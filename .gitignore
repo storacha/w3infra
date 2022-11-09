@@ -1,0 +1,13 @@
+# dependencies
+node_modules
+
+# sst
+.sst
+.build
+
+# misc
+.DS_Store
+.vscode
+
+# local env files
+.env*.local
