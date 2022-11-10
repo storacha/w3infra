@@ -1,0 +1,45 @@
+{
+  "name": "w3up-api",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "start": "sst start",
+    "build": "sst build",
+    "deploy": "sst deploy",
+    "remove": "sst remove",
+    "console": "sst console",
+    "lint": "tsc && eslint '**/*.js'",
+    "clean": "rm -rf docs node_modules pnpm-lock.yaml packages/*/{pnpm-lock.yaml,coverage,.nyc_output,dist,node_modules,.next}",
+    "test": "npm test -w services"
+  },
+  "devDependencies": {
+    "@serverless-stack/cli": "^1.17.1",
+    "@serverless-stack/resources": "^1.17.1",
+    "@tsconfig/node16": "^1.0.3",
+    "ava": "^4.3.3",
+    "aws-cdk-lib": "2.50.0",
+    "hd-scripts": "^3.0.2",
+    "lint-staged": "^13.0.3",
+    "typescript": "^4.8.4"
+  },
+  "dependencies": {
+    "@serverless-stack/node": "^1.17.1"
+  },
+  "simple-git-hooks": {
+    "pre-commit": "npx lint-staged"
+  },
+  "lint-staged": {
+    "*.js": "eslint --fix"
+  },
+  "eslintConfig": {
+    "extends": [
+      "./node_modules/hd-scripts/eslint/index.js"
+    ],
+    "parserOptions": {
+      "project": "./tsconfig.json"
+    }
+  },
+  "workspaces": [
+    "services"
+  ]
+}
