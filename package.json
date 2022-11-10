@@ -8,7 +8,7 @@
     "deploy": "sst deploy",
     "remove": "sst remove",
     "console": "sst console",
-    "lint": "eslint '**/*.js'",
+    "lint": "tsc && eslint '**/*.js'",
     "clean": "rm -rf docs node_modules pnpm-lock.yaml packages/*/{pnpm-lock.yaml,coverage,.nyc_output,dist,node_modules,.next}",
     "test": "npm test -w services"
   },
