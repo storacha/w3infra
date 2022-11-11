@@ -8,7 +8,7 @@ import { ApiStack } from './api-stack.js'
 export default function (app) {
   app.setDefaultFunctionProps({
     runtime: 'nodejs16.x',
-    srcPath: 'services',
+    srcPath: 'api',
     bundle: {
       format: 'esm',
     },

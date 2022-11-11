@@ -10,20 +10,34 @@
     "console": "sst console",
     "lint": "tsc && eslint '**/*.js'",
     "clean": "rm -rf docs node_modules pnpm-lock.yaml packages/*/{pnpm-lock.yaml,coverage,.nyc_output,dist,node_modules,.next}",
-    "test": "npm test -w services"
+    "test": "npm test -w api"
   },
   "devDependencies": {
+    "@ipld/dag-ucan": "^2.0.1",
     "@serverless-stack/cli": "^1.17.1",
     "@serverless-stack/resources": "^1.17.1",
     "@tsconfig/node16": "^1.0.3",
+    "@types/aws-lambda": "^8.10.108",
     "ava": "^4.3.3",
     "aws-cdk-lib": "2.50.0",
     "hd-scripts": "^3.0.2",
     "lint-staged": "^13.0.3",
+    "nanoid": "^4.0.0",
+    "testcontainers": "^8.13.0",
     "typescript": "^4.8.4"
   },
   "dependencies": {
-    "@serverless-stack/node": "^1.17.1"
+    "@aws-sdk/client-dynamodb": "^3.208.0",
+    "@aws-sdk/client-s3": "^3.209.0",
+    "@aws-sdk/util-dynamodb": "^3.208.0",
+    "@serverless-stack/node": "^1.17.1",
+    "@ucanto/interface": "^3.0.1",
+    "@ucanto/principal": "^3.0.0",
+    "@ucanto/server": "^3.0.1",
+    "@ucanto/transport": "^3.0.1",
+    "@web3-storage/access": "^4.0.2",
+    "@web3-storage/sigv4": "^1.0.2",
+    "multiformats": "^10.0.2"
   },
   "simple-git-hooks": {
     "pre-commit": "npx lint-staged"
@@ -37,9 +51,13 @@
     ],
     "parserOptions": {
       "project": "./tsconfig.json"
+    },
+    "rules": {
+      "no-console": "off",
+      "no-warning-comments": "off"
     }
   },
   "workspaces": [
-    "services"
+    "api"
   ]
 }

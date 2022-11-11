@@ -20,3 +20,7 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm test
+        env:
+          AWS_REGION: 'us-west-2'
+          AWS_ACCESS_KEY_ID: 'NOSUCH'
+          AWS_SECRET_ACCESS_KEY: 'NOSUCH'
