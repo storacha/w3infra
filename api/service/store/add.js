@@ -1,8 +1,6 @@
 import * as Server from '@ucanto/server'
 import * as Store from '@web3-storage/access/capabilities/store'
 
-import * as utils from '../utils.js'
-
 /**
  * @typedef {import('@ucanto/interface').Link<unknown, number, number, 0 | 1>} Link
  */
@@ -36,14 +34,14 @@ export function storeAddProvider(context) {
         carExists
       ] = await Promise.all([
         context.storeTable.exists(account, link.toString()),
-        context.carStore.has(link.toString())
+        context.carStoreBucket.has(link.toString())
       ])
 
       if (!carIsLinkedToAccount) {
         await context.storeTable.insert({
-          accountDID: account,
+          uploaderDID: account,
           link: link.toString(),
-          proof,
+          proof: proof.toString(),
           origin,
           size
         })
@@ -57,7 +55,7 @@ export function storeAddProvider(context) {
         }
       }
 
-      const { url, headers } = utils.createSignedUrl(link, context.signingOptions)
+      const { url, headers } = context.signer.sign(link)
       return {
         status: 'upload',
         with: account,

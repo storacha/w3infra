@@ -3,8 +3,9 @@ import * as CAR from '@ucanto/transport/car'
 import * as CBOR from '@ucanto/transport/cbor'
 
 import getServiceDid from '../authority.js'
-import { create as createCarStore } from '../buckets/car-store.js'
-import { StoreTable } from '../database/store.js'
+import { createSigner } from '../signer.js'
+import { createCarStore } from '../buckets/car-store.js'
+import { createStoreTable } from '../tables/store.js'
 import { createServiceRouter } from '../service/index.js'
 
 const AWS_ACCESS_KEY_ID = process.env.AWS_ACCESS_KEY_ID || ''
@@ -13,7 +14,7 @@ const AWS_SESSION_TOKEN = process.env.AWS_SESSION_TOKEN || ''
 const AWS_REGION = process.env.AWS_REGION || 'us-west-2'
 
 /**
- * AWS API Gateway handler for POST / with ucan invocation router.
+ * AWS HTTP Gateway handler for POST / with ucan invocation router.
  * 
  * We provide responses in Payload format v2.0
  * see: https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-develop-integrations-lambda.html#http-api-develop-integrations-lambda.proxy-format
@@ -23,7 +24,7 @@ const AWS_REGION = process.env.AWS_REGION || 'us-west-2'
 async function ucanInvocationRouter (request) {
   const {
     STORE_TABLE_NAME: storeTableName = '',
-    CAR_STORE_BUCKET_NAME: bucketName = '',
+    STORE_BUCKET_NAME: storeBucketName = '',
     // set for testing
     DYNAMO_DB_ENDPOINT: dbEndpoint
   } = process.env
@@ -35,20 +36,20 @@ async function ucanInvocationRouter (request) {
   }
 
   const server = await createUcantoServer({
-    storeTable: new StoreTable(AWS_REGION, storeTableName, {
+    storeTable: createStoreTable(AWS_REGION, storeTableName, {
       endpoint: dbEndpoint
     }),
-    carStore: createCarStore(AWS_REGION, bucketName),
-    signingOptions: {
+    carStoreBucket: createCarStore(AWS_REGION, storeBucketName),
+    signer: createSigner({
       region: AWS_REGION,
       secretAccessKey: AWS_SECRET_ACCESS_KEY,
       accessKeyId: AWS_ACCESS_KEY_ID,
       sessionToken: AWS_SESSION_TOKEN,
-      bucket: bucketName,
-    }
+      bucket: storeBucketName,
+    })
   })
   const response = await server.request({
-    // @ts-ignore - type is Record<string, string|string[]|undefined>
+    // @ts-expect-error - type is Record<string, string|string[]|undefined>
     headers: request.headers,
     body: Buffer.from(request.body, 'base64'),
   })

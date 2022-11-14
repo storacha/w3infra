@@ -20,8 +20,26 @@ const stageConfigs = {
       },
     },
   },
-  staging: {},
-  prod: {},
+  staging: {
+    bucketConfig: {
+      cdk: {
+        bucket: {
+          // Force name of bucket to be "carpark-staging-0" in staging.
+          bucketName: 'carpark-staging-0'
+        },
+      },
+    },
+  },
+  prod: {
+    bucketConfig: {
+      cdk: {
+        bucket: {
+          // Force name of bucket to be "carpark-prod-0" in prod.
+          bucketName: 'carpark-prod-0'
+        },
+      },
+    },
+  },
 }
 
 /**

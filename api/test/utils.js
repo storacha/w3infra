@@ -68,7 +68,7 @@ export async function createBucket(s3) {
 /**
  * @param {any} ctx 
  */
-export function createSigningOptions(ctx) {
+export function getSigningOptions(ctx) {
   return {
     region: ctx.region,
     secretAccessKey: ctx.secretAccessKey,

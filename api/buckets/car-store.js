@@ -8,7 +8,7 @@ import { S3Client, HeadObjectCommand } from '@aws-sdk/client-s3'
  * @param {object} [options]
  * @param {string} [options.endpoint] - needed for testing
  */
-export function create (region, bucketName, options = {}) {
+export function createCarStore (region, bucketName, options = {}) {
   const s3client = new S3Client({
     region,
     ...options

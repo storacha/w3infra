@@ -10,7 +10,7 @@ import { getConfig } from './config.js'
  * @param {import('@serverless-stack/resources').StackContext} properties
  */
 export function ApiStack({ stack }) {
-  // @ts-ignore "prod" | "dev" | "staging" only allowed for stage
+  // @ts-expect-error "prod" | "dev" | "staging" only allowed for stage
   const stackConfig = getConfig(stack.stage)
 
   /**
@@ -18,7 +18,7 @@ export function ApiStack({ stack }) {
    * to associate the uploaders DID with a payload CID.
    * You can also optionally indicate an application DID, origin and size
    */
-   const storeTable = new Table(stack, 'store_table', {
+   const storeTable = new Table(stack, 'store', {
     fields: {
       uploaderDID: 'string',
       payloadCID: 'string',
@@ -31,26 +31,18 @@ export function ApiStack({ stack }) {
     primaryIndex: { partitionKey: 'uploaderDID', sortKey: 'payloadCID' },
     ...stackConfig.tableConfig,
   })
-
-  /**
-   * This bucket is the car store used within the `store/*` invocations.
-   * Force name of bucket to be "car-park-prod-0" in prod.
-   */
-  const ingestBucketCdkConfig =
-    stack.stage === 'prod' ? { cdk: { bucket: { bucketName: 'car-park-prod-0' } } } : {}
   
-  const carStore = new Bucket(stack, 'carStore', {
-    ...stackConfig.bucketConfig,
-    ...ingestBucketCdkConfig
+  const storeBucket = new Bucket(stack, 'car-store', {
+    ...stackConfig.bucketConfig
   })
 
   const api = new Api(stack, 'http-gateway', {
     defaults: {
       function: {
-        permissions: [storeTable, carStore],
+        permissions: [storeTable, storeBucket],
         environment: {
           STORE_TABLE_NAME: storeTable.tableName,
-          CAR_STORE_BUCKET_NAME: carStore.bucketName
+          STORE_BUCKET_NAME: storeBucket.bucketName
         }
       }
     },

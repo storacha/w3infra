@@ -8,15 +8,16 @@ import { CAR, CBOR } from '@ucanto/transport'
 
 import getServiceDid from '../../authority.js'
 import { createUcantoServer } from '../../functions/ucan-invocation-router.js'
-import { create as createCarStore } from '../../buckets/car-store.js'
-import { StoreTable } from '../../database/store.js'
+import { createCarStore } from '../../buckets/car-store.js'
+import { createStoreTable } from '../../tables/store.js'
+import { createSigner } from '../../signer.js'
 
 import { alice } from '../fixtures.js'
-import { createS3, createBucket, createDynamodDb, createSigningOptions } from '../utils.js'
+import { createS3, createBucket, createDynamodDb, getSigningOptions } from '../utils.js'
 
 test.beforeEach(async t => {
   const region = 'us-west-2'
-  const tableName = 'store_table'
+  const tableName = 'store'
 
   // Dynamo DB
   const {
@@ -124,11 +125,11 @@ test('store add returns done if already uploaded', async (t) => {
  */
 function createStoreUcantoServer(ctx) {
   return createUcantoServer({
-    storeTable: new StoreTable(ctx.region, ctx.tableName, {
+    storeTable: createStoreTable(ctx.region, ctx.tableName, {
       endpoint: ctx.dbEndpoint
     }),
-    carStore: createCarStore(ctx.region, ctx.bucketName, { ...ctx.s3ClientOpts }),
-    signingOptions: createSigningOptions(ctx)
+    carStoreBucket: createCarStore(ctx.region, ctx.bucketName, { ...ctx.s3ClientOpts }),
+    signer: createSigner(getSigningOptions(ctx))
   })
 }
 
@@ -138,7 +139,7 @@ function createStoreUcantoServer(ctx) {
 async function createDynamoStoreTable(dynamo) {
   // TODO: see in pickup Document DB wrapper
   await dynamo.send(new CreateTableCommand({
-    TableName: 'store_table',
+    TableName: 'store',
     AttributeDefinitions: [
       { AttributeName: 'uploaderDID', AttributeType: 'S' },
       { AttributeName: 'payloadCID', AttributeType: 'S' }
@@ -161,7 +162,7 @@ async function createDynamoStoreTable(dynamo) {
  */
 async function getItemFromStoreTable(dynamo, did, link) {
   const params = {
-    TableName: 'store_table',
+    TableName: 'store',
     Key: marshall({
       uploaderDID: did.did(),
       payloadCID: link.toString(),
