@@ -1,6 +1,6 @@
 import { testStore as test } from '../helpers/context.js'
 import { CreateTableCommand, GetItemCommand } from '@aws-sdk/client-dynamodb'
-import { marshall } from '@aws-sdk/util-dynamodb'
+import { marshall, unmarshall } from '@aws-sdk/util-dynamodb'
 import { PutObjectCommand } from '@aws-sdk/client-s3'
 
 import { parse } from '@ipld/dag-ucan/did'
@@ -61,21 +61,20 @@ test('store add returns signed url for uploading', async (t) => {
   ])
 
   const storeAddResponse = await server.request(request)
+  /** @type {import('../../service/types').StoreAddSuccessResult[]} */
+  // @ts-expect-error
   const storeAdd = await CBOR.decode(storeAddResponse)
-
   t.is(storeAdd.length, 1)
-  // @ts-ignore TODO: we need type here
   t.is(storeAdd[0].status, 'upload')
-  // @ts-ignore TODO: we need type here
   t.is(storeAdd[0].with, account)
-  // @ts-ignore TODO: we need type here
   t.deepEqual(storeAdd[0].link, link)
-  // @ts-ignore TODO: we need type here
   t.truthy(storeAdd[0].url)
 
-  const dynamoItem = await getItemFromStoreTable(t.context.dynamoClient, alice, link)
-  t.truthy(dynamoItem)
-  // TODO: check dynamo content
+  const item = await getItemFromStoreTable(t.context.dynamoClient, alice, link)
+  t.truthy(item)
+  t.truthy(item.uploadedAt)
+  t.truthy(item.proof)
+  t.truthy(item.uploaderDID)
 })
 
 test('store add returns done if already uploaded', async (t) => {
@@ -106,18 +105,22 @@ test('store add returns done if already uploaded', async (t) => {
   ])
 
   const storeAddResponse = await server.request(request)
+  /** @type {import('../../service/types').StoreAddSuccessResult[]} */
+  // @ts-expect-error
   const storeAdd = await CBOR.decode(storeAddResponse)
 
   t.is(storeAdd.length, 1)
-
-  // @ts-ignore TODO: we need type here
   t.is(storeAdd[0].status, 'done')
-  // @ts-ignore TODO: we need type here
   t.is(storeAdd[0].with, account)
-  // @ts-ignore TODO: we need type here
   t.deepEqual(storeAdd[0].link, link)
-  // @ts-ignore TODO: we need type here
   t.falsy(storeAdd[0].url)
+
+  // Even if done (CAR already exists in bucket), mapped to user if non existing
+  const item = await getItemFromStoreTable(t.context.dynamoClient, alice, link)
+  t.truthy(item)
+  t.truthy(item.uploadedAt)
+  t.truthy(item.proof)
+  t.truthy(item.uploaderDID)
 })
 
 /**
@@ -167,9 +170,12 @@ async function getItemFromStoreTable(dynamo, did, link) {
       uploaderDID: did.did(),
       payloadCID: link.toString(),
     }),
-    AttributesToGet: ['uploaderDID'],
+    AttributesToGet: ['uploaderDID', 'proof', 'uploadedAt'],
   }
 
   const response = await dynamo.send(new GetItemCommand(params))
-  return response?.Item
+  if (!response?.Item) {
+    throw new Error('item not found')
+  }
+  return unmarshall(response?.Item)
 }

@@ -3,6 +3,7 @@ import * as Store from '@web3-storage/access/capabilities/store'
 
 /**
  * @typedef {import('@ucanto/interface').Link<unknown, number, number, 0 | 1>} Link
+ * @typedef {import('@web3-storage/access/types').StoreAdd} StoreAddCapability
  */
 
 /**
@@ -12,7 +13,7 @@ export function storeAddProvider(context) {
   return Server.provide(
     Store.add,
     async ({ capability, invocation }) => {
-      /** @type {{ link: Link, origin: string, size: number }} */
+      /** @type {{ link: Link, origin: Link, size: number }} */
       // @ts-ignore need to add types from capabilities here
       const { link, origin, size } = capability.nb
       const proof = invocation.cid
@@ -42,7 +43,7 @@ export function storeAddProvider(context) {
           uploaderDID: account,
           link: link.toString(),
           proof: proof.toString(),
-          origin,
+          origin: origin && origin.toString(),
           size
         })
       }
