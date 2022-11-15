@@ -16,22 +16,24 @@ export function storeAddProvider(context) {
       const { link, origin, size } = capability.nb
       const proof = invocation.cid
 
-      // Only use capability account for now to check if account is registered.
-      // This must change to access account/info!!
-      // We need to use https://github.com/web3-storage/w3protocol/blob/9d4b5bec1f0e870233b071ecb1c7a1e09189624b/packages/access/src/agent.js#L270
-      const account = capability.with
-
+      const resource = Server.DID.parse(capability.with).did()
       const [
+        verified,
         carIsLinkedToAccount,
         carExists
       ] = await Promise.all([
-        context.storeTable.exists(account, link.toString()),
+        context.access.verifyInvocation(invocation),
+        context.storeTable.exists(resource, link.toString()),
         context.carStoreBucket.has(link.toString())
       ])
 
+      if (!verified) {
+        return new Server.Failure(`${invocation.issuer.did()} is not delegated capability ${Store.add.can} on ${resource}`)
+      }
+
       if (!carIsLinkedToAccount) {
         await context.storeTable.insert({
-          uploaderDID: account,
+          uploaderDID: resource,
           link: link.toString(),
           proof: proof.toString(),
           origin: origin?.toString(),
@@ -42,7 +44,7 @@ export function storeAddProvider(context) {
       if (carExists) {
         return {
           status: 'done',
-          with: account,
+          with: resource,
           link
         }
       }
@@ -50,7 +52,7 @@ export function storeAddProvider(context) {
       const { url, headers } = context.signer.sign(link)
       return {
         status: 'upload',
-        with: account,
+        with: resource,
         link,
         url,
         headers
