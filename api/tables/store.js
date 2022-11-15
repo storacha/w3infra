@@ -2,8 +2,10 @@ import {
   DynamoDBClient,
   GetItemCommand,
   PutItemCommand,
+  DeleteItemCommand,
+  QueryCommand
 } from '@aws-sdk/client-dynamodb'
-import { marshall } from '@aws-sdk/util-dynamodb'
+import { marshall, unmarshall } from '@aws-sdk/util-dynamodb'
 
 /**
  * Abstraction layer to handle operations on Store Table.
@@ -12,6 +14,7 @@ import { marshall } from '@aws-sdk/util-dynamodb'
  * @param {string} tableName
  * @param {object} [options]
  * @param {string} [options.endpoint]
+ * @returns {import('../service/types').StoreTable}
  */
 export function createStoreTable (region, tableName, options = {}) {
   const dynamoDb = new DynamoDBClient({
@@ -30,8 +33,8 @@ export function createStoreTable (region, tableName, options = {}) {
       const params = {
         TableName: tableName,
         Key: marshall({
-          uploaderDID: uploaderDID.toString(),
-          payloadCID: payloadCID.toString(),
+          uploaderDID,
+          payloadCID,
         }),
         AttributesToGet: ['uploaderDID'],
       }
@@ -67,6 +70,61 @@ export function createStoreTable (region, tableName, options = {}) {
       await dynamoDb.send(new PutItemCommand(params))
   
       return item
+    },
+    /**
+     * Unbinds a link CID to an account
+     *
+     * @param {string} uploaderDID
+     * @param {string} payloadCID
+     */
+    remove: async (uploaderDID, payloadCID) => {
+      const params = {
+        TableName: tableName,
+        Key: marshall({
+          uploaderDID,
+          payloadCID,
+        }),
+        AttributesToGet: ['uploaderDID'],
+      }
+  
+      await dynamoDb.send(new DeleteItemCommand(params))
+    },
+    /**
+     * List all CARs bound to an account
+     *
+     * @param {string} uploaderDID
+     * @param {import('../service/types').ListOptions} [options]
+     */
+    list: async (uploaderDID, options = {}) => {
+      const params = {
+        TableName: tableName,
+        Limit: options.pageSize || 20,
+        KeyConditions: {
+          uploaderDID: {
+            ComparisonOperator: 'EQ',
+            AttributeValueList: [{ S: uploaderDID }],
+          },
+        },
+        AttributesToGet: ['payloadCID', 'size', 'origin', 'uploadedAt'],
+      }
+      const response = await dynamoDb.send(new QueryCommand(params))
+
+      /** @type {import('../service/types').StoreListResult[]} */
+      // @ts-expect-error
+      const results = response.Items?.map(i => unmarshall(i)) || []
+
+      /* 
+      // TODO: cursor integrate with capabilities
+      // Get cursor of last key payload CID
+      const lastKey = response.LastEvaluatedKey && unmarshall(response.LastEvaluatedKey)
+      const cursorID = lastKey ? lastKey.payloadCID : undefined
+      */
+
+      return {
+        pageSize: results.length,
+        // cursorID,
+        results
+      }
     }
   }
 }

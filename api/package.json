@@ -20,6 +20,7 @@
   "devDependencies": {
     "@ipld/dag-ucan": "^2.0.1",
     "@types/aws-lambda": "^8.10.108",
+    "@ucanto/core": "^3.0.2",
     "ava": "^4.3.3",
     "nanoid": "^4.0.0",
     "testcontainers": "^8.13.0"
