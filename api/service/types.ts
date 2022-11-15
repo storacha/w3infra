@@ -1,4 +1,5 @@
 import type { Link } from '@ucanto/interface'
+import type { API, MalformedCapability } from '@ucanto/server'
 
 export interface StoreServiceContext {
   storeTable: StoreTable,
@@ -38,3 +39,13 @@ export interface StoreItemOutput {
   proof: string,
   uploadedAt: string,
 }
+
+export interface StoreAddSuccessResult {
+  status: 'upload' | 'done',
+  with: API.URI<"did:">,
+  link: API.Link<unknown, number, number, 0 | 1>,
+  url?: URL,
+  headers?: Record<string, string>
+}
+
+export type StoreAddResult = StoreAddSuccessResult | MalformedCapability
