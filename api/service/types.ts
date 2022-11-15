@@ -1,10 +1,12 @@
-import type { Link } from '@ucanto/interface'
+import type { Link, Principal, Invocation } from '@ucanto/interface'
 import type { API, MalformedCapability } from '@ucanto/server'
 
 export interface StoreServiceContext {
+  id: Principal
   storeTable: StoreTable,
   signer: Signer
   carStoreBucket: CarStoreBucket,
+  access: AccessClient
 }
 
 export interface UcantoServerContext extends StoreServiceContext {}
@@ -49,3 +51,11 @@ export interface StoreAddSuccessResult {
 }
 
 export type StoreAddResult = StoreAddSuccessResult | MalformedCapability
+
+export interface AccessClient {
+  /**
+   * Determines if the issuer of the invocation has received a delegation
+   * allowing them to issue the passed invocation.
+   */
+  verifyInvocation: (invocation: Invocation) => Promise<boolean>
+}
