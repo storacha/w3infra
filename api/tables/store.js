@@ -30,17 +30,17 @@ export function createStoreTable (region, tableName, options = {}) {
      * @param {string} payloadCID
      */
     exists: async (uploaderDID, payloadCID) => {
-      const params = {
+      const cmd = new GetItemCommand({
         TableName: tableName,
         Key: marshall({
           uploaderDID,
           payloadCID,
         }),
         AttributesToGet: ['uploaderDID'],
-      }
+      })
   
       try {
-        const response = await dynamoDb.send(new GetItemCommand(params))
+        const response = await dynamoDb.send(cmd)
         return response?.Item !== undefined
       } catch {
         return false
@@ -62,12 +62,12 @@ export function createStoreTable (region, tableName, options = {}) {
         uploadedAt: new Date().toISOString(),
       }
   
-      const params = {
+      const cmd = new PutItemCommand({
         TableName: tableName,
         Item: marshall(item),
-      }
+      })
   
-      await dynamoDb.send(new PutItemCommand(params))
+      await dynamoDb.send(cmd)
   
       return item
     },
