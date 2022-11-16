@@ -6,9 +6,22 @@
     "test": "ava --verbose --timeout=60s **/*.test.js"
   },
   "dependencies": {
-    "aws-sdk": "^2.1250.0"
+    "@aws-sdk/client-dynamodb": "^3.211.0",
+    "@aws-sdk/client-s3": "^3.211.0",
+    "@aws-sdk/util-dynamodb": "^3.211.0",
+    "@ucanto/interface": "^3.0.1",
+    "@ucanto/principal": "^3.0.1",
+    "@ucanto/server": "^3.0.4",
+    "@ucanto/transport": "^3.0.2",
+    "@web3-storage/access": "^5.0.1",
+    "@web3-storage/sigv4": "^1.0.2",
+    "multiformats": "^10.0.2"
   },
   "devDependencies": {
-    "@types/aws-lambda": "^8.10.108"
+    "@ipld/dag-ucan": "^2.0.1",
+    "@types/aws-lambda": "^8.10.108",
+    "ava": "^4.3.3",
+    "nanoid": "^4.0.0",
+    "testcontainers": "^8.13.0"
   }
 }
