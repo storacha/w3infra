@@ -1,7 +1,7 @@
 import anyTest from 'ava'
 
 /**
- * @typedef {object} StoreContext
+ * @typedef {object} UcantoServerContext
  * @property {string} dbEndpoint
  * @property {string} tableName
  * @property {string} region
@@ -10,7 +10,7 @@ import anyTest from 'ava'
  * @property {import('@aws-sdk/client-s3').ServiceInputTypes} s3ClientOpts
  * @property {import('@ucanto/principal/ed25519').EdSigner} serviceDid
  * 
- * @typedef {import("ava").TestFn<Awaited<ReturnType<StoreContext>>>} TestStoreFn
+ * @typedef {import("ava").TestFn<Awaited<ReturnType<UcantoServerContext>>>} TestStoreFn
  */
 
 // eslint-disable-next-line unicorn/prefer-export-from

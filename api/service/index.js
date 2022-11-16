@@ -1,4 +1,5 @@
 import { createStoreService } from './store/index.js'
+import { createUploadService } from './upload/index.js'
 
 /**
  * @param {import('./types').UcantoServerContext} context
@@ -7,6 +8,6 @@ import { createStoreService } from './store/index.js'
 export function createServiceRouter (context) {
   return {
     store: createStoreService(context),
-    // TODO: upload
+    upload: createUploadService(context)
   }
 }
