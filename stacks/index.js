@@ -1,6 +1,7 @@
 import { Tags } from 'aws-cdk-lib'
 
 import { ApiStack } from './api-stack.js'
+import { CarparkStack } from './carpark-stack.js'
 
 /**
  * @param {import('@serverless-stack/resources').App} app
@@ -13,6 +14,7 @@ export default function (app) {
       format: 'esm',
     },
   })
+  app.stack(CarparkStack)
   app.stack(ApiStack)
 
   // tags let us discover all the aws resource costs incurred by this app

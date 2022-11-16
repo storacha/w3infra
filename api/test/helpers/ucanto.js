@@ -8,7 +8,6 @@ import { createStoreTable } from '../../tables/store.js'
 import { createUploadTable } from '../../tables/upload.js'
 import { createSigner } from '../../signer.js'
 
-import { getSigningOptions } from '../utils.js'
 import { createAccessClient } from '../../access.js'
 
 /**
@@ -57,5 +56,18 @@ export async function createSpace (audience) {
       capabilities: [{ can: '*', with: spaceDid }]
     }),
     spaceDid
+  }
+}
+
+/**
+ * @param {any} ctx 
+ */
+ export function getSigningOptions(ctx) {
+  return {
+    region: ctx.region,
+    secretAccessKey: ctx.secretAccessKey,
+    accessKeyId: ctx.accessKeyId,
+    sessionToken: ctx.sessionToken,
+    bucket: ctx.bucketName,
   }
 }

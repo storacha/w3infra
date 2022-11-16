@@ -6,7 +6,7 @@ import * as UploadCapabilities from '@web3-storage/access/capabilities/upload'
 
 import { BATCH_MAX_SAFE_LIMIT } from '../../tables/upload.js'
 
-import { createAccessServer, createDynamodDb } from '../utils.js'
+import { createAccessServer, createDynamodDb } from '../helpers/resources.js'
 import { randomCAR } from '../helpers/random.js'
 import { getClientConnection, createSpace } from '../helpers/ucanto.js'
 
