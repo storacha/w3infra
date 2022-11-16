@@ -13,8 +13,6 @@ export function storeAddProvider(context) {
   return Server.provide(
     Store.add,
     async ({ capability, invocation }) => {
-      /** @type {{ link: Link, origin: Link, size: number }} */
-      // @ts-ignore need to add types from capabilities here
       const { link, origin, size } = capability.nb
       const proof = invocation.cid
 
@@ -22,6 +20,11 @@ export function storeAddProvider(context) {
         return new Server.MalformedCapability(
           invocation.capabilities[0],
           new Server.Failure('Provided capability has no link')
+        )
+      } else if (!size) {
+        return new Server.MalformedCapability(
+          invocation.capabilities[0],
+          new Server.Failure('Provided capability has no size')
         )
       }
 
@@ -43,7 +46,7 @@ export function storeAddProvider(context) {
           uploaderDID: account,
           link: link.toString(),
           proof: proof.toString(),
-          origin: origin && origin.toString(),
+          origin: origin?.toString(),
           size
         })
       }

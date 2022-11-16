@@ -25,7 +25,7 @@ export interface Signer {
 export interface StoreItemInput {
   uploaderDID: string,
   link: string,
-  origin: string,
+  origin?: string,
   size: number,
   proof: string,
 }
