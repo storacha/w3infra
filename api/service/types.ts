@@ -16,6 +16,8 @@ export interface CarStoreBucket {
 export interface StoreTable {
   exists: (uploaderDID: string, payloadCID: string) => Promise<boolean>
   insert: (item: StoreItemInput) => Promise<StoreItemOutput>
+  remove: (uploaderDID: string, payloadCID: string) => Promise<void>
+  list: (uploaderDID: string) => Promise<ListResponse<StoreListResult>>
 }
 
 export interface Signer {
@@ -49,3 +51,20 @@ export interface StoreAddSuccessResult {
 }
 
 export type StoreAddResult = StoreAddSuccessResult | MalformedCapability
+
+export type ListOptions = {
+  pageSize?: number,
+}
+
+export interface StoreListResult {
+  payloadCID: string
+  origin: string
+  size: number
+  uploadedAt: number
+}
+
+export interface ListResponse<R> {
+  cursorID?: string,
+  pageSize: number,
+  results: R[]
+}
