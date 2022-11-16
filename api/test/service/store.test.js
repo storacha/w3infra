@@ -2,18 +2,16 @@ import { testStore as test } from '../helpers/context.js'
 import { CreateTableCommand, GetItemCommand } from '@aws-sdk/client-dynamodb'
 import { marshall, unmarshall } from '@aws-sdk/util-dynamodb'
 import { PutObjectCommand } from '@aws-sdk/client-s3'
-
-import { parse } from '@ipld/dag-ucan/did'
+import * as Signer from '@ucanto/principal/ed25519'
 import { CAR, CBOR } from '@ucanto/transport'
-import { DID } from '@ucanto/core'
-
+import * as UcantoClient from '@ucanto/client'
+import * as StoreCapabilities from '@web3-storage/access/capabilities/store'
 import getServiceDid from '../../authority.js'
 import { createUcantoServer } from '../../functions/ucan-invocation-router.js'
 import { createCarStore } from '../../buckets/car-store.js'
 import { createStoreTable } from '../../tables/store.js'
 import { createSigner } from '../../signer.js'
-
-import { alice } from '../fixtures.js'
+import { base64pad } from 'multiformats/bases/base64'
 import { createS3, createBucket, createDynamodDb, getSigningOptions } from '../utils.js'
 
 test.beforeEach(async t => {
@@ -42,51 +40,76 @@ test.beforeEach(async t => {
 })
 
 test('store add returns signed url for uploading', async (t) => {
-  const server = await createStoreUcantoServer(t.context)
-  const account = alice.did()
+  const uploadService = t.context.serviceDid
+  const alice = await Signer.generate()
+  const space = await Signer.generate()
   const data = new Uint8Array([11, 22, 34, 44, 55])
   const link = await CAR.codec.link(data)
 
-  const request = await CAR.encode([
-    {
-      issuer: alice,
-      audience: parse(t.context.serviceDid.did()),
-      capabilities: [{
-        can: 'store/add',
-        with: account,
-        nb: { link, size: data.byteLength },
-      }],
-      proofs: [],
-    }
-  ])
+  const connection = UcantoClient.connect({
+    id: uploadService,
+    encoder: CAR,
+    decoder: CBOR,
+    channel: await createStoreUcantoServer(t.context),
+  })
 
-  const storeAddResponse = await server.request(request)
-  /** @type {import('../../service/types').StoreAddSuccessResult[]} */
-  // @ts-expect-error
-  const storeAdd = await CBOR.decode(storeAddResponse)
-  t.is(storeAdd.length, 1)
-  t.is(storeAdd[0].status, 'upload')
-  t.is(storeAdd[0].with, account)
-  t.deepEqual(storeAdd[0].link, link)
-  t.truthy(storeAdd[0].url)
+  // alice may do anything to this space
+  const proof = await UcantoClient.delegate({
+    issuer: space,
+    audience: alice,
+    capabilities: [{ can: '*', with: space.did() }]
+  })
 
-  const item = await getItemFromStoreTable(t.context.dynamoClient, alice, link)
+  // invoke a store/add with proof
+  const storeAdd = await StoreCapabilities.add.invoke({
+    issuer: alice,
+    audience: uploadService,
+    with: space.did(),
+    nb: { link, size: data.byteLength },
+    proofs: [proof]
+    // @ts-expect-error ʅʕ•ᴥ•ʔʃ
+  }).execute(connection)
+
+  t.not(storeAdd.error, true, storeAdd.message)
+  t.is(storeAdd.status, 'upload')
+  t.is(storeAdd.with, space.did())
+  t.deepEqual(storeAdd.link, link)
+  t.is(new URL(storeAdd.url).pathname, `/${link}/${link}.car`)
+  t.is(storeAdd.headers['x-amz-checksum-sha256'], base64pad.baseEncode(link.multihash.digest))
+
+  const item = await getItemFromStoreTable(t.context.dynamoClient, space, link)
   t.truthy(item)
   t.is(typeof item?.uploadedAt, 'string')
   t.is(typeof item?.proof, 'string')
   t.is(typeof item?.uploaderDID, 'string')
-  t.is(item?.uploaderDID, account)
-  t.truthy(DID.parse(item?.uploaderDID))
+  // TODO: this looks suspicious... why is uploaderDID not the issuer / alice who invoked the upload
+  t.is(item?.uploaderDID, space.did())
   t.is(typeof item?.size, 'number')
   t.is(item?.size, data.byteLength)
 })
 
 test('store add returns done if already uploaded', async (t) => {
-  const server = await createStoreUcantoServer(t.context)
-  const account = alice.did()
+  const uploadService = t.context.serviceDid
+  const alice = await Signer.generate()
+  const space = await Signer.generate()
   const data = new Uint8Array([11, 22, 34, 44, 55])
   const link = await CAR.codec.link(data)
 
+  const connection = UcantoClient.connect({
+    id: uploadService,
+    encoder: CAR,
+    decoder: CBOR,
+    channel: await createStoreUcantoServer(t.context),
+  })
+
+  // alice may do anything to this space
+  const proof = await UcantoClient.delegate({
+    issuer: space,
+    audience: alice,
+    capabilities: [{ can: '*', with: space.did() }]
+  })
+
+  // simulate an already stored CAR
   await t.context.s3Client.send(
     new PutObjectCommand({
       Bucket: t.context.bucketName,
@@ -95,190 +118,214 @@ test('store add returns done if already uploaded', async (t) => {
     })
   )
 
-  const request = await CAR.encode([
-    {
-      issuer: alice,
-      audience: parse(t.context.serviceDid.did()),
-      capabilities: [{
-        can: 'store/add',
-        with: account,
-        nb: { link, size: data.byteLength },
-      }],
-      proofs: [],
-    }
-  ])
+  const storeAdd = await StoreCapabilities.add.invoke({
+    issuer: alice,
+    audience: uploadService,
+    with: space.did(),
+    nb: { link, size: data.byteLength },
+    proofs: [proof]
+    // @ts-expect-error ʅʕ•ᴥ•ʔʃ
+  }).execute(connection)
 
-  const storeAddResponse = await server.request(request)
-  /** @type {import('../../service/types').StoreAddSuccessResult[]} */
-  // @ts-expect-error
-  const storeAdd = await CBOR.decode(storeAddResponse)
-
-  t.is(storeAdd.length, 1)
-  t.is(storeAdd[0].status, 'done')
-  t.is(storeAdd[0].with, account)
-  t.deepEqual(storeAdd[0].link, link)
-  t.falsy(storeAdd[0].url)
+  t.is(storeAdd.status, 'done')
+  t.is(storeAdd.with, space.did())
+  t.deepEqual(storeAdd.link, link)
+  t.falsy(storeAdd.url)
 
   // Even if done (CAR already exists in bucket), mapped to user if non existing
-  const item = await getItemFromStoreTable(t.context.dynamoClient, alice, link)
+  const item = await getItemFromStoreTable(t.context.dynamoClient, space, link)
   t.is(typeof item?.uploadedAt, 'string')
   t.is(typeof item?.proof, 'string')
   t.is(typeof item?.uploaderDID, 'string')
-  t.is(item?.uploaderDID, account)
-  t.truthy(DID.parse(item?.uploaderDID))
+  t.is(item?.uploaderDID, space.did())
   t.is(typeof item?.size, 'number')
   t.is(item?.size, data.byteLength)
 })
 
 test('store remove does not fail for non existent link', async (t) => {
-  const server = await createStoreUcantoServer(t.context)
-  const account = alice.did()
+  const uploadService = t.context.serviceDid
+  const alice = await Signer.generate()
+  const space = await Signer.generate()
   const data = new Uint8Array([11, 22, 34, 44, 55])
   const link = await CAR.codec.link(data)
 
-  const request = await CAR.encode([
-    {
-      issuer: alice,
-      audience: parse(t.context.serviceDid.did()),
-      capabilities: [{
-        can: 'store/remove',
-        with: account,
-        nb: { link },
-      }],
-      proofs: [],
-    }
-  ])
+  const connection = UcantoClient.connect({
+    id: uploadService,
+    encoder: CAR,
+    decoder: CBOR,
+    channel: await createStoreUcantoServer(t.context),
+  })
 
-  const storeRemoveResponse = await server.request(request)
-  const storeRemove = await CBOR.decode(storeRemoveResponse)
-  t.is(storeRemove.length, 1)
+  // alice may do anything to this space
+  const proof = await UcantoClient.delegate({
+    issuer: space,
+    audience: alice,
+    capabilities: [{ can: '*', with: space.did() }]
+  })
+
+  const storeRemove = await StoreCapabilities.remove.invoke({
+    issuer: alice,
+    audience: uploadService,
+    with: space.did(),
+    nb: { link },
+    proofs: [proof]
+    // @ts-expect-error ʅʕ•ᴥ•ʔʃ
+  }).execute(connection)
+
+  // expect no response for a remove
+  t.falsy(storeRemove)
+
+  const storeRemove2 = await StoreCapabilities.remove.invoke({
+    issuer: alice,
+    audience: uploadService,
+    with: space.did(),
+    nb: { link },
+    proofs: [proof]
+    // @ts-expect-error ʅʕ•ᴥ•ʔʃ
+  }).execute(connection)
+
+  // expect no response for a remove
+  t.falsy(storeRemove2)
 })
 
 test('store remove invocation removes car bound to issuer from store table', async (t) => {
-  const server = await createStoreUcantoServer(t.context)
-  const account = alice.did()
-  const link = await CAR.codec.link(
-    new Uint8Array([11, 22, 34, 44, 55])
-  )
+  const uploadService = t.context.serviceDid
+  const alice = await Signer.generate()
+  const space = await Signer.generate()
+  const data = new Uint8Array([11, 22, 34, 44, 55])
+  const link = await CAR.codec.link(data)
+
+  const connection = UcantoClient.connect({
+    id: uploadService,
+    encoder: CAR,
+    decoder: CBOR,
+    channel: await createStoreUcantoServer(t.context),
+  })
+
+  // alice may do anything to this space
+  const proof = await UcantoClient.delegate({
+    issuer: space,
+    audience: alice,
+    capabilities: [{ can: '*', with: space.did() }]
+  })
 
   // Validate Store Table content does not exist before add
-  const dynamoItemBeforeAdd = await getItemFromStoreTable(t.context.dynamoClient, alice, link)
+  const dynamoItemBeforeAdd = await getItemFromStoreTable(t.context.dynamoClient, space, link)
   t.falsy(dynamoItemBeforeAdd)
 
-  const addRequest = await CAR.encode([
-    {
-      issuer: alice,
-      audience: parse(t.context.serviceDid.did()),
-      capabilities: [{
-        can: 'store/add',
-        with: account,
-        nb: { link, size: 5 },
-      }],
-      proofs: [],
-    }
-  ])
-  await server.request(addRequest)
+  const storeAdd = await StoreCapabilities.add.invoke({
+    issuer: alice,
+    audience: uploadService,
+    with: space.did(),
+    nb: { link, size: data.byteLength },
+    proofs: [proof]
+    // @ts-expect-error ʅʕ•ᴥ•ʔʃ
+  }).execute(connection)
+
+  t.is(storeAdd.status, 'upload')
 
   // Validate Store Table content exists after add
-  const dynamoItemAfterAdd = await getItemFromStoreTable(t.context.dynamoClient, alice, link)
+  const dynamoItemAfterAdd = await getItemFromStoreTable(t.context.dynamoClient, space, link)
   t.truthy(dynamoItemAfterAdd)
 
-  const removeRequest = await CAR.encode([
-    {
-      issuer: alice,
-      audience: parse(t.context.serviceDid.did()),
-      capabilities: [{
-        can: 'store/remove',
-        with: account,
-        nb: { link },
-      }],
-      proofs: [],
-    }
-  ])
-  const storeRemoveResponse = await server.request(removeRequest)
-  const storeRemove = await CBOR.decode(storeRemoveResponse)
-  t.is(storeRemove.length, 1)
+  const storeRemove = await StoreCapabilities.remove.invoke({
+    issuer: alice,
+    audience: uploadService,
+    with: space.did(),
+    nb: { link },
+    proofs: [proof]
+    // @ts-expect-error ʅʕ•ᴥ•ʔʃ
+  }).execute(connection)
+
+  t.falsy(storeRemove)
 
   // Validate Store Table content does not exist after remove
-  const dynamoItemAfterRemove = await getItemFromStoreTable(t.context.dynamoClient, alice, link)
+  const dynamoItemAfterRemove = await getItemFromStoreTable(t.context.dynamoClient, space, link)
   t.falsy(dynamoItemAfterRemove)
 })
 
 test('store list does not fail for empty list', async (t) => {
-  const server = await createStoreUcantoServer(t.context)
-  const account = alice.did()
+  const uploadService = t.context.serviceDid
+  const alice = await Signer.generate()
+  const space = await Signer.generate()
 
-  const request = await CAR.encode([
-    {
-      issuer: alice,
-      audience: parse(t.context.serviceDid.did()),
-      capabilities: [{
-        can: 'store/list',
-        with: account,
-      }],
-      proofs: [],
-    }
-  ])
+  const connection = UcantoClient.connect({
+    id: uploadService,
+    encoder: CAR,
+    decoder: CBOR,
+    channel: await createStoreUcantoServer(t.context),
+  })
 
-  const storeListResponse = await server.request(request)
-  /** @type {import('../../service/types').ListResponse<any>[]} */
-  // @ts-expect-error
-  const storeList = await CBOR.decode(storeListResponse)
-  t.is(storeList.length, 1)
-  t.is(storeList[0].results.length, 0)
-  t.is(storeList[0].pageSize, 0)
+  // alice may do anything to this space
+  const proof = await UcantoClient.delegate({
+    issuer: space,
+    audience: alice,
+    capabilities: [{ can: '*', with: space.did() }]
+  })
+  
+  const storeList = await StoreCapabilities.list.invoke({
+    issuer: alice,
+    audience: uploadService,
+    with: space.did(),
+    proofs: [ proof ]
+    // @ts-expect-error ʅʕ•ᴥ•ʔʃ
+  }).execute(connection)
+
+  t.like(storeList, { results: [], pageSize: 0 })
 })
 
 test('store list returns items previously stored by the user', async (t) => {
-  const server = await createStoreUcantoServer(t.context)
-  const account = alice.did()
+  const uploadService = t.context.serviceDid
+  const alice = await Signer.generate()
+  const space = await Signer.generate()
 
-  // Request to store a few links
-  const links = await Promise.all([
-    new Uint8Array([11, 22, 34, 44, 55]),
-    new Uint8Array([22, 34, 44, 55, 66])
-  ].map(async (data) => {
-    const link = await CAR.codec.link(data)
-    const request = await CAR.encode([
-      {
-        issuer: alice,
-        audience: parse(t.context.serviceDid.did()),
-        capabilities: [{
-          can: 'store/add',
-          with: account,
-          nb: { link, size: 5 },
-        }],
-        proofs: [],
-      }
-    ])
-    await server.request(request)
+  const connection = UcantoClient.connect({
+    id: uploadService,
+    encoder: CAR,
+    decoder: CBOR,
+    channel: await createStoreUcantoServer(t.context),
+  })
 
-    return link
-  }))
+  // alice may do anything to this space
+  const proof = await UcantoClient.delegate({
+    issuer: space,
+    audience: alice,
+    capabilities: [{ can: '*', with: space.did() }]
+  })
 
-  const request = await CAR.encode([
-    {
+  const data = [ new Uint8Array([11, 22, 34, 44, 55]), new Uint8Array([22, 34, 44, 55, 66]) ]
+  const links = []
+  for (const datum of data) {
+    const storeAdd = await StoreCapabilities.add.invoke({
       issuer: alice,
-      audience: parse(t.context.serviceDid.did()),
-      capabilities: [{
-        can: 'store/list',
-        with: account,
-      }],
-      proofs: [],
-    }
-  ])
+      audience: uploadService,
+      with: space.did(),
+      nb: { link: await CAR.codec.link(datum) , size: datum.byteLength },
+      proofs: [proof]
+      // @ts-expect-error ʅʕ•ᴥ•ʔʃ
+    }).execute(connection)
+    t.not(storeAdd.error, true, storeAdd.message)
+    t.is(storeAdd.status, 'upload')
+    links.push(storeAdd.link)
+  }
 
-  const storeListResponse = await server.request(request)
-  /** @type {import('../../service/types').ListResponse<import('../../service/types').StoreListResult>[]} */
-  // @ts-expect-error
-  const storeList = await CBOR.decode(storeListResponse)
-  t.is(storeList.length, 1)
-  t.is(storeList[0].results.length, 2)
-  t.is(storeList[0].pageSize, 2)
+  const storeList = await StoreCapabilities.list.invoke({
+    issuer: alice,
+    audience: uploadService,
+    with: space.did(),
+    proofs: [ proof ]
+    // @ts-expect-error ʅʕ•ᴥ•ʔʃ
+  }).execute(connection)
 
-  // Has stored links
-  for (const link of links) {
-    t.truthy(storeList[0].results.find(i => i.payloadCID === link.toString()))
+  t.is(storeList.pageSize, links.length)
+
+  // list order last-in-first-out
+  links.reverse()
+  let i = 0
+  for (const entry of storeList.results) {
+    // TODO: what is `origin` for
+    t.like(entry, { payloadCID: links[i].toString(), size: 5, origin: '' })
+    i++
   }
 })
 
