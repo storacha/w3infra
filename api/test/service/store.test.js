@@ -44,9 +44,8 @@ test.beforeEach(async t => {
 test('store add returns signed url for uploading', async (t) => {
   const server = await createStoreUcantoServer(t.context)
   const account = alice.did()
-  const link = await CAR.codec.link(
-    new Uint8Array([11, 22, 34, 44, 55])
-  )
+  const data = new Uint8Array([11, 22, 34, 44, 55])
+  const link = await CAR.codec.link(data)
 
   const request = await CAR.encode([
     {
@@ -55,7 +54,7 @@ test('store add returns signed url for uploading', async (t) => {
       capabilities: [{
         can: 'store/add',
         with: account,
-        nb: { link, size: 5 },
+        nb: { link, size: data.byteLength },
       }],
       proofs: [],
     }
@@ -76,8 +75,10 @@ test('store add returns signed url for uploading', async (t) => {
   t.is(typeof item?.uploadedAt, 'string')
   t.is(typeof item?.proof, 'string')
   t.is(typeof item?.uploaderDID, 'string')
+  t.is(item?.uploaderDID, account)
   t.truthy(DID.parse(item?.uploaderDID))
   t.is(typeof item?.size, 'number')
+  t.is(item?.size, data.byteLength)
 })
 
 test('store add returns done if already uploaded', async (t) => {
@@ -101,7 +102,7 @@ test('store add returns done if already uploaded', async (t) => {
       capabilities: [{
         can: 'store/add',
         with: account,
-        nb: { link, size: 5 },
+        nb: { link, size: data.byteLength },
       }],
       proofs: [],
     }
@@ -123,8 +124,10 @@ test('store add returns done if already uploaded', async (t) => {
   t.is(typeof item?.uploadedAt, 'string')
   t.is(typeof item?.proof, 'string')
   t.is(typeof item?.uploaderDID, 'string')
+  t.is(item?.uploaderDID, account)
   t.truthy(DID.parse(item?.uploaderDID))
   t.is(typeof item?.size, 'number')
+  t.is(item?.size, data.byteLength)
 })
 
 test('store remove does not fail for non existent link', async (t) => {

@@ -83,8 +83,7 @@ export function createStoreTable (region, tableName, options = {}) {
         Key: marshall({
           uploaderDID,
           payloadCID,
-        }),
-        AttributesToGet: ['uploaderDID'],
+        })
       })
   
       await dynamoDb.send(cmd)
