@@ -54,7 +54,7 @@ test('store add returns signed url for uploading', async (t) => {
       capabilities: [{
         can: 'store/add',
         with: account,
-        nb: { link },
+        nb: { link, size: 5 },
       }],
       proofs: [],
     }
@@ -98,7 +98,7 @@ test('store add returns done if already uploaded', async (t) => {
       capabilities: [{
         can: 'store/add',
         with: account,
-        nb: { link },
+        nb: { link, size: 5 },
       }],
       proofs: [],
     }
