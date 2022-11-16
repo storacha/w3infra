@@ -78,16 +78,16 @@ export function createStoreTable (region, tableName, options = {}) {
      * @param {string} payloadCID
      */
     remove: async (uploaderDID, payloadCID) => {
-      const params = {
+      const cmd = new DeleteItemCommand({
         TableName: tableName,
         Key: marshall({
           uploaderDID,
           payloadCID,
         }),
         AttributesToGet: ['uploaderDID'],
-      }
+      })
   
-      await dynamoDb.send(new DeleteItemCommand(params))
+      await dynamoDb.send(cmd)
     },
     /**
      * List all CARs bound to an account
@@ -96,7 +96,7 @@ export function createStoreTable (region, tableName, options = {}) {
      * @param {import('../service/types').ListOptions} [options]
      */
     list: async (uploaderDID, options = {}) => {
-      const params = {
+      const cmd = new QueryCommand({
         TableName: tableName,
         Limit: options.pageSize || 20,
         KeyConditions: {
@@ -106,8 +106,8 @@ export function createStoreTable (region, tableName, options = {}) {
           },
         },
         AttributesToGet: ['payloadCID', 'size', 'origin', 'uploadedAt'],
-      }
-      const response = await dynamoDb.send(new QueryCommand(params))
+      })
+      const response = await dynamoDb.send(cmd)
 
       /** @type {import('../service/types').StoreListResult[]} */
       // @ts-expect-error
