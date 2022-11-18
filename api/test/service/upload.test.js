@@ -260,11 +260,12 @@ test('store/list does not fail for empty list', async (t) => {
     issuer: alice,
     audience: uploadService,
     with: spaceDid,
-    proofs: [ proof ]
+    proofs: [ proof ],
+    nb: {}
     // @ts-expect-error ʅʕ•ᴥ•ʔʃ
   }).execute(connection)
 
-  t.like(uploadList, { results: [], pageSize: 0 })
+  t.like(uploadList, { results: [], size: 0 })
 })
 
 test('store/list returns entries previously uploaded by the user', async (t) => {
@@ -295,14 +296,72 @@ test('store/list returns entries previously uploaded by the user', async (t) => 
     issuer: alice,
     audience: uploadService,
     with: spaceDid,
-    proofs: [ proof ]
+    proofs: [ proof ],
+    nb: {}
     // @ts-expect-error ʅʕ•ᴥ•ʔʃ
   }).execute(connection)
 
-  t.is(uploadList.pageSize, cars.length)
+  t.is(uploadList.size, cars.length)
 
   // Validate entries have given CARs
   for (const entry of uploadList.results) {
+    t.truthy(cars.find(car => car.roots[0].toString() === entry.dataCID ))
+  }
+})
+
+test('upload/list can be paginated with custom size', async (t) => {
+  const uploadService = await Signer.generate()
+  const alice = await Signer.generate()
+  const { proof, spaceDid } = await createSpace(alice)
+  const connection = await getClientConnection(uploadService, t.context)
+
+  // invoke multiple upload/add with proof
+  const cars = [
+    await randomCAR(128),
+    await randomCAR(128)
+  ]
+
+  for (const car of cars) {
+    await UploadCapabilities.add.invoke({
+      issuer: alice,
+      audience: uploadService,
+      with: spaceDid,
+      nb: { root: car.roots[0], shards: [car.cid] },
+      proofs: [proof]
+      // @ts-expect-error ʅʕ•ᴥ•ʔʃ
+    }).execute(connection)
+  }
+
+  // Get list with page size 1 (two pages)
+  const size = 1
+  const listPages = []
+  let cursor
+
+  do {
+    /** @type {import('../../service/types').ListResponse<any>} */
+    const uploadList = await UploadCapabilities.list.invoke({
+      issuer: alice,
+      audience: uploadService,
+      with: spaceDid,
+      proofs: [ proof ],
+      nb: {
+        size,
+        // @ts-ignore let's do an interface for service!!
+        cursor
+      }
+      // @ts-expect-error ʅʕ•ᴥ•ʔʃ
+    }).execute(connection)
+  
+    cursor = uploadList.cursor
+    // Add page if it has size
+    uploadList.size && listPages.push(uploadList.results)
+  } while (cursor)
+
+  t.is(listPages.length, cars.length, 'has number of pages of added CARs')
+
+  // Inspect content
+  const uploadList = listPages.flat()
+  for (const entry of uploadList) {
     t.truthy(cars.find(car => car.roots[0].toString() === entry.dataCID ))
   }
 })

@@ -22,14 +22,14 @@ export interface StoreTable {
   exists: (uploaderDID: string, payloadCID: string) => Promise<boolean>
   insert: (item: StoreItemInput) => Promise<StoreItemOutput>
   remove: (uploaderDID: string, payloadCID: string) => Promise<void>
-  list: (uploaderDID: string) => Promise<ListResponse<StoreListResult>>
+  list: (uploaderDID: string, options?: ListOptions) => Promise<ListResponse<StoreListResult>>
 }
 
 export interface UploadTable {
   exists: (uploaderDID: string, dataCID: string) => Promise<boolean>
   insert: (uploaderDID: string, item: UploadItemInput) => Promise<UploadItemOutput[]>
   remove: (uploaderDID: string, dataCID: string) => Promise<void>
-  list: (uploaderDID: string) => Promise<ListResponse<UploadItemOutput>>
+  list: (uploaderDID: string, options?: ListOptions) => Promise<ListResponse<UploadItemOutput>>
 }
 
 export interface Signer {
@@ -65,7 +65,8 @@ export interface StoreAddSuccessResult {
 export type StoreAddResult = StoreAddSuccessResult | MalformedCapability
 
 export type ListOptions = {
-  pageSize?: number,
+  size?: number,
+  cursor?: string
 }
 
 export interface StoreListResult {
@@ -76,8 +77,8 @@ export interface StoreListResult {
 }
 
 export interface ListResponse<R> {
-  cursorID?: string,
-  pageSize: number,
+  cursor?: string,
+  size: number,
   results: R[]
 }
 
