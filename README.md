@@ -60,7 +60,7 @@ The POST body must contain a [CAR encoded UCAN](https://github.com/web3-storage/
 Returns version info for this api in JSON
 
 ```json
-{ "name": "@web3-storage/upload-api", "version": "3.0.0", "commit": "sha1", branch: "main" }
+{ "name": "@web3-storage/upload-api", "did": "did:foo:bar", "version": "3.0.0", "commit": "sha1", "branch": "main" }
 ```
 
 ## UCAN Capabilities
