@@ -4,7 +4,7 @@ import {
   Table
 } from '@serverless-stack/resources'
 
-import { getConfig } from './config.js'
+import { getConfig, getCustomDomain } from './config.js'
 
 /**
  * @param {import('@serverless-stack/resources').StackContext} properties
@@ -58,7 +58,10 @@ export function ApiStack({ stack }) {
     ...stackConfig.tableConfig,
   })
 
+  const customDomain = getCustomDomain(stack.stage, process.env.HOSTED_ZONE)
+
   const api = new Api(stack, 'http-gateway', {
+    customDomain,
     defaults: {
       function: {
         permissions: [storeTable, uploadTable, storeBucket],
@@ -76,5 +79,6 @@ export function ApiStack({ stack }) {
 
   stack.addOutputs({
     ApiEndpoint: api.url,
+    CustomDomain:  customDomain ? `https://${customDomain.domainName}` : 'Set HOSTED_ZONE in env to deploy to a custom domain'
   })
 }
