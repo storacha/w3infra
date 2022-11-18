@@ -6,7 +6,7 @@ import getServiceDid from '../authority.js'
  * @param {import('aws-lambda').APIGatewayProxyEventV2} request 
  */
  export async function version (request) {
-  const { NAME: name , VERSION: version, COMMIT: commit, BRANCH: branch, STAGE: env } = process.env
+  const { NAME: name , VERSION: version, COMMIT: commit, STAGE: env } = process.env
   const serviceSigner = await getServiceDid()
   const did = serviceSigner.did()
   const repo = 'https://github.com/web3-storage/upload-api'
@@ -15,7 +15,7 @@ import getServiceDid from '../authority.js'
     headers: {
       'Content-Type': `application/json`
     },
-    body: JSON.stringify({ name, version, did, repo, commit, branch, env })
+    body: JSON.stringify({ name, version, did, repo, commit, env })
   }
 }
 
@@ -33,7 +33,7 @@ export async function home (request) {
   return {
     statusCode: 200,
     headers: {
-      'Content-Type': 'text/plain'
+      'Content-Type': 'text/plain; charset=utf-8'
     },
     body: `⁂ upload-api v${version} ${env}\n- ${repo}\n- ${did}\n`
   }

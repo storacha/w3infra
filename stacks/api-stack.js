@@ -75,7 +75,6 @@ export function ApiStack({ stack }) {
           NAME: pkg.name,
           VERSION: pkg.version,
           COMMIT: git.commmit,
-          BRANCH: git.branch,
           STAGE: stack.stage
         }
       }
