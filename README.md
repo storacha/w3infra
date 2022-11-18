@@ -49,7 +49,7 @@ A UCAN based [RPC] API over HTTP.
 
 ### `POST /`
 
-The RPC endpoint for invoking UCAN cababilities. Supported abilities are defined in [#ucan-capabilities]
+The RPC endpoint for invoking UCAN cababilities. Supported abilities are defined below in [UCAN Capabilities](#ucan-capabilities)
 
 The POST body must contain a [CAR encoded UCAN](https://github.com/web3-storage/ucanto/blob/main/Readme.md#transport).
 
