@@ -10,7 +10,7 @@ The server-side implementation of the `store/*` and `upload/*` capabilities defi
 The repo contains the infra deployment code and the api implementation.
 
 ```
-├── api     - lambda & dynamoDB implementation of the pinning service api 
+├── api     - lambda & dynamoDB implementation of the upload-api
 └── stacks  - sst and aws cdk code to deploy all the things 
 ```
 
