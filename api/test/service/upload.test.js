@@ -65,7 +65,7 @@ test('upload/add inserts into DB mapping between data CID and car CIDs', async (
   }
 
   // Validate DB
-  const dbItems = await getSpaceItems(t.context.dynamoClient, spaceDid)
+  const dbItems = await getUploadsForSpace(t.context.dynamoClient, spaceDid)
   t.is(dbItems.length, shards.length)
 
   // Validate shards result
@@ -104,7 +104,7 @@ test('upload/add does not fail with no shards provided', async (t) => {
   t.is(uploadAdd.length, 0)
 
   // Validate DB
-  const dbItems = await getSpaceItems(t.context.dynamoClient, spaceDid)
+  const dbItems = await getUploadsForSpace(t.context.dynamoClient, spaceDid)
   t.is(dbItems.length, 0)
 })
 
@@ -188,15 +188,15 @@ test('upload/remove removes all entries with data CID linked to space', async (t
   }).execute(connection)
 
   // Validate SpaceA has 0 items for CarA
-  const spaceAcarAItems = await getSpaceItemsFilteredByDataCID(t.context.dynamoClient, spaceDidA, carA.roots[0])
+  const spaceAcarAItems = await getUploadsForSpaceFilteredByDataCID(t.context.dynamoClient, spaceDidA, carA.roots[0])
   t.is(spaceAcarAItems.length, 0)
 
   // Validate SpaceA has 2 items for CarB
-  const spaceAcarBItems = await getSpaceItemsFilteredByDataCID(t.context.dynamoClient, spaceDidA, carB.roots[0])
+  const spaceAcarBItems = await getUploadsForSpaceFilteredByDataCID(t.context.dynamoClient, spaceDidA, carB.roots[0])
   t.is(spaceAcarBItems.length, 2)
 
   // Validate SpaceB has 2 items for CarA
-  const spaceBcarAItems = await getSpaceItemsFilteredByDataCID(t.context.dynamoClient, spaceDidB, carA.roots[0])
+  const spaceBcarAItems = await getUploadsForSpaceFilteredByDataCID(t.context.dynamoClient, spaceDidB, carA.roots[0])
   t.is(spaceBcarAItems.length, 2)
 })
 
@@ -228,7 +228,7 @@ test('upload/remove removes all entries when larger than batch limit', async (t)
   t.is(uploadAdd.length, shards.length)
 
   // Validate DB before remove
-  const dbItemsBefore = await getSpaceItems(t.context.dynamoClient, spaceDid)
+  const dbItemsBefore = await getUploadsForSpace(t.context.dynamoClient, spaceDid)
   t.is(dbItemsBefore.length, shards.length)
 
   // Remove Car from Space
@@ -242,7 +242,7 @@ test('upload/remove removes all entries when larger than batch limit', async (t)
   }).execute(connection)
 
   // Validate DB after remove
-  const dbItemsAfter = await getSpaceItems(t.context.dynamoClient, spaceDid)
+  const dbItemsAfter = await getUploadsForSpace(t.context.dynamoClient, spaceDid)
   t.is(dbItemsAfter.length, 0)
 })
 
@@ -327,11 +327,13 @@ test('store/list returns entries previously uploaded by the user', async (t) => 
 /**
  * @param {import("@aws-sdk/client-dynamodb").DynamoDBClient} dynamo
  * @param {`did:key:${string}`} spaceDid
+ * @param {object} [options]
+ * @param {number} [options.limit]
  */
- async function getSpaceItems(dynamo, spaceDid) {
+ async function getUploadsForSpace(dynamo, spaceDid, options = {}) {
   const cmd = new QueryCommand({
     TableName: 'upload',
-    Limit: 30,
+    Limit: options.limit || 30,
     ExpressionAttributeValues: {
       ':u': { S: spaceDid },
     },  
@@ -347,11 +349,13 @@ test('store/list returns entries previously uploaded by the user', async (t) => 
  * @param {import("@aws-sdk/client-dynamodb").DynamoDBClient} dynamo
  * @param {`did:key:${string}`} spaceDid
  * @param {import("multiformats").CID<unknown, 85, 18, 1>} dataCid
+ * @param {object} [options]
+ * @param {number} [options.limit]
  */
- async function getSpaceItemsFilteredByDataCID(dynamo, spaceDid, dataCid) {
+ async function getUploadsForSpaceFilteredByDataCID(dynamo, spaceDid, dataCid, options = {}) {
   const cmd = new QueryCommand({
     TableName: 'upload',
-    Limit: 30,
+    Limit: options.limit || 30,
     ExpressionAttributeValues: {
       ':u': { S: spaceDid },
       ':d': { S: dataCid.toString() }

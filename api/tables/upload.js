@@ -55,26 +55,21 @@ export function createUploadTable (region, tableName, options = {}) {
      * @param {import('../service/types').UploadItemInput} item
      */
     insert: async (uploaderDID, { dataCID, carCIDs }) => {
+      const uploadedAt = new Date().toISOString()
+
       /** @type {import('../service/types').UploadItemOutput[]} */
-      const items = []
-      const batchItems = []
-
-      // Create returning array and array to batch
-      for (const carCID of carCIDs) {
-        const item = {
-          uploaderDID,
-          dataCID,
-          carCID,
-          uploadedAt: new Date().toISOString(),
-        }
-
-        items.push(item)
-        batchItems.push({
-          ...item,
-          // add sk property for Dynamo Key uniqueness
-          sk: `${item.dataCID}#${item.carCID}`
-        })
-      }
+      const items = carCIDs.map(carCID => ({
+        uploaderDID,
+        dataCID,
+        carCID,
+        uploadedAt
+      }))
+      // items formatted for dynamodb
+      const batchItems = items.map(item => ({
+        ...item,
+        // add sk property for Dynamo Key uniqueness
+        sk: `${item.dataCID}#${item.carCID}`
+      }))
 
       // Batch writes with max safe limit
       while (batchItems.length > 0) {
