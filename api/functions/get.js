@@ -26,21 +26,14 @@ import getServiceDid from '../authority.js'
  */
 export async function home (request) {
   const { VERSION: version } = process.env
+  const serviceSigner = await getServiceDid()
+  const did = serviceSigner.did()
+  const repo = 'https://github.com/web3-storage/upload-api'
   return {
     statusCode: 200,
     headers: {
       'Content-Type': 'text/plain'
     },
-    /* eslint-disable no-useless-escape */
-    body: `
-           ________                    ._.
-  __  _  __\_____  \     __ __ ______  | |
-  \ \/ \/ /  _(__  <    |  |  \\____ \ | |
-   \     /  /       \   |  |  /|  |_> > \|
-    \/\_/  /______  /   |____/ |   __/  __
-                  \/           |__|     \/
-                         upload-api v${version} 
-`
-    /* eslint-enable no-useless-escape */
+    body: `⁂ upload-api v${version}\n- ${repo}\n- ${did}\n`
   }
 }
