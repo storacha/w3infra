@@ -15,7 +15,7 @@ import getServiceDid from '../authority.js'
     headers: {
       'Content-Type': `application/json`
     },
-    body: JSON.stringify({ name, version, did, repo, branch, commit, env })
+    body: JSON.stringify({ name, version, did, repo, commit, branch, env })
   }
 }
 
