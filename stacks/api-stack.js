@@ -3,8 +3,9 @@ import {
   Bucket,
   Table
 } from '@serverless-stack/resources'
+import { App } from 'aws-cdk-lib'
 
-import { getConfig, getCustomDomain, getApiPackageJson } from './config.js'
+import { getConfig, getCustomDomain, getApiPackageJson, getGitInfo } from './config.js'
 
 /**
  * @param {import('@serverless-stack/resources').StackContext} properties
@@ -61,6 +62,7 @@ export function ApiStack({ stack }) {
   const customDomain = getCustomDomain(stack.stage, process.env.HOSTED_ZONE)
 
   const pkg = getApiPackageJson()
+  const git = getGitInfo()
 
   const api = new Api(stack, 'http-gateway', {
     customDomain,
@@ -73,6 +75,9 @@ export function ApiStack({ stack }) {
           UPLOAD_TABLE_NAME: uploadTable.tableName,
           NAME: pkg.name,
           VERSION: pkg.version,
+          COMMIT: git.commmit,
+          BRANCH: git.branch,
+          STAGE: stack.stage
         }
       }
     },

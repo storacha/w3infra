@@ -2,6 +2,7 @@
 // DO NOT INCLUDE SECRETS IN IT
 import { RemovalPolicy } from 'aws-cdk-lib'
 import { createRequire } from "module"
+import git from 'git-rev-sync'
 
 const stageConfigs = {
   dev: {
@@ -75,4 +76,11 @@ export function getApiPackageJson () {
   // @ts-ignore ts dont see *.json and dont like it
   const pkg = require('../../api/package.json')
   return pkg
+}
+
+export function getGitInfo () {
+  return {
+    commmit: git.long('.'),
+    branch: git.branch('.')
+  }
 }
