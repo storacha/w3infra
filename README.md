@@ -10,7 +10,7 @@ The server-side implementation of the `store/*` and `upload/*` capabilities defi
 The repo contains the infra deployment code and the api implementation.
 
 ```
-├── api     - lambda & dynamoDB implementation of the upload-api
+├── api     - lambda & dynamoDB implementation of the upload-api http gateway
 └── stacks  - sst and aws cdk code to deploy all the things 
 ```
 
@@ -31,7 +31,7 @@ See: https://docs.sst.dev for more info on how things get deployed.
 
 ## Deployment 
 
-Deployment is manged by [seed.run]. PR's are deployed automatically to `https://<pr#>.up.web3.storage`. 
+Deployment is managed by [seed.run]. PR's are deployed automatically to `https://<pr#>.up.web3.storage`. 
 
 The `main` branch is deployed to https://staging.up.web3.storage and staging builds are promoted to prod manually via the UI at https://console.seed.run
 
