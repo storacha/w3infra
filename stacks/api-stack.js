@@ -3,7 +3,6 @@ import {
   Bucket,
   Table
 } from '@serverless-stack/resources'
-import { App } from 'aws-cdk-lib'
 
 import { getConfig, getCustomDomain, getApiPackageJson, getGitInfo } from './config.js'
 

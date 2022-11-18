@@ -16,6 +16,7 @@
     "@serverless-stack/cli": "^1.18.0",
     "@serverless-stack/resources": "^1.18.0",
     "@tsconfig/node16": "^1.0.3",
+    "@types/git-rev-sync": "^2.0.0",
     "aws-cdk-lib": "2.50.0",
     "git-rev-sync": "^3.0.2",
     "hd-scripts": "^3.0.2",
