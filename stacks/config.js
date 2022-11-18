@@ -1,6 +1,7 @@
 // TREAT THIS THE SAME AS AN ENV FILE
 // DO NOT INCLUDE SECRETS IN IT
 import { RemovalPolicy } from 'aws-cdk-lib'
+import { createRequire } from "module"
 
 const stageConfigs = {
   dev: {
@@ -66,4 +67,12 @@ export function getCustomDomain (stage, hostedZone) {
   const domainMap = { prod: hostedZone }
   const domainName = domainMap[stage] ?? `${stage}.${hostedZone}`
   return { domainName, hostedZone }
+}
+
+export function getApiPackageJson () {
+  // @ts-expect-error ts thinks this is unused becuase of the ignore
+  const require = createRequire(import.meta.url)
+  // @ts-ignore ts dont see *.json and dont like it
+  const pkg = require('../api/package.json')
+  return pkg
 }
