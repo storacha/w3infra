@@ -5,7 +5,7 @@ A [UCAN] based API to for storing CARs and registering uploads, built on [ucanto
 
 The server-side implementation of the `store/*` and `upload/*` capabilities defined in [w3protocol].
 
-## Getting Started
+## Getting Started
 
 The repo contains the infra deployment code and the api implementation.
 
