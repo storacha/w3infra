@@ -12,7 +12,7 @@ import { createCarStore } from '../../buckets/car-store.js'
 import { createStoreTable } from '../../tables/store.js'
 import { createSigner } from '../../signer.js'
 import { base64pad } from 'multiformats/bases/base64'
-import { createS3, createBucket, createDynamodDb, getSigningOptions } from '../utils.js'
+import { createS3, createBucket, createDynamodDb, getSigningOptions, createAccess } from '../utils.js'
 
 test.beforeEach(async t => {
   const region = 'us-west-2'
@@ -29,6 +29,22 @@ test.beforeEach(async t => {
   const { client: s3Client, clientOpts: s3ClientOpts } = await createS3({ port: 9000, region })
   const bucketName = await createBucket(s3Client)
 
+  // Access
+  const access = await createAccess()
+  // by default, allow access
+  access.setServiceImpl({
+    account: {
+      info: async () => ({
+        did: (await Signer.generate()).did(),
+        agent: (await Signer.generate()).did(),
+        email: 'mailto:test@example.com',
+        product: 'product:free',
+        updated_at: new Date().toISOString(),
+        inserted_at: new Date().toISOString()
+      })
+    }
+  })
+
   t.context.dbEndpoint = dbEndpoint
   t.context.dynamoClient = dynamo
   t.context.tableName = tableName
@@ -37,6 +53,13 @@ test.beforeEach(async t => {
   t.context.s3Client = s3Client
   t.context.s3ClientOpts = s3ClientOpts
   t.context.serviceDid = await getServiceDid()
+  t.context.access = access
+  t.context.accessServiceDID = access.serviceDID
+  t.context.accessServiceURL = access.serviceURL
+})
+
+test.afterEach(async t => {
+  t.context.access.httpServer.close()
 })
 
 test('store add returns signed url for uploading', async (t) => {
@@ -329,10 +352,10 @@ test('store list returns items previously stored by the user', async (t) => {
 })
 
 /**
- * @param {any} ctx
+ * @param {import('../helpers/context.js').StoreContext} ctx
  */
 function createStoreUcantoServer(ctx) {
-  return createUcantoServer({
+  return createUcantoServer(ctx.serviceDid, {
     storeTable: createStoreTable(ctx.region, ctx.tableName, {
       endpoint: ctx.dbEndpoint
     }),

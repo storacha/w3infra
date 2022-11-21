@@ -3,20 +3,18 @@ import { connect } from '@ucanto/client'
 import { CAR, CBOR, HTTP } from '@ucanto/transport'
 
 /**
- * @param {import('@ucanto/interface').Signer} issuer
- * @param {import('@ucanto/interface').Principal} serviceDID
- * @param {URL} serviceURL
+ * @param {import('@ucanto/interface').Signer} issuer Issuer of UCAN invocations to the Access service.
+ * @param {import('@ucanto/interface').Principal} serviceDID DID of the Access service.
+ * @param {URL} serviceURL URL of the Access service.
  * @returns {import('./service/types').AccessClient}
  */
 export function createAccess (issuer, serviceDID, serviceURL) {
+  /** @type {import('@ucanto/server').ConnectionView<import('@web3-storage/access/types').Service>} */
   const conn = connect({
     id: serviceDID,
     encoder: CAR,
     decoder: CBOR,
-    channel: HTTP.open({
-      url: new URL(serviceURL),
-      method: 'POST'
-    })
+    channel: HTTP.open({ url: serviceURL, method: 'POST' })
   })
 
   return {

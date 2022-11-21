@@ -2,7 +2,7 @@ import type { Link, Principal, Invocation } from '@ucanto/interface'
 import type { API, MalformedCapability } from '@ucanto/server'
 
 export interface StoreServiceContext {
-  id: Principal
+  servicePrincipal: Principal
   storeTable: StoreTable,
   signer: Signer
   carStoreBucket: CarStoreBucket,
