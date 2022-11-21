@@ -5,6 +5,7 @@ import { PutObjectCommand } from '@aws-sdk/client-s3'
 
 import { parse } from '@ipld/dag-ucan/did'
 import { CAR, CBOR } from '@ucanto/transport'
+import * as Signer from '@ucanto/principal/ed25519'
 
 import getServiceDid from '../../authority.js'
 import { createUcantoServer } from '../../functions/ucan-invocation-router.js'
@@ -13,7 +14,7 @@ import { createStoreTable } from '../../tables/store.js'
 import { createSigner } from '../../signer.js'
 
 import { alice } from '../fixtures.js'
-import { createS3, createBucket, createDynamodDb, getSigningOptions } from '../utils.js'
+import { createS3, createBucket, createDynamodDb, getSigningOptions, createAccess } from '../utils.js'
 
 test.beforeEach(async t => {
   const region = 'us-west-2'
@@ -30,6 +31,22 @@ test.beforeEach(async t => {
   const { client: s3Client, clientOpts: s3ClientOpts } = await createS3({ port: 9000, region })
   const bucketName = await createBucket(s3Client)
 
+  // Access
+  const access = await createAccess()
+  // by default, allow access
+  access.setServiceImpl({
+    account: {
+      info: async () => ({
+        did: (await Signer.generate()).did(),
+        agent: (await Signer.generate()).did(),
+        email: 'mailto:test@example.com',
+        product: 'product:free',
+        updated_at: new Date().toISOString(),
+        inserted_at: new Date().toISOString()
+      })
+    }
+  })
+
   t.context.dbEndpoint = dbEndpoint
   t.context.dynamoClient = dynamo
   t.context.tableName = tableName
@@ -38,6 +55,13 @@ test.beforeEach(async t => {
   t.context.s3Client = s3Client
   t.context.s3ClientOpts = s3ClientOpts
   t.context.serviceDid = await getServiceDid()
+  t.context.access = access
+  t.context.accessServiceDID = access.serviceDID
+  t.context.accessServiceURL = access.serviceURL
+})
+
+test.afterEach(async t => {
+  t.context.access.httpServer.close()
 })
 
 test('store add returns signed url for uploading', async (t) => {
