@@ -10,7 +10,6 @@ export interface StoreServiceContext {
 
 export interface UploadServiceContext {
   uploadTable: UploadTable
-  access: AccessClient
 }
 
 export interface UcantoServerContext extends StoreServiceContext, UploadServiceContext {}
