@@ -245,7 +245,7 @@ test('store/list returns items previously stored by the user', async (t) => {
   links.reverse()
   let i = 0
   for (const entry of storeList.results) {
-    t.like(entry, { payloadCID: links[i].toString(), size: 5, origin: '' })
+    t.like(entry, { payloadCID: links[i].toString(), size: 5 })
     i++
   }
 })
