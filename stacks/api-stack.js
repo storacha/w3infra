@@ -1,6 +1,7 @@
 import {
   Api,
   Bucket,
+  Config,
   Table
 } from '@serverless-stack/resources'
 
@@ -62,6 +63,7 @@ export function ApiStack({ stack }) {
 
   const pkg = getApiPackageJson()
   const git = getGitInfo()
+  const privateKey = new Config.Secret(stack, 'PRIVATE_KEY')
 
   const api = new Api(stack, 'http-gateway', {
     customDomain,
@@ -76,7 +78,8 @@ export function ApiStack({ stack }) {
           VERSION: pkg.version,
           COMMIT: git.commmit,
           STAGE: stack.stage
-        }
+        },
+        bind: [privateKey]
       }
     },
     routes: {

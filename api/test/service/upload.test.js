@@ -4,7 +4,6 @@ import { unmarshall } from '@aws-sdk/util-dynamodb'
 import * as Signer from '@ucanto/principal/ed25519'
 import * as UploadCapabilities from '@web3-storage/access/capabilities/upload'
 
-import getServiceDid from '../../authority.js'
 import { BATCH_MAX_SAFE_LIMIT } from '../../tables/upload.js'
 
 import { createDynamodDb } from '../utils.js'
@@ -26,11 +25,11 @@ test.beforeEach(async t => {
   t.context.dynamoClient = dynamo
   t.context.tableName = tableName
   t.context.region = region
-  t.context.serviceDid = await getServiceDid()
+  t.context.serviceSigner = await Signer.generate()
 })
 
 test('upload/add inserts into DB mapping between data CID and car CIDs', async (t) => {
-  const uploadService = t.context.serviceDid
+  const uploadService = t.context.serviceSigner
   const alice = await Signer.generate()
   const { proof, spaceDid } = await createSpace(alice)
   const connection = await getClientConnection(uploadService, t.context)
@@ -79,7 +78,7 @@ test('upload/add inserts into DB mapping between data CID and car CIDs', async (
 // TODO: this is current behavior with optional nb.
 // We should look into this as a desired behavior
 test('upload/add does not fail with no shards provided', async (t) => {
-  const uploadService = t.context.serviceDid
+  const uploadService = t.context.serviceSigner
   const alice = await Signer.generate()
   const { proof, spaceDid } = await createSpace(alice)
   const connection = await getClientConnection(uploadService, t.context)
@@ -109,7 +108,7 @@ test('upload/add does not fail with no shards provided', async (t) => {
 })
 
 test('upload/remove does not fail for non existent upload', async (t) => {
-  const uploadService = t.context.serviceDid
+  const uploadService = t.context.serviceSigner
   const alice = await Signer.generate()
   const { proof, spaceDid } = await createSpace(alice)
   const connection = await getClientConnection(uploadService, t.context)
@@ -133,7 +132,7 @@ test('upload/remove does not fail for non existent upload', async (t) => {
 })
 
 test('upload/remove removes all entries with data CID linked to space', async (t) => {
-  const uploadService = t.context.serviceDid
+  const uploadService = t.context.serviceSigner
   const alice = await Signer.generate()
   const { proof: proofSpaceA, spaceDid: spaceDidA } = await createSpace(alice)
   const { proof: proofSpaceB, spaceDid: spaceDidB } = await createSpace(alice)
@@ -201,7 +200,7 @@ test('upload/remove removes all entries with data CID linked to space', async (t
 })
 
 test('upload/remove removes all entries when larger than batch limit', async (t) => {
-  const uploadService = t.context.serviceDid
+  const uploadService = t.context.serviceSigner
   const alice = await Signer.generate()
   const { proof, spaceDid } = await createSpace(alice)
   const connection = await getClientConnection(uploadService, t.context)
@@ -247,7 +246,7 @@ test('upload/remove removes all entries when larger than batch limit', async (t)
 })
 
 test('store/list does not fail for empty list', async (t) => {
-  const uploadService = t.context.serviceDid
+  const uploadService = t.context.serviceSigner
   const alice = await Signer.generate()
   const { proof, spaceDid } = await createSpace(alice)
   const connection = await getClientConnection(uploadService, t.context)
@@ -264,7 +263,7 @@ test('store/list does not fail for empty list', async (t) => {
 })
 
 test('store/list returns entries previously uploaded by the user', async (t) => {
-  const uploadService = t.context.serviceDid
+  const uploadService = t.context.serviceSigner
   const alice = await Signer.generate()
   const { proof, spaceDid } = await createSpace(alice)
   const connection = await getClientConnection(uploadService, t.context)

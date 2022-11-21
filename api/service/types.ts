@@ -1,4 +1,4 @@
-import type { Link } from '@ucanto/interface'
+import type { Link, Principal } from '@ucanto/interface'
 import type { API, MalformedCapability } from '@ucanto/server'
 
 export interface StoreServiceContext {
@@ -11,7 +11,9 @@ export interface UploadServiceContext {
   uploadTable: UploadTable
 }
 
-export interface UcantoServerContext extends StoreServiceContext, UploadServiceContext {}
+export interface UcantoServerContext extends StoreServiceContext, UploadServiceContext {
+  serviceSigner: Principal
+}
 
 export interface CarStoreBucket {
   has: (key: string) => Promise<boolean>

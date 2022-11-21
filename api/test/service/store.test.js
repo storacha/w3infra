@@ -6,7 +6,6 @@ import * as Signer from '@ucanto/principal/ed25519'
 import { CAR } from '@ucanto/transport'
 import * as StoreCapabilities from '@web3-storage/access/capabilities/store'
 import { base64pad } from 'multiformats/bases/base64'
-import getServiceDid from '../../authority.js'
 import { getClientConnection, createSpace } from '../helpers/ucanto.js'
 import { createS3, createBucket, createDynamodDb } from '../utils.js'
 
@@ -32,11 +31,11 @@ test.beforeEach(async t => {
   t.context.bucketName = bucketName
   t.context.s3Client = s3Client
   t.context.s3ClientOpts = s3ClientOpts
-  t.context.serviceDid = await getServiceDid()
+  t.context.serviceSigner = await Signer.generate()
 })
 
 test('store/add returns signed url for uploading', async (t) => {
-  const uploadService = t.context.serviceDid
+  const uploadService = t.context.serviceSigner
   const alice = await Signer.generate()
   const { proof, spaceDid } = await createSpace(alice)
   const connection = await getClientConnection(uploadService, t.context)
@@ -73,7 +72,7 @@ test('store/add returns signed url for uploading', async (t) => {
 })
 
 test('store/add returns done if already uploaded', async (t) => {
-  const uploadService = t.context.serviceDid
+  const uploadService = t.context.serviceSigner
   const alice = await Signer.generate()
   const { proof, spaceDid } = await createSpace(alice)
   const connection = await getClientConnection(uploadService, t.context)
@@ -115,7 +114,7 @@ test('store/add returns done if already uploaded', async (t) => {
 })
 
 test('store/remove does not fail for non existent link', async (t) => {
-  const uploadService = t.context.serviceDid
+  const uploadService = t.context.serviceSigner
   const alice = await Signer.generate()
   const { proof, spaceDid } = await createSpace(alice)
   const connection = await getClientConnection(uploadService, t.context)
@@ -149,7 +148,7 @@ test('store/remove does not fail for non existent link', async (t) => {
 })
 
 test('store/remove removes car bound to issuer from store table', async (t) => {
-  const uploadService = t.context.serviceDid
+  const uploadService = t.context.serviceSigner
   const alice = await Signer.generate()
   const { proof, spaceDid } = await createSpace(alice)
   const connection = await getClientConnection(uploadService, t.context)
@@ -193,7 +192,7 @@ test('store/remove removes car bound to issuer from store table', async (t) => {
 })
 
 test('store/list does not fail for empty list', async (t) => {
-  const uploadService = t.context.serviceDid
+  const uploadService = t.context.serviceSigner
   const alice = await Signer.generate()
   const { proof, spaceDid } = await createSpace(alice)
   const connection = await getClientConnection(uploadService, t.context)
@@ -210,7 +209,7 @@ test('store/list does not fail for empty list', async (t) => {
 })
 
 test('store/list returns items previously stored by the user', async (t) => {
-  const uploadService = t.context.serviceDid
+  const uploadService = t.context.serviceSigner
   const alice = await Signer.generate()
   const { proof, spaceDid } = await createSpace(alice)
   const connection = await getClientConnection(uploadService, t.context)

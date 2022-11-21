@@ -1,3 +1,7 @@
+import * as Server from '@ucanto/server'
+import * as CAR from '@ucanto/transport/car'
+import * as CBOR from '@ucanto/transport/cbor'
+
 import { createStoreService } from './store/index.js'
 import { createUploadService } from './upload/index.js'
 
@@ -10,4 +14,22 @@ export function createServiceRouter (context) {
     store: createStoreService(context),
     upload: createUploadService(context)
   }
+}
+
+/**
+ * @param {import('../service/types').UcantoServerContext} context 
+ */
+ export async function createUcantoServer (context) {
+  const server = Server.create({
+    id: context.serviceSigner,
+    encoder: CBOR,
+    decoder: CAR,
+    service: createServiceRouter(context),
+    catch: (/** @type {string | Error} */ err) => {
+      // TODO: We need sentry to log stuff
+      console.log('reporting error to sentry', err)
+    },
+  })
+
+  return server
 }

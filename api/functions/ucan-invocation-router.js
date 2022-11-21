@@ -1,13 +1,9 @@
-import * as Server from '@ucanto/server'
-import * as CAR from '@ucanto/transport/car'
-import * as CBOR from '@ucanto/transport/cbor'
-
-import getServiceDid from '../authority.js'
 import { createSigner } from '../signer.js'
 import { createCarStore } from '../buckets/car-store.js'
 import { createStoreTable } from '../tables/store.js'
 import { createUploadTable } from '../tables/upload.js'
-import { createServiceRouter } from '../service/index.js'
+import { getServiceSigner } from '../config.js'
+import { createUcantoServer } from '../service/index.js'
 
 const AWS_ACCESS_KEY_ID = process.env.AWS_ACCESS_KEY_ID || ''
 const AWS_SECRET_ACCESS_KEY = process.env.AWS_SECRET_ACCESS_KEY || ''
@@ -38,6 +34,7 @@ async function ucanInvocationRouter (request) {
   }
 
   const server = await createUcantoServer({
+    serviceSigner: getServiceSigner(),
     storeTable: createStoreTable(AWS_REGION, storeTableName, {
       endpoint: dbEndpoint
     }),
@@ -65,26 +62,7 @@ async function ucanInvocationRouter (request) {
 export const handler = ucanInvocationRouter
 
 /**
- * @param {import('../service/types').UcantoServerContext} context 
- */
-export async function createUcantoServer (context) {
-  const id = await getServiceDid()
-  const server = Server.create({
-    id,
-    encoder: CBOR,
-    decoder: CAR,
-    service: createServiceRouter(context),
-    catch: (/** @type {string | Error} */ err) => {
-      // TODO: We need sentry to log stuff
-      console.log('reporting error to sentry', err)
-    },
-  })
-
-  return server
-}
-
-/**
- * @param {Server.HTTPResponse<never>} response
+ * @param {import('@ucanto/server').HTTPResponse<never>} response
  */
 function toLambdaSuccessResponse (response) {
   return {
