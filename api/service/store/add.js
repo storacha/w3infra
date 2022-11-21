@@ -4,10 +4,13 @@ import * as Store from '@web3-storage/access/capabilities/store'
 /**
  * @typedef {import('@ucanto/interface').Link<unknown, number, number, 0 | 1>} Link
  * @typedef {import('@web3-storage/access/types').StoreAdd} StoreAddCapability
+ * @typedef {import('@ucanto/interface').Failure} Failure
+ * @typedef {import('../types').StoreAddResult} StoreAddResult
  */
 
 /**
  * @param {import('../types').StoreServiceContext} context
+ * @returns {import('@ucanto/interface').ServiceMethod<StoreAddCapability, StoreAddResult, Failure>}
  */
 export function storeAddProvider(context) {
   return Server.provide(

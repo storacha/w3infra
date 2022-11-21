@@ -7,7 +7,7 @@ import { createUploadService } from './upload/index.js'
 
 /**
  * @param {import('./types').UcantoServerContext} context
- * @returns {Record<string, any>}
+ * @returns {import('./types').Service}
  */
 export function createServiceRouter (context) {
   return {
