@@ -7,7 +7,7 @@ import * as UploadCapabilities from '@web3-storage/access/capabilities/upload'
 import getServiceDid from '../../authority.js'
 import { BATCH_MAX_SAFE_LIMIT } from '../../tables/upload.js'
 
-import { createDynamodDb } from '../utils.js'
+import { createAccessServer, createDynamodDb } from '../utils.js'
 import { randomCAR } from '../helpers/random.js'
 import { getClientConnection, createSpace } from '../helpers/ucanto.js'
 
@@ -22,11 +22,17 @@ test.beforeEach(async t => {
   } = await createDynamodDb({ port: 8000, region })
   await createDynamoUploadTable(dynamo)
 
+  // Access
+  const access = await createAccessServer()
+
   t.context.dbEndpoint = dbEndpoint
   t.context.dynamoClient = dynamo
   t.context.tableName = tableName
   t.context.region = region
   t.context.serviceDid = await getServiceDid()
+  t.context.access = access
+  t.context.accessServiceDID = access.servicePrincipal.did()
+  t.context.accessServiceURL = access.serviceURL.toString()
 })
 
 test('upload/add inserts into DB mapping between data CID and car CIDs', async (t) => {

@@ -1,8 +1,10 @@
 import * as Server from '@ucanto/server'
 import * as CAR from '@ucanto/transport/car'
 import * as CBOR from '@ucanto/transport/cbor'
+import { DID } from '@ucanto/core'
 
 import getServiceDid from '../authority.js'
+import { createAccessClient } from '../access.js'
 import { createSigner } from '../signer.js'
 import { createCarStore } from '../buckets/car-store.js'
 import { createStoreTable } from '../tables/store.js'
@@ -28,7 +30,9 @@ async function ucanInvocationRouter (request) {
     STORE_BUCKET_NAME: storeBucketName = '',
     UPLOAD_TABLE_NAME: uploadTableName = '',
     // set for testing
-    DYNAMO_DB_ENDPOINT: dbEndpoint
+    DYNAMO_DB_ENDPOINT: dbEndpoint,
+    ACCESS_SERVICE_DID: accessServiceDID = '',
+    ACCESS_SERVICE_URL: accessServiceURL = ''
   } = process.env
 
   if (request.body === undefined) {
@@ -37,7 +41,8 @@ async function ucanInvocationRouter (request) {
     }
   }
 
-  const server = await createUcantoServer({
+  const serviceSigner = await getServiceDid()
+  const server = await createUcantoServer(serviceSigner, {
     storeTable: createStoreTable(AWS_REGION, storeTableName, {
       endpoint: dbEndpoint
     }),
@@ -51,7 +56,8 @@ async function ucanInvocationRouter (request) {
       accessKeyId: AWS_ACCESS_KEY_ID,
       sessionToken: AWS_SESSION_TOKEN,
       bucket: storeBucketName,
-    })
+    }),
+    access: createAccessClient(serviceSigner, DID.parse(accessServiceDID), new URL(accessServiceURL))
   })
   const response = await server.request({
     // @ts-expect-error - type is Record<string, string|string[]|undefined>
@@ -65,12 +71,12 @@ async function ucanInvocationRouter (request) {
 export const handler = ucanInvocationRouter
 
 /**
- * @param {import('../service/types').UcantoServerContext} context 
+ * @param {import('@ipld/dag-ucan').Principal} servicePrincipal
+ * @param {import('../service/types').UcantoServerContext} context
  */
-export async function createUcantoServer (context) {
-  const id = await getServiceDid()
+export async function createUcantoServer (servicePrincipal, context) {
   const server = Server.create({
-    id,
+    id: servicePrincipal,
     encoder: CBOR,
     decoder: CAR,
     service: createServiceRouter(context),

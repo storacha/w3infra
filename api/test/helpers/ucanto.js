@@ -9,12 +9,13 @@ import { createUploadTable } from '../../tables/upload.js'
 import { createSigner } from '../../signer.js'
 
 import { getSigningOptions } from '../utils.js'
+import { createAccessClient } from '../../access.js'
 
 /**
- * @param {any} ctx
+ * @param {import('./context.js').UcantoServerContext} ctx
  */
 export function createTestingUcantoServer(ctx) {
- return createUcantoServer({
+ return createUcantoServer(ctx.serviceDid, {
    storeTable: createStoreTable(ctx.region, ctx.tableName, {
      endpoint: ctx.dbEndpoint
    }),
@@ -22,7 +23,8 @@ export function createTestingUcantoServer(ctx) {
      endpoint: ctx.dbEndpoint
    }),
    carStoreBucket: createCarStore(ctx.region, ctx.bucketName, { ...ctx.s3ClientOpts }),
-   signer: createSigner(getSigningOptions(ctx))
+   signer: createSigner(getSigningOptions(ctx)),
+   access: createAccessClient(ctx.serviceDid, ctx.access.servicePrincipal, ctx.access.serviceURL)
  })
 }
 
