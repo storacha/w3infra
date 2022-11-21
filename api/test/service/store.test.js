@@ -137,6 +137,74 @@ test('store/add returns done if already uploaded', async (t) => {
   t.is(item?.size, data.byteLength)
 })
 
+test('store/add allowed if invocation passes access verification', async (t) => {
+  const uploadService = t.context.serviceDid
+  const alice = await Signer.generate()
+  const { proof, spaceDid } = await createSpace(alice)
+  const connection = await getClientConnection(uploadService, t.context)
+
+  const data = new Uint8Array([11, 22, 34, 44, 55])
+  const link = await CAR.codec.link(data)
+
+  // invoke a store/add with proof
+  const storeAdd = await StoreCapabilities.add.invoke({
+    issuer: alice,
+    audience: uploadService,
+    with: spaceDid,
+    nb: { link, size: data.byteLength },
+    proofs: [proof]
+    // @ts-expect-error ʅʕ•ᴥ•ʔʃ
+  }).execute(connection)
+
+  t.not(storeAdd.error, true, storeAdd.message)
+  t.is(storeAdd.status, 'upload')
+  t.is(storeAdd.with, spaceDid)
+  t.deepEqual(storeAdd.link, link)
+  t.is(new URL(storeAdd.url).pathname, `/${link}/${link}.car`)
+  t.is(storeAdd.headers['x-amz-checksum-sha256'], base64pad.baseEncode(link.multihash.digest))
+
+  const { service } = t.context.access.server
+  t.true(service.account.info.called)
+  t.is(service.account.info.callCount, 1)
+})
+
+// test('store/add disallowed if invocation fails access verification', async (t) => {
+//   const uploadService = t.context.serviceDid
+//   const alice = await Signer.generate()
+//   const { proof, spaceDid } = await createSpace(alice)
+//   const connection = await getClientConnection(uploadService, t.context)
+
+//   const data = new Uint8Array([11, 22, 34, 44, 55])
+//   const link = await CAR.codec.link(data)
+
+//   // invoke a store/add with proof
+//   const storeAdd = await StoreCapabilities.add.invoke({
+//     issuer: alice,
+//     audience: uploadService,
+//     with: spaceDid,
+//     nb: { link, size: data.byteLength },
+//     proofs: [proof]
+//     // @ts-expect-error ʅʕ•ᴥ•ʔʃ
+//   }).execute(connection)
+
+//   t.not(storeAdd.error, true, storeAdd.message)
+//   t.is(storeAdd.status, 'upload')
+//   t.is(storeAdd.with, spaceDid)
+//   t.deepEqual(storeAdd.link, link)
+//   t.is(new URL(storeAdd.url).pathname, `/${link}/${link}.car`)
+//   t.is(storeAdd.headers['x-amz-checksum-sha256'], base64pad.baseEncode(link.multihash.digest))
+
+//   const item = await getItemFromStoreTable(t.context.dynamoClient, spaceDid, link)
+//   t.truthy(item)
+//   t.is(typeof item?.uploadedAt, 'string')
+//   t.is(typeof item?.proof, 'string')
+//   t.is(typeof item?.uploaderDID, 'string')
+//   // TODO: this looks suspicious... why is uploaderDID not the issuer / alice who invoked the upload
+//   t.is(item?.uploaderDID, spaceDid)
+//   t.is(typeof item?.size, 'number')
+//   t.is(item?.size, data.byteLength)
+// })
+
 test('store/remove does not fail for non existent link', async (t) => {
   const uploadService = t.context.serviceDid
   const alice = await Signer.generate()
