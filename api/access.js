@@ -8,7 +8,7 @@ import { CAR, CBOR, HTTP } from '@ucanto/transport'
  * @param {URL} serviceURL URL of the Access service.
  * @returns {import('./service/types').AccessClient}
  */
-export function createAccess (issuer, serviceDID, serviceURL) {
+export function createAccessClient (issuer, serviceDID, serviceURL) {
   /** @type {import('@ucanto/server').ConnectionView<import('@web3-storage/access/types').Service>} */
   const conn = connect({
     id: serviceDID,

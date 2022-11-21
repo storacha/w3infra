@@ -14,8 +14,8 @@ import * as HTTP from 'http'
  * }>} PartialAccessService
  * @typedef {ReturnType<mockAccessService>} MockedAccessService
  * @typedef {{
- *   serviceDID: string
- *   serviceURL: string
+ *   servicePrincipal: import('@ucanto/interface').Principal
+ *   serviceURL: URL
  *   setServiceImpl: (impl: PartialAccessService) => void
  *   server: import('@ucanto/server').ServerView<MockedAccessService>
  *   httpServer: HTTP.Server
@@ -98,7 +98,7 @@ export function getSigningOptions(ctx) {
 }
 
 /** @returns {Promise<MockAccess>} */
-export async function createAccess () {
+export async function createAccessServer () {
   const signer = await Signer.generate()
   const server = Server.create({
     id: signer,
@@ -128,19 +128,19 @@ export async function createAccess () {
     }
   })
 
-  const serviceDID = signer.did()
+  const servicePrincipal = signer
   const serviceURL = await new Promise(resolve => {
     httpServer.listen(() => {
       // @ts-expect-error
-      const { address, port } = httpServer.address()
-      const serviceURL = `http://${address}:${port}`
+      const { port } = httpServer.address()
+      const serviceURL = new URL(`http://127.0.0.1:${port}`)
       resolve(serviceURL)
     })
   })
   /** @param {PartialAccessService} impl */
   const setServiceImpl = impl => Object.assign(server.service, mockAccessService(impl))
 
-  return { serviceDID, serviceURL, setServiceImpl, server, httpServer }
+  return { servicePrincipal, serviceURL, setServiceImpl, server, httpServer }
 }
 
 /** @param {PartialAccessService} [impl] */

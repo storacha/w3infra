@@ -12,7 +12,8 @@ import { createCarStore } from '../../buckets/car-store.js'
 import { createStoreTable } from '../../tables/store.js'
 import { createSigner } from '../../signer.js'
 import { base64pad } from 'multiformats/bases/base64'
-import { createS3, createBucket, createDynamodDb, getSigningOptions, createAccess } from '../utils.js'
+import { createS3, createBucket, createDynamodDb, getSigningOptions, createAccessServer } from '../utils.js'
+import { createAccessClient } from '../../access.js'
 
 test.beforeEach(async t => {
   const region = 'us-west-2'
@@ -30,8 +31,8 @@ test.beforeEach(async t => {
   const bucketName = await createBucket(s3Client)
 
   // Access
-  const access = await createAccess()
-  // by default, allow access
+  const access = await createAccessServer()
+  // return a mock info by default
   access.setServiceImpl({
     account: {
       info: async () => ({
@@ -54,8 +55,8 @@ test.beforeEach(async t => {
   t.context.s3ClientOpts = s3ClientOpts
   t.context.serviceDid = await getServiceDid()
   t.context.access = access
-  t.context.accessServiceDID = access.serviceDID
-  t.context.accessServiceURL = access.serviceURL
+  t.context.accessServiceDID = access.servicePrincipal.did()
+  t.context.accessServiceURL = access.serviceURL.toString()
 })
 
 test.afterEach(async t => {
@@ -356,11 +357,10 @@ test('store list returns items previously stored by the user', async (t) => {
  */
 function createStoreUcantoServer(ctx) {
   return createUcantoServer(ctx.serviceDid, {
-    storeTable: createStoreTable(ctx.region, ctx.tableName, {
-      endpoint: ctx.dbEndpoint
-    }),
+    storeTable: createStoreTable(ctx.region, ctx.tableName, { endpoint: ctx.dbEndpoint }),
     carStoreBucket: createCarStore(ctx.region, ctx.bucketName, { ...ctx.s3ClientOpts }),
-    signer: createSigner(getSigningOptions(ctx))
+    signer: createSigner(getSigningOptions(ctx)),
+    access: createAccessClient(ctx.serviceDid, ctx.access.servicePrincipal, ctx.access.serviceURL)
   })
 }
 

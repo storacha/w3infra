@@ -4,7 +4,7 @@ import * as CBOR from '@ucanto/transport/cbor'
 import { DID } from '@ucanto/core'
 
 import getServiceDid from '../authority.js'
-import { createAccess } from '../access.js'
+import { createAccessClient } from '../access.js'
 import { createSigner } from '../signer.js'
 import { createCarStore } from '../buckets/car-store.js'
 import { createStoreTable } from '../tables/store.js'
@@ -39,9 +39,8 @@ async function ucanInvocationRouter (request) {
     }
   }
 
-  const id = await getServiceDid()
-  const server = await createUcantoServer(id, {
-    id,
+  const serviceSigner = await getServiceDid()
+  const server = await createUcantoServer(serviceSigner, {
     storeTable: createStoreTable(AWS_REGION, storeTableName, {
       endpoint: dbEndpoint
     }),
@@ -53,7 +52,7 @@ async function ucanInvocationRouter (request) {
       sessionToken: AWS_SESSION_TOKEN,
       bucket: storeBucketName,
     }),
-    access: createAccess(id, DID.parse(accessServiceDID), new URL(accessServiceURL))
+    access: createAccessClient(serviceSigner, DID.parse(accessServiceDID), new URL(accessServiceURL))
   })
   const response = await server.request({
     // @ts-expect-error - type is Record<string, string|string[]|undefined>
