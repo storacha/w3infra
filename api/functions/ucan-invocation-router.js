@@ -71,12 +71,12 @@ async function ucanInvocationRouter (request) {
 export const handler = ucanInvocationRouter
 
 /**
- * @param {import('@ipld/dag-ucan').Principal} id
+ * @param {import('@ipld/dag-ucan').Principal} servicePrincipal
  * @param {import('../service/types').UcantoServerContext} context
  */
-export async function createUcantoServer (id, context) {
+export async function createUcantoServer (servicePrincipal, context) {
   const server = Server.create({
-    id,
+    id: servicePrincipal,
     encoder: CBOR,
     decoder: CAR,
     service: createServiceRouter(context),
