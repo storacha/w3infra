@@ -143,9 +143,10 @@ export async function createAccessServer () {
   return { servicePrincipal, serviceURL, setServiceImpl, server, httpServer }
 }
 
+const notImplemented = () => { throw new Server.Failure('not implemented') }
+
 /** @param {PartialAccessService} [impl] */
 function mockAccessService (impl = {}) {
-  const notImplemented = () => { throw new Server.Failure('not implemented') }
   return {
     voucher: {
       claim: withCallCount(impl.voucher?.claim ?? notImplemented),
