@@ -8,6 +8,7 @@ import { createAccessClient } from '../access.js'
 import { createSigner } from '../signer.js'
 import { createCarStore } from '../buckets/car-store.js'
 import { createStoreTable } from '../tables/store.js'
+import { createUploadTable } from '../tables/upload.js'
 import { createServiceRouter } from '../service/index.js'
 
 const AWS_ACCESS_KEY_ID = process.env.AWS_ACCESS_KEY_ID || ''
@@ -27,6 +28,7 @@ async function ucanInvocationRouter (request) {
   const {
     STORE_TABLE_NAME: storeTableName = '',
     STORE_BUCKET_NAME: storeBucketName = '',
+    UPLOAD_TABLE_NAME: uploadTableName = '',
     // set for testing
     DYNAMO_DB_ENDPOINT: dbEndpoint,
     ACCESS_SERVICE_DID: accessServiceDID = '',
@@ -45,6 +47,9 @@ async function ucanInvocationRouter (request) {
       endpoint: dbEndpoint
     }),
     carStoreBucket: createCarStore(AWS_REGION, storeBucketName),
+    uploadTable: createUploadTable(AWS_REGION, uploadTableName, {
+      endpoint: dbEndpoint
+    }),
     signer: createSigner({
       region: AWS_REGION,
       secretAccessKey: AWS_SECRET_ACCESS_KEY,

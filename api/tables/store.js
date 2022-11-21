@@ -110,7 +110,15 @@ export function createStoreTable (region, tableName, options = {}) {
 
       /** @type {import('../service/types').StoreListResult[]} */
       // @ts-expect-error
-      const results = response.Items?.map(i => unmarshall(i)) || []
+      const results = response.Items?.map(i => {
+        const item = unmarshall(i)
+        // omit origin if empty
+        if (!item.origin) {
+          delete item.origin
+        }
+
+        return item
+      }) || []
 
       /* 
       // TODO: cursor integrate with capabilities

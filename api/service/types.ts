@@ -3,12 +3,17 @@ import type { API, MalformedCapability } from '@ucanto/server'
 
 export interface StoreServiceContext {
   storeTable: StoreTable,
-  signer: Signer
   carStoreBucket: CarStoreBucket,
+  signer: Signer
   access: AccessClient
 }
 
-export interface UcantoServerContext extends StoreServiceContext {}
+export interface UploadServiceContext {
+  uploadTable: UploadTable
+  access: AccessClient
+}
+
+export interface UcantoServerContext extends StoreServiceContext, UploadServiceContext {}
 
 export interface CarStoreBucket {
   has: (key: string) => Promise<boolean>
@@ -19,6 +24,13 @@ export interface StoreTable {
   insert: (item: StoreItemInput) => Promise<StoreItemOutput>
   remove: (uploaderDID: string, payloadCID: string) => Promise<void>
   list: (uploaderDID: string) => Promise<ListResponse<StoreListResult>>
+}
+
+export interface UploadTable {
+  exists: (uploaderDID: string, dataCID: string) => Promise<boolean>
+  insert: (uploaderDID: string, item: UploadItemInput) => Promise<UploadItemOutput[]>
+  remove: (uploaderDID: string, dataCID: string) => Promise<void>
+  list: (uploaderDID: string) => Promise<ListResponse<UploadItemOutput>>
 }
 
 export interface Signer {
@@ -68,6 +80,18 @@ export interface ListResponse<R> {
   cursorID?: string,
   pageSize: number,
   results: R[]
+}
+
+export interface UploadItemInput {
+  dataCID: string,
+  carCIDs: string[]
+}
+
+export interface UploadItemOutput {
+  uploaderDID: string,
+  dataCID: string,
+  carCID: string,
+  uploadedAt: string,
 }
 
 export interface AccessClient {

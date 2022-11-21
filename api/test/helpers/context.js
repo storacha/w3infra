@@ -1,7 +1,7 @@
 import anyTest from 'ava'
 
 /**
- * @typedef {object} StoreContext
+ * @typedef {object} UcantoServerContext
  * @property {string} dbEndpoint
  * @property {string} tableName
  * @property {import('@aws-sdk/client-dynamodb').DynamoDBClient} dynamoClient
@@ -14,7 +14,7 @@ import anyTest from 'ava'
  * @property {string} accessServiceDID
  * @property {string} accessServiceURL
  * 
- * @typedef {import("ava").TestFn<Awaited<StoreContext>>} TestStoreFn
+ * @typedef {import("ava").TestFn<Awaited<UcantoServerContext>>} TestStoreFn
  */
 
 // eslint-disable-next-line unicorn/prefer-export-from
