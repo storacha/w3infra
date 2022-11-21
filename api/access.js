@@ -1,6 +1,7 @@
 import { info } from '@web3-storage/access/capabilities/account'
 import { connect } from '@ucanto/client'
 import { CAR, CBOR, HTTP } from '@ucanto/transport'
+import fetch from '@web-std/fetch'
 
 /**
  * @param {import('@ucanto/interface').Signer} issuer Issuer of UCAN invocations to the Access service.
@@ -14,7 +15,7 @@ export function createAccessClient (issuer, serviceDID, serviceURL) {
     id: serviceDID,
     encoder: CAR,
     decoder: CBOR,
-    channel: HTTP.open({ url: serviceURL, method: 'POST' })
+    channel: HTTP.open({ url: serviceURL, method: 'POST', fetch })
   })
 
   return {
