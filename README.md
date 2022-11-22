@@ -51,7 +51,7 @@ DID of the w3access service.
 
 URL of the w3access service.
 
-## Secrets
+### Secrets
 
 Set production secrets in aws SSM via [`sst secrets`](https://docs.sst.dev/config#sst-secrets). The region must be set to the one you deploy that stage to
 
@@ -60,7 +60,7 @@ Set production secrets in aws SSM via [`sst secrets`](https://docs.sst.dev/confi
 $ npx sst secrets set --region us-west-2 --stage prod PRIVATE_KEY "MgCblCY...="
 ```
 
-To set a [fallback key] for `staging` or an ephmeral PR build use [`sst secrets set-fallback`](https://docs.sst.dev/config#fallback-values)
+To set a fallback value for `staging` or an ephmeral PR build use [`sst secrets set-fallback`](https://docs.sst.dev/config#fallback-values)
 
 ```sh
 # set `PRIVATE_KEY` for any stage in us-east-2
@@ -79,7 +79,7 @@ $ npx sst secrets list --region us-west-2 --stage prod
 PRIVATE_KEY M...=
 ```
 
-### PRIVATE_KEY
+#### `PRIVATE_KEY`
 
 The [`multibase`](https://github.com/multiformats/multibase) encoded ED25519 keypair used as the signing key for the upload-api.
 
