@@ -1,7 +1,7 @@
 /**
  * This file uses SSTs magic Config handler.
  * If you depend on it in a test then you need to use the `sst bind` CLI to setup the config object.
- 
+ *
  * see: https://docs.sst.dev/config
  * see: https://docs.sst.dev/advanced/testing#how-sst-bind-works
  */
