@@ -1,4 +1,4 @@
-import type { Link, Invocation, Principal } from '@ucanto/interface'
+import type { Link, Invocation } from '@ucanto/interface'
 import type { API, MalformedCapability } from '@ucanto/server'
 
 export interface StoreServiceContext {

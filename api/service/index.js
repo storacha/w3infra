@@ -17,8 +17,8 @@ export function createServiceRouter (context) {
 }
 
 /**
- * @param {import('@ucanto/interface').Principal} serviceSigner 
- * @param {import('../service/types').UcantoServerContext} context 
+ * @param {import('@ucanto/interface').Signer} serviceSigner
+ * @param {import('../service/types').UcantoServerContext} context
  */
  export async function createUcantoServer (serviceSigner, context) {
   const server = Server.create({

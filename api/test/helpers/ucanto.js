@@ -11,10 +11,8 @@ import { createSigner } from '../../signer.js'
 import { getSigningOptions } from '../utils.js'
 import { createAccessClient } from '../../access.js'
 
-/** @typedef {import('@ucanto/interface').Principal} Principal */
-
 /**
- * @param {Principal} service
+ * @param {import('@ucanto/interface').Signer} service
  * @param {import('./context.js').UcantoServerContext} ctx
  */
 export function createTestingUcantoServer(service, ctx) {
@@ -32,7 +30,7 @@ export function createTestingUcantoServer(service, ctx) {
 }
 
 /**
- * @param {Principal} service 
+ * @param {import('@ucanto/interface').Signer} service
  * @param {any} context 
  * @returns 
  */
@@ -46,7 +44,7 @@ export async function getClientConnection (service, context) {
 }
 
 /**
- * @param {Principal} audience
+ * @param {import('@ucanto/interface').Principal} audience
  */
 export async function createSpace (audience) {
   const space = await Signer.generate()
