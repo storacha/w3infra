@@ -1,3 +1,5 @@
+import { DID } from '@ucanto/core'
+import { createAccessClient } from '../access.js'
 import { createSigner } from '../signer.js'
 import { createCarStore } from '../buckets/car-store.js'
 import { createStoreTable } from '../tables/store.js'
@@ -24,7 +26,9 @@ async function ucanInvocationRouter (request) {
     STORE_BUCKET_NAME: storeBucketName = '',
     UPLOAD_TABLE_NAME: uploadTableName = '',
     // set for testing
-    DYNAMO_DB_ENDPOINT: dbEndpoint
+    DYNAMO_DB_ENDPOINT: dbEndpoint,
+    ACCESS_SERVICE_DID: accessServiceDID = '',
+    ACCESS_SERVICE_URL: accessServiceURL = ''
   } = process.env
 
   if (request.body === undefined) {
@@ -33,8 +37,8 @@ async function ucanInvocationRouter (request) {
     }
   }
 
-  const server = await createUcantoServer({
-    serviceSigner: getServiceSigner(),
+  const serviceSigner = getServiceSigner()
+  const server = await createUcantoServer(serviceSigner, {
     storeTable: createStoreTable(AWS_REGION, storeTableName, {
       endpoint: dbEndpoint
     }),
@@ -48,7 +52,8 @@ async function ucanInvocationRouter (request) {
       accessKeyId: AWS_ACCESS_KEY_ID,
       sessionToken: AWS_SESSION_TOKEN,
       bucket: storeBucketName,
-    })
+    }),
+    access: createAccessClient(serviceSigner, DID.parse(accessServiceDID), new URL(accessServiceURL))
   })
   const response = await server.request({
     // @ts-expect-error - type is Record<string, string|string[]|undefined>

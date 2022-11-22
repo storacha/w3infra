@@ -43,6 +43,14 @@ Ensure the following variables are set in the env when deploying
 
 The root domain to deploy the API to. e.g `up.web3.storage`. The value should match a hosted zone configured in route53 that your aws account has access to.
 
+#### `ACCESS_SERVICE_DID`
+
+DID of the w3access service.
+
+#### `ACCESS_SERVICE_URL`
+
+URL of the w3access service.
+
 ## HTTP API
 
 A UCAN based [RPC] API over HTTP.

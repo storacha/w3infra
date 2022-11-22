@@ -4,10 +4,11 @@ import { marshall, unmarshall } from '@aws-sdk/util-dynamodb'
 import { PutObjectCommand } from '@aws-sdk/client-s3'
 import * as Signer from '@ucanto/principal/ed25519'
 import { CAR } from '@ucanto/transport'
+import * as Server from '@ucanto/server'
 import * as StoreCapabilities from '@web3-storage/access/capabilities/store'
 import { base64pad } from 'multiformats/bases/base64'
 import { getClientConnection, createSpace } from '../helpers/ucanto.js'
-import { createS3, createBucket, createDynamodDb } from '../utils.js'
+import { createS3, createBucket, createDynamodDb, createAccessServer } from '../utils.js'
 
 test.beforeEach(async t => {
   const region = 'us-west-2'
@@ -24,6 +25,22 @@ test.beforeEach(async t => {
   const { client: s3Client, clientOpts: s3ClientOpts } = await createS3({ port: 9000, region })
   const bucketName = await createBucket(s3Client)
 
+  // Access
+  const access = await createAccessServer()
+  // return a mock info by default
+  access.setServiceImpl({
+    account: {
+      info: async () => ({
+        did: (await Signer.generate()).did(),
+        agent: (await Signer.generate()).did(),
+        email: 'mailto:test@example.com',
+        product: 'product:free',
+        updated_at: new Date().toISOString(),
+        inserted_at: new Date().toISOString()
+      })
+    }
+  })
+
   t.context.dbEndpoint = dbEndpoint
   t.context.dynamoClient = dynamo
   t.context.tableName = tableName
@@ -31,11 +48,17 @@ test.beforeEach(async t => {
   t.context.bucketName = bucketName
   t.context.s3Client = s3Client
   t.context.s3ClientOpts = s3ClientOpts
-  t.context.serviceSigner = await Signer.generate()
+  t.context.access = access
+  t.context.accessServiceDID = access.servicePrincipal.did()
+  t.context.accessServiceURL = access.serviceURL.toString()
+})
+
+test.afterEach(async t => {
+  t.context.access.httpServer.close()
 })
 
 test('store/add returns signed url for uploading', async (t) => {
-  const uploadService = t.context.serviceSigner
+  const uploadService = await Signer.generate()
   const alice = await Signer.generate()
   const { proof, spaceDid } = await createSpace(alice)
   const connection = await getClientConnection(uploadService, t.context)
@@ -72,7 +95,7 @@ test('store/add returns signed url for uploading', async (t) => {
 })
 
 test('store/add returns done if already uploaded', async (t) => {
-  const uploadService = t.context.serviceSigner
+  const uploadService = await Signer.generate()
   const alice = await Signer.generate()
   const { proof, spaceDid } = await createSpace(alice)
   const connection = await getClientConnection(uploadService, t.context)
@@ -113,8 +136,69 @@ test('store/add returns done if already uploaded', async (t) => {
   t.is(item?.size, data.byteLength)
 })
 
+test('store/add allowed if invocation passes access verification', async (t) => {
+  const uploadService = await Signer.generate()
+  const alice = await Signer.generate()
+  const { proof, spaceDid } = await createSpace(alice)
+  const connection = await getClientConnection(uploadService, t.context)
+
+  const data = new Uint8Array([11, 22, 34, 44, 55])
+  const link = await CAR.codec.link(data)
+
+  // invoke a store/add with proof
+  const storeAdd = await StoreCapabilities.add.invoke({
+    issuer: alice,
+    audience: uploadService,
+    with: spaceDid,
+    nb: { link, size: data.byteLength },
+    proofs: [proof]
+    // @ts-expect-error ʅʕ•ᴥ•ʔʃ
+  }).execute(connection)
+
+  t.not(storeAdd.error, true, storeAdd.message)
+  t.is(storeAdd.status, 'upload')
+  t.is(storeAdd.with, spaceDid)
+  t.deepEqual(storeAdd.link, link)
+  t.is(new URL(storeAdd.url).pathname, `/${link}/${link}.car`)
+  t.is(storeAdd.headers['x-amz-checksum-sha256'], base64pad.baseEncode(link.multihash.digest))
+
+  const { service } = t.context.access.server
+  t.true(service.account.info.called)
+  t.is(service.account.info.callCount, 1)
+})
+
+test('store/add disallowed if invocation fails access verification', async (t) => {
+  t.context.access.setServiceImpl({
+    account: { info: () => { return new Server.Failure('not found') } }
+  })
+
+  const uploadService = await Signer.generate()
+  const alice = await Signer.generate()
+  const { proof, spaceDid } = await createSpace(alice)
+  const connection = await getClientConnection(uploadService, t.context)
+
+  const data = new Uint8Array([11, 22, 34, 44, 55])
+  const link = await CAR.codec.link(data)
+
+  // invoke a store/add with proof
+  const storeAdd = await StoreCapabilities.add.invoke({
+    issuer: alice,
+    audience: uploadService,
+    with: spaceDid,
+    nb: { link, size: data.byteLength },
+    proofs: [proof]
+    // @ts-expect-error ʅʕ•ᴥ•ʔʃ
+  }).execute(connection)
+
+  t.is(storeAdd.error, true)
+
+  const { service } = t.context.access.server
+  t.true(service.account.info.called)
+  t.is(service.account.info.callCount, 1)
+})
+
 test('store/remove does not fail for non existent link', async (t) => {
-  const uploadService = t.context.serviceSigner
+  const uploadService = await Signer.generate()
   const alice = await Signer.generate()
   const { proof, spaceDid } = await createSpace(alice)
   const connection = await getClientConnection(uploadService, t.context)
@@ -148,7 +232,7 @@ test('store/remove does not fail for non existent link', async (t) => {
 })
 
 test('store/remove removes car bound to issuer from store table', async (t) => {
-  const uploadService = t.context.serviceSigner
+  const uploadService = await Signer.generate()
   const alice = await Signer.generate()
   const { proof, spaceDid } = await createSpace(alice)
   const connection = await getClientConnection(uploadService, t.context)
@@ -192,7 +276,7 @@ test('store/remove removes car bound to issuer from store table', async (t) => {
 })
 
 test('store/list does not fail for empty list', async (t) => {
-  const uploadService = t.context.serviceSigner
+  const uploadService = await Signer.generate()
   const alice = await Signer.generate()
   const { proof, spaceDid } = await createSpace(alice)
   const connection = await getClientConnection(uploadService, t.context)
@@ -209,7 +293,7 @@ test('store/list does not fail for empty list', async (t) => {
 })
 
 test('store/list returns items previously stored by the user', async (t) => {
-  const uploadService = t.context.serviceSigner
+  const uploadService = await Signer.generate()
   const alice = await Signer.generate()
   const { proof, spaceDid } = await createSpace(alice)
   const connection = await getClientConnection(uploadService, t.context)

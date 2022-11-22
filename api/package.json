@@ -3,7 +3,7 @@
   "version": "3.0.0",
   "type": "module",
   "scripts": {
-    "test": "ava --verbose --timeout=60s **/*.test.js"
+    "test": "ava --verbose --timeout=60s --serial **/*.test.js"
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.211.0",
@@ -14,6 +14,7 @@
     "@ucanto/principal": "^3.0.1",
     "@ucanto/server": "^3.0.4",
     "@ucanto/transport": "^3.0.2",
+    "@web-std/fetch": "^4.1.0",
     "@web3-storage/access": "^5.0.2",
     "@web3-storage/sigv4": "^1.0.2",
     "multiformats": "^10.0.2"

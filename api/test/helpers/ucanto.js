@@ -9,24 +9,25 @@ import { createUploadTable } from '../../tables/upload.js'
 import { createSigner } from '../../signer.js'
 
 import { getSigningOptions } from '../utils.js'
+import { createAccessClient } from '../../access.js'
 
 /** @typedef {import('@ucanto/interface').Principal} Principal */
 
 /**
- * @param {Principal} service 
- * @param {any} ctx
+ * @param {Principal} service
+ * @param {import('./context.js').UcantoServerContext} ctx
  */
-export async function createTestingUcantoServer(service, ctx) {
-  return createUcantoServer({
-    serviceSigner: service,
-    storeTable: createStoreTable(ctx.region, ctx.tableName, {
-      endpoint: ctx.dbEndpoint
-    }),
-    uploadTable: createUploadTable(ctx.region, ctx.tableName, {
-      endpoint: ctx.dbEndpoint
-    }),
-    carStoreBucket: createCarStore(ctx.region, ctx.bucketName, { ...ctx.s3ClientOpts }),
-    signer: createSigner(getSigningOptions(ctx))
+export function createTestingUcantoServer(service, ctx) {
+ return createUcantoServer(service, {
+   storeTable: createStoreTable(ctx.region, ctx.tableName, {
+     endpoint: ctx.dbEndpoint
+   }),
+   uploadTable: createUploadTable(ctx.region, ctx.tableName, {
+     endpoint: ctx.dbEndpoint
+   }),
+   carStoreBucket: createCarStore(ctx.region, ctx.bucketName, { ...ctx.s3ClientOpts }),
+   signer: createSigner(getSigningOptions(ctx)),
+   access: createAccessClient(service, ctx.access.servicePrincipal, ctx.access.serviceURL)
  })
 }
 
