@@ -163,8 +163,8 @@ test('store/add allowed if invocation passes access verification', async (t) => 
   t.is(storeAdd.headers['x-amz-checksum-sha256'], base64pad.baseEncode(link.multihash.digest))
 
   const { service } = t.context.access.server
-  t.true(service.account.info.called)
-  t.is(service.account.info.callCount, 1)
+  t.true(service.space.info.called)
+  t.is(service.space.info.callCount, 1)
 })
 
 test('store/add disallowed if invocation fails access verification', async (t) => {
@@ -193,8 +193,8 @@ test('store/add disallowed if invocation fails access verification', async (t) =
   t.is(storeAdd.error, true)
 
   const { service } = t.context.access.server
-  t.true(service.account.info.called)
-  t.is(service.account.info.callCount, 1)
+  t.true(service.space.info.called)
+  t.is(service.space.info.callCount, 1)
 })
 
 test('store/remove does not fail for non existent link', async (t) => {
@@ -285,11 +285,12 @@ test('store/list does not fail for empty list', async (t) => {
     issuer: alice,
     audience: uploadService,
     with: spaceDid,
-    proofs: [ proof ]
+    proofs: [ proof ],
+    nb: {}
     // @ts-expect-error ʅʕ•ᴥ•ʔʃ
   }).execute(connection)
 
-  t.like(storeList, { results: [], pageSize: 0 })
+  t.like(storeList, { results: [], size: 0 })
 })
 
 test('store/list returns items previously stored by the user', async (t) => {
@@ -318,16 +319,76 @@ test('store/list returns items previously stored by the user', async (t) => {
     issuer: alice,
     audience: uploadService,
     with: spaceDid,
-    proofs: [ proof ]
+    proofs: [ proof ],
+    nb: {}
     // @ts-expect-error ʅʕ•ᴥ•ʔʃ
   }).execute(connection)
 
-  t.is(storeList.pageSize, links.length)
+  t.is(storeList.size, links.length)
 
   // list order last-in-first-out
   links.reverse()
   let i = 0
   for (const entry of storeList.results) {
+    t.like(entry, { payloadCID: links[i].toString(), size: 5 })
+    i++
+  }
+})
+
+test('store/list can be paginated with custom size', async (t) => {
+  const uploadService = await Signer.generate()
+  const alice = await Signer.generate()
+  const { proof, spaceDid } = await createSpace(alice)
+  const connection = await getClientConnection(uploadService, t.context)
+
+  const data = [ new Uint8Array([11, 22, 34, 44, 55]), new Uint8Array([22, 34, 44, 55, 66]) ]
+  const links = []
+
+  for (const datum of data) {
+    const storeAdd = await StoreCapabilities.add.invoke({
+      issuer: alice,
+      audience: uploadService,
+      with: spaceDid,
+      nb: { link: await CAR.codec.link(datum) , size: datum.byteLength },
+      proofs: [proof]
+      // @ts-expect-error ʅʕ•ᴥ•ʔʃ
+    }).execute(connection)
+    t.not(storeAdd.error, true, storeAdd.message)
+    links.push(storeAdd.link)
+  }
+
+  // Get list with page size 1 (two pages)
+  const size = 1
+  const listPages = []
+  let cursor
+
+  do {
+    /** @type {import('../../service/types').ListResponse<any>} */
+    const storeList = await StoreCapabilities.list.invoke({
+      issuer: alice,
+      audience: uploadService,
+      with: spaceDid,
+      proofs: [ proof ],
+      nb: {
+        size,
+        cursor
+      }
+      // @ts-expect-error ʅʕ•ᴥ•ʔʃ
+    }).execute(connection)
+  
+    cursor = storeList.cursor
+    // Add page if it has size
+    storeList.size && listPages.push(storeList.results)
+  } while (cursor)
+
+  t.is(listPages.length, data.length, 'has number of pages of added CARs')
+
+  // Inspect content
+  const storeList = listPages.flat()
+  // list order last-in-first-out
+  links.reverse()
+  let i = 0
+  for (const entry of storeList) {
     t.like(entry, { payloadCID: links[i].toString(), size: 5 })
     i++
   }

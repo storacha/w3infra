@@ -136,15 +136,21 @@ export function createUploadTable (region, tableName, options = {}) {
      * @param {import('../service/types').ListOptions} [options]
      */
     list:  async (uploaderDID, options = {}) => {
+      const exclusiveStartKey = options.cursor ? marshall({
+        uploaderDID,
+        sk: options.cursor
+      }) : undefined
+
       const cmd = new QueryCommand({
         TableName: tableName,
-        Limit: options.pageSize || 20,
+        Limit: options.size || 20,
         KeyConditions: {
           uploaderDID: {
             ComparisonOperator: 'EQ',
             AttributeValueList: [{ S: uploaderDID }],
           },
         },
+        ExclusiveStartKey: exclusiveStartKey,
         AttributesToGet: ['dataCID', 'carCID', 'uploadedAt'],
       })
       const response = await dynamoDb.send(cmd)
@@ -153,11 +159,15 @@ export function createUploadTable (region, tableName, options = {}) {
       // @ts-expect-error
       const results = response.Items?.map(i => unmarshall(i)) || []
 
-      // TODO: cursor integrate with capabilities
+      // Get cursor of the item where list operation stopped (inclusive).
+      // This value can be used to start a new operation to continue listing.
+      const lastKey = response.LastEvaluatedKey && unmarshall(response.LastEvaluatedKey)
+      const cursor = lastKey ? lastKey.sk : undefined
 
       return {
-        pageSize: results.length,
-        results
+        size: results.length,
+        results,
+        cursor
       }
     },
   }

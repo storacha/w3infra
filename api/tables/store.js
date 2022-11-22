@@ -95,15 +95,21 @@ export function createStoreTable (region, tableName, options = {}) {
      * @param {import('../service/types').ListOptions} [options]
      */
     list: async (uploaderDID, options = {}) => {
+      const exclusiveStartKey = options.cursor ? marshall({
+        uploaderDID,
+        payloadCID: options.cursor
+      }) : undefined
+
       const cmd = new QueryCommand({
         TableName: tableName,
-        Limit: options.pageSize || 20,
+        Limit: options.size || 20,
         KeyConditions: {
           uploaderDID: {
             ComparisonOperator: 'EQ',
             AttributeValueList: [{ S: uploaderDID }],
           },
         },
+        ExclusiveStartKey: exclusiveStartKey,
         AttributesToGet: ['payloadCID', 'size', 'origin', 'uploadedAt'],
       })
       const response = await dynamoDb.send(cmd)
@@ -120,16 +126,14 @@ export function createStoreTable (region, tableName, options = {}) {
         return item
       }) || []
 
-      /* 
-      // TODO: cursor integrate with capabilities
-      // Get cursor of last key payload CID
+      // Get cursor of the item where list operation stopped (inclusive).
+      // This value can be used to start a new operation to continue listing.
       const lastKey = response.LastEvaluatedKey && unmarshall(response.LastEvaluatedKey)
-      const cursorID = lastKey ? lastKey.payloadCID : undefined
-      */
+      const cursor = lastKey ? lastKey.payloadCID : undefined
 
       return {
-        pageSize: results.length,
-        // cursorID,
+        size: results.length,
+        cursor,
         results
       }
     }
