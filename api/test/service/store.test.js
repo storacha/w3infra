@@ -7,7 +7,6 @@ import { CAR } from '@ucanto/transport'
 import * as Server from '@ucanto/server'
 import * as StoreCapabilities from '@web3-storage/access/capabilities/store'
 import { base64pad } from 'multiformats/bases/base64'
-import getServiceDid from '../../authority.js'
 import { getClientConnection, createSpace } from '../helpers/ucanto.js'
 import { createS3, createBucket, createDynamodDb, createAccessServer } from '../utils.js'
 
@@ -49,7 +48,6 @@ test.beforeEach(async t => {
   t.context.bucketName = bucketName
   t.context.s3Client = s3Client
   t.context.s3ClientOpts = s3ClientOpts
-  t.context.serviceDid = await getServiceDid()
   t.context.access = access
   t.context.accessServiceDID = access.servicePrincipal.did()
   t.context.accessServiceURL = access.serviceURL.toString()
@@ -60,7 +58,7 @@ test.afterEach(async t => {
 })
 
 test('store/add returns signed url for uploading', async (t) => {
-  const uploadService = t.context.serviceDid
+  const uploadService = await Signer.generate()
   const alice = await Signer.generate()
   const { proof, spaceDid } = await createSpace(alice)
   const connection = await getClientConnection(uploadService, t.context)
@@ -97,7 +95,7 @@ test('store/add returns signed url for uploading', async (t) => {
 })
 
 test('store/add returns done if already uploaded', async (t) => {
-  const uploadService = t.context.serviceDid
+  const uploadService = await Signer.generate()
   const alice = await Signer.generate()
   const { proof, spaceDid } = await createSpace(alice)
   const connection = await getClientConnection(uploadService, t.context)
@@ -139,7 +137,7 @@ test('store/add returns done if already uploaded', async (t) => {
 })
 
 test('store/add allowed if invocation passes access verification', async (t) => {
-  const uploadService = t.context.serviceDid
+  const uploadService = await Signer.generate()
   const alice = await Signer.generate()
   const { proof, spaceDid } = await createSpace(alice)
   const connection = await getClientConnection(uploadService, t.context)
@@ -174,7 +172,7 @@ test('store/add disallowed if invocation fails access verification', async (t) =
     account: { info: () => { return new Server.Failure('not found') } }
   })
 
-  const uploadService = t.context.serviceDid
+  const uploadService = await Signer.generate()
   const alice = await Signer.generate()
   const { proof, spaceDid } = await createSpace(alice)
   const connection = await getClientConnection(uploadService, t.context)
@@ -200,7 +198,7 @@ test('store/add disallowed if invocation fails access verification', async (t) =
 })
 
 test('store/remove does not fail for non existent link', async (t) => {
-  const uploadService = t.context.serviceDid
+  const uploadService = await Signer.generate()
   const alice = await Signer.generate()
   const { proof, spaceDid } = await createSpace(alice)
   const connection = await getClientConnection(uploadService, t.context)
@@ -234,7 +232,7 @@ test('store/remove does not fail for non existent link', async (t) => {
 })
 
 test('store/remove removes car bound to issuer from store table', async (t) => {
-  const uploadService = t.context.serviceDid
+  const uploadService = await Signer.generate()
   const alice = await Signer.generate()
   const { proof, spaceDid } = await createSpace(alice)
   const connection = await getClientConnection(uploadService, t.context)
@@ -278,7 +276,7 @@ test('store/remove removes car bound to issuer from store table', async (t) => {
 })
 
 test('store/list does not fail for empty list', async (t) => {
-  const uploadService = t.context.serviceDid
+  const uploadService = await Signer.generate()
   const alice = await Signer.generate()
   const { proof, spaceDid } = await createSpace(alice)
   const connection = await getClientConnection(uploadService, t.context)
@@ -295,7 +293,7 @@ test('store/list does not fail for empty list', async (t) => {
 })
 
 test('store/list returns items previously stored by the user', async (t) => {
-  const uploadService = t.context.serviceDid
+  const uploadService = await Signer.generate()
   const alice = await Signer.generate()
   const { proof, spaceDid } = await createSpace(alice)
   const connection = await getClientConnection(uploadService, t.context)

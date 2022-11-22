@@ -1,4 +1,4 @@
-import getServiceDid from '../authority.js'
+import { getServiceSigner } from '../config.js'
 
 /**
  * AWS HTTP Gateway handler for GET /version
@@ -7,8 +7,7 @@ import getServiceDid from '../authority.js'
  */
  export async function version (request) {
   const { NAME: name , VERSION: version, COMMIT: commit, STAGE: env } = process.env
-  const serviceSigner = await getServiceDid()
-  const did = serviceSigner.did()
+  const did = getServiceSigner().did()
   const repo = 'https://github.com/web3-storage/upload-api'
   return {
     statusCode: 200,
@@ -26,8 +25,7 @@ import getServiceDid from '../authority.js'
  */
 export async function home (request) {
   const { VERSION: version, STAGE: stage } = process.env
-  const serviceSigner = await getServiceDid()
-  const did = serviceSigner.did()
+  const did = getServiceSigner().did()
   const repo = 'https://github.com/web3-storage/upload-api'
   const env = stage === 'prod' ? '' : `(${stage})`
   return {

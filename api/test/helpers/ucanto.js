@@ -2,7 +2,7 @@ import * as UcantoClient from '@ucanto/client'
 import { CAR, CBOR } from '@ucanto/transport'
 import * as Signer from '@ucanto/principal/ed25519'
 
-import { createUcantoServer } from '../../functions/ucan-invocation-router.js'
+import { createUcantoServer } from '../../service/index.js'
 import { createCarStore } from '../../buckets/car-store.js'
 import { createStoreTable } from '../../tables/store.js'
 import { createUploadTable } from '../../tables/upload.js'
@@ -12,10 +12,11 @@ import { getSigningOptions } from '../utils.js'
 import { createAccessClient } from '../../access.js'
 
 /**
+ * @param {import('@ucanto/interface').Signer} service
  * @param {import('./context.js').UcantoServerContext} ctx
  */
-export function createTestingUcantoServer(ctx) {
- return createUcantoServer(ctx.serviceDid, {
+export function createTestingUcantoServer(service, ctx) {
+ return createUcantoServer(service, {
    storeTable: createStoreTable(ctx.region, ctx.tableName, {
      endpoint: ctx.dbEndpoint
    }),
@@ -24,12 +25,12 @@ export function createTestingUcantoServer(ctx) {
    }),
    carStoreBucket: createCarStore(ctx.region, ctx.bucketName, { ...ctx.s3ClientOpts }),
    signer: createSigner(getSigningOptions(ctx)),
-   access: createAccessClient(ctx.serviceDid, ctx.access.servicePrincipal, ctx.access.serviceURL)
+   access: createAccessClient(service, ctx.access.servicePrincipal, ctx.access.serviceURL)
  })
 }
 
 /**
- * @param {import('@ucanto/principal/ed25519').EdSigner} service 
+ * @param {import('@ucanto/interface').Signer} service
  * @param {any} context 
  * @returns 
  */
@@ -38,12 +39,12 @@ export async function getClientConnection (service, context) {
     id: service,
     encoder: CAR,
     decoder: CBOR,
-    channel: await createTestingUcantoServer(context),
+    channel: await createTestingUcantoServer(service, context),
   })
 }
 
 /**
- * @param {import("@ucanto/principal/dist/src/ed25519/type.js").EdSigner<"key">} audience
+ * @param {import('@ucanto/interface').Principal} audience
  */
 export async function createSpace (audience) {
   const space = await Signer.generate()
