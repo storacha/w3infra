@@ -81,7 +81,7 @@ test('store/add returns signed url for uploading', async (t) => {
   }).execute(connection)
 
   if (storeAdd.error) {
-    throw new Error(storeAdd.message)
+    throw new Error('invocation failed', { cause: storeAdd })
   }
 
   t.is(storeAdd.status, 'upload')
@@ -128,7 +128,7 @@ test('store/add returns done if already uploaded', async (t) => {
   }).execute(connection)
 
   if (storeAdd.error) {
-    throw new Error(storeAdd.message)
+    throw new Error('invocation failed', { cause: storeAdd })
   }
 
   t.is(storeAdd.status, 'done')
@@ -165,7 +165,7 @@ test('store/add allowed if invocation passes access verification', async (t) => 
   }).execute(connection)
 
   if (storeAdd.error) {
-    throw new Error(storeAdd.message)
+    throw new Error('invocation failed', { cause: storeAdd })
   }
 
   t.is(storeAdd.status, 'upload')
@@ -262,7 +262,7 @@ test('store/remove removes car bound to issuer from store table', async (t) => {
   }).execute(connection)
 
   if (storeAdd.error) {
-    throw new Error(storeAdd.message)
+    throw new Error('invocation failed', { cause: storeAdd })
   }
 
   t.is(storeAdd.status, 'upload')
@@ -320,7 +320,7 @@ test('store/list returns items previously stored by the user', async (t) => {
       proofs: [proof]
     }).execute(connection)
     if (storeAdd.error) {
-      throw new Error(storeAdd.message)
+      throw new Error('invocation failed', { cause: storeAdd })
     }
 
     t.is(storeAdd.status, 'upload')
@@ -336,7 +336,7 @@ test('store/list returns items previously stored by the user', async (t) => {
   }).execute(connection)
 
   if (storeList.error) {
-    throw new Error(storeList.message)
+    throw new Error('invocation failed', { cause: storeList })
   }
 
   t.is(storeList.size, links.length)
@@ -368,7 +368,7 @@ test('store/list can be paginated with custom size', async (t) => {
       proofs: [proof]
     }).execute(connection)
     if (storeAdd.error) {
-      throw new Error(storeAdd.message)
+      throw new Error('invocation failed', { cause: storeAdd })
     }
 
     links.push(storeAdd.link)
@@ -393,7 +393,7 @@ test('store/list can be paginated with custom size', async (t) => {
     }).execute(connection)
 
     if (storeList.error) {
-      throw new Error(storeList.message)
+      throw new Error('invocation failed', { cause: storeList })
     }
   
     cursor = storeList.cursor

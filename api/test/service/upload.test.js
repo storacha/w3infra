@@ -61,7 +61,7 @@ test('upload/add inserts into DB mapping between data CID and car CIDs', async (
   }).execute(connection)
 
   if (uploadAdd.error) {
-    throw new Error(uploadAdd.message)
+    throw new Error('invocation failed', { cause: uploadAdd })
   }
   t.is(uploadAdd.length, shards.length)
 
@@ -107,7 +107,7 @@ test('upload/add does not fail with no shards provided', async (t) => {
   }).execute(connection)
 
   if (uploadAdd.error) {
-    throw new Error(uploadAdd.message)
+    throw new Error('invocation failed', { cause: uploadAdd })
   }
 
   t.is(uploadAdd.length, 0)
@@ -161,7 +161,7 @@ test('upload/remove removes all entries with data CID linked to space', async (t
     proofs: [proofSpaceA]
   }).execute(connection)
   if (uploadAddCarAToSpaceA.error) {
-    throw new Error(uploadAddCarAToSpaceA.message)
+    throw new Error('invocation failed', { cause: uploadAddCarAToSpaceA })
   }
 
   // Upload CarB to SpaceA
@@ -173,7 +173,7 @@ test('upload/remove removes all entries with data CID linked to space', async (t
     proofs: [proofSpaceA]
   }).execute(connection)
   if (uploadAddCarBToSpaceA.error) {
-    throw new Error(uploadAddCarBToSpaceA.message)
+    throw new Error('invocation failed', { cause: uploadAddCarBToSpaceA })
   }
 
   // Upload CarA to SpaceB
@@ -186,7 +186,7 @@ test('upload/remove removes all entries with data CID linked to space', async (t
 
   }).execute(connection)
   if (uploadAddCarAToSpaceB.error) {
-    throw new Error(uploadAddCarAToSpaceB.message)
+    throw new Error('invocation failed', { cause: uploadAddCarAToSpaceB })
   }
 
   // Remove CarA from SpaceA
@@ -233,7 +233,7 @@ test('upload/remove removes all entries when larger than batch limit', async (t)
   }).execute(connection)
 
   if (uploadAdd.error) {
-    throw new Error(uploadAdd.message)
+    throw new Error('invocation failed', { cause: uploadAdd })
   }
 
   t.is(uploadAdd.length, shards.length)
@@ -303,7 +303,7 @@ test('store/list returns entries previously uploaded by the user', async (t) => 
     nb: {}
   }).execute(connection)
   if (uploadList.error) {
-    throw new Error(uploadList.message)
+    throw new Error('invocation failed', { cause: uploadList })
   }
 
   t.is(uploadList.size, cars.length)
@@ -355,7 +355,7 @@ test('upload/list can be paginated with custom size', async (t) => {
     }).execute(connection)
 
     if (uploadList.error) {
-      throw new Error(uploadList.message)
+      throw new Error('invocation failed', { cause: uploadList })
     }
   
     cursor = uploadList.cursor
