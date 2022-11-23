@@ -96,9 +96,9 @@ export type ListOptions = {
 
 export interface StoreListResult {
   payloadCID: string
-  origin: string
+  origin?: string
   size: number
-  uploadedAt: number
+  uploadedAt: string
 }
 
 export interface ListResponse<R> {
