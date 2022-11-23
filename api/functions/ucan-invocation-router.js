@@ -2,6 +2,7 @@ import { DID } from '@ucanto/core'
 import { createAccessClient } from '../access.js'
 import { createSigner } from '../signer.js'
 import { createCarStore } from '../buckets/car-store.js'
+import { createDataCidToCarCidStore } from '../buckets/data-cid-to-car-cid-store.js'
 import { createStoreTable } from '../tables/store.js'
 import { createUploadTable } from '../tables/upload.js'
 import { getServiceSigner } from '../config.js'
@@ -11,6 +12,15 @@ const AWS_ACCESS_KEY_ID = process.env.AWS_ACCESS_KEY_ID || ''
 const AWS_SECRET_ACCESS_KEY = process.env.AWS_SECRET_ACCESS_KEY || ''
 const AWS_SESSION_TOKEN = process.env.AWS_SESSION_TOKEN || ''
 const AWS_REGION = process.env.AWS_REGION || 'us-west-2'
+
+
+// TODO: Should we use secrets for this or inject here?
+const REPLICATOR_ACCESS_KEY_ID = process.env.REPLICATOR_ACCESS_KEY_ID || ''
+const REPLICATOR_SECRET_ACCESS_KEY = process.env.REPLICATOR_SECRET_ACCESS_KEY || ''
+const REPLICATOR_REGION = process.env.REPLICATOR_REGION || 'global'
+const REPLICATOR_DUDE_WHERE_BUCKET_NAME =
+  process.env.REPLICATOR_DUDE_WHERE_BUCKET_NAME || ''
+const REPLICATOR_ENDPOINT = process.env.REPLICATOR_ENDPOINT || ``
 
 /**
  * AWS HTTP Gateway handler for POST / with ucan invocation router.
@@ -43,6 +53,17 @@ async function ucanInvocationRouter (request) {
       endpoint: dbEndpoint
     }),
     carStoreBucket: createCarStore(AWS_REGION, storeBucketName),
+    dataCidCarCidMapBucket: createDataCidToCarCidStore(
+      REPLICATOR_REGION,
+      REPLICATOR_DUDE_WHERE_BUCKET_NAME,
+      {
+        endpoint: REPLICATOR_ENDPOINT,
+        credentials: {
+          accessKeyId: REPLICATOR_ACCESS_KEY_ID,
+          secretAccessKey: REPLICATOR_SECRET_ACCESS_KEY,
+        },
+      }
+    ),
     uploadTable: createUploadTable(AWS_REGION, uploadTableName, {
       endpoint: dbEndpoint
     }),

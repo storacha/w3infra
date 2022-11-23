@@ -4,6 +4,7 @@ import * as Signer from '@ucanto/principal/ed25519'
 
 import { createUcantoServer } from '../../service/index.js'
 import { createCarStore } from '../../buckets/car-store.js'
+import { createDataCidToCarCidStore } from '../../buckets/data-cid-to-car-cid-store.js'
 import { createStoreTable } from '../../tables/store.js'
 import { createUploadTable } from '../../tables/upload.js'
 import { createSigner } from '../../signer.js'
@@ -31,6 +32,7 @@ export function createTestingUcantoServer(service, ctx) {
      endpoint: ctx.dbEndpoint
    }),
    carStoreBucket: createCarStore(region, ctx.bucketName, { ...ctx.s3ClientOpts }),
+   dataCidCarCidMapBucket: createDataCidToCarCidStore(region, ctx.bucketName, { ...ctx.s3ClientOpts }),
    signer: createSigner(getSigningOptions(ctx)),
    access: createAccessClient(service, ctx.access.servicePrincipal, ctx.access.serviceURL)
  })

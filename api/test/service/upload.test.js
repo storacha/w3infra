@@ -1,6 +1,7 @@
 import { testStore as test } from '../helpers/context.js'
 import { customAlphabet } from 'nanoid'
 import { CreateTableCommand, QueryCommand } from '@aws-sdk/client-dynamodb'
+import { ListObjectsV2Command } from '@aws-sdk/client-s3'
 import { unmarshall } from '@aws-sdk/util-dynamodb'
 import * as Signer from '@ucanto/principal/ed25519'
 import * as UploadCapabilities from '@web3-storage/access/capabilities/upload'
@@ -113,6 +114,12 @@ test('upload/add inserts into DB mapping between data CID and car CIDs', async (
     t.is(shardResult?.root, root.toString())
     t.truthy(shardResult?.insertedAt)
   }
+
+  // Validate data CID -> car CID mapping
+  const bucketItems = await getMappingItemsForUpload(t.context.s3Client, bucketName, root.toString())
+  for (const shard of shards) {
+    t.truthy(bucketItems?.includes(`${root.toString()}/${shard.toString()}`))
+  }
 })
 
 // TODO: this is current behavior with optional nb.
@@ -151,6 +158,10 @@ test('upload/add does not fail with no shards provided', async (t) => {
   // Validate DB
   const dbItems = await getUploadsForSpace(t.context.dynamoClient, tableName, spaceDid)
   t.is(dbItems.length, 0)
+
+  // Validate data CID -> car CID mapping
+  const bucketItems = await getMappingItemsForUpload(t.context.s3Client, bucketName, root.toString())
+  t.is(bucketItems.length, 0)
 })
 
 test('upload/remove does not fail for non existent upload', async (t) => {
@@ -536,3 +547,17 @@ async function prepareResources (dynamoClient, s3Client) {
   return response.Items?.map(i => unmarshall(i)) || []
 }
 
+/**
+ * @param {import("@aws-sdk/client-s3").S3Client} s3Client
+ * @param {string} bucketName
+ * @param {string} dataCid
+ */
+async function getMappingItemsForUpload (s3Client, bucketName, dataCid) {
+  const listCmd = new ListObjectsV2Command({
+    Bucket: bucketName,
+    Prefix: dataCid
+  })
+  const mappingItems = await s3Client.send(listCmd)
+
+  return mappingItems.Contents?.map(i => i.Key) || []
+}

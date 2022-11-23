@@ -17,7 +17,8 @@
     "@web-std/fetch": "^4.1.0",
     "@web3-storage/access": "^6.0.1",
     "@web3-storage/sigv4": "^1.0.2",
-    "multiformats": "^10.0.2"
+    "multiformats": "^10.0.2",
+    "p-retry": "^5.1.2"
   },
   "devDependencies": {
     "@ipld/car": "^5.0.1",
