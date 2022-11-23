@@ -10,6 +10,11 @@ import { base64pad } from 'multiformats/bases/base64'
 import { getClientConnection, createSpace } from '../helpers/ucanto.js'
 import { createS3, createBucket, createDynamodDb, createAccessServer } from '../utils.js'
 
+/**
+ * @typedef {import('../../service/types').StoreListResult} StoreListResult
+ * @typedef {import('../../service/types').ListResponse<StoreListResult>} ListResponse
+ */
+
 test.beforeEach(async t => {
   const region = 'us-west-2'
   const tableName = 'store'
@@ -73,15 +78,17 @@ test('store/add returns signed url for uploading', async (t) => {
     with: spaceDid,
     nb: { link, size: data.byteLength },
     proofs: [proof]
-    // @ts-expect-error ʅʕ•ᴥ•ʔʃ
   }).execute(connection)
 
-  t.not(storeAdd.error, true, storeAdd.message)
+  if (storeAdd.error) {
+    throw new Error('invocation failed', { cause: storeAdd })
+  }
+
   t.is(storeAdd.status, 'upload')
   t.is(storeAdd.with, spaceDid)
   t.deepEqual(storeAdd.link, link)
-  t.is(new URL(storeAdd.url).pathname, `/${link}/${link}.car`)
-  t.is(storeAdd.headers['x-amz-checksum-sha256'], base64pad.baseEncode(link.multihash.digest))
+  t.is(storeAdd.url && new URL(storeAdd.url).pathname, `/${link}/${link}.car`)
+  t.is(storeAdd.headers && storeAdd.headers['x-amz-checksum-sha256'], base64pad.baseEncode(link.multihash.digest))
 
   const item = await getItemFromStoreTable(t.context.dynamoClient, spaceDid, link)
   t.truthy(item)
@@ -118,8 +125,11 @@ test('store/add returns done if already uploaded', async (t) => {
     with: spaceDid,
     nb: { link, size: data.byteLength },
     proofs: [proof]
-    // @ts-expect-error ʅʕ•ᴥ•ʔʃ
   }).execute(connection)
+
+  if (storeAdd.error) {
+    throw new Error('invocation failed', { cause: storeAdd })
+  }
 
   t.is(storeAdd.status, 'done')
   t.is(storeAdd.with, spaceDid)
@@ -152,15 +162,17 @@ test('store/add allowed if invocation passes access verification', async (t) => 
     with: spaceDid,
     nb: { link, size: data.byteLength },
     proofs: [proof]
-    // @ts-expect-error ʅʕ•ᴥ•ʔʃ
   }).execute(connection)
 
-  t.not(storeAdd.error, true, storeAdd.message)
+  if (storeAdd.error) {
+    throw new Error('invocation failed', { cause: storeAdd })
+  }
+
   t.is(storeAdd.status, 'upload')
   t.is(storeAdd.with, spaceDid)
   t.deepEqual(storeAdd.link, link)
-  t.is(new URL(storeAdd.url).pathname, `/${link}/${link}.car`)
-  t.is(storeAdd.headers['x-amz-checksum-sha256'], base64pad.baseEncode(link.multihash.digest))
+  t.is(storeAdd.url && new URL(storeAdd.url).pathname, `/${link}/${link}.car`)
+  t.is(storeAdd.headers && storeAdd.headers['x-amz-checksum-sha256'], base64pad.baseEncode(link.multihash.digest))
 
   const { service } = t.context.access.server
   t.true(service.space.info.called)
@@ -187,7 +199,6 @@ test('store/add disallowed if invocation fails access verification', async (t) =
     with: spaceDid,
     nb: { link, size: data.byteLength },
     proofs: [proof]
-    // @ts-expect-error ʅʕ•ᴥ•ʔʃ
   }).execute(connection)
 
   t.is(storeAdd.error, true)
@@ -212,7 +223,6 @@ test('store/remove does not fail for non existent link', async (t) => {
     with: spaceDid,
     nb: { link },
     proofs: [proof]
-    // @ts-expect-error ʅʕ•ᴥ•ʔʃ
   }).execute(connection)
 
   // expect no response for a remove
@@ -224,7 +234,6 @@ test('store/remove does not fail for non existent link', async (t) => {
     with: spaceDid,
     nb: { link },
     proofs: [proof]
-    // @ts-expect-error ʅʕ•ᴥ•ʔʃ
   }).execute(connection)
 
   // expect no response for a remove
@@ -250,8 +259,11 @@ test('store/remove removes car bound to issuer from store table', async (t) => {
     with: spaceDid,
     nb: { link, size: data.byteLength },
     proofs: [proof]
-    // @ts-expect-error ʅʕ•ᴥ•ʔʃ
   }).execute(connection)
+
+  if (storeAdd.error) {
+    throw new Error('invocation failed', { cause: storeAdd })
+  }
 
   t.is(storeAdd.status, 'upload')
 
@@ -265,7 +277,6 @@ test('store/remove removes car bound to issuer from store table', async (t) => {
     with: spaceDid,
     nb: { link },
     proofs: [proof]
-    // @ts-expect-error ʅʕ•ᴥ•ʔʃ
   }).execute(connection)
 
   t.falsy(storeRemove)
@@ -287,7 +298,6 @@ test('store/list does not fail for empty list', async (t) => {
     with: spaceDid,
     proofs: [ proof ],
     nb: {}
-    // @ts-expect-error ʅʕ•ᴥ•ʔʃ
   }).execute(connection)
 
   t.like(storeList, { results: [], size: 0 })
@@ -308,9 +318,11 @@ test('store/list returns items previously stored by the user', async (t) => {
       with: spaceDid,
       nb: { link: await CAR.codec.link(datum) , size: datum.byteLength },
       proofs: [proof]
-      // @ts-expect-error ʅʕ•ᴥ•ʔʃ
     }).execute(connection)
-    t.not(storeAdd.error, true, storeAdd.message)
+    if (storeAdd.error) {
+      throw new Error('invocation failed', { cause: storeAdd })
+    }
+
     t.is(storeAdd.status, 'upload')
     links.push(storeAdd.link)
   }
@@ -321,8 +333,11 @@ test('store/list returns items previously stored by the user', async (t) => {
     with: spaceDid,
     proofs: [ proof ],
     nb: {}
-    // @ts-expect-error ʅʕ•ᴥ•ʔʃ
   }).execute(connection)
+
+  if (storeList.error) {
+    throw new Error('invocation failed', { cause: storeList })
+  }
 
   t.is(storeList.size, links.length)
 
@@ -351,9 +366,11 @@ test('store/list can be paginated with custom size', async (t) => {
       with: spaceDid,
       nb: { link: await CAR.codec.link(datum) , size: datum.byteLength },
       proofs: [proof]
-      // @ts-expect-error ʅʕ•ᴥ•ʔʃ
     }).execute(connection)
-    t.not(storeAdd.error, true, storeAdd.message)
+    if (storeAdd.error) {
+      throw new Error('invocation failed', { cause: storeAdd })
+    }
+
     links.push(storeAdd.link)
   }
 
@@ -363,7 +380,7 @@ test('store/list can be paginated with custom size', async (t) => {
   let cursor
 
   do {
-    /** @type {import('../../service/types').ListResponse<any>} */
+    /** @type {Server.Result<ListResponse, Server.API.Failure | Server.HandlerExecutionError | Server.API.HandlerNotFound | Server.InvalidAudience | Server.Unauthorized>} */
     const storeList = await StoreCapabilities.list.invoke({
       issuer: alice,
       audience: uploadService,
@@ -373,8 +390,11 @@ test('store/list can be paginated with custom size', async (t) => {
         size,
         cursor
       }
-      // @ts-expect-error ʅʕ•ᴥ•ʔʃ
     }).execute(connection)
+
+    if (storeList.error) {
+      throw new Error('invocation failed', { cause: storeList })
+    }
   
     cursor = storeList.cursor
     // Add page if it has size

@@ -2,12 +2,19 @@ import * as Server from '@ucanto/server'
 import * as Upload from '@web3-storage/access/capabilities/upload'
 
 /**
+ * @typedef {import('@web3-storage/access/types').UploadAdd} UploadAddCapability
+ * @typedef {import('@ucanto/interface').Failure} Failure
+ * @typedef {import('../types').UploadAddResult} UploadAddResult
+ */
+
+/**
  * @param {import('../types').UploadServiceContext} context
+ * @returns {import('@ucanto/interface').ServiceMethod<UploadAddCapability, UploadAddResult, Failure>}
  */
 export function uploadAddProvider(context) {
   return Server.provide(
     Upload.add,
-    async ({ capability, invocation }) => {
+    async ({ capability }) => {
       const { root, shards } = capability.nb
 
       // Only use capability account for now to check if account is registered.

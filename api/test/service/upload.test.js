@@ -10,6 +10,12 @@ import { createAccessServer, createDynamodDb } from '../utils.js'
 import { randomCAR } from '../helpers/random.js'
 import { getClientConnection, createSpace } from '../helpers/ucanto.js'
 
+/**
+ * @typedef {import('@ucanto/server')} Server
+ * @typedef {import('../../service/types').UploadItemOutput} UploadItemOutput
+ * @typedef {import('../../service/types').ListResponse<UploadItemOutput>} ListResponse
+ */
+
 test.beforeEach(async t => {
   const region = 'us-west-2'
   const tableName = 'upload'
@@ -46,18 +52,17 @@ test('upload/add inserts into DB mapping between data CID and car CIDs', async (
   const root = car.roots[0]
   const shards = [car.cid, otherCar.cid]
 
-  /** @type {import('../../service/types').UploadItemOutput[]} */
   const uploadAdd = await UploadCapabilities.add.invoke({
     issuer: alice,
     audience: uploadService,
     with: spaceDid,
     nb: { root, shards },
     proofs: [proof]
-    // @ts-expect-error ʅʕ•ᴥ•ʔʃ
   }).execute(connection)
 
-  // @ts-expect-error error is added by ucanto if it fails
-  t.not(uploadAdd.error, true, uploadAdd.message)
+  if (uploadAdd.error) {
+    throw new Error('invocation failed', { cause: uploadAdd })
+  }
   t.is(uploadAdd.length, shards.length)
 
   // Validate shards result
@@ -93,18 +98,18 @@ test('upload/add does not fail with no shards provided', async (t) => {
   // invoke a upload/add with proof
   const root = car.roots[0]
 
-  /** @type {import('../../service/types').UploadItemOutput[]} */
   const uploadAdd = await UploadCapabilities.add.invoke({
     issuer: alice,
     audience: uploadService,
     with: spaceDid,
     nb: { root },
     proofs: [proof]
-    // @ts-expect-error ʅʕ•ᴥ•ʔʃ
   }).execute(connection)
 
-  // @ts-expect-error error is added by ucanto if it fails
-  t.not(uploadAdd.error, true, uploadAdd.message)
+  if (uploadAdd.error) {
+    throw new Error('invocation failed', { cause: uploadAdd })
+  }
+
   t.is(uploadAdd.length, 0)
 
   // Validate DB
@@ -129,7 +134,6 @@ test('upload/remove does not fail for non existent upload', async (t) => {
     with: spaceDid,
     nb: { root },
     proofs: [proof]
-    // @ts-expect-error ʅʕ•ᴥ•ʔʃ
   }).execute(connection)
 
   // expect no response for a remove
@@ -155,9 +159,10 @@ test('upload/remove removes all entries with data CID linked to space', async (t
     with: spaceDidA,
     nb: { root: carA.roots[0], shards: [carA.cid, carB.cid] },
     proofs: [proofSpaceA]
-    // @ts-expect-error ʅʕ•ᴥ•ʔʃ
   }).execute(connection)
-  t.not(uploadAddCarAToSpaceA.error, true, uploadAddCarAToSpaceA.message)
+  if (uploadAddCarAToSpaceA.error) {
+    throw new Error('invocation failed', { cause: uploadAddCarAToSpaceA })
+  }
 
   // Upload CarB to SpaceA
   const uploadAddCarBToSpaceA = await UploadCapabilities.add.invoke({
@@ -166,9 +171,10 @@ test('upload/remove removes all entries with data CID linked to space', async (t
     with: spaceDidA,
     nb: { root: carB.roots[0], shards: [carB.cid, carA.cid] },
     proofs: [proofSpaceA]
-    // @ts-expect-error ʅʕ•ᴥ•ʔʃ
   }).execute(connection)
-  t.not(uploadAddCarBToSpaceA.error, true, uploadAddCarBToSpaceA.message)
+  if (uploadAddCarBToSpaceA.error) {
+    throw new Error('invocation failed', { cause: uploadAddCarBToSpaceA })
+  }
 
   // Upload CarA to SpaceB
   const uploadAddCarAToSpaceB = await UploadCapabilities.add.invoke({
@@ -177,9 +183,11 @@ test('upload/remove removes all entries with data CID linked to space', async (t
     with: spaceDidB,
     nb: { root: carA.roots[0], shards: [carA.cid, carB.cid] },
     proofs: [proofSpaceB]
-    // @ts-expect-error ʅʕ•ᴥ•ʔʃ
+
   }).execute(connection)
-  t.not(uploadAddCarAToSpaceB.error, true, uploadAddCarAToSpaceB.message)
+  if (uploadAddCarAToSpaceB.error) {
+    throw new Error('invocation failed', { cause: uploadAddCarAToSpaceB })
+  }
 
   // Remove CarA from SpaceA
   await UploadCapabilities.remove.invoke({
@@ -188,7 +196,6 @@ test('upload/remove removes all entries with data CID linked to space', async (t
     with: spaceDidA,
     nb: { root: carA.roots[0] },
     proofs: [proofSpaceA]
-    // @ts-expect-error ʅʕ•ᴥ•ʔʃ
   }).execute(connection)
 
   // Validate SpaceA has 0 items for CarA
@@ -217,18 +224,18 @@ test('upload/remove removes all entries when larger than batch limit', async (t)
   const root = cars[0].roots[0]
   const shards = cars.map(c => c.cid)
 
-  /** @type {import('../../service/types').UploadItemOutput[]} */
   const uploadAdd = await UploadCapabilities.add.invoke({
     issuer: alice,
     audience: uploadService,
     with: spaceDid,
     nb: { root, shards },
     proofs: [proof]
-    // @ts-expect-error ʅʕ•ᴥ•ʔʃ
   }).execute(connection)
 
-  // @ts-expect-error error is added by ucanto if it fails
-  t.not(uploadAdd.error, true, uploadAdd.message)
+  if (uploadAdd.error) {
+    throw new Error('invocation failed', { cause: uploadAdd })
+  }
+
   t.is(uploadAdd.length, shards.length)
 
   // Validate DB before remove
@@ -242,7 +249,6 @@ test('upload/remove removes all entries when larger than batch limit', async (t)
     with: spaceDid,
     nb: { root },
     proofs: [proof]
-    // @ts-expect-error ʅʕ•ᴥ•ʔʃ
   }).execute(connection)
 
   // Validate DB after remove
@@ -262,7 +268,6 @@ test('store/list does not fail for empty list', async (t) => {
     with: spaceDid,
     proofs: [ proof ],
     nb: {}
-    // @ts-expect-error ʅʕ•ᴥ•ʔʃ
   }).execute(connection)
 
   t.like(uploadList, { results: [], size: 0 })
@@ -287,19 +292,19 @@ test('store/list returns entries previously uploaded by the user', async (t) => 
       with: spaceDid,
       nb: { root: car.roots[0], shards: [car.cid] },
       proofs: [proof]
-      // @ts-expect-error ʅʕ•ᴥ•ʔʃ
     }).execute(connection)
   }
 
-  /** @type {import('../../service/types').ListResponse<import('../../service/types').UploadItemOutput>} */
   const uploadList = await UploadCapabilities.list.invoke({
     issuer: alice,
     audience: uploadService,
     with: spaceDid,
     proofs: [ proof ],
     nb: {}
-    // @ts-expect-error ʅʕ•ᴥ•ʔʃ
   }).execute(connection)
+  if (uploadList.error) {
+    throw new Error('invocation failed', { cause: uploadList })
+  }
 
   t.is(uploadList.size, cars.length)
 
@@ -328,7 +333,6 @@ test('upload/list can be paginated with custom size', async (t) => {
       with: spaceDid,
       nb: { root: car.roots[0], shards: [car.cid] },
       proofs: [proof]
-      // @ts-expect-error ʅʕ•ᴥ•ʔʃ
     }).execute(connection)
   }
 
@@ -338,7 +342,7 @@ test('upload/list can be paginated with custom size', async (t) => {
   let cursor
 
   do {
-    /** @type {import('../../service/types').ListResponse<any>} */
+    /** @type {import('@ucanto/server').Result<ListResponse, import('@ucanto/server').API.Failure | import('@ucanto/server').HandlerExecutionError | import('@ucanto/server').API.HandlerNotFound | import('@ucanto/server').InvalidAudience | import('@ucanto/server').Unauthorized>} */
     const uploadList = await UploadCapabilities.list.invoke({
       issuer: alice,
       audience: uploadService,
@@ -346,11 +350,13 @@ test('upload/list can be paginated with custom size', async (t) => {
       proofs: [ proof ],
       nb: {
         size,
-        // @ts-ignore let's do an interface for service!!
         cursor
       }
-      // @ts-expect-error ʅʕ•ᴥ•ʔʃ
     }).execute(connection)
+
+    if (uploadList.error) {
+      throw new Error('invocation failed', { cause: uploadList })
+    }
   
     cursor = uploadList.cursor
     // Add page if it has size
