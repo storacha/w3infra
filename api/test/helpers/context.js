@@ -3,10 +3,7 @@ import anyTest from 'ava'
 /**
  * @typedef {object} UcantoServerContext
  * @property {string} dbEndpoint
- * @property {string} tableName
  * @property {import('@aws-sdk/client-dynamodb').DynamoDBClient} dynamoClient
- * @property {string} region
- * @property {string} bucketName
  * @property {import('@aws-sdk/client-s3').S3Client} s3Client
  * @property {import('@aws-sdk/client-s3').ServiceInputTypes} s3ClientOpts
  * @property {import('@ucanto/principal/ed25519').EdSigner} serviceDid

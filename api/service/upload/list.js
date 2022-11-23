@@ -2,7 +2,15 @@ import * as Server from '@ucanto/server'
 import * as Upload from '@web3-storage/access/capabilities/upload'
 
 /**
+ * @typedef {import('@web3-storage/access/types').UploadList} UploadListCapability
+ * @typedef {import('@ucanto/interface').Failure} Failure
+ * @typedef {import('../types').UploadItemOutput} UploadItemOutput
+ * @typedef {import('../types').ListResponse<UploadItemOutput>} ListResponse
+ */
+
+/**
  * @param {import('../types').UploadServiceContext} context
+ * @returns {import('@ucanto/interface').ServiceMethod<UploadListCapability, ListResponse, Failure>}
  */
 export function uploadListProvider(context) {
   return Server.provide(

@@ -61,14 +61,14 @@ export function createStoreTable (region, tableName, options = {}) {
         proof,
         uploadedAt: new Date().toISOString(),
       }
-  
+
       const cmd = new PutItemCommand({
         TableName: tableName,
         Item: marshall(item),
       })
-  
+
       await dynamoDb.send(cmd)
-  
+
       return item
     },
     /**

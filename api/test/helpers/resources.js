@@ -85,15 +85,16 @@ export async function createBucket(s3) {
 }
 
 /**
- * @param {any} ctx 
+ * @param {any} ctx
+ * @param {import('./ucanto').ResourcesMetadata} resourcesMetadata
  */
-export function getSigningOptions(ctx) {
+export function getSigningOptions(ctx, resourcesMetadata) {
   return {
-    region: ctx.region,
+    region: resourcesMetadata.region || 'us-west-2',
     secretAccessKey: ctx.secretAccessKey,
     accessKeyId: ctx.accessKeyId,
     sessionToken: ctx.sessionToken,
-    bucket: ctx.bucketName,
+    bucket: resourcesMetadata.bucketName,
   }
 }
 

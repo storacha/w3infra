@@ -11,18 +11,26 @@ import { createSigner } from '../../signer.js'
 import { createAccessClient } from '../../access.js'
 
 /**
+ * @typedef {object} ResourcesMetadata
+ * @property {string} [region]
+ * @property {string} tableName
+ * @property {string} bucketName
+ */
+
+/**
  * @param {import('@ucanto/interface').Signer} service
- * @param {import('./context.js').UcantoServerContext} ctx
+ * @param {import('./context.js').UcantoServerContext & ResourcesMetadata} ctx
  */
 export function createTestingUcantoServer(service, ctx) {
+  const region = ctx.region || 'us-west-2'
  return createUcantoServer(service, {
-   storeTable: createStoreTable(ctx.region, ctx.tableName, {
+   storeTable: createStoreTable(region, ctx.tableName, {
      endpoint: ctx.dbEndpoint
    }),
-   uploadTable: createUploadTable(ctx.region, ctx.tableName, {
+   uploadTable: createUploadTable(region, ctx.tableName, {
      endpoint: ctx.dbEndpoint
    }),
-   carStoreBucket: createCarStore(ctx.region, ctx.bucketName, { ...ctx.s3ClientOpts }),
+   carStoreBucket: createCarStore(region, ctx.bucketName, { ...ctx.s3ClientOpts }),
    signer: createSigner(getSigningOptions(ctx)),
    access: createAccessClient(service, ctx.access.servicePrincipal, ctx.access.serviceURL)
  })
@@ -30,7 +38,7 @@ export function createTestingUcantoServer(service, ctx) {
 
 /**
  * @param {import('@ucanto/interface').Signer} service
- * @param {any} context 
+ * @param {any} context
  * @returns 
  */
 export async function getClientConnection (service, context) {
@@ -64,7 +72,7 @@ export async function createSpace (audience) {
  */
  export function getSigningOptions(ctx) {
   return {
-    region: ctx.region,
+    region: ctx.region || 'us-west-2',
     secretAccessKey: ctx.secretAccessKey,
     accessKeyId: ctx.accessKeyId,
     sessionToken: ctx.sessionToken,
