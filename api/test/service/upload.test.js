@@ -1,4 +1,5 @@
 import { testStore as test } from '../helpers/context.js'
+import { customAlphabet } from 'nanoid'
 import { CreateTableCommand, QueryCommand } from '@aws-sdk/client-dynamodb'
 import { unmarshall } from '@aws-sdk/util-dynamodb'
 import * as Signer from '@ucanto/principal/ed25519'
@@ -6,7 +7,7 @@ import * as UploadCapabilities from '@web3-storage/access/capabilities/upload'
 
 import { BATCH_MAX_SAFE_LIMIT } from '../../tables/upload.js'
 
-import { createAccessServer, createDynamodDb } from '../utils.js'
+import { createS3, createBucket, createAccessServer, createDynamodDb } from '../utils.js'
 import { randomCAR } from '../helpers/random.js'
 import { getClientConnection, createSpace } from '../helpers/ucanto.js'
 
@@ -15,35 +16,64 @@ import { getClientConnection, createSpace } from '../helpers/ucanto.js'
  * @typedef {import('../../service/types').UploadItemOutput} UploadItemOutput
  * @typedef {import('../../service/types').ListResponse<UploadItemOutput>} ListResponse
  */
+ const REGION = 'us-west-2'
 
-test.beforeEach(async t => {
-  const region = 'us-west-2'
-  const tableName = 'upload'
-
+ test.before(async t => {
   // Dynamo DB
   const {
     client: dynamo,
     endpoint: dbEndpoint
-  } = await createDynamodDb({ port: 8000, region })
-  await createDynamoUploadTable(dynamo)
-
-  // Access
-  const access = await createAccessServer()
+  } = await createDynamodDb({ port: 8000, region: REGION })
 
   t.context.dbEndpoint = dbEndpoint
   t.context.dynamoClient = dynamo
-  t.context.tableName = tableName
-  t.context.region = region
+
+  // S3
+  const { client: s3Client, clientOpts: s3ClientOpts } = await createS3({ port: 9000, region: REGION })
+
+  t.context.dbEndpoint = dbEndpoint
+  t.context.dynamoClient = dynamo
+  t.context.s3Client = s3Client
+  t.context.s3ClientOpts = s3ClientOpts
+})
+
+test.beforeEach(async t => {
+  // Access
+  const access = await createAccessServer()
+  // return a mock info by default
+  access.setServiceImpl({
+    account: {
+      info: async () => ({
+        did: (await Signer.generate()).did(),
+        agent: (await Signer.generate()).did(),
+        email: 'mailto:test@example.com',
+        product: 'product:free',
+        updated_at: new Date().toISOString(),
+        inserted_at: new Date().toISOString()
+      })
+    }
+  })
+
   t.context.access = access
   t.context.accessServiceDID = access.servicePrincipal.did()
   t.context.accessServiceURL = access.serviceURL.toString()
 })
 
+test.afterEach(async t => {
+  t.context.access.httpServer.close()
+})
+
 test('upload/add inserts into DB mapping between data CID and car CIDs', async (t) => {
+  const { tableName, bucketName } = await prepareResources(t.context.dynamoClient, t.context.s3Client)
+
   const uploadService = await Signer.generate()
   const alice = await Signer.generate()
   const { proof, spaceDid } = await createSpace(alice)
-  const connection = await getClientConnection(uploadService, t.context)
+  const connection = await getClientConnection(uploadService, t.context, {
+    region: REGION,
+    tableName,
+    bucketName
+  })
 
   const car = await randomCAR(128)
   const otherCar = await randomCAR(40)
@@ -74,7 +104,7 @@ test('upload/add inserts into DB mapping between data CID and car CIDs', async (
   }
 
   // Validate DB
-  const dbItems = await getUploadsForSpace(t.context.dynamoClient, spaceDid)
+  const dbItems = await getUploadsForSpace(t.context.dynamoClient, tableName, spaceDid)
   t.is(dbItems.length, shards.length)
 
   // Validate shards result
@@ -88,10 +118,16 @@ test('upload/add inserts into DB mapping between data CID and car CIDs', async (
 // TODO: this is current behavior with optional nb.
 // We should look into this as a desired behavior
 test('upload/add does not fail with no shards provided', async (t) => {
+  const { tableName, bucketName } = await prepareResources(t.context.dynamoClient, t.context.s3Client)
+
   const uploadService = await Signer.generate()
   const alice = await Signer.generate()
   const { proof, spaceDid } = await createSpace(alice)
-  const connection = await getClientConnection(uploadService, t.context)
+  const connection = await getClientConnection(uploadService, t.context, {
+    region: REGION,
+    tableName,
+    bucketName
+  })
 
   const car = await randomCAR(128)
 
@@ -113,15 +149,21 @@ test('upload/add does not fail with no shards provided', async (t) => {
   t.is(uploadAdd.length, 0)
 
   // Validate DB
-  const dbItems = await getUploadsForSpace(t.context.dynamoClient, spaceDid)
+  const dbItems = await getUploadsForSpace(t.context.dynamoClient, tableName, spaceDid)
   t.is(dbItems.length, 0)
 })
 
 test('upload/remove does not fail for non existent upload', async (t) => {
+  const { tableName, bucketName } = await prepareResources(t.context.dynamoClient, t.context.s3Client)
+
   const uploadService = await Signer.generate()
   const alice = await Signer.generate()
   const { proof, spaceDid } = await createSpace(alice)
-  const connection = await getClientConnection(uploadService, t.context)
+  const connection = await getClientConnection(uploadService, t.context, {
+    region: REGION,
+    tableName,
+    bucketName
+  })
 
   const car = await randomCAR(128)
 
@@ -141,11 +183,17 @@ test('upload/remove does not fail for non existent upload', async (t) => {
 })
 
 test('upload/remove removes all entries with data CID linked to space', async (t) => {
+  const { tableName, bucketName } = await prepareResources(t.context.dynamoClient, t.context.s3Client)
+
   const uploadService = await Signer.generate()
   const alice = await Signer.generate()
   const { proof: proofSpaceA, spaceDid: spaceDidA } = await createSpace(alice)
   const { proof: proofSpaceB, spaceDid: spaceDidB } = await createSpace(alice)
-  const connection = await getClientConnection(uploadService, t.context)
+  const connection = await getClientConnection(uploadService, t.context, {
+    region: REGION,
+    tableName,
+    bucketName
+  })
 
   const carA = await randomCAR(128)
   const carB = await randomCAR(40)
@@ -199,23 +247,29 @@ test('upload/remove removes all entries with data CID linked to space', async (t
   }).execute(connection)
 
   // Validate SpaceA has 0 items for CarA
-  const spaceAcarAItems = await getUploadsForSpaceFilteredByDataCID(t.context.dynamoClient, spaceDidA, carA.roots[0])
+  const spaceAcarAItems = await getUploadsForSpaceFilteredByDataCID(t.context.dynamoClient, tableName, spaceDidA, carA.roots[0])
   t.is(spaceAcarAItems.length, 0)
 
   // Validate SpaceA has 2 items for CarB
-  const spaceAcarBItems = await getUploadsForSpaceFilteredByDataCID(t.context.dynamoClient, spaceDidA, carB.roots[0])
+  const spaceAcarBItems = await getUploadsForSpaceFilteredByDataCID(t.context.dynamoClient, tableName, spaceDidA, carB.roots[0])
   t.is(spaceAcarBItems.length, 2)
 
   // Validate SpaceB has 2 items for CarA
-  const spaceBcarAItems = await getUploadsForSpaceFilteredByDataCID(t.context.dynamoClient, spaceDidB, carA.roots[0])
+  const spaceBcarAItems = await getUploadsForSpaceFilteredByDataCID(t.context.dynamoClient, tableName, spaceDidB, carA.roots[0])
   t.is(spaceBcarAItems.length, 2)
 })
 
 test('upload/remove removes all entries when larger than batch limit', async (t) => {
+  const { tableName, bucketName } = await prepareResources(t.context.dynamoClient, t.context.s3Client)
+
   const uploadService = await Signer.generate()
   const alice = await Signer.generate()
   const { proof, spaceDid } = await createSpace(alice)
-  const connection = await getClientConnection(uploadService, t.context)
+  const connection = await getClientConnection(uploadService, t.context, {
+    region: REGION,
+    tableName,
+    bucketName
+  })
 
   // create upload with more shards than dynamo batch limit
   const cars = await Promise.all(
@@ -239,7 +293,7 @@ test('upload/remove removes all entries when larger than batch limit', async (t)
   t.is(uploadAdd.length, shards.length)
 
   // Validate DB before remove
-  const dbItemsBefore = await getUploadsForSpace(t.context.dynamoClient, spaceDid)
+  const dbItemsBefore = await getUploadsForSpace(t.context.dynamoClient, tableName, spaceDid)
   t.is(dbItemsBefore.length, shards.length)
 
   // Remove Car from Space
@@ -252,15 +306,21 @@ test('upload/remove removes all entries when larger than batch limit', async (t)
   }).execute(connection)
 
   // Validate DB after remove
-  const dbItemsAfter = await getUploadsForSpace(t.context.dynamoClient, spaceDid)
+  const dbItemsAfter = await getUploadsForSpace(t.context.dynamoClient, tableName, spaceDid)
   t.is(dbItemsAfter.length, 0)
 })
 
 test('store/list does not fail for empty list', async (t) => {
+  const { tableName, bucketName } = await prepareResources(t.context.dynamoClient, t.context.s3Client)
+
   const uploadService = await Signer.generate()
   const alice = await Signer.generate()
   const { proof, spaceDid } = await createSpace(alice)
-  const connection = await getClientConnection(uploadService, t.context)
+  const connection = await getClientConnection(uploadService, t.context, {
+    region: REGION,
+    tableName,
+    bucketName
+  })
   
   const uploadList = await UploadCapabilities.list.invoke({
     issuer: alice,
@@ -274,10 +334,16 @@ test('store/list does not fail for empty list', async (t) => {
 })
 
 test('store/list returns entries previously uploaded by the user', async (t) => {
+  const { tableName, bucketName } = await prepareResources(t.context.dynamoClient, t.context.s3Client)
+
   const uploadService = await Signer.generate()
   const alice = await Signer.generate()
   const { proof, spaceDid } = await createSpace(alice)
-  const connection = await getClientConnection(uploadService, t.context)
+  const connection = await getClientConnection(uploadService, t.context, {
+    region: REGION,
+    tableName,
+    bucketName
+  })
 
   // invoke multiple upload/add with proof
   const cars = [
@@ -315,10 +381,16 @@ test('store/list returns entries previously uploaded by the user', async (t) => 
 })
 
 test('upload/list can be paginated with custom size', async (t) => {
+  const { tableName, bucketName } = await prepareResources(t.context.dynamoClient, t.context.s3Client)
+
   const uploadService = await Signer.generate()
   const alice = await Signer.generate()
   const { proof, spaceDid } = await createSpace(alice)
-  const connection = await getClientConnection(uploadService, t.context)
+  const connection = await getClientConnection(uploadService, t.context, {
+    region: REGION,
+    tableName,
+    bucketName
+  })
 
   // invoke multiple upload/add with proof
   const cars = [
@@ -373,11 +445,30 @@ test('upload/list can be paginated with custom size', async (t) => {
 })
 
 /**
+ * @param {import("@aws-sdk/client-dynamodb").DynamoDBClient} dynamoClient
+ * @param {import("@aws-sdk/client-s3").S3Client} s3Client
+ */
+async function prepareResources (dynamoClient, s3Client) {
+  const [ tableName, bucketName ] = await Promise.all([
+    createDynamoUploadTable(dynamoClient),
+    createBucket(s3Client)
+  ])
+
+  return {
+    tableName,
+    bucketName
+  }
+}
+
+/**
  * @param {import("@aws-sdk/client-dynamodb").DynamoDBClient} dynamo
  */
  async function createDynamoUploadTable(dynamo) {
+  const id = customAlphabet('1234567890abcdefghijklmnopqrstuvwxyz', 10)
+  const tableName = id()
+
   await dynamo.send(new CreateTableCommand({
-    TableName: 'upload',
+    TableName: tableName,
     AttributeDefinitions: [
       { AttributeName: 'uploaderDID', AttributeType: 'S' },
       { AttributeName: 'sk', AttributeType: 'S' }
@@ -391,17 +482,20 @@ test('upload/list can be paginated with custom size', async (t) => {
       WriteCapacityUnits: 1
     }
   }))
+
+  return tableName
 }
 
 /**
  * @param {import("@aws-sdk/client-dynamodb").DynamoDBClient} dynamo
+ * @param {string} tableName
  * @param {`did:key:${string}`} spaceDid
  * @param {object} [options]
  * @param {number} [options.limit]
  */
- async function getUploadsForSpace(dynamo, spaceDid, options = {}) {
+ async function getUploadsForSpace(dynamo, tableName, spaceDid, options = {}) {
   const cmd = new QueryCommand({
-    TableName: 'upload',
+    TableName: tableName,
     Limit: options.limit || 30,
     ExpressionAttributeValues: {
       ':u': { S: spaceDid },
@@ -416,14 +510,15 @@ test('upload/list can be paginated with custom size', async (t) => {
 
 /**
  * @param {import("@aws-sdk/client-dynamodb").DynamoDBClient} dynamo
+ * @param {string} tableName
  * @param {`did:key:${string}`} spaceDid
  * @param {import("multiformats").CID<unknown, 85, 18, 1>} dataCid
  * @param {object} [options]
  * @param {number} [options.limit]
  */
- async function getUploadsForSpaceFilteredByDataCID(dynamo, spaceDid, dataCid, options = {}) {
+ async function getUploadsForSpaceFilteredByDataCID(dynamo, tableName, spaceDid, dataCid, options = {}) {
   const cmd = new QueryCommand({
-    TableName: 'upload',
+    TableName: tableName,
     Limit: options.limit || 30,
     ExpressionAttributeValues: {
       ':u': { S: spaceDid },
