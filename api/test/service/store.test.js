@@ -16,20 +16,18 @@ import { createS3, createBucket, createDynamodDb, createAccessServer } from '../
  * @typedef {import('../../service/types').ListResponse<StoreListResult>} ListResponse
  */
 
-const REGION = 'us-west-2'
-
 test.before(async t => {
   // Dynamo DB
   const {
     client: dynamo,
     endpoint: dbEndpoint
-  } = await createDynamodDb({ port: 8000, region: REGION })
+  } = await createDynamodDb({ port: 8000 })
 
   t.context.dbEndpoint = dbEndpoint
   t.context.dynamoClient = dynamo
 
   // S3
-  const { client: s3Client, clientOpts: s3ClientOpts } = await createS3({ port: 9000, region: REGION })
+  const { client: s3Client, clientOpts: s3ClientOpts } = await createS3({ port: 9000 })
 
   t.context.dbEndpoint = dbEndpoint
   t.context.dynamoClient = dynamo
@@ -69,8 +67,8 @@ test('store/add returns signed url for uploading', async (t) => {
   const uploadService = await Signer.generate()
   const alice = await Signer.generate()
   const { proof, spaceDid } = await createSpace(alice)
-  const connection = await getClientConnection(uploadService, t.context, {
-    region: REGION,
+  const connection = await getClientConnection(uploadService, {
+    ...t.context,
     tableName,
     bucketName
   })
@@ -114,8 +112,8 @@ test('store/add returns done if already uploaded', async (t) => {
   const uploadService = await Signer.generate()
   const alice = await Signer.generate()
   const { proof, spaceDid } = await createSpace(alice)
-  const connection = await getClientConnection(uploadService, t.context, {
-    region: REGION,
+  const connection = await getClientConnection(uploadService, {
+    ...t.context,
     tableName,
     bucketName
   })
@@ -165,8 +163,8 @@ test('store/add allowed if invocation passes access verification', async (t) => 
   const uploadService = await Signer.generate()
   const alice = await Signer.generate()
   const { proof, spaceDid } = await createSpace(alice)
-  const connection = await getClientConnection(uploadService, t.context, {
-    region: REGION,
+  const connection = await getClientConnection(uploadService, {
+    ...t.context,
     tableName,
     bucketName
   })
@@ -208,8 +206,8 @@ test('store/add disallowed if invocation fails access verification', async (t) =
   const uploadService = await Signer.generate()
   const alice = await Signer.generate()
   const { proof, spaceDid } = await createSpace(alice)
-  const connection = await getClientConnection(uploadService, t.context, {
-    region: REGION,
+  const connection = await getClientConnection(uploadService, {
+    ...t.context,
     tableName,
     bucketName
   })
@@ -239,8 +237,8 @@ test('store/remove does not fail for non existent link', async (t) => {
   const uploadService = await Signer.generate()
   const alice = await Signer.generate()
   const { proof, spaceDid } = await createSpace(alice)
-  const connection = await getClientConnection(uploadService, t.context, {
-    region: REGION,
+  const connection = await getClientConnection(uploadService, {
+    ...t.context,
     tableName,
     bucketName
   })
@@ -277,8 +275,8 @@ test('store/remove removes car bound to issuer from store table', async (t) => {
   const uploadService = await Signer.generate()
   const alice = await Signer.generate()
   const { proof, spaceDid } = await createSpace(alice)
-  const connection = await getClientConnection(uploadService, t.context, {
-    region: REGION,
+  const connection = await getClientConnection(uploadService, {
+    ...t.context,
     tableName,
     bucketName
   })
@@ -329,8 +327,8 @@ test('store/list does not fail for empty list', async (t) => {
   const uploadService = await Signer.generate()
   const alice = await Signer.generate()
   const { proof, spaceDid } = await createSpace(alice)
-  const connection = await getClientConnection(uploadService, t.context, {
-    region: REGION,
+  const connection = await getClientConnection(uploadService, {
+    ...t.context,
     tableName,
     bucketName
   })
@@ -352,8 +350,8 @@ test('store/list returns items previously stored by the user', async (t) => {
   const uploadService = await Signer.generate()
   const alice = await Signer.generate()
   const { proof, spaceDid } = await createSpace(alice)
-  const connection = await getClientConnection(uploadService, t.context, {
-    region: REGION,
+  const connection = await getClientConnection(uploadService, {
+    ...t.context,
     tableName,
     bucketName
   })
@@ -405,8 +403,8 @@ test('store/list can be paginated with custom size', async (t) => {
   const uploadService = await Signer.generate()
   const alice = await Signer.generate()
   const { proof, spaceDid } = await createSpace(alice)
-  const connection = await getClientConnection(uploadService, t.context, {
-    region: REGION,
+  const connection = await getClientConnection(uploadService, {
+    ...t.context,
     tableName,
     bucketName
   })

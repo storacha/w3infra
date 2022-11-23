@@ -13,42 +13,41 @@ import { createAccessClient } from '../../access.js'
 
 /**
  * @typedef {object} ResourcesMetadata
- * @property {string} region
+ * @property {string} [region]
  * @property {string} tableName
  * @property {string} bucketName
  */
 
 /**
  * @param {import('@ucanto/interface').Signer} service
- * @param {import('./context.js').UcantoServerContext} ctx
- * @param {ResourcesMetadata} resourcesMetadata
+ * @param {import('./context.js').UcantoServerContext & ResourcesMetadata} ctx
  */
-export function createTestingUcantoServer(service, ctx, resourcesMetadata) {
+export function createTestingUcantoServer(service, ctx) {
+  const region = ctx.region || 'us-west-2'
  return createUcantoServer(service, {
-   storeTable: createStoreTable(resourcesMetadata.region, resourcesMetadata.tableName, {
+   storeTable: createStoreTable(region, ctx.tableName, {
      endpoint: ctx.dbEndpoint
    }),
-   uploadTable: createUploadTable(resourcesMetadata.region, resourcesMetadata.tableName, {
+   uploadTable: createUploadTable(region, ctx.tableName, {
      endpoint: ctx.dbEndpoint
    }),
-   carStoreBucket: createCarStore(resourcesMetadata.region, resourcesMetadata.bucketName, { ...ctx.s3ClientOpts }),
-   signer: createSigner(getSigningOptions(ctx, resourcesMetadata)),
+   carStoreBucket: createCarStore(region, ctx.bucketName, { ...ctx.s3ClientOpts }),
+   signer: createSigner(getSigningOptions(ctx, ctx)),
    access: createAccessClient(service, ctx.access.servicePrincipal, ctx.access.serviceURL)
  })
 }
 
 /**
  * @param {import('@ucanto/interface').Signer} service
- * @param {any} context 
- * @param {ResourcesMetadata} resourcesMetadata
+ * @param {any} context
  * @returns 
  */
-export async function getClientConnection (service, context, resourcesMetadata) {
+export async function getClientConnection (service, context) {
   return UcantoClient.connect({
     id: service,
     encoder: CAR,
     decoder: CBOR,
-    channel: await createTestingUcantoServer(service, context, resourcesMetadata),
+    channel: await createTestingUcantoServer(service, context),
   })
 }
 

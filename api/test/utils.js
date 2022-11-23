@@ -90,7 +90,7 @@ export async function createBucket(s3) {
  */
 export function getSigningOptions(ctx, resourcesMetadata) {
   return {
-    region: resourcesMetadata.region,
+    region: resourcesMetadata.region || 'us-west-2',
     secretAccessKey: ctx.secretAccessKey,
     accessKeyId: ctx.accessKeyId,
     sessionToken: ctx.sessionToken,

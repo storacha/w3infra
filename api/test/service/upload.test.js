@@ -16,20 +16,19 @@ import { getClientConnection, createSpace } from '../helpers/ucanto.js'
  * @typedef {import('../../service/types').UploadItemOutput} UploadItemOutput
  * @typedef {import('../../service/types').ListResponse<UploadItemOutput>} ListResponse
  */
- const REGION = 'us-west-2'
 
  test.before(async t => {
   // Dynamo DB
   const {
     client: dynamo,
     endpoint: dbEndpoint
-  } = await createDynamodDb({ port: 8000, region: REGION })
+  } = await createDynamodDb({ port: 8000 })
 
   t.context.dbEndpoint = dbEndpoint
   t.context.dynamoClient = dynamo
 
   // S3
-  const { client: s3Client, clientOpts: s3ClientOpts } = await createS3({ port: 9000, region: REGION })
+  const { client: s3Client, clientOpts: s3ClientOpts } = await createS3({ port: 9000 })
 
   t.context.dbEndpoint = dbEndpoint
   t.context.dynamoClient = dynamo
@@ -69,8 +68,8 @@ test('upload/add inserts into DB mapping between data CID and car CIDs', async (
   const uploadService = await Signer.generate()
   const alice = await Signer.generate()
   const { proof, spaceDid } = await createSpace(alice)
-  const connection = await getClientConnection(uploadService, t.context, {
-    region: REGION,
+  const connection = await getClientConnection(uploadService, {
+    ...t.context,
     tableName,
     bucketName
   })
@@ -123,8 +122,8 @@ test('upload/add does not fail with no shards provided', async (t) => {
   const uploadService = await Signer.generate()
   const alice = await Signer.generate()
   const { proof, spaceDid } = await createSpace(alice)
-  const connection = await getClientConnection(uploadService, t.context, {
-    region: REGION,
+  const connection = await getClientConnection(uploadService, {
+    ...t.context,
     tableName,
     bucketName
   })
@@ -159,8 +158,8 @@ test('upload/remove does not fail for non existent upload', async (t) => {
   const uploadService = await Signer.generate()
   const alice = await Signer.generate()
   const { proof, spaceDid } = await createSpace(alice)
-  const connection = await getClientConnection(uploadService, t.context, {
-    region: REGION,
+  const connection = await getClientConnection(uploadService, {
+    ...t.context,
     tableName,
     bucketName
   })
@@ -189,8 +188,8 @@ test('upload/remove removes all entries with data CID linked to space', async (t
   const alice = await Signer.generate()
   const { proof: proofSpaceA, spaceDid: spaceDidA } = await createSpace(alice)
   const { proof: proofSpaceB, spaceDid: spaceDidB } = await createSpace(alice)
-  const connection = await getClientConnection(uploadService, t.context, {
-    region: REGION,
+  const connection = await getClientConnection(uploadService, {
+    ...t.context,
     tableName,
     bucketName
   })
@@ -265,8 +264,8 @@ test('upload/remove removes all entries when larger than batch limit', async (t)
   const uploadService = await Signer.generate()
   const alice = await Signer.generate()
   const { proof, spaceDid } = await createSpace(alice)
-  const connection = await getClientConnection(uploadService, t.context, {
-    region: REGION,
+  const connection = await getClientConnection(uploadService, {
+    ...t.context,
     tableName,
     bucketName
   })
@@ -316,8 +315,8 @@ test('store/list does not fail for empty list', async (t) => {
   const uploadService = await Signer.generate()
   const alice = await Signer.generate()
   const { proof, spaceDid } = await createSpace(alice)
-  const connection = await getClientConnection(uploadService, t.context, {
-    region: REGION,
+  const connection = await getClientConnection(uploadService, {
+    ...t.context,
     tableName,
     bucketName
   })
@@ -339,8 +338,8 @@ test('store/list returns entries previously uploaded by the user', async (t) => 
   const uploadService = await Signer.generate()
   const alice = await Signer.generate()
   const { proof, spaceDid } = await createSpace(alice)
-  const connection = await getClientConnection(uploadService, t.context, {
-    region: REGION,
+  const connection = await getClientConnection(uploadService, {
+    ...t.context,
     tableName,
     bucketName
   })
@@ -386,8 +385,8 @@ test('upload/list can be paginated with custom size', async (t) => {
   const uploadService = await Signer.generate()
   const alice = await Signer.generate()
   const { proof, spaceDid } = await createSpace(alice)
-  const connection = await getClientConnection(uploadService, t.context, {
-    region: REGION,
+  const connection = await getClientConnection(uploadService, {
+    ...t.context,
     tableName,
     bucketName
   })
