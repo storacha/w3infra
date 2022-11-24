@@ -10,6 +10,7 @@ import * as StoreCapabilities from '@web3-storage/access/capabilities/store'
 import { base64pad } from 'multiformats/bases/base64'
 import { getClientConnection, createSpace } from '../helpers/ucanto.js'
 import { createS3, createBucket, createDynamodDb, createAccessServer } from '../helpers/resources.js'
+import { dynamoDBTableConfig, storeTableProps } from '../../tables/index.js'
 
 /**
  * @typedef {import('../../service/types').StoreListResult} StoreListResult
@@ -493,14 +494,7 @@ async function createDynamoStoreTable(dynamo) {
   // TODO: see in pickup Document DB wrapper
   await dynamo.send(new CreateTableCommand({
     TableName: tableName,
-    AttributeDefinitions: [
-      { AttributeName: 'uploaderDID', AttributeType: 'S' },
-      { AttributeName: 'payloadCID', AttributeType: 'S' }
-    ],
-    KeySchema: [
-      { AttributeName: 'uploaderDID', KeyType: 'HASH' },
-      { AttributeName: 'payloadCID', KeyType: 'RANGE' },
-    ],
+    ...dynamoDBTableConfig(storeTableProps),
     ProvisionedThroughput: {
       ReadCapacityUnits: 1,
       WriteCapacityUnits: 1

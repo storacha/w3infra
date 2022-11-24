@@ -6,7 +6,7 @@ export const CARPARK_EVENT_BRIDGE_SOURCE_EVENT = 'carpark_bucket'
 
 /**
  * @param {import('aws-lambda').S3Event} event
- * @param {import('aws-sdk').EventBridge} eventBridge
+ * @param {import('@aws-sdk/client-eventbridge').EventBridge} eventBridge
  * @param {string} eventBusName
  */
  export async function notifyCarparkBus(event, eventBridge, eventBusName) {
@@ -26,7 +26,7 @@ export const CARPARK_EVENT_BRIDGE_SOURCE_EVENT = 'carpark_bucket'
       DetailType: 'car_added',
       Detail: JSON.stringify(entry),
     }))
-    await eventBridge.putEvents({ Entries: feedbackEntries }).promise()
+    await eventBridge.putEvents({ Entries: feedbackEntries })
   }
 
   return {

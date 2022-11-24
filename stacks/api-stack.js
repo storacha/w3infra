@@ -8,6 +8,7 @@ import {
   CarparkStack
 } from './carpark-stack.js'
 
+import { storeTableProps, uploadTableProps } from '../api/tables/index.js'
 import { getConfig, getCustomDomain, getApiPackageJson, getGitInfo } from './config.js'
 
 /**
@@ -28,16 +29,7 @@ export function ApiStack({ stack }) {
    * This is used by the store/* service capabilities.
    */
    const storeTable = new Table(stack, 'store', {
-    fields: {
-      uploaderDID: 'string',
-      payloadCID: 'string',
-      applicationDID: 'string',
-      origin: 'string',
-      size: 'number',
-      proof: 'string',
-      uploadedAt: 'string',
-    },
-    primaryIndex: { partitionKey: 'uploaderDID', sortKey: 'payloadCID' },
+    ...storeTableProps,
     ...stackConfig.tableConfig,
   })
 
@@ -50,14 +42,7 @@ export function ApiStack({ stack }) {
    * This is used by the upload/* capabilities.
    */
    const uploadTable = new Table(stack, 'upload', {
-    fields: {
-      uploaderDID: 'string',
-      dataCID: 'string', // root CID
-      carCID: 'string', // shard CID
-      sk: 'string', // 'dataCID#carCID' used to guarantee uniqueness
-      uploadedAt: 'string',
-    },
-    primaryIndex: { partitionKey: 'uploaderDID', sortKey: 'sk' },
+    ...uploadTableProps,
     ...stackConfig.tableConfig,
   })
 
