@@ -1,4 +1,4 @@
-import { EventBridge } from 'aws-sdk'
+import { EventBridge } from '@aws-sdk/client-eventbridge'
 
 import { notifyCarparkBus } from '../carpark/event-bridge/index.js'
 
