@@ -13,7 +13,7 @@ import { concat as uint8arraysConcat } from 'uint8arrays'
  */
 
 /**
- * Copy event target into destination bucket and write a side index for it.
+ * Replicate event target into destination bucket and write a side index for it.
  *
  * @param {object} props
  * @param {import('../utils/parse-sqs-event').EventRecord} props.record
@@ -22,7 +22,7 @@ import { concat as uint8arraysConcat } from 'uint8arrays'
  * @param {string} props.destinationBucketCarName
  * @param {string} props.destinationBucketSideIndexName
  */
- export const carBackupAndIndex = async ({
+ export const carReplicateAndIndex = async ({
   record,
   destinationBucket,
   destinationBucketCarName,
@@ -116,7 +116,7 @@ async function writeIndexToBucket(key, stream, bucketName, client) {
 
     await client.send(putCmd)
   } catch (error) {
-    throw new Error('error saving car to backup bucket:' + error)
+    throw new Error('error saving car to replicator bucket:' + error)
   }
 }
 

@@ -2,7 +2,7 @@ import { test } from '../helpers/context.js'
 
 import { notifyCarparkBus } from '../../carpark/event-bridge/index.js'
 import { eipfsHandler } from '../../carpark/event-bridge/eipfs-indexer.js'
-import { carBackupAndIndexHandler } from '../../carpark/event-bridge/car-backup-and-index.js'
+import { carReplicatorAndIndexHandler } from '../../carpark/event-bridge/car-replicator-and-index.js'
 
 import {
   s3PutInvalidRecords as fixtureS3PutInvalidRecords,
@@ -61,7 +61,7 @@ test('does not notify carpark event bridge when new carpark bucket is written wi
   t.is(response.statusCode, 200)
 })
 
-test('car backup and index event handler sends message to SQS', async t => {
+test('car replicator and index event handler sends message to SQS', async t => {
   const url = 'localhost:8000'
   const bridgeEvent = {
     detail: {
@@ -81,7 +81,7 @@ test('car backup and index event handler sends message to SQS', async t => {
   }
 
   // @ts-expect-error SQS mock client is partially implemented
-  await carBackupAndIndexHandler(bridgeEvent, sqsClient, url)
+  await carReplicatorAndIndexHandler(bridgeEvent, sqsClient, url)
 })
 
 test('E-IPFS event handler sends message to SQS', async t => {

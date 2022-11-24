@@ -33,29 +33,29 @@ export function CarparkStack({ stack }) {
     },
   })
 
-  // carpark backup and index for Freeway
-  const carBackupAndIndexHandler = new Function(
+  // carpark replicator and index for Freeway
+  const carReplicatorAndIndexHandler = new Function(
     stack,
-    'car-backup-and-index-handler',
+    'car-replicator-and-index-handler',
     {
       environment: {
-        BACKUP_ACCOUNT_ID: process.env.BACKUP_ACCOUNT_ID || '',
-        BACKUP_ACCESS_KEY_ID: process.env.BACKUP_ACCESS_KEY_ID || '',
-        BACKUP_SECRET_ACCESS_KEY:
-          process.env.BACKUP_SECRET_ACCESS_KEY || '',
-        BACKUP_CAR_BUCKET_NAME: process.env.BACKUP_CAR_BUCKET_NAME || '',
-        BACKUP_INDEX_BUCKET_NAME:
-          process.env.BACKUP_INDEX_BUCKET_NAME || '',
+        REPLICATOR_ACCOUNT_ID: process.env.REPLICATOR_ACCOUNT_ID || '',
+        REPLICATOR_ACCESS_KEY_ID: process.env.REPLICATOR_ACCESS_KEY_ID || '',
+        REPLICATOR_SECRET_ACCESS_KEY:
+          process.env.REPLICATOR_SECRET_ACCESS_KEY || '',
+        REPLICATOR_CAR_BUCKET_NAME: process.env.REPLICATOR_CAR_BUCKET_NAME || '',
+        REPLICATOR_INDEX_BUCKET_NAME:
+          process.env.REPLICATOR_INDEX_BUCKET_NAME || '',
       },
       permissions: ['s3:*'],
-      handler: 'functions/car-backup-and-index.handler',
+      handler: 'functions/car-replicator-and-index.handler',
       timeout: 15 * 60,
     }
   )
 
-  const carBackupAndIndexQueue = new Queue(stack, 'car-backup-and-index-queue', {
+  const carReplicatorAndIndexQueue = new Queue(stack, 'car-replicator-and-index-queue', {
     consumer: {
-      function: carBackupAndIndexHandler,
+      function: carReplicatorAndIndexHandler,
       cdk: {
         eventSource: {
           batchSize: 1,
@@ -79,13 +79,13 @@ export function CarparkStack({ stack }) {
     },
   }
 
-  const carBackupAndIndexTarget = {
+  const carReplicatorAndIndexTarget = {
     function: {
       environment: {
-        SQS_BACKUP_AND_INDEX_QUEUE_URL: carBackupAndIndexQueue.queueUrl,
+        SQS_REPLICATOR_AND_INDEX_QUEUE_URL: carReplicatorAndIndexQueue.queueUrl,
       },
-      permissions: [carBackupAndIndexQueue],
-      handler: 'carpark/event-bridge/car-backup-and-index.handler',
+      permissions: [carReplicatorAndIndexQueue],
+      handler: 'carpark/event-bridge/car-replicator-and-index.handler',
     },
   }
 
@@ -97,7 +97,7 @@ export function CarparkStack({ stack }) {
         },
         targets: {
           eIpfsIndexTarget,
-          carBackupAndIndexTarget,
+          carReplicatorAndIndexTarget,
         },
       }
     }

@@ -13,9 +13,9 @@ import { equals, toString } from 'uint8arrays'
 import { MultihashIndexSortedReader } from 'cardex'
 
 import { createS3, createBucket } from '../helpers/resources.js'
-import { carBackupAndIndex } from '../../carpark/backup-and-index.js'
+import { carReplicateAndIndex } from '../../carpark/replicate-and-index.js'
 
-test('copy CARs from origin bucket to new bucket and creates index', async t => {
+test('copy CARs from origin bucket to replicator bucket and creates index', async t => {
   const { client: originBucket } = await createS3({ port: 9000 })
   const { client: destinationBucket } = await createS3({ port: 9000 })
   const originBucketId = await createBucket(originBucket)
@@ -58,7 +58,7 @@ test('copy CARs from origin bucket to new bucket and creates index', async t => 
     key,
   }
 
-  await carBackupAndIndex({
+  await carReplicateAndIndex({
     record,
     destinationBucket,
     originBucket,

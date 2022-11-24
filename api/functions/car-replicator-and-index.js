@@ -2,7 +2,7 @@ import {
   S3Client
 } from '@aws-sdk/client-s3'
 
-import { carBackupAndIndex } from '../carpark/backup-and-index.js'
+import { carReplicateAndIndex } from '../carpark/replicate-and-index.js'
 import parseSqsEvent from '../utils/parse-sqs-event.js'
 
 /**
@@ -12,11 +12,11 @@ import parseSqsEvent from '../utils/parse-sqs-event.js'
  */
 export function handler (event) {
   const {
-    BACKUP_ACCOUNT_ID,
-    BACKUP_ACCESS_KEY_ID,
-    BACKUP_SECRET_ACCESS_KEY,
-    BACKUP_CAR_BUCKET_NAME,
-    BACKUP_INDEX_BUCKET_NAME,
+    REPLICATOR_ACCOUNT_ID,
+    REPLICATOR_ACCESS_KEY_ID,
+    REPLICATOR_SECRET_ACCESS_KEY,
+    REPLICATOR_CAR_BUCKET_NAME,
+    REPLICATOR_INDEX_BUCKET_NAME,
   } = getEnv()
 
   const record = parseSqsEvent(event)
@@ -26,20 +26,20 @@ export function handler (event) {
 
   const destinationBucket = new S3Client({
     region: 'auto',
-    endpoint: `https://${BACKUP_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+    endpoint: `https://${REPLICATOR_ACCOUNT_ID}.r2.cloudflarestorage.com`,
     credentials: {
-      accessKeyId: BACKUP_ACCESS_KEY_ID,
-      secretAccessKey: BACKUP_SECRET_ACCESS_KEY,
+      accessKeyId: REPLICATOR_ACCESS_KEY_ID,
+      secretAccessKey: REPLICATOR_SECRET_ACCESS_KEY,
     },
   })
 
   const originBucket = new S3Client({ region: record.bucketRegion })
-  return carBackupAndIndex({
+  return carReplicateAndIndex({
     record,
     destinationBucket,
     originBucket,
-    destinationBucketCarName: BACKUP_CAR_BUCKET_NAME,
-    destinationBucketSideIndexName: BACKUP_INDEX_BUCKET_NAME,
+    destinationBucketCarName: REPLICATOR_CAR_BUCKET_NAME,
+    destinationBucketSideIndexName: REPLICATOR_INDEX_BUCKET_NAME,
   })
 }
 
@@ -48,11 +48,11 @@ export function handler (event) {
  */
 function getEnv() {
   return {
-    BACKUP_ACCOUNT_ID: mustGetEnv('BACKUP_ACCOUNT_ID'),
-    BACKUP_ACCESS_KEY_ID: mustGetEnv('BACKUP_ACCESS_KEY_ID'),
-    BACKUP_SECRET_ACCESS_KEY: mustGetEnv('BACKUP_SECRET_ACCESS_KEY'),
-    BACKUP_CAR_BUCKET_NAME: mustGetEnv('BACKUP_CAR_BUCKET_NAME'),
-    BACKUP_INDEX_BUCKET_NAME: mustGetEnv('BACKUP_INDEX_BUCKET_NAME')
+    REPLICATOR_ACCOUNT_ID: mustGetEnv('REPLICATOR_ACCOUNT_ID'),
+    REPLICATOR_ACCESS_KEY_ID: mustGetEnv('REPLICATOR_ACCESS_KEY_ID'),
+    REPLICATOR_SECRET_ACCESS_KEY: mustGetEnv('REPLICATOR_SECRET_ACCESS_KEY'),
+    REPLICATOR_CAR_BUCKET_NAME: mustGetEnv('REPLICATOR_CAR_BUCKET_NAME'),
+    REPLICATOR_INDEX_BUCKET_NAME: mustGetEnv('REPLICATOR_INDEX_BUCKET_NAME')
   }
 }
 
