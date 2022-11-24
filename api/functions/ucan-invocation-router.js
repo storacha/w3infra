@@ -14,7 +14,7 @@ const AWS_SESSION_TOKEN = process.env.AWS_SESSION_TOKEN || ''
 const AWS_REGION = process.env.AWS_REGION || 'us-west-2'
 
 
-// TODO: Should we use secrets for this or inject here?
+// TODO: Should use secrets for this or inject here?
 const REPLICATOR_ACCESS_KEY_ID = process.env.REPLICATOR_ACCESS_KEY_ID || ''
 const REPLICATOR_SECRET_ACCESS_KEY = process.env.REPLICATOR_SECRET_ACCESS_KEY || ''
 const REPLICATOR_REGION = process.env.REPLICATOR_REGION || 'global'
