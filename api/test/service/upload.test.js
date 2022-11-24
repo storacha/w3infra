@@ -97,10 +97,10 @@ test('upload/add inserts into DB mapping between data CID and car CIDs', async (
 
   // Validate shards result
   for (const shard of shards) {
-    const shardResult = uploadAdd.find((s) => s.carCID === shard.toString())
-    t.is(shardResult?.dataCID, root.toString())
-    t.is(shardResult?.uploaderDID, spaceDid)
-    t.truthy(shardResult?.uploadedAt)
+    const shardResult = uploadAdd.find((s) => s.shard === shard.toString())
+    t.is(shardResult?.root, root.toString())
+    t.is(shardResult?.space, spaceDid)
+    t.truthy(shardResult?.insertedAt)
   }
 
   // Validate DB
@@ -109,9 +109,9 @@ test('upload/add inserts into DB mapping between data CID and car CIDs', async (
 
   // Validate shards result
   for (const shard of shards) {
-    const shardResult = dbItems.find((s) => s.carCID === shard.toString())
-    t.is(shardResult?.dataCID, root.toString())
-    t.truthy(shardResult?.uploadedAt)
+    const shardResult = dbItems.find((s) => s.shard === shard.toString())
+    t.is(shardResult?.root, root.toString())
+    t.truthy(shardResult?.insertedAt)
   }
 })
 
@@ -247,15 +247,15 @@ test('upload/remove removes all entries with data CID linked to space', async (t
   }).execute(connection)
 
   // Validate SpaceA has 0 items for CarA
-  const spaceAcarAItems = await getUploadsForSpaceFilteredByDataCID(t.context.dynamoClient, tableName, spaceDidA, carA.roots[0])
+  const spaceAcarAItems = await getUploadsForSpaceFilteredByRoot(t.context.dynamoClient, tableName, spaceDidA, carA.roots[0])
   t.is(spaceAcarAItems.length, 0)
 
   // Validate SpaceA has 2 items for CarB
-  const spaceAcarBItems = await getUploadsForSpaceFilteredByDataCID(t.context.dynamoClient, tableName, spaceDidA, carB.roots[0])
+  const spaceAcarBItems = await getUploadsForSpaceFilteredByRoot(t.context.dynamoClient, tableName, spaceDidA, carB.roots[0])
   t.is(spaceAcarBItems.length, 2)
 
   // Validate SpaceB has 2 items for CarA
-  const spaceBcarAItems = await getUploadsForSpaceFilteredByDataCID(t.context.dynamoClient, tableName, spaceDidB, carA.roots[0])
+  const spaceBcarAItems = await getUploadsForSpaceFilteredByRoot(t.context.dynamoClient, tableName, spaceDidB, carA.roots[0])
   t.is(spaceBcarAItems.length, 2)
 })
 
@@ -376,7 +376,7 @@ test('store/list returns entries previously uploaded by the user', async (t) => 
 
   // Validate entries have given CARs
   for (const entry of uploadList.results) {
-    t.truthy(cars.find(car => car.roots[0].toString() === entry.dataCID ))
+    t.truthy(cars.find(car => car.roots[0].toString() === entry.root ))
   }
 })
 
@@ -440,7 +440,7 @@ test('upload/list can be paginated with custom size', async (t) => {
   // Inspect content
   const uploadList = listPages.flat()
   for (const entry of uploadList) {
-    t.truthy(cars.find(car => car.roots[0].toString() === entry.dataCID ))
+    t.truthy(cars.find(car => car.roots[0].toString() === entry.root ))
   }
 })
 
@@ -492,9 +492,14 @@ async function prepareResources (dynamoClient, s3Client) {
     Limit: options.limit || 30,
     ExpressionAttributeValues: {
       ':u': { S: spaceDid },
-    },  
-    KeyConditionExpression: 'uploaderDID = :u',
-    ProjectionExpression: 'dataCID, carCID, uploadedAt'
+    },
+    // gotta sidestep dynamo reserved words!?
+    ExpressionAttributeNames: {
+      '#space': 'space',
+      '#shard': 'shard'
+    },
+    KeyConditionExpression: '#space = :u',
+    ProjectionExpression: 'root, #shard, insertedAt'
   })
 
   const response = await dynamo.send(cmd)
@@ -505,21 +510,26 @@ async function prepareResources (dynamoClient, s3Client) {
  * @param {import("@aws-sdk/client-dynamodb").DynamoDBClient} dynamo
  * @param {string} tableName
  * @param {`did:key:${string}`} spaceDid
- * @param {import("multiformats").CID<unknown, 85, 18, 1>} dataCid
+ * @param {import("multiformats").CID<unknown, 85, 18, 1>} root
  * @param {object} [options]
  * @param {number} [options.limit]
  */
- async function getUploadsForSpaceFilteredByDataCID(dynamo, tableName, spaceDid, dataCid, options = {}) {
+ async function getUploadsForSpaceFilteredByRoot(dynamo, tableName, spaceDid, root, options = {}) {
   const cmd = new QueryCommand({
     TableName: tableName,
     Limit: options.limit || 30,
     ExpressionAttributeValues: {
       ':u': { S: spaceDid },
-      ':d': { S: dataCid.toString() }
+      ':d': { S: root.toString() }
     },  
-    KeyConditionExpression: 'uploaderDID = :u',
-    FilterExpression: 'contains (dataCID, :d)',
-    ProjectionExpression: 'dataCID, carCID, uploadedAt'
+    KeyConditionExpression: '#space = :u',
+    FilterExpression: 'contains (root, :d)',
+    // gotta sidestep dynamo reserved words!?
+    ExpressionAttributeNames: {
+      '#space': 'space',
+      '#shard': 'shard'
+    },
+    ProjectionExpression: 'root, #shard, insertedAt'
   })
 
   const response = await dynamo.send(cmd)

@@ -26,15 +26,15 @@ export function createStoreTable (region, tableName, options = {}) {
     /**
      * Check if the given link CID is bound to the uploader account
      *
-     * @param {string} uploaderDID
-     * @param {string} payloadCID
+     * @param {string} space
+     * @param {string} car
      */
-    exists: async (uploaderDID, payloadCID) => {
+    exists: async (space, car) => {
       const cmd = new GetItemCommand({
         TableName: tableName,
         Key: marshall({
-          uploaderDID,
-          payloadCID,
+          space,
+          car
         }),
         AttributesToGet: ['uploaderDID'],
       })
@@ -50,16 +50,18 @@ export function createStoreTable (region, tableName, options = {}) {
      * Bind a link CID to an account
      *
      * @param {import('../service/types').StoreItemInput} item
+     * @returns {Promise<import('../service/types').StoreItemOutput>}
      */
-    insert: async ({ uploaderDID, link, proof, origin, size = 0 }) => {
+    insert: async ({ space, car, origin = '', size = 0, agent, ucan }) => {
+      /** @type import('../service/types').StoreItemOutput */
       const item = {
-        uploaderDID,
-        payloadCID: link,
-        applicationDID: '',
-        origin: origin || '',
+        space,
+        car,
         size,
-        proof,
-        uploadedAt: new Date().toISOString(),
+        origin,
+        agent,
+        ucan,
+        insertedAt: new Date().toISOString(),
       }
 
       const cmd = new PutItemCommand({
@@ -74,15 +76,15 @@ export function createStoreTable (region, tableName, options = {}) {
     /**
      * Unbinds a link CID to an account
      *
-     * @param {string} uploaderDID
-     * @param {string} payloadCID
+     * @param {string} space
+     * @param {string} car
      */
-    remove: async (uploaderDID, payloadCID) => {
+    remove: async (space, car) => {
       const cmd = new DeleteItemCommand({
         TableName: tableName,
         Key: marshall({
-          uploaderDID,
-          payloadCID,
+          space,
+          car,
         })
       })
   
@@ -90,27 +92,31 @@ export function createStoreTable (region, tableName, options = {}) {
     },
     /**
      * List all CARs bound to an account
-     *
-     * @param {string} uploaderDID
+     * 
+     * @typedef {import('../service/types').StoreListResult} StoreListResult
+     * @typedef {import('../service/types').ListResponse<StoreListResult>} ListResponse
+     * 
+     * @param {string} space
      * @param {import('../service/types').ListOptions} [options]
+     * @returns {Promise<ListResponse>}
      */
-    list: async (uploaderDID, options = {}) => {
+    list: async (space, options = {}) => {
       const exclusiveStartKey = options.cursor ? marshall({
-        uploaderDID,
-        payloadCID: options.cursor
+        space,
+        car: options.cursor
       }) : undefined
 
       const cmd = new QueryCommand({
         TableName: tableName,
         Limit: options.size || 20,
         KeyConditions: {
-          uploaderDID: {
+          space: {
             ComparisonOperator: 'EQ',
-            AttributeValueList: [{ S: uploaderDID }],
+            AttributeValueList: [{ S: space }],
           },
         },
         ExclusiveStartKey: exclusiveStartKey,
-        AttributesToGet: ['payloadCID', 'size', 'origin', 'uploadedAt'],
+        AttributesToGet: ['car', 'size', 'origin', 'insertedAt'],
       })
       const response = await dynamoDb.send(cmd)
 
@@ -129,7 +135,7 @@ export function createStoreTable (region, tableName, options = {}) {
       // Get cursor of the item where list operation stopped (inclusive).
       // This value can be used to start a new operation to continue listing.
       const lastKey = response.LastEvaluatedKey && unmarshall(response.LastEvaluatedKey)
-      const cursor = lastKey ? lastKey.payloadCID : undefined
+      const cursor = lastKey ? lastKey.car : undefined
 
       return {
         size: results.length,

@@ -46,17 +46,17 @@ export interface CarStoreBucket {
 }
 
 export interface StoreTable {
-  exists: (uploaderDID: string, payloadCID: string) => Promise<boolean>
+  exists: (space: string, car: string) => Promise<boolean>
   insert: (item: StoreItemInput) => Promise<StoreItemOutput>
-  remove: (uploaderDID: string, payloadCID: string) => Promise<void>
-  list: (uploaderDID: string, options?: ListOptions) => Promise<ListResponse<StoreListResult>>
+  remove: (space: string, car: string) => Promise<void>
+  list: (space: string, options?: ListOptions) => Promise<ListResponse<StoreListResult>>
 }
 
 export interface UploadTable {
-  exists: (uploaderDID: string, dataCID: string) => Promise<boolean>
-  insert: (uploaderDID: string, item: UploadItemInput) => Promise<UploadItemOutput[]>
-  remove: (uploaderDID: string, dataCID: string) => Promise<void>
-  list: (uploaderDID: string, options?: ListOptions) => Promise<ListResponse<UploadItemOutput>>
+  exists: (space: string, root: string) => Promise<boolean>
+  insert: (item: UploadItemInput) => Promise<UploadItemOutput[]>
+  remove: (space: string, root: string) => Promise<void>
+  list: (space: string, options?: ListOptions) => Promise<ListResponse<UploadItemOutput>>
 }
 
 export interface Signer {
@@ -64,21 +64,16 @@ export interface Signer {
 }
 
 export interface StoreItemInput {
-  uploaderDID: string,
-  link: string,
-  origin?: string,
+  space: string,
+  car: string,
   size: number,
-  proof: string,
+  origin?: string,
+  agent: string,
+  ucan: string,
 }
 
-export interface StoreItemOutput {
-  uploaderDID: string,
-  payloadCID: string,
-  applicationDID: string,
-  origin: string,
-  size: number,
-  proof: string,
-  uploadedAt: string,
+export interface StoreItemOutput extends StoreItemInput {
+  insertedAt: string,
 }
 
 export interface StoreAddResult {
@@ -89,16 +84,16 @@ export interface StoreAddResult {
   headers?: Record<string, string>
 }
 
-export type ListOptions = {
+export interface ListOptions {
   size?: number,
   cursor?: string
 }
 
 export interface StoreListResult {
-  payloadCID: string
-  origin?: string
+  car: string
   size: number
-  uploadedAt: string
+  origin?: string
+  insertedAt: string
 }
 
 export interface ListResponse<R> {
@@ -107,16 +102,20 @@ export interface ListResponse<R> {
   results: R[]
 }
 
-export interface UploadItemInput {
-  dataCID: string,
-  carCIDs: string[]
+interface UploadItemBase {
+  space: string
+  root: string,
+  agent: string,
+  ucan: string,  
 }
 
-export interface UploadItemOutput {
-  uploaderDID: string,
-  dataCID: string,
-  carCID: string,
-  uploadedAt: string,
+export interface UploadItemInput extends UploadItemBase {
+  shards: string[]
+}
+
+export interface UploadItemOutput extends UploadItemBase {
+  shard: string,
+  insertedAt: string,
 }
 
 export interface AccessClient {

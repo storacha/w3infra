@@ -98,11 +98,9 @@ test('store/add returns signed url for uploading', async (t) => {
 
   const item = await getItemFromStoreTable(t.context.dynamoClient, tableName, spaceDid, link)
   t.truthy(item)
-  t.is(typeof item?.uploadedAt, 'string')
-  t.is(typeof item?.proof, 'string')
-  t.is(typeof item?.uploaderDID, 'string')
-  // TODO: this looks suspicious... why is uploaderDID not the issuer / alice who invoked the upload
-  t.is(item?.uploaderDID, spaceDid)
+  t.is(typeof item?.insertedAt, 'string')
+  t.is(typeof item?.space, 'string')
+  t.is(item?.space, spaceDid)
   t.is(typeof item?.size, 'number')
   t.is(item?.size, data.byteLength)
 })
@@ -150,12 +148,14 @@ test('store/add returns done if already uploaded', async (t) => {
 
   // Even if done (CAR already exists in bucket), mapped to user if non existing
   const item = await getItemFromStoreTable(t.context.dynamoClient, tableName, spaceDid, link)
-  t.is(typeof item?.uploadedAt, 'string')
-  t.is(typeof item?.proof, 'string')
-  t.is(typeof item?.uploaderDID, 'string')
-  t.is(item?.uploaderDID, spaceDid)
-  t.is(typeof item?.size, 'number')
-  t.is(item?.size, data.byteLength)
+  t.like(item, {
+    space: spaceDid,
+    car: link.toString(),
+    size: data.byteLength,
+    agent: alice.did(),
+  })
+  t.is(typeof item?.ucan, 'string')
+  t.is(typeof item?.insertedAt, 'string')
 })
 
 test('store/add allowed if invocation passes access verification', async (t) => {
@@ -393,7 +393,7 @@ test('store/list returns items previously stored by the user', async (t) => {
   links.reverse()
   let i = 0
   for (const entry of storeList.results) {
-    t.like(entry, { payloadCID: links[i].toString(), size: 5 })
+    t.like(entry, { car: links[i].toString(), size: 5 })
     i++
   }
 })
@@ -463,7 +463,7 @@ test('store/list can be paginated with custom size', async (t) => {
   links.reverse()
   let i = 0
   for (const entry of storeList) {
-    t.like(entry, { payloadCID: links[i].toString(), size: 5 })
+    t.like(entry, { car: links[i].toString(), size: 5 })
     i++
   }
 })
@@ -507,17 +507,16 @@ async function createDynamoStoreTable(dynamo) {
 /**
  * @param {import("@aws-sdk/client-dynamodb").DynamoDBClient} dynamo
  * @param {string} tableName
- * @param {`did:key:${string}`} spaceDid
+ * @param {`did:key:${string}`} space
  * @param {import('@ucanto/interface').Link<unknown, number, number, 0 | 1>} link
  */
-async function getItemFromStoreTable(dynamo, tableName, spaceDid, link) {
+async function getItemFromStoreTable(dynamo, tableName, space, link) {
   const params = {
     TableName: tableName,
     Key: marshall({
-      uploaderDID: spaceDid,
-      payloadCID: link.toString(),
-    }),
-    AttributesToGet: ['uploaderDID', 'proof', 'uploadedAt', 'size'],
+      space,
+      car: link.toString(),
+    })
   }
 
   const response = await dynamo.send(new GetItemCommand(params))
