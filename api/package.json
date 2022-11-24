@@ -22,6 +22,7 @@
   "devDependencies": {
     "@ipld/car": "^5.0.1",
     "@ipld/dag-ucan": "^2.0.1",
+    "@serverless-stack/resources": "*",
     "@types/aws-lambda": "^8.10.108",
     "@ucanto/core": "^3.0.2",
     "@web-std/blob": "3.0.4",

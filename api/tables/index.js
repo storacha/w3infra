@@ -1,9 +1,14 @@
+/** @typedef {import('@aws-sdk/client-dynamodb').CreateTableCommandInput} CreateTableCommandInput */
+/** @typedef {import('@serverless-stack/resources').TableProps} TableProps */
+
 /**
- * Convert SST Table spec to DynamoDB CreateTable command config
+ * Convert SST TableProps to DynamoDB `CreateTableCommandInput` config
  *
- * @param {{fields: Record<string,string>, primaryIndex: { partitionKey: string, sortKey: string}}} config
+ * @param {TableProps} props
+ * @returns {Pick<CreateTableCommandInput, 'AttributeDefinitions' | 'KeySchema'>}
  */
 export function dynamoDBTableConfig ({ fields, primaryIndex }) {
+  if (!primaryIndex || !fields) throw new Error('Expected primaryIndex and fields on TableProps')
   const attributes = Object.values(primaryIndex)
   const AttributeDefinitions = Object.entries(fields)
     .filter(([k]) => attributes.includes(k)) // 'The number of attributes in key schema must match the number of attributes defined in attribute definitions'
@@ -25,7 +30,8 @@ export function dynamoDBTableConfig ({ fields, primaryIndex }) {
   }
 }
 
-export const storeTableSchema = {
+/** @type TableProps */
+export const storeTableProps = {
   fields: {
     uploaderDID: 'string',
     payloadCID: 'string',
@@ -38,7 +44,8 @@ export const storeTableSchema = {
   primaryIndex: { partitionKey: 'uploaderDID', sortKey: 'payloadCID' },
 }
 
-export const uploadTableSchema = {
+/** @type TableProps */
+export const uploadTableProps = {
   fields: {
     uploaderDID: 'string',
     dataCID: 'string', // root CID

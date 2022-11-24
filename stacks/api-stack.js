@@ -5,7 +5,7 @@ import {
   Table
 } from '@serverless-stack/resources'
 
-import { storeTableSchema, uploadTableSchema } from '../api/tables/index.js'
+import { storeTableProps, uploadTableProps } from '../api/tables/index.js'
 import { getConfig, getCustomDomain, getApiPackageJson, getGitInfo } from './config.js'
 
 /**
@@ -23,7 +23,7 @@ export function ApiStack({ stack }) {
    * This is used by the store/* service capabilities.
    */
    const storeTable = new Table(stack, 'store', {
-    ...storeTableSchema,
+    ...storeTableProps,
     ...stackConfig.tableConfig,
   })
   
@@ -40,7 +40,7 @@ export function ApiStack({ stack }) {
    * This is used by the upload/* capabilities.
    */
    const uploadTable = new Table(stack, 'upload', {
-    ...uploadTableSchema,
+    ...uploadTableProps,
     ...stackConfig.tableConfig,
   })
 

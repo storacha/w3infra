@@ -10,7 +10,7 @@ import { BATCH_MAX_SAFE_LIMIT } from '../../tables/upload.js'
 import { createS3, createBucket, createAccessServer, createDynamodDb } from '../utils.js'
 import { randomCAR } from '../helpers/random.js'
 import { getClientConnection, createSpace } from '../helpers/ucanto.js'
-import { dynamoDBTableConfig, uploadTableSchema } from '../../tables/index.js'
+import { dynamoDBTableConfig, uploadTableProps } from '../../tables/index.js'
 
 /**
  * @typedef {import('@ucanto/server')} Server
@@ -469,7 +469,7 @@ async function prepareResources (dynamoClient, s3Client) {
 
   await dynamo.send(new CreateTableCommand({
     TableName: tableName,
-    ...dynamoDBTableConfig(uploadTableSchema),
+    ...dynamoDBTableConfig(uploadTableProps),
     ProvisionedThroughput: {
       ReadCapacityUnits: 1,
       WriteCapacityUnits: 1
