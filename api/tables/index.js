@@ -31,32 +31,6 @@ export function dynamoDBTableConfig ({ fields, primaryIndex }) {
 }
 
 /** @type TableProps */
-export const StoreTablePropsv0 = {
-  fields: {
-    uploaderDID: 'string',
-    payloadCID: 'string',
-    applicationDID: 'string',
-    origin: 'string',
-    size: 'number',
-    proof: 'string',
-    uploadedAt: 'string',
-  },
-  primaryIndex: { partitionKey: 'uploaderDID', sortKey: 'payloadCID' },
-}
-
-/** @type TableProps */
-export const uploadTablePropsV0 = {
-  fields: {
-    uploaderDID: 'string',
-    dataCID: 'string', // root CID
-    carCID: 'string', // shard CID
-    sk: 'string', // 'dataCID#carCID' used to guarantee uniqueness
-    uploadedAt: 'string',
-  },
-  primaryIndex: { partitionKey: 'uploaderDID', sortKey: 'sk' },
-}
-
-/** @type TableProps */
 export const storeTableProps = {
   fields: {
     space: 'string',        // `did:key:space`
