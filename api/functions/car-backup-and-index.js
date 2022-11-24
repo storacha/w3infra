@@ -56,7 +56,16 @@ function getEnv() {
   }
 }
 
+/**
+ * 
+ * @param {string} name 
+ * @returns {string}
+ */
 function mustGetEnv (name) {
-  if (!process.env[name]) throw new Error(`Missing env var: ${name}`)
+  if (!process.env[name]) {
+    throw new Error(`Missing env var: ${name}`)
+  }
+
+  // @ts-expect-error there will always be a string there, but typescript does not believe
   return process.env[name]
 }
