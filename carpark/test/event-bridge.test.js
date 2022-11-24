@@ -1,8 +1,8 @@
-import { test } from '../helpers/context.js'
+import { test } from './helpers/context.js'
 
-import { notifyCarparkBus } from '../../carpark/event-bridge/index.js'
-import { eipfsHandler } from '../../carpark/event-bridge/eipfs-indexer.js'
-import { carReplicatorAndIndexHandler } from '../../carpark/event-bridge/car-replicator-and-index.js'
+import { notifyCarparkBus } from '../event-bridge/index.js'
+import { eipfsHandler } from '../event-bridge/eipfs-indexer.js'
+import { carReplicatorAndIndexHandler } from '../event-bridge/car-replicator-and-index.js'
 
 import {
   s3PutInvalidRecords as fixtureS3PutInvalidRecords,

@@ -16,7 +16,7 @@ import { concat as uint8arraysConcat } from 'uint8arrays'
  * Replicate event target into destination bucket and write a side index for it.
  *
  * @param {object} props
- * @param {import('../utils/parse-sqs-event').EventRecord} props.record
+ * @param {import('./utils/parse-sqs-event').EventRecord} props.record
  * @param {S3Client} props.destinationBucket
  * @param {S3Client} props.originBucket
  * @param {string} props.destinationBucketCarName

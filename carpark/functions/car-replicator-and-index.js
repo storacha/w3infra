@@ -2,7 +2,7 @@ import {
   S3Client
 } from '@aws-sdk/client-s3'
 
-import { carReplicateAndIndex } from '../carpark/replicate-and-index.js'
+import { carReplicateAndIndex } from '../replicator.js'
 import parseSqsEvent from '../utils/parse-sqs-event.js'
 
 /**

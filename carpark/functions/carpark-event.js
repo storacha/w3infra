@@ -1,6 +1,6 @@
 import { EventBridge } from '@aws-sdk/client-eventbridge'
 
-import { notifyCarparkBus } from '../carpark/event-bridge/index.js'
+import { notifyCarparkBus } from '../event-bridge/index.js'
 
 const CARPARK_BUS_ARN = process.env.CARPARK_BUS_ARN || ''
 

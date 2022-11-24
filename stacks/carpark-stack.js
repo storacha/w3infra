@@ -7,7 +7,7 @@ import {
 import { Duration } from 'aws-cdk-lib'
 import * as sqs from 'aws-cdk-lib/aws-sqs'
 
-import { CARPARK_EVENT_BRIDGE_SOURCE_EVENT } from '../api/carpark/event-bridge/index.js'
+import { CARPARK_EVENT_BRIDGE_SOURCE_EVENT } from '../carpark/event-bridge/index.js'
 
 import { getConfig } from './config.js'
 
@@ -15,6 +15,10 @@ import { getConfig } from './config.js'
  * @param {import('@serverless-stack/resources').StackContext} properties
  */
 export function CarparkStack({ stack }) {
+  stack.setDefaultFunctionProps({
+    srcPath: 'carpark'
+  })
+
   // @ts-expect-error "prod" | "dev" | "staging" only allowed for stage
   const stackConfig = getConfig(stack.stage)
 
@@ -75,7 +79,7 @@ export function CarparkStack({ stack }) {
     function: {
       environment: {},
       permissions: [indexerTopicQueue],
-      handler: 'carpark/event-bridge/eipfs-indexer.handler',
+      handler: 'event-bridge/eipfs-indexer.handler',
     },
   }
 
@@ -85,7 +89,7 @@ export function CarparkStack({ stack }) {
         SQS_REPLICATOR_AND_INDEX_QUEUE_URL: carReplicatorAndIndexQueue.queueUrl,
       },
       permissions: [carReplicatorAndIndexQueue],
-      handler: 'carpark/event-bridge/car-replicator-and-index.handler',
+      handler: 'event-bridge/car-replicator-and-index.handler',
     },
   }
 

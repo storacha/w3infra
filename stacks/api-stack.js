@@ -15,6 +15,10 @@ import { getConfig, getCustomDomain, getApiPackageJson, getGitInfo } from './con
  * @param {import('@serverless-stack/resources').StackContext} properties
  */
 export function ApiStack({ stack }) {
+  stack.setDefaultFunctionProps({
+    srcPath: 'api'
+  })
+
   // @ts-expect-error "prod" | "dev" | "staging" only allowed for stage
   const stackConfig = getConfig(stack.stage)
 
