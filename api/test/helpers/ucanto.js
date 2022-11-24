@@ -8,7 +8,6 @@ import { createStoreTable } from '../../tables/store.js'
 import { createUploadTable } from '../../tables/upload.js'
 import { createSigner } from '../../signer.js'
 
-import { getSigningOptions } from '../utils.js'
 import { createAccessClient } from '../../access.js'
 
 /**
@@ -32,7 +31,7 @@ export function createTestingUcantoServer(service, ctx) {
      endpoint: ctx.dbEndpoint
    }),
    carStoreBucket: createCarStore(region, ctx.bucketName, { ...ctx.s3ClientOpts }),
-   signer: createSigner(getSigningOptions(ctx, ctx)),
+   signer: createSigner(getSigningOptions(ctx)),
    access: createAccessClient(service, ctx.access.servicePrincipal, ctx.access.serviceURL)
  })
 }
@@ -65,5 +64,18 @@ export async function createSpace (audience) {
       capabilities: [{ can: '*', with: spaceDid }]
     }),
     spaceDid
+  }
+}
+
+/**
+ * @param {any} ctx 
+ */
+ export function getSigningOptions(ctx) {
+  return {
+    region: ctx.region || 'us-west-2',
+    secretAccessKey: ctx.secretAccessKey,
+    accessKeyId: ctx.accessKeyId,
+    sessionToken: ctx.sessionToken,
+    bucket: ctx.bucketName,
   }
 }

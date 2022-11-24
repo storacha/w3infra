@@ -86,7 +86,7 @@ export async function createBucket(s3) {
 
 /**
  * @param {any} ctx
- * @param {import('./helpers/ucanto').ResourcesMetadata} resourcesMetadata
+ * @param {import('./ucanto').ResourcesMetadata} resourcesMetadata
  */
 export function getSigningOptions(ctx, resourcesMetadata) {
   return {

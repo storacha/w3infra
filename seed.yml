@@ -1,0 +1,4 @@
+
+before_compile:
+  - n 16.17.1
+  - npm ci

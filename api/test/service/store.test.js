@@ -9,7 +9,7 @@ import * as Server from '@ucanto/server'
 import * as StoreCapabilities from '@web3-storage/access/capabilities/store'
 import { base64pad } from 'multiformats/bases/base64'
 import { getClientConnection, createSpace } from '../helpers/ucanto.js'
-import { createS3, createBucket, createDynamodDb, createAccessServer } from '../utils.js'
+import { createS3, createBucket, createDynamodDb, createAccessServer } from '../helpers/resources.js'
 import { dynamoDBTableConfig, storeTableProps } from '../../tables/index.js'
 
 /**

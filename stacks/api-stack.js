@@ -1,9 +1,12 @@
 import {
   Api,
-  Bucket,
   Config,
-  Table
+  Table,
+  use
 } from '@serverless-stack/resources'
+import {
+  CarparkStack
+} from './carpark-stack.js'
 
 import { storeTableProps, uploadTableProps } from '../api/tables/index.js'
 import { getConfig, getCustomDomain, getApiPackageJson, getGitInfo } from './config.js'
@@ -15,6 +18,9 @@ export function ApiStack({ stack }) {
   // @ts-expect-error "prod" | "dev" | "staging" only allowed for stage
   const stackConfig = getConfig(stack.stage)
 
+  // Get carpark reference
+  const { carparkBucket } = use(CarparkStack)
+
   /**
    * This table takes a stored CAR and makes an entry in the store table
    * to associate the uploaders DID with a payload CID.
@@ -25,10 +31,6 @@ export function ApiStack({ stack }) {
    const storeTable = new Table(stack, 'store', {
     ...storeTableProps,
     ...stackConfig.tableConfig,
-  })
-  
-  const storeBucket = new Bucket(stack, 'car-store', {
-    ...stackConfig.bucketConfig
   })
 
   /**
@@ -54,10 +56,10 @@ export function ApiStack({ stack }) {
     customDomain,
     defaults: {
       function: {
-        permissions: [storeTable, uploadTable, storeBucket],
+        permissions: [storeTable, uploadTable, carparkBucket],
         environment: {
           STORE_TABLE_NAME: storeTable.tableName,
-          STORE_BUCKET_NAME: storeBucket.bucketName,
+          STORE_BUCKET_NAME: carparkBucket.bucketName,
           UPLOAD_TABLE_NAME: uploadTable.tableName,
           NAME: pkg.name,
           VERSION: pkg.version,
@@ -79,4 +81,3 @@ export function ApiStack({ stack }) {
     CustomDomain:  customDomain ? `https://${customDomain.domainName}` : 'Set HOSTED_ZONE in env to deploy to a custom domain'
   })
 }
-

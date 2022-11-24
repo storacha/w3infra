@@ -1,0 +1,71 @@
+import {
+  S3Client
+} from '@aws-sdk/client-s3'
+
+import { carReplicateAndIndex } from '../carpark/replicate-and-index.js'
+import parseSqsEvent from '../utils/parse-sqs-event.js'
+
+/**
+ * Get EventRecord from the SQS Event triggering the handler
+ *
+ * @param {import('aws-lambda').SQSEvent} event
+ */
+export function handler (event) {
+  const {
+    REPLICATOR_ENDPOINT,
+    REPLICATOR_ACCESS_KEY_ID,
+    REPLICATOR_SECRET_ACCESS_KEY,
+    REPLICATOR_CAR_BUCKET_NAME,
+    REPLICATOR_INDEX_BUCKET_NAME,
+  } = getEnv()
+
+  const record = parseSqsEvent(event)
+  if (!record) {
+    throw new Error('Invalid CAR file format')
+  }
+
+  const destinationBucket = new S3Client({
+    region: 'auto',
+    endpoint: REPLICATOR_ENDPOINT,
+    credentials: {
+      accessKeyId: REPLICATOR_ACCESS_KEY_ID,
+      secretAccessKey: REPLICATOR_SECRET_ACCESS_KEY,
+    },
+  })
+
+  const originBucket = new S3Client({ region: record.bucketRegion })
+  return carReplicateAndIndex({
+    record,
+    destinationBucket,
+    originBucket,
+    destinationBucketCarName: REPLICATOR_CAR_BUCKET_NAME,
+    destinationBucketSideIndexName: REPLICATOR_INDEX_BUCKET_NAME,
+  })
+}
+
+/**
+ * Get Env validating it is set.
+ */
+function getEnv() {
+  return {
+    REPLICATOR_ENDPOINT: mustGetEnv('REPLICATOR_ENDPOINT'),
+    REPLICATOR_ACCESS_KEY_ID: mustGetEnv('REPLICATOR_ACCESS_KEY_ID'),
+    REPLICATOR_SECRET_ACCESS_KEY: mustGetEnv('REPLICATOR_SECRET_ACCESS_KEY'),
+    REPLICATOR_CAR_BUCKET_NAME: mustGetEnv('REPLICATOR_CAR_BUCKET_NAME'),
+    REPLICATOR_INDEX_BUCKET_NAME: mustGetEnv('REPLICATOR_INDEX_BUCKET_NAME')
+  }
+}
+
+/**
+ * 
+ * @param {string} name 
+ * @returns {string}
+ */
+function mustGetEnv (name) {
+  if (!process.env[name]) {
+    throw new Error(`Missing env var: ${name}`)
+  }
+
+  // @ts-expect-error there will always be a string there, but typescript does not believe
+  return process.env[name]
+}
