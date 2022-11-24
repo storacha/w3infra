@@ -47,29 +47,16 @@ export function handler (event) {
  * Get Env validating it is set.
  */
 function getEnv() {
-  const {
-    BACKUP_ACCOUNT_ID,
-    BACKUP_ACCESS_KEY_ID,
-    BACKUP_SECRET_ACCESS_KEY,
-    BACKUP_CAR_BUCKET_NAME,
-    BACKUP_INDEX_BUCKET_NAME,
-  } = process.env
-
-  if (
-    !BACKUP_ACCOUNT_ID ||
-    !BACKUP_ACCESS_KEY_ID ||
-    !BACKUP_SECRET_ACCESS_KEY ||
-    !BACKUP_CAR_BUCKET_NAME ||
-    !BACKUP_INDEX_BUCKET_NAME
-  ) {
-    throw new Error('Environment setup not completed')
-  }
-
   return {
-    BACKUP_ACCOUNT_ID,
-    BACKUP_ACCESS_KEY_ID,
-    BACKUP_SECRET_ACCESS_KEY,
-    BACKUP_CAR_BUCKET_NAME,
-    BACKUP_INDEX_BUCKET_NAME,
+    BACKUP_ACCOUNT_ID: mustGetEnv('BACKUP_ACCOUNT_ID'),
+    BACKUP_ACCESS_KEY_ID: mustGetEnv('BACKUP_ACCESS_KEY_ID'),
+    BACKUP_SECRET_ACCESS_KEY: mustGetEnv('BACKUP_SECRET_ACCESS_KEY'),
+    BACKUP_CAR_BUCKET_NAME: mustGetEnv('BACKUP_CAR_BUCKET_NAME'),
+    BACKUP_INDEX_BUCKET_NAME: mustGetEnv('BACKUP_INDEX_BUCKET_NAME')
   }
+}
+
+function mustGetEnv (name) {
+  if (!process.env[name]) throw new Error(`Missing env var: ${name}`)
+  return process.env[name]
 }
