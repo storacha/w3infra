@@ -12,7 +12,7 @@ import parseSqsEvent from '../utils/parse-sqs-event.js'
  */
 export function handler (event) {
   const {
-    REPLICATOR_ACCOUNT_ID,
+    REPLICATOR_ENDPOINT,
     REPLICATOR_ACCESS_KEY_ID,
     REPLICATOR_SECRET_ACCESS_KEY,
     REPLICATOR_CAR_BUCKET_NAME,
@@ -26,7 +26,7 @@ export function handler (event) {
 
   const destinationBucket = new S3Client({
     region: 'auto',
-    endpoint: `https://${REPLICATOR_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+    endpoint: REPLICATOR_ENDPOINT,
     credentials: {
       accessKeyId: REPLICATOR_ACCESS_KEY_ID,
       secretAccessKey: REPLICATOR_SECRET_ACCESS_KEY,
@@ -48,7 +48,7 @@ export function handler (event) {
  */
 function getEnv() {
   return {
-    REPLICATOR_ACCOUNT_ID: mustGetEnv('REPLICATOR_ACCOUNT_ID'),
+    REPLICATOR_ENDPOINT: mustGetEnv('REPLICATOR_ENDPOINT'),
     REPLICATOR_ACCESS_KEY_ID: mustGetEnv('REPLICATOR_ACCESS_KEY_ID'),
     REPLICATOR_SECRET_ACCESS_KEY: mustGetEnv('REPLICATOR_SECRET_ACCESS_KEY'),
     REPLICATOR_CAR_BUCKET_NAME: mustGetEnv('REPLICATOR_CAR_BUCKET_NAME'),
