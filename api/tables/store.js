@@ -36,7 +36,7 @@ export function createStoreTable (region, tableName, options = {}) {
           space,
           link: link.toString()
         }),
-        AttributesToGet: ['uploaderDID'],
+        AttributesToGet: ['space'],
       })
   
       try {
