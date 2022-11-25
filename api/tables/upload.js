@@ -28,15 +28,15 @@ export function createUploadTable (region, tableName, options = {}) {
     /**
      * Check if the given data CID is bound to the uploader DID
      *
-     * @param {string} space
-     * @param {string} root
+     * @param {import('@ucanto/interface').DID} space
+     * @param {import('../service/types').AnyLink} root
      */
      exists: async (space, root) => {
       const cmd = new GetItemCommand({
         TableName: tableName,
         Key: marshall({
           space,
-          root,
+          root: root.toString(),
         }),
         AttributesToGet: ['space'],
       })
@@ -49,21 +49,23 @@ export function createUploadTable (region, tableName, options = {}) {
       }
     },
     /**
-     * Link an upload to an account
+     * Link a root data CID to a car CID shard in a space DID.
+     * 
+     * @typedef {import('../service/types').UploadItemOutput} UploadItemOutput
      *
      * @param {import('../service/types').UploadItemInput} item
-     * @returns {Promise<import('../service/types').UploadItemOutput[]>}
+     * @returns {Promise<UploadItemOutput[]>}
      */
-    insert: async ({ space, root, shards = [], agent, ucan }) => {
+    insert: async ({ space, root, shards = [], issuer, invocation }) => {
       const insertedAt = new Date().toISOString()
 
-      /** @type {import('../service/types').UploadItemOutput[]} */
+      /** @type {UploadItemOutput[]} */
       const items = shards.map(shard => ({
         space,
-        root,
-        shard,
-        agent,
-        ucan,
+        root: root.toString(),
+        shard: shard.toString(),
+        issuer,
+        invocation: invocation.toString(),
         insertedAt
       }))
       // items formatted for dynamodb
@@ -91,8 +93,8 @@ export function createUploadTable (region, tableName, options = {}) {
     /**
      * Remove an upload from an account
      *
-     * @param {string} space
-     * @param {string} root
+     * @param {import('@ucanto/interface').DID} space
+     * @param {import('../service/types').AnyLink} root
      */
     remove: async (space, root) => {
       let lastEvaluatedKey
@@ -104,7 +106,7 @@ export function createUploadTable (region, tableName, options = {}) {
           Limit: BATCH_MAX_SAFE_LIMIT,
           ExpressionAttributeValues: {
             ':u': { S: space },
-            ':d': { S: root }
+            ':d': { S: root.toString() }
           },
           // gotta sidestep dynamo reserved words!?
           ExpressionAttributeNames: {

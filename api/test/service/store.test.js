@@ -150,11 +150,11 @@ test('store/add returns done if already uploaded', async (t) => {
   const item = await getItemFromStoreTable(t.context.dynamoClient, tableName, spaceDid, link)
   t.like(item, {
     space: spaceDid,
-    car: link.toString(),
+    link: link.toString(),
     size: data.byteLength,
-    agent: alice.did(),
+    issuer: alice.did(),
   })
-  t.is(typeof item?.ucan, 'string')
+  t.is(typeof item?.invocation, 'string')
   t.is(typeof item?.insertedAt, 'string')
 })
 
@@ -393,7 +393,7 @@ test('store/list returns items previously stored by the user', async (t) => {
   links.reverse()
   let i = 0
   for (const entry of storeList.results) {
-    t.like(entry, { car: links[i].toString(), size: 5 })
+    t.like(entry, { link: links[i].toString(), size: 5 })
     i++
   }
 })
@@ -463,7 +463,7 @@ test('store/list can be paginated with custom size', async (t) => {
   links.reverse()
   let i = 0
   for (const entry of storeList) {
-    t.like(entry, { car: links[i].toString(), size: 5 })
+    t.like(entry, { link: links[i].toString(), size: 5 })
     i++
   }
 })
@@ -508,17 +508,17 @@ async function createDynamoStoreTable(dynamo) {
  * @param {import("@aws-sdk/client-dynamodb").DynamoDBClient} dynamo
  * @param {string} tableName
  * @param {`did:key:${string}`} space
- * @param {import('@ucanto/interface').Link<unknown, number, number, 0 | 1>} link
+ * @param {import('../../service/types').AnyLink} link
  */
 async function getItemFromStoreTable(dynamo, tableName, space, link) {
+  const item = {
+    space,
+    link: link.toString()
+  }
   const params = {
     TableName: tableName,
-    Key: marshall({
-      space,
-      car: link.toString(),
-    })
+    Key: marshall(item)
   }
-
   const response = await dynamo.send(new GetItemCommand(params))
   return response?.Item && unmarshall(response?.Item)
 }

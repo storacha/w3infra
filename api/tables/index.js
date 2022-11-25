@@ -34,15 +34,15 @@ export function dynamoDBTableConfig ({ fields, primaryIndex }) {
 export const storeTableProps = {
   fields: {
     space: 'string',        // `did:key:space`
-    car: 'string',          // `bagy...1`
+    link: 'string',         // `bagy...1`
     size: 'number',         // `101`
     origin: 'string',       // `bagy...0` (prev CAR CID. optional)
-    agent: 'string',        // `did:key:agent` (issuer of ucan)
-    ucan: 'string',         // `baf...ucan` (CID of invcation UCAN)
+    issuer: 'string',       // `did:key:agent` (issuer of ucan)
+    invocation: 'string',   // `baf...ucan` (CID of invcation UCAN)
     insertedAt: 'string',   // `2022-12-24T...`
   },
   // space + car must be unique to satisfy index constraint
-  primaryIndex: { partitionKey: 'space', sortKey: 'car' },
+  primaryIndex: { partitionKey: 'space', sortKey: 'link' },
 }
 
 /** @type TableProps */
@@ -52,8 +52,8 @@ export const uploadTableProps = {
     sk: 'string',           // `root#shard` + space must be unique for dynamo index constraint
     root: 'string',         // `baf...x`
     shard: 'string',        // `bagy...1
-    agent: 'string',        // `did:key:agent` (issuer of ucan)
-    ucan: 'string',         // `baf...ucan` (CID of invcation UCAN)
+    issuer: 'string',       // `did:key:agent` (issuer of ucan)
+    invocation: 'string',   // `baf...ucan` (CID of invcation UCAN)
     insertedAt: 'string',   // `2022-12-24T...`
   },
   // space + sk must be unique to satisfy index constraint

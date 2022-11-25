@@ -26,15 +26,15 @@ export function createStoreTable (region, tableName, options = {}) {
     /**
      * Check if the given link CID is bound to the uploader account
      *
-     * @param {string} space
-     * @param {string} car
+     * @param {import('@ucanto/interface').DID} space
+     * @param {import('../service/types').AnyLink} link
      */
-    exists: async (space, car) => {
+    exists: async (space, link) => {
       const cmd = new GetItemCommand({
         TableName: tableName,
         Key: marshall({
           space,
-          car
+          link: link.toString()
         }),
         AttributesToGet: ['uploaderDID'],
       })
@@ -49,24 +49,26 @@ export function createStoreTable (region, tableName, options = {}) {
     /**
      * Bind a link CID to an account
      *
+     * @typedef {import('../service/types').StoreItemOutput} StoreItemOutput
+     * 
      * @param {import('../service/types').StoreItemInput} item
-     * @returns {Promise<import('../service/types').StoreItemOutput>}
+     * @returns {Promise<StoreItemOutput>}
      */
-    insert: async ({ space, car, origin = '', size = 0, agent, ucan }) => {
-      /** @type import('../service/types').StoreItemOutput */
+    insert: async ({ space, link, origin, size = 0, issuer, invocation }) => {
+      /** @type StoreItemOutput */
       const item = {
         space,
-        car,
+        link: link.toString(),
         size,
-        origin,
-        agent,
-        ucan,
+        origin: origin?.toString(),
+        issuer,
+        invocation: invocation.toString(),
         insertedAt: new Date().toISOString(),
       }
 
       const cmd = new PutItemCommand({
         TableName: tableName,
-        Item: marshall(item),
+        Item: marshall(item, { removeUndefinedValues: true }),
       })
 
       await dynamoDb.send(cmd)
@@ -76,15 +78,15 @@ export function createStoreTable (region, tableName, options = {}) {
     /**
      * Unbinds a link CID to an account
      *
-     * @param {string} space
-     * @param {string} car
+     * @param {import('@ucanto/interface').DID} space
+     * @param {import('../service/types').AnyLink} link
      */
-    remove: async (space, car) => {
+    remove: async (space, link) => {
       const cmd = new DeleteItemCommand({
         TableName: tableName,
         Key: marshall({
           space,
-          car,
+          link: link.toString(),
         })
       })
   
@@ -96,14 +98,14 @@ export function createStoreTable (region, tableName, options = {}) {
      * @typedef {import('../service/types').StoreListResult} StoreListResult
      * @typedef {import('../service/types').ListResponse<StoreListResult>} ListResponse
      * 
-     * @param {string} space
+     * @param {import('@ucanto/interface').DID} space
      * @param {import('../service/types').ListOptions} [options]
      * @returns {Promise<ListResponse>}
      */
     list: async (space, options = {}) => {
       const exclusiveStartKey = options.cursor ? marshall({
         space,
-        car: options.cursor
+        link: options.cursor
       }) : undefined
 
       const cmd = new QueryCommand({
@@ -116,7 +118,7 @@ export function createStoreTable (region, tableName, options = {}) {
           },
         },
         ExclusiveStartKey: exclusiveStartKey,
-        AttributesToGet: ['car', 'size', 'origin', 'insertedAt'],
+        AttributesToGet: ['link', 'size', 'origin', 'insertedAt'],
       })
       const response = await dynamoDb.send(cmd)
 
@@ -135,7 +137,7 @@ export function createStoreTable (region, tableName, options = {}) {
       // Get cursor of the item where list operation stopped (inclusive).
       // This value can be used to start a new operation to continue listing.
       const lastKey = response.LastEvaluatedKey && unmarshall(response.LastEvaluatedKey)
-      const cursor = lastKey ? lastKey.car : undefined
+      const cursor = lastKey ? lastKey.link : undefined
 
       return {
         size: results.length,

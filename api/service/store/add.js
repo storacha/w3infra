@@ -18,31 +18,29 @@ export function storeAddProvider(context) {
     async ({ capability, invocation }) => {
       const { link, origin, size } = capability.nb
       const space = Server.DID.parse(capability.with).did()
-      const car = link.toString()
-      const agent = invocation.issuer.did()
-      const ucan = invocation.cid.toString() 
+      const issuer = invocation.issuer.did()
       const [
         verified,
         carIsLinkedToAccount,
         carExists
       ] = await Promise.all([
         context.access.verifyInvocation(invocation),
-        context.storeTable.exists(space, car),
-        context.carStoreBucket.has(car)
+        context.storeTable.exists(space, link),
+        context.carStoreBucket.has(link.toString())
       ])
 
       if (!verified) {
-        return new Server.Failure(`${agent} is not delegated capability ${Store.add.can} on ${space}`)
+        return new Server.Failure(`${issuer} is not delegated capability ${Store.add.can} on ${space}`)
       }
 
       if (!carIsLinkedToAccount) {
         await context.storeTable.insert({
           space,
-          car,
+          link,
           size,
-          origin: origin?.toString(),
-          agent,
-          ucan
+          origin,
+          issuer,
+          invocation: invocation.cid,
         })
       }
 

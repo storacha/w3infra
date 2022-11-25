@@ -1,8 +1,9 @@
 import type {
   Failure,
-  Link,
   Invocation,
   ServiceMethod,
+  UCANLink,
+  DID,
 } from '@ucanto/interface'
 import type { API } from '@ucanto/server'
 
@@ -14,6 +15,9 @@ import {
   UploadRemove,
   UploadList
 } from '@web3-storage/access/capabilities/types'
+
+/** CID v0 or CID v1 */
+export interface AnyLink extends API.Link<unknown, number, number, 0 | 1> {}
 
 export interface Service {
   store: {
@@ -46,40 +50,47 @@ export interface CarStoreBucket {
 }
 
 export interface StoreTable {
-  exists: (space: string, car: string) => Promise<boolean>
+  exists: (space: DID, link: AnyLink) => Promise<boolean>
   insert: (item: StoreItemInput) => Promise<StoreItemOutput>
-  remove: (space: string, car: string) => Promise<void>
-  list: (space: string, options?: ListOptions) => Promise<ListResponse<StoreListResult>>
+  remove: (space: DID, link: AnyLink) => Promise<void>
+  list: (space: DID, options?: ListOptions) => Promise<ListResponse<StoreListResult>>
 }
 
 export interface UploadTable {
-  exists: (space: string, root: string) => Promise<boolean>
+  exists: (space: DID, root: AnyLink) => Promise<boolean>
   insert: (item: UploadItemInput) => Promise<UploadItemOutput[]>
-  remove: (space: string, root: string) => Promise<void>
-  list: (space: string, options?: ListOptions) => Promise<ListResponse<UploadItemOutput>>
+  remove: (space: DID, root: AnyLink) => Promise<void>
+  list: (space: DID, options?: ListOptions) => Promise<ListResponse<UploadItemOutput>>
 }
 
 export interface Signer {
-  sign: (link: Link<unknown, number, number, 0 | 1>) => { url: URL, headers: Record<string, string>}
+  sign: (link: AnyLink) => { url: URL, headers: Record<string, string>}
 }
 
 export interface StoreItemInput {
-  space: string,
-  car: string,
-  size: number,
-  origin?: string,
-  agent: string,
-  ucan: string,
+  space: DID
+  link: AnyLink
+  size: number
+  origin?: AnyLink
+  issuer: DID
+  invocation: UCANLink
 }
 
-export interface StoreItemOutput extends StoreItemInput {
+/** Formatted for inserting to the db */ 
+export interface StoreItemOutput {
+  space: string
+  link: string
+  size: number
+  origin?: string
+  issuer: string
+  invocation: string
   insertedAt: string,
 }
 
 export interface StoreAddResult {
   status: 'upload' | 'done',
   with: API.URI<"did:">,
-  link: API.Link<unknown, number, number, 0 | 1>,
+  link: AnyLink,
   url?: URL,
   headers?: Record<string, string>
 }
@@ -90,7 +101,7 @@ export interface ListOptions {
 }
 
 export interface StoreListResult {
-  car: string
+  link: string
   size: number
   origin?: string
   insertedAt: string
@@ -102,20 +113,22 @@ export interface ListResponse<R> {
   results: R[]
 }
 
-interface UploadItemBase {
+export interface UploadItemInput {
+  space: DID
+  root: AnyLink
+  shards?: AnyLink[]
+  issuer: DID
+  invocation: UCANLink
+}
+
+/** Formatted for inserting to the db */ 
+export interface UploadItemOutput {
   space: string
-  root: string,
-  agent: string,
-  ucan: string,  
-}
-
-export interface UploadItemInput extends UploadItemBase {
-  shards: string[]
-}
-
-export interface UploadItemOutput extends UploadItemBase {
+  root: string
   shard: string,
-  insertedAt: string,
+  issuer: string
+  invocation: string
+  insertedAt: string
 }
 
 export interface AccessClient {
