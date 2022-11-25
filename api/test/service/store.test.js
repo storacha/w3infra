@@ -11,6 +11,7 @@ import { base64pad } from 'multiformats/bases/base64'
 import { getClientConnection, createSpace } from '../helpers/ucanto.js'
 import { createS3, createBucket, createDynamodDb, createAccessServer } from '../utils.js'
 import { dynamoDBTableConfig, storeTableProps } from '../../tables/index.js'
+import { CID } from 'multiformats'
 
 /**
  * @typedef {import('../../service/types').StoreListResult} StoreListResult
@@ -77,14 +78,16 @@ test('store/add returns signed url for uploading', async (t) => {
   const data = new Uint8Array([11, 22, 34, 44, 55])
   const link = await CAR.codec.link(data)
 
-  // invoke a store/add with proof
-  const storeAdd = await StoreCapabilities.add.invoke({
+  const invocation = StoreCapabilities.add.invoke({
     issuer: alice,
     audience: uploadService,
     with: spaceDid,
     nb: { link, size: data.byteLength },
     proofs: [proof]
-  }).execute(connection)
+  })
+  
+  // invoke a store/add with proof
+  const storeAdd = await invocation.execute(connection)
 
   if (storeAdd.error) {
     throw new Error('invocation failed', { cause: storeAdd })
@@ -97,12 +100,14 @@ test('store/add returns signed url for uploading', async (t) => {
   t.is(storeAdd.headers && storeAdd.headers['x-amz-checksum-sha256'], base64pad.baseEncode(link.multihash.digest))
 
   const item = await getItemFromStoreTable(t.context.dynamoClient, tableName, spaceDid, link)
-  t.truthy(item)
-  t.is(typeof item?.insertedAt, 'string')
-  t.is(typeof item?.space, 'string')
-  t.is(item?.space, spaceDid)
-  t.is(typeof item?.size, 'number')
-  t.is(item?.size, data.byteLength)
+  t.like(item, {
+    space: spaceDid,
+    link: link.toString(),
+    size: data.byteLength,
+    issuer: alice.did()
+  })
+  t.notThrows(() => CID.parse(item?.invocation))
+  t.true(Date.now() - new Date(item?.insertedAt).getTime() < 1000)
 })
 
 test('store/add returns done if already uploaded', async (t) => {
@@ -129,13 +134,15 @@ test('store/add returns done if already uploaded', async (t) => {
     })
   )
 
-  const storeAdd = await StoreCapabilities.add.invoke({
+  const storeAddInvocation = StoreCapabilities.add.invoke({
     issuer: alice,
     audience: uploadService,
     with: spaceDid,
     nb: { link, size: data.byteLength },
     proofs: [proof]
-  }).execute(connection)
+  })
+  
+  const storeAdd = await storeAddInvocation.execute(connection)
 
   if (storeAdd.error) {
     throw new Error('invocation failed', { cause: storeAdd })
@@ -154,8 +161,8 @@ test('store/add returns done if already uploaded', async (t) => {
     size: data.byteLength,
     issuer: alice.did(),
   })
-  t.is(typeof item?.invocation, 'string')
-  t.is(typeof item?.insertedAt, 'string')
+  t.notThrows(() => CID.parse(item?.invocation))
+  t.true(Date.now() - new Date(item?.insertedAt).getTime() < 1000)
 })
 
 test('store/add allowed if invocation passes access verification', async (t) => {
