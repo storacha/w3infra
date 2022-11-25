@@ -7,9 +7,9 @@ import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
  * @param {string} region
  * @param {string} bucketName
  * @param {import('@aws-sdk/client-s3').ServiceInputTypes} [options]
- * @returns {import('../service/types').DataCidCarCidMapBucket}
+ * @returns {import('../service/types').DudewhereBucket}
  */
-export function createDataCidToCarCidStore (region, bucketName, options = {}) {
+export function createDudewhereStore (region, bucketName, options = {}) {
   const s3client = new S3Client({
     region,
     ...options

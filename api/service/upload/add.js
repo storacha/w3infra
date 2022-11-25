@@ -33,7 +33,7 @@ export function uploadAddProvider(context) {
           invocation: invocation.cid
         }),
         writeDataCidToCarCidsMapping(
-          context.dataCidCarCidMapBucket,
+          context.dudewhereBucket,
           root,
           shards
         )
@@ -44,15 +44,16 @@ export function uploadAddProvider(context) {
 }
 
 
- /**
+/**
  * Writes to a "bucket DB" the mapping from a data CID to the car CIDs it is composed of.
  * Retries up to 3 times, in case of failures.
- * @param {import('../types').DataCidCarCidMapBucket} dataCidCarCidMapStore
+ *
+ * @param {import("../types").DudewhereBucket} dudewhereStore
  * @param {Server.API.Link<unknown, number, number, 0 | 1>} root
  * @param {Server.API.Link<unknown, 514, number, 1>[] | undefined} shards
  */
  async function writeDataCidToCarCidsMapping(
-  dataCidCarCidMapStore,
+  dudewhereStore,
   root,
   shards
 ) {
@@ -61,7 +62,7 @@ export function uploadAddProvider(context) {
 
   return Promise.all(carCids.map(async (/** @type {string} */ carCid) => {
     await pRetry(
-      () => dataCidCarCidMapStore.put(dataCid, carCid),
+      () => dudewhereStore.put(dataCid, carCid),
       { retries: 3 }
     )
   }))

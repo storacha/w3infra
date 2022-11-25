@@ -41,7 +41,7 @@ export interface StoreServiceContext {
 
 export interface UploadServiceContext {
   uploadTable: UploadTable,
-  dataCidCarCidMapBucket: DataCidCarCidMapBucket
+  dudewhereBucket: DudewhereBucket
 }
 
 export interface UcantoServerContext extends StoreServiceContext, UploadServiceContext {}
@@ -50,7 +50,7 @@ export interface CarStoreBucket {
   has: (key: string) => Promise<boolean>
 }
 
-export interface DataCidCarCidMapBucket {
+export interface DudewhereBucket {
   put: (dataCid: string, carCid: string) => Promise<void>
 }
 
