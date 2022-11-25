@@ -34,5 +34,5 @@
     "resolveJsonModule": true,
   },
   "include": [
-    "api", "stacks", "carpark" ]
+    "api", "stacks", "carpark", "satnav" ]
 }

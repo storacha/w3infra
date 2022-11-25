@@ -23,7 +23,7 @@ export function CarparkStack({ stack }) {
   const stackConfig = getConfig(stack.stage)
 
   const carparkBucket = new Bucket(stack, 'car-store', {
-    ...stackConfig.bucketConfig,
+    ...stackConfig.carparkBucketConfig,
   })
 
   // Elastic IPFS event for indexing
@@ -37,10 +37,10 @@ export function CarparkStack({ stack }) {
     },
   })
 
-  // carpark replicator and index for Freeway
-  const carReplicatorAndIndexHandler = new Function(
+  // CAR files and Side indexes replicator
+  const replicatorHandler = new Function(
     stack,
-    'car-replicator-and-index-handler',
+    'replicator-handler',
     {
       environment: {
         REPLICATOR_ACCOUNT_ID: process.env.REPLICATOR_ACCOUNT_ID || '',
@@ -52,14 +52,14 @@ export function CarparkStack({ stack }) {
           process.env.REPLICATOR_INDEX_BUCKET_NAME || '',
       },
       permissions: ['s3:*'],
-      handler: 'functions/car-replicator-and-index.handler',
+      handler: 'functions/replicator.handler',
       timeout: 15 * 60,
     }
   )
 
-  const carReplicatorAndIndexQueue = new Queue(stack, 'car-replicator-and-index-queue', {
+  const replicatorQueue = new Queue(stack, 'replicator-queue', {
     consumer: {
-      function: carReplicatorAndIndexHandler,
+      function: replicatorHandler,
       cdk: {
         eventSource: {
           batchSize: 1,
@@ -83,13 +83,13 @@ export function CarparkStack({ stack }) {
     },
   }
 
-  const carReplicatorAndIndexTarget = {
+  const replicatorTarget = {
     function: {
       environment: {
-        SQS_REPLICATOR_AND_INDEX_QUEUE_URL: carReplicatorAndIndexQueue.queueUrl,
+        SQS_REPLICATOR_QUEUE_URL: replicatorQueue.queueUrl,
       },
-      permissions: [carReplicatorAndIndexQueue],
-      handler: 'event-bridge/car-replicator-and-index.handler',
+      permissions: [replicatorQueue],
+      handler: 'event-bridge/replicator.handler',
     },
   }
 
@@ -101,9 +101,9 @@ export function CarparkStack({ stack }) {
         },
         targets: {
           eIpfsIndexTarget,
-          carReplicatorAndIndexTarget,
+          replicatorTarget
         },
-      }
+      },
     }
   })
 
@@ -115,7 +115,6 @@ export function CarparkStack({ stack }) {
     permissions: [carparkEventBus],
     handler: 'functions/carpark-event.carparkBucketConsumer',
   })
-
   carparkBucket.addNotifications(stack, {
     newCarPut: {
       function: carparkPutEventConsumer,
@@ -124,6 +123,7 @@ export function CarparkStack({ stack }) {
   })
 
   return {
-    carparkBucket
+    carparkBucket,
+    carparkEventBus
   }
 }
