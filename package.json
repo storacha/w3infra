@@ -10,7 +10,7 @@
     "console": "sst console",
     "lint": "tsc && eslint '**/*.js'",
     "clean": "rm -rf docs node_modules pnpm-lock.yaml packages/*/{pnpm-lock.yaml,coverage,.nyc_output,dist,node_modules,.next}",
-    "test": "npm test -w api"
+    "test": "npm test -w api -w carpark"
   },
   "devDependencies": {
     "@serverless-stack/cli": "^1.18.0",
@@ -59,6 +59,7 @@
     }
   },
   "workspaces": [
-    "api"
+    "api",
+    "carpark"
   ]
 }

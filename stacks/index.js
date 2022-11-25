@@ -9,7 +9,6 @@ import { CarparkStack } from './carpark-stack.js'
 export default function (app) {
   app.setDefaultFunctionProps({
     runtime: 'nodejs16.x',
-    srcPath: 'api',
     bundle: {
       format: 'esm',
     },

@@ -1,4 +1,4 @@
-import { test } from '../helpers/context.js'
+import { test } from './helpers/context.js'
 
 import {
   GetObjectCommand,
@@ -12,8 +12,8 @@ import { CarBufferWriter } from '@ipld/car'
 import { equals, toString } from 'uint8arrays'
 import { MultihashIndexSortedReader } from 'cardex'
 
-import { createS3, createBucket } from '../helpers/resources.js'
-import { carReplicateAndIndex } from '../../carpark/replicate-and-index.js'
+import { createS3, createBucket } from './helpers/resources.js'
+import { carReplicateAndIndex } from '../replicator.js'
 
 test('copy CARs from origin bucket to replicator bucket and creates index', async t => {
   const { client: originBucket } = await createS3({ port: 9000 })
