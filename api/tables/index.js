@@ -41,7 +41,7 @@ export const storeTableProps = {
     invocation: 'string',   // `baf...ucan` (CID of invcation UCAN)
     insertedAt: 'string',   // `2022-12-24T...`
   },
-  // space + car must be unique to satisfy index constraint
+  // space + link must be unique to satisfy index constraint
   primaryIndex: { partitionKey: 'space', sortKey: 'link' },
 }
 
