@@ -28,17 +28,17 @@ export function createUploadTable (region, tableName, options = {}) {
     /**
      * Check if the given data CID is bound to the uploader DID
      *
-     * @param {string} uploaderDID
-     * @param {string} dataCID
+     * @param {import('@ucanto/interface').DID} space
+     * @param {import('../service/types').AnyLink} root
      */
-     exists: async (uploaderDID, dataCID) => {
+     exists: async (space, root) => {
       const cmd = new GetItemCommand({
         TableName: tableName,
         Key: marshall({
-          uploaderDID,
-          dataCID,
+          space,
+          root: root.toString(),
         }),
-        AttributesToGet: ['uploaderDID'],
+        AttributesToGet: ['space'],
       })
   
       try {
@@ -49,26 +49,30 @@ export function createUploadTable (region, tableName, options = {}) {
       }
     },
     /**
-     * Link an upload to an account
+     * Link a root data CID to a car CID shard in a space DID.
+     * 
+     * @typedef {import('../service/types').UploadItemOutput} UploadItemOutput
      *
-     * @param {string} uploaderDID
      * @param {import('../service/types').UploadItemInput} item
+     * @returns {Promise<UploadItemOutput[]>}
      */
-    insert: async (uploaderDID, { dataCID, carCIDs }) => {
-      const uploadedAt = new Date().toISOString()
+    insert: async ({ space, root, shards = [], issuer, invocation }) => {
+      const insertedAt = new Date().toISOString()
 
-      /** @type {import('../service/types').UploadItemOutput[]} */
-      const items = carCIDs.map(carCID => ({
-        uploaderDID,
-        dataCID,
-        carCID,
-        uploadedAt
+      /** @type {UploadItemOutput[]} */
+      const items = shards.map(shard => ({
+        space,
+        root: root.toString(),
+        shard: shard.toString(),
+        issuer,
+        invocation: invocation.toString(),
+        insertedAt
       }))
       // items formatted for dynamodb
       const batchItems = items.map(item => ({
         ...item,
         // add sk property for Dynamo Key uniqueness
-        sk: `${item.dataCID}#${item.carCID}`
+        sk: `${item.root}#${item.shard}`
       }))
 
       // Batch writes with max safe limit
@@ -89,24 +93,28 @@ export function createUploadTable (region, tableName, options = {}) {
     /**
      * Remove an upload from an account
      *
-     * @param {string} uploaderDID
-     * @param {string} dataCID
+     * @param {import('@ucanto/interface').DID} space
+     * @param {import('../service/types').AnyLink} root
      */
-    remove:  async (uploaderDID, dataCID) => {
+    remove: async (space, root) => {
       let lastEvaluatedKey
-      // Iterate through all carCIDs mapped to given uploaderDID
+      // Iterate through all carCIDs mapped to given space
       do {
         // Get first batch of items to remove
         const queryCommand = new QueryCommand({
           TableName: tableName,
           Limit: BATCH_MAX_SAFE_LIMIT,
           ExpressionAttributeValues: {
-            ':u': { S: uploaderDID },
-            ':d': { S: dataCID }
-          },  
-          KeyConditionExpression: 'uploaderDID = :u',
-          FilterExpression: 'contains (dataCID, :d)',
-          ProjectionExpression: 'uploaderDID, sk'
+            ':u': { S: space },
+            ':d': { S: root.toString() }
+          },
+          // gotta sidestep dynamo reserved words!?
+          ExpressionAttributeNames: {
+            '#space': 'space',
+          },
+          KeyConditionExpression: '#space = :u',
+          FilterExpression: 'contains (root, :d)',
+          ProjectionExpression: '#space, sk'
         })
         const queryResponse = await dynamoDb.send(queryCommand)
         // Update cursor if existing
@@ -132,12 +140,12 @@ export function createUploadTable (region, tableName, options = {}) {
     /**
      * List all CARs bound to an account
      *
-     * @param {string} uploaderDID
+     * @param {string} space
      * @param {import('../service/types').ListOptions} [options]
      */
-    list:  async (uploaderDID, options = {}) => {
+    list:  async (space, options = {}) => {
       const exclusiveStartKey = options.cursor ? marshall({
-        uploaderDID,
+        space,
         sk: options.cursor
       }) : undefined
 
@@ -145,13 +153,13 @@ export function createUploadTable (region, tableName, options = {}) {
         TableName: tableName,
         Limit: options.size || 20,
         KeyConditions: {
-          uploaderDID: {
+          space: {
             ComparisonOperator: 'EQ',
-            AttributeValueList: [{ S: uploaderDID }],
+            AttributeValueList: [{ S: space }],
           },
         },
         ExclusiveStartKey: exclusiveStartKey,
-        AttributesToGet: ['dataCID', 'carCID', 'uploadedAt'],
+        AttributesToGet: ['root', 'shard', 'insertedAt'],
       })
       const response = await dynamoDb.send(cmd)
 

@@ -11,6 +11,7 @@ import { base64pad } from 'multiformats/bases/base64'
 import { getClientConnection, createSpace } from '../helpers/ucanto.js'
 import { createS3, createBucket, createDynamodDb, createAccessServer } from '../helpers/resources.js'
 import { dynamoDBTableConfig, storeTableProps } from '../../tables/index.js'
+import { CID } from 'multiformats'
 
 /**
  * @typedef {import('../../service/types').StoreListResult} StoreListResult
@@ -77,14 +78,16 @@ test('store/add returns signed url for uploading', async (t) => {
   const data = new Uint8Array([11, 22, 34, 44, 55])
   const link = await CAR.codec.link(data)
 
-  // invoke a store/add with proof
-  const storeAdd = await StoreCapabilities.add.invoke({
+  const invocation = StoreCapabilities.add.invoke({
     issuer: alice,
     audience: uploadService,
     with: spaceDid,
     nb: { link, size: data.byteLength },
     proofs: [proof]
-  }).execute(connection)
+  })
+  
+  // invoke a store/add with proof
+  const storeAdd = await invocation.execute(connection)
 
   if (storeAdd.error) {
     throw new Error('invocation failed', { cause: storeAdd })
@@ -97,14 +100,14 @@ test('store/add returns signed url for uploading', async (t) => {
   t.is(storeAdd.headers && storeAdd.headers['x-amz-checksum-sha256'], base64pad.baseEncode(link.multihash.digest))
 
   const item = await getItemFromStoreTable(t.context.dynamoClient, tableName, spaceDid, link)
-  t.truthy(item)
-  t.is(typeof item?.uploadedAt, 'string')
-  t.is(typeof item?.proof, 'string')
-  t.is(typeof item?.uploaderDID, 'string')
-  // TODO: this looks suspicious... why is uploaderDID not the issuer / alice who invoked the upload
-  t.is(item?.uploaderDID, spaceDid)
-  t.is(typeof item?.size, 'number')
-  t.is(item?.size, data.byteLength)
+  t.like(item, {
+    space: spaceDid,
+    link: link.toString(),
+    size: data.byteLength,
+    issuer: alice.did()
+  })
+  t.notThrows(() => CID.parse(item?.invocation))
+  t.true(Date.now() - new Date(item?.insertedAt).getTime() < 1000)
 })
 
 test('store/add returns done if already uploaded', async (t) => {
@@ -131,13 +134,15 @@ test('store/add returns done if already uploaded', async (t) => {
     })
   )
 
-  const storeAdd = await StoreCapabilities.add.invoke({
+  const storeAddInvocation = StoreCapabilities.add.invoke({
     issuer: alice,
     audience: uploadService,
     with: spaceDid,
     nb: { link, size: data.byteLength },
     proofs: [proof]
-  }).execute(connection)
+  })
+  
+  const storeAdd = await storeAddInvocation.execute(connection)
 
   if (storeAdd.error) {
     throw new Error('invocation failed', { cause: storeAdd })
@@ -150,12 +155,14 @@ test('store/add returns done if already uploaded', async (t) => {
 
   // Even if done (CAR already exists in bucket), mapped to user if non existing
   const item = await getItemFromStoreTable(t.context.dynamoClient, tableName, spaceDid, link)
-  t.is(typeof item?.uploadedAt, 'string')
-  t.is(typeof item?.proof, 'string')
-  t.is(typeof item?.uploaderDID, 'string')
-  t.is(item?.uploaderDID, spaceDid)
-  t.is(typeof item?.size, 'number')
-  t.is(item?.size, data.byteLength)
+  t.like(item, {
+    space: spaceDid,
+    link: link.toString(),
+    size: data.byteLength,
+    issuer: alice.did(),
+  })
+  t.notThrows(() => CID.parse(item?.invocation))
+  t.true(Date.now() - new Date(item?.insertedAt).getTime() < 1000)
 })
 
 test('store/add allowed if invocation passes access verification', async (t) => {
@@ -393,7 +400,7 @@ test('store/list returns items previously stored by the user', async (t) => {
   links.reverse()
   let i = 0
   for (const entry of storeList.results) {
-    t.like(entry, { payloadCID: links[i].toString(), size: 5 })
+    t.like(entry, { link: links[i].toString(), size: 5 })
     i++
   }
 })
@@ -463,7 +470,7 @@ test('store/list can be paginated with custom size', async (t) => {
   links.reverse()
   let i = 0
   for (const entry of storeList) {
-    t.like(entry, { payloadCID: links[i].toString(), size: 5 })
+    t.like(entry, { link: links[i].toString(), size: 5 })
     i++
   }
 })
@@ -507,19 +514,18 @@ async function createDynamoStoreTable(dynamo) {
 /**
  * @param {import("@aws-sdk/client-dynamodb").DynamoDBClient} dynamo
  * @param {string} tableName
- * @param {`did:key:${string}`} spaceDid
- * @param {import('@ucanto/interface').Link<unknown, number, number, 0 | 1>} link
+ * @param {`did:key:${string}`} space
+ * @param {import('../../service/types').AnyLink} link
  */
-async function getItemFromStoreTable(dynamo, tableName, spaceDid, link) {
+async function getItemFromStoreTable(dynamo, tableName, space, link) {
+  const item = {
+    space,
+    link: link.toString()
+  }
   const params = {
     TableName: tableName,
-    Key: marshall({
-      uploaderDID: spaceDid,
-      payloadCID: link.toString(),
-    }),
-    AttributesToGet: ['uploaderDID', 'proof', 'uploadedAt', 'size'],
+    Key: marshall(item)
   }
-
   const response = await dynamo.send(new GetItemCommand(params))
   return response?.Item && unmarshall(response?.Item)
 }

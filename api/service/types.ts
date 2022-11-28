@@ -1,8 +1,9 @@
 import type {
   Failure,
-  Link,
   Invocation,
   ServiceMethod,
+  UCANLink,
+  DID,
 } from '@ucanto/interface'
 import type { API } from '@ucanto/server'
 
@@ -14,6 +15,9 @@ import {
   UploadRemove,
   UploadList
 } from '@web3-storage/access/capabilities/types'
+
+/** CID v0 or CID v1 */
+export interface AnyLink extends API.Link<unknown, number, number, 0 | 1> {}
 
 export interface Service {
   store: {
@@ -46,59 +50,61 @@ export interface CarStoreBucket {
 }
 
 export interface StoreTable {
-  exists: (uploaderDID: string, payloadCID: string) => Promise<boolean>
+  exists: (space: DID, link: AnyLink) => Promise<boolean>
   insert: (item: StoreItemInput) => Promise<StoreItemOutput>
-  remove: (uploaderDID: string, payloadCID: string) => Promise<void>
-  list: (uploaderDID: string, options?: ListOptions) => Promise<ListResponse<StoreListResult>>
+  remove: (space: DID, link: AnyLink) => Promise<void>
+  list: (space: DID, options?: ListOptions) => Promise<ListResponse<StoreListResult>>
 }
 
 export interface UploadTable {
-  exists: (uploaderDID: string, dataCID: string) => Promise<boolean>
-  insert: (uploaderDID: string, item: UploadItemInput) => Promise<UploadItemOutput[]>
-  remove: (uploaderDID: string, dataCID: string) => Promise<void>
-  list: (uploaderDID: string, options?: ListOptions) => Promise<ListResponse<UploadItemOutput>>
+  exists: (space: DID, root: AnyLink) => Promise<boolean>
+  insert: (item: UploadItemInput) => Promise<UploadItemOutput[]>
+  remove: (space: DID, root: AnyLink) => Promise<void>
+  list: (space: DID, options?: ListOptions) => Promise<ListResponse<UploadItemOutput>>
 }
 
 export interface Signer {
-  sign: (link: Link<unknown, number, number, 0 | 1>) => { url: URL, headers: Record<string, string>}
+  sign: (link: AnyLink) => { url: URL, headers: Record<string, string>}
 }
 
 export interface StoreItemInput {
-  uploaderDID: string,
-  link: string,
-  origin?: string,
-  size: number,
-  proof: string,
+  space: DID
+  link: AnyLink
+  size: number
+  origin?: AnyLink
+  issuer: DID
+  invocation: UCANLink
 }
 
+/** Formatted for inserting to the db */ 
 export interface StoreItemOutput {
-  uploaderDID: string,
-  payloadCID: string,
-  applicationDID: string,
-  origin: string,
-  size: number,
-  proof: string,
-  uploadedAt: string,
+  space: string
+  link: string
+  size: number
+  origin?: string
+  issuer: string
+  invocation: string
+  insertedAt: string,
 }
 
 export interface StoreAddResult {
   status: 'upload' | 'done',
   with: API.URI<"did:">,
-  link: API.Link<unknown, number, number, 0 | 1>,
+  link: AnyLink,
   url?: URL,
   headers?: Record<string, string>
 }
 
-export type ListOptions = {
+export interface ListOptions {
   size?: number,
   cursor?: string
 }
 
 export interface StoreListResult {
-  payloadCID: string
-  origin?: string
+  link: string
   size: number
-  uploadedAt: string
+  origin?: string
+  insertedAt: string
 }
 
 export interface ListResponse<R> {
@@ -108,15 +114,21 @@ export interface ListResponse<R> {
 }
 
 export interface UploadItemInput {
-  dataCID: string,
-  carCIDs: string[]
+  space: DID
+  root: AnyLink
+  shards?: AnyLink[]
+  issuer: DID
+  invocation: UCANLink
 }
 
+/** Formatted for inserting to the db */ 
 export interface UploadItemOutput {
-  uploaderDID: string,
-  dataCID: string,
-  carCID: string,
-  uploadedAt: string,
+  space: string
+  root: string
+  shard: string,
+  issuer: string
+  invocation: string
+  insertedAt: string
 }
 
 export interface AccessClient {
