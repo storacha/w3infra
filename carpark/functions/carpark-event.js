@@ -1,6 +1,6 @@
 import { EventBridge } from '@aws-sdk/client-eventbridge'
 
-import { notifyCarparkBus } from '../event-bridge/index.js'
+import { notifyBusNewCar } from '../event-bridge/index.js'
 
 const CARPARK_BUS_ARN = process.env.CARPARK_BUS_ARN || ''
 
@@ -10,7 +10,7 @@ const CARPARK_BUS_ARN = process.env.CARPARK_BUS_ARN || ''
 async function handler(event) {
   const bus = new EventBridge({})
 
-  return await notifyCarparkBus(event, bus, CARPARK_BUS_ARN)
+  return await notifyBusNewCar(event, bus, CARPARK_BUS_ARN)
 }
 
 export const carparkBucketConsumer = handler
