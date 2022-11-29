@@ -1,8 +1,7 @@
 import { test } from './helpers/context.js'
 
-import { notifyBusNewCar } from '../event-bridge/index.js'
-import { eipfsHandler } from '../event-bridge/eipfs-indexer.js'
-import { replicatorHandler } from '../event-bridge/replicator.js'
+import { notifyBus } from '../event-bus/source.js'
+import { eipfsHandler } from '../event-bus/eipfs-indexer.js'
 
 import {
   s3PutInvalidRecords as fixtureS3PutInvalidRecords,
@@ -11,7 +10,7 @@ import {
 
 const eventBusName = 'event-bus-arn'
 
-test('notifies carpark event bridge when new carpark bucket is written', async t => {
+test('notifies event bus when new carpark bucket is written', async t => {
   const bus = {
     putEvents: (/** @type {any} */ data) => {
       t.is(data.Entries.length, fixtureS3PutValidRecords.length)
@@ -33,7 +32,7 @@ test('notifies carpark event bridge when new carpark bucket is written', async t
     }
   }
 
-  const response = await notifyBusNewCar({
+  const response = await notifyBus({
       // @ts-expect-error incomplete S3 event metadata
       Records: fixtureS3PutValidRecords
     },
@@ -44,14 +43,14 @@ test('notifies carpark event bridge when new carpark bucket is written', async t
   t.is(response.statusCode, 200)
 })
 
-test('does not notify carpark event bridge when new carpark bucket is written with non CAR files', async t => {
+test('does not notify event bus when carpark bucket is written with non CAR files', async t => {
   const bus = {
     putEvents: () => {
       throw new Error('event should not be triggered')
     }
   }
 
-  const response = await notifyBusNewCar({
+  const response = await notifyBus({
       // @ts-expect-error incomplete S3 event metadata
       Records: fixtureS3PutInvalidRecords
     },
@@ -59,29 +58,6 @@ test('does not notify carpark event bridge when new carpark bucket is written wi
     eventBusName
   )
   t.is(response.statusCode, 200)
-})
-
-test('car replicator and index event handler sends message to SQS', async t => {
-  const url = 'localhost:8000'
-  const bridgeEvent = {
-    detail: {
-      key: 'bafkreigfrvnqxtgyazq2x5bzljvhrag3xfnfl4jnjvdiewc2fqb5vz5ddu/bagbaieraujbjejtyjrx3qkwk4plekotl2oxwclil7sddc4fpdb5nl5mandjq.car',
-      region: 'us-west-2',
-      bucketName: 'carpark-prod-0'
-    }
-  }
-
-  const sqsClient = {
-    send: (/** @type {any} */ messageCommand) => {
-      t.is(messageCommand.input.QueueUrl, url)
-      t.is(messageCommand.input.MessageBody, `${bridgeEvent.detail.region}/${bridgeEvent.detail.bucketName}/${bridgeEvent.detail.key}`)
-
-      return Promise.resolve()
-    }
-  }
-
-  // @ts-expect-error SQS mock client is partially implemented
-  await replicatorHandler(bridgeEvent, sqsClient, url)
 })
 
 test('E-IPFS event handler sends message to SQS', async t => {
