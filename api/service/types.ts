@@ -39,14 +39,19 @@ export interface StoreServiceContext {
   access: AccessClient
 }
 
-export interface UcantoServerContext extends StoreServiceContext, UploadServiceContext {}
-
 export interface UploadServiceContext {
-  uploadTable: UploadTable
+  uploadTable: UploadTable,
+  dudewhereBucket: DudewhereBucket
 }
+
+export interface UcantoServerContext extends StoreServiceContext, UploadServiceContext {}
 
 export interface CarStoreBucket {
   has: (key: string) => Promise<boolean>
+}
+
+export interface DudewhereBucket {
+  put: (dataCid: string, carCid: string) => Promise<void>
 }
 
 export interface StoreTable {
