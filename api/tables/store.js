@@ -6,6 +6,27 @@ import {
   QueryCommand
 } from '@aws-sdk/client-dynamodb'
 import { marshall, unmarshall } from '@aws-sdk/util-dynamodb'
+import { CID } from 'multiformats/cid'
+
+/** @typedef {import('../service/types').StoreAddInput} StoreItemInput */
+/** @typedef {import('../service/types').StoreListItem} StoreListResult */
+
+/**
+ * Upgrade from the db representation
+ * 
+ * @param {Record<string, any>} item
+ * @returns {StoreListResult}
+ */
+ export function toStoreListResult ({link, size, origin, insertedAt}) {
+  return {
+    link: CID.parse(link),
+    size,
+    insertedAt,
+    ...origin && { 
+      origin: CID.parse(origin) 
+    }
+  }
+}
 
 /**
  * Abstraction layer to handle operations on Store Table.
@@ -48,14 +69,13 @@ export function createStoreTable (region, tableName, options = {}) {
     },
     /**
      * Bind a link CID to an account
-     *
-     * @typedef {import('../service/types').StoreItemOutput} StoreItemOutput
      * 
-     * @param {import('../service/types').StoreItemInput} item
-     * @returns {Promise<StoreItemOutput>}
+     * @param {StoreItemInput} item
+     * @returns {Promise<StoreItemInput>}
      */
-    insert: async ({ space, link, origin, size = 0, issuer, invocation }) => {
-      /** @type StoreItemOutput */
+    insert: async ({ space, link, origin, size, issuer, invocation }) => {
+      const insertedAt = new Date().toISOString()
+
       const item = {
         space,
         link: link.toString(),
@@ -63,7 +83,7 @@ export function createStoreTable (region, tableName, options = {}) {
         origin: origin?.toString(),
         issuer,
         invocation: invocation.toString(),
-        insertedAt: new Date().toISOString(),
+        insertedAt
       }
 
       const cmd = new PutItemCommand({
@@ -72,8 +92,7 @@ export function createStoreTable (region, tableName, options = {}) {
       })
 
       await dynamoDb.send(cmd)
-
-      return item
+      return { space, link, size, issuer, invocation, ...origin && { origin }}
     },
     /**
      * Unbinds a link CID to an account
@@ -95,7 +114,7 @@ export function createStoreTable (region, tableName, options = {}) {
     /**
      * List all CARs bound to an account
      * 
-     * @typedef {import('../service/types').StoreListResult} StoreListResult
+     * @typedef {import('../service/types').StoreListItem} StoreListResult
      * @typedef {import('../service/types').ListResponse<StoreListResult>} ListResponse
      * 
      * @param {import('@ucanto/interface').DID} space
@@ -122,18 +141,7 @@ export function createStoreTable (region, tableName, options = {}) {
       })
       const response = await dynamoDb.send(cmd)
 
-      /** @type {import('../service/types').StoreListResult[]} */
-      // @ts-expect-error
-      const results = response.Items?.map(i => {
-        const item = unmarshall(i)
-        // omit origin if empty
-        if (!item.origin) {
-          delete item.origin
-        }
-
-        return item
-      }) || []
-
+      const results = response.Items?.map(i => toStoreListResult(unmarshall(i))) ?? []
       // Get cursor of the item where list operation stopped (inclusive).
       // This value can be used to start a new operation to continue listing.
       const lastKey = response.LastEvaluatedKey && unmarshall(response.LastEvaluatedKey)

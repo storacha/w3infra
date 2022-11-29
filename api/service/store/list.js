@@ -5,7 +5,7 @@ import * as Store from '@web3-storage/access/capabilities/store'
  * @typedef {import('@ucanto/interface').Link<unknown, number, number, 0 | 1>} Link
  * @typedef {import('@web3-storage/access/types').StoreList} StoreListCapability
  * @typedef {import('@ucanto/interface').Failure} Failure
- * @typedef {import('../types').StoreListResult} StoreListResult
+ * @typedef {import('../types').StoreListItem} StoreListResult
  * @typedef {import('../types').ListResponse<StoreListResult>} ListResponse
  */
 

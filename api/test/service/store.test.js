@@ -9,12 +9,12 @@ import * as Server from '@ucanto/server'
 import * as StoreCapabilities from '@web3-storage/access/capabilities/store'
 import { base64pad } from 'multiformats/bases/base64'
 import { getClientConnection, createSpace } from '../helpers/ucanto.js'
-import { createS3, createBucket, createDynamodDb, createAccessServer } from '../helpers/resources.js'
-import { dynamoDBTableConfig, storeTableProps } from '../../tables/index.js'
+import { createS3, createBucket, createDynamodDb, createAccessServer, dynamoDBTableConfig } from '../helpers/resources.js'
+import { storeTableProps } from '../../tables/index.js'
 import { CID } from 'multiformats'
 
 /**
- * @typedef {import('../../service/types').StoreListResult} StoreListResult
+ * @typedef {import('../../service/types').StoreListItem} StoreListResult
  * @typedef {import('../../service/types').ListResponse<StoreListResult>} ListResponse
  */
 
@@ -400,7 +400,7 @@ test('store/list returns items previously stored by the user', async (t) => {
   links.reverse()
   let i = 0
   for (const entry of storeList.results) {
-    t.like(entry, { link: links[i].toString(), size: 5 })
+    t.like(entry, { link: links[i], size: 5 })
     i++
   }
 })
@@ -470,7 +470,7 @@ test('store/list can be paginated with custom size', async (t) => {
   links.reverse()
   let i = 0
   for (const entry of storeList) {
-    t.like(entry, { link: links[i].toString(), size: 5 })
+    t.like(entry, { link: links[i], size: 5 })
     i++
   }
 })
