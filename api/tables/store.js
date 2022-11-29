@@ -12,23 +12,6 @@ import { CID } from 'multiformats/cid'
 /** @typedef {import('../service/types').StoreListItem} StoreListResult */
 
 /**
- * Upgrade from the db representation
- * 
- * @param {Record<string, any>} item
- * @returns {StoreListResult}
- */
- export function toStoreListResult ({link, size, origin, insertedAt}) {
-  return {
-    link: CID.parse(link),
-    size,
-    insertedAt,
-    ...origin && { 
-      origin: CID.parse(origin) 
-    }
-  }
-}
-
-/**
  * Abstraction layer to handle operations on Store Table.
  *
  * @param {string} region
@@ -152,6 +135,23 @@ export function createStoreTable (region, tableName, options = {}) {
         cursor,
         results
       }
+    }
+  }
+}
+
+/**
+ * Upgrade from the db representation
+ * 
+ * @param {Record<string, any>} item
+ * @returns {StoreListResult}
+ */
+ export function toStoreListResult ({link, size, origin, insertedAt}) {
+  return {
+    link: CID.parse(link),
+    size,
+    insertedAt,
+    ...origin && { 
+      origin: CID.parse(origin) 
     }
   }
 }
