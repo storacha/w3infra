@@ -92,12 +92,15 @@ test('store/add returns signed url for uploading', async (t) => {
   if (storeAdd.error) {
     throw new Error('invocation failed', { cause: storeAdd })
   }
-
-  t.is(storeAdd.status, 'upload')
-  t.is(storeAdd.with, spaceDid)
-  t.deepEqual(storeAdd.link, link)
+  t.like(storeAdd, {
+    status: 'upload',
+    with: spaceDid,
+    link,
+    headers: {
+      'x-amz-checksum-sha256': base64pad.baseEncode(link.multihash.digest)
+    }
+  })
   t.is(storeAdd.url && new URL(storeAdd.url).pathname, `/${link}/${link}.car`)
-  t.is(storeAdd.headers && storeAdd.headers['x-amz-checksum-sha256'], base64pad.baseEncode(link.multihash.digest))
 
   const item = await getItemFromStoreTable(t.context.dynamoClient, tableName, spaceDid, link)
   t.like(item, {

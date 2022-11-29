@@ -8,8 +8,9 @@ import {
 import { marshall, unmarshall } from '@aws-sdk/util-dynamodb'
 import { CID } from 'multiformats/cid'
 
-/** @typedef {import('../service/types').StoreAddInput} StoreItemInput */
-/** @typedef {import('../service/types').StoreListItem} StoreListResult */
+/** @typedef {import('../service/types').StoreAddInput} StoreAddInput */
+/** @typedef {import('../service/types').StoreAddOutput} StoreAddOutput */
+/** @typedef {import('../service/types').StoreListItem} StoreListItem */
 
 /**
  * Abstraction layer to handle operations on Store Table.
@@ -53,8 +54,8 @@ export function createStoreTable (region, tableName, options = {}) {
     /**
      * Bind a link CID to an account
      * 
-     * @param {StoreItemInput} item
-     * @returns {Promise<StoreItemInput>}
+     * @param {StoreAddInput} item
+     * @returns {Promise<StoreAddOutput>}
      */
     insert: async ({ space, link, origin, size, issuer, invocation }) => {
       const insertedAt = new Date().toISOString()
@@ -75,7 +76,7 @@ export function createStoreTable (region, tableName, options = {}) {
       })
 
       await dynamoDb.send(cmd)
-      return { space, link, size, issuer, invocation, ...origin && { origin }}
+      return { link, size, ...origin && { origin }}
     },
     /**
      * Unbinds a link CID to an account
@@ -97,8 +98,7 @@ export function createStoreTable (region, tableName, options = {}) {
     /**
      * List all CARs bound to an account
      * 
-     * @typedef {import('../service/types').StoreListItem} StoreListResult
-     * @typedef {import('../service/types').ListResponse<StoreListResult>} ListResponse
+     * @typedef {import('../service/types').ListResponse<StoreListItem>} ListResponse
      * 
      * @param {import('@ucanto/interface').DID} space
      * @param {import('../service/types').ListOptions} [options]
@@ -143,7 +143,7 @@ export function createStoreTable (region, tableName, options = {}) {
  * Upgrade from the db representation
  * 
  * @param {Record<string, any>} item
- * @returns {StoreListResult}
+ * @returns {StoreListItem}
  */
  export function toStoreListResult ({link, size, origin, insertedAt}) {
   return {

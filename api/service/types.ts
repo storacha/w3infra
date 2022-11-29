@@ -56,7 +56,7 @@ export interface DudewhereBucket {
 
 export interface StoreTable {
   exists: (space: DID, link: AnyLink) => Promise<boolean>
-  insert: (item: StoreAddInput) => Promise<StoreAddInput>
+  insert: (item: StoreAddInput) => Promise<StoreAddOutput>
   remove: (space: DID, link: AnyLink) => Promise<void>
   list: (space: DID, options?: ListOptions) => Promise<ListResponse<StoreListItem>>
 }
@@ -81,7 +81,9 @@ export interface StoreAddInput {
   invocation: UCANLink
 }
 
-export interface StoreListItem extends Omit<StoreAddInput, 'space' | 'issuer' | 'invocation'> {
+export interface StoreAddOutput extends Omit<StoreAddInput, 'space' | 'issuer' | 'invocation'> {}
+
+export interface StoreListItem extends StoreAddOutput {
   insertedAt: string
 }
 
