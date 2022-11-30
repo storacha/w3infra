@@ -110,7 +110,7 @@ test('store/add returns signed url for uploading', async (t) => {
     issuer: alice.did()
   })
   t.notThrows(() => CID.parse(item?.invocation))
-  t.true(Date.now() - new Date(item?.insertedAt).getTime() < 1000)
+  t.true(Date.now() - new Date(item?.insertedAt).getTime() < 60000)
 })
 
 test('store/add returns done if already uploaded', async (t) => {
@@ -165,7 +165,7 @@ test('store/add returns done if already uploaded', async (t) => {
     issuer: alice.did(),
   })
   t.notThrows(() => CID.parse(item?.invocation))
-  t.true(Date.now() - new Date(item?.insertedAt).getTime() < 1000)
+  t.true(Date.now() - new Date(item?.insertedAt).getTime() < 60_000)
 })
 
 test('store/add allowed if invocation passes access verification', async (t) => {

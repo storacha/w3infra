@@ -113,7 +113,7 @@ test('upload/add inserts into DB mapping between data CID and car CIDs', async (
   t.deepEqual([...dbItem.shards].sort(), shards.map(s => s.toString()))
 
   const msAgo = Date.now() - new Date(dbItems[0].insertedAt).getTime()
-  t.true(msAgo < 1000)
+  t.true(msAgo < 60_000)
   t.true(msAgo >= 0)
 
   // Validate data CID -> car CID mapping
