@@ -9,7 +9,7 @@ import {
 } from './carpark-stack.js'
 
 import { storeTableProps, uploadTableProps } from '../api/tables/index.js'
-import { getConfig, getCustomDomain, getApiPackageJson, getGitInfo } from './config.js'
+import { getConfig, getCustomDomain, getApiPackageJson, getGitInfo, setupSentry } from './config.js'
 
 /**
  * @param {import('@serverless-stack/resources').StackContext} properties
@@ -21,6 +21,11 @@ export function ApiStack({ stack }) {
 
   // @ts-expect-error "prod" | "dev" | "staging" only allowed for stage
   const stackConfig = getConfig(stack.stage)
+
+  // Setup Sentry when not in dev mode
+  if (stack.stage !== 'dev') {
+    setupSentry(stack)
+  }
 
   // Get carpark reference
   const { carparkBucket } = use(CarparkStack)

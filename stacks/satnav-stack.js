@@ -8,7 +8,7 @@ import { Duration, aws_events as awsEvents } from 'aws-cdk-lib'
 
 import { BusStack } from './bus-stack.js'
 import { CarparkStack } from './carpark-stack.js'
-import { getConfig } from './config.js'
+import { getConfig, setupSentry } from './config.js'
 import { CARPARK_EVENT_BRIDGE_SOURCE_EVENT } from '../carpark/event-bus/source.js'
 
 /**
@@ -21,6 +21,11 @@ export function SatnavStack({ stack }) {
 
   // @ts-expect-error "prod" | "dev" | "staging" only allowed for stage
   const stackConfig = getConfig(stack.stage)
+
+  // Setup Sentry when not in dev mode
+  if (stack.stage !== 'dev') {
+    setupSentry(stack)
+  }
 
   // Get carpark reference
   const { carparkBucket } = use(CarparkStack)

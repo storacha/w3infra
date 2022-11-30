@@ -6,6 +6,7 @@ import {
 import { Duration, aws_events as awsEvents } from 'aws-cdk-lib'
 import { BusStack } from './bus-stack.js'
 
+import { setupSentry } from './config.js'
 import { CARPARK_EVENT_BRIDGE_SOURCE_EVENT } from '../carpark/event-bus/source.js'
 import { SATNAV_EVENT_BRIDGE_SOURCE_EVENT } from '../satnav/event-bus/source.js'
 
@@ -16,6 +17,11 @@ export function ReplicatorStack({ stack }) {
   stack.setDefaultFunctionProps({
     srcPath: 'replicator'
   })
+
+  // Setup Sentry when not in dev mode
+  if (stack.stage !== 'dev') {
+    setupSentry(stack)
+  }
 
   // Get Event Bus reference
   const { eventBus } = use(BusStack)

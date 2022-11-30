@@ -1,11 +1,18 @@
+import * as Sentry from '@sentry/serverless'
+
 import { getServiceSigner } from '../config.js'
+
+Sentry.AWSLambda.init({
+  dsn: process.env.SENTRY_DSN,
+  tracesSampleRate: 1.0,
+})
 
 /**
  * AWS HTTP Gateway handler for GET /version
  *
  * @param {import('aws-lambda').APIGatewayProxyEventV2} request 
  */
- export async function version (request) {
+ export async function versionGet (request) {
   const { NAME: name , VERSION: version, COMMIT: commit, STAGE: env } = process.env
   const did = getServiceSigner().did()
   const repo = 'https://github.com/web3-storage/upload-api'
@@ -18,12 +25,14 @@ import { getServiceSigner } from '../config.js'
   }
 }
 
+export const version = Sentry.AWSLambda.wrapHandler(versionGet)
+
 /**
  * AWS HTTP Gateway handler for GET /
  *
  * @param {import('aws-lambda').APIGatewayProxyEventV2} request 
  */
-export async function home (request) {
+export async function homeGet (request) {
   const { VERSION: version, STAGE: stage } = process.env
   const did = getServiceSigner().did()
   const repo = 'https://github.com/web3-storage/upload-api'
@@ -36,3 +45,5 @@ export async function home (request) {
     body: `⁂ upload-api v${version} ${env}\n- ${repo}\n- ${did}\n`
   }
 }
+
+export const home = Sentry.AWSLambda.wrapHandler(homeGet)
