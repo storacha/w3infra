@@ -9,12 +9,12 @@ import * as Server from '@ucanto/server'
 import * as StoreCapabilities from '@web3-storage/access/capabilities/store'
 import { base64pad } from 'multiformats/bases/base64'
 import { getClientConnection, createSpace } from '../helpers/ucanto.js'
-import { createS3, createBucket, createDynamodDb, createAccessServer } from '../helpers/resources.js'
-import { dynamoDBTableConfig, storeTableProps } from '../../tables/index.js'
+import { createS3, createBucket, createDynamodDb, createAccessServer, dynamoDBTableConfig } from '../helpers/resources.js'
+import { storeTableProps } from '../../tables/index.js'
 import { CID } from 'multiformats'
 
 /**
- * @typedef {import('../../service/types').StoreListResult} StoreListResult
+ * @typedef {import('../../service/types').StoreListItem} StoreListResult
  * @typedef {import('../../service/types').ListResponse<StoreListResult>} ListResponse
  */
 
@@ -92,12 +92,15 @@ test('store/add returns signed url for uploading', async (t) => {
   if (storeAdd.error) {
     throw new Error('invocation failed', { cause: storeAdd })
   }
-
-  t.is(storeAdd.status, 'upload')
-  t.is(storeAdd.with, spaceDid)
-  t.deepEqual(storeAdd.link, link)
+  t.like(storeAdd, {
+    status: 'upload',
+    with: spaceDid,
+    link,
+    headers: {
+      'x-amz-checksum-sha256': base64pad.baseEncode(link.multihash.digest)
+    }
+  })
   t.is(storeAdd.url && new URL(storeAdd.url).pathname, `/${link}/${link}.car`)
-  t.is(storeAdd.headers && storeAdd.headers['x-amz-checksum-sha256'], base64pad.baseEncode(link.multihash.digest))
 
   const item = await getItemFromStoreTable(t.context.dynamoClient, tableName, spaceDid, link)
   t.like(item, {
@@ -107,7 +110,7 @@ test('store/add returns signed url for uploading', async (t) => {
     issuer: alice.did()
   })
   t.notThrows(() => CID.parse(item?.invocation))
-  t.true(Date.now() - new Date(item?.insertedAt).getTime() < 1000)
+  t.true(Date.now() - new Date(item?.insertedAt).getTime() < 60_000)
 })
 
 test('store/add returns done if already uploaded', async (t) => {
@@ -162,7 +165,7 @@ test('store/add returns done if already uploaded', async (t) => {
     issuer: alice.did(),
   })
   t.notThrows(() => CID.parse(item?.invocation))
-  t.true(Date.now() - new Date(item?.insertedAt).getTime() < 1000)
+  t.true(Date.now() - new Date(item?.insertedAt).getTime() < 60_000)
 })
 
 test('store/add allowed if invocation passes access verification', async (t) => {
@@ -400,7 +403,7 @@ test('store/list returns items previously stored by the user', async (t) => {
   links.reverse()
   let i = 0
   for (const entry of storeList.results) {
-    t.like(entry, { link: links[i].toString(), size: 5 })
+    t.like(entry, { link: links[i], size: 5 })
     i++
   }
 })
@@ -470,7 +473,7 @@ test('store/list can be paginated with custom size', async (t) => {
   links.reverse()
   let i = 0
   for (const entry of storeList) {
-    t.like(entry, { link: links[i].toString(), size: 5 })
+    t.like(entry, { link: links[i], size: 5 })
     i++
   }
 })
