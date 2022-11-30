@@ -22,11 +22,11 @@
   if (!body) {
     return
   }
-  const { key, region, bucket } = JSON.parse(body)
+  const { key, bucketName, bucketRegion } = JSON.parse(body)
 
   return {
-    bucketRegion: region,
-    bucketName: bucket,
+    bucketRegion,
+    bucketName,
     key,
   }
 }

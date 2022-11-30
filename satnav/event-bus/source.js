@@ -10,7 +10,7 @@ export const SATNAV_EVENT_BRIDGE_SOURCE_EVENT = 'satnav_bucket'
  * @param {string} eventBusName
  */
  export async function notifyBus(event, eventBridge, eventBusName) {
-  const entries = event.Records
+  const s3Entries = event.Records
     ? event.Records.map((r) => ({
         key: r?.s3?.object?.key,
         region: r?.awsRegion || 'us-west-2',
@@ -18,14 +18,14 @@ export const SATNAV_EVENT_BRIDGE_SOURCE_EVENT = 'satnav_bucket'
       })).filter((entry) => entry.key && entry.key.endsWith('.car.idx'))
     : []
 
-  if (entries.length > 0) {
-    const feedbackEntries = entries.map((entry) => ({
+  if (s3Entries.length > 0) {
+    const busEvents = s3Entries.map((entry) => ({
       EventBusName: eventBusName,
       Source: SATNAV_EVENT_BRIDGE_SOURCE_EVENT,
       DetailType: 'satnav_index_added',
       Detail: JSON.stringify(entry),
     }))
-    await eventBridge.putEvents({ Entries: feedbackEntries })
+    await eventBridge.putEvents({ Entries: busEvents })
   }
 
   return {

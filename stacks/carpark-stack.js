@@ -93,8 +93,8 @@ export function CarparkStack({ stack }) {
     cdk: {
       target: {
         message: awsEvents.RuleTargetInput.fromObject({
-          region: awsEvents.EventField.fromPath('$.detail.region'),
-          bucket: awsEvents.EventField.fromPath('$.detail.bucketName'),
+          bucketRegion: awsEvents.EventField.fromPath('$.detail.region'),
+          bucketName: awsEvents.EventField.fromPath('$.detail.bucketName'),
           key: awsEvents.EventField.fromPath('$.detail.key')
         }),
       },
