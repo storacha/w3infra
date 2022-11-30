@@ -18,13 +18,11 @@
     )
   }
 
-  const carId = sqsEvent.Records[0].body
-  const info = carId.match(/([^/]+)\/([^/]+)\/(.+)/)
-  if (!info) {
+  const body = sqsEvent.Records[0].body
+  if (!body) {
     return
   }
-
-  const [, bucketRegion, bucketName, key] = info
+  const { key, bucketName, bucketRegion } = JSON.parse(body)
 
   return {
     bucketRegion,

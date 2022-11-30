@@ -2,13 +2,14 @@ import {
   Bucket,
   Function,
   Queue,
-  use
+  use,
 } from '@serverless-stack/resources'
-import { Duration } from 'aws-cdk-lib'
+import { Duration, aws_events as awsEvents } from 'aws-cdk-lib'
 
+import { BusStack } from './bus-stack.js'
 import { CarparkStack } from './carpark-stack.js'
 import { getConfig } from './config.js'
-import { CARPARK_EVENT_BRIDGE_SOURCE_EVENT } from '../carpark/event-bridge/index.js'
+import { CARPARK_EVENT_BRIDGE_SOURCE_EVENT } from '../carpark/event-bus/source.js'
 
 /**
  * @param {import('@serverless-stack/resources').StackContext} properties
@@ -22,7 +23,9 @@ export function SatnavStack({ stack }) {
   const stackConfig = getConfig(stack.stage)
 
   // Get carpark reference
-  const { carparkBucket, carparkEventBus } = use(CarparkStack)
+  const { carparkBucket } = use(CarparkStack)
+  // Get eventBus reference
+  const { eventBus } = use(BusStack)
 
   const satnavBucket = new Bucket(stack, 'satnav-store', {
     ...stackConfig.satnavBucketConfig,
@@ -59,36 +62,39 @@ export function SatnavStack({ stack }) {
     },
   })
 
-  const satnavWriterTarget = {
-    function: {
-      environment: {
-        SQS_SATNAV_WRITER_QUEUE_URL: satnavWriterQueue.queueUrl,
+  /** @type {import('@serverless-stack/resources').EventBusQueueTargetProps} */
+  const targetSatnavWriterQueue = {
+    type: 'queue',
+    queue: satnavWriterQueue,
+    cdk: {
+      target: {
+        message: awsEvents.RuleTargetInput.fromObject({
+          region: awsEvents.EventField.fromPath('$.detail.region'),
+          bucket: awsEvents.EventField.fromPath('$.detail.bucketName'),
+          key: awsEvents.EventField.fromPath('$.detail.key')
+        }),
       },
-      permissions: [satnavWriterQueue],
-      handler: 'events/satnav-writer.handler',
-    },
+    }
   }
 
-  carparkEventBus.addRules(stack, {
+  eventBus.addRules(stack, {
     newCarToWriteSatnav: {
       pattern: {
         source: [CARPARK_EVENT_BRIDGE_SOURCE_EVENT],
       },
       targets: {
-        satnavWriterTarget
+        targetSatnavWriterQueue,
       }
     }
   })
 
   // Trigger satnav events when an Index is put into the bucket
-  // TODO: this needs replicator-stack because of circular dependency stack
-  /*
   const satnavPutEventConsumer = new Function(stack, 'satnav-consumer', {
     environment: {
-      CARPARK_BUS_ARN: carparkEventBus.eventBusArn,
+      EVENT_BUS_ARN: eventBus.eventBusArn,
     },
-    permissions: [carparkEventBus],
-    handler: 'functions/satnav-event.satnavBucketConsumer',
+    permissions: [eventBus],
+    handler: 'functions/satnav-bucket-event.satnavBucketConsumer',
   })
   satnavBucket.addNotifications(stack, {
     newCarPut: {
@@ -96,5 +102,4 @@ export function SatnavStack({ stack }) {
       events: ['object_created_put'],
     }
   })
-  */
 }

@@ -52,8 +52,8 @@ const stageConfigs = {
     satnavBucketConfig: {
       cdk: {
         bucket: {
-          // Force name of bucket to be "satnav-staging-0" in staging.
-          bucketName: 'satnav-staging-0'
+          // Force name of bucket to be "satnav-prod-0" in prod.
+          bucketName: 'satnav-prod-0'
         },
       },
     }

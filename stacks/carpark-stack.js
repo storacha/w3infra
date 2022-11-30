@@ -2,13 +2,13 @@ import {
   Bucket,
   Function,
   Queue,
-  EventBus
+  use
 } from '@serverless-stack/resources'
-import { Duration } from 'aws-cdk-lib'
+import { Duration, aws_events as awsEvents } from 'aws-cdk-lib'
 import * as sqs from 'aws-cdk-lib/aws-sqs'
 
-import { CARPARK_EVENT_BRIDGE_SOURCE_EVENT } from '../carpark/event-bridge/index.js'
-
+import { BusStack } from './bus-stack.js'
+import { CARPARK_EVENT_BRIDGE_SOURCE_EVENT } from '../carpark/event-bus/source.js'
 import { getConfig } from './config.js'
 
 /**
@@ -21,6 +21,9 @@ export function CarparkStack({ stack }) {
 
   // @ts-expect-error "prod" | "dev" | "staging" only allowed for stage
   const stackConfig = getConfig(stack.stage)
+
+  // Get eventBus reference
+  const { eventBus } = use(BusStack)
 
   const carparkBucket = new Bucket(stack, 'car-store', {
     ...stackConfig.carparkBucketConfig,
@@ -79,41 +82,44 @@ export function CarparkStack({ stack }) {
     function: {
       environment: {},
       permissions: [indexerTopicQueue],
-      handler: 'event-bridge/eipfs-indexer.handler',
+      handler: 'event-bus/eipfs-indexer.handler',
     },
   }
 
-  const replicatorTarget = {
-    function: {
-      environment: {
-        SQS_REPLICATOR_QUEUE_URL: replicatorQueue.queueUrl,
+  /** @type {import('@serverless-stack/resources').EventBusQueueTargetProps} */
+  const targetReplicatorQueue = {
+    type: 'queue',
+    queue: replicatorQueue,
+    cdk: {
+      target: {
+        message: awsEvents.RuleTargetInput.fromObject({
+          bucketRegion: awsEvents.EventField.fromPath('$.detail.region'),
+          bucketName: awsEvents.EventField.fromPath('$.detail.bucketName'),
+          key: awsEvents.EventField.fromPath('$.detail.key')
+        }),
       },
-      permissions: [replicatorQueue],
-      handler: 'event-bridge/replicator.handler',
-    },
+    }
   }
 
-  const carparkEventBus = new EventBus(stack, 'carpark-event-bus', {
-    rules: {
-      newCar: {
-        pattern: {
-          source: [CARPARK_EVENT_BRIDGE_SOURCE_EVENT],
-        },
-        targets: {
-          eIpfsIndexTarget,
-          replicatorTarget
-        },
+  eventBus.addRules(stack, {
+    newCar: {
+      pattern: {
+        source: [CARPARK_EVENT_BRIDGE_SOURCE_EVENT],
       },
+      targets: {
+        eIpfsIndexTarget,
+        targetReplicatorQueue
+      }
     }
   })
 
   // Trigger carpark events when a CAR is put into the bucket.
   const carparkPutEventConsumer = new Function(stack, 'carpark-consumer', {
     environment: {
-      CARPARK_BUS_ARN: carparkEventBus.eventBusArn,
+      EVENT_BUS_ARN: eventBus.eventBusArn,
     },
-    permissions: [carparkEventBus],
-    handler: 'functions/carpark-event.carparkBucketConsumer',
+    permissions: [eventBus],
+    handler: 'functions/carpark-bucket-event.carparkBucketConsumer',
   })
   carparkBucket.addNotifications(stack, {
     newCarPut: {
@@ -123,7 +129,6 @@ export function CarparkStack({ stack }) {
   })
 
   return {
-    carparkBucket,
-    carparkEventBus
+    carparkBucket
   }
 }
