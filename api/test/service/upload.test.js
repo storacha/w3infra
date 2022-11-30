@@ -11,7 +11,7 @@ import { randomCAR } from '../helpers/random.js'
 import { getClientConnection, createSpace } from '../helpers/ucanto.js'
 
 // https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-dynamodb/classes/batchwriteitemcommand.html
-export const BATCH_MAX_SAFE_LIMIT = 25
+const BATCH_MAX_SAFE_LIMIT = 25
 
 /**
  * @typedef {import('@ucanto/server')} Server
@@ -170,7 +170,7 @@ test('upload/add does not fail with no shards provided', async (t) => {
   t.is(bucketItems.length, 0)
 })
 
-test('upload/add does can add shards to an existing item with no shards', async (t) => {
+test('upload/add can add shards to an existing item with no shards', async (t) => {
   const { tableName, bucketName } = await prepareResources(t.context.dynamoClient, t.context.s3Client)
 
   const uploadService = await Signer.generate()
