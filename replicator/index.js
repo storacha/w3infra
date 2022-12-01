@@ -9,7 +9,7 @@ import {
  */
 
 /**
- * Replicate event target into destination bucket and write a side index for it.
+ * Replicate object from event target to destination bucket.
  *
  * @param {object} props
  * @param {import('./utils/parse-sqs-event').EventRecord} props.record
@@ -47,7 +47,7 @@ import {
     }
 
     // @ts-expect-error aws types body does not include pipe...
-    await writeCarToBucket(key, res.Body, destinationBucketName, destinationBucket, { contentLength: res.ContentLength })
+    await writeToBucket(key, res.Body, destinationBucketName, destinationBucket, { contentLength: res.ContentLength })
   }
 }
 
@@ -59,7 +59,7 @@ import {
  * @param {object} [options]
  * @param {number} [options.contentLength]
  */
-async function writeCarToBucket(key, body, bucketName, client, options = {}) {
+async function writeToBucket(key, body, bucketName, client, options = {}) {
   try {
     const putCmd = new PutObjectCommand({
       Bucket: bucketName,
