@@ -11,10 +11,8 @@ export function BusStack({ stack, app }) {
     srcPath: 'bus'
   })
 
-  // Setup Sentry when not in local
-  if (!app.local) {
-    setupSentry(stack)
-  }
+  // Setup app monitoring with Sentry
+  setupSentry(app, stack)
 
   const eventBus = new EventBus(stack, 'event-bus')
 

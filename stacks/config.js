@@ -103,9 +103,15 @@ export function getGitInfo () {
 }
 
 /**
+ * @param {import('@serverless-stack/resources').App} app
  * @param {import('@serverless-stack/resources').Stack} stack
  */
-export function setupSentry (stack) {
+export function setupSentry (app, stack) {
+  // Skip when locally
+  if (app.local) {
+    return
+  }
+
   const { SENTRY_DSN } = getEnv()
 
   const sentry = LayerVersion.fromLayerVersionArn(

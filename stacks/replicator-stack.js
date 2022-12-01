@@ -18,10 +18,8 @@ export function ReplicatorStack({ stack, app }) {
     srcPath: 'replicator'
   })
 
-  // Setup Sentry when not in local
-  if (!app.local) {
-    setupSentry(stack)
-  }
+  // Setup app monitoring with Sentry
+  setupSentry(app, stack)
 
   // Get Event Bus reference
   const { eventBus } = use(BusStack)

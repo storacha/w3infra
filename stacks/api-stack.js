@@ -22,10 +22,8 @@ export function ApiStack({ stack, app }) {
   // @ts-expect-error "prod" | "dev" | "staging" only allowed for stage
   const stackConfig = getConfig(stack.stage)
 
-  // Setup Sentry when not in local
-  if (!app.local) {
-    setupSentry(stack)
-  }
+  // Setup app monitoring with Sentry
+  setupSentry(app, stack)
 
   // Get carpark reference
   const { carparkBucket } = use(CarparkStack)
