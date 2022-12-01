@@ -6,13 +6,13 @@ import { setupSentry } from './config.js'
 /**
  * @param {import('@serverless-stack/resources').StackContext} properties
  */
-export function BusStack({ stack }) {
+export function BusStack({ stack, app }) {
   stack.setDefaultFunctionProps({
     srcPath: 'bus'
   })
 
-  // Setup Sentry when not in dev mode
-  if (stack.stage !== 'dev') {
+  // Setup Sentry when not in local
+  if (!app.local) {
     setupSentry(stack)
   }
 

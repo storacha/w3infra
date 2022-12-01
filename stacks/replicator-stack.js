@@ -13,13 +13,13 @@ import { SATNAV_EVENT_BRIDGE_SOURCE_EVENT } from '../satnav/event-bus/source.js'
 /**
  * @param {import('@serverless-stack/resources').StackContext} properties
  */
-export function ReplicatorStack({ stack }) {
+export function ReplicatorStack({ stack, app }) {
   stack.setDefaultFunctionProps({
     srcPath: 'replicator'
   })
 
-  // Setup Sentry when not in dev mode
-  if (stack.stage !== 'dev') {
+  // Setup Sentry when not in local
+  if (!app.local) {
     setupSentry(stack)
   }
 

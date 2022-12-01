@@ -14,7 +14,7 @@ import { getConfig, getCustomDomain, getApiPackageJson, getGitInfo, setupSentry 
 /**
  * @param {import('@serverless-stack/resources').StackContext} properties
  */
-export function ApiStack({ stack }) {
+export function ApiStack({ stack, app }) {
   stack.setDefaultFunctionProps({
     srcPath: 'api'
   })
@@ -22,8 +22,8 @@ export function ApiStack({ stack }) {
   // @ts-expect-error "prod" | "dev" | "staging" only allowed for stage
   const stackConfig = getConfig(stack.stage)
 
-  // Setup Sentry when not in dev mode
-  if (stack.stage !== 'dev') {
+  // Setup Sentry when not in local
+  if (!app.local) {
     setupSentry(stack)
   }
 

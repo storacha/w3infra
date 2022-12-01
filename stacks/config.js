@@ -117,6 +117,7 @@ export function setupSentry (stack) {
   stack.addDefaultFunctionEnv({
     SENTRY_DSN,
     SENTRY_TRACES_SAMPLE_RATE: '1.0',
+    NODE_OPTIONS: "-r @sentry/serverless/dist/awslambda-auto", 
   })
 }
 

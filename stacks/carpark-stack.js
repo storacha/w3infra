@@ -13,7 +13,7 @@ import { getConfig, setupSentry } from './config.js'
 /**
  * @param {import('@serverless-stack/resources').StackContext} properties
  */
-export function CarparkStack({ stack }) {
+export function CarparkStack({ stack, app }) {
   stack.setDefaultFunctionProps({
     srcPath: 'carpark'
   })
@@ -21,8 +21,8 @@ export function CarparkStack({ stack }) {
   // @ts-expect-error "prod" | "dev" | "staging" only allowed for stage
   const stackConfig = getConfig(stack.stage)
 
-  // Setup Sentry when not in dev mode
-  if (stack.stage !== 'dev') {
+  // Setup Sentry when not in local
+  if (!app.local) {
     setupSentry(stack)
   }
 

@@ -14,7 +14,7 @@ import { CARPARK_EVENT_BRIDGE_SOURCE_EVENT } from '../carpark/event-bus/source.j
 /**
  * @param {import('@serverless-stack/resources').StackContext} properties
  */
-export function SatnavStack({ stack }) {
+export function SatnavStack({ stack, app }) {
   stack.setDefaultFunctionProps({
     srcPath: 'satnav'
   })
@@ -22,8 +22,8 @@ export function SatnavStack({ stack }) {
   // @ts-expect-error "prod" | "dev" | "staging" only allowed for stage
   const stackConfig = getConfig(stack.stage)
 
-  // Setup Sentry when not in dev mode
-  if (stack.stage !== 'dev') {
+  // Setup Sentry when not in local
+  if (!app.local) {
     setupSentry(stack)
   }
 
