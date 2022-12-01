@@ -33,7 +33,11 @@ import {
         Key: key,
       })
     )
-  } catch {
+  } catch (/** @type {any} */ err) {
+    if (err?.$metadata.httpStatusCode !== 404) {
+      throw err
+    }
+
     // Not in destinationBucket, so read from origin bucket and write to destination bucket
     const getCmd = new GetObjectCommand({
       Bucket: record.bucketName,
@@ -47,7 +51,10 @@ import {
     }
 
     // @ts-expect-error aws types body does not include pipe...
-    await writeToBucket(key, res.Body, destinationBucketName, destinationBucket, { contentLength: res.ContentLength })
+    await writeToBucket(key, res.Body, destinationBucketName, destinationBucket, {
+      contentLength: res.ContentLength,
+      metadata: res.Metadata
+    })
   }
 }
 
@@ -58,6 +65,7 @@ import {
  * @param {S3Client} client
  * @param {object} [options]
  * @param {number} [options.contentLength]
+ * @param {Record<string, string> | undefined} [options.metadata]
  */
 async function writeToBucket(key, body, bucketName, client, options = {}) {
   try {
@@ -67,6 +75,7 @@ async function writeToBucket(key, body, bucketName, client, options = {}) {
       Body: body,
       // TODO: md5
       ContentLength: options.contentLength,
+      Metadata: options.metadata
     })
 
     await client.send(putCmd)
