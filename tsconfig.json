@@ -33,6 +33,5 @@
     "stripInternal": true,
     "resolveJsonModule": true,
   },
-  "include": [
-    "api", "stacks", "carpark", "satnav" ]
+  "include": [ "api", "stacks", "carpark", "replicator", "satnav" ]
 }

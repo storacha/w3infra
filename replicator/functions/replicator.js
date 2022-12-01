@@ -2,7 +2,7 @@ import {
   S3Client
 } from '@aws-sdk/client-s3'
 
-import { carReplicateAndIndex } from '../replicator.js'
+import { replicate } from '../index.js'
 import parseSqsEvent from '../utils/parse-sqs-event.js'
 
 /**
@@ -15,8 +15,7 @@ export function handler (event) {
     REPLICATOR_ENDPOINT,
     REPLICATOR_ACCESS_KEY_ID,
     REPLICATOR_SECRET_ACCESS_KEY,
-    REPLICATOR_CAR_BUCKET_NAME,
-    REPLICATOR_INDEX_BUCKET_NAME,
+    REPLICATOR_BUCKET_NAME,
   } = getEnv()
 
   const record = parseSqsEvent(event)
@@ -34,12 +33,11 @@ export function handler (event) {
   })
 
   const originBucket = new S3Client({ region: record.bucketRegion })
-  return carReplicateAndIndex({
+  return replicate({
     record,
     destinationBucket,
     originBucket,
-    destinationBucketCarName: REPLICATOR_CAR_BUCKET_NAME,
-    destinationBucketSideIndexName: REPLICATOR_INDEX_BUCKET_NAME,
+    destinationBucketName: REPLICATOR_BUCKET_NAME,
   })
 }
 
@@ -51,8 +49,7 @@ function getEnv() {
     REPLICATOR_ENDPOINT: mustGetEnv('REPLICATOR_ENDPOINT'),
     REPLICATOR_ACCESS_KEY_ID: mustGetEnv('REPLICATOR_ACCESS_KEY_ID'),
     REPLICATOR_SECRET_ACCESS_KEY: mustGetEnv('REPLICATOR_SECRET_ACCESS_KEY'),
-    REPLICATOR_CAR_BUCKET_NAME: mustGetEnv('REPLICATOR_CAR_BUCKET_NAME'),
-    REPLICATOR_INDEX_BUCKET_NAME: mustGetEnv('REPLICATOR_INDEX_BUCKET_NAME')
+    REPLICATOR_BUCKET_NAME: mustGetEnv('REPLICATOR_BUCKET_NAME')
   }
 }
 
