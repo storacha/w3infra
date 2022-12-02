@@ -63,7 +63,7 @@ Secret access key for S3 like cloud object storage to replicate content into.
 
 Endpoint for S3 like cloud object storage to replicate content into.
 
-### `R2_CAR_BUCKET_NAME`
+### `R2_CARPARK_BUCKET_NAME`
 
 Bucket name to replicate written CAR files.
 
