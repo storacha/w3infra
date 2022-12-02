@@ -33,6 +33,8 @@ export function createAccessClient (issuer, serviceDID, serviceURL) {
           proofs: [invocation]
         })
         .execute(conn)
+
+      if (res.error) console.warn('invocation verification failed', res)
       return !res.error
     }
   }
