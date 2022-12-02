@@ -114,16 +114,8 @@ export function setupSentry (app, stack) {
 
   const { SENTRY_DSN } = getEnv()
 
-  // const sentry = LayerVersion.fromLayerVersionArn(
-  //   stack,
-  //   'SentryLayer',
-  //   `arn:aws:lambda:${stack.region}:943013980633:layer:SentryNodeServerlessSDK:73`
-  // )
-  // stack.addDefaultFunctionLayers([sentry])
   stack.addDefaultFunctionEnv({
     SENTRY_DSN,
-    SENTRY_TRACES_SAMPLE_RATE: '1.0',
-    // NODE_OPTIONS: "-r @sentry/serverless/dist/awslambda-auto", 
   })
 }
 
