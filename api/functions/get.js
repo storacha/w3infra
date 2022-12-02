@@ -47,3 +47,12 @@ export async function homeGet (request) {
 }
 
 export const home = Sentry.AWSLambda.wrapHandler(homeGet)
+
+/**
+ * AWS HTTP Gateway handler for GET /error
+ */
+ export async function errorGet () {
+  throw new Error('API Error')
+}
+
+export const error = Sentry.AWSLambda.wrapHandler(errorGet)
