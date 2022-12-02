@@ -23,7 +23,7 @@ const stageConfigs = {
     },
   },
   staging: {
-    bucketConfig: {
+    carparkBucketConfig: {
       cdk: {
         bucket: {
           // Force name of bucket to be "carpark-staging-0" in staging.
@@ -31,9 +31,17 @@ const stageConfigs = {
         },
       },
     },
+    satnavBucketConfig: {
+      cdk: {
+        bucket: {
+          // Force name of bucket to be "satnav-staging-0" in staging.
+          bucketName: 'satnav-staging-0'
+        },
+      },
+    }
   },
   prod: {
-    bucketConfig: {
+    carparkBucketConfig: {
       cdk: {
         bucket: {
           // Force name of bucket to be "carpark-prod-0" in prod.
@@ -41,12 +49,20 @@ const stageConfigs = {
         },
       },
     },
+    satnavBucketConfig: {
+      cdk: {
+        bucket: {
+          // Force name of bucket to be "satnav-prod-0" in prod.
+          bucketName: 'satnav-prod-0'
+        },
+      },
+    }
   },
 }
 
 /**
  * @param {'dev'|'staging'|'prod'} stage
- * @returns {{ bucketConfig ?:any, tableConfig ?:any }}
+ * @returns {{ carparkBucketConfig ?:any, satnavBucketConfig ?: any, tableConfig ?:any }}
  */
 export function getConfig(stage) {
   return stageConfigs[stage] || stageConfigs.dev

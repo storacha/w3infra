@@ -9,7 +9,7 @@ export const CARPARK_EVENT_BRIDGE_SOURCE_EVENT = 'carpark_bucket'
  * @param {import('@aws-sdk/client-eventbridge').EventBridge} eventBridge
  * @param {string} eventBusName
  */
- export async function notifyCarparkBus(event, eventBridge, eventBusName) {
+ export async function notifyBus(event, eventBridge, eventBusName) {
   const entries = event.Records
     ? event.Records.map((r) => ({
         key: r?.s3?.object?.key,

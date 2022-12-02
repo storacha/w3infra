@@ -6,6 +6,11 @@ import {
   QueryCommand
 } from '@aws-sdk/client-dynamodb'
 import { marshall, unmarshall } from '@aws-sdk/util-dynamodb'
+import { CID } from 'multiformats/cid'
+
+/** @typedef {import('../service/types').StoreAddInput} StoreAddInput */
+/** @typedef {import('../service/types').StoreAddOutput} StoreAddOutput */
+/** @typedef {import('../service/types').StoreListItem} StoreListItem */
 
 /**
  * Abstraction layer to handle operations on Store Table.
@@ -26,17 +31,17 @@ export function createStoreTable (region, tableName, options = {}) {
     /**
      * Check if the given link CID is bound to the uploader account
      *
-     * @param {string} uploaderDID
-     * @param {string} payloadCID
+     * @param {import('@ucanto/interface').DID} space
+     * @param {import('../service/types').AnyLink} link
      */
-    exists: async (uploaderDID, payloadCID) => {
+    exists: async (space, link) => {
       const cmd = new GetItemCommand({
         TableName: tableName,
         Key: marshall({
-          uploaderDID,
-          payloadCID,
+          space,
+          link: link.toString()
         }),
-        AttributesToGet: ['uploaderDID'],
+        AttributesToGet: ['space'],
       })
   
       try {
@@ -48,41 +53,43 @@ export function createStoreTable (region, tableName, options = {}) {
     },
     /**
      * Bind a link CID to an account
-     *
-     * @param {import('../service/types').StoreItemInput} item
+     * 
+     * @param {StoreAddInput} item
+     * @returns {Promise<StoreAddOutput>}
      */
-    insert: async ({ uploaderDID, link, proof, origin, size = 0 }) => {
+    insert: async ({ space, link, origin, size, issuer, invocation }) => {
+      const insertedAt = new Date().toISOString()
+
       const item = {
-        uploaderDID,
-        payloadCID: link,
-        applicationDID: '',
-        origin: origin || '',
+        space,
+        link: link.toString(),
         size,
-        proof,
-        uploadedAt: new Date().toISOString(),
+        origin: origin?.toString(),
+        issuer,
+        invocation: invocation.toString(),
+        insertedAt
       }
 
       const cmd = new PutItemCommand({
         TableName: tableName,
-        Item: marshall(item),
+        Item: marshall(item, { removeUndefinedValues: true }),
       })
 
       await dynamoDb.send(cmd)
-
-      return item
+      return { link, size, ...origin && { origin }}
     },
     /**
      * Unbinds a link CID to an account
      *
-     * @param {string} uploaderDID
-     * @param {string} payloadCID
+     * @param {import('@ucanto/interface').DID} space
+     * @param {import('../service/types').AnyLink} link
      */
-    remove: async (uploaderDID, payloadCID) => {
+    remove: async (space, link) => {
       const cmd = new DeleteItemCommand({
         TableName: tableName,
         Key: marshall({
-          uploaderDID,
-          payloadCID,
+          space,
+          link: link.toString(),
         })
       })
   
@@ -90,52 +97,61 @@ export function createStoreTable (region, tableName, options = {}) {
     },
     /**
      * List all CARs bound to an account
-     *
-     * @param {string} uploaderDID
+     * 
+     * @typedef {import('../service/types').ListResponse<StoreListItem>} ListResponse
+     * 
+     * @param {import('@ucanto/interface').DID} space
      * @param {import('../service/types').ListOptions} [options]
+     * @returns {Promise<ListResponse>}
      */
-    list: async (uploaderDID, options = {}) => {
+    list: async (space, options = {}) => {
       const exclusiveStartKey = options.cursor ? marshall({
-        uploaderDID,
-        payloadCID: options.cursor
+        space,
+        link: options.cursor
       }) : undefined
 
       const cmd = new QueryCommand({
         TableName: tableName,
         Limit: options.size || 20,
         KeyConditions: {
-          uploaderDID: {
+          space: {
             ComparisonOperator: 'EQ',
-            AttributeValueList: [{ S: uploaderDID }],
+            AttributeValueList: [{ S: space }],
           },
         },
         ExclusiveStartKey: exclusiveStartKey,
-        AttributesToGet: ['payloadCID', 'size', 'origin', 'uploadedAt'],
+        AttributesToGet: ['link', 'size', 'origin', 'insertedAt'],
       })
       const response = await dynamoDb.send(cmd)
 
-      /** @type {import('../service/types').StoreListResult[]} */
-      // @ts-expect-error
-      const results = response.Items?.map(i => {
-        const item = unmarshall(i)
-        // omit origin if empty
-        if (!item.origin) {
-          delete item.origin
-        }
-
-        return item
-      }) || []
-
+      const results = response.Items?.map(i => toStoreListResult(unmarshall(i))) ?? []
       // Get cursor of the item where list operation stopped (inclusive).
       // This value can be used to start a new operation to continue listing.
       const lastKey = response.LastEvaluatedKey && unmarshall(response.LastEvaluatedKey)
-      const cursor = lastKey ? lastKey.payloadCID : undefined
+      const cursor = lastKey ? lastKey.link : undefined
 
       return {
         size: results.length,
         cursor,
         results
       }
+    }
+  }
+}
+
+/**
+ * Upgrade from the db representation
+ * 
+ * @param {Record<string, any>} item
+ * @returns {StoreListItem}
+ */
+ export function toStoreListResult ({link, size, origin, insertedAt}) {
+  return {
+    link: CID.parse(link),
+    size,
+    insertedAt,
+    ...origin && { 
+      origin: CID.parse(origin) 
     }
   }
 }

@@ -6,7 +6,7 @@ const SQS_INDEXER_QUEUE_URL =
 const SQS_INDEXER_QUEUE_REGION = 'us-west-2'
 
 /**
- * @param {import('.').EventBridgeEvent} event 
+ * @param {import('./source').EventBridgeEvent} event 
  * @param {SQSClient} client
  * @param {string} queueUrl
  */
@@ -24,7 +24,7 @@ export async function eipfsHandler(event, client, queueUrl) {
 }
 
 /**
- * @param {import('.').EventBridgeEvent} event 
+ * @param {import('./source').EventBridgeEvent} event 
  */
  export async function handler (event) {
   const sqsClient = new SQSClient({

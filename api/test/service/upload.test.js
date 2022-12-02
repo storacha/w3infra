@@ -1,20 +1,21 @@
 import { testStore as test } from '../helpers/context.js'
 import { customAlphabet } from 'nanoid'
 import { CreateTableCommand, QueryCommand } from '@aws-sdk/client-dynamodb'
+import { ListObjectsV2Command } from '@aws-sdk/client-s3'
 import { unmarshall } from '@aws-sdk/util-dynamodb'
 import * as Signer from '@ucanto/principal/ed25519'
 import * as UploadCapabilities from '@web3-storage/access/capabilities/upload'
-
-import { BATCH_MAX_SAFE_LIMIT } from '../../tables/upload.js'
-
-import { createS3, createBucket, createAccessServer, createDynamodDb } from '../helpers/resources.js'
+import { uploadTableProps } from '../../tables/index.js'
+import { createS3, createBucket, createAccessServer, createDynamodDb, dynamoDBTableConfig } from '../helpers/resources.js'
 import { randomCAR } from '../helpers/random.js'
 import { getClientConnection, createSpace } from '../helpers/ucanto.js'
-import { dynamoDBTableConfig, uploadTableProps } from '../../tables/index.js'
+
+// https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-dynamodb/classes/batchwriteitemcommand.html
+const BATCH_MAX_SAFE_LIMIT = 25
 
 /**
  * @typedef {import('@ucanto/server')} Server
- * @typedef {import('../../service/types').UploadItemOutput} UploadItemOutput
+ * @typedef {import('../../service/types').UploadListItem} UploadItemOutput
  * @typedef {import('../../service/types').ListResponse<UploadItemOutput>} ListResponse
  */
 
@@ -80,7 +81,7 @@ test('upload/add inserts into DB mapping between data CID and car CIDs', async (
 
   // invoke a upload/add with proof
   const root = car.roots[0]
-  const shards = [car.cid, otherCar.cid]
+  const shards = [car.cid, otherCar.cid].sort()
 
   const uploadAdd = await UploadCapabilities.add.invoke({
     issuer: alice,
@@ -93,25 +94,32 @@ test('upload/add inserts into DB mapping between data CID and car CIDs', async (
   if (uploadAdd.error) {
     throw new Error('invocation failed', { cause: uploadAdd })
   }
-  t.is(uploadAdd.length, shards.length)
 
-  // Validate shards result
-  for (const shard of shards) {
-    const shardResult = uploadAdd.find((s) => s.carCID === shard.toString())
-    t.is(shardResult?.dataCID, root.toString())
-    t.is(shardResult?.uploaderDID, spaceDid)
-    t.truthy(shardResult?.uploadedAt)
-  }
+  t.like(uploadAdd, { root })
+
+  // order not guaranteed. Sort manually to simplify assertions.
+  t.deepEqual(uploadAdd.shards?.sort(), shards)
 
   // Validate DB
   const dbItems = await getUploadsForSpace(t.context.dynamoClient, tableName, spaceDid)
-  t.is(dbItems.length, shards.length)
+  t.is(dbItems.length, 1)
 
-  // Validate shards result
+  const [dbItem] = dbItems
+  t.like(dbItem, {
+    space: spaceDid,
+    root: root.toString(),
+  })
+
+  t.deepEqual([...dbItem.shards].sort(), shards.map(s => s.toString()))
+
+  const msAgo = Date.now() - new Date(dbItems[0].insertedAt).getTime()
+  t.true(msAgo < 60_000)
+  t.true(msAgo >= 0)
+
+  // Validate data CID -> car CID mapping
+  const bucketItems = await getMappingItemsForUpload(t.context.s3Client, bucketName, root.toString())
   for (const shard of shards) {
-    const shardResult = dbItems.find((s) => s.carCID === shard.toString())
-    t.is(shardResult?.dataCID, root.toString())
-    t.truthy(shardResult?.uploadedAt)
+    t.truthy(bucketItems?.includes(`${root.toString()}/${shard.toString()}`))
   }
 })
 
@@ -146,11 +154,130 @@ test('upload/add does not fail with no shards provided', async (t) => {
     throw new Error('invocation failed', { cause: uploadAdd })
   }
 
-  t.is(uploadAdd.length, 0)
+  t.like(uploadAdd, {
+    root,
+    shards: []
+  }, 'Should have an empty shards array')
 
   // Validate DB
   const dbItems = await getUploadsForSpace(t.context.dynamoClient, tableName, spaceDid)
-  t.is(dbItems.length, 0)
+  t.is(dbItems.length, 1)
+  const [item] = dbItems
+  t.falsy(item.shards)
+
+  // Validate data CID -> car CID mapping
+  const bucketItems = await getMappingItemsForUpload(t.context.s3Client, bucketName, root.toString())
+  t.is(bucketItems.length, 0)
+})
+
+test('upload/add can add shards to an existing item with no shards', async (t) => {
+  const { tableName, bucketName } = await prepareResources(t.context.dynamoClient, t.context.s3Client)
+
+  const uploadService = await Signer.generate()
+  const alice = await Signer.generate()
+  const { proof, spaceDid } = await createSpace(alice)
+  const connection = await getClientConnection(uploadService, {
+    ...t.context,
+    tableName,
+    bucketName
+  })
+
+  const car = await randomCAR(128)
+  const shards = [car.cid]
+
+  // invoke a upload/add with proof
+  const root = car.roots[0]
+
+  const uploadAdd1 = await UploadCapabilities.add.invoke({
+    issuer: alice,
+    audience: uploadService,
+    with: spaceDid,
+    nb: { root },
+    proofs: [proof]
+  }).execute(connection)
+
+  if (uploadAdd1.error) {
+    throw new Error('invocation failed', { cause: uploadAdd1 })
+  }
+
+  t.deepEqual(uploadAdd1.shards, [])
+
+  const uploadAdd2 = await UploadCapabilities.add.invoke({
+    issuer: alice,
+    audience: uploadService,
+    with: spaceDid,
+    nb: { root, shards },
+    proofs: [proof]
+  }).execute(connection)
+
+  if (uploadAdd2.error) {
+    throw new Error('invocation failed', { cause: uploadAdd2 })
+  }
+
+  t.deepEqual(uploadAdd2.shards, shards)
+
+  // Validate DB
+  const dbItems = await getUploadsForSpace(t.context.dynamoClient, tableName, spaceDid)
+  t.is(dbItems.length, 1)
+  t.deepEqual([...dbItems[0].shards], shards.map(s => s.toString()))
+})
+
+test('upload/add merges shards to an existing item with shards', async (t) => {
+  const { tableName, bucketName } = await prepareResources(t.context.dynamoClient, t.context.s3Client)
+
+  const uploadService = await Signer.generate()
+  const alice = await Signer.generate()
+  const { proof, spaceDid } = await createSpace(alice)
+  const connection = await getClientConnection(uploadService, {
+    ...t.context,
+    tableName,
+    bucketName
+  })
+
+  const cars = await Promise.all([randomCAR(128), randomCAR(128), randomCAR(128)])
+
+  // invoke a upload/add with proof
+  const root = cars[2].roots[0]
+
+  const uploadAdd1 = await UploadCapabilities.add.invoke({
+    issuer: alice,
+    audience: uploadService,
+    with: spaceDid,
+    nb: { root, shards: [cars[0].cid, cars[1].cid] },
+    proofs: [proof]
+  }).execute(connection)
+
+  if (uploadAdd1.error) {
+    throw new Error('invocation failed', { cause: uploadAdd1 })
+  }
+
+  t.deepEqual(uploadAdd1.shards?.sort(), [cars[0].cid, cars[1].cid].sort())
+
+  const uploadAdd2 = await UploadCapabilities.add.invoke({
+    issuer: alice,
+    audience: uploadService,
+    with: spaceDid,
+    nb: { root, shards: [cars[1].cid, cars[2].cid] },
+    proofs: [proof]
+  }).execute(connection)
+
+  if (uploadAdd2.error) {
+    throw new Error('invocation failed', { cause: uploadAdd2 })
+  }
+
+  t.deepEqual(uploadAdd2?.shards?.sort(), [cars[0].cid, cars[1].cid, cars[2].cid].sort())
+
+  // Validate DB
+  const dbItems = await getUploadsForSpace(t.context.dynamoClient, tableName, spaceDid)
+  t.is(dbItems.length, 1)
+
+  const [item] = dbItems
+  t.like(item, {
+    space: spaceDid,
+    root: root.toString()
+  })
+  t.is(item.shards.size, 3, 'Repeated shards should be deduped')
+  t.deepEqual([...dbItems[0].shards].sort(), cars.map(c => c.cid.toString()).sort())
 })
 
 test('upload/remove does not fail for non existent upload', async (t) => {
@@ -246,17 +373,13 @@ test('upload/remove removes all entries with data CID linked to space', async (t
     proofs: [proofSpaceA]
   }).execute(connection)
 
-  // Validate SpaceA has 0 items for CarA
-  const spaceAcarAItems = await getUploadsForSpaceFilteredByDataCID(t.context.dynamoClient, tableName, spaceDidA, carA.roots[0])
-  t.is(spaceAcarAItems.length, 0)
+  const spaceAItems = await getUploadsForSpace(t.context.dynamoClient, tableName, spaceDidA)
+  t.falsy(spaceAItems.find((x) => x.root === carA.roots[0].toString()), 'SpaceA should not have upload for carA.root')
+  t.truthy(spaceAItems.find((x) => x.root === carB.roots[0].toString()), 'SpaceA should have upload for carB.root')
 
-  // Validate SpaceA has 2 items for CarB
-  const spaceAcarBItems = await getUploadsForSpaceFilteredByDataCID(t.context.dynamoClient, tableName, spaceDidA, carB.roots[0])
-  t.is(spaceAcarBItems.length, 2)
-
-  // Validate SpaceB has 2 items for CarA
-  const spaceBcarAItems = await getUploadsForSpaceFilteredByDataCID(t.context.dynamoClient, tableName, spaceDidB, carA.roots[0])
-  t.is(spaceBcarAItems.length, 2)
+  const spaceBItems = await getUploadsForSpace(t.context.dynamoClient, tableName, spaceDidB)
+  t.falsy(spaceBItems.find((x) => x.root === carB.roots[0].toString()), 'SpaceB should not have upload for carB.root')
+  t.truthy(spaceBItems.find((x) => x.root === carA.roots[0].toString()), 'SpaceB should have upload for carA.root')
 })
 
 test('upload/remove removes all entries when larger than batch limit', async (t) => {
@@ -289,12 +412,12 @@ test('upload/remove removes all entries when larger than batch limit', async (t)
   if (uploadAdd.error) {
     throw new Error('invocation failed', { cause: uploadAdd })
   }
-
-  t.is(uploadAdd.length, shards.length)
+  
+  t.is(uploadAdd.shards?.length, shards.length)
 
   // Validate DB before remove
   const dbItemsBefore = await getUploadsForSpace(t.context.dynamoClient, tableName, spaceDid)
-  t.is(dbItemsBefore.length, shards.length)
+  t.is(dbItemsBefore.length, 1)
 
   // Remove Car from Space
   await UploadCapabilities.remove.invoke({
@@ -310,7 +433,7 @@ test('upload/remove removes all entries when larger than batch limit', async (t)
   t.is(dbItemsAfter.length, 0)
 })
 
-test('store/list does not fail for empty list', async (t) => {
+test('upload/list does not fail for empty list', async (t) => {
   const { tableName, bucketName } = await prepareResources(t.context.dynamoClient, t.context.s3Client)
 
   const uploadService = await Signer.generate()
@@ -333,7 +456,7 @@ test('store/list does not fail for empty list', async (t) => {
   t.like(uploadList, { results: [], size: 0 })
 })
 
-test('store/list returns entries previously uploaded by the user', async (t) => {
+test('upload/list returns entries previously uploaded by the user', async (t) => {
   const { tableName, bucketName } = await prepareResources(t.context.dynamoClient, t.context.s3Client)
 
   const uploadService = await Signer.generate()
@@ -373,10 +496,13 @@ test('store/list returns entries previously uploaded by the user', async (t) => 
   }
 
   t.is(uploadList.size, cars.length)
-
-  // Validate entries have given CARs
-  for (const entry of uploadList.results) {
-    t.truthy(cars.find(car => car.roots[0].toString() === entry.dataCID ))
+  
+  for (const car of cars) {
+    const root = car.roots[0]
+    const item = uploadList.results.find((x) => x.root.toString() === root.toString())
+    t.like(item, { root })
+    t.deepEqual(item?.shards, [car.cid])
+    t.is(item?.updatedAt, item?.insertedAt)
   }
 })
 
@@ -440,7 +566,7 @@ test('upload/list can be paginated with custom size', async (t) => {
   // Inspect content
   const uploadList = listPages.flat()
   for (const entry of uploadList) {
-    t.truthy(cars.find(car => car.roots[0].toString() === entry.dataCID ))
+    t.truthy(cars.find(car => car.roots[0].toString() === entry.root.toString() ))
   }
 })
 
@@ -492,9 +618,13 @@ async function prepareResources (dynamoClient, s3Client) {
     Limit: options.limit || 30,
     ExpressionAttributeValues: {
       ':u': { S: spaceDid },
-    },  
-    KeyConditionExpression: 'uploaderDID = :u',
-    ProjectionExpression: 'dataCID, carCID, uploadedAt'
+    },
+    // gotta sidestep dynamo reserved words!?
+    ExpressionAttributeNames: {
+      '#space': 'space'
+    },
+    KeyConditionExpression: '#space = :u',
+    ProjectionExpression: '#space, root, shards, insertedAt'
   })
 
   const response = await dynamo.send(cmd)
@@ -502,27 +632,16 @@ async function prepareResources (dynamoClient, s3Client) {
 }
 
 /**
- * @param {import("@aws-sdk/client-dynamodb").DynamoDBClient} dynamo
- * @param {string} tableName
- * @param {`did:key:${string}`} spaceDid
- * @param {import("multiformats").CID<unknown, 85, 18, 1>} dataCid
- * @param {object} [options]
- * @param {number} [options.limit]
+ * @param {import("@aws-sdk/client-s3").S3Client} s3Client
+ * @param {string} bucketName
+ * @param {string} dataCid
  */
- async function getUploadsForSpaceFilteredByDataCID(dynamo, tableName, spaceDid, dataCid, options = {}) {
-  const cmd = new QueryCommand({
-    TableName: tableName,
-    Limit: options.limit || 30,
-    ExpressionAttributeValues: {
-      ':u': { S: spaceDid },
-      ':d': { S: dataCid.toString() }
-    },  
-    KeyConditionExpression: 'uploaderDID = :u',
-    FilterExpression: 'contains (dataCID, :d)',
-    ProjectionExpression: 'dataCID, carCID, uploadedAt'
+async function getMappingItemsForUpload (s3Client, bucketName, dataCid) {
+  const listCmd = new ListObjectsV2Command({
+    Bucket: bucketName,
+    Prefix: dataCid
   })
+  const mappingItems = await s3Client.send(listCmd)
 
-  const response = await dynamo.send(cmd)
-  return response.Items?.map(i => unmarshall(i)) || []
+  return mappingItems.Contents?.map(i => i.Key) || []
 }
-

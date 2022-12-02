@@ -17,37 +17,37 @@ export function storeAddProvider(context) {
     Store.add,
     async ({ capability, invocation }) => {
       const { link, origin, size } = capability.nb
-      const proof = invocation.cid
-
-      const resource = Server.DID.parse(capability.with).did()
+      const space = Server.DID.parse(capability.with).did()
+      const issuer = invocation.issuer.did()
       const [
         verified,
         carIsLinkedToAccount,
         carExists
       ] = await Promise.all([
         context.access.verifyInvocation(invocation),
-        context.storeTable.exists(resource, link.toString()),
+        context.storeTable.exists(space, link),
         context.carStoreBucket.has(link.toString())
       ])
 
       if (!verified) {
-        return new Server.Failure(`${invocation.issuer.did()} is not delegated capability ${Store.add.can} on ${resource}`)
+        return new Server.Failure(`${issuer} is not delegated capability ${Store.add.can} on ${space}`)
       }
 
       if (!carIsLinkedToAccount) {
         await context.storeTable.insert({
-          uploaderDID: resource,
-          link: link.toString(),
-          proof: proof.toString(),
-          origin: origin?.toString(),
-          size
+          space,
+          link,
+          size,
+          origin,
+          issuer,
+          invocation: invocation.cid,
         })
       }
 
       if (carExists) {
         return {
           status: 'done',
-          with: resource,
+          with: space,
           link
         }
       }
@@ -55,7 +55,7 @@ export function storeAddProvider(context) {
       const { url, headers } = context.signer.sign(link)
       return {
         status: 'upload',
-        with: resource,
+        with: space,
         link,
         url,
         headers

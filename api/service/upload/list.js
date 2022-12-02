@@ -4,7 +4,7 @@ import * as Upload from '@web3-storage/access/capabilities/upload'
 /**
  * @typedef {import('@web3-storage/access/types').UploadList} UploadListCapability
  * @typedef {import('@ucanto/interface').Failure} Failure
- * @typedef {import('../types').UploadItemOutput} UploadItemOutput
+ * @typedef {import('../types').UploadListItem} UploadItemOutput
  * @typedef {import('../types').ListResponse<UploadItemOutput>} ListResponse
  */
 
@@ -21,9 +21,9 @@ export function uploadListProvider(context) {
       // Only use capability account for now to check if account is registered.
       // This must change to access account/info!!
       // We need to use https://github.com/web3-storage/w3protocol/blob/9d4b5bec1f0e870233b071ecb1c7a1e09189624b/packages/access/src/agent.js#L270
-      const account = capability.with
+      const space = Server.DID.parse(capability.with).did()
 
-      return await context.uploadTable.list(account, {
+      return await context.uploadTable.list(space, {
         size,
         cursor
       })
