@@ -26,11 +26,11 @@ export function ReplicatorStack({ stack }) {
     'carpark-replicator-handler',
     {
       environment: {
-        REPLICATOR_ACCESS_KEY_ID: process.env.REPLICATOR_ACCESS_KEY_ID || '',
-        REPLICATOR_ENDPOINT: process.env.REPLICATOR_ENDPOINT || '',
+        REPLICATOR_ACCESS_KEY_ID: process.env.R2_ACCESS_KEY_ID || '',
+        REPLICATOR_ENDPOINT: process.env.R2_ENDPOINT || '',
         REPLICATOR_SECRET_ACCESS_KEY:
-          process.env.REPLICATOR_SECRET_ACCESS_KEY || '',
-        REPLICATOR_BUCKET_NAME: process.env.REPLICATOR_CAR_BUCKET_NAME || '',
+          process.env.R2_SECRET_ACCESS_KEY || '',
+        REPLICATOR_BUCKET_NAME: process.env.R2_CAR_BUCKET_NAME || '',
       },
       permissions: ['s3:*'],
       handler: 'functions/replicator.handler',
@@ -44,11 +44,11 @@ export function ReplicatorStack({ stack }) {
     'satnav-replicator-handler',
     {
       environment: {
-        REPLICATOR_ACCESS_KEY_ID: process.env.REPLICATOR_ACCESS_KEY_ID || '',
-        REPLICATOR_ENDPOINT: process.env.REPLICATOR_ENDPOINT || '',
+        REPLICATOR_ACCESS_KEY_ID: process.env.R2_ACCESS_KEY_ID || '',
+        REPLICATOR_ENDPOINT: process.env.R2_ENDPOINT || '',
         REPLICATOR_SECRET_ACCESS_KEY:
-          process.env.REPLICATOR_SECRET_ACCESS_KEY || '',
-        REPLICATOR_BUCKET_NAME: process.env.REPLICATOR_INDEX_BUCKET_NAME || '',
+          process.env.R2_SECRET_ACCESS_KEY || '',
+        REPLICATOR_BUCKET_NAME: process.env.R2_SATNAV_BUCKET_NAME || '',
       },
       permissions: ['s3:*'],
       handler: 'functions/replicator.handler',

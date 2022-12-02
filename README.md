@@ -51,27 +51,27 @@ DID of the w3access service.
 
 URL of the w3access service.
 
-### `REPLICATOR_ACCESS_KEY_ID`
+### `R2_ACCESS_KEY_ID`
 
 Access key for S3 like cloud object storage to replicate content into.
 
-### `REPLICATOR_SECRET_ACCESS_KEY`
+### `R2_SECRET_ACCESS_KEY`
 
 Secret access key for S3 like cloud object storage to replicate content into.
 
-### `REPLICATOR_ENDPOINT`
+### `R2_ENDPOINT`
 
 Endpoint for S3 like cloud object storage to replicate content into.
 
-### `REPLICATOR_CAR_BUCKET_NAME`
+### `R2_CAR_BUCKET_NAME`
 
 Bucket name to replicate written CAR files.
 
-### `REPLICATOR_INDEX_BUCKET_NAME`
+### `R2_SATNAV_BUCKET_NAME`
 
 Bucket name to replicate written .idx files.
 
-### `REPLICATOR_DUDEWHERE_BUCKET_NAME`
+### `R2_DUDEWHERE_BUCKET_NAME`
 
 Bucket name to replicate root CID to car CIDs mapping.
 

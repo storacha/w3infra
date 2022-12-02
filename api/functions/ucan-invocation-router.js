@@ -14,12 +14,12 @@ const AWS_SESSION_TOKEN = process.env.AWS_SESSION_TOKEN || ''
 const AWS_REGION = process.env.AWS_REGION || 'us-west-2'
 
 // Specified in SST environment
-const REPLICATOR_ACCESS_KEY_ID = process.env.REPLICATOR_ACCESS_KEY_ID || ''
-const REPLICATOR_SECRET_ACCESS_KEY = process.env.REPLICATOR_SECRET_ACCESS_KEY || ''
-const REPLICATOR_REGION = process.env.REPLICATOR_REGION || 'global'
-const REPLICATOR_DUDEWHERE_BUCKET_NAME =
-  process.env.REPLICATOR_DUDEWHERE_BUCKET_NAME || ''
-const REPLICATOR_ENDPOINT = process.env.REPLICATOR_ENDPOINT || ``
+const R2_ACCESS_KEY_ID = process.env.R2_ACCESS_KEY_ID || ''
+const R2_SECRET_ACCESS_KEY = process.env.R2_SECRET_ACCESS_KEY || ''
+const R2_REGION = process.env.R2_REGION || 'global'
+const R2_DUDEWHERE_BUCKET_NAME =
+  process.env.R2_DUDEWHERE_BUCKET_NAME || ''
+const R2_ENDPOINT = process.env.R2_ENDPOINT || ``
 
 /**
  * AWS HTTP Gateway handler for POST / with ucan invocation router.
@@ -53,13 +53,13 @@ async function ucanInvocationRouter (request) {
     }),
     carStoreBucket: createCarStore(AWS_REGION, storeBucketName),
     dudewhereBucket: createDudewhereStore(
-      REPLICATOR_REGION,
-      REPLICATOR_DUDEWHERE_BUCKET_NAME,
+      R2_REGION,
+      R2_DUDEWHERE_BUCKET_NAME,
       {
-        endpoint: REPLICATOR_ENDPOINT,
+        endpoint: R2_ENDPOINT,
         credentials: {
-          accessKeyId: REPLICATOR_ACCESS_KEY_ID,
-          secretAccessKey: REPLICATOR_SECRET_ACCESS_KEY,
+          accessKeyId: R2_ACCESS_KEY_ID,
+          secretAccessKey: R2_SECRET_ACCESS_KEY,
         },
       }
     ),
