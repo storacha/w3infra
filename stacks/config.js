@@ -1,7 +1,7 @@
 // TREAT THIS THE SAME AS AN ENV FILE
 // DO NOT INCLUDE SECRETS IN IT
 import { RemovalPolicy } from 'aws-cdk-lib'
-import { LayerVersion } from 'aws-cdk-lib/aws-lambda'
+// import { LayerVersion } from 'aws-cdk-lib/aws-lambda'
 import { createRequire } from "module"
 import git from 'git-rev-sync'
 
@@ -114,16 +114,16 @@ export function setupSentry (app, stack) {
 
   const { SENTRY_DSN } = getEnv()
 
-  const sentry = LayerVersion.fromLayerVersionArn(
-    stack,
-    'SentryLayer',
-    `arn:aws:lambda:${stack.region}:943013980633:layer:SentryNodeServerlessSDK:73`
-  )
-  stack.addDefaultFunctionLayers([sentry])
+  // const sentry = LayerVersion.fromLayerVersionArn(
+  //   stack,
+  //   'SentryLayer',
+  //   `arn:aws:lambda:${stack.region}:943013980633:layer:SentryNodeServerlessSDK:73`
+  // )
+  // stack.addDefaultFunctionLayers([sentry])
   stack.addDefaultFunctionEnv({
     SENTRY_DSN,
     SENTRY_TRACES_SAMPLE_RATE: '1.0',
-    NODE_OPTIONS: "-r @sentry/serverless/dist/awslambda-auto", 
+    // NODE_OPTIONS: "-r @sentry/serverless/dist/awslambda-auto", 
   })
 }
 
