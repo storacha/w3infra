@@ -37,7 +37,7 @@ export function SatnavStack({ stack }) {
     'satnav-writer-handler',
     {
       environment : {
-
+        SATNAV_BUCKET_NAME: satnavBucket.bucketName
       },
       permissions: [satnavBucket, carparkBucket],
       handler: 'functions/satnav-writer.handler',

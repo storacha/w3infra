@@ -51,6 +51,34 @@ DID of the w3access service.
 
 URL of the w3access service.
 
+### `R2_ACCESS_KEY_ID`
+
+Access key for S3 like cloud object storage to replicate content into.
+
+### `R2_SECRET_ACCESS_KEY`
+
+Secret access key for S3 like cloud object storage to replicate content into.
+
+### `R2_ENDPOINT`
+
+Endpoint for S3 like cloud object storage to replicate content into.
+
+### `R2_CARPARK_BUCKET_NAME`
+
+Bucket name to replicate written CAR files.
+
+### `R2_SATNAV_BUCKET_NAME`
+
+Bucket name to replicate written .idx files.
+
+### `R2_DUDEWHERE_BUCKET_NAME`
+
+Bucket name to replicate root CID to car CIDs mapping.
+
+### `SENTRY_DSN`
+
+Data source name for Sentry application monitoring service.
+
 ### Secrets
 
 Set production secrets in aws SSM via [`sst secrets`](https://docs.sst.dev/config#sst-secrets). The region must be set to the one you deploy that stage to
