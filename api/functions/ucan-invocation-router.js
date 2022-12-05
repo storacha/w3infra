@@ -1,4 +1,6 @@
 import { DID } from '@ucanto/core'
+import * as Sentry from '@sentry/serverless'
+
 import { createAccessClient } from '../access.js'
 import { createSigner } from '../signer.js'
 import { createCarStore } from '../buckets/car-store.js'
@@ -7,6 +9,11 @@ import { createStoreTable } from '../tables/store.js'
 import { createUploadTable } from '../tables/upload.js'
 import { getServiceSigner } from '../config.js'
 import { createUcantoServer } from '../service/index.js'
+
+Sentry.AWSLambda.init({
+  dsn: process.env.SENTRY_DSN,
+  tracesSampleRate: 1.0,
+})
 
 const AWS_ACCESS_KEY_ID = process.env.AWS_ACCESS_KEY_ID || ''
 const AWS_SECRET_ACCESS_KEY = process.env.AWS_SECRET_ACCESS_KEY || ''
@@ -84,7 +91,7 @@ async function ucanInvocationRouter (request) {
   return toLambdaSuccessResponse(response)
 }
 
-export const handler = ucanInvocationRouter
+export const handler = Sentry.AWSLambda.wrapHandler(ucanInvocationRouter)
 
 /**
  * @param {import('@ucanto/server').HTTPResponse<never>} response

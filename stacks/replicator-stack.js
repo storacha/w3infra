@@ -6,16 +6,20 @@ import {
 import { Duration, aws_events as awsEvents } from 'aws-cdk-lib'
 import { BusStack } from './bus-stack.js'
 
+import { setupSentry } from './config.js'
 import { CARPARK_EVENT_BRIDGE_SOURCE_EVENT } from '../carpark/event-bus/source.js'
 import { SATNAV_EVENT_BRIDGE_SOURCE_EVENT } from '../satnav/event-bus/source.js'
 
 /**
  * @param {import('@serverless-stack/resources').StackContext} properties
  */
-export function ReplicatorStack({ stack }) {
+export function ReplicatorStack({ stack, app }) {
   stack.setDefaultFunctionProps({
     srcPath: 'replicator'
   })
+
+  // Setup app monitoring with Sentry
+  setupSentry(app, stack)
 
   // Get Event Bus reference
   const { eventBus } = use(BusStack)

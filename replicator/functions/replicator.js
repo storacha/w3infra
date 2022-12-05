@@ -1,16 +1,20 @@
-import {
-  S3Client
-} from '@aws-sdk/client-s3'
+import { S3Client } from '@aws-sdk/client-s3'
+import * as Sentry from '@sentry/serverless'
 
 import { replicate } from '../index.js'
 import parseSqsEvent from '../utils/parse-sqs-event.js'
+
+Sentry.AWSLambda.init({
+  dsn: process.env.SENTRY_DSN,
+  tracesSampleRate: 1.0,
+})
 
 /**
  * Get EventRecord from the SQS Event triggering the handler
  *
  * @param {import('aws-lambda').SQSEvent} event
  */
-export function handler (event) {
+function replicatorHandler (event) {
   const {
     REPLICATOR_ENDPOINT,
     REPLICATOR_ACCESS_KEY_ID,
@@ -40,6 +44,8 @@ export function handler (event) {
     destinationBucketName: REPLICATOR_BUCKET_NAME,
   })
 }
+
+export const handler = Sentry.AWSLambda.wrapHandler(replicatorHandler)
 
 /**
  * Get Env validating it is set.
