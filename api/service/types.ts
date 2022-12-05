@@ -14,7 +14,7 @@ import {
   UploadAdd,
   UploadRemove,
   UploadList
-} from '@web3-storage/access/capabilities/types'
+} from '@web3-storage/capabilities/types'
 
 /** CID v0 or CID v1 */
 export interface AnyLink extends API.Link<unknown, number, number, 0 | 1> {}

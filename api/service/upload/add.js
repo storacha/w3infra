@@ -1,6 +1,6 @@
 import pRetry from 'p-retry'
 import * as Server from '@ucanto/server'
-import * as Upload from '@web3-storage/access/capabilities/upload'
+import * as Upload from '@web3-storage/capabilities/upload'
 
 /**
  * @typedef {import('@web3-storage/access/types').UploadAdd} UploadAddCapability
