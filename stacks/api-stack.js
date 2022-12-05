@@ -79,7 +79,7 @@ export function ApiStack({ stack, app }) {
     routes: {
       'POST /':        'functions/ucan-invocation-router.handler',
        'GET /':        'functions/get.home',
-       'GET /error': 'functions/get.error',
+       'GET /error':   'functions/get.error',
        'GET /version': 'functions/get.version'
     },
   })
