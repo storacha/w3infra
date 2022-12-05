@@ -35,7 +35,6 @@ export interface Service {
 export interface StoreServiceContext {
   storeTable: StoreTable,
   carStoreBucket: CarStoreBucket,
-  signer: Signer
   access: AccessClient
 }
 
@@ -47,7 +46,8 @@ export interface UploadServiceContext {
 export interface UcantoServerContext extends StoreServiceContext, UploadServiceContext {}
 
 export interface CarStoreBucket {
-  has: (key: string) => Promise<boolean>
+  has: (key: AnyLink) => Promise<boolean>
+  createUploadUrl: (link: AnyLink) => Promise<{ url: URL, headers: { 'x-amz-checksum-sha256': string}}>
 }
 
 export interface DudewhereBucket {
@@ -66,10 +66,6 @@ export interface UploadTable {
   insert: (item: UploadAddInput) => Promise<UploadAddResult>
   remove: (space: DID, root: AnyLink) => Promise<void>
   list: (space: DID, options?: ListOptions) => Promise<ListResponse<UploadListItem>>
-}
-
-export interface Signer {
-  sign: (link: AnyLink) => { url: URL, headers: Record<string, string>}
 }
 
 export interface StoreAddInput {

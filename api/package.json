@@ -8,6 +8,7 @@
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.211.0",
     "@aws-sdk/client-s3": "^3.211.0",
+    "@aws-sdk/s3-request-presigner": "^3.224.0",
     "@aws-sdk/util-dynamodb": "^3.211.0",
     "@serverless-stack/node": "^1.18.2",
     "@ucanto/interface": "^3.0.1",
@@ -16,7 +17,6 @@
     "@ucanto/transport": "^3.0.2",
     "@web-std/fetch": "^4.1.0",
     "@web3-storage/access": "^6.0.1",
-    "@web3-storage/sigv4": "^1.0.2",
     "multiformats": "^10.0.2",
     "p-retry": "^5.1.2"
   },

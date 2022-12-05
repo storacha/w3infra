@@ -100,7 +100,8 @@ test('store/add returns signed url for uploading', async (t) => {
       'x-amz-checksum-sha256': base64pad.baseEncode(link.multihash.digest)
     }
   })
-  t.is(storeAdd.url && new URL(storeAdd.url).pathname, `/${link}/${link}.car`)
+  const key = storeAdd.url && new URL(storeAdd.url).pathname.slice(11) // minio puts bucket name at start of path
+  t.is(key, `/${link}/${link}.car`)
 
   const item = await getItemFromStoreTable(t.context.dynamoClient, tableName, spaceDid, link)
   t.like(item, {
@@ -199,7 +200,8 @@ test('store/add allowed if invocation passes access verification', async (t) => 
   t.is(storeAdd.status, 'upload')
   t.is(storeAdd.with, spaceDid)
   t.deepEqual(storeAdd.link, link)
-  t.is(storeAdd.url && new URL(storeAdd.url).pathname, `/${link}/${link}.car`)
+  const key = storeAdd.url && new URL(storeAdd.url).pathname.slice(11) // minio puts bucket name at start of path
+  t.is(key, `/${link}/${link}.car`)
   t.is(storeAdd.headers && storeAdd.headers['x-amz-checksum-sha256'], base64pad.baseEncode(link.multihash.digest))
 
   const { service } = t.context.access.server
