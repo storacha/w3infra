@@ -3,7 +3,7 @@ import * as Server from '@ucanto/server'
 import * as Upload from '@web3-storage/capabilities/upload'
 
 /**
- * @typedef {import('@web3-storage/access/types').UploadAdd} UploadAddCapability
+ * @typedef {import('@web3-storage/capabilities/types').UploadAdd} UploadAddCapability
  * @typedef {import('@ucanto/interface').Failure} Failure
  * @typedef {import('../types').UploadAddResult} UploadAddResult
  */
