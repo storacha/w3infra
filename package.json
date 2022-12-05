@@ -24,7 +24,6 @@
   },
   "dependencies": {
     "@serverless-stack/node": "^1.18.0",
-    "@web3-storage/capabilities": "^1.0.0",
     "aws-cdk-lib": "2.50.0"
   },
   "simple-git-hooks": {
