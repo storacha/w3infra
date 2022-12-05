@@ -68,7 +68,9 @@ export function ApiStack({ stack }) {
           NAME: pkg.name,
           VERSION: pkg.version,
           COMMIT: git.commmit,
-          STAGE: stack.stage
+          STAGE: stack.stage,
+          ACCESS_SERVICE_DID: process.env.ACCESS_SERVICE_DID ?? '',
+          ACCESS_SERVICE_URL: process.env.ACCESS_SERVICE_URL ?? ''
         },
         bind: [privateKey]
       }
