@@ -1,9 +1,15 @@
 import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs'
+import * as Sentry from '@sentry/serverless'
 
 // https://github.com/elastic-ipfs/indexer-lambda
 const SQS_INDEXER_QUEUE_URL =
   'https://sqs.us-west-2.amazonaws.com/505595374361/indexer-topic'
 const SQS_INDEXER_QUEUE_REGION = 'us-west-2'
+
+Sentry.AWSLambda.init({
+  dsn: process.env.SENTRY_DSN,
+  tracesSampleRate: 1.0,
+})
 
 /**
  * @param {import('./source').EventBridgeEvent} event 
@@ -26,10 +32,12 @@ export async function eipfsHandler(event, client, queueUrl) {
 /**
  * @param {import('./source').EventBridgeEvent} event 
  */
- export async function handler (event) {
+async function messageHandler (event) {
   const sqsClient = new SQSClient({
     region: SQS_INDEXER_QUEUE_REGION,
   })
 
   await eipfsHandler(event, sqsClient, SQS_INDEXER_QUEUE_URL)
 }
+
+export const handler = Sentry.AWSLambda.wrapHandler(messageHandler)

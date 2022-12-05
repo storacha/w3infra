@@ -1,6 +1,7 @@
 // TREAT THIS THE SAME AS AN ENV FILE
 // DO NOT INCLUDE SECRETS IN IT
 import { RemovalPolicy } from 'aws-cdk-lib'
+// import { LayerVersion } from 'aws-cdk-lib/aws-lambda'
 import { createRequire } from "module"
 import git from 'git-rev-sync'
 
@@ -99,4 +100,44 @@ export function getGitInfo () {
     commmit: git.long('.'),
     branch: git.branch('.')
   }
+}
+
+/**
+ * @param {import('@serverless-stack/resources').App} app
+ * @param {import('@serverless-stack/resources').Stack} stack
+ */
+export function setupSentry (app, stack) {
+  // Skip when locally
+  if (app.local) {
+    return
+  }
+
+  const { SENTRY_DSN } = getEnv()
+
+  stack.addDefaultFunctionEnv({
+    SENTRY_DSN,
+  })
+}
+
+/**
+ * Get Env validating it is set.
+ */
+ function getEnv() {
+  return {
+    SENTRY_DSN: mustGetEnv('SENTRY_DSN'),
+  }
+}
+
+/**
+ * 
+ * @param {string} name 
+ * @returns {string}
+ */
+function mustGetEnv (name) {
+  if (!process.env[name]) {
+    throw new Error(`Missing env var: ${name}`)
+  }
+
+  // @ts-expect-error there will always be a string there, but typescript does not believe
+  return process.env[name]
 }

@@ -1,17 +1,21 @@
-import {
-  S3Client
-} from '@aws-sdk/client-s3'
+import { S3Client } from '@aws-sdk/client-s3'
+import * as Sentry from '@sentry/serverless'
 
 import parseSqsEvent from '../utils/parse-sqs-event.js'
 
 import { writeSatnavIndex } from '../index.js'
+
+Sentry.AWSLambda.init({
+  dsn: process.env.SENTRY_DSN,
+  tracesSampleRate: 1.0,
+})
 
 /**
  * Get EventRecord from the SQS Event triggering the handler
  *
  * @param {import('aws-lambda').SQSEvent} event
  */
-export function handler (event) {
+function writerHandler (event) {
   const {
     SATNAV_BUCKET_NAME,
   } = getEnv()
@@ -29,6 +33,8 @@ export function handler (event) {
     satnavBucketName: SATNAV_BUCKET_NAME
   })
 }
+
+export const handler = Sentry.AWSLambda.wrapHandler(writerHandler)
 
 /**
  * Get Env validating it is set.

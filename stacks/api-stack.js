@@ -9,18 +9,21 @@ import {
 } from './carpark-stack.js'
 
 import { storeTableProps, uploadTableProps } from '../api/tables/index.js'
-import { getConfig, getCustomDomain, getApiPackageJson, getGitInfo } from './config.js'
+import { getConfig, getCustomDomain, getApiPackageJson, getGitInfo, setupSentry } from './config.js'
 
 /**
  * @param {import('@serverless-stack/resources').StackContext} properties
  */
-export function ApiStack({ stack }) {
+export function ApiStack({ stack, app }) {
   stack.setDefaultFunctionProps({
     srcPath: 'api'
   })
 
   // @ts-expect-error "prod" | "dev" | "staging" only allowed for stage
   const stackConfig = getConfig(stack.stage)
+
+  // Setup app monitoring with Sentry
+  setupSentry(app, stack)
 
   // Get carpark reference
   const { carparkBucket } = use(CarparkStack)
@@ -78,6 +81,7 @@ export function ApiStack({ stack }) {
     routes: {
       'POST /':        'functions/ucan-invocation-router.handler',
        'GET /':        'functions/get.home',
+       'GET /error':   'functions/get.error',
        'GET /version': 'functions/get.version'
     },
   })

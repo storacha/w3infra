@@ -49,6 +49,7 @@
       "unicorn/catch-error-name": "off",
       "unicorn/explicit-length-check": "off",
       "unicorn/prefer-type-error": "off",
+      "unicorn/no-zero-fractions": "off",
       "eqeqeq": "off",
       "no-void": "off",
       "no-console": "off",
