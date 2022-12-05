@@ -46,8 +46,8 @@ export interface UploadServiceContext {
 export interface UcantoServerContext extends StoreServiceContext, UploadServiceContext {}
 
 export interface CarStoreBucket {
-  has: (key: AnyLink) => Promise<boolean>
-  createUploadUrl: (link: AnyLink) => Promise<{ url: URL, headers: { 'x-amz-checksum-sha256': string}}>
+  has: (link: AnyLink) => Promise<boolean>
+  createUploadUrl: (link: AnyLink, size: number) => Promise<{ url: URL, headers: { 'x-amz-checksum-sha256': string}}>
 }
 
 export interface DudewhereBucket {

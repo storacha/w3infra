@@ -8,6 +8,7 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner"
  * @param {string} region
  * @param {string} bucketName
  * @param {import('@aws-sdk/client-s3').ServiceInputTypes} [options]
+ * @returns {import('../service/types').CarStoreBucket}
  */
 export function createCarStore (region, bucketName, options) {
   const s3 = new S3Client({ 
@@ -40,16 +41,18 @@ export function createCarStore (region, bucketName, options) {
      * only the CAR that matches the provided Link
      * 
      * @param {import('../service/types').AnyLink} link
+     * @param {number} size
      */
-    createUploadUrl: async (link) => {
+    createUploadUrl: async (link, size) => {
       const checksum = base64pad.baseEncode(link.multihash.digest)
       const cmd = new PutObjectCommand({
         Key: `${link}/${link}.car`,
         Bucket: bucketName,
-        ChecksumSHA256: checksum
+        ChecksumSHA256: checksum,
+        ContentLength: size
       })
       const expiresIn = 60 * 60 * 24 // 1 day
-      const url = new URL(await getSignedUrl(s3, cmd, { expiresIn }))
+      const url = new URL(await getSignedUrl(s3, cmd, { expiresIn,  }))
       return {
         url,
         headers: {

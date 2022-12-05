@@ -52,7 +52,7 @@ export function storeAddProvider(context) {
         }
       }
 
-      const { url, headers } = await context.carStoreBucket.createUploadUrl(link)
+      const { url, headers } = await context.carStoreBucket.createUploadUrl(link, size)
       return {
         status: 'upload',
         with: space,
