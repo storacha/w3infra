@@ -7,8 +7,9 @@ import { createCarStore } from '../buckets/car-store.js'
 import { createDudewhereStore } from '../buckets/dudewhere-store.js'
 import { createStoreTable } from '../tables/store.js'
 import { createUploadTable } from '../tables/upload.js'
+import { createUcanLogTable } from '../tables/ucan-log.js'
 import { getServiceSigner } from '../config.js'
-import { createUcantoServer } from '../service/index.js'
+import { createUcantoServer, createUcanLogger } from '../service/index.js'
 
 Sentry.AWSLambda.init({
   dsn: process.env.SENTRY_DSN,
@@ -41,6 +42,7 @@ async function ucanInvocationRouter (request) {
     STORE_TABLE_NAME: storeTableName = '',
     STORE_BUCKET_NAME: storeBucketName = '',
     UPLOAD_TABLE_NAME: uploadTableName = '',
+    UCAN_LOG_TABLE_NAME: ucanLogTableName = '',
     // set for testing
     DYNAMO_DB_ENDPOINT: dbEndpoint,
     ACCESS_SERVICE_DID: accessServiceDID = '',
@@ -52,6 +54,12 @@ async function ucanInvocationRouter (request) {
       statusCode: 400,
     }
   }
+
+  const ucanLog = createUcanLogger({
+    ucanLogTable: createUcanLogTable(AWS_REGION, ucanLogTableName, {
+      endpoint: dbEndpoint
+    })
+  })
 
   const serviceSigner = getServiceSigner()
   const server = await createUcantoServer(serviceSigner, {
@@ -87,6 +95,9 @@ async function ucanInvocationRouter (request) {
     headers: request.headers,
     body: Buffer.from(request.body, 'base64'),
   })
+
+  // Log UCAN invocation on response
+  await ucanLog(request)
 
   return toLambdaSuccessResponse(response)
 }

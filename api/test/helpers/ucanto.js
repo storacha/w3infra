@@ -7,6 +7,7 @@ import { createCarStore } from '../../buckets/car-store.js'
 import { createDudewhereStore } from '../../buckets/dudewhere-store.js'
 import { createStoreTable } from '../../tables/store.js'
 import { createUploadTable } from '../../tables/upload.js'
+import { createUcanLogTable } from '../../tables/ucan-log.js'
 import { createSigner } from '../../signer.js'
 
 import { createAccessClient } from '../../access.js'
@@ -14,6 +15,7 @@ import { createAccessClient } from '../../access.js'
 /**
  * @typedef {object} ResourcesMetadata
  * @property {string} [region]
+ * @property {string} [dbEndpoint]
  * @property {string} tableName
  * @property {string} bucketName
  */
@@ -24,18 +26,31 @@ import { createAccessClient } from '../../access.js'
  */
 export function createTestingUcantoServer(service, ctx) {
   const region = ctx.region || 'us-west-2'
- return createUcantoServer(service, {
-   storeTable: createStoreTable(region, ctx.tableName, {
-     endpoint: ctx.dbEndpoint
-   }),
-   uploadTable: createUploadTable(region, ctx.tableName, {
-     endpoint: ctx.dbEndpoint
-   }),
-   carStoreBucket: createCarStore(region, ctx.bucketName, { ...ctx.s3ClientOpts }),
-   dudewhereBucket: createDudewhereStore(region, ctx.bucketName, { ...ctx.s3ClientOpts }),
-   signer: createSigner(getSigningOptions(ctx)),
-   access: createAccessClient(service, ctx.access.servicePrincipal, ctx.access.serviceURL)
- })
+  return createUcantoServer(service, {
+    storeTable: createStoreTable(region, ctx.tableName, {
+      endpoint: ctx.dbEndpoint
+    }),
+    uploadTable: createUploadTable(region, ctx.tableName, {
+      endpoint: ctx.dbEndpoint
+    }),
+    carStoreBucket: createCarStore(region, ctx.bucketName, { ...ctx.s3ClientOpts }),
+    dudewhereBucket: createDudewhereStore(region, ctx.bucketName, { ...ctx.s3ClientOpts }),
+    signer: createSigner(getSigningOptions(ctx)),
+    access: createAccessClient(service, ctx.access.servicePrincipal, ctx.access.serviceURL)
+  })
+}
+
+/**
+ * @param {ResourcesMetadata} ctx
+ */
+export function createTestingUcanLoggerContext(ctx) {
+  const region = ctx.region || 'us-west-2'
+
+  return {
+    ucanLogTable: createUcanLogTable(region, ctx.tableName, {
+      endpoint: ctx.dbEndpoint
+    })
+  }
 }
 
 /**

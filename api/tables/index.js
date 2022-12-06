@@ -26,3 +26,13 @@ export const uploadTableProps = {
   // space + root must be unique to satisfy index constraint
   primaryIndex: { partitionKey: 'space', sortKey: 'root' },
 }
+
+/** @type TableProps */
+export const ucanLogTableProps = {
+  fields: {
+    root: 'string',         // `baf...x`
+    bytes: 'string',       // base64 string of UCAN raw bytes
+    insertedAt: 'string',   // `2022-12-24T...`
+  },
+  primaryIndex: { partitionKey: 'root' },
+}

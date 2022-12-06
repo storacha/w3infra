@@ -8,7 +8,7 @@ import {
   CarparkStack
 } from './carpark-stack.js'
 
-import { storeTableProps, uploadTableProps } from '../api/tables/index.js'
+import { storeTableProps, uploadTableProps, ucanLogTableProps } from '../api/tables/index.js'
 import { getConfig, getCustomDomain, getApiPackageJson, getGitInfo, setupSentry } from './config.js'
 
 /**
@@ -42,14 +42,22 @@ export function ApiStack({ stack, app }) {
 
   /**
    * This table maps stored CAR files (shards) to an upload root cid (dataCID).
-   * These are stored as individual rows, from dataCID to carCID:
    * 
-   * upload -> {root, shards} -> maps to [[root,shard1], ...[root, shardN]]
+   * upload -> {root, Set<shards>}
    * 
    * This is used by the upload/* capabilities.
    */
    const uploadTable = new Table(stack, 'upload', {
     ...uploadTableProps,
+    ...stackConfig.tableConfig,
+  })
+
+  // TODO: Naming! I don't like this naming, but still did not get anything nice.
+  /**
+   * This table maps the CID of handled UCAN invocations with their content.
+   */
+  const ucanLogTable = new Table(stack, 'ucan-log', {
+    ...ucanLogTableProps,
     ...stackConfig.tableConfig,
   })
 
@@ -63,11 +71,12 @@ export function ApiStack({ stack, app }) {
     customDomain,
     defaults: {
       function: {
-        permissions: [storeTable, uploadTable, carparkBucket],
+        permissions: [storeTable, uploadTable, ucanLogTable, carparkBucket],
         environment: {
           STORE_TABLE_NAME: storeTable.tableName,
           STORE_BUCKET_NAME: carparkBucket.bucketName,
           UPLOAD_TABLE_NAME: uploadTable.tableName,
+          UCAN_LOG_TABLE_NAME: ucanLogTable.tableName,
           NAME: pkg.name,
           VERSION: pkg.version,
           COMMIT: git.commmit,

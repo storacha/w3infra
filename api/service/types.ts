@@ -46,6 +46,10 @@ export interface UploadServiceContext {
 
 export interface UcantoServerContext extends StoreServiceContext, UploadServiceContext {}
 
+export interface UcanLoggerContext {
+  ucanLogTable: UcanLogTable
+}
+
 export interface CarStoreBucket {
   has: (key: string) => Promise<boolean>
 }
@@ -68,8 +72,17 @@ export interface UploadTable {
   list: (space: DID, options?: ListOptions) => Promise<ListResponse<UploadListItem>>
 }
 
+export interface UcanLogTable {
+  insert: (item: UcanLogInput) => Promise<UcanLogInput>
+}
+
 export interface Signer {
   sign: (link: AnyLink) => { url: URL, headers: Record<string, string>}
+}
+
+export interface UcanLogInput {
+  root: AnyLink
+  bytes: string
 }
 
 export interface StoreAddInput {

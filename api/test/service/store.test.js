@@ -31,8 +31,6 @@ test.before(async t => {
   // S3
   const { client: s3Client, clientOpts: s3ClientOpts } = await createS3({ port: 9000 })
 
-  t.context.dbEndpoint = dbEndpoint
-  t.context.dynamoClient = dynamo
   t.context.s3Client = s3Client
   t.context.s3ClientOpts = s3ClientOpts
 })

@@ -9,6 +9,7 @@
     "@aws-sdk/client-dynamodb": "^3.211.0",
     "@aws-sdk/client-s3": "^3.211.0",
     "@aws-sdk/util-dynamodb": "^3.211.0",
+    "@ipld/dag-ucan": "3.0.1",
     "@sentry/serverless": "^7.22.0",
     "@serverless-stack/node": "^1.18.2",
     "@ucanto/interface": "^3.0.1",

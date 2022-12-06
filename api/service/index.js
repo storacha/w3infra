@@ -34,3 +34,26 @@ export function createServiceRouter (context) {
 
   return server
 }
+
+/**
+ * @param {import('../service/types').UcanLoggerContext} context
+ */
+export function createUcanLogger (context) {
+  /**
+   * @param {import('aws-lambda').APIGatewayProxyEventV2} request
+   */
+  return async function (request){
+    if (!request.body) {
+      throw new Error('service requests are required to have body')
+    }
+  
+    const bytes = Buffer.from(request.body, 'base64')
+    const car = await CAR.codec.decode(bytes)
+    const root = car.roots[0].cid
+    
+    await context.ucanLogTable.insert({
+      root,
+      bytes: request.body
+    })
+  }
+}
