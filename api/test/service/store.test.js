@@ -63,7 +63,7 @@ test.afterEach(async t => {
   t.context.access.httpServer.close()
 })
 
-test('store/add returns signed url for uploading', async (t) => {
+test.only('store/add returns signed url for uploading', async (t) => {
   const { tableName, bucketName } = await prepareResources(t.context.dynamoClient, t.context.s3Client)
 
   const uploadService = await Signer.generate()
@@ -77,12 +77,13 @@ test('store/add returns signed url for uploading', async (t) => {
 
   const data = new Uint8Array([11, 22, 34, 44, 55])
   const link = await CAR.codec.link(data)
+  const size = data.byteLength
 
   const invocation = StoreCapabilities.add.invoke({
     issuer: alice,
     audience: uploadService,
     with: spaceDid,
-    nb: { link, size: data.byteLength },
+    nb: { link, size },
     proofs: [proof]
   })
   
@@ -97,11 +98,49 @@ test('store/add returns signed url for uploading', async (t) => {
     with: spaceDid,
     link,
     headers: {
+      'content-length': size,
       'x-amz-checksum-sha256': base64pad.baseEncode(link.multihash.digest)
     }
   })
-  const key = storeAdd.url && new URL(storeAdd.url).pathname.slice(11) // minio puts bucket name at start of path
+  const url = storeAdd.url && new URL(storeAdd.url)
+  if (!url) {
+    throw new Error('Expected presigned url in response')
+  }
+
+  const signedHeaders = url.searchParams.get('X-Amz-SignedHeaders')
+  t.is(signedHeaders, 'content-length;host;x-amz-checksum-sha256', 'content-length and checksum must be part of the signature')
+
+  const key = url?.pathname.slice(11) // minio puts bucket name at start of path
   t.is(key, `/${link}/${link}.car`)
+
+  const goodPut = await fetch(url, {
+    method: 'PUT',
+    mode: 'cors',
+    body: data,
+    headers: storeAdd.headers
+  })
+  t.is(goodPut.status, 200, await goodPut.text())
+
+  const unexpectedLength = await fetch(url, {
+    method: 'PUT',
+    mode: 'cors',
+    body: new Uint8Array([11, 22, 34, 44, 55, 1]), // one byte more
+    headers: {
+      'content-length': '6',
+      'x-amz-checksum-sha256': storeAdd.headers['x-amz-checksum-sha256']
+    }
+  })
+  // expect signature to not match
+  t.is(unexpectedLength.status, 403, await unexpectedLength.text())
+
+  // TODO: why is minio not respecting the checksum header?
+  // const failChecksum = await fetch(url, {
+  //   method: 'PUT',
+  //   mode: 'cors',
+  //   body: new Uint8Array([1, 2, 3, 4, 5]),
+  //   headers: storeAdd.headers
+  // })
+  // t.not(failChecksum.status, 200, 'should fail to upload any other data')
 
   const item = await getItemFromStoreTable(t.context.dynamoClient, tableName, spaceDid, link)
   t.like(item, {

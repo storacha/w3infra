@@ -52,12 +52,16 @@ export function createCarStore (region, bucketName, options) {
         ContentLength: size
       })
       const expiresIn = 60 * 60 * 24 // 1 day
-      const url = new URL(await getSignedUrl(s3, cmd, { expiresIn,  }))
+      const url = new URL(await getSignedUrl(s3, cmd, {
+        expiresIn,
+        unhoistableHeaders: new Set(['x-amz-checksum-sha256']),
+      }))
       return {
         url,
         headers: {
           'x-amz-checksum-sha256': checksum,
-        },
+          'content-length': size
+        }
       }
     }
   }
