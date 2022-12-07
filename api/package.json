@@ -17,6 +17,7 @@
     "@ucanto/transport": "^3.0.2",
     "@web-std/fetch": "^4.1.0",
     "@web3-storage/access": "^6.0.1",
+    "@web3-storage/capabilities": "^1.0.0",
     "@web3-storage/sigv4": "^1.0.2",
     "multiformats": "^10.0.2",
     "p-retry": "^5.1.2"

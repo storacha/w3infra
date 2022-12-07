@@ -1,8 +1,8 @@
 import * as Server from '@ucanto/server'
-import * as Upload from '@web3-storage/access/capabilities/upload'
+import * as Upload from '@web3-storage/capabilities/upload'
 
 /**
- * @typedef {import('@web3-storage/access/types').UploadRemove} UploadRemoveCapability
+ * @typedef {import('@web3-storage/capabilities/types').UploadRemove} UploadRemoveCapability
  * @typedef {import('@ucanto/interface').Failure} Failure
  */
 

@@ -1,9 +1,9 @@
 import * as Server from '@ucanto/server'
-import * as Store from '@web3-storage/access/capabilities/store'
+import * as Store from '@web3-storage/capabilities/store'
 
 /**
  * @typedef {import('@ucanto/interface').Link<unknown, number, number, 0 | 1>} Link
- * @typedef {import('@web3-storage/access/types').StoreAdd} StoreAddCapability
+ * @typedef {import('@web3-storage/capabilities/types').StoreAdd} StoreAddCapability
  * @typedef {import('@ucanto/interface').Failure} Failure
  * @typedef {import('../types').StoreAddResult} StoreAddResult
  */
