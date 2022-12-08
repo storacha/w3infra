@@ -175,7 +175,7 @@ Use the JS [upload-client] to handle the details of content-addressing your file
 
 ```js
 import { Agent } from '@web3-storage/access'
-import { store } from '@web3-storage/access/capabilities/store'
+import { store } from '@web3-storage/capabilities/store'
 import { uploadFile } from '@web3-storage/upload-client'
 
 // holds your identity on this device

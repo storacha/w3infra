@@ -1,4 +1,4 @@
-import { info } from '@web3-storage/access/capabilities/space'
+import { info } from '@web3-storage/capabilities/space'
 import { connect } from '@ucanto/client'
 import { CAR, CBOR, HTTP } from '@ucanto/transport'
 import fetch from '@web-std/fetch'

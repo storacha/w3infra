@@ -1,5 +1,5 @@
 import * as Server from '@ucanto/server'
-import * as Store from '@web3-storage/access/capabilities/store'
+import * as Store from '@web3-storage/capabilities/store'
 
 /**
  * @typedef {import('../types').AnyLink} Link
