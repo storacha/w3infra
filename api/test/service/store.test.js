@@ -77,12 +77,13 @@ test('store/add returns signed url for uploading', async (t) => {
 
   const data = new Uint8Array([11, 22, 34, 44, 55])
   const link = await CAR.codec.link(data)
+  const size = data.byteLength
 
   const invocation = StoreCapabilities.add.invoke({
     issuer: alice,
     audience: uploadService,
     with: spaceDid,
-    nb: { link, size: data.byteLength },
+    nb: { link, size },
     proofs: [proof]
   })
   
@@ -97,10 +98,28 @@ test('store/add returns signed url for uploading', async (t) => {
     with: spaceDid,
     link,
     headers: {
+      'content-length': size,
       'x-amz-checksum-sha256': base64pad.baseEncode(link.multihash.digest)
     }
   })
-  t.is(storeAdd.url && new URL(storeAdd.url).pathname, `/${link}/${link}.car`)
+  const url = storeAdd.url && new URL(storeAdd.url)
+  if (!url) {
+    throw new Error('Expected presigned url in response')
+  }
+
+  const signedHeaders = url.searchParams.get('X-Amz-SignedHeaders')
+  t.is(signedHeaders, 'content-length;host;x-amz-checksum-sha256', 'content-length and checksum must be part of the signature')
+
+  const key = url?.pathname.slice(11) // minio puts bucket name at start of path
+  t.is(key, `/${link}/${link}.car`)
+
+  const goodPut = await fetch(url, {
+    method: 'PUT',
+    mode: 'cors',
+    body: data,
+    headers: storeAdd.headers
+  })
+  t.is(goodPut.status, 200, await goodPut.text())
 
   const item = await getItemFromStoreTable(t.context.dynamoClient, tableName, spaceDid, link)
   t.like(item, {
@@ -111,6 +130,95 @@ test('store/add returns signed url for uploading', async (t) => {
   })
   t.notThrows(() => CID.parse(item?.invocation))
   t.true(Date.now() - new Date(item?.insertedAt).getTime() < 60_000)
+})
+
+test('store/add should create a presigned url that can only PUT a payload with the right length', async (t) => {
+  const { tableName, bucketName } = await prepareResources(t.context.dynamoClient, t.context.s3Client)
+
+  const uploadService = await Signer.generate()
+  const alice = await Signer.generate()
+  const { proof, spaceDid } = await createSpace(alice)
+  const connection = await getClientConnection(uploadService, {
+    ...t.context,
+    tableName,
+    bucketName
+  })
+  
+  const data = new Uint8Array([11, 22, 34, 44, 55])
+  const longer = new Uint8Array([11, 22, 34, 44, 55, 66])
+  const link = await CAR.codec.link(data)
+  const size = data.byteLength
+
+  const storeAdd = await StoreCapabilities.add.invoke({
+    issuer: alice,
+    audience: uploadService,
+    with: spaceDid,
+    nb: { link, size },
+    proofs: [proof]
+  }).execute(connection)
+  
+  if (storeAdd.error) {
+    throw new Error('invocation failed', { cause: storeAdd })
+  }
+
+  const url = storeAdd.url && new URL(storeAdd.url)
+  if (!url) {
+    throw new Error('Expected presigned url in response')
+  }
+
+  const contentLengthFailSignature = await fetch(url, {
+    method: 'PUT',
+    mode: 'cors',
+    body: longer,
+    headers: {
+      ...storeAdd.headers,
+      'content-length': longer.byteLength.toString(10)
+    }
+  })
+  t.is(contentLengthFailSignature.status, 403, 'should fail to upload as content-length differs from that used to sign the url')
+})
+
+test('store/add should create a presigned url that can only PUT the exact bytes we signed for', async (t) => {
+  const { tableName, bucketName } = await prepareResources(t.context.dynamoClient, t.context.s3Client)
+
+  const uploadService = await Signer.generate()
+  const alice = await Signer.generate()
+  const { proof, spaceDid } = await createSpace(alice)
+  const connection = await getClientConnection(uploadService, {
+    ...t.context,
+    tableName,
+    bucketName
+  })
+  
+  const data = new Uint8Array([11, 22, 34, 44, 55])
+  const other = new Uint8Array([10, 22, 34, 44, 55])
+  const link = await CAR.codec.link(data)
+  const size = data.byteLength
+
+  const storeAdd = await StoreCapabilities.add.invoke({
+    issuer: alice,
+    audience: uploadService,
+    with: spaceDid,
+    nb: { link, size },
+    proofs: [proof]
+  }).execute(connection)
+  
+  if (storeAdd.error) {
+    throw new Error('invocation failed', { cause: storeAdd })
+  }
+
+  const url = storeAdd.url && new URL(storeAdd.url)
+  if (!url) {
+    throw new Error('Expected presigned url in response')
+  }
+  
+  const failChecksum = await fetch(url, {
+    method: 'PUT',
+    mode: 'cors',
+    body: other,
+    headers: storeAdd.headers
+  })
+  t.is(failChecksum.status, 400, 'should fail to upload any other data.')
 })
 
 test('store/add returns done if already uploaded', async (t) => {
@@ -199,7 +307,8 @@ test('store/add allowed if invocation passes access verification', async (t) => 
   t.is(storeAdd.status, 'upload')
   t.is(storeAdd.with, spaceDid)
   t.deepEqual(storeAdd.link, link)
-  t.is(storeAdd.url && new URL(storeAdd.url).pathname, `/${link}/${link}.car`)
+  const key = storeAdd.url && new URL(storeAdd.url).pathname.slice(11) // minio puts bucket name at start of path
+  t.is(key, `/${link}/${link}.car`)
   t.is(storeAdd.headers && storeAdd.headers['x-amz-checksum-sha256'], base64pad.baseEncode(link.multihash.digest))
 
   const { service } = t.context.access.server
