@@ -28,6 +28,7 @@ export function CarparkStack({ stack, app }) {
   const { eventBus } = use(BusStack)
 
   const carparkBucket = new Bucket(stack, 'car-store', {
+    cors: true,
     ...stackConfig.carparkBucketConfig,
   })
 
