@@ -19,7 +19,7 @@ const AWS_REGION = process.env.AWS_REGION || 'us-west-2'
 // Specified in SST environment
 const R2_ACCESS_KEY_ID = process.env.R2_ACCESS_KEY_ID || ''
 const R2_SECRET_ACCESS_KEY = process.env.R2_SECRET_ACCESS_KEY || ''
-const R2_REGION = process.env.R2_REGION || 'global'
+const R2_REGION = process.env.R2_REGION || 'auto'
 const R2_DUDEWHERE_BUCKET_NAME =
   process.env.R2_DUDEWHERE_BUCKET_NAME || ''
 const R2_ENDPOINT = process.env.R2_ENDPOINT || ``
