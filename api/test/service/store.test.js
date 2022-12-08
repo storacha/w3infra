@@ -121,18 +121,6 @@ test('store/add returns signed url for uploading', async (t) => {
   })
   t.is(goodPut.status, 200, await goodPut.text())
 
-  const unexpectedLength = await fetch(url, {
-    method: 'PUT',
-    mode: 'cors',
-    body: new Uint8Array([11, 22, 34, 44, 55, 1]), // one byte more
-    headers: {
-      ...storeAdd.headers,
-      'content-length': '6'
-    }
-  })
-  // expect signature to not match
-  t.is(unexpectedLength.status, 403, await unexpectedLength.text())
-
   const item = await getItemFromStoreTable(t.context.dynamoClient, tableName, spaceDid, link)
   t.like(item, {
     space: spaceDid,
@@ -142,6 +130,52 @@ test('store/add returns signed url for uploading', async (t) => {
   })
   t.notThrows(() => CID.parse(item?.invocation))
   t.true(Date.now() - new Date(item?.insertedAt).getTime() < 60_000)
+})
+
+test('store/add should create a presigned url that can only PUT a payload with the right length', async (t) => {
+  const { tableName, bucketName } = await prepareResources(t.context.dynamoClient, t.context.s3Client)
+
+  const uploadService = await Signer.generate()
+  const alice = await Signer.generate()
+  const { proof, spaceDid } = await createSpace(alice)
+  const connection = await getClientConnection(uploadService, {
+    ...t.context,
+    tableName,
+    bucketName
+  })
+  
+  const data = new Uint8Array([11, 22, 34, 44, 55])
+  const longer = new Uint8Array([11, 22, 34, 44, 55, 66])
+  const link = await CAR.codec.link(data)
+  const size = data.byteLength
+
+  const storeAdd = await StoreCapabilities.add.invoke({
+    issuer: alice,
+    audience: uploadService,
+    with: spaceDid,
+    nb: { link, size },
+    proofs: [proof]
+  }).execute(connection)
+  
+  if (storeAdd.error) {
+    throw new Error('invocation failed', { cause: storeAdd })
+  }
+
+  const url = storeAdd.url && new URL(storeAdd.url)
+  if (!url) {
+    throw new Error('Expected presigned url in response')
+  }
+
+  const contentLengthFailSignature = await fetch(url, {
+    method: 'PUT',
+    mode: 'cors',
+    body: longer,
+    headers: {
+      ...storeAdd.headers,
+      'content-length': longer.byteLength.toString(10)
+    }
+  })
+  t.is(contentLengthFailSignature.status, 403, 'should fail to upload as content-length differs from that used to sign the url')
 })
 
 test('store/add should create a presigned url that can only PUT the exact bytes we signed for', async (t) => {
@@ -173,23 +207,10 @@ test('store/add should create a presigned url that can only PUT the exact bytes 
     throw new Error('invocation failed', { cause: storeAdd })
   }
 
-  t.like(storeAdd, {
-    status: 'upload',
-    with: spaceDid,
-    link,
-    headers: {
-      'content-length': size,
-      'x-amz-checksum-sha256': base64pad.baseEncode(link.multihash.digest)
-    }
-  }, 'should return expected response')
-
   const url = storeAdd.url && new URL(storeAdd.url)
   if (!url) {
     throw new Error('Expected presigned url in response')
   }
-
-  const signedHeaders = url.searchParams.get('X-Amz-SignedHeaders')
-  t.is(signedHeaders, 'content-length;host;x-amz-checksum-sha256', 'content-length and checksum must be part of the signature')
   
   const failChecksum = await fetch(url, {
     method: 'PUT',
