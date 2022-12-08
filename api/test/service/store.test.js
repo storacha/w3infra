@@ -144,9 +144,9 @@ test('store/add returns signed url for uploading', async (t) => {
   t.true(Date.now() - new Date(item?.insertedAt).getTime() < 60_000)
 })
 
-// TODO: why is minio not respecting the checksum header?
-test.failing('store/add should create a presigned url that can only PUT the exact bytes we signed for', async (t) => {
+test('store/add should create a presigned url that can only PUT the exact bytes we signed for', async (t) => {
   const { tableName, bucketName } = await prepareResources(t.context.dynamoClient, t.context.s3Client)
+
   const uploadService = await Signer.generate()
   const alice = await Signer.generate()
   const { proof, spaceDid } = await createSpace(alice)
@@ -155,9 +155,12 @@ test.failing('store/add should create a presigned url that can only PUT the exac
     tableName,
     bucketName
   })
+  
   const data = new Uint8Array([11, 22, 34, 44, 55])
+  const other = new Uint8Array([10, 22, 34, 44, 55])
   const link = await CAR.codec.link(data)
   const size = data.byteLength
+
   const storeAdd = await StoreCapabilities.add.invoke({
     issuer: alice,
     audience: uploadService,
@@ -187,14 +190,14 @@ test.failing('store/add should create a presigned url that can only PUT the exac
 
   const signedHeaders = url.searchParams.get('X-Amz-SignedHeaders')
   t.is(signedHeaders, 'content-length;host;x-amz-checksum-sha256', 'content-length and checksum must be part of the signature')
-
+  
   const failChecksum = await fetch(url, {
     method: 'PUT',
     mode: 'cors',
-    body: new Uint8Array([1, 2, 3, 4, 5]),
+    body: other,
     headers: storeAdd.headers
   })
-  t.not(failChecksum.status, 200, 'should fail to upload any other data. Why is minio not respecting the checksum-sha256 header?')
+  t.is(failChecksum.status, 400, 'should fail to upload any other data.')
 })
 
 test('store/add returns done if already uploaded', async (t) => {
