@@ -2,8 +2,8 @@ import * as Server from '@ucanto/server'
 import * as Store from '@web3-storage/capabilities/store'
 
 /**
- * @typedef {import('@ucanto/interface').Link<unknown, number, number, 0 | 1>} Link
- * @typedef {import('@web3-storage/capabilities/types').StoreAdd} StoreAddCapability
+ * @typedef {import('../types').AnyLink} Link
+ * @typedef {import('@web3-storage/access/types').StoreAdd} StoreAddCapability
  * @typedef {import('@ucanto/interface').Failure} Failure
  * @typedef {import('../types').StoreAddResult} StoreAddResult
  */
@@ -26,7 +26,7 @@ export function storeAddProvider(context) {
       ] = await Promise.all([
         context.access.verifyInvocation(invocation),
         context.storeTable.exists(space, link),
-        context.carStoreBucket.has(link.toString())
+        context.carStoreBucket.has(link)
       ])
 
       if (!verified) {
@@ -52,7 +52,7 @@ export function storeAddProvider(context) {
         }
       }
 
-      const { url, headers } = context.signer.sign(link)
+      const { url, headers } = await context.carStoreBucket.createUploadUrl(link, size)
       return {
         status: 'upload',
         with: space,

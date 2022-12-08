@@ -2,7 +2,6 @@ import { DID } from '@ucanto/core'
 import * as Sentry from '@sentry/serverless'
 
 import { createAccessClient } from '../access.js'
-import { createSigner } from '../signer.js'
 import { createCarStore } from '../buckets/car-store.js'
 import { createDudewhereStore } from '../buckets/dudewhere-store.js'
 import { createStoreTable } from '../tables/store.js'
@@ -15,9 +14,6 @@ Sentry.AWSLambda.init({
   tracesSampleRate: 1.0,
 })
 
-const AWS_ACCESS_KEY_ID = process.env.AWS_ACCESS_KEY_ID || ''
-const AWS_SECRET_ACCESS_KEY = process.env.AWS_SECRET_ACCESS_KEY || ''
-const AWS_SESSION_TOKEN = process.env.AWS_SESSION_TOKEN || ''
 const AWS_REGION = process.env.AWS_REGION || 'us-west-2'
 
 // Specified in SST environment
@@ -72,13 +68,6 @@ async function ucanInvocationRouter (request) {
     ),
     uploadTable: createUploadTable(AWS_REGION, uploadTableName, {
       endpoint: dbEndpoint
-    }),
-    signer: createSigner({
-      region: AWS_REGION,
-      secretAccessKey: AWS_SECRET_ACCESS_KEY,
-      accessKeyId: AWS_ACCESS_KEY_ID,
-      sessionToken: AWS_SESSION_TOKEN,
-      bucket: storeBucketName,
     }),
     access: createAccessClient(serviceSigner, DID.parse(accessServiceDID), new URL(accessServiceURL))
   })
