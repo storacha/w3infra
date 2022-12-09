@@ -1,5 +1,5 @@
 <h1 align="center">⁂<br/>web3.storage</h1>
-<p align="center">The Upload API for <a href="https://web3.storage">https://web3.storage</a></p>
+<p align="center">The Infra for <a href="https://web3.storage">https://web3.storage</a></p>'s [w3protocol]
 
 A [UCAN] based API to for storing CARs and registering uploads, built on [ucanto] and [SST].
 

@@ -91,7 +91,7 @@ export function getApiPackageJson () {
   // @ts-expect-error ts thinks this is unused becuase of the ignore
   const require = createRequire(import.meta.url)
   // @ts-ignore ts dont see *.json and dont like it
-  const pkg = require('../../api/package.json')
+  const pkg = require('../../upload-api/package.json')
   return pkg
 }
 
