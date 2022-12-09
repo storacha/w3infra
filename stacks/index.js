@@ -2,6 +2,7 @@ import { Tags } from 'aws-cdk-lib'
 
 import { UploadApiStack } from './upload-api-stack.js'
 import { UploadDbStack } from './upload-db-stack.js'
+import { UcanInvocationStack } from './ucan-invocation-stack.js'
 import { BusStack } from './bus-stack.js'
 import { CarparkStack } from './carpark-stack.js'
 import { SatnavStack } from './satnav-stack.js'
@@ -17,6 +18,7 @@ export default function (app) {
     },
   })
   app.stack(BusStack)
+  app.stack(UcanInvocationStack)
   app.stack(CarparkStack)
   app.stack(UploadDbStack)
   app.stack(SatnavStack)

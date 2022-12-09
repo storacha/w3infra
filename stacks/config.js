@@ -39,6 +39,14 @@ const stageConfigs = {
           bucketName: 'satnav-staging-0'
         },
       },
+    },
+    ucanBucketConfig: {
+      cdk: {
+        bucket: {
+          // Force name of bucket to be "ucan-staging-0" in staging.
+          bucketName: 'ucan-store-staging-0'
+        },
+      },
     }
   },
   prod: {
@@ -57,13 +65,21 @@ const stageConfigs = {
           bucketName: 'satnav-prod-0'
         },
       },
+    },
+    ucanBucketConfig: {
+      cdk: {
+        bucket: {
+          // Force name of bucket to be "ucan-prod-0" in prod.
+          bucketName: 'ucan-store-prod-0'
+        },
+      },
     }
   },
 }
 
 /**
  * @param {'dev'|'staging'|'prod'} stage
- * @returns {{ carparkBucketConfig ?:any, satnavBucketConfig ?: any, tableConfig ?:any }}
+ * @returns {{ carparkBucketConfig ?:any, satnavBucketConfig ?: any, ucanBucketConfig ?: any, tableConfig ?:any }}
  */
 export function getConfig(stage) {
   return stageConfigs[stage] || stageConfigs.dev

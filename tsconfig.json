@@ -33,5 +33,5 @@
     "stripInternal": true,
     "resolveJsonModule": true,
   },
-  "include": [ "upload-api", "stacks", "carpark", "replicator", "satnav" ]
+  "include": [ "upload-api", "stacks", "carpark", "replicator", "satnav", "ucan-invocation" ]
 }
