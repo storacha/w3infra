@@ -212,6 +212,7 @@ test('store/add should create a presigned url that can only PUT the exact bytes 
     throw new Error('Expected presigned url in response')
   }
   
+  console.log('url to put is', url)
   const failChecksum = await fetch(url, {
     method: 'PUT',
     mode: 'cors',
