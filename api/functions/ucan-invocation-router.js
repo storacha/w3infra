@@ -2,8 +2,10 @@ import { DID } from '@ucanto/core'
 import * as Sentry from '@sentry/serverless'
 
 import { createAccessClient } from '../access.js'
+import { persistUcanInvocation } from '../ucan-invocation.js'
 import { createCarStore } from '../buckets/car-store.js'
 import { createDudewhereStore } from '../buckets/dudewhere-store.js'
+import { createUcanStore } from '../buckets/ucan-store.js'
 import { createStoreTable } from '../tables/store.js'
 import { createUploadTable } from '../tables/upload.js'
 import { getServiceSigner } from '../config.js'
@@ -37,6 +39,7 @@ async function ucanInvocationRouter (request) {
     STORE_TABLE_NAME: storeTableName = '',
     STORE_BUCKET_NAME: storeBucketName = '',
     UPLOAD_TABLE_NAME: uploadTableName = '',
+    UCAN_BUCKET_NAME: ucanBucketName = '',
     // set for testing
     DYNAMO_DB_ENDPOINT: dbEndpoint,
     ACCESS_SERVICE_DID: accessServiceDID = '',
@@ -50,6 +53,8 @@ async function ucanInvocationRouter (request) {
   }
 
   const serviceSigner = getServiceSigner()
+  const ucanStoreBucket = createUcanStore(AWS_REGION, ucanBucketName)
+
   const server = await createUcantoServer(serviceSigner, {
     storeTable: createStoreTable(AWS_REGION, storeTableName, {
       endpoint: dbEndpoint
@@ -76,6 +81,9 @@ async function ucanInvocationRouter (request) {
     headers: request.headers,
     body: Buffer.from(request.body, 'base64'),
   })
+
+  // persist successful invocation handled
+  await persistUcanInvocation(request, ucanStoreBucket)
 
   return toLambdaSuccessResponse(response)
 }

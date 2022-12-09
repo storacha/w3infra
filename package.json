@@ -10,7 +10,7 @@
     "console": "sst console",
     "lint": "tsc && eslint '**/*.js'",
     "clean": "rm -rf docs node_modules pnpm-lock.yaml packages/*/{pnpm-lock.yaml,coverage,.nyc_output,dist,node_modules,.next}",
-    "test": "npm test -w api -w carpark -w replicator -w satnav"
+    "test": "npm test -w api -w carpark -w replicator -w satnav -w ucan-invocation"
   },
   "devDependencies": {
     "@serverless-stack/cli": "^1.18.0",
@@ -63,6 +63,7 @@
     "api",
     "carpark",
     "replicator",
-    "satnav"
+    "satnav",
+    "ucan-invocation"
   ]
 }

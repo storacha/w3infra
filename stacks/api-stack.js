@@ -4,9 +4,8 @@ import {
   Table,
   use
 } from '@serverless-stack/resources'
-import {
-  CarparkStack
-} from './carpark-stack.js'
+import { CarparkStack } from './carpark-stack.js'
+import { UcanInvocationStack } from './ucan-invocation-stack.js'
 
 import { storeTableProps, uploadTableProps } from '../api/tables/index.js'
 import { getConfig, getCustomDomain, getApiPackageJson, getGitInfo, setupSentry } from './config.js'
@@ -27,6 +26,7 @@ export function ApiStack({ stack, app }) {
 
   // Get carpark reference
   const { carparkBucket } = use(CarparkStack)
+  const { ucanBucket } = use(UcanInvocationStack)
 
   /**
    * This table takes a stored CAR and makes an entry in the store table
@@ -68,6 +68,7 @@ export function ApiStack({ stack, app }) {
           STORE_TABLE_NAME: storeTable.tableName,
           STORE_BUCKET_NAME: carparkBucket.bucketName,
           UPLOAD_TABLE_NAME: uploadTable.tableName,
+          UCAN_BUCKET_NAME: ucanBucket.bucketName,
           NAME: pkg.name,
           VERSION: pkg.version,
           COMMIT: git.commmit,
