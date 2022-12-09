@@ -6,10 +6,12 @@
     "test": "ava --node-arguments='--experimental-fetch' --verbose --timeout=60s **/*.test.js"
   },
   "dependencies": {
-    "@aws-sdk/client-dynamodb": "^3.211.0",
-    "@aws-sdk/client-s3": "^3.211.0",
-    "@aws-sdk/s3-request-presigner": "^3.224.0",
-    "@aws-sdk/util-dynamodb": "^3.211.0",
+    "@aws-sdk/client-dynamodb": "^3.226.0",
+    "@aws-sdk/client-s3": "^3.226.0",
+    "@aws-sdk/client-kinesis": "^3.226.0",
+    "@aws-sdk/s3-request-presigner": "^3.226.0",
+    "@aws-sdk/util-dynamodb": "^3.226.0",
+    "@ipld/dag-ucan": "3.0.1",
     "@sentry/serverless": "^7.22.0",
     "@serverless-stack/node": "^1.18.2",
     "@ucanto/client": "^4.0.2",
@@ -21,7 +23,8 @@
     "@web3-storage/access": "^9.0.0",
     "@web3-storage/capabilities": "^2.0.0",
     "multiformats": "^10.0.2",
-    "p-retry": "^5.1.2"
+    "p-retry": "^5.1.2",
+    "uint8arrays": "^4.0.2"
   },
   "devDependencies": {
     "@ipld/car": "^5.0.1",

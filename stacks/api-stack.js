@@ -26,7 +26,7 @@ export function ApiStack({ stack, app }) {
 
   // Get carpark reference
   const { carparkBucket } = use(CarparkStack)
-  const { ucanBucket } = use(UcanInvocationStack)
+  const { ucanBucket, ucanStream } = use(UcanInvocationStack)
 
   /**
    * This table takes a stored CAR and makes an entry in the store table
@@ -69,6 +69,7 @@ export function ApiStack({ stack, app }) {
           STORE_BUCKET_NAME: carparkBucket.bucketName,
           UPLOAD_TABLE_NAME: uploadTable.tableName,
           UCAN_BUCKET_NAME: ucanBucket.bucketName,
+          UCAN_LOG_STREAM_NAME: ucanStream.streamName,
           NAME: pkg.name,
           VERSION: pkg.version,
           COMMIT: git.commmit,
