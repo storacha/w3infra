@@ -15,10 +15,7 @@ export function UploadDbStack({ stack, app }) {
 
   /**
    * This table takes a stored CAR and makes an entry in the store table
-   * to associate the uploaders DID with a payload CID.
-   * You can also optionally indicate an application DID and origin.
-   *
-   * This is used by the store/* service capabilities.
+   * Used by the store/* service capabilities.
    */
    const storeTable = new Table(stack, 'store', {
     ...storeTableProps,
@@ -26,12 +23,8 @@ export function UploadDbStack({ stack, app }) {
   })
 
   /**
-   * This table maps stored CAR files (shards) to an upload root cid (dataCID).
-   * These are stored as individual rows, from dataCID to carCID:
-   * 
-   * upload -> {root, shards} -> maps to [[root,shard1], ...[root, shardN]]
-   * 
-   * This is used by the upload/* capabilities.
+   * This table maps stored CAR files (shards) to an upload root cid.
+   * Used by the upload/* capabilities.
    */
    const uploadTable = new Table(stack, 'upload', {
     ...uploadTableProps,

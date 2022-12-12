@@ -19,7 +19,7 @@ export function UploadApiStack({ stack, app }) {
   // Setup app monitoring with Sentry
   setupSentry(app, stack)
 
-  // Get references from dependent stacks
+  // Get references to constructs created in other stacks
   const { carparkBucket } = use(CarparkStack)
   const { storeTable, uploadTable } = use(UploadDbStack)
 
