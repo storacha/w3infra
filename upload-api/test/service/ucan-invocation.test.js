@@ -1,6 +1,6 @@
 import { testUcanInvocation as test } from '../helpers/context.js'
 
-import { HeadObjectCommand } from '@aws-sdk/client-s3'
+import { GetObjectCommand } from '@aws-sdk/client-s3'
 import * as Signer from '@ucanto/principal/ed25519'
 import { CAR } from '@ucanto/transport'
 import * as UCAN from '@ipld/dag-ucan'
@@ -96,14 +96,34 @@ test('persists ucan invocation CAR file', async t => {
   await persistUcanInvocation(request, ucanStore)
 
   const requestCar = await CAR.codec.decode(request.body)
-  const requestCarRootCid = requestCar.roots[0].cid
+  const requestCarRootCid = requestCar.roots[0].cid.toString()
 
-  const cmd = new HeadObjectCommand({
-    Key: requestCarRootCid.toString(),
+  const cmd = new GetObjectCommand({
+    Key: `${requestCarRootCid}/${requestCarRootCid}.car`,
     Bucket: bucketName,
   })
   const s3Response = await t.context.s3Client.send(cmd)
   t.is(s3Response.$metadata.httpStatusCode, 200)
+
+  // @ts-expect-error AWS types with readable stream
+  const bytes = (await s3Response.Body.toArray())[0]
+
+  const storedCar = await CAR.codec.decode(bytes)
+  const storedCarRootCid = storedCar.roots[0].cid.toString()
+
+  t.is(requestCarRootCid, storedCarRootCid)
+  // @ts-expect-error unkown ByteView type
+  const ucan = UCAN.decode(storedCar.roots[0].bytes)
+
+  t.is(ucan.iss.did(), alice.did())
+  t.is(ucan.aud.did(), uploadService.did())
+  t.deepEqual(ucan.prf, [proof.root.cid])  
+  t.is(ucan.att.length, 1)
+  t.like(ucan.att[0], {
+    nb,
+    can,
+    with: spaceDid,
+  })
 })
 
 /**

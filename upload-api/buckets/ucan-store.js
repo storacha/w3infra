@@ -25,7 +25,7 @@ export function createUcanStore (region, bucketName, options = {}) {
     put: async (carCid, bytes) => {
       const putCmd = new PutObjectCommand({
         Bucket: bucketName,
-        Key: carCid,
+        Key: `${carCid}/${carCid}.car`,
         Body: bytes
       })
       await s3client.send(putCmd)

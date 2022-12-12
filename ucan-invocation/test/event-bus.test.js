@@ -9,7 +9,7 @@ import {
 
 const eventBusName = 'event-bus-arn'
 
-test('notifies event bus when an .idx file is added to the satnav bucket', async t => {
+test('notifies event bus when a CAR file is added to the ucan store bucket', async t => {
   const bus = {
     putEvents: (/** @type {any} */ data) => {
       t.is(data.Entries.length, fixtureS3PutValidRecords.length)
@@ -42,7 +42,7 @@ test('notifies event bus when an .idx file is added to the satnav bucket', async
   t.is(response.statusCode, 200)
 })
 
-test('does not notify event bus when a non .idx file is added to the satnav bucket', async t => {
+test('does not notify event bus when a non CAR file is added to the ucan store bucket', async t => {
   const bus = {
     putEvents: () => {
       throw new Error('event should not be triggered')
