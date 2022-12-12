@@ -12,12 +12,12 @@ import { DID } from '@ucanto/validator'
  * Given a config, return a ucanto Signer object representing the service
  *
  * @param {object} config
- * @param {string} [config.DID] - public identifier of the running service. e.g. a did:key or a did:web
+ * @param {string} [config.UPLOAD_API_DID] - public identifier of the running service. e.g. a did:key or a did:web
  * @param {string} config.PRIVATE_KEY - multiformats private key of primary signing key
  */
  export function getServiceSigner(config) {
   const signer = ed25519.parse(config.PRIVATE_KEY)
-  const did = config.DID
+  const did = config.UPLOAD_API_DID
   if (!did) {
     return signer
   }

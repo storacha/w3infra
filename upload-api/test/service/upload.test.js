@@ -621,9 +621,9 @@ test('upload/list can be paginated with custom size', async (t) => {
 
 test('can invoke when serviceSigner has a did:web did', async (t) => {
   const serviceDid = 'did:web:example.com'
-  const servicePrivateKey = "MgCZWi610eROJX6FJVgpPUpaE/Xg6GyT8DchhEWukperKg+0Ba/bpI+xjNrI1xFYOy0q5JFeHq2fzmukKUQLcS7SDfFk="
+  const servicePrivateKey = Signer.format(await Signer.generate())
   const servicePrincipal = getServiceSigner({
-    DID: serviceDid,
+    UPLOAD_API_DID: serviceDid,
     PRIVATE_KEY: servicePrivateKey,
   })
   const connection = await getClientConnection(servicePrincipal, {

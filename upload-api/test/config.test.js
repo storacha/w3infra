@@ -18,14 +18,14 @@ const testKeypair = {
   },
 }
 
-test('upload-api/config getServiceSigner creates a signer using config.{DID,PRIVATE_KEY}', async (t) => {
+test('upload-api/config getServiceSigner creates a signer using config.{UPLOAD_API_KEY,PRIVATE_KEY}', async (t) => {
   const config = {
     PRIVATE_KEY: testKeypair.private.multiformats,
-    DID: 'did:web:exampe.com',
+    UPLOAD_API_DID: 'did:web:exampe.com',
   }
   const signer = configModule.getServiceSigner(config)
   t.assert(signer)
-  t.is(signer.did().toString(), config.DID)
+  t.is(signer.did().toString(), config.UPLOAD_API_DID)
   const { keys } = signer.toArchive()
   const didKeys = Object.keys(keys)
   t.deepEqual(didKeys, [testKeypair.public.did])
@@ -33,7 +33,7 @@ test('upload-api/config getServiceSigner creates a signer using config.{DID,PRIV
 test('upload-api/config getServiceSigner errors if config.DID is provided but not a did', (t) => {
   t.throws(() => {
     configModule.getServiceSigner({
-      DID: 'not a did',
+      UPLOAD_API_DID: 'not a did',
       PRIVATE_KEY: testKeypair.private.multiformats,
     })
   }, { message: /^Expected a did: but got ".+" instead$/ })
