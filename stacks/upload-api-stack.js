@@ -28,9 +28,7 @@ export function UploadApiStack({ stack, app }) {
   const pkg = getApiPackageJson()
   const git = getGitInfo()
   const privateKey = new Config.Secret(stack, 'PRIVATE_KEY')
-  const uploadApiDid = new Config.Parameter(stack, 'UPLOAD_API_DID', {
-    value: process.env.UPLOAD_API_DID ?? '',
-  })
+  const uploadApiDid = new Config.Parameter(stack, 'UPLOAD_API_DID', { value: '' })
 
   const api = new Api(stack, 'http-gateway', {
     customDomain,
@@ -47,7 +45,6 @@ export function UploadApiStack({ stack, app }) {
           STAGE: stack.stage,
           ACCESS_SERVICE_DID: process.env.ACCESS_SERVICE_DID ?? '',
           ACCESS_SERVICE_URL: process.env.ACCESS_SERVICE_URL ?? '',
-          PRIVATE_KEY: process.env.PRIVATE_KEY ?? '',
           R2_ACCESS_KEY_ID: process.env.R2_ACCESS_KEY_ID ?? '',
           R2_SECRET_ACCESS_KEY: process.env.R2_SECRET_ACCESS_KEY ?? '',
           R2_REGION: process.env.R2_REGION ?? '',
