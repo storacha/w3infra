@@ -111,9 +111,16 @@ export function createUploadTable (region, tableName, options = {}) {
         Key: marshall({
           space,
           root: root.toString(),
-        })
+        }),
+        ReturnValues: 'ALL_OLD'
       })
-      await dynamoDb.send(cmd)
+      // return the removed object so caller may remove all shards
+      const res = await dynamoDb.send(cmd)
+      if (res.Attributes === undefined) {
+        return
+      }
+      const raw = unmarshall(res.Attributes)
+      return toUploadAddResult(raw)
     },
     /**
      * List all CARs bound to an account
