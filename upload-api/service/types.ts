@@ -27,7 +27,7 @@ export interface Service {
   },
   upload: {
     add: ServiceMethod<UploadAdd, UploadAddResult, Failure>,
-    remove: ServiceMethod<UploadRemove, void, Failure>,
+    remove: ServiceMethod<UploadRemove, UploadRemoveResult | undefined, Failure>,
     list: ServiceMethod<UploadList, ListResponse<UploadListItem>, Failure>,
   }
 }
@@ -64,7 +64,7 @@ export interface StoreTable {
 export interface UploadTable {
   exists: (space: DID, root: AnyLink) => Promise<boolean>
   insert: (item: UploadAddInput) => Promise<UploadAddResult>
-  remove: (space: DID, root: AnyLink) => Promise<void>
+  remove: (space: DID, root: AnyLink) => Promise<UploadRemoveResult | undefined>
   list: (space: DID, options?: ListOptions) => Promise<ListResponse<UploadListItem>>
 }
 
@@ -100,6 +100,7 @@ export interface UploadAddInput {
 }
 
 export interface UploadAddResult extends Omit<UploadAddInput, 'space' | 'issuer' | 'invocation'> {}
+export interface UploadRemoveResult extends UploadAddResult {}
 
 export interface UploadListItem extends UploadAddResult {
   insertedAt: string

@@ -280,6 +280,55 @@ test('upload/add merges shards to an existing item with shards', async (t) => {
   t.deepEqual([...dbItems[0].shards].sort(), cars.map(c => c.cid.toString()).sort())
 })
 
+test('upload/remove removes an upload', async (t) => {
+  const { tableName, bucketName } = await prepareResources(t.context.dynamoClient, t.context.s3Client)
+
+  const uploadService = await Signer.generate()
+  const alice = await Signer.generate()
+  const { proof, spaceDid } = await createSpace(alice)
+  const connection = await getClientConnection(uploadService, {
+    ...t.context,
+    tableName,
+    bucketName
+  })
+
+  const car = await randomCAR(128)
+
+  // invoke a upload/add with proof
+  const root = car.roots[0]
+
+  // Add upload to space
+  const uploadAdd = await UploadCapabilities.add.invoke({
+    issuer: alice,
+    audience: uploadService,
+    with: spaceDid,
+    nb: { root: car.roots[0], shards: [ car.cid ] },
+    proofs: [proof]
+  }).execute(connection)
+  if (uploadAdd.error) {
+    throw new Error('invocation failed', { cause: uploadAdd })
+  }
+
+  const uploadRemove = await UploadCapabilities.remove.invoke({
+    issuer: alice,
+    audience: uploadService,
+    with: spaceDid,
+    nb: { root },
+    proofs: [proof]
+  }).execute(connection)
+
+  if (uploadRemove === undefined) {
+    throw new Error('expected upload/remove response to include the upload object removed')
+  }
+
+  if (uploadRemove.error) {
+    throw new Error('expected upload/remove response to include the upload object removed', { cause: uploadRemove.error })
+  }
+
+  t.is(uploadRemove.root.toString(), car.roots[0].toString())
+  t.is(uploadRemove.shards?.[0].toString(), car.cid.toString())
+})
+
 test('upload/remove does not fail for non existent upload', async (t) => {
   const { tableName, bucketName } = await prepareResources(t.context.dynamoClient, t.context.s3Client)
 
@@ -305,11 +354,10 @@ test('upload/remove does not fail for non existent upload', async (t) => {
     proofs: [proof]
   }).execute(connection)
 
-  // expect no response for a remove
-  t.falsy(uploadRemove)
+  t.falsy(uploadRemove, 'expect falsy response when removing an upload you dont have')
 })
 
-test('upload/remove removes all entries with data CID linked to space', async (t) => {
+test('upload/remove only removes an upload for the given space', async (t) => {
   const { tableName, bucketName } = await prepareResources(t.context.dynamoClient, t.context.s3Client)
 
   const uploadService = await Signer.generate()
