@@ -6,8 +6,20 @@
  * see: https://docs.sst.dev/advanced/testing#how-sst-bind-works
  */
 import * as ed25519 from '@ucanto/principal/ed25519'
-import { Config } from '@serverless-stack/node/config/index.js'
+import { DID } from '@ucanto/validator'
 
-export function getServiceSigner() {
-  return ed25519.parse(Config.PRIVATE_KEY)
+/**
+ * Given a config, return a ucanto Signer object representing the service
+ *
+ * @param {object} config
+ * @param {string} [config.DID] - public identifier of the running service. e.g. a did:key or a did:web
+ * @param {string} config.PRIVATE_KEY - multiformats private key of primary signing key
+ */
+ export function getServiceSigner(config) {
+  const signer = ed25519.parse(config.PRIVATE_KEY)
+  const did = config.DID
+  if (!did) {
+    return signer
+  }
+  return signer.withDID(DID.match({}).from(did))
 }

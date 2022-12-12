@@ -8,6 +8,7 @@ import { createStoreTable } from '../tables/store.js'
 import { createUploadTable } from '../tables/upload.js'
 import { getServiceSigner } from '../config.js'
 import { createUcantoServer } from '../service/index.js'
+import { Config } from '@serverless-stack/node/config/index.js'
 
 Sentry.AWSLambda.init({
   dsn: process.env.SENTRY_DSN,
@@ -49,7 +50,7 @@ async function ucanInvocationRouter (request) {
     }
   }
 
-  const serviceSigner = getServiceSigner()
+  const serviceSigner = getServiceSigner(Config)
   const server = await createUcantoServer(serviceSigner, {
     storeTable: createStoreTable(AWS_REGION, storeTableName, {
       endpoint: dbEndpoint
