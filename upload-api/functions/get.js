@@ -1,4 +1,5 @@
 import * as Sentry from '@sentry/serverless'
+import { Config } from '@serverless-stack/node/config/index.js'
 
 import { getServiceSigner } from '../config.js'
 
@@ -14,7 +15,9 @@ Sentry.AWSLambda.init({
  */
  export async function versionGet (request) {
   const { NAME: name , VERSION: version, COMMIT: commit, STAGE: env } = process.env
-  const did = getServiceSigner().did()
+  const { UPLOAD_API_DID } = process.env;
+  const { PRIVATE_KEY } = Config
+  const did = getServiceSigner({ UPLOAD_API_DID, PRIVATE_KEY }).did()
   const repo = 'https://github.com/web3-storage/upload-api'
   return {
     statusCode: 200,
@@ -33,8 +36,9 @@ export const version = Sentry.AWSLambda.wrapHandler(versionGet)
  * @param {import('aws-lambda').APIGatewayProxyEventV2} request 
  */
 export async function homeGet (request) {
-  const { VERSION: version, STAGE: stage } = process.env
-  const did = getServiceSigner().did()
+  const { VERSION: version, STAGE: stage, UPLOAD_API_DID } = process.env
+  const { PRIVATE_KEY } = Config
+  const did = getServiceSigner({ PRIVATE_KEY, UPLOAD_API_DID }).did()
   const repo = 'https://github.com/web3-storage/upload-api'
   const env = stage === 'prod' ? '' : `(${stage})`
   return {

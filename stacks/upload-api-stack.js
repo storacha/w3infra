@@ -52,8 +52,11 @@ export function UploadApiStack({ stack, app }) {
           R2_REGION: process.env.R2_REGION ?? '',
           R2_DUDEWHERE_BUCKET_NAME: process.env.R2_DUDEWHERE_BUCKET_NAME ?? '',
           R2_ENDPOINT: process.env.R2_ENDPOINT ?? '',
+          UPLOAD_API_DID: process.env.UPLOAD_API_DID ?? '',
         },
-        bind: [privateKey]
+        bind: [
+          privateKey,
+        ]
       }
     },
     routes: {

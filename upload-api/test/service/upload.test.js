@@ -9,6 +9,7 @@ import { uploadTableProps } from '../../tables/index.js'
 import { createS3, createBucket, createAccessServer, createDynamodDb, dynamoDBTableConfig } from '../helpers/resources.js'
 import { randomCAR } from '../helpers/random.js'
 import { getClientConnection, createSpace } from '../helpers/ucanto.js'
+import { getServiceSigner } from '../../config.js'
 
 // https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-dynamodb/classes/batchwriteitemcommand.html
 const BATCH_MAX_SAFE_LIMIT = 25
@@ -617,6 +618,67 @@ test('upload/list can be paginated with custom size', async (t) => {
     t.truthy(cars.find(car => car.roots[0].toString() === entry.root.toString() ))
   }
 })
+
+test('can invoke when serviceSigner has a did:web did', async (t) => {
+  const serviceDid = 'did:web:example.com'
+  const servicePrivateKey = Signer.format(await Signer.generate())
+  const servicePrincipal = getServiceSigner({
+    UPLOAD_API_DID: serviceDid,
+    PRIVATE_KEY: servicePrivateKey,
+  })
+  const connection = await getClientConnection(servicePrincipal, {
+    ...t.context,
+    ...await prepareResources(t.context.dynamoClient, t.context.s3Client),
+  })
+
+  // first try invoking with expected issuer, audience
+  const alice = await Signer.generate()
+  const inovocation = await createNoopRemoveInovocation({
+    issuer: alice,
+    audience: servicePrincipal
+  })
+  const result = await inovocation.execute(connection)
+  t.falsy(result, 'result is falsy')
+  t.is(result?.error, undefined, 'result is not a ucanto Failure')
+  // everything's fine when invocation audience is the expected serviceDid.
+
+  // Let's also ensure that invoking with the wrong audience results in an error.
+  // Specifically, we'll use the wrong audience that corresponds to a servicePrincipal.signer key.
+  // This might be a common mistake, since its a key that the serviceSigner may sign with,
+  // but the `signer.did()` does not match, so we'd still expect the server to reject it.
+  const wrongAudience = Signer.parse(servicePrivateKey)
+  const resultOfInvocationWithWrongAudience = await (await createNoopRemoveInovocation({
+    issuer: alice,
+    audience: wrongAudience,
+  })).execute(connection)
+  t.not(resultOfInvocationWithWrongAudience, undefined, 'result is not undefined - it should be an error')
+  if (resultOfInvocationWithWrongAudience?.error) {
+    t.is(resultOfInvocationWithWrongAudience.name, 'InvalidAudience', 'result of sending invocation with wrong audience is InvalidAudience')
+    t.is(/** @type {import('@ucanto/server').InvalidAudience} */ (resultOfInvocationWithWrongAudience).audience?.toString(), serviceDid)
+  }
+})
+
+/**
+ * Create an invocation that can be used for testing ucanto connections.
+ * 
+ * @param {object} options
+ * @param {import('@ucanto/interface').Principal} options.audience
+ * @param {Signer.EdSigner} options.issuer
+ */
+async function createNoopRemoveInovocation(options) {
+  const { proof, spaceDid } = await createSpace(options.issuer)
+  const car = await randomCAR(128)
+  // upload/remove is a decent choice for a no-op, as it will respond with a non-error result
+  // even without setting up any state ahead of time
+  const invocation = UploadCapabilities.remove.invoke({
+    issuer: options.issuer,
+    audience: options.audience,
+    with: spaceDid,
+    nb: { root: car.roots[0] },
+    proofs: [proof]
+  })
+  return invocation
+}
 
 /**
  * @param {import("@aws-sdk/client-dynamodb").DynamoDBClient} dynamoClient

@@ -58,6 +58,10 @@ DID of the w3access service.
 
 URL of the w3access service.
 
+#### `UPLOAD_API_DID`
+
+[DID](https://www.w3.org/TR/did-core/) of the upload-api ucanto server. e.g. `did:web:up.web3.storage`. Optional: if omitted, a `did:key` will be derrived from `PRIVATE_KEY`
+
 #### `R2_ACCESS_KEY_ID`
 
 Access key for S3 like cloud object storage to replicate content into.
