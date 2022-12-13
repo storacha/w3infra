@@ -25,7 +25,7 @@ import * as DID from '@ipld/dag-ucan/did'
  * @param {{ UPLOAD_API_DID: string } | { PRIVATE_KEY: string }} config
  * @returns {import('@ucanto/interface').Principal}
  */
-export function configureUcantoServerId(config) {
+export function getServerPrincipal(config) {
   if ('UPLOAD_API_DID' in config) {
     return DID.parse(config.UPLOAD_API_DID)
   }

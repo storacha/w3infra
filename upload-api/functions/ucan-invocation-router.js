@@ -10,7 +10,7 @@ import { createDudewhereStore } from '../buckets/dudewhere-store.js'
 import { createUcanStore } from '../buckets/ucan-store.js'
 import { createStoreTable } from '../tables/store.js'
 import { createUploadTable } from '../tables/upload.js'
-import { configureUcantoServerId, getServiceSigner } from '../config.js'
+import { getServerPrincipal, getServiceSigner } from '../config.js'
 import { createUcantoServer } from '../service/index.js'
 import { Config } from '@serverless-stack/node/config/index.js'
 
@@ -59,7 +59,7 @@ async function ucanInvocationRouter (request) {
 
   const { UPLOAD_API_DID } = process.env;
   const { PRIVATE_KEY } = Config
-  const servicePrincipal = configureUcantoServerId({ UPLOAD_API_DID, PRIVATE_KEY })
+  const servicePrincipal = getServerPrincipal({ UPLOAD_API_DID, PRIVATE_KEY })
   const serviceSigner = getServiceSigner({ PRIVATE_KEY })
   const ucanStoreBucket = createUcanStore(AWS_REGION, ucanBucketName)
 

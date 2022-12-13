@@ -38,28 +38,28 @@ test('upload-api/config getServiceSigner infers did from config.PRIVATE_KEY when
   t.is(signer.did().toString(), testKeypair.public.did)
 })
 
-test('upload-api/config configureUcantoServerId creates a signer using config.{UPLOAD_API_KEY,PRIVATE_KEY}', async (t) => {
+test('upload-api/config getServerPrincipal creates a signer using config.{UPLOAD_API_KEY,PRIVATE_KEY}', async (t) => {
   const config = {
     PRIVATE_KEY: testKeypair.private.multiformats,
     UPLOAD_API_DID: 'did:web:exampe.com',
   }
-  const principal = configModule.configureUcantoServerId(config)
+  const principal = configModule.getServerPrincipal(config)
   t.assert(principal)
   t.is(principal.did().toString(), config.UPLOAD_API_DID)
 })
-test('upload-api/config configureUcantoServerId errors if config.UPLOAD_API_DID is provided but not a did', (t) => {
+test('upload-api/config getServerPrincipal errors if config.UPLOAD_API_DID is provided but not a did', (t) => {
   t.throws(() => {
-    configModule.configureUcantoServerId({
+    configModule.getServerPrincipal({
       UPLOAD_API_DID: 'not a did',
       PRIVATE_KEY: testKeypair.private.multiformats,
     })
   }, { message: /^Invalid DID/ })
 })
-test('upload-api/config configureUcantoServerId infers did from config.PRIVATE_KEY when config.UPLOAD_API_DID is omitted', async (t) => {
+test('upload-api/config getServerPrincipal infers did from config.PRIVATE_KEY when config.UPLOAD_API_DID is omitted', async (t) => {
   const config = {
     PRIVATE_KEY: testKeypair.private.multiformats,
   }
-  const principal = configModule.configureUcantoServerId(config)
+  const principal = configModule.getServerPrincipal(config)
   t.assert(principal)
   t.is(principal.did().toString(), testKeypair.public.did)
 })

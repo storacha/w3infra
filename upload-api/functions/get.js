@@ -1,7 +1,7 @@
 import * as Sentry from '@sentry/serverless'
 import { Config } from '@serverless-stack/node/config/index.js'
 
-import { getServiceSigner } from '../config.js'
+import { getServerPrincipal, getServiceSigner } from '../config.js'
 
 Sentry.AWSLambda.init({
   dsn: process.env.SENTRY_DSN,
@@ -16,14 +16,18 @@ Sentry.AWSLambda.init({
  export async function versionGet (request) {
   const { NAME: name , VERSION: version, COMMIT: commit, STAGE: env } = process.env
   const { PRIVATE_KEY } = Config
-  const did = getServiceSigner({ PRIVATE_KEY }).did()
+  const { UPLOAD_API_DID } = process.env
+  const signer = getServiceSigner({ PRIVATE_KEY })
+  const did = signer.did();
+  const serverPrincipal = getServerPrincipal({ UPLOAD_API_DID, PRIVATE_KEY })
+  const aud = serverPrincipal.did()
   const repo = 'https://github.com/web3-storage/upload-api'
   return {
     statusCode: 200,
     headers: {
       'Content-Type': `application/json`
     },
-    body: JSON.stringify({ name, version, did, repo, commit, env })
+    body: JSON.stringify({ name, version, did, aud, repo, commit, env })
   }
 }
 
