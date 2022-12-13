@@ -4,6 +4,7 @@ import * as Signer from '@ucanto/principal/ed25519'
 
 import { createUcantoServer } from '../../service/index.js'
 import { createCarStore } from '../../buckets/car-store.js'
+import { createUcanStore } from '../../buckets/ucan-store.js'
 import { createDudewhereStore } from '../../buckets/dudewhere-store.js'
 import { createStoreTable } from '../../tables/store.js'
 import { createUploadTable } from '../../tables/upload.js'
@@ -24,15 +25,17 @@ import { createAccessClient } from '../../access.js'
 export function createTestingUcantoServer(service, ctx) {
   const region = ctx.region || 'us-west-2'
  return createUcantoServer(service, {
-   storeTable: createStoreTable(region, ctx.tableName, {
-     endpoint: ctx.dbEndpoint
-   }),
-   uploadTable: createUploadTable(region, ctx.tableName, {
-     endpoint: ctx.dbEndpoint
-   }),
-   carStoreBucket: createCarStore(region, ctx.bucketName, { ...ctx.s3ClientOpts }),
-   dudewhereBucket: createDudewhereStore(region, ctx.bucketName, { ...ctx.s3ClientOpts }),
-   access: createAccessClient(service, ctx.access.servicePrincipal, ctx.access.serviceURL)
+    ucanBucket: createUcanStore(region, ctx.bucketName, { ...ctx.s3ClientOpts })
+    }, {
+    storeTable: createStoreTable(region, ctx.tableName, {
+      endpoint: ctx.dbEndpoint
+    }),
+    uploadTable: createUploadTable(region, ctx.tableName, {
+      endpoint: ctx.dbEndpoint
+    }),
+    carStoreBucket: createCarStore(region, ctx.bucketName, { ...ctx.s3ClientOpts }),
+    dudewhereBucket: createDudewhereStore(region, ctx.bucketName, { ...ctx.s3ClientOpts }),
+    access: createAccessClient(service, ctx.access.servicePrincipal, ctx.access.serviceURL)
  })
 }
 

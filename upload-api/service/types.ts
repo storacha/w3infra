@@ -43,7 +43,11 @@ export interface UploadServiceContext {
   dudewhereBucket: DudewhereBucket
 }
 
-export interface UcantoServerContext extends StoreServiceContext, UploadServiceContext {}
+export interface UcantoServiceContext extends StoreServiceContext, UploadServiceContext {}
+
+export interface UcantoServerContext {
+  ucanBucket: UcanBucket,
+}
 
 export interface CarStoreBucket {
   has: (link: AnyLink) => Promise<boolean>

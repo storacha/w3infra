@@ -2,7 +2,6 @@ import { DID } from '@ucanto/core'
 import * as Sentry from '@sentry/serverless'
 
 import { createAccessClient } from '../access.js'
-import { persistUcanInvocation } from '../ucan-invocation.js'
 import { createCarStore } from '../buckets/car-store.js'
 import { createDudewhereStore } from '../buckets/dudewhere-store.js'
 import { createUcanStore } from '../buckets/ucan-store.js'
@@ -53,9 +52,11 @@ async function ucanInvocationRouter (request) {
   }
 
   const serviceSigner = getServiceSigner()
-  const ucanStoreBucket = createUcanStore(AWS_REGION, ucanBucketName)
+  const ucanBucket = createUcanStore(AWS_REGION, ucanBucketName)
 
   const server = await createUcantoServer(serviceSigner, {
+      ucanBucket
+    }, {
     storeTable: createStoreTable(AWS_REGION, storeTableName, {
       endpoint: dbEndpoint
     }),
@@ -74,16 +75,13 @@ async function ucanInvocationRouter (request) {
     uploadTable: createUploadTable(AWS_REGION, uploadTableName, {
       endpoint: dbEndpoint
     }),
-    access: createAccessClient(serviceSigner, DID.parse(accessServiceDID), new URL(accessServiceURL))
+    access: createAccessClient(serviceSigner, DID.parse(accessServiceDID), new URL(accessServiceURL)),
   })
   const response = await server.request({
     // @ts-expect-error - type is Record<string, string|string[]|undefined>
     headers: request.headers,
     body: Buffer.from(request.body, 'base64'),
   })
-
-  // persist successful invocation handled
-  await persistUcanInvocation(request, ucanStoreBucket)
 
   return toLambdaSuccessResponse(response)
 }
