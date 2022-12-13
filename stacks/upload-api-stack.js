@@ -23,7 +23,7 @@ export function UploadApiStack({ stack, app }) {
   // Get references to constructs created in other stacks
   const { carparkBucket } = use(CarparkStack)
   const { storeTable, uploadTable } = use(UploadDbStack)
-  const { ucanBucket } = use(UcanInvocationStack)
+  const { ucanBucket, ucanStream } = use(UcanInvocationStack)
 
   // Setup API
   const customDomain = getCustomDomain(stack.stage, process.env.HOSTED_ZONE)
@@ -35,12 +35,13 @@ export function UploadApiStack({ stack, app }) {
     customDomain,
     defaults: {
       function: {
-        permissions: [storeTable, uploadTable, carparkBucket],
+        permissions: [storeTable, uploadTable, carparkBucket, ucanBucket, ucanStream],
         environment: {
           STORE_TABLE_NAME: storeTable.tableName,
           STORE_BUCKET_NAME: carparkBucket.bucketName,
           UPLOAD_TABLE_NAME: uploadTable.tableName,
           UCAN_BUCKET_NAME: ucanBucket.bucketName,
+          UCAN_LOG_STREAM_NAME: ucanStream.streamName,
           NAME: pkg.name,
           VERSION: pkg.version,
           COMMIT: git.commmit,

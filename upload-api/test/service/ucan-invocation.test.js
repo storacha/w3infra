@@ -93,7 +93,8 @@ test('persists ucan invocation CAR file', async t => {
   ])
 
   // @ts-expect-error different type interface in AWS expected request
-  await persistUcanInvocation(request, ucanStore)
+  const ucanInvocationObject = await parseUcanInvocationRequest(request)
+  await persistUcanInvocation(ucanInvocationObject, ucanStore)
 
   const requestCar = await CAR.codec.decode(request.body)
   const requestCarRootCid = requestCar.roots[0].cid.toString()
