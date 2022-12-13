@@ -53,7 +53,9 @@ async function ucanInvocationRouter (request) {
     }
   }
 
-  const serviceSigner = getServiceSigner(Config)
+  const { UPLOAD_API_DID } = process.env;
+  const { PRIVATE_KEY } = Config
+  const serviceSigner = getServiceSigner({ UPLOAD_API_DID, PRIVATE_KEY })
   const ucanStoreBucket = createUcanStore(AWS_REGION, ucanBucketName)
 
   const server = await createUcantoServer(serviceSigner, {
