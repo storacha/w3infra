@@ -41,7 +41,9 @@ export const version = Sentry.AWSLambda.wrapHandler(versionGet)
 export async function homeGet (request) {
   const { VERSION: version, STAGE: stage } = process.env
   const { PRIVATE_KEY } = Config
-  const did = getServiceSigner({ PRIVATE_KEY }).did()
+  const { UPLOAD_API_DID } = process.env
+  const serverPrincipal = getServerPrincipal({ UPLOAD_API_DID, PRIVATE_KEY })
+  const aud = serverPrincipal.did()
   const repo = 'https://github.com/web3-storage/upload-api'
   const env = stage === 'prod' ? '' : `(${stage})`
   return {
@@ -49,7 +51,7 @@ export async function homeGet (request) {
     headers: {
       'Content-Type': 'text/plain; charset=utf-8'
     },
-    body: `⁂ upload-api v${version} ${env}\n- ${repo}\n- ${did}\n`
+    body: `⁂ upload-api v${version} ${env}\n- ${repo}\n- ${aud}\n`
   }
 }
 
