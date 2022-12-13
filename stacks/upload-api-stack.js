@@ -30,7 +30,6 @@ export function UploadApiStack({ stack, app }) {
   const pkg = getApiPackageJson()
   const git = getGitInfo()
   const privateKey = new Config.Secret(stack, 'PRIVATE_KEY')
-  const uploadApiDid = new Config.Parameter(stack, 'UPLOAD_API_DID', { value: customDomain ? `did:web:${customDomain.domainName}` : '' })
 
   const api = new Api(stack, 'http-gateway', {
     customDomain,
@@ -53,10 +52,10 @@ export function UploadApiStack({ stack, app }) {
           R2_REGION: process.env.R2_REGION ?? '',
           R2_DUDEWHERE_BUCKET_NAME: process.env.R2_DUDEWHERE_BUCKET_NAME ?? '',
           R2_ENDPOINT: process.env.R2_ENDPOINT ?? '',
+          UPLOAD_API_DID: process.env.UPLOAD_API_DID ?? '',
         },
         bind: [
           privateKey,
-          uploadApiDid,
         ]
       }
     },
