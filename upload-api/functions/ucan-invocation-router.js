@@ -95,7 +95,8 @@ async function ucanInvocationRouter (request) {
   await kinesisClient.putRecord({
     Data: uint8arrayFromString(JSON.stringify({
       carCid: ucanInvocation.carCid,
-      value: ucanInvocation.value
+      value: ucanInvocation.value,
+      ts: Date.now()
     })),
     // https://docs.aws.amazon.com/streams/latest/dev/key-concepts.html
     // A partition key is used to group data by shard within a stream.

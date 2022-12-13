@@ -50,7 +50,8 @@ export async function parseUcanInvocationRequest (request) {
       // @ts-ignore missing types
       att: dagUcan.att.map(replaceAllLinkValues),
       aud: dagUcan.aud.did(),
-      iss: dagUcan.iss.did()
+      iss: dagUcan.iss.did(),
+      prf: replaceAllLinkValues(dagUcan.prf)
     }
   }
 }

@@ -143,7 +143,7 @@ test('replace all link values as object and array', async t => {
         size: car.size
       },
       can: 'store/add',
-      with: 'did:key:z6MkfTDbhRZz26kcDNmmehPxeujSkbXe8jqv5fLpKvtc3Wcv'
+      with: 'did:key:z6MkfTDbhRZz26kcDNmmehPxeujSkbXe8jqv5fLpKvtc3Wcv',
     },
     {
       nb: {
