@@ -12,7 +12,8 @@ import { SatnavStack } from './satnav-stack.js'
  */
 export default function (app) {
   app.setDefaultFunctionProps({
-    runtime: 'nodejs16.x',
+    // @ts-ignore it will be https://github.com/serverless-stack/sst/pull/2206
+    runtime: 'nodejs18.x',  
     bundle: {
       format: 'esm',
     },

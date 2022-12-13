@@ -65,5 +65,8 @@
     "satnav",
     "ucan-invocation",
     "upload-api"
-  ]
+  ],
+  "engines": {
+    "node": ">=18 <19"
+  }
 }
