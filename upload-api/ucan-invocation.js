@@ -72,7 +72,7 @@ export const replaceAllLinkValues = (value) => {
   }
   // Object with Links?
   else if (typeof value === 'object') {
-    for (const key in value) {
+    for (const key of Object.keys(value)) {
       if (Link.isLink(value[key])) {
         value[key] = toJSON(value[key])
       }
