@@ -12,6 +12,7 @@ import { createStoreTable } from '../tables/store.js'
 import { createUploadTable } from '../tables/upload.js'
 import { getServiceSigner } from '../config.js'
 import { createUcantoServer } from '../service/index.js'
+import { roundAt } from '../drand.js'
 
 Sentry.AWSLambda.init({
   dsn: process.env.SENTRY_DSN,
@@ -88,14 +89,21 @@ async function ucanInvocationRouter (request) {
 
   const ucanInvocation = await parseUcanInvocationRequest(request)
 
-  // persist successful invocation handled
-  await persistUcanInvocation(ucanInvocation, ucanStoreBucket)
+  const [, round ] = await Promise.all([
+    // persist successful invocation handled
+    persistUcanInvocation(ucanInvocation, ucanStoreBucket),
+    // Get drand round for this moment in time
+    roundAt(Date.now())
+  ])
 
   // Put invocation to UCAN stream
   await kinesisClient.putRecord({
     Data: uint8arrayFromString(JSON.stringify({
       carCid: ucanInvocation.carCid,
-      value: ucanInvocation.value
+      value: ucanInvocation.value,
+      drand: {
+        round
+      }
     })),
     // https://docs.aws.amazon.com/streams/latest/dev/key-concepts.html
     // A partition key is used to group data by shard within a stream.
