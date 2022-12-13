@@ -5,6 +5,7 @@ import {
 } from '@serverless-stack/resources'
 import { UploadDbStack } from './upload-db-stack.js'
 import { CarparkStack } from './carpark-stack.js'
+import { UcanInvocationStack } from './ucan-invocation-stack.js'
 
 import { getCustomDomain, getApiPackageJson, getGitInfo, setupSentry } from './config.js'
 
@@ -22,6 +23,7 @@ export function UploadApiStack({ stack, app }) {
   // Get references to constructs created in other stacks
   const { carparkBucket } = use(CarparkStack)
   const { storeTable, uploadTable } = use(UploadDbStack)
+  const { ucanBucket } = use(UcanInvocationStack)
 
   // Setup API
   const customDomain = getCustomDomain(stack.stage, process.env.HOSTED_ZONE)
@@ -34,11 +36,12 @@ export function UploadApiStack({ stack, app }) {
     customDomain,
     defaults: {
       function: {
-        permissions: [storeTable, uploadTable, carparkBucket],
+        permissions: [storeTable, uploadTable, carparkBucket, ucanBucket],
         environment: {
           STORE_TABLE_NAME: storeTable.tableName,
           STORE_BUCKET_NAME: carparkBucket.bucketName,
           UPLOAD_TABLE_NAME: uploadTable.tableName,
+          UCAN_BUCKET_NAME: ucanBucket.bucketName,
           NAME: pkg.name,
           VERSION: pkg.version,
           COMMIT: git.commmit,

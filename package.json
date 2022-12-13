@@ -10,7 +10,7 @@
     "console": "sst console",
     "lint": "tsc && eslint '**/*.js'",
     "clean": "rm -rf dist node_modules package-lock.json ./*/{.cache,dist,node_modules}",
-    "test": "npm test -w upload-api -w carpark -w replicator -w satnav"
+    "test": "npm test -w upload-api -w carpark -w replicator -w satnav -w ucan-invocation"
   },
   "devDependencies": {
     "@serverless-stack/cli": "^1.18.0",
@@ -63,6 +63,7 @@
     "carpark",
     "replicator",
     "satnav",
+    "ucan-invocation",
     "upload-api"
   ]
 }
