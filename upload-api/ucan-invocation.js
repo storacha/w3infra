@@ -1,5 +1,6 @@
 import * as CAR from '@ucanto/transport/car'
 import * as UCAN from '@ipld/dag-ucan'
+import * as Link from 'multiformats/link'
 
 /**
  * @typedef {object} UcanInvocation
@@ -43,9 +44,49 @@ export async function parseUcanInvocationRequest (request) {
     bytes,
     carCid,
     value: {
-      att: dagUcan.att,
+      // Workaround for:
+      // https://github.com/web3-storage/ucanto/issues/171
+      // https://github.com/multiformats/js-multiformats/issues/228
+      // @ts-ignore missing types
+      att: dagUcan.att.map(replaceAllLinkValues),
       aud: dagUcan.aud.did(),
       iss: dagUcan.iss.did()
     }
   }
 }
+
+/**
+ * @param {any} value
+ */
+export const replaceAllLinkValues = (value) => {
+  // Array with Links?
+  if (Array.isArray(value)) {
+    for (let i = 0; i < value.length; i++) {
+      if (Link.isLink(value[i])) {
+        value[i] = toJSON(value[i])
+      } else {
+        replaceAllLinkValues(value[i])
+      }
+    }
+  }
+  // Object with Links?
+  else if (typeof value === 'object') {
+    for (const key in value) {
+      if (Link.isLink(value[key])) {
+        value[key] = toJSON(value[key])
+      }
+      replaceAllLinkValues(value[key])
+    }
+  }
+
+  return value
+}
+
+/**
+ * @template {import('multiformats').UnknownLink} Link
+ * @param {Link} link
+ */
+export const toJSON = link =>
+/** @type {import('./service/types').LinkJSON<Link>} */ ({
+  '/': link.toString(),
+})
