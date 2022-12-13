@@ -28,7 +28,7 @@ export function UploadApiStack({ stack, app }) {
   const pkg = getApiPackageJson()
   const git = getGitInfo()
   const privateKey = new Config.Secret(stack, 'PRIVATE_KEY')
-  const uploadApiDid = new Config.Parameter(stack, 'UPLOAD_API_DID', { value: '' })
+  const uploadApiDid = new Config.Parameter(stack, 'UPLOAD_API_DID', { value: customDomain ? `did:web:${customDomain}` : '' })
 
   const api = new Api(stack, 'http-gateway', {
     customDomain,
