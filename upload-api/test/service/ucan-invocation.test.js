@@ -7,9 +7,10 @@ import * as UCAN from '@ipld/dag-ucan'
 
 import { createSpace } from '../helpers/ucanto.js'
 import { createS3, createBucket } from '../helpers/resources.js'
+import { randomCAR } from '../helpers/random.js'
 
 import { createUcanStore } from '../../buckets/ucan-store.js'
-import { parseUcanInvocationRequest, persistUcanInvocation } from '../../ucan-invocation.js'
+import { parseUcanInvocationRequest, persistUcanInvocation, replaceAllLinkValues } from '../../ucan-invocation.js'
 
 test.before(async t => {
   const { client: s3Client, clientOpts: s3ClientOpts } = await createS3({ port: 9000 })
@@ -93,7 +94,8 @@ test('persists ucan invocation CAR file', async t => {
   ])
 
   // @ts-expect-error different type interface in AWS expected request
-  await persistUcanInvocation(request, ucanStore)
+  const ucanInvocationObject = await parseUcanInvocationRequest(request)
+  await persistUcanInvocation(ucanInvocationObject, ucanStore)
 
   const requestCar = await CAR.codec.decode(request.body)
   const requestCarRootCid = requestCar.roots[0].cid.toString()
@@ -126,6 +128,46 @@ test('persists ucan invocation CAR file', async t => {
   })
 })
 
+test('replace all link values as object and array', async t => {
+  const car = await randomCAR(128)
+  const otherCar = await randomCAR(40)
+
+  // invoke a upload/add with proof
+  const root = car.roots[0]
+  const shards = [car.cid, otherCar.cid].sort()
+
+  const att = [
+    {
+      nb: {
+        link: root,
+        size: car.size
+      },
+      can: 'store/add',
+      with: 'did:key:z6MkfTDbhRZz26kcDNmmehPxeujSkbXe8jqv5fLpKvtc3Wcv',
+    },
+    {
+      nb: {
+        root,
+        shards: [...shards]
+      },
+      can: 'upload/add',
+      with: 'did:key:z6MkfTDbhRZz26kcDNmmehPxeujSkbXe8jqv5fLpKvtc3Wcv'
+    },
+  ]
+
+  att.map(replaceAllLinkValues)
+
+  // Object with Link
+  // @ts-expect-error Property '/' does not exist on type 'Link<Partial<Model>
+  t.is(att[0].nb.link['/'], root.toString())
+  // @ts-expect-error Property '/' does not exist on type 'Link<Partial<Model>
+  t.is(att[1].nb.root['/'], root.toString())
+
+  // Array with Link
+  // @ts-expect-error Property '/' does not exist on type 'Link<Partial<Model>
+  t.deepEqual(att[1].nb.shards?.map(s => s['/']), shards.map(s => s.toString()))
+})
+
 /**
  * @param {import("@aws-sdk/client-s3").S3Client} s3Client
  */
@@ -136,3 +178,4 @@ async function prepareResources (s3Client) {
     bucketName
   }
 }
+

@@ -42,6 +42,7 @@
     "rules": {
       "unicorn/prefer-number-properties": "off",
       "unicorn/no-null": "off",
+      "unicorn/no-array-callback-reference": "off",
       "unicorn/no-array-for-each": "off",
       "unicorn/no-await-expression-member": "off",
       "unicorn/prefer-set-has": "off",

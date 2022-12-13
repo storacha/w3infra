@@ -7,7 +7,8 @@
   },
   "dependencies": {
     "@aws-sdk/client-eventbridge": "^3.218.0",
-    "@sentry/serverless": "^7.22.0"
+    "@sentry/serverless": "^7.22.0",
+    "uint8arrays": "^4.0.2"
   },
   "devDependencies": {
     "@serverless-stack/resources": "*",

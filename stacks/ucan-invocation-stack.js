@@ -1,8 +1,10 @@
 import {
   Bucket,
   Function,
+  KinesisStream,
   use
 } from '@serverless-stack/resources'
+import { Duration } from 'aws-cdk-lib'
 
 import { BusStack } from './bus-stack.js'
 import { getConfig, setupSentry } from './config.js'
@@ -44,7 +46,20 @@ export function UcanInvocationStack({ stack, app }) {
     }
   })
 
+  // create a kinesis stream
+  const ucanStream = new KinesisStream(stack, 'ucan-stream', {
+    cdk: {
+      stream: {
+        retentionPeriod: Duration.days(365)
+      }
+    },
+    consumers: {
+      // consumer1: 'functions/consumer1.handler'
+    },
+  })
+
   return {
-    ucanBucket
+    ucanBucket,
+    ucanStream
   }
 }
