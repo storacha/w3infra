@@ -38,7 +38,7 @@ export function createTestingUcantoServer(service, ctx) {
 
 /**
  * @param {import('@ucanto/interface').Signer} service
- * @param {any} context
+ * @param {import('./context.js').UcantoServerContext & ResourcesMetadata} context
  * @returns 
  */
 export async function getClientConnection (service, context) {

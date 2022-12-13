@@ -9,7 +9,7 @@ import { uploadTableProps } from '../../tables/index.js'
 import { createS3, createBucket, createAccessServer, createDynamodDb, dynamoDBTableConfig } from '../helpers/resources.js'
 import { randomCAR } from '../helpers/random.js'
 import { getClientConnection, createSpace } from '../helpers/ucanto.js'
-import { getServiceSigner } from '../../config.js'
+import * as DID from '@ipld/dag-ucan/did'
 
 // https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-dynamodb/classes/batchwriteitemcommand.html
 const BATCH_MAX_SAFE_LIMIT = 25
@@ -620,12 +620,9 @@ test('upload/list can be paginated with custom size', async (t) => {
 })
 
 test('can invoke when serviceSigner has a did:web did', async (t) => {
-  const serviceDid = 'did:web:example.com'
-  const servicePrivateKey = Signer.format(await Signer.generate())
-  const servicePrincipal = getServiceSigner({
-    UPLOAD_API_DID: serviceDid,
-    PRIVATE_KEY: servicePrivateKey,
-  })
+  const serviceDid = DID.parse('did:web:example.com')
+  const serviceKeySigner = (await Signer.generate())
+  const servicePrincipal = serviceKeySigner.withDID(serviceDid.did());
   const connection = await getClientConnection(servicePrincipal, {
     ...t.context,
     ...await prepareResources(t.context.dynamoClient, t.context.s3Client),
@@ -635,7 +632,7 @@ test('can invoke when serviceSigner has a did:web did', async (t) => {
   const alice = await Signer.generate()
   const inovocation = await createNoopRemoveInovocation({
     issuer: alice,
-    audience: servicePrincipal
+    audience: serviceDid
   })
   const result = await inovocation.execute(connection)
   t.falsy(result, 'result is falsy')
@@ -646,7 +643,7 @@ test('can invoke when serviceSigner has a did:web did', async (t) => {
   // Specifically, we'll use the wrong audience that corresponds to a servicePrincipal.signer key.
   // This might be a common mistake, since its a key that the serviceSigner may sign with,
   // but the `signer.did()` does not match, so we'd still expect the server to reject it.
-  const wrongAudience = Signer.parse(servicePrivateKey)
+  const wrongAudience = serviceKeySigner
   const resultOfInvocationWithWrongAudience = await (await createNoopRemoveInovocation({
     issuer: alice,
     audience: wrongAudience,
@@ -654,7 +651,7 @@ test('can invoke when serviceSigner has a did:web did', async (t) => {
   t.not(resultOfInvocationWithWrongAudience, undefined, 'result is not undefined - it should be an error')
   if (resultOfInvocationWithWrongAudience?.error) {
     t.is(resultOfInvocationWithWrongAudience.name, 'InvalidAudience', 'result of sending invocation with wrong audience is InvalidAudience')
-    t.is(/** @type {import('@ucanto/server').InvalidAudience} */ (resultOfInvocationWithWrongAudience).audience?.toString(), serviceDid)
+    t.is(/** @type {import('@ucanto/server').InvalidAudience} */ (resultOfInvocationWithWrongAudience).audience?.toString(), serviceDid.did())
   }
 })
 
