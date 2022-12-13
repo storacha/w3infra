@@ -35,7 +35,7 @@ export function UploadApiStack({ stack, app }) {
     customDomain,
     defaults: {
       function: {
-        permissions: [storeTable, uploadTable, carparkBucket],
+        permissions: [storeTable, uploadTable, carparkBucket, ucanBucket],
         environment: {
           STORE_TABLE_NAME: storeTable.tableName,
           STORE_BUCKET_NAME: carparkBucket.bucketName,
