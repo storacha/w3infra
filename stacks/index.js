@@ -1,4 +1,4 @@
-import { Tags } from 'aws-cdk-lib'
+import { Tags, RemovalPolicy } from 'aws-cdk-lib'
 
 import { UploadApiStack } from './upload-api-stack.js'
 import { UploadDbStack } from './upload-db-stack.js'
@@ -11,6 +11,10 @@ import { SatnavStack } from './satnav-stack.js'
  * @param {import('@serverless-stack/resources').App} app
  */
 export default function (app) {
+  if (app.stage !== 'prod' && app.stage !== 'staging') {
+    // destroy buckets and tables for PR builds
+    app.setDefaultRemovalPolicy(RemovalPolicy.DESTROY)
+  }
   app.setDefaultFunctionProps({
     runtime: 'nodejs16.x',
     bundle: {

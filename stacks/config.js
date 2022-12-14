@@ -1,88 +1,15 @@
-// TREAT THIS THE SAME AS AN ENV FILE
-// DO NOT INCLUDE SECRETS IN IT
-import { RemovalPolicy } from 'aws-cdk-lib'
-// import { LayerVersion } from 'aws-cdk-lib/aws-lambda'
 import { createRequire } from "module"
 import git from 'git-rev-sync'
 
-const stageConfigs = {
-  dev: {
-    bucketConfig: {
-      cdk: {
-        bucket: {
-          autoDeleteObjects: true,
-          removalPolicy: RemovalPolicy.DESTROY,
-        },
-      },
-    },
-    tableConfig: {
-      cdk: {
-        table: {
-          removalPolicy: RemovalPolicy.DESTROY,
-        },
-      },
-    },
-  },
-  staging: {
-    carparkBucketConfig: {
-      cdk: {
-        bucket: {
-          // Force name of bucket to be "carpark-staging-0" in staging.
-          bucketName: 'carpark-staging-0'
-        },
-      },
-    },
-    satnavBucketConfig: {
-      cdk: {
-        bucket: {
-          // Force name of bucket to be "satnav-staging-0" in staging.
-          bucketName: 'satnav-staging-0'
-        },
-      },
-    },
-    ucanBucketConfig: {
-      cdk: {
-        bucket: {
-          // Force name of bucket to be "ucan-staging-0" in staging.
-          bucketName: 'ucan-store-staging-0'
-        },
-      },
-    }
-  },
-  prod: {
-    carparkBucketConfig: {
-      cdk: {
-        bucket: {
-          // Force name of bucket to be "carpark-prod-0" in prod.
-          bucketName: 'carpark-prod-0'
-        },
-      },
-    },
-    satnavBucketConfig: {
-      cdk: {
-        bucket: {
-          // Force name of bucket to be "satnav-prod-0" in prod.
-          bucketName: 'satnav-prod-0'
-        },
-      },
-    },
-    ucanBucketConfig: {
-      cdk: {
-        bucket: {
-          // Force name of bucket to be "ucan-prod-0" in prod.
-          bucketName: 'ucan-store-prod-0'
-        },
-      },
-    }
-  },
-}
-
 /**
- * @param {'dev'|'staging'|'prod'} stage
- * @returns {{ carparkBucketConfig ?:any, satnavBucketConfig ?: any, ucanBucketConfig ?: any, tableConfig ?:any }}
+ * Get nicer bucket names
+ * @param {string} name
+ * @param {string} stage
+ * @param {number} version
  */
-export function getConfig(stage) {
-  return stageConfigs[stage] || stageConfigs.dev
+export function getBucketName(name, stage, version = 0) {
+  // e.g `carpark-prod-0` or `satnav-pr101-0`
+  return `${name}-${stage}-${version}`
 }
 
 /**

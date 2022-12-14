@@ -8,7 +8,7 @@ import { Duration, aws_events as awsEvents } from 'aws-cdk-lib'
 
 import { BusStack } from './bus-stack.js'
 import { CarparkStack } from './carpark-stack.js'
-import { getConfig, setupSentry } from './config.js'
+import { getBucketName, setupSentry } from './config.js'
 import { CARPARK_EVENT_BRIDGE_SOURCE_EVENT } from '../carpark/event-bus/source.js'
 
 /**
@@ -19,9 +19,6 @@ export function SatnavStack({ stack, app }) {
     srcPath: 'satnav'
   })
 
-  // @ts-expect-error "prod" | "dev" | "staging" only allowed for stage
-  const stackConfig = getConfig(stack.stage)
-
   // Setup app monitoring with Sentry
   setupSentry(app, stack)
 
@@ -31,7 +28,9 @@ export function SatnavStack({ stack, app }) {
   const { eventBus } = use(BusStack)
 
   const satnavBucket = new Bucket(stack, 'satnav-store', {
-    ...stackConfig.satnavBucketConfig,
+    cdk: {
+      bucket: { bucketName: getBucketName('satnav', app.stage) }
+    }
   })
 
    // Side Index creation and write to Satnav
