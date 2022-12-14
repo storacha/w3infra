@@ -20,4 +20,4 @@ async function handler(event) {
   return await notifyBus(event, bus, EVENT_BUS_ARN)
 }
 
-export const carparkBucketConsumer = Sentry.AWSLambda.wrapHandler(handler)
+export const ucanBucketConsumer = Sentry.AWSLambda.wrapHandler(handler)
