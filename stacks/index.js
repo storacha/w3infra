@@ -6,6 +6,7 @@ import { UcanInvocationStack } from './ucan-invocation-stack.js'
 import { BusStack } from './bus-stack.js'
 import { CarparkStack } from './carpark-stack.js'
 import { SatnavStack } from './satnav-stack.js'
+import { ReplicatorStack } from './replicator-stack.js'
 import { isPrBuild } from './config.js'
 
 /**
@@ -31,6 +32,7 @@ export default function (app) {
   app.stack(UploadDbStack)
   app.stack(SatnavStack)
   app.stack(UploadApiStack)
+  app.stack(ReplicatorStack)
 
   // tags let us discover all the aws resource costs incurred by this app
   // see: https://docs.sst.dev/advanced/tagging-resources
