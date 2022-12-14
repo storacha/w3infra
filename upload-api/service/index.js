@@ -23,12 +23,12 @@ export function createServiceRouter (context) {
 }
 
 /**
- * @param {import('@ucanto/interface').Signer} serviceSigner
+ * @param {import('@ucanto/interface').Principal} servicePrincipal
  * @param {import('../service/types').UcantoServerContext} context
  */
-export async function createUcantoServer (serviceSigner, context) {
+export async function createUcantoServer (servicePrincipal, context) {
   const server = Server.create({
-    id: serviceSigner,
+    id: servicePrincipal,
     encoder: CBOR,
     decoder: CAR,
     service: createServiceRouter(context),

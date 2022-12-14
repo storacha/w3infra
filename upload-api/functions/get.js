@@ -1,7 +1,7 @@
 import * as Sentry from '@sentry/serverless'
 import { Config } from '@serverless-stack/node/config/index.js'
 
-import { getServiceSigner } from '../config.js'
+import { getServicePrincipal, getServiceSigner } from '../config.js'
 
 Sentry.AWSLambda.init({
   dsn: process.env.SENTRY_DSN,
@@ -15,16 +15,17 @@ Sentry.AWSLambda.init({
  */
  export async function versionGet (request) {
   const { NAME: name , VERSION: version, COMMIT: commit, STAGE: env } = process.env
-  const { UPLOAD_API_DID } = process.env;
   const { PRIVATE_KEY } = Config
-  const did = getServiceSigner({ UPLOAD_API_DID, PRIVATE_KEY }).did()
+  const { UPLOAD_API_DID } = process.env
+  const did = getServiceSigner({ PRIVATE_KEY }).did()
+  const aud = getServicePrincipal({ UPLOAD_API_DID, PRIVATE_KEY }).did()
   const repo = 'https://github.com/web3-storage/upload-api'
   return {
     statusCode: 200,
     headers: {
       'Content-Type': `application/json`
     },
-    body: JSON.stringify({ name, version, did, repo, commit, env })
+    body: JSON.stringify({ name, version, did, aud, repo, commit, env })
   }
 }
 
@@ -36,9 +37,10 @@ export const version = Sentry.AWSLambda.wrapHandler(versionGet)
  * @param {import('aws-lambda').APIGatewayProxyEventV2} request 
  */
 export async function homeGet (request) {
-  const { VERSION: version, STAGE: stage, UPLOAD_API_DID } = process.env
+  const { VERSION: version, STAGE: stage } = process.env
   const { PRIVATE_KEY } = Config
-  const did = getServiceSigner({ PRIVATE_KEY, UPLOAD_API_DID }).did()
+  const { UPLOAD_API_DID } = process.env
+  const aud = getServicePrincipal({ UPLOAD_API_DID, PRIVATE_KEY }).did()
   const repo = 'https://github.com/web3-storage/upload-api'
   const env = stage === 'prod' ? '' : `(${stage})`
   return {
@@ -46,7 +48,7 @@ export async function homeGet (request) {
     headers: {
       'Content-Type': 'text/plain; charset=utf-8'
     },
-    body: `⁂ upload-api v${version} ${env}\n- ${repo}\n- ${did}\n`
+    body: `⁂ upload-api v${version} ${env}\n- ${repo}\n- ${aud}\n`
   }
 }
 
