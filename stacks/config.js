@@ -8,9 +8,31 @@ import git from 'git-rev-sync'
  * @param {string} stage
  * @param {number} version
  */
-export function getBucketName(name, stage, version = 0) {
+export function getBucketName (name, stage, version = 0) {
   // e.g `carpark-prod-0` or `satnav-pr101-0`
   return `${name}-${stage}-${version}`
+}
+
+/**
+ * Is an ephemeral build?
+ *
+ * @param {string} stage
+ */
+export function isPrBuild (stage) {
+  if (!stage) throw new Error('stage must be provided')
+  return stage !== 'prod' && stage !== 'staging'
+}
+
+/**
+ * @param {string} name
+ * @param {string} stage
+ * @param {number} version
+ */
+export function getBucketConfig(name, stage, version = 0){
+  return {
+      autoDeleteObjects: isPrBuild(stage),
+      bucketName: getBucketName(name, stage, version)
+  }
 }
 
 /**

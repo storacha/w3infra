@@ -7,7 +7,7 @@ import {
 import { Duration } from 'aws-cdk-lib'
 
 import { BusStack } from './bus-stack.js'
-import { getBucketName, setupSentry } from './config.js'
+import { getBucketConfig, setupSentry } from './config.js'
 
 /**
  * @param {import('@serverless-stack/resources').StackContext} properties
@@ -26,7 +26,7 @@ export function UcanInvocationStack({ stack, app }) {
   const ucanBucket = new Bucket(stack, 'ucan-store', {
     cors: true,
     cdk: {
-      bucket: { bucketName: getBucketName('ucan-store', app.stage) }
+      bucket: getBucketConfig('ucan-store', app.stage)
     }
   })
 

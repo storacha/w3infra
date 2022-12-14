@@ -8,7 +8,7 @@ import { Duration, aws_events as awsEvents } from 'aws-cdk-lib'
 
 import { BusStack } from './bus-stack.js'
 import { CarparkStack } from './carpark-stack.js'
-import { getBucketName, setupSentry } from './config.js'
+import { getBucketConfig, setupSentry } from './config.js'
 import { CARPARK_EVENT_BRIDGE_SOURCE_EVENT } from '../carpark/event-bus/source.js'
 
 /**
@@ -29,7 +29,7 @@ export function SatnavStack({ stack, app }) {
 
   const satnavBucket = new Bucket(stack, 'satnav-store', {
     cdk: {
-      bucket: { bucketName: getBucketName('satnav', app.stage) }
+      bucket: getBucketConfig('satnav', app.stage)
     }
   })
 
