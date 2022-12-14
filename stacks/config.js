@@ -30,8 +30,8 @@ export function isPrBuild (stage) {
  */
 export function getBucketConfig(name, stage, version = 0){
   return {
-      autoDeleteObjects: isPrBuild(stage),
-      bucketName: getBucketName(name, stage, version)
+    bucketName: getBucketName(name, stage, version),
+    ...(isPrBuild(stage) && { autoDeleteObjects: true })
   }
 }
 
