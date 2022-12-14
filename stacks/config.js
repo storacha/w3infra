@@ -3,6 +3,7 @@ import git from 'git-rev-sync'
 
 /**
  * Get nicer bucket names
+ *
  * @param {string} name
  * @param {string} stage
  * @param {number} version
