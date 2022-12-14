@@ -18,7 +18,7 @@ const testKeypair = {
   },
 }
 
-test('upload-api/config getServiceSigner creates a signer using config.PRIVATE_KEY', async (t) => {
+test('getServiceSigner creates a signer using config.PRIVATE_KEY', async (t) => {
   const config = {
     PRIVATE_KEY: testKeypair.private.multiformats,
   }
@@ -29,7 +29,8 @@ test('upload-api/config getServiceSigner creates a signer using config.PRIVATE_K
   const didKeys = Object.keys(keys)
   t.deepEqual(didKeys, [testKeypair.public.did])
 })
-test('upload-api/config getServiceSigner infers did from config.PRIVATE_KEY when config.UPLOAD_API_DID is omitted', async (t) => {
+
+test('getServiceSigner infers DID from config.PRIVATE_KEY when config.UPLOAD_API_DID is omitted', async (t) => {
   const config = {
     PRIVATE_KEY: testKeypair.private.multiformats,
   }
@@ -38,28 +39,21 @@ test('upload-api/config getServiceSigner infers did from config.PRIVATE_KEY when
   t.is(signer.did().toString(), testKeypair.public.did)
 })
 
-test('upload-api/config getServerPrincipal creates a signer using config.{UPLOAD_API_KEY,PRIVATE_KEY}', async (t) => {
+test('getServiceSigner creates a signer using config.{UPLOAD_API_KEY,PRIVATE_KEY}', async (t) => {
   const config = {
     PRIVATE_KEY: testKeypair.private.multiformats,
     UPLOAD_API_DID: 'did:web:exampe.com',
   }
-  const principal = configModule.getServicePrincipal(config)
+  const principal = configModule.getServiceSigner(config)
   t.assert(principal)
   t.is(principal.did().toString(), config.UPLOAD_API_DID)
 })
-test('upload-api/config getServerPrincipal errors if config.UPLOAD_API_DID is provided but not a did', (t) => {
+
+test('getServiceSigner errors if config.UPLOAD_API_DID is provided but not a DID', (t) => {
   t.throws(() => {
-    configModule.getServicePrincipal({
+    configModule.getServiceSigner({
       UPLOAD_API_DID: 'not a did',
       PRIVATE_KEY: testKeypair.private.multiformats,
     })
   }, { message: /^Invalid DID/ })
-})
-test('upload-api/config getServerPrincipal infers did from config.PRIVATE_KEY when config.UPLOAD_API_DID is omitted', async (t) => {
-  const config = {
-    PRIVATE_KEY: testKeypair.private.multiformats,
-  }
-  const principal = configModule.getServicePrincipal(config)
-  t.assert(principal)
-  t.is(principal.did().toString(), testKeypair.public.did)
 })

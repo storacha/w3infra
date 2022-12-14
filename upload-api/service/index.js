@@ -23,7 +23,7 @@ export function createServiceRouter (context) {
 }
 
 /**
- * @param {import('@ucanto/interface').Principal} servicePrincipal
+ * @param {import('@ucanto/interface').Verifier} servicePrincipal
  * @param {import('../service/types').UcantoServerContext} context
  */
 export async function createUcantoServer (servicePrincipal, context) {

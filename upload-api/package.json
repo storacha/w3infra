@@ -3,7 +3,7 @@
   "version": "3.0.0",
   "type": "module",
   "scripts": {
-    "test": "ava --node-arguments='--experimental-fetch' --verbose --timeout=60s **/*.test.js"
+    "test": "ava --node-arguments='--experimental-fetch' --verbose --timeout=60s '**/*.test.js'"
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.226.0",
@@ -11,14 +11,14 @@
     "@aws-sdk/client-kinesis": "^3.226.0",
     "@aws-sdk/s3-request-presigner": "^3.226.0",
     "@aws-sdk/util-dynamodb": "^3.226.0",
-    "@ipld/dag-ucan": "3.0.1",
+    "@ipld/dag-ucan": "^3.0.1",
     "@sentry/serverless": "^7.22.0",
     "@serverless-stack/node": "^1.18.2",
-    "@ucanto/client": "^4.0.2",
-    "@ucanto/interface": "^4.0.2",
-    "@ucanto/principal": "^4.0.2",
-    "@ucanto/server": "^4.0.2",
-    "@ucanto/transport": "^4.0.2",
+    "@ucanto/client": "^4.0.3",
+    "@ucanto/interface": "^4.0.3",
+    "@ucanto/principal": "^4.0.3",
+    "@ucanto/server": "^4.0.3",
+    "@ucanto/transport": "^4.0.3",
     "@web-std/fetch": "^4.1.0",
     "@web3-storage/access": "^9.0.0",
     "@web3-storage/capabilities": "^2.0.0",

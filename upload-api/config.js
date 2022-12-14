@@ -6,21 +6,12 @@ import * as DID from '@ipld/dag-ucan/did'
  *
  * @param {object} config
  * @param {string} config.PRIVATE_KEY - multiformats private key of primary signing key
+ * @param {string} [config.UPLOAD_API_DID] - public DID for the upload service (did:key:... derived from PRIVATE_KEY if not set)
  */
  export function getServiceSigner(config) {
   const signer = ed25519.parse(config.PRIVATE_KEY)
-  return signer
-}
-
-/**
- * Given a config, return a ucanto principal
- *
- * @param {{ UPLOAD_API_DID: string } | { PRIVATE_KEY: string }} config
- * @returns {import('@ucanto/interface').Principal}
- */
-export function getServicePrincipal(config) {
-  if ('UPLOAD_API_DID' in config) {
-    return DID.parse(config.UPLOAD_API_DID)
+  if (config.UPLOAD_API_DID) {
+    return signer.withDID(DID.parse(config.UPLOAD_API_DID).did())
   }
-  return getServiceSigner(config)
+  return signer
 }
