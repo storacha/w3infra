@@ -1,4 +1,3 @@
-import {} from '@ucanto/principal'
 import * as ed25519 from '@ucanto/principal/ed25519'
 import * as DID from '@ipld/dag-ucan/did'
 
