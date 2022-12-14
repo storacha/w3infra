@@ -4,6 +4,7 @@ import { Config } from '@serverless-stack/node/config/index.js'
 import { getServiceSigner } from '../config.js'
 
 Sentry.AWSLambda.init({
+  environment: process.env.SST_STAGE,
   dsn: process.env.SENTRY_DSN,
   tracesSampleRate: 1.0,
 })

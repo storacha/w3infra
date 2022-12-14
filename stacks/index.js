@@ -13,6 +13,9 @@ import { SatnavStack } from './satnav-stack.js'
 export default function (app) {
   app.setDefaultFunctionProps({
     runtime: 'nodejs16.x',
+    environment: {
+      NODE_OPTIONS: "--enable-source-maps",
+    },
     bundle: {
       format: 'esm',
     },

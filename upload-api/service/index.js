@@ -7,6 +7,7 @@ import { createStoreService } from './store/index.js'
 import { createUploadService } from './upload/index.js'
 
 Sentry.AWSLambda.init({
+  environment: process.env.SST_STAGE,
   dsn: process.env.SENTRY_DSN,
   tracesSampleRate: 1.0,
 })

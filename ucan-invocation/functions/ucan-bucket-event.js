@@ -4,6 +4,7 @@ import * as Sentry from '@sentry/serverless'
 import { notifyBus } from '../event-bus/source.js'
 
 Sentry.AWSLambda.init({
+  environment: process.env.SST_STAGE,
   dsn: process.env.SENTRY_DSN,
   tracesSampleRate: 1.0,
 })
