@@ -5,6 +5,7 @@ import { replicate } from '../index.js'
 import parseSqsEvent from '../utils/parse-sqs-event.js'
 
 Sentry.AWSLambda.init({
+  environment: process.env.SST_STAGE,
   dsn: process.env.SENTRY_DSN,
   tracesSampleRate: 1.0,
 })

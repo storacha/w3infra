@@ -6,6 +6,7 @@ import parseSqsEvent from '../utils/parse-sqs-event.js'
 import { writeSatnavIndex } from '../index.js'
 
 Sentry.AWSLambda.init({
+  environment: process.env.SST_STAGE,
   dsn: process.env.SENTRY_DSN,
   tracesSampleRate: 1.0,
 })
