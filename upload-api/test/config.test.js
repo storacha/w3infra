@@ -43,13 +43,13 @@ test('upload-api/config getServerPrincipal creates a signer using config.{UPLOAD
     PRIVATE_KEY: testKeypair.private.multiformats,
     UPLOAD_API_DID: 'did:web:exampe.com',
   }
-  const principal = configModule.getServerPrincipal(config)
+  const principal = configModule.getServicePrincipal(config)
   t.assert(principal)
   t.is(principal.did().toString(), config.UPLOAD_API_DID)
 })
 test('upload-api/config getServerPrincipal errors if config.UPLOAD_API_DID is provided but not a did', (t) => {
   t.throws(() => {
-    configModule.getServerPrincipal({
+    configModule.getServicePrincipal({
       UPLOAD_API_DID: 'not a did',
       PRIVATE_KEY: testKeypair.private.multiformats,
     })
@@ -59,7 +59,7 @@ test('upload-api/config getServerPrincipal infers did from config.PRIVATE_KEY wh
   const config = {
     PRIVATE_KEY: testKeypair.private.multiformats,
   }
-  const principal = configModule.getServerPrincipal(config)
+  const principal = configModule.getServicePrincipal(config)
   t.assert(principal)
   t.is(principal.did().toString(), testKeypair.public.did)
 })

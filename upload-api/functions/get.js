@@ -1,7 +1,7 @@
 import * as Sentry from '@sentry/serverless'
 import { Config } from '@serverless-stack/node/config/index.js'
 
-import { getServerPrincipal, getServiceSigner } from '../config.js'
+import { getServicePrincipal, getServiceSigner } from '../config.js'
 
 Sentry.AWSLambda.init({
   dsn: process.env.SENTRY_DSN,
@@ -17,10 +17,8 @@ Sentry.AWSLambda.init({
   const { NAME: name , VERSION: version, COMMIT: commit, STAGE: env } = process.env
   const { PRIVATE_KEY } = Config
   const { UPLOAD_API_DID } = process.env
-  const signer = getServiceSigner({ PRIVATE_KEY })
-  const did = signer.did();
-  const serverPrincipal = getServerPrincipal({ UPLOAD_API_DID, PRIVATE_KEY })
-  const aud = serverPrincipal.did()
+  const did = getServiceSigner({ PRIVATE_KEY }).did()
+  const aud = getServicePrincipal({ UPLOAD_API_DID, PRIVATE_KEY }).did()
   const repo = 'https://github.com/web3-storage/upload-api'
   return {
     statusCode: 200,
@@ -42,8 +40,7 @@ export async function homeGet (request) {
   const { VERSION: version, STAGE: stage } = process.env
   const { PRIVATE_KEY } = Config
   const { UPLOAD_API_DID } = process.env
-  const serverPrincipal = getServerPrincipal({ UPLOAD_API_DID, PRIVATE_KEY })
-  const aud = serverPrincipal.did()
+  const aud = getServicePrincipal({ UPLOAD_API_DID, PRIVATE_KEY }).did()
   const repo = 'https://github.com/web3-storage/upload-api'
   const env = stage === 'prod' ? '' : `(${stage})`
   return {

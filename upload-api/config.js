@@ -1,10 +1,3 @@
-/**
- * This file uses SSTs magic Config handler.
- * If you depend on it in a test then you need to use the `sst bind` CLI to setup the config object.
- *
- * see: https://docs.sst.dev/config
- * see: https://docs.sst.dev/advanced/testing#how-sst-bind-works
- */
 import * as ed25519 from '@ucanto/principal/ed25519'
 import * as DID from '@ipld/dag-ucan/did'
 
@@ -25,7 +18,7 @@ import * as DID from '@ipld/dag-ucan/did'
  * @param {{ UPLOAD_API_DID: string } | { PRIVATE_KEY: string }} config
  * @returns {import('@ucanto/interface').Principal}
  */
-export function getServerPrincipal(config) {
+export function getServicePrincipal(config) {
   if ('UPLOAD_API_DID' in config) {
     return DID.parse(config.UPLOAD_API_DID)
   }
