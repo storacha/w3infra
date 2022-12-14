@@ -7,7 +7,7 @@ import {
 import { Duration } from 'aws-cdk-lib'
 
 import { BusStack } from './bus-stack.js'
-import { getConfig, setupSentry } from './config.js'
+import { getBucketConfig, setupSentry } from './config.js'
 
 /**
  * @param {import('@serverless-stack/resources').StackContext} properties
@@ -17,9 +17,6 @@ export function UcanInvocationStack({ stack, app }) {
     srcPath: 'ucan-invocation'
   })
 
-  // @ts-expect-error "prod" | "dev" | "staging" only allowed for stage
-  const stackConfig = getConfig(stack.stage)
-
   // Setup app monitoring with Sentry
   setupSentry(app, stack)
 
@@ -28,7 +25,9 @@ export function UcanInvocationStack({ stack, app }) {
 
   const ucanBucket = new Bucket(stack, 'ucan-store', {
     cors: true,
-    ...stackConfig.ucanBucketConfig,
+    cdk: {
+      bucket: getBucketConfig('ucan-store', app.stage)
+    }
   })
 
   // Trigger ucan store events when a CAR is put into the bucket.

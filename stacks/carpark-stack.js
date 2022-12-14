@@ -8,7 +8,7 @@ import * as sqs from 'aws-cdk-lib/aws-sqs'
 
 import { BusStack } from './bus-stack.js'
 import { CARPARK_EVENT_BRIDGE_SOURCE_EVENT } from '../carpark/event-bus/source.js'
-import { getConfig, setupSentry } from './config.js'
+import { getBucketConfig, setupSentry } from './config.js'
 
 /**
  * @param {import('@serverless-stack/resources').StackContext} properties
@@ -18,9 +18,6 @@ export function CarparkStack({ stack, app }) {
     srcPath: 'carpark'
   })
 
-  // @ts-expect-error "prod" | "dev" | "staging" only allowed for stage
-  const stackConfig = getConfig(stack.stage)
-
   // Setup app monitoring with Sentry
   setupSentry(app, stack)
 
@@ -29,7 +26,9 @@ export function CarparkStack({ stack, app }) {
 
   const carparkBucket = new Bucket(stack, 'car-store', {
     cors: true,
-    ...stackConfig.carparkBucketConfig,
+    cdk: {
+      bucket: getBucketConfig('carpark', app.stage)
+    }
   })
 
   // Elastic IPFS event for indexing
