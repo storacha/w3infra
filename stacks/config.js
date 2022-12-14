@@ -1,4 +1,5 @@
-import { createRequire } from "module"
+import { RemovalPolicy } from 'aws-cdk-lib'
+import { createRequire } from 'module'
 import git from 'git-rev-sync'
 
 /**
@@ -31,7 +32,10 @@ export function isPrBuild (stage) {
 export function getBucketConfig(name, stage, version = 0){
   return {
     bucketName: getBucketName(name, stage, version),
-    ...(isPrBuild(stage) && { autoDeleteObjects: true })
+    ...(isPrBuild(stage) && {
+      autoDeleteObjects: true,
+      removalPolicy: RemovalPolicy.DESTROY
+    })
   }
 }
 
