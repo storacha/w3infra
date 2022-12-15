@@ -10,8 +10,10 @@ import * as StoreCapabilities from '@web3-storage/capabilities/store'
 import { base64pad } from 'multiformats/bases/base64'
 import { getClientConnection, createSpace } from '../helpers/ucanto.js'
 import { createS3, createBucket, createDynamodDb, createAccessServer, dynamoDBTableConfig } from '../helpers/resources.js'
+import { MAX_S3_PUT_SIZE } from '../../service/store/add.js'
 import { storeTableProps } from '../../tables/index.js'
 import { CID } from 'multiformats'
+
 
 /**
  * @typedef {import('../../service/types').StoreListItem} StoreListResult
@@ -349,6 +351,35 @@ test('store/add disallowed if invocation fails access verification', async (t) =
   const { service } = t.context.access.server
   t.true(service.space.info.called)
   t.is(service.space.info.callCount, 1)
+})
+
+test.only('store/add fails when size to large to PUT', async (t) => {
+  const { tableName, bucketName } = await prepareResources(t.context.dynamoClient, t.context.s3Client)
+
+  const uploadService = await Signer.generate()
+  const alice = await Signer.generate()
+  const { proof, spaceDid } = await createSpace(alice)
+  const connection = await getClientConnection(uploadService, {
+    ...t.context,
+    tableName,
+    bucketName
+  })
+  
+  const data = new Uint8Array([11, 22, 34, 44, 55])
+  const link = await CAR.codec.link(data)
+  const size = MAX_S3_PUT_SIZE + 1
+
+  const storeAdd = await StoreCapabilities.add.invoke({
+    issuer: alice,
+    audience: uploadService,
+    with: spaceDid,
+    nb: { link, size },
+    proofs: [proof]
+  }).execute(connection)
+
+  t.true(storeAdd.error)
+  // @ts-expect-error
+  t.true(storeAdd.message.startsWith('Size must not exceed'))
 })
 
 test('store/remove does not fail for non existent link', async (t) => {
