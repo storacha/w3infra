@@ -4,6 +4,7 @@ import { CreateTableCommand, QueryCommand } from '@aws-sdk/client-dynamodb'
 import { ListObjectsV2Command } from '@aws-sdk/client-s3'
 import { unmarshall } from '@aws-sdk/util-dynamodb'
 import * as Signer from '@ucanto/principal/ed25519'
+import * as Server from '@ucanto/server'
 import * as UploadCapabilities from '@web3-storage/capabilities/upload'
 import { uploadTableProps } from '../../tables/index.js'
 import { createS3, createBucket, createAccessServer, createDynamodDb, dynamoDBTableConfig } from '../helpers/resources.js'
@@ -279,6 +280,44 @@ test('upload/add merges shards to an existing item with shards', async (t) => {
   })
   t.is(item.shards.size, 3, 'Repeated shards should be deduped')
   t.deepEqual([...dbItems[0].shards].sort(), cars.map(c => c.cid.toString()).sort())
+})
+
+test('upload/add disallowed if invocation fails access verification', async (t) => {
+  const { tableName, bucketName } = await prepareResources(t.context.dynamoClient, t.context.s3Client)
+
+  t.context.access.setServiceImpl({
+    account: { info: () => { return new Server.Failure('not found') } }
+  })
+
+  const uploadService = await Signer.generate()
+  const alice = await Signer.generate()
+  const { proof, spaceDid } = await createSpace(alice)
+  const connection = await getClientConnection(uploadService, {
+    ...t.context,
+    tableName,
+    bucketName
+  })
+
+  const car = await randomCAR(128)
+  const otherCar = await randomCAR(40)
+
+  // invoke a upload/add with proof
+  const root = car.roots[0]
+  const shards = [car.cid, otherCar.cid].sort()
+
+  const uploadAdd = await UploadCapabilities.add.invoke({
+    issuer: alice,
+    audience: uploadService,
+    with: spaceDid,
+    nb: { root, shards },
+    proofs: [proof]
+  }).execute(connection)
+
+  t.is(uploadAdd.error, true)
+
+  const { service } = t.context.access.server
+  t.true(service.space.info.called)
+  t.is(service.space.info.callCount, 1)
 })
 
 test('upload/remove removes an upload', async (t) => {

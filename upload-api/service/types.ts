@@ -42,7 +42,8 @@ export interface StoreServiceContext {
 
 export interface UploadServiceContext {
   uploadTable: UploadTable,
-  dudewhereBucket: DudewhereBucket
+  dudewhereBucket: DudewhereBucket,
+  access: AccessClient
 }
 
 export interface UcantoServerContext extends StoreServiceContext, UploadServiceContext {}
