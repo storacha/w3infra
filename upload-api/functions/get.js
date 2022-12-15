@@ -19,13 +19,15 @@ const repo = 'https://github.com/web3-storage/w3infra'
  export async function versionGet (request) {
   const { NAME: name , VERSION: version, COMMIT: commit, STAGE: env, UPLOAD_API_DID } = process.env
   const { PRIVATE_KEY } = Config
-  const did = getServiceSigner({ UPLOAD_API_DID, PRIVATE_KEY }).did()
+  const serviceSigner = getServiceSigner({ UPLOAD_API_DID, PRIVATE_KEY })
+  const did = serviceSigner.did()
+  const publicKey = serviceSigner.toDIDKey()
   return {
     statusCode: 200,
     headers: {
       'Content-Type': `application/json`
     },
-    body: JSON.stringify({ name, version, did, repo, commit, env })
+    body: JSON.stringify({ name, version, did, publicKey, repo, commit, env })
   }
 }
 
@@ -39,14 +41,16 @@ export const version = Sentry.AWSLambda.wrapHandler(versionGet)
 export async function homeGet (request) {
   const { VERSION: version, STAGE: stage, UPLOAD_API_DID } = process.env
   const { PRIVATE_KEY } = Config
-  const did = getServiceSigner({ UPLOAD_API_DID, PRIVATE_KEY }).did()
+  const serviceSigner = getServiceSigner({ UPLOAD_API_DID, PRIVATE_KEY })
+  const did = serviceSigner.did()
+  const publicKey = serviceSigner.toDIDKey()
   const env = stage === 'prod' ? '' : `(${stage})`
   return {
     statusCode: 200,
     headers: {
       'Content-Type': 'text/plain; charset=utf-8'
     },
-    body: `⁂ upload-api v${version} ${env}\n- ${repo}\n- ${did}\n`
+    body: `⁂ upload-api v${version} ${env}\n- ${repo}\n- ${did}\n- ${publicKey}`
   }
 }
 
