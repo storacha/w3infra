@@ -353,7 +353,7 @@ test('store/add disallowed if invocation fails access verification', async (t) =
   t.is(service.space.info.callCount, 1)
 })
 
-test.only('store/add fails when size to large to PUT', async (t) => {
+test('store/add fails when size to large to PUT', async (t) => {
   const { tableName, bucketName } = await prepareResources(t.context.dynamoClient, t.context.s3Client)
 
   const uploadService = await Signer.generate()
