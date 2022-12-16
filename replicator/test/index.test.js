@@ -13,7 +13,7 @@ import { toString } from 'uint8arrays'
 
 import { getSideIndex } from '../../satnav/index.js'
 import { createS3, createBucket } from './helpers/resources.js'
-import { replicate } from '../index.js'
+import { replicate, writeToBucket } from '../index.js'
 
 test.before(async t => {
   const { client } = await createS3({ port: 9000 })
@@ -134,4 +134,57 @@ test('copy satnav index to replicator bucket', async t => {
     })
   )
   t.is(copiedCarResponse.$metadata.httpStatusCode, 200)
+})
+
+test('write to bucket fails with invalid md5', async t => {
+  const originBucketName = await createBucket(t.context.s3Client)
+  const destinationBucketName = await createBucket(t.context.s3Client)
+
+  // Write original car to origin bucket
+  const id = await encode({
+    value: pb.prepare({ Data: 'a red car on the street!' }),
+    codec: pb,
+    hasher: identity,
+  })
+  const parent = await encode({
+    value: pb.prepare({ Links: [id.cid] }),
+    codec: pb,
+    hasher,
+  })
+  const car = CarBufferWriter.createWriter(Buffer.alloc(1000), {
+    roots: [parent.cid],
+  })
+  car.write(parent)
+
+  const Body = car.close()
+  const digest = await hasher.digest(Body)
+  const checksum = toString(digest.digest, 'base64pad')
+
+  const key = `${parent.cid.toString()}/${parent.cid.toString()}`
+  await t.context.s3Client.send(
+    new PutObjectCommand({
+      Bucket: originBucketName,
+      Key: key,
+      Body,
+      ChecksumSHA256: checksum,
+    })
+  )
+
+  const writtenCar = await t.context.s3Client.send(
+    new GetObjectCommand({
+      Bucket: originBucketName,
+      Key: key,
+    })
+  )
+
+  await t.throwsAsync(() => writeToBucket(
+    key,
+    // @ts-expect-error
+    writtenCar.Body,
+    destinationBucketName,
+    t.context.s3Client,
+    {
+      md5: writtenCar.ETag // invalid encoding
+    }
+  ))
 })

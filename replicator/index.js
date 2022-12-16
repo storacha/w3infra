@@ -3,6 +3,8 @@ import {
   HeadObjectCommand,
   PutObjectCommand,
 } from '@aws-sdk/client-s3'
+import { toString } from 'uint8arrays/to-string'
+import { fromString } from 'uint8arrays/from-string'
 
 /**
  * @typedef {import('@aws-sdk/client-s3').S3Client} S3Client
@@ -44,16 +46,20 @@ import {
       Key: key,
     })
 
-    // TODO: md5
     const res = await originBucket.send(getCmd)
     if (!res.Body) {
       throw new Error('invalid CAR file retrieved')
     }
 
+    const base16Md5 = res.ETag?.replaceAll('"', '') || ''
+    const rawMd5 = fromString(base16Md5, 'base16')
+    const base64Md5 = toString(rawMd5, 'base64pad')
+
     // @ts-expect-error aws types body does not include pipe...
     await writeToBucket(key, res.Body, destinationBucketName, destinationBucket, {
       contentLength: res.ContentLength,
-      metadata: res.Metadata
+      metadata: res.Metadata,
+      md5: base64Md5
     })
   }
 }
@@ -64,16 +70,17 @@ import {
  * @param {string} bucketName
  * @param {S3Client} client
  * @param {object} [options]
+ * @param {string} [options.md5]
  * @param {number} [options.contentLength]
  * @param {Record<string, string> | undefined} [options.metadata]
  */
-async function writeToBucket(key, body, bucketName, client, options = {}) {
+export async function writeToBucket(key, body, bucketName, client, options = {}) {
   try {
     const putCmd = new PutObjectCommand({
       Bucket: bucketName,
       Key: key,
       Body: body,
-      // TODO: md5
+      ContentMD5: options.md5,
       ContentLength: options.contentLength,
       Metadata: options.metadata
     })
