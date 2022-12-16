@@ -1,7 +1,11 @@
 import anyTest from 'ava'
 
+
 /**
- * @typedef {import("ava").TestFn<Awaited<any>>} TestAnyFn
+ * @typedef {object} TestContext
+ * @property {import('@aws-sdk/client-s3').S3Client} s3Client
+ *
+ * @typedef {import("ava").TestFn<Awaited<TestContext>>} TestAnyFn
  */
 
 // eslint-disable-next-line unicorn/prefer-export-from
