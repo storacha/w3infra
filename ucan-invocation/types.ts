@@ -10,6 +10,18 @@ export interface TotalSizeCtx {
   metricsTable: MetricsTable
 }
 
+export interface UploadCountIncrement {
+  space: DID,
+  count: number
+}
+export interface UploadCountTable {
+  increment: (uploadAddInv: Capability<Ability, `${string}:${string}`, unknown>[]) => Promise<void>
+}
+
+export interface UploadCountCtx {
+  uploadCountTable: UploadCountTable
+}
+
 export interface UcanInvocation {
   carCid: string,
   value: UcanInvocationValue,

@@ -35,12 +35,11 @@ export const getApiEndpoint = () => {
   }
 
   const require = createRequire(import.meta.url)
-  const sst = require('../../sst.json')
   const testEnv = require('../../.test-env.json')
 
   // Get Upload API endpoint
   const id = 'UploadApiStack'
-  return testEnv[`${stage}-${sst.name}-${id}`].ApiEndpoint
+  return testEnv[`${getStackName()}-${id}`].ApiEndpoint
 }
 
 export const getSatnavBucketInfo = () => {
@@ -53,14 +52,13 @@ export const getSatnavBucketInfo = () => {
   }
 
   const require = createRequire(import.meta.url)
-  const sst = require('../../sst.json')
   const testEnv = require('../../.test-env.json')
 
   // Get Satnav metadata
   const id = 'SatnavStack'
   return {
-    Bucket: testEnv[`${stage}-${sst.name}-${id}`].BucketName,
-    Region: testEnv[`${stage}-${sst.name}-${id}`].Region,
+    Bucket: testEnv[`${getStackName()}-${id}`].BucketName,
+    Region: testEnv[`${getStackName()}-${id}`].Region,
   }
 }
 
@@ -74,18 +72,17 @@ export const getCarparkBucketInfo = () => {
   }
 
   const require = createRequire(import.meta.url)
-  const sst = require('../../sst.json')
   const testEnv = require('../../.test-env.json')
 
   // Get Carpark metadata
   const id = 'CarparkStack'
   return {
-    Bucket: testEnv[`${stage}-${sst.name}-${id}`].BucketName,
-    Region: testEnv[`${stage}-${sst.name}-${id}`].Region,
+    Bucket: testEnv[`${getStackName()}-${id}`].BucketName,
+    Region: testEnv[`${getStackName()}-${id}`].Region,
   }
 }
 
-const getAwsRegion = () => {
+export const getAwsRegion = () => {
   // CI/CD deployment
   if (process.env.SEED_APP_NAME) {
     return 'us-east-2'

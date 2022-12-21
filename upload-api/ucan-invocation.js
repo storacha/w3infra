@@ -7,7 +7,8 @@ import * as Link from 'multiformats/link'
  * @property {UCAN.Capabilities} att
  * @property {`did:${string}:${string}`} aud
  * @property {`did:${string}:${string}`} iss
- *
+ * @property {string[]} prf
+ * 
  * @typedef {object} UcanInvocationWrapper
  * @property {string} carCid
  * @property {Uint8Array} bytes

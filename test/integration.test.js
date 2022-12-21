@@ -16,25 +16,23 @@ import {
 } from './helpers/deployment.js'
 import { getClient } from './helpers/up-client.js'
 import { randomFile } from './helpers/random.js'
-import { getAllTableRows } from './helpers/table.js'
+import { getTableItem, getAllTableRows } from './helpers/table.js'
 
 test.before(t => {
   t.context = {
     apiEndpoint: getApiEndpoint(),
-    metricsDynamo: getDynamoDb('admin-metrics')
+    metricsDynamo: getDynamoDb('admin-metrics'),
+    spaceUploadCountDynamo: getDynamoDb('space-upload-count')
   }
 })
 
-test('upload-api GET /', async t => {
-  const apiEndpoint = getApiEndpoint()
-  const response = await fetch(apiEndpoint)
+test('GET /', async t => {
+  const response = await fetch(t.context.apiEndpoint)
   t.is(response.status, 200)
 })
 
-test('upload-api /version', async t => {
-  const apiEndpoint = getApiEndpoint()
-
-  const response = await fetch(`${apiEndpoint}/version`)
+test('GET /version', async t => {
+  const response = await fetch(`${t.context.apiEndpoint}/version`)
   t.is(response.status, 200)
 
   const body = await response.json()
@@ -45,6 +43,12 @@ test('upload-api /version', async t => {
 // Integration test for all flow from uploading a file to Kinesis events consumers and replicator
 test('w3infra integration flow', async t => {
   const client = await getClient(t.context.apiEndpoint)
+  const spaceDid = client.currentSpace()?.did()
+  if (!spaceDid) {
+    throw new Error('Testing space DID must be set')
+  }
+  // Get metrics before upload
+  const beforeOperationSpaceMetrics = await getSpaceMetrics(t, spaceDid)
 
   // Get metrics before upload
   const beforeOperationMetrics = await getMetrics(t)
@@ -159,13 +163,20 @@ test('w3infra integration flow', async t => {
   beforeStoreAddSizeTotal && await pWaitFor(async () => {
     const afterOperationMetrics = await getMetrics(t)
     const afterStoreAddSizeTotal = afterOperationMetrics.find(row => row.name === METRICS_NAMES.STORE_ADD_SIZE_TOTAL)
+    const afterOperationSpaceMetrics = await getSpaceMetrics(t, spaceDid)
 
     // If staging accept more broad condition given multiple parallel tests can happen there
     if (stage === 'staging') {
-      return afterStoreAddSizeTotal?.value >= beforeStoreAddSizeTotal.value + carSize
+      return (
+        afterStoreAddSizeTotal?.value >= beforeStoreAddSizeTotal.value + carSize &&
+        beforeOperationSpaceMetrics.spaceUploadCount?.count < afterOperationSpaceMetrics.spaceUploadCount?.count
+      )
     }
 
-    return afterStoreAddSizeTotal?.value === beforeStoreAddSizeTotal.value + carSize
+    return (
+      afterStoreAddSizeTotal?.value === beforeStoreAddSizeTotal.value + carSize &&
+      beforeOperationSpaceMetrics.spaceUploadCount?.count < afterOperationSpaceMetrics.spaceUploadCount?.count
+    )
   })
 })
 
@@ -179,4 +190,20 @@ async function getMetrics (t) {
   )
 
   return metrics
+}
+
+/**
+ * @param {import("ava").ExecutionContext<import("./helpers/context.js").Context>} t
+ * @param {`did:${string}:${string}`} spaceDid
+ */
+async function getSpaceMetrics (t, spaceDid) {
+  const spaceUploadCount = await getTableItem(
+    t.context.spaceUploadCountDynamo.client,
+    t.context.spaceUploadCountDynamo.tableName,
+    { space: spaceDid }
+  )
+
+  return {
+    spaceUploadCount
+  }
 }

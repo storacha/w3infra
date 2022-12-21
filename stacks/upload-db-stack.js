@@ -1,8 +1,12 @@
 import { Table } from '@serverless-stack/resources'
 
-import { storeTableProps, uploadTableProps } from '../upload-api/tables/index.js'
 import {
-  adminMetricsTableProps
+  storeTableProps,
+  uploadTableProps,
+} from '../upload-api/tables/index.js'
+import {
+  adminMetricsTableProps,
+  spaceUploadCountTableProps
 } from '../ucan-invocation/tables/index.js'
 import { setupSentry } from './config.js'
 
@@ -31,9 +35,15 @@ export function UploadDbStack({ stack, app }) {
    */
   const adminMetricsTable = new Table(stack, 'admin-metrics', adminMetricsTableProps)
 
+   /**
+    * This table tracks count of uploads per space.
+    */
+   const spaceUploadCountTable = new Table(stack, 'space-upload-count', spaceUploadCountTableProps)
+
   return {
     storeTable,
     uploadTable,
-    adminMetricsTable
+    adminMetricsTable,
+    spaceUploadCountTable
   }
 }
