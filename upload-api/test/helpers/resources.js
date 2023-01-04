@@ -51,29 +51,51 @@ export async function createDynamodDb(opts = {}) {
  * @typedef {import('@serverless-stack/resources').TableProps} TableProps
  *
  * @param {TableProps} props
- * @returns {Pick<CreateTableCommandInput, 'AttributeDefinitions' | 'KeySchema'>}
+ * @returns {Pick<CreateTableCommandInput, 'AttributeDefinitions' | 'KeySchema' | 'GlobalSecondaryIndexes'>}
  */
- export function dynamoDBTableConfig ({ fields, primaryIndex }) {
+ export function dynamoDBTableConfig ({ fields, primaryIndex, globalIndexes = {} }) {
   if (!primaryIndex || !fields) throw new Error('Expected primaryIndex and fields on TableProps')
   const attributes = Object.values(primaryIndex)
+
   const AttributeDefinitions = Object.entries(fields)
     .filter(([k]) => attributes.includes(k)) // 'The number of attributes in key schema must match the number of attributes defined in attribute definitions'
     .map(([k, v]) => ({
       AttributeName: k,
       AttributeType: v[0].toUpperCase()
     }))
-  const KeySchema = [
-    { AttributeName: primaryIndex.partitionKey, KeyType: 'HASH' }
-  ]
-  if (primaryIndex.sortKey) {
-    KeySchema.push(
-      { AttributeName: primaryIndex.sortKey, KeyType: 'RANGE' }
-    )
-  }
+
+  const KeySchema = toKeySchema(primaryIndex)
+
+  const GlobalSecondaryIndexes = Object.entries(globalIndexes)
+    .map(([IndexName, val]) => ({
+      IndexName,
+      // @ts-expect-error sst got an typo in its types for TableGlobalIndexProps.partitionKey
+      KeySchema: toKeySchema(val),
+      Projection: { ProjectionType: 'ALL' }
+    }))
+
   return {
     AttributeDefinitions,
-    KeySchema
+    KeySchema,
+    GlobalSecondaryIndexes
   }
+}
+
+/**
+ * @param {object} index
+ * @param {string} index.partitionKey
+ * @param {string} [index.sortKey]
+ */
+function toKeySchema ({partitionKey, sortKey}) {
+  const KeySchema = [
+    { AttributeName: partitionKey, KeyType: 'HASH' }
+  ]
+  if (sortKey) {
+    KeySchema.push(
+      { AttributeName: sortKey, KeyType: 'RANGE' }
+    )
+  }
+  return KeySchema
 }
 
 /**

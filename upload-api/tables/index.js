@@ -13,6 +13,10 @@ export const storeTableProps = {
   },
   // space + link must be unique to satisfy index constraint
   primaryIndex: { partitionKey: 'space', sortKey: 'link' },
+  globalIndexes: {
+    // @ts-expect-error sst got an typo in its types for TableGlobalIndexProps.partitionKey
+    linkSpace: { partitionKey: 'link', sortKey: 'space' }
+  }
 }
 
 /** @type TableProps */
