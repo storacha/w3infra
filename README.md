@@ -42,6 +42,19 @@ Deployment is managed by [seed.run]. PR's are deployed automatically to `https:/
 
 The `main` branch is deployed to https://staging.up.web3.storage and staging builds are promoted to prod manually via the UI at https://console.seed.run
 
+## Integration tests
+
+Integration tests run by default on post-deploy stage of [seed.run] deployment pipeline. These integration tests will run with the deployed infrastructure for the given stages (PR / staging).
+
+It is also possible to run the integration tests with a development deploy of `sst`. For this, you can run:
+
+```
+npm run deploy
+npm run test-integration
+```
+
+Please notice that appropriate environment variables must be set for the development deploy.
+
 ### Environment Variables
 
 Ensure the following variables are set in the env when deploying
@@ -207,7 +220,6 @@ const cid = await uploadFile({
   proofs: agent.getProofs([store, upload]),
 }, file)
 ```
-
 
 [SST]: https://sst.dev
 [UCAN]: https://github.com/ucan-wg/spec/

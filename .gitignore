@@ -12,3 +12,4 @@ dist
 
 # local env files
 .env*.local
+.test-env.json
