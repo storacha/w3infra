@@ -77,6 +77,11 @@ export function CarparkStack({ stack, app }) {
     }
   })
 
+  stack.addOutputs({
+    BucketName: carparkBucket.bucketName,
+    Region: stack.region
+  })
+
   return {
     carparkBucket
   }
