@@ -1,4 +1,9 @@
 import anyTest from 'ava'
+import dotenv from 'dotenv'
+
+dotenv.config({
+  path: '.env.local'
+})
 
 /**
  * @typedef {import("ava").TestFn<Awaited<any>>} TestAnyFn

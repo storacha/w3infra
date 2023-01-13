@@ -53,7 +53,7 @@ npm run deploy
 npm run test-integration
 ```
 
-Please notice that appropriate environment variables must be set for the development deploy.
+Please notice that appropriate environment variables must be set for the development deploy. For this you are required to setup your `.env.local` file as instructed in Getting started section. You can read more [here](https://gist.github.com/alanshaw/e949abfcf6728f590ac9fa083dba5648) on how to setup CI with a w3account.
 
 ### Environment Variables
 

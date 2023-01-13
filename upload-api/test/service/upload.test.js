@@ -46,6 +46,7 @@ test.beforeEach(async t => {
   // return a mock info by default
   access.setServiceImpl({
     account: {
+      // @ts-expect-error
       info: async () => ({
         did: (await Signer.generate()).did(),
         agent: (await Signer.generate()).did(),

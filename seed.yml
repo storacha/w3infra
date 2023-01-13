@@ -1,4 +1,4 @@
 
 before_compile:
-  - n 16.17.1
+  - n 18.13.0
   - npm ci
