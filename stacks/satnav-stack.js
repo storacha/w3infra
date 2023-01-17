@@ -104,4 +104,9 @@ export function SatnavStack({ stack, app }) {
       events: ['object_created_put'],
     }
   })
+
+  stack.addOutputs({
+    BucketName: satnavBucket.bucketName,
+    Region: stack.region
+  })
 }

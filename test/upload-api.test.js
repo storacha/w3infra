@@ -1,12 +1,16 @@
 import { fetch } from '@web-std/fetch'
 import git from 'git-rev-sync'
+import pWaitFor from 'p-wait-for'
 import { HeadObjectCommand } from '@aws-sdk/client-s3'
 
 import { test } from './helpers/context.js'
 import {
   stage,
   getApiEndpoint,
+  getAwsBucketClient,
   getCloudflareBucketClient,
+  getSatnavBucketInfo,
+  getCarparkBucketInfo
 } from './helpers/deployment.js'
 import { getClient } from './helpers/up-client.js'
 import { randomFile } from './helpers/random.js'
@@ -31,6 +35,7 @@ test('GET /version', async t => {
 test('POST / client can upload a file and list it', async t => {
   const apiEndpoint = getApiEndpoint()
   const client = await getClient(apiEndpoint)
+  const s3Client = getAwsBucketClient()
   const r2Client = getCloudflareBucketClient()
 
   const file = await randomFile(100)
@@ -44,6 +49,15 @@ test('POST / client can upload a file and list it', async t => {
   })
   t.truthy(fileLink)
   t.is(shards.length, 1)
+
+  // Check carpark
+  const carparkRequest = await s3Client.send(
+    new HeadObjectCommand({
+      Bucket: (getCarparkBucketInfo()).Bucket,
+      Key: `${shards[0].toString()}/${shards[0].toString()}.car`
+    })
+  )
+  t.is(carparkRequest.$metadata.httpStatusCode, 200)
 
   // Check dudewhere
   const dudewhereRequest = await r2Client.send(
@@ -71,4 +85,56 @@ test('POST / client can upload a file and list it', async t => {
   // Remove file from space
   const removeResult = await client.capability.upload.remove(fileLink)
   t.falsy(removeResult?.error)
+
+  // Check Satnav side index asynchronously created
+  await pWaitFor(async () => {
+    let satnavRequest
+    try {
+      satnavRequest = await s3Client.send(
+        new HeadObjectCommand({
+          Bucket: (getSatnavBucketInfo()).Bucket,
+          Key: `${shards[0].toString()}/${shards[0].toString()}.car.idx`
+        })
+      )
+    } catch {}
+
+    return satnavRequest?.$metadata.httpStatusCode === 200
+  }, {
+    interval: 100,
+  })
+
+  // Replicator
+  // Check carpark
+  await pWaitFor(async () => {
+    let carpark
+    try {
+      carpark = await r2Client.send(
+        new HeadObjectCommand({
+          Bucket: process.env.R2_CARPARK_BUCKET_NAME || '',
+          Key: `${shards[0].toString()}/${shards[0].toString()}.car`
+        })
+      )
+    } catch {}
+
+    return carpark?.$metadata.httpStatusCode === 200
+  }, {
+    interval: 100,
+  })
+
+  // Check satnav
+  await pWaitFor(async () => {
+    let satnav
+    try {
+      satnav = await r2Client.send(
+        new HeadObjectCommand({
+          Bucket: process.env.R2_SATNAV_BUCKET_NAME || '',
+          Key: `${shards[0].toString()}/${shards[0].toString()}.car.idx`
+        })
+      )
+    } catch {}
+
+    return satnav?.$metadata.httpStatusCode === 200
+  }, {
+    interval: 100,
+  })
 })
