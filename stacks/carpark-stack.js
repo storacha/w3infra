@@ -23,6 +23,7 @@ export function CarparkStack({ stack, app }) {
 
   // Get eventBus reference
   const { eventBus } = use(BusStack)
+  const { EIPFS_INDEXER_SQS_ARN } = getEnv()
 
   const carparkBucket = new Bucket(stack, 'car-store', {
     cors: true,
@@ -37,7 +38,7 @@ export function CarparkStack({ stack, app }) {
       queue: sqs.Queue.fromQueueArn(
         stack,
         'indexer-topic',
-        'arn:aws:sqs:us-west-2:505595374361:indexer-topic'
+        EIPFS_INDEXER_SQS_ARN
       ),
     },
   })
@@ -80,4 +81,27 @@ export function CarparkStack({ stack, app }) {
   return {
     carparkBucket
   }
+}
+
+/**
+ * Get Env validating it is set.
+ */
+function getEnv() {
+  return {
+    EIPFS_INDEXER_SQS_ARN: mustGetEnv('EIPFS_INDEXER_SQS_ARN'),
+  }
+}
+
+/**
+ * 
+ * @param {string} name 
+ * @returns {string}
+ */
+function mustGetEnv (name) {
+  if (!process.env[name]) {
+    throw new Error(`Missing env var: ${name}`)
+  }
+
+  // @ts-expect-error there will always be a string there, but typescript does not believe
+  return process.env[name]
 }

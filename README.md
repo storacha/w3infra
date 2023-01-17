@@ -107,6 +107,10 @@ Bucket name to persist the CAR files of UCAN invocations handled by the service.
 
 Data source name for Sentry application monitoring service.
 
+### `EIPFS_INDEXER_SQS_ARN`
+
+AWS ARN for Elastic IPFS SQS indexer used to request Elastic IPFS to index given CAR files.
+
 ### Secrets
 
 Set production secrets in aws SSM via [`sst secrets`](https://docs.sst.dev/config#sst-secrets). The region must be set to the one you deploy that stage to
