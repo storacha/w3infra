@@ -24,6 +24,7 @@ export default function (app) {
     },
     bundle: {
       format: 'esm',
+      sourcemap: true,
     },
   })
   app.stack(BusStack)
