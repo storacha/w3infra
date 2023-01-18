@@ -23,7 +23,7 @@ export function CarparkStack({ stack, app }) {
 
   // Get eventBus reference
   const { eventBus } = use(BusStack)
-  const { EIPFS_INDEXER_SQS_ARN } = getEnv()
+  const { EIPFS_INDEXER_SQS_ARN, EIPFS_INDEXER_SQS_URL } = getEnv()
 
   const carparkBucket = new Bucket(stack, 'car-store', {
     cors: true,
@@ -46,7 +46,9 @@ export function CarparkStack({ stack, app }) {
   // Event Bus targets
   const eIpfsIndexTarget = {
     function: {
-      environment: {},
+      environment: {
+        EIPFS_INDEXER_SQS_URL
+      },
       permissions: [indexerTopicQueue],
       handler: 'event-bus/eipfs-indexer.handler',
     },
@@ -94,6 +96,7 @@ export function CarparkStack({ stack, app }) {
 function getEnv() {
   return {
     EIPFS_INDEXER_SQS_ARN: mustGetEnv('EIPFS_INDEXER_SQS_ARN'),
+    EIPFS_INDEXER_SQS_URL: mustGetEnv('EIPFS_INDEXER_SQS_URL'),
   }
 }
 

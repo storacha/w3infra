@@ -111,6 +111,10 @@ Data source name for Sentry application monitoring service.
 
 AWS ARN for Elastic IPFS SQS indexer used to request Elastic IPFS to index given CAR files.
 
+### `EIPFS_INDEXER_SQS_URL`
+
+AWS URL for Elastic IPFS SQS indexer used to request Elastic IPFS to index given CAR files.
+
 ### Secrets
 
 Set production secrets in aws SSM via [`sst secrets`](https://docs.sst.dev/config#sst-secrets). The region must be set to the one you deploy that stage to
