@@ -7,6 +7,8 @@
 # uncomment to set SENTRY_DSN
 # SENTRY_DSN = ''
 
+EIPFS_INDEXER_SQS_ARN = 'arn:aws:sqs:us-west-2:505595374361:staging-ep-indexer-topic'
+EIPFS_INDEXER_SQS_URL = 'https://sqs.us-west-2.amazonaws.com/505595374361/staging-ep-indexer-topic'
 
 # Following variables are only required to run integration tests
 INTEGRATION_TESTS_UCAN_KEY = ''
