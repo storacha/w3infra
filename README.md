@@ -107,11 +107,11 @@ Bucket name to persist the CAR files of UCAN invocations handled by the service.
 
 Data source name for Sentry application monitoring service.
 
-### `EIPFS_INDEXER_SQS_ARN`
+#### `EIPFS_INDEXER_SQS_ARN`
 
 AWS ARN for Elastic IPFS SQS indexer used to request Elastic IPFS to index given CAR files.
 
-### `EIPFS_INDEXER_SQS_URL`
+#### `EIPFS_INDEXER_SQS_URL`
 
 AWS URL for Elastic IPFS SQS indexer used to request Elastic IPFS to index given CAR files.
 
