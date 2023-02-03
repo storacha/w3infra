@@ -24,23 +24,36 @@ The repo contains the infra deployment code and the api implementation.
 To work on this codebase **you need**:
 
 - Node.js >= v16 (prod env is node v16)
-- An AWS account with the AWS CLI configured locally
-- Copy `.env.tpl` to `.env.local`
 - Install the deps with `npm i`
 
-Deploy dev services to your aws account and start dev console
+You can then run the tests locally with `npm test`. 
+
+To try out a change submit a PR and you'll get temporary infra rolled out for you automatically at `https://<pr#>.up.web3.storage`.
+
+[`sst`](https://sst.dev) is the framework we use to define what to deploy. Read the docs! https://sst.dev
+
+## Deployment 
+
+Deployments are managed by [seed.run]. 
+
+The `main` branch is deployed to https://staging.up.web3.storage and staging builds are promoted to prod manually via the UI at https://console.seed.run
+
+### Local dev
+
+You can use `sst` to create a custom dev deployment on aws, with a local dev console for debugging.
+
+To do that **you need**
+
+- An AWS account with the AWS CLI configured locally
+- Copy `.env.tpl` to `.env.local`
+
+Then run `npm start` to deploy dev services to your aws account and start dev console
 
 ```console
 npm start
 ```
 
 See: https://docs.sst.dev for more info on how things get deployed.
-
-## Deployment 
-
-Deployment is managed by [seed.run]. PR's are deployed automatically to `https://<pr#>.up.web3.storage`. 
-
-The `main` branch is deployed to https://staging.up.web3.storage and staging builds are promoted to prod manually via the UI at https://console.seed.run
 
 ## Integration tests
 
