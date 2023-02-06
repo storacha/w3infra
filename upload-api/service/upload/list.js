@@ -16,12 +16,13 @@ export function uploadListProvider(context) {
   return Server.provide(
     Upload.list,
     async ({ capability }) => {
-      const { cursor, size } = capability.nb
+      const { cursor, size, prev } = capability.nb
       const space = Server.DID.parse(capability.with).did()
 
       return await context.uploadTable.list(space, {
         size,
-        cursor
+        cursor,
+        prev
       })
   })
 }
