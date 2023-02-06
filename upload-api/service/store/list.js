@@ -17,13 +17,12 @@ export function storeListProvider(context) {
   return Server.provide(
     Store.list,
     async ({ capability }) => {
-      const { cursor, size, prev } = capability.nb
+      const { cursor, size } = capability.nb
       const space = Server.DID.parse(capability.with).did()
 
       return await context.storeTable.list(space, {
         size,
-        cursor,
-        prev
+        cursor
       })
     }
   )
