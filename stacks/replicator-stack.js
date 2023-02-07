@@ -36,6 +36,8 @@ export function ReplicatorStack({ stack, app }) {
         REPLICATOR_SECRET_ACCESS_KEY:
           process.env.R2_SECRET_ACCESS_KEY || '',
         REPLICATOR_BUCKET_NAME: process.env.R2_CARPARK_BUCKET_NAME || '',
+        REPLICATOR_BUCKET_PUBLIC_URL: process.env.R2_CARPARK_BUCKET_PUBLIC_URL || '',
+        EVENT_BUS_ARN: eventBus.eventBusArn
       },
       permissions: ['s3:*'],
       handler: 'functions/replicator.handler',
@@ -54,6 +56,8 @@ export function ReplicatorStack({ stack, app }) {
         REPLICATOR_SECRET_ACCESS_KEY:
           process.env.R2_SECRET_ACCESS_KEY || '',
         REPLICATOR_BUCKET_NAME: process.env.R2_SATNAV_BUCKET_NAME || '',
+        REPLICATOR_BUCKET_PUBLIC_URL: process.env.R2_SATNAV_BUCKET_PUBLIC_URL || '',
+        EVENT_BUS_ARN: eventBus.eventBusArn
       },
       permissions: ['s3:*'],
       handler: 'functions/replicator.handler',
@@ -72,6 +76,8 @@ export function ReplicatorStack({ stack, app }) {
         REPLICATOR_SECRET_ACCESS_KEY:
           process.env.R2_SECRET_ACCESS_KEY || '',
         REPLICATOR_BUCKET_NAME: process.env.R2_UCAN_BUCKET_NAME || '',
+        REPLICATOR_BUCKET_PUBLIC_URL: process.env.R2_UCAN_BUCKET_PUBLIC_URL || '',
+        EVENT_BUS_ARN: eventBus.eventBusArn
       },
       permissions: ['s3:*'],
       handler: 'functions/replicator.handler',
