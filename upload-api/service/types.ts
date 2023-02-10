@@ -117,7 +117,7 @@ export interface UploadListItem extends UploadAddResult {
 export interface ListOptions {
   size?: number,
   cursor?: string,
-  prev?: boolean
+  pre?: boolean
 }
 
 export interface ListResponse<R> {
