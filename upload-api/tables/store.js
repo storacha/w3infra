@@ -119,7 +119,7 @@ export function createStoreTable (region, tableName, options = {}) {
             AttributeValueList: [{ S: space }],
           },
         },
-        ScanIndexForward: options.pre ? false : true,
+        ScanIndexForward: ! options.pre,
         ExclusiveStartKey: exclusiveStartKey,
         AttributesToGet: ['link', 'size', 'origin', 'insertedAt'],
       })

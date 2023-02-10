@@ -143,7 +143,7 @@ export function createUploadTable (region, tableName, options = {}) {
             AttributeValueList: [{ S: space }],
           },
         },
-        ScanIndexForward: options.pre ? false : true,
+        ScanIndexForward: ! options.pre,
         ExclusiveStartKey: exclusiveStartKey,
         AttributesToGet: ['space', 'root', 'shards', 'insertedAt', 'updatedAt'],
       })
