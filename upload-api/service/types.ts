@@ -122,6 +122,8 @@ export interface ListOptions {
 
 export interface ListResponse<R> {
   cursor?: string,
+  startCursor?: string,
+  endCursor?: string,
   size: number,
   results: R[]
 }

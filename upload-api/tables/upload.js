@@ -151,16 +151,20 @@ export function createUploadTable (region, tableName, options = {}) {
 
       /** @type {UploadListItem[]} */
       const results = response.Items?.map(i => toUploadListItem(unmarshall(i))) || []
+      const startCursor = results[0] ? results[0].root.toString() : undefined
 
       // Get cursor of the item where list operation stopped (inclusive).
       // This value can be used to start a new operation to continue listing.
       const lastKey = response.LastEvaluatedKey && unmarshall(response.LastEvaluatedKey)
       const cursor = lastKey ? lastKey.root : undefined
+      const endCursor = cursor
 
       return {
         size: results.length,
-        results,
-        cursor
+        cursor,
+        startCursor,
+        endCursor,
+        results
       }
     },
   }
