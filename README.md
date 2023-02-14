@@ -14,11 +14,12 @@ The server-side implementation of the `store/*` and `upload/*` capabilities defi
 The repo contains the infra deployment code and the api implementation.
 
 ```
-├── carpark     - lambda for announce new CARs in the carpark bucket
-├── replicator  - lambda to replicate buckets to R2
-├── satnav      - lambda to listen for new CARs and write CAR indexes in satnav
-├── stacks      - sst and aws cdk code to deploy all the things
-└── upload-api  - lambda & dynamoDB implementation of the upload-api http gateway
+├── carpark         - lambda for announce new CARs in the carpark bucket
+├── replicator      - lambda to replicate buckets to R2
+├── satnav          - lambda to listen for new CARs and write CAR indexes in satnav
+├── stacks          - sst and aws cdk code to deploy all the things
+├── ucan-invocation - kinesis log data stream and its lambda consumers
+└── upload-api      - lambda & dynamoDB implementation of the upload-api http gateway
 ```
 
 To work on this codebase **you need**:
