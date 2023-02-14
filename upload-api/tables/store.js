@@ -130,12 +130,12 @@ export function createStoreTable (region, tableName, options = {}) {
       // Get cursor of the item where list operation stopped (inclusive).
       // This value can be used to start a new operation to continue listing.
       const lastKey = response.LastEvaluatedKey && unmarshall(response.LastEvaluatedKey)
-      const cursor = lastKey ? lastKey.link : undefined
-      const endCursor = cursor
+      const endCursor = lastKey ? lastKey.link : undefined
 
       return {
         size: results.length,
-        cursor,
+        // cursor is deprecated and will be removed in a future version
+        cursor: endCursor,
         startCursor,
         endCursor,
         results
