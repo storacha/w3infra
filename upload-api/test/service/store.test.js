@@ -89,7 +89,7 @@ test('store/add returns signed url for uploading', async (t) => {
     nb: { link, size },
     proofs: [proof]
   })
-  
+
   // invoke a store/add with proof
   const storeAdd = await invocation.execute(connection)
 
@@ -146,7 +146,7 @@ test('store/add should create a presigned url that can only PUT a payload with t
     tableName,
     bucketName
   })
-  
+
   const data = new Uint8Array([11, 22, 34, 44, 55])
   const longer = new Uint8Array([11, 22, 34, 44, 55, 66])
   const link = await CAR.codec.link(data)
@@ -159,7 +159,7 @@ test('store/add should create a presigned url that can only PUT a payload with t
     nb: { link, size },
     proofs: [proof]
   }).execute(connection)
-  
+
   if (storeAdd.error) {
     throw new Error('invocation failed', { cause: storeAdd })
   }
@@ -192,7 +192,7 @@ test('store/add should create a presigned url that can only PUT the exact bytes 
     tableName,
     bucketName
   })
-  
+
   const data = new Uint8Array([11, 22, 34, 44, 55])
   const other = new Uint8Array([10, 22, 34, 44, 55])
   const link = await CAR.codec.link(data)
@@ -205,7 +205,7 @@ test('store/add should create a presigned url that can only PUT the exact bytes 
     nb: { link, size },
     proofs: [proof]
   }).execute(connection)
-  
+
   if (storeAdd.error) {
     throw new Error('invocation failed', { cause: storeAdd })
   }
@@ -214,7 +214,7 @@ test('store/add should create a presigned url that can only PUT the exact bytes 
   if (!url) {
     throw new Error('Expected presigned url in response')
   }
-  
+
   const failChecksum = await fetch(url, {
     method: 'PUT',
     mode: 'cors',
@@ -255,7 +255,7 @@ test('store/add returns done if already uploaded', async (t) => {
     nb: { link, size: data.byteLength },
     proofs: [proof]
   })
-  
+
   const storeAdd = await storeAddInvocation.execute(connection)
 
   if (storeAdd.error) {
@@ -365,7 +365,7 @@ test('store/add fails when size to large to PUT', async (t) => {
     tableName,
     bucketName
   })
-  
+
   const data = new Uint8Array([11, 22, 34, 44, 55])
   const link = await CAR.codec.link(data)
   const size = MAX_S3_PUT_SIZE + 1
@@ -484,12 +484,12 @@ test('store/list does not fail for empty list', async (t) => {
     tableName,
     bucketName
   })
-  
+
   const storeList = await StoreCapabilities.list.invoke({
     issuer: alice,
     audience: uploadService,
     with: spaceDid,
-    proofs: [ proof ],
+    proofs: [proof],
     nb: {}
   }).execute(connection)
 
@@ -508,14 +508,14 @@ test('store/list returns items previously stored by the user', async (t) => {
     bucketName
   })
 
-  const data = [ new Uint8Array([11, 22, 34, 44, 55]), new Uint8Array([22, 34, 44, 55, 66]) ]
+  const data = [new Uint8Array([11, 22, 34, 44, 55]), new Uint8Array([22, 34, 44, 55, 66])]
   const links = []
   for (const datum of data) {
     const storeAdd = await StoreCapabilities.add.invoke({
       issuer: alice,
       audience: uploadService,
       with: spaceDid,
-      nb: { link: await CAR.codec.link(datum) , size: datum.byteLength },
+      nb: { link: await CAR.codec.link(datum), size: datum.byteLength },
       proofs: [proof]
     }).execute(connection)
     if (storeAdd.error) {
@@ -530,7 +530,7 @@ test('store/list returns items previously stored by the user', async (t) => {
     issuer: alice,
     audience: uploadService,
     with: spaceDid,
-    proofs: [ proof ],
+    proofs: [proof],
     nb: {}
   }).execute(connection)
 
@@ -561,7 +561,7 @@ test('store/list can be paginated with custom size', async (t) => {
     bucketName
   })
 
-  const data = [ new Uint8Array([11, 22, 34, 44, 55]), new Uint8Array([22, 34, 44, 55, 66]) ]
+  const data = [new Uint8Array([11, 22, 34, 44, 55]), new Uint8Array([22, 34, 44, 55, 66])]
   const links = []
 
   for (const datum of data) {
@@ -569,7 +569,7 @@ test('store/list can be paginated with custom size', async (t) => {
       issuer: alice,
       audience: uploadService,
       with: spaceDid,
-      nb: { link: await CAR.codec.link(datum) , size: datum.byteLength },
+      nb: { link: await CAR.codec.link(datum), size: datum.byteLength },
       proofs: [proof]
     }).execute(connection)
     if (storeAdd.error) {
@@ -590,7 +590,7 @@ test('store/list can be paginated with custom size', async (t) => {
       issuer: alice,
       audience: uploadService,
       with: spaceDid,
-      proofs: [ proof ],
+      proofs: [proof],
       nb: {
         size,
         cursor
@@ -600,8 +600,8 @@ test('store/list can be paginated with custom size', async (t) => {
     if (storeList.error) {
       throw new Error('invocation failed', { cause: storeList })
     }
-  
-    cursor = storeList.cursor
+
+    cursor = storeList.endCursor
     // Add page if it has size
     storeList.size && listPages.push(storeList.results)
   } while (cursor)
@@ -619,12 +619,85 @@ test('store/list can be paginated with custom size', async (t) => {
   }
 })
 
+test('store/list can page backwards', async (t) => {
+  const { tableName, bucketName } = await prepareResources(t.context.dynamoClient, t.context.s3Client)
+
+  const uploadService = await Signer.generate()
+  const alice = await Signer.generate()
+  const { proof, spaceDid } = await createSpace(alice)
+  const connection = await getClientConnection(uploadService, {
+    ...t.context,
+    tableName,
+    bucketName
+  })
+
+  const data = [new Uint8Array([11, 22, 34, 44, 55]), new Uint8Array([22, 34, 44, 55, 66]), new Uint8Array([33, 44, 55, 66, 77])]
+  const links = []
+
+  for (const datum of data) {
+    const storeAdd = await StoreCapabilities.add.invoke({
+      issuer: alice,
+      audience: uploadService,
+      with: spaceDid,
+      nb: { link: await CAR.codec.link(datum), size: datum.byteLength },
+      proofs: [proof]
+    }).execute(connection)
+    if (storeAdd.error) {
+      throw new Error('invocation failed', { cause: storeAdd })
+    }
+
+    links.push(storeAdd.link)
+  }
+
+  const size = 3
+  let cursor
+
+  /** @type {Server.Result<ListResponse, Server.API.Failure | Server.HandlerExecutionError | Server.API.HandlerNotFound | Server.InvalidAudience | Server.Unauthorized>} */
+  const listResponse = await StoreCapabilities.list.invoke({
+    issuer: alice,
+    audience: uploadService,
+    with: spaceDid,
+    proofs: [proof],
+    nb: {
+      size,
+      cursor
+    }
+  }).execute(connection)
+
+  if (listResponse.error) {
+    throw new Error('invocation failed', { cause: listResponse.error })
+  }
+
+  /** @type {Server.Result<ListResponse, Server.API.Failure | Server.HandlerExecutionError | Server.API.HandlerNotFound | Server.InvalidAudience | Server.Unauthorized>} */
+  const reverseListResponse = await StoreCapabilities.list.invoke({
+    issuer: alice,
+    audience: uploadService,
+    with: spaceDid,
+    proofs: [proof],
+    nb: {
+      size,
+      cursor: listResponse.endCursor,
+      pre: true
+    }
+  }).execute(connection)
+
+  if (reverseListResponse.error) {
+    throw new Error('invocation failed', { cause: reverseListResponse.error })
+  }
+
+  t.is(listResponse.results.length, 3)
+  // we initially listed forward and got 3 results. we then used the "end cursor" of that list and listed backwards,
+  // which means the first result of the reverse list response should be the middle result of the inital response.
+  t.like(reverseListResponse.results[0], listResponse.results[1])
+
+})
+
 /**
  * @param {import("@aws-sdk/client-dynamodb").DynamoDBClient} dynamoClient
  * @param {import("@aws-sdk/client-s3").S3Client} s3Client
  */
-async function prepareResources (dynamoClient, s3Client) {
-  const [ tableName, bucketName ] = await Promise.all([
+async function prepareResources(dynamoClient, s3Client) {
+  const [tableName, bucketName] = await Promise.all([
     createDynamoStoreTable(dynamoClient),
     createBucket(s3Client)
   ])
