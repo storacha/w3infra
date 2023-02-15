@@ -717,7 +717,7 @@ test('upload/list can page backwards', async (t) => {
     }
   }).execute(connection)
 
-  if ((reverseListResponse.error) {
+  if (reverseListResponse.error) {
     throw new Error('invocation failed', { cause: reverseListResponse.error })
   }
 
