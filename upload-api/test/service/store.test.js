@@ -687,9 +687,10 @@ test('store/list can page backwards', async (t) => {
 
   t.is(listResponse.results.length, 3)
   // we initially listed forward and got 3 results. we then used the "end cursor" of that list and listed backwards,
-  // which means the first result of the reverse list response should be the middle result of the inital response.
+  // which means the first result of the reverse list response should be the middle result of the inital response
+  // and the second result of the reverse list should be the first result of the initial response
   t.like(reverseListResponse.results[0], listResponse.results[1])
-
+  t.like(reverseListResponse.results[1], listResponse.results[0])
 })
 
 /**

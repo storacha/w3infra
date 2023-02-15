@@ -21,7 +21,7 @@ const BATCH_MAX_SAFE_LIMIT = 25
  * @typedef {import('../../service/types').ListResponse<UploadItemOutput>} ListResponse
  */
 
- test.before(async t => {
+test.before(async t => {
   // Dynamo DB
   const {
     client: dynamo,
@@ -343,7 +343,7 @@ test('upload/remove removes an upload', async (t) => {
     issuer: alice,
     audience: uploadService,
     with: spaceDid,
-    nb: { root: car.roots[0], shards: [ car.cid ] },
+    nb: { root: car.roots[0], shards: [car.cid] },
     proofs: [proof]
   }).execute(connection)
   if (uploadAdd.error) {
@@ -501,7 +501,7 @@ test('upload/remove removes all entries when larger than batch limit', async (t)
   if (uploadAdd.error) {
     throw new Error('invocation failed', { cause: uploadAdd })
   }
-  
+
   t.is(uploadAdd.shards?.length, shards.length)
 
   // Validate DB before remove
@@ -533,12 +533,12 @@ test('upload/list does not fail for empty list', async (t) => {
     tableName,
     bucketName
   })
-  
+
   const uploadList = await UploadCapabilities.list.invoke({
     issuer: alice,
     audience: uploadService,
     with: spaceDid,
-    proofs: [ proof ],
+    proofs: [proof],
     nb: {}
   }).execute(connection)
 
@@ -577,7 +577,7 @@ test('upload/list returns entries previously uploaded by the user', async (t) =>
     issuer: alice,
     audience: uploadService,
     with: spaceDid,
-    proofs: [ proof ],
+    proofs: [proof],
     nb: {}
   }).execute(connection)
   if (uploadList.error) {
@@ -585,7 +585,7 @@ test('upload/list returns entries previously uploaded by the user', async (t) =>
   }
 
   t.is(uploadList.size, cars.length)
-  
+
   for (const car of cars) {
     const root = car.roots[0]
     const item = uploadList.results.find((x) => x.root.toString() === root.toString())
@@ -634,7 +634,7 @@ test('upload/list can be paginated with custom size', async (t) => {
       issuer: alice,
       audience: uploadService,
       with: spaceDid,
-      proofs: [ proof ],
+      proofs: [proof],
       nb: {
         size,
         cursor
@@ -644,7 +644,7 @@ test('upload/list can be paginated with custom size', async (t) => {
     if (uploadList.error) {
       throw new Error('invocation failed', { cause: uploadList })
     }
-  
+
     cursor = uploadList.cursor
     // Add page if it has size
     uploadList.size && listPages.push(uploadList.results)
@@ -655,8 +655,78 @@ test('upload/list can be paginated with custom size', async (t) => {
   // Inspect content
   const uploadList = listPages.flat()
   for (const entry of uploadList) {
-    t.truthy(cars.find(car => car.roots[0].toString() === entry.root.toString() ))
+    t.truthy(cars.find(car => car.roots[0].toString() === entry.root.toString()))
   }
+})
+
+test('upload/list can page backwards', async (t) => {
+  const { tableName, bucketName } = await prepareResources(t.context.dynamoClient, t.context.s3Client)
+
+  const uploadService = await Signer.generate()
+  const alice = await Signer.generate()
+  const { proof, spaceDid } = await createSpace(alice)
+  const connection = await getClientConnection(uploadService, {
+    ...t.context,
+    tableName,
+    bucketName
+  })
+
+  // invoke multiple upload/add with proof
+  const cars = [
+    await randomCAR(128),
+    await randomCAR(128)
+  ]
+
+  for (const car of cars) {
+    await UploadCapabilities.add.invoke({
+      issuer: alice,
+      audience: uploadService,
+      with: spaceDid,
+      nb: { root: car.roots[0], shards: [car.cid] },
+      proofs: [proof]
+    }).execute(connection)
+  }
+
+  const size = 3
+
+  /** @type {import('@ucanto/server').Result<ListResponse, import('@ucanto/server').API.Failure | import('@ucanto/server').HandlerExecutionError | import('@ucanto/server').API.HandlerNotFound | import('@ucanto/server').InvalidAudience | import('@ucanto/server').Unauthorized>} */
+  const listResponse = await UploadCapabilities.list.invoke({
+    issuer: alice,
+    audience: uploadService,
+    with: spaceDid,
+    proofs: [proof],
+    nb: {
+      size
+    }
+  }).execute(connection)
+
+  if (listResponse.error) {
+    throw new Error('invocation failed', { cause: listResponse.error })
+  }
+
+  /** @type {import('@ucanto/server').Result<ListResponse, import('@ucanto/server').API.Failure | import('@ucanto/server').HandlerExecutionError | import('@ucanto/server').API.HandlerNotFound | import('@ucanto/server').InvalidAudience | import('@ucanto/server').Unauthorized>} */
+  const reverseListResponse = await UploadCapabilities.list.invoke({
+    issuer: alice,
+    audience: uploadService,
+    with: spaceDid,
+    proofs: [proof],
+    nb: {
+      size,
+      cursor: listResponse.endCursor,
+      pre: true
+    }
+  }).execute(connection)
+
+  if ((reverseListResponse.error) {
+    throw new Error('invocation failed', { cause: reverseListResponse.error })
+  }
+
+  t.is(listResponse.results.length, 3)
+  // we initially listed forward and got 3 results. we then used the "end cursor" of that list and listed backwards,
+  // which means the first result of the reverse list response should be the middle result of the inital response
+  // and the second result of the reverse list should be the first result of the initial response
+  t.like(reverseListResponse.results[0], listResponse.results[1])
+  t.like(reverseListResponse.results[1], listResponse.results[0])
 })
 
 test('can invoke when serviceSigner has a did:web did', async (t) => {
@@ -691,7 +761,7 @@ test('can invoke when serviceSigner has a did:web did', async (t) => {
   t.not(resultOfInvocationWithWrongAudience, undefined, 'result is not undefined - it should be an error')
   if (resultOfInvocationWithWrongAudience?.error) {
     t.is(resultOfInvocationWithWrongAudience.name, 'InvalidAudience', 'result of sending invocation with wrong audience is InvalidAudience')
-    t.is(/** @type {import('@ucanto/server').InvalidAudience} */ (resultOfInvocationWithWrongAudience).audience?.toString(), serviceDid.did())
+    t.is(/** @type {import('@ucanto/server').InvalidAudience} */(resultOfInvocationWithWrongAudience).audience?.toString(), serviceDid.did())
   }
 })
 
@@ -721,8 +791,8 @@ async function createNoopRemoveInovocation(options) {
  * @param {import("@aws-sdk/client-dynamodb").DynamoDBClient} dynamoClient
  * @param {import("@aws-sdk/client-s3").S3Client} s3Client
  */
-async function prepareResources (dynamoClient, s3Client) {
-  const [ tableName, bucketName ] = await Promise.all([
+async function prepareResources(dynamoClient, s3Client) {
+  const [tableName, bucketName] = await Promise.all([
     createDynamoUploadTable(dynamoClient),
     createBucket(s3Client)
   ])
@@ -736,7 +806,7 @@ async function prepareResources (dynamoClient, s3Client) {
 /**
  * @param {import("@aws-sdk/client-dynamodb").DynamoDBClient} dynamo
  */
- async function createDynamoUploadTable(dynamo) {
+async function createDynamoUploadTable(dynamo) {
   const id = customAlphabet('1234567890abcdefghijklmnopqrstuvwxyz', 10)
   const tableName = id()
 
@@ -759,7 +829,7 @@ async function prepareResources (dynamoClient, s3Client) {
  * @param {object} [options]
  * @param {number} [options.limit]
  */
- async function getUploadsForSpace(dynamo, tableName, spaceDid, options = {}) {
+async function getUploadsForSpace(dynamo, tableName, spaceDid, options = {}) {
   const cmd = new QueryCommand({
     TableName: tableName,
     Limit: options.limit || 30,
@@ -783,7 +853,7 @@ async function prepareResources (dynamoClient, s3Client) {
  * @param {string} bucketName
  * @param {string} dataCid
  */
-async function getMappingItemsForUpload (s3Client, bucketName, dataCid) {
+async function getMappingItemsForUpload(s3Client, bucketName, dataCid) {
   const listCmd = new ListObjectsV2Command({
     Bucket: bucketName,
     Prefix: dataCid
