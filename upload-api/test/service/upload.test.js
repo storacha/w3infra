@@ -674,6 +674,7 @@ test('upload/list can page backwards', async (t) => {
   // invoke multiple upload/add with proof
   const cars = [
     await randomCAR(128),
+    await randomCAR(128),
     await randomCAR(128)
   ]
 
