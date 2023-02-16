@@ -595,32 +595,59 @@ test('upload/list returns entries previously uploaded by the user', async (t) =>
   }
 })
 
-test('upload/list can be paginated with custom size', async (t) => {
+async function uploadCapabilityHelpers(t) {
   const { tableName, bucketName } = await prepareResources(t.context.dynamoClient, t.context.s3Client)
 
   const uploadService = await Signer.generate()
   const alice = await Signer.generate()
   const { proof, spaceDid } = await createSpace(alice)
+  const proofs = [proof]
   const connection = await getClientConnection(uploadService, {
     ...t.context,
     tableName,
     bucketName
   })
 
-  // invoke multiple upload/add with proof
+  async function add(car) {
+    return UploadCapabilities.add.invoke({
+      issuer: alice,
+      audience: uploadService,
+      with: spaceDid,
+      nb: { root: car.roots[0], shards: [car.cid] },
+      proofs
+    }).execute(connection)
+  }
+
+  async function list(size, cursor, pre = false) {
+    return UploadCapabilities.list.invoke({
+      issuer: alice,
+      audience: uploadService,
+      with: spaceDid,
+      proofs,
+      nb: {
+        size,
+        cursor,
+        pre
+      }
+    }).execute(connection)
+  }
+
+  return {
+    tableName, bucketName, audience: uploadService, issuer: alice, with: spaceDid, proofs: [proof],
+    add, list
+  }
+}
+
+test('upload/list can be paginated with custom size', async (t) => {
+  const { add, list } = await uploadCapabilityHelpers(t)
+
   const cars = [
     await randomCAR(128),
     await randomCAR(128)
   ]
 
   for (const car of cars) {
-    await UploadCapabilities.add.invoke({
-      issuer: alice,
-      audience: uploadService,
-      with: spaceDid,
-      nb: { root: car.roots[0], shards: [car.cid] },
-      proofs: [proof]
-    }).execute(connection)
+    await add(car)
   }
 
   // Get list with page size 1 (two pages)
@@ -630,16 +657,7 @@ test('upload/list can be paginated with custom size', async (t) => {
 
   do {
     /** @type {import('@ucanto/server').Result<ListResponse, import('@ucanto/server').API.Failure | import('@ucanto/server').HandlerExecutionError | import('@ucanto/server').API.HandlerNotFound | import('@ucanto/server').InvalidAudience | import('@ucanto/server').Unauthorized>} */
-    const uploadList = await UploadCapabilities.list.invoke({
-      issuer: alice,
-      audience: uploadService,
-      with: spaceDid,
-      proofs: [proof],
-      nb: {
-        size,
-        cursor
-      }
-    }).execute(connection)
+    const uploadList = await list(size, cursor)
 
     if (uploadList.error) {
       throw new Error('invocation failed', { cause: uploadList })
@@ -660,16 +678,7 @@ test('upload/list can be paginated with custom size', async (t) => {
 })
 
 test('upload/list can page backwards', async (t) => {
-  const { tableName, bucketName } = await prepareResources(t.context.dynamoClient, t.context.s3Client)
-
-  const uploadService = await Signer.generate()
-  const alice = await Signer.generate()
-  const { proof, spaceDid } = await createSpace(alice)
-  const connection = await getClientConnection(uploadService, {
-    ...t.context,
-    tableName,
-    bucketName
-  })
+  const { add, list } = await uploadCapabilityHelpers(t)
 
   // invoke multiple upload/add with proof
   const cars = [
@@ -679,44 +688,20 @@ test('upload/list can page backwards', async (t) => {
   ]
 
   for (const car of cars) {
-    await UploadCapabilities.add.invoke({
-      issuer: alice,
-      audience: uploadService,
-      with: spaceDid,
-      nb: { root: car.roots[0], shards: [car.cid] },
-      proofs: [proof]
-    }).execute(connection)
+    await add(car)
   }
 
   const size = 3
 
   /** @type {import('@ucanto/server').Result<ListResponse, import('@ucanto/server').API.Failure | import('@ucanto/server').HandlerExecutionError | import('@ucanto/server').API.HandlerNotFound | import('@ucanto/server').InvalidAudience | import('@ucanto/server').Unauthorized>} */
-  const listResponse = await UploadCapabilities.list.invoke({
-    issuer: alice,
-    audience: uploadService,
-    with: spaceDid,
-    proofs: [proof],
-    nb: {
-      size
-    }
-  }).execute(connection)
+  const listResponse = await list(size)
 
   if (listResponse.error) {
     throw new Error('invocation failed', { cause: listResponse.error })
   }
 
   /** @type {import('@ucanto/server').Result<ListResponse, import('@ucanto/server').API.Failure | import('@ucanto/server').HandlerExecutionError | import('@ucanto/server').API.HandlerNotFound | import('@ucanto/server').InvalidAudience | import('@ucanto/server').Unauthorized>} */
-  const reverseListResponse = await UploadCapabilities.list.invoke({
-    issuer: alice,
-    audience: uploadService,
-    with: spaceDid,
-    proofs: [proof],
-    nb: {
-      size,
-      cursor: listResponse.endCursor,
-      pre: true
-    }
-  }).execute(connection)
+  const reverseListResponse = await list(size, listResponse.endCursor, true)
 
   if (reverseListResponse.error) {
     throw new Error('invocation failed', { cause: reverseListResponse.error })
