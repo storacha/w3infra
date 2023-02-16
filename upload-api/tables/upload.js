@@ -143,6 +143,7 @@ export function createUploadTable (region, tableName, options = {}) {
             AttributeValueList: [{ S: space }],
           },
         },
+        ScanIndexForward: ! options.pre,
         ExclusiveStartKey: exclusiveStartKey,
         AttributesToGet: ['space', 'root', 'shards', 'insertedAt', 'updatedAt'],
       })
@@ -150,16 +151,20 @@ export function createUploadTable (region, tableName, options = {}) {
 
       /** @type {UploadListItem[]} */
       const results = response.Items?.map(i => toUploadListItem(unmarshall(i))) || []
+      const startCursor = results[0] ? results[0].root.toString() : undefined
 
       // Get cursor of the item where list operation stopped (inclusive).
       // This value can be used to start a new operation to continue listing.
       const lastKey = response.LastEvaluatedKey && unmarshall(response.LastEvaluatedKey)
-      const cursor = lastKey ? lastKey.root : undefined
+      const endCursor = lastKey ? lastKey.root : undefined
 
       return {
         size: results.length,
-        results,
-        cursor
+        // cursor is deprecated and will be removed in a future version
+        cursor: endCursor,
+        startCursor,
+        endCursor,
+        results
       }
     },
   }

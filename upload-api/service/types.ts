@@ -116,11 +116,15 @@ export interface UploadListItem extends UploadAddResult {
 
 export interface ListOptions {
   size?: number,
-  cursor?: string
+  cursor?: string,
+  pre?: boolean
 }
 
 export interface ListResponse<R> {
+  // cursor is deprecated in favor of endCursor and will be removed in a future version
   cursor?: string,
+  startCursor?: string,
+  endCursor?: string,
   size: number,
   results: R[]
 }

@@ -4,6 +4,7 @@ import { GetObjectCommand } from '@aws-sdk/client-s3'
 import * as Signer from '@ucanto/principal/ed25519'
 import { CAR } from '@ucanto/transport'
 import * as UCAN from '@ipld/dag-ucan'
+import * as ucanto from '@ucanto/core';
 
 import { createSpace } from '../helpers/ucanto.js'
 import { createS3, createBucket } from '../helpers/resources.js'
@@ -30,7 +31,7 @@ test('parses ucan invocation request', async t => {
   const can = 'store/add'
 
   const request = await CAR.encode([
-    {
+    await ucanto.delegate({
       issuer: alice,
       audience: uploadService,
       capabilities: [{
@@ -39,7 +40,7 @@ test('parses ucan invocation request', async t => {
         nb
       }],
       proofs: [proof],
-    }
+    })
   ])
 
   // @ts-expect-error different type interface in AWS expected request
@@ -81,7 +82,7 @@ test('persists ucan invocation CAR file', async t => {
   const can = 'store/add'
 
   const request = await CAR.encode([
-    {
+    await ucanto.delegate({
       issuer: alice,
       audience: uploadService,
       capabilities: [{
@@ -90,7 +91,7 @@ test('persists ucan invocation CAR file', async t => {
         nb
       }],
       proofs: [proof],
-    }
+    })
   ])
 
   // @ts-expect-error different type interface in AWS expected request

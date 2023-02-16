@@ -13,7 +13,7 @@
     "@ipld/car": "^5.0.1",
     "@ipld/dag-pb": "^3.0.0",
     "ava": "^4.3.3",
-    "multiformats": "^10.0.2",
+    "multiformats": "^11.0.0",
     "nanoid": "^4.0.0",
     "testcontainers": "^8.13.0",
     "uint8arrays": "^4.0.2"

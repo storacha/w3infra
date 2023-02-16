@@ -119,20 +119,25 @@ export function createStoreTable (region, tableName, options = {}) {
             AttributeValueList: [{ S: space }],
           },
         },
+        ScanIndexForward: ! options.pre,
         ExclusiveStartKey: exclusiveStartKey,
         AttributesToGet: ['link', 'size', 'origin', 'insertedAt'],
       })
       const response = await dynamoDb.send(cmd)
 
       const results = response.Items?.map(i => toStoreListResult(unmarshall(i))) ?? []
+      const startCursor = results[0] ? results[0].link.toString() : undefined
       // Get cursor of the item where list operation stopped (inclusive).
       // This value can be used to start a new operation to continue listing.
       const lastKey = response.LastEvaluatedKey && unmarshall(response.LastEvaluatedKey)
-      const cursor = lastKey ? lastKey.link : undefined
+      const endCursor = lastKey ? lastKey.link : undefined
 
       return {
         size: results.length,
-        cursor,
+        // cursor is deprecated and will be removed in a future version
+        cursor: endCursor,
+        startCursor,
+        endCursor,
         results
       }
     }
