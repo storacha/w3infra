@@ -675,6 +675,9 @@ test('upload/list can page backwards', async (t) => {
   const cars = [
     await randomCAR(128),
     await randomCAR(128),
+    await randomCAR(128),
+    await randomCAR(128),
+    await randomCAR(128),
     await randomCAR(128)
   ]
 
@@ -700,34 +703,52 @@ test('upload/list can page backwards', async (t) => {
       size
     }
   }).execute(connection)
-
   if (listResponse.error) {
     throw new Error('invocation failed', { cause: listResponse.error })
   }
 
   /** @type {import('@ucanto/server').Result<ListResponse, import('@ucanto/server').API.Failure | import('@ucanto/server').HandlerExecutionError | import('@ucanto/server').API.HandlerNotFound | import('@ucanto/server').InvalidAudience | import('@ucanto/server').Unauthorized>} */
-  const reverseListResponse = await UploadCapabilities.list.invoke({
+  const secondListResponse = await UploadCapabilities.list.invoke({
     issuer: alice,
     audience: uploadService,
     with: spaceDid,
     proofs: [proof],
     nb: {
       size,
-      cursor: listResponse.endCursor,
+      cursor: listResponse.endCursor
+    }
+  }).execute(connection)
+  if (secondListResponse.error) {
+    throw new Error('invocation failed', { cause: secondListResponse.error })
+  }
+
+  /** @type {import('@ucanto/server').Result<ListResponse, import('@ucanto/server').API.Failure | import('@ucanto/server').HandlerExecutionError | import('@ucanto/server').API.HandlerNotFound | import('@ucanto/server').InvalidAudience | import('@ucanto/server').Unauthorized>} */
+  const prevListResponse = await UploadCapabilities.list.invoke({
+    issuer: alice,
+    audience: uploadService,
+    with: spaceDid,
+    proofs: [proof],
+    nb: {
+      size,
+      cursor: secondListResponse.startCursor,
       pre: true
     }
   }).execute(connection)
-
-  if (reverseListResponse.error) {
-    throw new Error('invocation failed', { cause: reverseListResponse.error })
+  if (prevListResponse.error) {
+    throw new Error('invocation failed', { cause: prevListResponse.error })
   }
 
   t.is(listResponse.results.length, 3)
-  // we initially listed forward and got 3 results. we then used the "end cursor" of that list and listed backwards,
-  // which means the first result of the reverse list response should be the middle result of the inital response
-  // and the second result of the reverse list should be the first result of the initial response
-  t.like(reverseListResponse.results[0], listResponse.results[1])
-  t.like(reverseListResponse.results[1], listResponse.results[0])
+  t.is(prevListResponse.results.length, 3)
+
+  // listResponse is the first page. we used its endCursor to get the second page, and then used the startCursor of the second
+  // page with the `pre` caveat to list the first page again. the results and cursors should remain the same.
+  t.like(prevListResponse.results[0], listResponse.results[0])
+  t.like(prevListResponse.results[1], listResponse.results[1])
+  t.like(prevListResponse.results[2], listResponse.results[2])
+  t.is(prevListResponse.startCursor, listResponse.startCursor)
+  t.is(prevListResponse.endCursor, listResponse.endCursor)
+
 })
 
 test('can invoke when serviceSigner has a did:web did', async (t) => {

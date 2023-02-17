@@ -126,19 +126,19 @@ export function createStoreTable (region, tableName, options = {}) {
       const response = await dynamoDb.send(cmd)
 
       const results = response.Items?.map(i => toStoreListResult(unmarshall(i))) ?? []
-      const startCursor = results[0] ? results[0].link.toString() : undefined
+      const firstLinkCID = results[0] ? results[0].link.toString() : undefined
       // Get cursor of the item where list operation stopped (inclusive).
       // This value can be used to start a new operation to continue listing.
       const lastKey = response.LastEvaluatedKey && unmarshall(response.LastEvaluatedKey)
-      const endCursor = lastKey ? lastKey.link : undefined
+      const lastLinkCID = lastKey ? lastKey.link : undefined
 
       return {
         size: results.length,
+        startCursor: options.pre ? lastLinkCID : firstLinkCID,
+        endCursor: options.pre ? firstLinkCID : lastLinkCID,
         // cursor is deprecated and will be removed in a future version
-        cursor: endCursor,
-        startCursor,
-        endCursor,
-        results
+        cursor: options.pre ? firstLinkCID : lastLinkCID,
+        results: options.pre ? results.reverse() : results
       }
     }
   }

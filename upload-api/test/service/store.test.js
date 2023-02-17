@@ -631,7 +631,14 @@ test('store/list can page backwards', async (t) => {
     bucketName
   })
 
-  const data = [new Uint8Array([11, 22, 34, 44, 55]), new Uint8Array([22, 34, 44, 55, 66]), new Uint8Array([33, 44, 55, 66, 77])]
+  const data = [
+    new Uint8Array([11, 22, 33, 44, 55]), 
+    new Uint8Array([22, 33, 44, 55, 66]), 
+    new Uint8Array([33, 44, 55, 66, 77]), 
+    new Uint8Array([44, 55, 66, 77, 88]), 
+    new Uint8Array([55, 66, 77, 88, 99]), 
+    new Uint8Array([66, 77, 88, 99, 11])
+  ]
   const links = []
 
   for (const datum of data) {
@@ -650,7 +657,6 @@ test('store/list can page backwards', async (t) => {
   }
 
   const size = 3
-  let cursor
 
   /** @type {Server.Result<ListResponse, Server.API.Failure | Server.HandlerExecutionError | Server.API.HandlerNotFound | Server.InvalidAudience | Server.Unauthorized>} */
   const listResponse = await StoreCapabilities.list.invoke({
@@ -659,38 +665,52 @@ test('store/list can page backwards', async (t) => {
     with: spaceDid,
     proofs: [proof],
     nb: {
-      size,
-      cursor
+      size
     }
   }).execute(connection)
-
   if (listResponse.error) {
     throw new Error('invocation failed', { cause: listResponse.error })
   }
 
   /** @type {Server.Result<ListResponse, Server.API.Failure | Server.HandlerExecutionError | Server.API.HandlerNotFound | Server.InvalidAudience | Server.Unauthorized>} */
-  const reverseListResponse = await StoreCapabilities.list.invoke({
+  const secondListResponse = await StoreCapabilities.list.invoke({
     issuer: alice,
     audience: uploadService,
     with: spaceDid,
     proofs: [proof],
     nb: {
       size,
-      cursor: listResponse.endCursor,
+      cursor: listResponse.endCursor
+    }
+  }).execute(connection)
+  if (secondListResponse.error) {
+    throw new Error('invocation failed', { cause: secondListResponse.error })
+  }
+
+  /** @type {Server.Result<ListResponse, Server.API.Failure | Server.HandlerExecutionError | Server.API.HandlerNotFound | Server.InvalidAudience | Server.Unauthorized>} */
+  const prevListResponse = await StoreCapabilities.list.invoke({
+    issuer: alice,
+    audience: uploadService,
+    with: spaceDid,
+    proofs: [proof],
+    nb: {
+      size,
+      cursor: secondListResponse.startCursor,
       pre: true
     }
   }).execute(connection)
-
-  if (reverseListResponse.error) {
-    throw new Error('invocation failed', { cause: reverseListResponse.error })
+  if (prevListResponse.error) {
+    throw new Error('invocation failed', { cause: prevListResponse.error })
   }
 
   t.is(listResponse.results.length, 3)
-  // we initially listed forward and got 3 results. we then used the "end cursor" of that list and listed backwards,
-  // which means the first result of the reverse list response should be the middle result of the inital response
-  // and the second result of the reverse list should be the first result of the initial response
-  t.like(reverseListResponse.results[0], listResponse.results[1])
-  t.like(reverseListResponse.results[1], listResponse.results[0])
+  // listResponse is the first page. we used its endCursor to get the second page, and then used the startCursor of the second
+  // page with the `pre` caveat to list the first page again. the results and cursors should remain the same.
+  t.like(prevListResponse.results[0], listResponse.results[0])
+  t.like(prevListResponse.results[1], listResponse.results[1])
+  t.like(prevListResponse.results[2], listResponse.results[2])
+  t.is(prevListResponse.startCursor, listResponse.startCursor)
+  t.is(prevListResponse.endCursor, listResponse.endCursor)
 })
 
 /**
