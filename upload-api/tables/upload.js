@@ -150,21 +150,21 @@ export function createUploadTable (region, tableName, options = {}) {
       const response = await dynamoDb.send(cmd)
 
       /** @type {UploadListItem[]} */
-      const results = response.Items?.map(i => toUploadListItem(unmarshall(i))) || []
-      const startCursor = results[0] ? results[0].root.toString() : undefined
+      let results = response.Items?.map(i => toUploadListItem(unmarshall(i))) || []
+      const firstRootCID = results[0] ? results[0].root.toString() : undefined
 
       // Get cursor of the item where list operation stopped (inclusive).
       // This value can be used to start a new operation to continue listing.
       const lastKey = response.LastEvaluatedKey && unmarshall(response.LastEvaluatedKey)
-      const endCursor = lastKey ? lastKey.root : undefined
+      const lastRootCID = lastKey ? lastKey.root : undefined
 
       return {
         size: results.length,
+        startCursor: options.pre ? lastRootCID : firstRootCID,
+        endCursor: options.pre ? firstRootCID : lastRootCID,
         // cursor is deprecated and will be removed in a future version
-        cursor: endCursor,
-        startCursor,
-        endCursor,
-        results
+        cursor: options.pre ? firstRootCID : lastRootCID,
+        results: options.pre ? results.reverse() : results
       }
     },
   }
