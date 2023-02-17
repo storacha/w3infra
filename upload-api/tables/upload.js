@@ -150,7 +150,7 @@ export function createUploadTable (region, tableName, options = {}) {
       const response = await dynamoDb.send(cmd)
 
       /** @type {UploadListItem[]} */
-      let results = response.Items?.map(i => toUploadListItem(unmarshall(i))) || []
+      const results = response.Items?.map(i => toUploadListItem(unmarshall(i))) || []
       const firstRootCID = results[0] ? results[0].root.toString() : undefined
 
       // Get cursor of the item where list operation stopped (inclusive).
