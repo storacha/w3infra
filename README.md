@@ -67,13 +67,17 @@ not need to be set to real values - the following works in `bash`-like shells:
 export AWS_REGION='us-west-2'; export AWS_ACCESS_KEY_ID='NOSUCH'; export AWS_SECRET_ACCESS_KEY='NOSUCH
 ```
 
-Finally, run the tests with:
+Finally, to run the tests for all packages, run:
 
 ```
 npm test
 ```
 
+Or to run the tests for a single package, run:
 
+```
+npm test -w <path/to/package>
+```
 
 ## Integration tests
 
