@@ -56,6 +56,29 @@ npm start
 
 See: https://docs.sst.dev for more info on how things get deployed.
 
+## Package Tests
+
+To run per-package tests, first install Docker Desktop (https://www.docker.com/) and ensure it is running.
+
+Next, ensure the `AWS_REGION`, `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` environment variables are set in your terminal. They do 
+not need to be set to real values - the following works in `bash`-like shells:
+
+```
+export AWS_REGION='us-west-2'; export AWS_ACCESS_KEY_ID='NOSUCH'; export AWS_SECRET_ACCESS_KEY='NOSUCH
+```
+
+Finally, to run the tests for all packages, run:
+
+```
+npm test
+```
+
+Or to run the tests for a single package, run:
+
+```
+npm test -w <path/to/package>
+```
+
 ## Integration tests
 
 Integration tests run by default on post-deploy stage of [seed.run] deployment pipeline. These integration tests will run with the deployed infrastructure for the given stages (PR / staging).
