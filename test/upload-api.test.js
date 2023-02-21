@@ -3,6 +3,7 @@ import git from 'git-rev-sync'
 import pWaitFor from 'p-wait-for'
 import { HeadObjectCommand } from '@aws-sdk/client-s3'
 
+import { W3_METRICS_NAMES } from '../ucan-invocation/constants.js'
 import { test } from './helpers/context.js'
 import {
   stage,
@@ -10,10 +11,19 @@ import {
   getAwsBucketClient,
   getCloudflareBucketClient,
   getSatnavBucketInfo,
-  getCarparkBucketInfo
+  getCarparkBucketInfo,
+  getDynamoDb
 } from './helpers/deployment.js'
 import { getClient } from './helpers/up-client.js'
 import { randomFile } from './helpers/random.js'
+import { getAllTableRows } from './helpers/table.js'
+
+test.before(t => {
+  t.context = {
+    apiEndpoint: getApiEndpoint(),
+    w3MetricsDynamo: getDynamoDb('w3-metrics')
+  }
+})
 
 test('GET /', async t => {
   const apiEndpoint = getApiEndpoint()
@@ -33,8 +43,12 @@ test('GET /version', async t => {
 })
 
 test('POST / client can upload a file and list it', async t => {
-  const apiEndpoint = getApiEndpoint()
-  const client = await getClient(apiEndpoint)
+  const client = await getClient(t.context.apiEndpoint)
+
+  // Get metrics before upload
+  const beforeOperationW3Metrics = await getW3Metrics(t)
+  const beforeW3AccumulatedSize = beforeOperationW3Metrics.find(row => row.name === W3_METRICS_NAMES.STORE_ADD_ACCUM_SIZE)
+
   const s3Client = getAwsBucketClient()
   const r2Client = getCloudflareBucketClient()
 
@@ -137,4 +151,24 @@ test('POST / client can upload a file and list it', async t => {
   }, {
     interval: 100,
   })
+
+  // Check metrics were updated
+  beforeW3AccumulatedSize && await pWaitFor(async () => {
+    const afterOperationW3Metrics = await getW3Metrics(t)
+    const afterW3AccumulatedSize = afterOperationW3Metrics.find(row => row.name === W3_METRICS_NAMES.STORE_ADD_ACCUM_SIZE)
+
+    return afterW3AccumulatedSize?.value > beforeW3AccumulatedSize.value
+  })
 })
+
+/**
+ * @param {import("ava").ExecutionContext<import("./helpers/context.js").Context>} t
+ */
+async function getW3Metrics (t) {
+  const w3Metrics = await getAllTableRows(
+    t.context.w3MetricsDynamo.client,
+    t.context.w3MetricsDynamo.tableName
+  )
+
+  return w3Metrics
+}
