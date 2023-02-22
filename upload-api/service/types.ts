@@ -121,10 +121,10 @@ export interface ListOptions {
 }
 
 export interface ListResponse<R> {
-  // cursor is deprecated in favor of endCursor and will be removed in a future version
+  // cursor and after should be identical
   cursor?: string,
-  startCursor?: string,
-  endCursor?: string,
+  before?: string,
+  after?: string,
   size: number,
   results: R[]
 }

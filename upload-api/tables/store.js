@@ -132,12 +132,13 @@ export function createStoreTable (region, tableName, options = {}) {
       const lastKey = response.LastEvaluatedKey && unmarshall(response.LastEvaluatedKey)
       const lastLinkCID = lastKey ? lastKey.link : undefined
 
+      const before = options.pre ? lastLinkCID : firstLinkCID
+      const after = options.pre ? firstLinkCID : lastLinkCID
       return {
         size: results.length,
-        startCursor: options.pre ? lastLinkCID : firstLinkCID,
-        endCursor: options.pre ? firstLinkCID : lastLinkCID,
-        // cursor is deprecated and will be removed in a future version
-        cursor: options.pre ? firstLinkCID : lastLinkCID,
+        before,
+        after: after,
+        cursor: after,
         results: options.pre ? results.reverse() : results
       }
     }
