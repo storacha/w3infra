@@ -158,12 +158,13 @@ export function createUploadTable (region, tableName, options = {}) {
       const lastKey = response.LastEvaluatedKey && unmarshall(response.LastEvaluatedKey)
       const lastRootCID = lastKey ? lastKey.root : undefined
 
+      const before = options.pre ? lastRootCID : firstRootCID
+      const after = options.pre ? firstRootCID : lastRootCID
       return {
         size: results.length,
-        startCursor: options.pre ? lastRootCID : firstRootCID,
-        endCursor: options.pre ? firstRootCID : lastRootCID,
-        // cursor is deprecated and will be removed in a future version
-        cursor: options.pre ? firstRootCID : lastRootCID,
+        before,
+        after,
+        cursor: after,
         results: options.pre ? results.reverse() : results
       }
     },

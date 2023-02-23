@@ -715,7 +715,7 @@ test('upload/list can page backwards', async (t) => {
     proofs: [proof],
     nb: {
       size,
-      cursor: listResponse.endCursor
+      cursor: listResponse.after
     }
   }).execute(connection)
   if (secondListResponse.error) {
@@ -730,7 +730,7 @@ test('upload/list can page backwards', async (t) => {
     proofs: [proof],
     nb: {
       size,
-      cursor: secondListResponse.startCursor,
+      cursor: secondListResponse.before,
       pre: true
     }
   }).execute(connection)
@@ -741,13 +741,13 @@ test('upload/list can page backwards', async (t) => {
   t.is(listResponse.results.length, 3)
   t.is(prevListResponse.results.length, 3)
 
-  // listResponse is the first page. we used its endCursor to get the second page, and then used the startCursor of the second
+  // listResponse is the first page. we used its after to get the second page, and then used the before of the second
   // page with the `pre` caveat to list the first page again. the results and cursors should remain the same.
   t.like(prevListResponse.results[0], listResponse.results[0])
   t.like(prevListResponse.results[1], listResponse.results[1])
   t.like(prevListResponse.results[2], listResponse.results[2])
-  t.is(prevListResponse.startCursor, listResponse.startCursor)
-  t.is(prevListResponse.endCursor, listResponse.endCursor)
+  t.is(prevListResponse.before, listResponse.before)
+  t.is(prevListResponse.after, listResponse.after)
 
 })
 
