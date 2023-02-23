@@ -2,7 +2,7 @@ import { Table } from '@serverless-stack/resources'
 
 import { storeTableProps, uploadTableProps } from '../upload-api/tables/index.js'
 import {
-  w3MetricsTableProps
+  adminMetricsTableProps
 } from '../ucan-invocation/tables/index.js'
 import { setupSentry } from './config.js'
 
@@ -29,11 +29,11 @@ export function UploadDbStack({ stack, app }) {
   /**
    * This table tracks w3 wider metrics.
    */
-  const w3MetricsTable = new Table(stack, 'w3-metrics', w3MetricsTableProps)
+  const adminMetricsTable = new Table(stack, 'metrics', adminMetricsTableProps)
 
   return {
     storeTable,
     uploadTable,
-    w3MetricsTable
+    adminMetricsTable
   }
 }

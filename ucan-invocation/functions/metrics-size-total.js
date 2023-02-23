@@ -1,6 +1,6 @@
 import * as Sentry from '@sentry/serverless'
 
-import { createW3MetricsTable } from '../tables/w3-metrics.js'
+import { createMetricsTable } from '../tables/metrics.js'
 import { parseKinesisEvent } from '../utils/parse-kinesis-event.js'
 import { STORE_ADD } from '../constants.js'
 
@@ -24,8 +24,8 @@ async function handler(event) {
     DYNAMO_DB_ENDPOINT: dbEndpoint,
   } = process.env
 
-  await updateAccumulatedSize(ucanInvocations, {
-    w3MetricsTable: createW3MetricsTable(AWS_REGION, tableName, {
+  await updateSizeTotal(ucanInvocations, {
+    metricsTable: createMetricsTable(AWS_REGION, tableName, {
       endpoint: dbEndpoint
     })
   })
@@ -33,14 +33,14 @@ async function handler(event) {
 
 /**
  * @param {import('../types').UcanInvocation[]} ucanInvocations
- * @param {import('../types').W3AccumulatedSizeCtx} ctx
+ * @param {import('../types').TotalSizeCtx} ctx
  */
-export async function updateAccumulatedSize (ucanInvocations, ctx) {
+export async function updateSizeTotal (ucanInvocations, ctx) {
   const invocationsWithStoreAdd = ucanInvocations.filter(
     inv => inv.value.att.find(a => a.can === STORE_ADD)
   ).flatMap(inv => inv.value.att)
 
-  await ctx.w3MetricsTable.incrementAccumulatedSize(invocationsWithStoreAdd)
+  await ctx.metricsTable.incrementStoreAddSizeTotal(invocationsWithStoreAdd)
 }
 
 export const consumer = Sentry.AWSLambda.wrapHandler(handler)

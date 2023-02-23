@@ -4,7 +4,7 @@ import {
 } from '@aws-sdk/client-dynamodb'
 import { marshall } from '@aws-sdk/util-dynamodb'
 
-import { W3_METRICS_NAMES } from '../constants.js'
+import { METRICS_NAMES } from '../constants.js'
 
 /**
  * @typedef {import('@ucanto/interface').Ability} Ability
@@ -22,9 +22,9 @@ import { W3_METRICS_NAMES } from '../constants.js'
  * @param {string} tableName
  * @param {object} [options]
  * @param {string} [options.endpoint]
- * @returns {import('../types').W3MetricsTable}
+ * @returns {import('../types').MetricsTable}
  */
-export function createW3MetricsTable (region, tableName, options = {}) {
+export function createMetricsTable (region, tableName, options = {}) {
   const dynamoDb = new DynamoDBClient({
     region,
     endpoint: options.endpoint
@@ -32,11 +32,11 @@ export function createW3MetricsTable (region, tableName, options = {}) {
 
   return {
     /**
-     * Increment accumulated value from new given operations.
+     * Increment total value from new given operations.
      *
      * @param {Capabilities} operationsInv
      */
-    incrementAccumulatedSize: async (operationsInv) => {
+    incrementStoreAddSizeTotal: async (operationsInv) => {
       // @ts-expect-error
       const invTotalSize = operationsInv.reduce((acc, c) => acc + c.nb?.size, 0)
 
@@ -48,7 +48,7 @@ export function createW3MetricsTable (region, tableName, options = {}) {
             ':value': { N: String(invTotalSize) },
           },
         Key: marshall({
-          name: W3_METRICS_NAMES.STORE_ADD_ACCUM_SIZE
+          name: METRICS_NAMES.STORE_ADD_SIZE_TOTAL
         })
       })
 

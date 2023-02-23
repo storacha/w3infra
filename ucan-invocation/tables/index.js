@@ -1,7 +1,7 @@
 /** @typedef {import('@serverless-stack/resources').TableProps} TableProps */
 
 /** @type TableProps */
-export const w3MetricsTableProps = {
+export const adminMetricsTableProps = {
   fields: {
     name: 'string',        // `total-size`
     value: 'number',         // `101`

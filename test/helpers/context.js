@@ -14,7 +14,7 @@ dotenv.config({
  *
  * @typedef {object} Context
  * @property {string} apiEndpoint
- * @property {Dynamo} w3MetricsDynamo
+ * @property {Dynamo} metricsDynamo
  *
  * @typedef {import("ava").TestFn<Awaited<Context>>} TestContextFn
  */

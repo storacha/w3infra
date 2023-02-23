@@ -6,14 +6,14 @@ import { marshall, unmarshall } from '@aws-sdk/util-dynamodb'
 import * as Signer from '@ucanto/principal/ed25519'
 import * as StoreCapabilities from '@web3-storage/capabilities/store'
 
-import { w3MetricsTableProps } from '../../tables/index.js'
+import { adminMetricsTableProps } from '../../tables/index.js'
 import { createDynamodDb, dynamoDBTableConfig } from '../helpers/resources.js'
 import { createSpace } from '../helpers/ucanto.js'
 import { randomCAR } from '../helpers/random.js'
 
-import { updateAccumulatedSize } from '../../functions/metrics-accumulated-size.js'
-import { createW3MetricsTable } from '../../tables/w3-metrics.js'
-import { W3_METRICS_NAMES } from '../../constants.js'
+import { updateSizeTotal } from '../../functions/metrics-size-total.js'
+import { createMetricsTable } from '../../tables/metrics.js'
+import { METRICS_NAMES } from '../../constants.js'
 
 const REGION = 'us-west-2'
 
@@ -35,7 +35,7 @@ test('handles a batch of single invocation with store/add', async t => {
   const { spaceDid } = await createSpace(alice)
   const car = await randomCAR(128)
 
-  const w3MetricsTable = createW3MetricsTable(REGION, tableName, {
+  const metricsTable = createMetricsTable(REGION, tableName, {
     endpoint: t.context.dbEndpoint
   })
 
@@ -58,13 +58,13 @@ test('handles a batch of single invocation with store/add', async t => {
   }]
 
   // @ts-expect-error
-  await updateAccumulatedSize(invocations, {
-    w3MetricsTable
+  await updateSizeTotal(invocations, {
+    metricsTable
   })
 
-  const item = await getItemFromTable(t.context.dynamoClient, tableName, W3_METRICS_NAMES.STORE_ADD_ACCUM_SIZE)
+  const item = await getItemFromTable(t.context.dynamoClient, tableName, METRICS_NAMES.STORE_ADD_SIZE_TOTAL)
   t.truthy(item)
-  t.is(item?.name, W3_METRICS_NAMES.STORE_ADD_ACCUM_SIZE)
+  t.is(item?.name, METRICS_NAMES.STORE_ADD_SIZE_TOTAL)
   t.is(item?.value, car.size)
 })
 
@@ -78,7 +78,7 @@ test('handles batch of single invocations with multiple store/add attributes', a
     Array.from({ length: 10 }).map(() => randomCAR(128))
   )
 
-  const w3MetricsTable = createW3MetricsTable(REGION, tableName, {
+  const metricsTable = createMetricsTable(REGION, tableName, {
     endpoint: t.context.dbEndpoint
   })
 
@@ -99,13 +99,13 @@ test('handles batch of single invocations with multiple store/add attributes', a
   }]
 
   // @ts-expect-error
-  await updateAccumulatedSize(invocations, {
-    w3MetricsTable
+  await updateSizeTotal(invocations, {
+    metricsTable
   })
 
-  const item = await getItemFromTable(t.context.dynamoClient, tableName, W3_METRICS_NAMES.STORE_ADD_ACCUM_SIZE)
+  const item = await getItemFromTable(t.context.dynamoClient, tableName, METRICS_NAMES.STORE_ADD_SIZE_TOTAL)
   t.truthy(item)
-  t.is(item?.name, W3_METRICS_NAMES.STORE_ADD_ACCUM_SIZE)
+  t.is(item?.name, METRICS_NAMES.STORE_ADD_SIZE_TOTAL)
   t.is(item?.value, cars.reduce((acc, c) => acc + c.size, 0))
 })
 
@@ -131,7 +131,7 @@ async function createDynamouploadTable(dynamo) {
 
   await dynamo.send(new CreateTableCommand({
     TableName: tableName,
-    ...dynamoDBTableConfig(w3MetricsTableProps),
+    ...dynamoDBTableConfig(adminMetricsTableProps),
     ProvisionedThroughput: {
       ReadCapacityUnits: 1,
       WriteCapacityUnits: 1

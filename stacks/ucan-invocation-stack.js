@@ -28,7 +28,7 @@ export function UcanInvocationStack({ stack, app }) {
 
   // Get eventBus reference
   const { eventBus } = use(BusStack)
-  const { w3MetricsTable } = use(UploadDbStack)
+  const { adminMetricsTable } = use(UploadDbStack)
 
   const ucanBucket = new Bucket(stack, 'ucan-store', {
     cors: true,
@@ -52,14 +52,14 @@ export function UcanInvocationStack({ stack, app }) {
     }
   })
 
-  const metricsAccumulatedSizeDLQ = new Queue(stack, 'metrics-accumulated-size-dlq')
-  const metricsAccumulatedSizeConsumer = new Function(stack, 'metrics-accumulated-size-consumer', {
+  const metricsSizeTotalDLQ = new Queue(stack, 'metrics-size-total-dlq')
+  const metricsSizeTotalConsumer = new Function(stack, 'metrics-size-total-consumer', {
     environment: {
-      TABLE_NAME: w3MetricsTable.tableName
+      TABLE_NAME: adminMetricsTable.tableName
     },
-    permissions: [w3MetricsTable],
-    handler: 'functions/metrics-accumulated-size.consumer',
-    deadLetterQueue: metricsAccumulatedSizeDLQ.cdk.queue,
+    permissions: [adminMetricsTable],
+    handler: 'functions/metrics-size-total.consumer',
+    deadLetterQueue: metricsSizeTotalDLQ.cdk.queue,
   })
 
   // create a kinesis stream
@@ -71,8 +71,8 @@ export function UcanInvocationStack({ stack, app }) {
     },
     consumers: {
       // consumer1: 'functions/consumer1.handler'
-      metricsAccumulatedSizeConsumer: {
-        function: metricsAccumulatedSizeConsumer,
+      metricsSizeTotalConsumer: {
+        function: metricsSizeTotalConsumer,
         // TODO: Set kinesis filters when supported by SST
         // https://github.com/serverless-stack/sst/issues/1407
         cdk: {

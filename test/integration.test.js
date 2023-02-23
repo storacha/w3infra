@@ -3,7 +3,7 @@ import git from 'git-rev-sync'
 import pWaitFor from 'p-wait-for'
 import { HeadObjectCommand } from '@aws-sdk/client-s3'
 
-import { W3_METRICS_NAMES } from '../ucan-invocation/constants.js'
+import { METRICS_NAMES } from '../ucan-invocation/constants.js'
 import { test } from './helpers/context.js'
 import {
   stage,
@@ -21,17 +21,17 @@ import { getAllTableRows } from './helpers/table.js'
 test.before(t => {
   t.context = {
     apiEndpoint: getApiEndpoint(),
-    w3MetricsDynamo: getDynamoDb('w3-metrics')
+    metricsDynamo: getDynamoDb('metrics')
   }
 })
 
-test('GET /', async t => {
+test('upload-api GET /', async t => {
   const apiEndpoint = getApiEndpoint()
   const response = await fetch(apiEndpoint)
   t.is(response.status, 200)
 })
 
-test('GET /version', async t => {
+test('upload-api /version', async t => {
   const apiEndpoint = getApiEndpoint()
 
   const response = await fetch(`${apiEndpoint}/version`)
@@ -42,12 +42,13 @@ test('GET /version', async t => {
   t.is(body.commit, git.long('.'))
 })
 
-test('POST / client can upload a file and list it', async t => {
+// Integration test for all flow from uploading a file to Kinesis events consumers and replicator
+test('w3infra integration flow', async t => {
   const client = await getClient(t.context.apiEndpoint)
 
   // Get metrics before upload
-  const beforeOperationW3Metrics = await getW3Metrics(t)
-  const beforeW3AccumulatedSize = beforeOperationW3Metrics.find(row => row.name === W3_METRICS_NAMES.STORE_ADD_ACCUM_SIZE)
+  const beforeOperationMetrics = await getMetrics(t)
+  const beforeAccumulatedSize = beforeOperationMetrics.find(row => row.name === METRICS_NAMES.STORE_ADD_ACCUM_SIZE)
 
   const s3Client = getAwsBucketClient()
   const r2Client = getCloudflareBucketClient()
@@ -72,6 +73,8 @@ test('POST / client can upload a file and list it', async t => {
     })
   )
   t.is(carparkRequest.$metadata.httpStatusCode, 200)
+
+  const carSize = carparkRequest.ContentLength
 
   // Check dudewhere
   const dudewhereRequest = await r2Client.send(
@@ -153,22 +156,27 @@ test('POST / client can upload a file and list it', async t => {
   })
 
   // Check metrics were updated
-  beforeW3AccumulatedSize && await pWaitFor(async () => {
-    const afterOperationW3Metrics = await getW3Metrics(t)
-    const afterW3AccumulatedSize = afterOperationW3Metrics.find(row => row.name === W3_METRICS_NAMES.STORE_ADD_ACCUM_SIZE)
+  beforeAccumulatedSize && await pWaitFor(async () => {
+    const afterOperationMetrics = await getMetrics(t)
+    const afterAccumulatedSize = afterOperationMetrics.find(row => row.name === METRICS_NAMES.STORE_ADD_ACCUM_SIZE)
 
-    return afterW3AccumulatedSize?.value > beforeW3AccumulatedSize.value
+    // If staging accept more broad condition given multiple parallel tests can happen there
+    if (stage === 'staging') {
+      return afterAccumulatedSize?.value > beforeAccumulatedSize.value
+    }
+
+    return afterAccumulatedSize?.value === beforeAccumulatedSize.value + carSize
   })
 })
 
 /**
  * @param {import("ava").ExecutionContext<import("./helpers/context.js").Context>} t
  */
-async function getW3Metrics (t) {
-  const w3Metrics = await getAllTableRows(
-    t.context.w3MetricsDynamo.client,
-    t.context.w3MetricsDynamo.tableName
+async function getMetrics (t) {
+  const metrics = await getAllTableRows(
+    t.context.metricsDynamo.client,
+    t.context.metricsDynamo.tableName
   )
 
-  return w3Metrics
+  return metrics
 }
