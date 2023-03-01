@@ -4,6 +4,7 @@ import {
 } from '@aws-sdk/client-dynamodb'
 import { marshall } from '@aws-sdk/util-dynamodb'
 
+import { SPACE_METRICS_NAMES } from '../constants.js'
 import { MAX_TRANSACT_WRITE_ITEMS } from './constants.js'
 
 /**
@@ -12,7 +13,7 @@ import { MAX_TRANSACT_WRITE_ITEMS } from './constants.js'
  * 
  * @typedef {object} UpdateInput
  * @property {`did:${string}:${string}`} space
- * @property {number} count
+ * @property {number} value
  */
 
 /**
@@ -22,9 +23,9 @@ import { MAX_TRANSACT_WRITE_ITEMS } from './constants.js'
  * @param {string} tableName
  * @param {object} [options]
  * @param {string} [options.endpoint]
- * @returns {import('../types').UploadCountTable}
+ * @returns {import('../types').MetricsBySpaceTable}
  */
-export function createUploadCountTable (region, tableName, options = {}) {
+export function createMetricsBySpaceTable (region, tableName, options = {}) {
   const dynamoDb = new DynamoDBClient({
     region,
     endpoint: options.endpoint
@@ -32,23 +33,23 @@ export function createUploadCountTable (region, tableName, options = {}) {
 
   return {
     /**
-     * Increment accumulated count from new given operations.
+     * Increment accumulated count from upload add operations.
      *
      * @param {Capabilities} uploadAddInv
      */
-    increment: async (uploadAddInv) => {
+    incrementUploadAddCount: async (uploadAddInv) => {
       // Merge same space operations into single one and transform into transaction format
       // We cannot have multiple operations in a TransactWrite with same key, and we
       // decrease the probability of reaching the maximum number of transactions.
       const updateInputTransactions = uploadAddInv.reduce((acc, c) => {
         const existing = acc?.find((e) => c.with === e.space)
         if (existing) {
-          existing.count += 1
+          existing.value += 1
         } else {
           acc.push({
             // @ts-expect-error
             space: c.with,
-            count: 1
+            value: 1
           })
         }
         return acc
@@ -66,13 +67,14 @@ export function createUploadCountTable (region, tableName, options = {}) {
       const transactItems = updateInputTransactions.map(item => ({
         Update: {
           TableName: tableName,
-          UpdateExpression: `ADD #count :count`,
-          ExpressionAttributeNames: {'#count': 'count'},
+          UpdateExpression: `ADD #value :value`,
+          ExpressionAttributeNames: {'#value': 'value'},
           ExpressionAttributeValues: {
-            ':count': { N: String(item.count) },
+            ':value': { N: String(item.value) },
           },
           Key: marshall({
-            space: item.space
+            space: item.space,
+            name: SPACE_METRICS_NAMES.UPLOAD_ADD_TOTAL
           }),
         }
       }))

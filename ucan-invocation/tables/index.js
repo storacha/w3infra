@@ -11,11 +11,12 @@ export const adminMetricsTableProps = {
 }
 
 /** @type TableProps */
-export const spaceUploadCountTableProps = {
+export const spaceMetricsTableProps = {
   fields: {
     space: 'string',        // `did:key:space`
-    count: 'number',         // `101`
+    name: 'string',        // `upload/add-count`
+    value: 'number',       // `101`
   },
-  // space must be unique to satisfy index constraint
-  primaryIndex: { partitionKey: 'space' },
+  // space+name must be unique to satisfy index constraint
+  primaryIndex: { partitionKey: 'space', sortKey: 'name' },
 }

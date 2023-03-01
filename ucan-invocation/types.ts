@@ -14,12 +14,12 @@ export interface UploadCountIncrement {
   space: DID,
   count: number
 }
-export interface UploadCountTable {
-  increment: (uploadAddInv: Capability<Ability, `${string}:${string}`, unknown>[]) => Promise<void>
+export interface MetricsBySpaceTable {
+  incrementUploadAddCount: (uploadAddInv: Capability<Ability, `${string}:${string}`, unknown>[]) => Promise<void>
 }
 
-export interface UploadCountCtx {
-  uploadCountTable: UploadCountTable
+export interface MetricsBySpaceCtx {
+  metricsBySpaceTable: MetricsBySpaceTable
 }
 
 export interface UcanInvocation {

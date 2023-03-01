@@ -6,7 +6,7 @@ import {
 } from '../upload-api/tables/index.js'
 import {
   adminMetricsTableProps,
-  spaceUploadCountTableProps
+  spaceMetricsTableProps
 } from '../ucan-invocation/tables/index.js'
 import { setupSentry } from './config.js'
 
@@ -35,15 +35,15 @@ export function UploadDbStack({ stack, app }) {
    */
   const adminMetricsTable = new Table(stack, 'admin-metrics', adminMetricsTableProps)
 
-   /**
-    * This table tracks count of uploads per space.
-    */
-   const spaceUploadCountTable = new Table(stack, 'space-upload-count', spaceUploadCountTableProps)
+  /**
+   * This table tracks metrics per space.
+   */
+  const spaceMetricsTable = new Table(stack, 'space-metrics', spaceMetricsTableProps)
 
   return {
     storeTable,
     uploadTable,
     adminMetricsTable,
-    spaceUploadCountTable
+    spaceMetricsTable
   }
 }

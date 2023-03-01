@@ -28,7 +28,7 @@ export function UcanInvocationStack({ stack, app }) {
 
   // Get eventBus reference
   const { eventBus } = use(BusStack)
-  const { adminMetricsTable, spaceUploadCountTable } = use(UploadDbStack)
+  const { adminMetricsTable, spaceMetricsTable } = use(UploadDbStack)
 
   const ucanBucket = new Bucket(stack, 'ucan-store', {
     cors: true,
@@ -63,14 +63,15 @@ export function UcanInvocationStack({ stack, app }) {
   })
   
   // metrics per space
-  const spaceUploadCountDLQ = new Queue(stack, 'space-upload-count-dlq')
-  const spaceUploadCountConsumer = new Function(stack, 'space-upload-count-consumer', {
+  // upload/add count
+  const spaceMetricsUploadAddTotalDLQ = new Queue(stack, 'space-metrics-upload-add-total-dlq')
+  const spaceMetricsUploadAddTotalConsumer = new Function(stack, 'space-metrics-upload-add-total-consumer', {
     environment: {
-      TABLE_NAME: spaceUploadCountTable.tableName
+      TABLE_NAME: spaceMetricsTable.tableName
     },
-    permissions: [spaceUploadCountTable],
-    handler: 'functions/space-upload-count.consumer',
-    deadLetterQueue: spaceUploadCountDLQ.cdk.queue,
+    permissions: [spaceMetricsTable],
+    handler: 'functions/space-metrics-upload-add-total.consumer',
+    deadLetterQueue: spaceMetricsUploadAddTotalDLQ.cdk.queue,
   })
 
   // create a kinesis stream
@@ -91,8 +92,8 @@ export function UcanInvocationStack({ stack, app }) {
           }
         }
       },
-      spaceUploadCountConsumer: {
-        function: spaceUploadCountConsumer,
+      spaceMetricsUploadAddTotalConsumer: {
+        function: spaceMetricsUploadAddTotalConsumer,
         // TODO: Set kinesis filters when supported by SST
         // https://github.com/serverless-stack/sst/issues/1407
         cdk: {

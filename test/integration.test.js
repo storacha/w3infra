@@ -3,7 +3,7 @@ import git from 'git-rev-sync'
 import pWaitFor from 'p-wait-for'
 import { HeadObjectCommand } from '@aws-sdk/client-s3'
 
-import { METRICS_NAMES } from '../ucan-invocation/constants.js'
+import { METRICS_NAMES, SPACE_METRICS_NAMES } from '../ucan-invocation/constants.js'
 import { test } from './helpers/context.js'
 import {
   stage,
@@ -22,7 +22,7 @@ test.before(t => {
   t.context = {
     apiEndpoint: getApiEndpoint(),
     metricsDynamo: getDynamoDb('admin-metrics'),
-    spaceUploadCountDynamo: getDynamoDb('space-upload-count')
+    spaceMetricsDynamo: getDynamoDb('space-metrics')
   }
 })
 
@@ -47,8 +47,8 @@ test('w3infra integration flow', async t => {
   if (!spaceDid) {
     throw new Error('Testing space DID must be set')
   }
-  // Get metrics before upload
-  const beforeOperationSpaceMetrics = await getSpaceMetrics(t, spaceDid)
+  // Get space metrics before upload
+  const spaceBeforeUploadAddMetrics = await getSpaceMetrics(t, spaceDid, SPACE_METRICS_NAMES.UPLOAD_ADD_TOTAL)
 
   // Get metrics before upload
   const beforeOperationMetrics = await getMetrics(t)
@@ -160,24 +160,26 @@ test('w3infra integration flow', async t => {
   })
 
   // Check metrics were updated
-  beforeStoreAddSizeTotal && await pWaitFor(async () => {
-    const afterOperationMetrics = await getMetrics(t)
-    const afterStoreAddSizeTotal = afterOperationMetrics.find(row => row.name === METRICS_NAMES.STORE_ADD_SIZE_TOTAL)
-    const afterOperationSpaceMetrics = await getSpaceMetrics(t, spaceDid)
-
-    // If staging accept more broad condition given multiple parallel tests can happen there
-    if (stage === 'staging') {
+  if (beforeStoreAddSizeTotal && spaceBeforeUploadAddMetrics) {
+    await pWaitFor(async () => {
+      const afterOperationMetrics = await getMetrics(t)
+      const afterStoreAddSizeTotal = afterOperationMetrics.find(row => row.name === METRICS_NAMES.STORE_ADD_SIZE_TOTAL)
+      const spaceAfterUploadAddMetrics = await getSpaceMetrics(t, spaceDid, SPACE_METRICS_NAMES.UPLOAD_ADD_TOTAL)
+  
+      // If staging accept more broad condition given multiple parallel tests can happen there
+      if (stage === 'staging') {
+        return (
+          afterStoreAddSizeTotal?.value >= beforeStoreAddSizeTotal.value + carSize &&
+          spaceAfterUploadAddMetrics?.value >= spaceBeforeUploadAddMetrics?.value + 1
+        )
+      }
+  
       return (
-        afterStoreAddSizeTotal?.value >= beforeStoreAddSizeTotal.value + carSize &&
-        beforeOperationSpaceMetrics.spaceUploadCount?.count < afterOperationSpaceMetrics.spaceUploadCount?.count
+        afterStoreAddSizeTotal?.value === beforeStoreAddSizeTotal.value + carSize &&
+        spaceAfterUploadAddMetrics?.value === spaceBeforeUploadAddMetrics?.value + 1
       )
-    }
-
-    return (
-      afterStoreAddSizeTotal?.value === beforeStoreAddSizeTotal.value + carSize &&
-      beforeOperationSpaceMetrics.spaceUploadCount?.count < afterOperationSpaceMetrics.spaceUploadCount?.count
-    )
-  })
+    })
+  }
 })
 
 /**
@@ -195,15 +197,14 @@ async function getMetrics (t) {
 /**
  * @param {import("ava").ExecutionContext<import("./helpers/context.js").Context>} t
  * @param {`did:${string}:${string}`} spaceDid
+ * @param {string} name
  */
-async function getSpaceMetrics (t, spaceDid) {
-  const spaceUploadCount = await getTableItem(
-    t.context.spaceUploadCountDynamo.client,
-    t.context.spaceUploadCountDynamo.tableName,
-    { space: spaceDid }
+async function getSpaceMetrics (t, spaceDid, name) {
+  const item = await getTableItem(
+    t.context.spaceMetricsDynamo.client,
+    t.context.spaceMetricsDynamo.tableName,
+    { space: spaceDid, name }
   )
 
-  return {
-    spaceUploadCount
-  }
+  return item
 }
