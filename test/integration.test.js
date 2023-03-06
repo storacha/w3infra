@@ -62,6 +62,7 @@ test('w3infra integration flow', async t => {
 
   // Get metrics before upload
   const beforeOperationMetrics = await getMetrics(t)
+  const beforeStoreAddTotal = beforeOperationMetrics.find(row => row.name === METRICS_NAMES.STORE_ADD_TOTAL)
   const beforeStoreAddSizeTotal = beforeOperationMetrics.find(row => row.name === METRICS_NAMES.STORE_ADD_SIZE_TOTAL)
 
   const s3Client = getAwsBucketClient()
@@ -173,18 +174,21 @@ test('w3infra integration flow', async t => {
   if (beforeStoreAddSizeTotal && spaceBeforeUploadAddMetrics) {
     await pWaitFor(async () => {
       const afterOperationMetrics = await getMetrics(t)
+      const afterStoreAddTotal = afterOperationMetrics.find(row => row.name === METRICS_NAMES.STORE_ADD_TOTAL)
       const afterStoreAddSizeTotal = afterOperationMetrics.find(row => row.name === METRICS_NAMES.STORE_ADD_SIZE_TOTAL)
       const spaceAfterUploadAddMetrics = await getSpaceMetrics(t, spaceDid, SPACE_METRICS_NAMES.UPLOAD_ADD_TOTAL)
   
       // If staging accept more broad condition given multiple parallel tests can happen there
       if (stage === 'staging') {
         return (
+          afterStoreAddTotal?.value >= beforeStoreAddTotal?.value + carSize &&
           afterStoreAddSizeTotal?.value >= beforeStoreAddSizeTotal.value + carSize &&
           spaceAfterUploadAddMetrics?.value >= spaceBeforeUploadAddMetrics?.value + 1
         )
       }
   
       return (
+        afterStoreAddTotal?.value === beforeStoreAddTotal?.value + 1 &&
         afterStoreAddSizeTotal?.value === beforeStoreAddSizeTotal.value + carSize &&
         spaceAfterUploadAddMetrics?.value === spaceBeforeUploadAddMetrics?.value + 1
       )

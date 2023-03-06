@@ -52,6 +52,29 @@ export function UcanInvocationStack({ stack, app }) {
     }
   })
 
+  // metrics store/add count
+  const metricsStoreAddTotalDLQ = new Queue(stack, 'metrics-store-add-total-dlq')
+  const metricsStoreAddTotalConsumer = new Function(stack, 'metrics-store-add-total-consumer', {
+    environment: {
+      TABLE_NAME: adminMetricsTable.tableName
+    },
+    permissions: [adminMetricsTable],
+    handler: 'functions/metrics-store-add-total.consumer',
+    deadLetterQueue: metricsStoreAddTotalDLQ.cdk.queue,
+  })
+  
+  // metrics store/remove count
+  const metricsStoreRemoveTotalDLQ = new Queue(stack, 'metrics-store-remove-total-dlq')
+  const metricsStoreRemoveTotalConsumer = new Function(stack, 'metrics-store-remove-total-consumer', {
+    environment: {
+      TABLE_NAME: adminMetricsTable.tableName
+    },
+    permissions: [adminMetricsTable],
+    handler: 'functions/metrics-store-remove-total.consumer',
+    deadLetterQueue: metricsStoreRemoveTotalDLQ.cdk.queue,
+  })
+
+  // metrics store/add size total
   const metricsStoreAddSizeTotalDLQ = new Queue(stack, 'metrics-store-add-size-total-dlq')
   const metricsStoreAddSizeTotalConsumer = new Function(stack, 'metrics-store-add-size-total-consumer', {
     environment: {
@@ -83,6 +106,22 @@ export function UcanInvocationStack({ stack, app }) {
       }
     },
     consumers: {
+      metricsStoreAddTotalConsumer: {
+        function: metricsStoreAddTotalConsumer,
+        cdk: {
+          eventSource: {
+            ...(getKinesisEventSourceConfig(stack))
+          }
+        }
+      },
+      metricsStoreRemoveTotalConsumer: {
+        function: metricsStoreRemoveTotalConsumer,
+        cdk: {
+          eventSource: {
+            ...(getKinesisEventSourceConfig(stack))
+          }
+        }
+      },
       metricsStoreAddSizeTotalConsumer: {
         function: metricsStoreAddSizeTotalConsumer,
         // TODO: Set kinesis filters when supported by SST

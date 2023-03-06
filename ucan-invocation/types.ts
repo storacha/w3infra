@@ -3,7 +3,9 @@ import { ToString, UnknownLink } from 'multiformats'
 import { Ability, Capability, Capabilities } from '@ucanto/interface'
 
 export interface MetricsTable {
+  incrementStoreAddTotal: (incrementSizeTotal: Capability<Ability, `${string}:${string}`, unknown>[]) => Promise<void>
   incrementStoreAddSizeTotal: (incrementSizeTotal: Capability<Ability, `${string}:${string}`, unknown>[]) => Promise<void>
+  incrementStoreRemoveTotal: (incrementSizeTotal: Capability<Ability, `${string}:${string}`, unknown>[]) => Promise<void>
 }
 
 export interface TotalSizeCtx {

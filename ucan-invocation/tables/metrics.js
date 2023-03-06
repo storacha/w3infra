@@ -32,6 +32,28 @@ export function createMetricsTable (region, tableName, options = {}) {
 
   return {
     /**
+     * Increment total count from store/add operations.
+     *
+     * @param {Capabilities} operationsInv
+     */
+    incrementStoreAddTotal: async (operationsInv) => {
+      const invTotalSize = operationsInv.length
+
+      const updateCmd = new UpdateItemCommand({
+        TableName: tableName,
+        UpdateExpression: `ADD #value :value`,
+          ExpressionAttributeNames: {'#value': 'value'},
+          ExpressionAttributeValues: {
+            ':value': { N: String(invTotalSize) },
+          },
+        Key: marshall({
+          name: METRICS_NAMES.STORE_ADD_TOTAL
+        })
+      })
+
+      await dynamoDb.send(updateCmd)
+    },
+    /**
      * Increment total value from new given operations.
      *
      * @param {Capabilities} operationsInv
@@ -49,6 +71,28 @@ export function createMetricsTable (region, tableName, options = {}) {
           },
         Key: marshall({
           name: METRICS_NAMES.STORE_ADD_SIZE_TOTAL
+        })
+      })
+
+      await dynamoDb.send(updateCmd)
+    },
+    /**
+     * Increment total count from store/remove operations.
+     *
+     * @param {Capabilities} operationsInv
+     */
+    incrementStoreRemoveTotal: async (operationsInv) => {
+      const invTotalSize = operationsInv.length
+
+      const updateCmd = new UpdateItemCommand({
+        TableName: tableName,
+        UpdateExpression: `ADD #value :value`,
+          ExpressionAttributeNames: {'#value': 'value'},
+          ExpressionAttributeValues: {
+            ':value': { N: String(invTotalSize) },
+          },
+        Key: marshall({
+          name: METRICS_NAMES.STORE_REMOVE_TOTAL
         })
       })
 
