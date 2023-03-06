@@ -2,12 +2,18 @@ import {
   Bucket,
   Function,
   KinesisStream,
+  Queue,
   use
 } from '@serverless-stack/resources'
 import { Duration } from 'aws-cdk-lib'
 
 import { BusStack } from './bus-stack.js'
-import { getBucketConfig, setupSentry } from './config.js'
+import { UploadDbStack } from './upload-db-stack.js'
+import {
+  getBucketConfig,
+  getKinesisEventSourceConfig,
+  setupSentry
+} from './config.js'
 
 /**
  * @param {import('@serverless-stack/resources').StackContext} properties
@@ -22,6 +28,7 @@ export function UcanInvocationStack({ stack, app }) {
 
   // Get eventBus reference
   const { eventBus } = use(BusStack)
+  const { adminMetricsTable } = use(UploadDbStack)
 
   const ucanBucket = new Bucket(stack, 'ucan-store', {
     cors: true,
@@ -45,6 +52,16 @@ export function UcanInvocationStack({ stack, app }) {
     }
   })
 
+  const metricsStoreAddSizeTotalDLQ = new Queue(stack, 'metrics-store-add-size-total-dlq')
+  const metricsStoreAddSizeTotalConsumer = new Function(stack, 'metrics-store-add-size-total-consumer', {
+    environment: {
+      TABLE_NAME: adminMetricsTable.tableName
+    },
+    permissions: [adminMetricsTable],
+    handler: 'functions/metrics-store-add-size-total.consumer',
+    deadLetterQueue: metricsStoreAddSizeTotalDLQ.cdk.queue,
+  })
+
   // create a kinesis stream
   const ucanStream = new KinesisStream(stack, 'ucan-stream', {
     cdk: {
@@ -54,6 +71,16 @@ export function UcanInvocationStack({ stack, app }) {
     },
     consumers: {
       // consumer1: 'functions/consumer1.handler'
+      metricsStoreAddSizeTotalConsumer: {
+        function: metricsStoreAddSizeTotalConsumer,
+        // TODO: Set kinesis filters when supported by SST
+        // https://github.com/serverless-stack/sst/issues/1407
+        cdk: {
+          eventSource: {
+            ...(getKinesisEventSourceConfig(stack))
+          }
+        }
+      }
     },
   })
 
