@@ -29,7 +29,7 @@ export function UploadDbStack({ stack, app }) {
   /**
    * This table tracks w3 wider metrics.
    */
-  const adminMetricsTable = new Table(stack, 'metrics', adminMetricsTableProps)
+  const adminMetricsTable = new Table(stack, 'admin-metrics', adminMetricsTableProps)
 
   return {
     storeTable,

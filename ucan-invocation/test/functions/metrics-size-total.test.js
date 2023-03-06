@@ -11,7 +11,7 @@ import { createDynamodDb, dynamoDBTableConfig } from '../helpers/resources.js'
 import { createSpace } from '../helpers/ucanto.js'
 import { randomCAR } from '../helpers/random.js'
 
-import { updateSizeTotal } from '../../functions/metrics-size-total.js'
+import { updateSizeTotal } from '../../functions/metrics-store-add-size-total.js'
 import { createMetricsTable } from '../../tables/metrics.js'
 import { METRICS_NAMES } from '../../constants.js'
 

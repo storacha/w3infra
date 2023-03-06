@@ -21,7 +21,7 @@ import { getAllTableRows } from './helpers/table.js'
 test.before(t => {
   t.context = {
     apiEndpoint: getApiEndpoint(),
-    metricsDynamo: getDynamoDb('metrics')
+    metricsDynamo: getDynamoDb('admin-metrics')
   }
 })
 
@@ -48,7 +48,7 @@ test('w3infra integration flow', async t => {
 
   // Get metrics before upload
   const beforeOperationMetrics = await getMetrics(t)
-  const beforeAccumulatedSize = beforeOperationMetrics.find(row => row.name === METRICS_NAMES.STORE_ADD_ACCUM_SIZE)
+  const beforeStoreAddSizeTotal = beforeOperationMetrics.find(row => row.name === METRICS_NAMES.STORE_ADD_SIZE_TOTAL)
 
   const s3Client = getAwsBucketClient()
   const r2Client = getCloudflareBucketClient()
@@ -156,16 +156,16 @@ test('w3infra integration flow', async t => {
   })
 
   // Check metrics were updated
-  beforeAccumulatedSize && await pWaitFor(async () => {
+  beforeStoreAddSizeTotal && await pWaitFor(async () => {
     const afterOperationMetrics = await getMetrics(t)
-    const afterAccumulatedSize = afterOperationMetrics.find(row => row.name === METRICS_NAMES.STORE_ADD_ACCUM_SIZE)
+    const afterStoreAddSizeTotal = afterOperationMetrics.find(row => row.name === METRICS_NAMES.STORE_ADD_SIZE_TOTAL)
 
     // If staging accept more broad condition given multiple parallel tests can happen there
     if (stage === 'staging') {
-      return afterAccumulatedSize?.value > beforeAccumulatedSize.value
+      return afterStoreAddSizeTotal?.value >= beforeStoreAddSizeTotal.value + carSize
     }
 
-    return afterAccumulatedSize?.value === beforeAccumulatedSize.value + carSize
+    return afterStoreAddSizeTotal?.value === beforeStoreAddSizeTotal.value + carSize
   })
 })
 

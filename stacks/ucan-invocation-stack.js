@@ -52,14 +52,14 @@ export function UcanInvocationStack({ stack, app }) {
     }
   })
 
-  const metricsSizeTotalDLQ = new Queue(stack, 'metrics-size-total-dlq')
-  const metricsSizeTotalConsumer = new Function(stack, 'metrics-size-total-consumer', {
+  const metricsStoreAddSizeTotalDLQ = new Queue(stack, 'metrics-store-add-size-total-dlq')
+  const metricsStoreAddSizeTotalConsumer = new Function(stack, 'metrics-store-add-size-total-consumer', {
     environment: {
       TABLE_NAME: adminMetricsTable.tableName
     },
     permissions: [adminMetricsTable],
-    handler: 'functions/metrics-size-total.consumer',
-    deadLetterQueue: metricsSizeTotalDLQ.cdk.queue,
+    handler: 'functions/metrics-store-add-size-total.consumer',
+    deadLetterQueue: metricsStoreAddSizeTotalDLQ.cdk.queue,
   })
 
   // create a kinesis stream
@@ -71,8 +71,8 @@ export function UcanInvocationStack({ stack, app }) {
     },
     consumers: {
       // consumer1: 'functions/consumer1.handler'
-      metricsSizeTotalConsumer: {
-        function: metricsSizeTotalConsumer,
+      metricsStoreAddSizeTotalConsumer: {
+        function: metricsStoreAddSizeTotalConsumer,
         // TODO: Set kinesis filters when supported by SST
         // https://github.com/serverless-stack/sst/issues/1407
         cdk: {
