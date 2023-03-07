@@ -2,7 +2,7 @@ import {
   Api,
   Config,
   use
-} from '@serverless-stack/resources'
+} from 'sst/constructs'
 import { UploadDbStack } from './upload-db-stack.js'
 import { CarparkStack } from './carpark-stack.js'
 import { UcanInvocationStack } from './ucan-invocation-stack.js'
@@ -10,13 +10,9 @@ import { UcanInvocationStack } from './ucan-invocation-stack.js'
 import { getCustomDomain, getApiPackageJson, getGitInfo, setupSentry } from './config.js'
 
 /**
- * @param {import('@serverless-stack/resources').StackContext} properties
+ * @param {import('sst/constructs').StackContext} properties
  */
 export function UploadApiStack({ stack, app }) {
-  stack.setDefaultFunctionProps({
-    srcPath: 'upload-api'
-  })
-
   // Setup app monitoring with Sentry
   setupSentry(app, stack)
 
@@ -61,10 +57,10 @@ export function UploadApiStack({ stack, app }) {
       }
     },
     routes: {
-      'POST /':        'functions/ucan-invocation-router.handler',
-       'GET /':        'functions/get.home',
-       'GET /error':   'functions/get.error',
-       'GET /version': 'functions/get.version'
+      'POST /':        'upload-api/functions/ucan-invocation-router.handler',
+       'GET /':        'upload-api/functions/get.home',
+       'GET /error':   'upload-api/functions/get.error',
+       'GET /version': 'upload-api/functions/get.version'
     },
   })
 

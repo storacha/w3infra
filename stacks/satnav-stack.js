@@ -3,7 +3,7 @@ import {
   Function,
   Queue,
   use,
-} from '@serverless-stack/resources'
+} from 'sst/constructs'
 import { Duration, aws_events as awsEvents } from 'aws-cdk-lib'
 
 import { BusStack } from './bus-stack.js'
@@ -12,13 +12,9 @@ import { getBucketConfig, setupSentry } from './config.js'
 import { CARPARK_EVENT_BRIDGE_SOURCE_EVENT } from '../carpark/event-bus/source.js'
 
 /**
- * @param {import('@serverless-stack/resources').StackContext} properties
+ * @param {import('sst/constructs').StackContext} properties
  */
 export function SatnavStack({ stack, app }) {
-  stack.setDefaultFunctionProps({
-    srcPath: 'satnav'
-  })
-
   // Setup app monitoring with Sentry
   setupSentry(app, stack)
 
@@ -42,7 +38,7 @@ export function SatnavStack({ stack, app }) {
         SATNAV_BUCKET_NAME: satnavBucket.bucketName
       },
       permissions: [satnavBucket, carparkBucket],
-      handler: 'functions/satnav-writer.handler',
+      handler: 'satnav/functions/satnav-writer.handler',
       timeout: 15 * 60,
     },
   )
@@ -64,7 +60,7 @@ export function SatnavStack({ stack, app }) {
     },
   })
 
-  /** @type {import('@serverless-stack/resources').EventBusQueueTargetProps} */
+  /** @type {import('sst/constructs').EventBusQueueTargetProps} */
   const targetSatnavWriterQueue = {
     type: 'queue',
     queue: satnavWriterQueue,
@@ -96,7 +92,7 @@ export function SatnavStack({ stack, app }) {
       EVENT_BUS_ARN: eventBus.eventBusArn,
     },
     permissions: [eventBus],
-    handler: 'functions/satnav-bucket-event.satnavBucketConsumer',
+    handler: 'satnav/functions/satnav-bucket-event.satnavBucketConsumer',
   })
   satnavBucket.addNotifications(stack, {
     newCarPut: {

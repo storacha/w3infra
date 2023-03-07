@@ -17,8 +17,6 @@
   "devDependencies": {
     "@ipld/car": "^5.0.1",
     "@ipld/dag-ucan": "^3.0.1",
-    "@serverless-stack/cli": "^1.18.0",
-    "@serverless-stack/resources": "^1.18.0",
     "@tsconfig/node16": "^1.0.3",
     "@types/git-rev-sync": "^2.0.0",
     "@ucanto/client": "^4.2.3",
@@ -30,6 +28,8 @@
     "@web3-storage/access": "^9.2.0",
     "@web3-storage/w3up-client": "^4.1.0",
     "ava": "^4.3.3",
+    "constructs": "10.1.156",
+    "chalk": "4.1.2",
     "dotenv": "^16.0.3",
     "git-rev-sync": "^3.0.2",
     "hd-scripts": "^3.0.2",
@@ -39,8 +39,8 @@
     "multiformats": "^11.0.1"
   },
   "dependencies": {
-    "@serverless-stack/node": "^1.18.0",
-    "aws-cdk-lib": "2.50.0"
+    "sst": "^2.1.12",
+    "aws-cdk-lib": "2.62.2"
   },
   "simple-git-hooks": {
     "pre-commit": "npx lint-staged"

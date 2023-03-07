@@ -4,7 +4,7 @@ import {
   KinesisStream,
   Queue,
   use
-} from '@serverless-stack/resources'
+} from 'sst/constructs'
 import { Duration } from 'aws-cdk-lib'
 
 import { BusStack } from './bus-stack.js'
@@ -16,13 +16,9 @@ import {
 } from './config.js'
 
 /**
- * @param {import('@serverless-stack/resources').StackContext} properties
+ * @param {import('sst/constructs').StackContext} properties
  */
 export function UcanInvocationStack({ stack, app }) {
-  stack.setDefaultFunctionProps({
-    srcPath: 'ucan-invocation'
-  })
-
   // Setup app monitoring with Sentry
   setupSentry(app, stack)
 
@@ -43,7 +39,7 @@ export function UcanInvocationStack({ stack, app }) {
       EVENT_BUS_ARN: eventBus.eventBusArn,
     },
     permissions: [eventBus],
-    handler: 'functions/ucan-bucket-event.ucanBucketConsumer',
+    handler: 'ucan-invocation/functions/ucan-bucket-event.ucanBucketConsumer',
   })
   ucanBucket.addNotifications(stack, {
     newCarPut: {
@@ -58,7 +54,7 @@ export function UcanInvocationStack({ stack, app }) {
       TABLE_NAME: adminMetricsTable.tableName
     },
     permissions: [adminMetricsTable],
-    handler: 'functions/metrics-store-add-size-total.consumer',
+    handler: 'ucan-invocation/functions/metrics-store-add-size-total.consumer',
     deadLetterQueue: metricsStoreAddSizeTotalDLQ.cdk.queue,
   })
 

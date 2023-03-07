@@ -2,7 +2,7 @@ import {
   Function,
   Queue,
   use
-} from '@serverless-stack/resources'
+} from 'sst/constructs'
 import { Duration, aws_events as awsEvents } from 'aws-cdk-lib'
 import { BusStack } from './bus-stack.js'
 
@@ -12,13 +12,9 @@ import { SATNAV_EVENT_BRIDGE_SOURCE_EVENT } from '../satnav/event-bus/source.js'
 import { UCAN_STORE_EVENT_BRIDGE_SOURCE_EVENT } from '../ucan-invocation/event-bus/source.js'
 
 /**
- * @param {import('@serverless-stack/resources').StackContext} properties
+ * @param {import('sst/constructs').StackContext} properties
  */
 export function ReplicatorStack({ stack, app }) {
-  stack.setDefaultFunctionProps({
-    srcPath: 'replicator'
-  })
-
   // Setup app monitoring with Sentry
   setupSentry(app, stack)
 
@@ -38,7 +34,7 @@ export function ReplicatorStack({ stack, app }) {
         REPLICATOR_BUCKET_NAME: process.env.R2_CARPARK_BUCKET_NAME || '',
       },
       permissions: ['s3:*'],
-      handler: 'functions/replicator.handler',
+      handler: 'replicator/functions/replicator.handler',
       timeout: 15 * 60,
     }
   )
@@ -56,7 +52,7 @@ export function ReplicatorStack({ stack, app }) {
         REPLICATOR_BUCKET_NAME: process.env.R2_SATNAV_BUCKET_NAME || '',
       },
       permissions: ['s3:*'],
-      handler: 'functions/replicator.handler',
+      handler: 'replicator/functions/replicator.handler',
       timeout: 15 * 60,
     }
   )
@@ -74,7 +70,7 @@ export function ReplicatorStack({ stack, app }) {
         REPLICATOR_BUCKET_NAME: process.env.R2_UCAN_BUCKET_NAME || '',
       },
       permissions: ['s3:*'],
-      handler: 'functions/replicator.handler',
+      handler: 'replicator/functions/replicator.handler',
       timeout: 15 * 60,
     }
   )
@@ -138,7 +134,7 @@ export function ReplicatorStack({ stack, app }) {
     key: awsEvents.EventField.fromPath('$.detail.key')
   })
 
-  /** @type {import('@serverless-stack/resources').EventBusQueueTargetProps} */
+  /** @type {import('sst/constructs').EventBusQueueTargetProps} */
   const carTargetReplicatorQueue = {
     type: 'queue',
     queue: carReplicatorQueue,
@@ -149,7 +145,7 @@ export function ReplicatorStack({ stack, app }) {
     }
   }
 
-  /** @type {import('@serverless-stack/resources').EventBusQueueTargetProps} */
+  /** @type {import('sst/constructs').EventBusQueueTargetProps} */
   const satnavTargetReplicatorQueue = {
     type: 'queue',
     queue: satnavReplicatorQueue,
@@ -160,7 +156,7 @@ export function ReplicatorStack({ stack, app }) {
     }
   }
 
-  /** @type {import('@serverless-stack/resources').EventBusQueueTargetProps} */
+  /** @type {import('sst/constructs').EventBusQueueTargetProps} */
   const ucanTargetReplicatorQueue = {
     type: 'queue',
     queue: ucanReplicatorQueue,

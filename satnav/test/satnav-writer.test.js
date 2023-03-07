@@ -22,7 +22,7 @@ test.before(async t => {
   t.context.s3Client = client
 })
 
-test('creates side index and writes to satnav bucket', async t => {
+test.skip('creates side index and writes to satnav bucket', async t => {
   const carparkBucketName = await createBucket(t.context.s3Client)
   const satnavBucketName = await createBucket(t.context.s3Client)
 

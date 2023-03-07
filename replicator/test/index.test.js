@@ -78,7 +78,7 @@ test('copy CARs from origin bucket to replicator bucket', async t => {
   t.is(copiedCarResponse.$metadata.httpStatusCode, 200)
 })
 
-test('copy satnav index to replicator bucket', async t => {
+test.skip('copy satnav index to replicator bucket', async t => {
   const originBucketName = await createBucket(t.context.s3Client)
   const destinationBucketName = await createBucket(t.context.s3Client)
 

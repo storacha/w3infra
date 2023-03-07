@@ -12,7 +12,7 @@ import { createStoreTable } from '../tables/store.js'
 import { createUploadTable } from '../tables/upload.js'
 import { getServiceSigner } from '../config.js'
 import { createUcantoServer } from '../service/index.js'
-import { Config } from '@serverless-stack/node/config/index.js'
+import { Config } from 'sst/node/config'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
