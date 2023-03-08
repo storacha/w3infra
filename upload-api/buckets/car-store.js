@@ -75,7 +75,7 @@ export function useCarStore(s3, bucketName) {
         url,
         headers: {
           'x-amz-checksum-sha256': checksum,
-          'content-length': size,
+          'content-length': String(size),
         },
       }
     },

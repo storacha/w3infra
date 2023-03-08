@@ -127,7 +127,7 @@ export function useUploadTable(dynamoDb, tableName) {
       // return the removed object so caller may remove all shards
       const res = await dynamoDb.send(cmd)
       if (res.Attributes === undefined) {
-        return
+        return null
       }
       const raw = unmarshall(res.Attributes)
       return toUploadAddResult(raw)
