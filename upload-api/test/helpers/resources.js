@@ -1,7 +1,7 @@
 import { customAlphabet } from 'nanoid'
 import { GenericContainer as Container } from 'testcontainers'
 import { S3Client, CreateBucketCommand } from '@aws-sdk/client-s3'
-import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
+import { DynamoDBClient, CreateTableCommand } from '@aws-sdk/client-dynamodb'
 import * as Signer from '@ucanto/principal/ed25519'
 import * as Server from '@ucanto/server'
 import { CAR, CBOR } from '@ucanto/transport'
@@ -34,45 +34,44 @@ export async function createDynamodDb(opts = {}) {
     .withExposedPorts(port)
     .start()
 
-  const endpoint = `http://${dbContainer.getHost()}:${dbContainer.getMappedPort(8000)}`
-  return {
-    client: new DynamoDBClient({
-      region,
-      endpoint
-    }),
-    endpoint
-  }
+  const endpoint = `http://${dbContainer.getHost()}:${dbContainer.getMappedPort(
+    8000
+  )}`
+
+  return new DynamoDBClient({
+    region,
+    endpoint,
+  })
 }
 
 /**
  * Convert SST TableProps to DynamoDB `CreateTableCommandInput` config
- * 
+ *
  * @typedef {import('@aws-sdk/client-dynamodb').CreateTableCommandInput} CreateTableCommandInput
  * @typedef {import('@serverless-stack/resources').TableProps} TableProps
  *
  * @param {TableProps} props
  * @returns {Pick<CreateTableCommandInput, 'AttributeDefinitions' | 'KeySchema'>}
  */
- export function dynamoDBTableConfig ({ fields, primaryIndex }) {
-  if (!primaryIndex || !fields) throw new Error('Expected primaryIndex and fields on TableProps')
+export function dynamoDBTableConfig({ fields, primaryIndex }) {
+  if (!primaryIndex || !fields)
+    throw new Error('Expected primaryIndex and fields on TableProps')
   const attributes = Object.values(primaryIndex)
   const AttributeDefinitions = Object.entries(fields)
     .filter(([k]) => attributes.includes(k)) // 'The number of attributes in key schema must match the number of attributes defined in attribute definitions'
     .map(([k, v]) => ({
       AttributeName: k,
-      AttributeType: v[0].toUpperCase()
+      AttributeType: v[0].toUpperCase(),
     }))
   const KeySchema = [
-    { AttributeName: primaryIndex.partitionKey, KeyType: 'HASH' }
+    { AttributeName: primaryIndex.partitionKey, KeyType: 'HASH' },
   ]
   if (primaryIndex.sortKey) {
-    KeySchema.push(
-      { AttributeName: primaryIndex.sortKey, KeyType: 'RANGE' }
-    )
+    KeySchema.push({ AttributeName: primaryIndex.sortKey, KeyType: 'RANGE' })
   }
   return {
     AttributeDefinitions,
-    KeySchema
+    KeySchema,
   }
 }
 
@@ -102,7 +101,7 @@ export async function createS3(opts = {}) {
 
   return {
     client: new S3Client(clientOpts),
-    clientOpts
+    clientOpts,
   }
 }
 
@@ -117,8 +116,38 @@ export async function createBucket(s3) {
 }
 
 /**
+ * @param {import("@aws-sdk/client-dynamodb").DynamoDBClient} dynamo
+ * @param {TableProps} props
+ */
+export async function createTable(dynamo, props) {
+  const id = customAlphabet('1234567890abcdefghijklmnopqrstuvwxyz', 10)
+  const tableName = id()
+
+  // TODO: see in pickup Document DB wrapper
+  await dynamo.send(
+    new CreateTableCommand({
+      TableName: tableName,
+      ...dynamoDBTableConfig(props),
+      ProvisionedThroughput: {
+        ReadCapacityUnits: 1,
+        WriteCapacityUnits: 1,
+      },
+    })
+  )
+
+  return tableName
+}
+
+/**
+ * @typedef {object} ResourcesMetadata
+ * @property {string} [region]
+ * @property {string} tableName
+ * @property {string} bucketName
+ */
+
+/**
  * @param {any} ctx
- * @param {import('./ucanto').ResourcesMetadata} resourcesMetadata
+ * @param {ResourcesMetadata} resourcesMetadata
  */
 export function getSigningOptions(ctx, resourcesMetadata) {
   return {
@@ -131,7 +160,7 @@ export function getSigningOptions(ctx, resourcesMetadata) {
 }
 
 /** @returns {Promise<MockAccess>} */
-export async function createAccessServer () {
+export async function createAccessServer() {
   const signer = await Signer.generate()
   const server = Server.create({
     id: signer,
@@ -162,7 +191,7 @@ export async function createAccessServer () {
   })
 
   const servicePrincipal = signer
-  const serviceURL = await new Promise(resolve => {
+  const serviceURL = await new Promise((resolve) => {
     httpServer.listen(() => {
       // @ts-expect-error
       const { port } = httpServer.address()
@@ -171,15 +200,18 @@ export async function createAccessServer () {
     })
   })
   /** @param {PartialAccessService} impl */
-  const setServiceImpl = impl => Object.assign(server.service, mockAccessService(impl))
+  const setServiceImpl = (impl) =>
+    Object.assign(server.service, mockAccessService(impl))
 
   return { servicePrincipal, serviceURL, setServiceImpl, server, httpServer }
 }
 
-const notImplemented = () => { throw new Server.Failure('not implemented') }
+const notImplemented = () => {
+  throw new Server.Failure('not implemented')
+}
 
 /** @param {PartialAccessService} [impl] */
-function mockAccessService (impl = {}) {
+function mockAccessService(impl = {}) {
   return {
     voucher: {
       claim: withCallCount(impl.voucher?.claim ?? notImplemented),
@@ -187,8 +219,10 @@ function mockAccessService (impl = {}) {
     },
     space: {
       info: withCallCount(impl.account?.info ?? notImplemented),
-      'recover-validation': withCallCount(impl.account?.['recover-validation'] ?? notImplemented),
-    }
+      'recover-validation': withCallCount(
+        impl.account?.['recover-validation'] ?? notImplemented
+      ),
+    },
   }
 }
 

@@ -7,14 +7,21 @@ import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
  * @param {string} region
  * @param {string} bucketName
  * @param {import('@aws-sdk/client-s3').ServiceInputTypes} [options]
- * @returns {import('../service/types').UcanBucket}
  */
-export function createUcanStore (region, bucketName, options = {}) {
+export function createUcanStore(region, bucketName, options = {}) {
   const s3client = new S3Client({
     region,
-    ...options
+    ...options,
   })
+  return useUcanStore(s3client, bucketName)
+}
 
+/**
+ * @param {S3Client} s3client
+ * @param {string} bucketName
+ * @returns {import('@web3-storage/upload-api').UcanBucket}
+ */
+export const useUcanStore = (s3client, bucketName) => {
   return {
     /**
      * Put UCAN invocation CAR file into bucket
@@ -26,9 +33,9 @@ export function createUcanStore (region, bucketName, options = {}) {
       const putCmd = new PutObjectCommand({
         Bucket: bucketName,
         Key: `${carCid}/${carCid}.car`,
-        Body: bytes
+        Body: bytes,
       })
       await s3client.send(putCmd)
-    }
+    },
   }
 }
