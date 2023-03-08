@@ -30,6 +30,7 @@
     "@web-std/blob": "^3.0.4",
     "@web-std/fetch": "^4.1.0",
     "@web3-storage/access": "^10.0.0",
+    "@web3-storage/w3up-client": "^4.2.0",
     "ava": "^4.3.3",
     "dotenv": "^16.0.3",
     "git-rev-sync": "^3.0.2",
