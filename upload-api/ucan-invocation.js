@@ -7,7 +7,7 @@ import * as Link from 'multiformats/link'
  * @property {UCAN.Capabilities} att
  * @property {`did:${string}:${string}`} aud
  * @property {`did:${string}:${string}`} iss
- * 
+ *
  * @typedef {object} UcanInvocationWrapper
  * @property {string} carCid
  * @property {Uint8Array} bytes
@@ -18,9 +18,9 @@ import * as Link from 'multiformats/link'
  * Persist successful UCAN invocations handled by the router.
  *
  * @param {UcanInvocationWrapper} ucanInvocation
- * @param {import('./service/types').UcanBucket} ucanStore 
+ * @param {import('@web3-storage/upload-api').UcanBucket} ucanStore
  */
-export async function persistUcanInvocation (ucanInvocation, ucanStore) {
+export async function persistUcanInvocation(ucanInvocation, ucanStore) {
   await ucanStore.put(ucanInvocation.carCid, ucanInvocation.bytes)
 }
 
@@ -28,7 +28,7 @@ export async function persistUcanInvocation (ucanInvocation, ucanStore) {
  * @param {import('aws-lambda').APIGatewayProxyEventV2} request
  * @returns {Promise<UcanInvocationWrapper>}
  */
-export async function parseUcanInvocationRequest (request) {
+export async function parseUcanInvocationRequest(request) {
   if (!request.body) {
     throw new Error('service requests are required to have body')
   }
@@ -51,8 +51,8 @@ export async function parseUcanInvocationRequest (request) {
       att: dagUcan.att.map(replaceAllLinkValues),
       aud: dagUcan.aud.did(),
       iss: dagUcan.iss.did(),
-      prf: replaceAllLinkValues(dagUcan.prf)
-    }
+      prf: replaceAllLinkValues(dagUcan.prf),
+    },
   }
 }
 
@@ -87,7 +87,7 @@ export const replaceAllLinkValues = (value) => {
  * @template {import('multiformats').UnknownLink} Link
  * @param {Link} link
  */
-export const toJSON = link =>
-/** @type {import('./service/types').LinkJSON<Link>} */ ({
-  '/': link.toString(),
-})
+export const toJSON = (link) =>
+  /** @type {import('@web3-storage/upload-api').LinkJSON<Link>} */ ({
+    '/': link.toString(),
+  })

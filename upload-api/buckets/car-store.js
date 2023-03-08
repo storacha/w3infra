@@ -1,6 +1,10 @@
-import { S3Client, HeadObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3'
+import {
+  S3Client,
+  HeadObjectCommand,
+  PutObjectCommand,
+} from '@aws-sdk/client-s3'
 import { base64pad } from 'multiformats/bases/base64'
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner"
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 
 /**
  * Abstraction layer with Factory to perform operations on bucket storing CAR files.
@@ -8,26 +12,35 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner"
  * @param {string} region
  * @param {string} bucketName
  * @param {import('@aws-sdk/client-s3').ServiceInputTypes} [options]
- * @returns {import('../service/types').CarStoreBucket}
  */
-export function createCarStore (region, bucketName, options) {
-  const s3 = new S3Client({ 
+export function createCarStore(region, bucketName, options) {
+  const s3 = new S3Client({
     region,
-    ...options
+    ...options,
   })
+  return useCarStore(s3, bucketName)
+}
 
+/**
+ *
+ * @param {S3Client} s3
+ * @param {string} bucketName
+ * @returns {import('@web3-storage/upload-api').CarStoreBucket}
+ */
+export function useCarStore(s3, bucketName) {
   return {
     /**
-     * @param {import('../service/types').AnyLink} link
+     * @param {import('@web3-storage/upload-api').UnknownLink} link
      */
     has: async (link) => {
       const cmd = new HeadObjectCommand({
         Key: `${link}/${link}.car`,
         Bucket: bucketName,
-      }) 
+      })
       try {
         await s3.send(cmd)
-      } catch (cause) { // @ts-expect-error
+      } catch (cause) {
+        // @ts-expect-error
         if (cause?.$metadata?.httpStatusCode === 404) {
           return false
         }
@@ -39,8 +52,8 @@ export function createCarStore (region, bucketName, options) {
     /**
      * Create a presigned s3 url allowing the recipient to upload
      * only the CAR that matches the provided Link
-     * 
-     * @param {import('../service/types').AnyLink} link
+     *
+     * @param {import('@web3-storage/upload-api').UnknownLink} link
      * @param {number} size
      */
     createUploadUrl: async (link, size) => {
@@ -49,20 +62,22 @@ export function createCarStore (region, bucketName, options) {
         Key: `${link}/${link}.car`,
         Bucket: bucketName,
         ChecksumSHA256: checksum,
-        ContentLength: size
+        ContentLength: size,
       })
       const expiresIn = 60 * 60 * 24 // 1 day
-      const url = new URL(await getSignedUrl(s3, cmd, {
-        expiresIn,
-        unhoistableHeaders: new Set(['x-amz-checksum-sha256']),
-      }))
+      const url = new URL(
+        await getSignedUrl(s3, cmd, {
+          expiresIn,
+          unhoistableHeaders: new Set(['x-amz-checksum-sha256']),
+        })
+      )
       return {
         url,
         headers: {
           'x-amz-checksum-sha256': checksum,
-          'content-length': size
-        }
+          'content-length': String(size),
+        },
       }
-    }
+    },
   }
 }

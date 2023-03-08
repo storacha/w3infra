@@ -1,26 +1,31 @@
-import { testUcanInvocation as test } from '../helpers/context.js'
+import { s3 as test } from '../helpers/context.js'
 
 import { GetObjectCommand } from '@aws-sdk/client-s3'
 import * as Signer from '@ucanto/principal/ed25519'
 import { CAR } from '@ucanto/transport'
 import * as UCAN from '@ipld/dag-ucan'
-import * as ucanto from '@ucanto/core';
+import * as ucanto from '@ucanto/core'
+import * as UcantoClient from '@ucanto/client'
 
-import { createSpace } from '../helpers/ucanto.js'
 import { createS3, createBucket } from '../helpers/resources.js'
 import { randomCAR } from '../helpers/random.js'
 
-import { createUcanStore } from '../../buckets/ucan-store.js'
-import { parseUcanInvocationRequest, persistUcanInvocation, replaceAllLinkValues } from '../../ucan-invocation.js'
+import { useUcanStore } from '../../buckets/ucan-store.js'
+import {
+  parseUcanInvocationRequest,
+  persistUcanInvocation,
+  replaceAllLinkValues,
+} from '../../ucan-invocation.js'
 
-test.before(async t => {
-  const { client: s3Client, clientOpts: s3ClientOpts } = await createS3({ port: 9000 })
+test.before(async (t) => {
+  const { client: s3 } = await createS3({
+    port: 9000,
+  })
 
-  t.context.s3Client = s3Client
-  t.context.s3ClientOpts = s3ClientOpts
+  t.context.s3 = s3
 })
 
-test('parses ucan invocation request', async t => {
+test('parses ucan invocation request', async (t) => {
   const uploadService = await Signer.generate()
   const alice = await Signer.generate()
   const { proof, spaceDid } = await createSpace(alice)
@@ -34,13 +39,15 @@ test('parses ucan invocation request', async t => {
     await ucanto.delegate({
       issuer: alice,
       audience: uploadService,
-      capabilities: [{
-        can,
-        with: spaceDid,
-        nb
-      }],
+      capabilities: [
+        {
+          can,
+          with: spaceDid,
+          nb,
+        },
+      ],
       proofs: [proof],
-    })
+    }),
   ])
 
   // @ts-expect-error different type interface in AWS expected request
@@ -59,7 +66,7 @@ test('parses ucan invocation request', async t => {
 
   t.is(ucan.iss.did(), alice.did())
   t.is(ucan.aud.did(), uploadService.did())
-  t.deepEqual(ucan.prf, [proof.root.cid])  
+  t.deepEqual(ucan.prf, [proof.root.cid])
   t.is(ucan.att.length, 1)
   t.like(ucan.att[0], {
     nb,
@@ -68,9 +75,9 @@ test('parses ucan invocation request', async t => {
   })
 })
 
-test('persists ucan invocation CAR file', async t => {
-  const { bucketName } = await prepareResources(t.context.s3Client)
-  const ucanStore = createUcanStore('us-west-2', bucketName, t.context.s3ClientOpts)
+test('persists ucan invocation CAR file', async (t) => {
+  const { bucketName } = await prepareResources(t.context.s3)
+  const ucanStore = useUcanStore(t.context.s3, bucketName)
 
   const uploadService = await Signer.generate()
   const alice = await Signer.generate()
@@ -85,13 +92,15 @@ test('persists ucan invocation CAR file', async t => {
     await ucanto.delegate({
       issuer: alice,
       audience: uploadService,
-      capabilities: [{
-        can,
-        with: spaceDid,
-        nb
-      }],
+      capabilities: [
+        {
+          can,
+          with: spaceDid,
+          nb,
+        },
+      ],
       proofs: [proof],
-    })
+    }),
   ])
 
   // @ts-expect-error different type interface in AWS expected request
@@ -105,7 +114,7 @@ test('persists ucan invocation CAR file', async t => {
     Key: `${requestCarRootCid}/${requestCarRootCid}.car`,
     Bucket: bucketName,
   })
-  const s3Response = await t.context.s3Client.send(cmd)
+  const s3Response = await t.context.s3.send(cmd)
   t.is(s3Response.$metadata.httpStatusCode, 200)
 
   // @ts-expect-error AWS types with readable stream
@@ -120,7 +129,7 @@ test('persists ucan invocation CAR file', async t => {
 
   t.is(ucan.iss.did(), alice.did())
   t.is(ucan.aud.did(), uploadService.did())
-  t.deepEqual(ucan.prf, [proof.root.cid])  
+  t.deepEqual(ucan.prf, [proof.root.cid])
   t.is(ucan.att.length, 1)
   t.like(ucan.att[0], {
     nb,
@@ -129,7 +138,7 @@ test('persists ucan invocation CAR file', async t => {
   })
 })
 
-test('replace all link values as object and array', async t => {
+test('replace all link values as object and array', async (t) => {
   const car = await randomCAR(128)
   const otherCar = await randomCAR(40)
 
@@ -141,7 +150,7 @@ test('replace all link values as object and array', async t => {
     {
       nb: {
         link: root,
-        size: car.size
+        size: car.size,
       },
       can: 'store/add',
       with: 'did:key:z6MkfTDbhRZz26kcDNmmehPxeujSkbXe8jqv5fLpKvtc3Wcv',
@@ -149,10 +158,10 @@ test('replace all link values as object and array', async t => {
     {
       nb: {
         root,
-        shards: [...shards]
+        shards: [...shards],
       },
       can: 'upload/add',
-      with: 'did:key:z6MkfTDbhRZz26kcDNmmehPxeujSkbXe8jqv5fLpKvtc3Wcv'
+      with: 'did:key:z6MkfTDbhRZz26kcDNmmehPxeujSkbXe8jqv5fLpKvtc3Wcv',
     },
   ]
 
@@ -165,18 +174,37 @@ test('replace all link values as object and array', async t => {
   t.is(att[1].nb.root['/'], root.toString())
 
   // Array with Link
-  // @ts-expect-error Property '/' does not exist on type 'Link<Partial<Model>
-  t.deepEqual(att[1].nb.shards?.map(s => s['/']), shards.map(s => s.toString()))
+  t.deepEqual(
+    // @ts-expect-error Property '/' does not exist on type 'Link<Partial<Model>
+    att[1].nb.shards?.map((s) => s['/']),
+    shards.map((s) => s.toString())
+  )
 })
 
 /**
  * @param {import("@aws-sdk/client-s3").S3Client} s3Client
  */
-async function prepareResources (s3Client) {
+async function prepareResources(s3Client) {
   const bucketName = await createBucket(s3Client)
 
   return {
-    bucketName
+    bucketName,
   }
 }
 
+/**
+ * @param {import('@ucanto/interface').Principal} audience
+ */
+export async function createSpace(audience) {
+  const space = await Signer.generate()
+  const spaceDid = space.did()
+
+  return {
+    proof: await UcantoClient.delegate({
+      issuer: space,
+      audience,
+      capabilities: [{ can: '*', with: spaceDid }],
+    }),
+    spaceDid,
+  }
+}

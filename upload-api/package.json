@@ -14,23 +14,24 @@
     "@ipld/dag-ucan": "^3.0.1",
     "@sentry/serverless": "^7.22.0",
     "@serverless-stack/node": "^1.18.2",
-    "@ucanto/client": "^4.2.3",
-    "@ucanto/interface": "^4.2.3",
-    "@ucanto/principal": "^4.2.3",
-    "@ucanto/server": "^4.2.3",
-    "@ucanto/transport": "^4.2.3",
+    "@ucanto/client": "^5.1.0",
+    "@ucanto/interface": "^6.0.0",
+    "@ucanto/principal": "^5.1.0",
+    "@ucanto/server": "^6.0.0",
+    "@ucanto/transport": "^5.1.0",
     "@web-std/fetch": "^4.1.0",
-    "@web3-storage/access": "^9.0.0",
-    "@web3-storage/capabilities": "^2.0.0",
+    "@web3-storage/access": "^10.0.0",
+    "@web3-storage/capabilities": "^3.2.0",
+    "@web3-storage/upload-api": "^1.0.4",
     "multiformats": "^11.0.1",
-    "p-retry": "^5.1.2",
     "uint8arrays": "^4.0.2"
   },
   "devDependencies": {
+    "@web3-storage/access": "^10.0.0",
     "@ipld/car": "^5.0.1",
     "@serverless-stack/resources": "*",
     "@types/aws-lambda": "^8.10.108",
-    "@ucanto/core": "^4.0.2",
+    "@ucanto/core": "^5.0.0",
     "@web-std/blob": "3.0.4",
     "ava": "^4.3.3",
     "nanoid": "^4.0.0",
@@ -38,5 +39,10 @@
   },
   "engines": {
     "node": ">=16.15"
+  },
+  "prettier": {
+    "singleQuote": true,
+    "trailingComma": "es5",
+    "semi": false
   }
 }
