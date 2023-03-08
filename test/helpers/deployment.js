@@ -3,10 +3,17 @@ import {
 } from '@serverless-stack/core'
 import { createRequire } from 'module'
 import { S3Client } from '@aws-sdk/client-s3'
+import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
 
 // Either seed.run deployment, or development deploy outputs-file
 // https://seed.run/docs/adding-a-post-deploy-phase.html#post-deploy-phase-environment
 export const stage = process.env.SEED_STAGE_NAME || State.getStage(process.cwd())
+
+export const getStackName = () => {
+  const require = createRequire(import.meta.url)
+  const sst = require('../../sst.json')
+  return `${stage}-${sst.name}`
+}
 
 export const getCloudflareBucketClient = () => new S3Client({
   region: 'auto',
@@ -85,4 +92,22 @@ const getAwsRegion = () => {
   }
 
   return 'us-west-2'
+}
+
+/**
+ * @param {string} tableName 
+ */
+export const getDynamoDb = (tableName) => {
+  const region = getAwsRegion()
+  const endpoint = `https://dynamodb.${region}.amazonaws.com`
+
+  return {
+    client: new DynamoDBClient({
+      region,
+      endpoint
+    }),
+    tableName: `${getStackName()}-${tableName}`,
+    region,
+    endpoint
+  }
 }

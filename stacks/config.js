@@ -1,5 +1,6 @@
-import { RemovalPolicy } from 'aws-cdk-lib'
+import { Duration, RemovalPolicy } from 'aws-cdk-lib'
 import { createRequire } from 'module'
+import { StartingPosition } from 'aws-cdk-lib/aws-lambda'
 import git from 'git-rev-sync'
 
 /**
@@ -55,6 +56,35 @@ export function getCustomDomain (stage, hostedZone) {
   const domainMap = { prod: hostedZone }
   const domainName = domainMap[stage] ?? `${stage}.${hostedZone}`
   return { domainName, hostedZone }
+}
+
+/**
+ * @param {import('@serverless-stack/resources').Stack} stack
+ */
+export function getKinesisEventSourceConfig (stack) {
+  if (stack.stage !== 'production') {
+    return {
+      batchSize: 10,
+      // The maximum amount of time to gather records before invoking the function.
+      maxBatchingWindow: Duration.seconds(5),
+      // If the function returns an error, split the batch in two and retry.
+      bisectBatchOnError: true,
+      // Where to begin consuming the stream.
+      startingPosition: StartingPosition.LATEST
+    }
+  }
+
+  return {
+    // Dynamo Transactions allow up to 100 writes per transactions. If we allow 10 capabilities executed per request, we can have up to 100.
+    // TODO: we use bisectBatchOnError, so maybe we can attempt bigger batch sizes to be optimistic?
+    batchSize: 10,
+    // The maximum amount of time to gather records before invoking the function.
+    maxBatchingWindow: Duration.minutes(2),
+    // If the function returns an error, split the batch in two and retry.
+    bisectBatchOnError: true,
+    // Where to begin consuming the stream.
+    startingPosition: StartingPosition.TRIM_HORIZON
+  }
 }
 
 export function getApiPackageJson () {

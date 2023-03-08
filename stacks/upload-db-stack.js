@@ -1,6 +1,9 @@
 import { Table } from '@serverless-stack/resources'
 
 import { storeTableProps, uploadTableProps } from '../upload-api/tables/index.js'
+import {
+  adminMetricsTableProps
+} from '../ucan-invocation/tables/index.js'
 import { setupSentry } from './config.js'
 
 /**
@@ -21,10 +24,16 @@ export function UploadDbStack({ stack, app }) {
    * This table maps stored CAR files (shards) to an upload root cid.
    * Used by the upload/* capabilities.
    */
-   const uploadTable = new Table(stack, 'upload', uploadTableProps)
+  const uploadTable = new Table(stack, 'upload', uploadTableProps)
+
+  /**
+   * This table tracks w3 wider metrics.
+   */
+  const adminMetricsTable = new Table(stack, 'admin-metrics', adminMetricsTableProps)
 
   return {
     storeTable,
-    uploadTable
+    uploadTable,
+    adminMetricsTable
   }
 }

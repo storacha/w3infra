@@ -28,9 +28,9 @@ export default function (app) {
     },
   })
   app.stack(BusStack)
+  app.stack(UploadDbStack)
   app.stack(UcanInvocationStack)
   app.stack(CarparkStack)
-  app.stack(UploadDbStack)
   app.stack(SatnavStack)
   app.stack(UploadApiStack)
   app.stack(ReplicatorStack)

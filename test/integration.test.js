@@ -3,6 +3,7 @@ import git from 'git-rev-sync'
 import pWaitFor from 'p-wait-for'
 import { HeadObjectCommand } from '@aws-sdk/client-s3'
 
+import { METRICS_NAMES } from '../ucan-invocation/constants.js'
 import { test } from './helpers/context.js'
 import {
   stage,
@@ -10,18 +11,27 @@ import {
   getAwsBucketClient,
   getCloudflareBucketClient,
   getSatnavBucketInfo,
-  getCarparkBucketInfo
+  getCarparkBucketInfo,
+  getDynamoDb
 } from './helpers/deployment.js'
 import { getClient } from './helpers/up-client.js'
 import { randomFile } from './helpers/random.js'
+import { getAllTableRows } from './helpers/table.js'
 
-test('GET /', async t => {
+test.before(t => {
+  t.context = {
+    apiEndpoint: getApiEndpoint(),
+    metricsDynamo: getDynamoDb('admin-metrics')
+  }
+})
+
+test('upload-api GET /', async t => {
   const apiEndpoint = getApiEndpoint()
   const response = await fetch(apiEndpoint)
   t.is(response.status, 200)
 })
 
-test('GET /version', async t => {
+test('upload-api /version', async t => {
   const apiEndpoint = getApiEndpoint()
 
   const response = await fetch(`${apiEndpoint}/version`)
@@ -32,9 +42,14 @@ test('GET /version', async t => {
   t.is(body.commit, git.long('.'))
 })
 
-test('POST / client can upload a file and list it', async t => {
-  const apiEndpoint = getApiEndpoint()
-  const client = await getClient(apiEndpoint)
+// Integration test for all flow from uploading a file to Kinesis events consumers and replicator
+test('w3infra integration flow', async t => {
+  const client = await getClient(t.context.apiEndpoint)
+
+  // Get metrics before upload
+  const beforeOperationMetrics = await getMetrics(t)
+  const beforeStoreAddSizeTotal = beforeOperationMetrics.find(row => row.name === METRICS_NAMES.STORE_ADD_SIZE_TOTAL)
+
   const s3Client = getAwsBucketClient()
   const r2Client = getCloudflareBucketClient()
 
@@ -58,6 +73,8 @@ test('POST / client can upload a file and list it', async t => {
     })
   )
   t.is(carparkRequest.$metadata.httpStatusCode, 200)
+
+  const carSize = carparkRequest.ContentLength
 
   // Check dudewhere
   const dudewhereRequest = await r2Client.send(
@@ -137,4 +154,29 @@ test('POST / client can upload a file and list it', async t => {
   }, {
     interval: 100,
   })
+
+  // Check metrics were updated
+  beforeStoreAddSizeTotal && await pWaitFor(async () => {
+    const afterOperationMetrics = await getMetrics(t)
+    const afterStoreAddSizeTotal = afterOperationMetrics.find(row => row.name === METRICS_NAMES.STORE_ADD_SIZE_TOTAL)
+
+    // If staging accept more broad condition given multiple parallel tests can happen there
+    if (stage === 'staging') {
+      return afterStoreAddSizeTotal?.value >= beforeStoreAddSizeTotal.value + carSize
+    }
+
+    return afterStoreAddSizeTotal?.value === beforeStoreAddSizeTotal.value + carSize
+  })
 })
+
+/**
+ * @param {import("ava").ExecutionContext<import("./helpers/context.js").Context>} t
+ */
+async function getMetrics (t) {
+  const metrics = await getAllTableRows(
+    t.context.metricsDynamo.client,
+    t.context.metricsDynamo.tableName
+  )
+
+  return metrics
+}
