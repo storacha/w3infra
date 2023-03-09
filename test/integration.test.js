@@ -3,6 +3,7 @@ import git from 'git-rev-sync'
 import pWaitFor from 'p-wait-for'
 import { HeadObjectCommand } from '@aws-sdk/client-s3'
 
+import { METRICS_PROM } from '../upload-api/constants.js'
 import { METRICS_NAMES, SPACE_METRICS_NAMES } from '../ucan-invocation/constants.js'
 import { test } from './helpers/context.js'
 import {
@@ -38,6 +39,16 @@ test('GET /version', async t => {
   const body = await response.json()
   t.is(body.env, stage)
   t.is(body.commit, git.long('.'))
+})
+
+test('upload-api /metrics', async t => {
+  const apiEndpoint = getApiEndpoint()
+
+  const response = await fetch(`${apiEndpoint}/metrics`)
+  t.is(response.status, 200)
+
+  const body = await response.text()
+  t.truthy(body.includes(METRICS_PROM.STORE_ADD_SIZE_TOTAL))
 })
 
 // Integration test for all flow from uploading a file to Kinesis events consumers and replicator

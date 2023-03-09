@@ -35,7 +35,6 @@ export function createStoreTable(region, tableName, options = {}) {
  * @param {string} tableName
  * @returns {import('@web3-storage/upload-api').StoreTable & import('@web3-storage/upload-api').TestStoreTable}
  */
-
 export function useStoreTable(dynamoDb, tableName) {
   return {
     /**
@@ -151,7 +150,7 @@ export function useStoreTable(dynamoDb, tableName) {
       return {
         size: results.length,
         before,
-        after: after,
+        after,
         cursor: after,
         results: options.pre ? results.reverse() : results,
       }

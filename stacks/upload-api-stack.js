@@ -22,7 +22,7 @@ export function UploadApiStack({ stack, app }) {
 
   // Get references to constructs created in other stacks
   const { carparkBucket } = use(CarparkStack)
-  const { storeTable, uploadTable } = use(UploadDbStack)
+  const { storeTable, uploadTable, adminMetricsTable } = use(UploadDbStack)
   const { ucanBucket, ucanStream } = use(UcanInvocationStack)
 
   // Setup API
@@ -35,13 +35,14 @@ export function UploadApiStack({ stack, app }) {
     customDomain,
     defaults: {
       function: {
-        permissions: [storeTable, uploadTable, carparkBucket, ucanBucket, ucanStream],
+        permissions: [storeTable, uploadTable, adminMetricsTable, carparkBucket, ucanBucket, ucanStream],
         environment: {
           STORE_TABLE_NAME: storeTable.tableName,
           STORE_BUCKET_NAME: carparkBucket.bucketName,
           UPLOAD_TABLE_NAME: uploadTable.tableName,
           UCAN_BUCKET_NAME: ucanBucket.bucketName,
           UCAN_LOG_STREAM_NAME: ucanStream.streamName,
+          ADMIN_METRICS_TABLE_NAME: adminMetricsTable.tableName,
           NAME: pkg.name,
           VERSION: pkg.version,
           COMMIT: git.commmit,
@@ -64,7 +65,8 @@ export function UploadApiStack({ stack, app }) {
       'POST /':        'functions/ucan-invocation-router.handler',
        'GET /':        'functions/get.home',
        'GET /error':   'functions/get.error',
-       'GET /version': 'functions/get.version'
+       'GET /version': 'functions/get.version',
+       'GET /metrics': 'functions/metrics.handler',
     },
     accessLog: {
       format:'{"requestTime":"$context.requestTime","requestId":"$context.requestId","httpMethod":"$context.httpMethod","path":"$context.path","routeKey":"$context.routeKey","status":$context.status,"responseLatency":$context.responseLatency,"integrationRequestId":"$context.integration.requestId","integrationStatus":"$context.integration.status","integrationLatency":"$context.integration.latency","integrationServiceStatus":"$context.integration.integrationStatus","ip":"$context.identity.sourceIp","userAgent":"$context.identity.userAgent"}'
