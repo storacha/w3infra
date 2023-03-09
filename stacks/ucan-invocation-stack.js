@@ -84,6 +84,17 @@ export function UcanInvocationStack({ stack, app }) {
     handler: 'functions/metrics-store-add-size-total.consumer',
     deadLetterQueue: metricsStoreAddSizeTotalDLQ.cdk.queue,
   })
+
+  // metrics upload/remove count
+  const metricsUploadRemoveTotalDLQ = new Queue(stack, 'metrics-upload-remove-total-dlq')
+  const metricsUploadRemoveTotalConsumer = new Function(stack, 'metrics-upload-remove-total-consumer', {
+    environment: {
+      TABLE_NAME: adminMetricsTable.tableName
+    },
+    permissions: [adminMetricsTable],
+    handler: 'functions/metrics-upload-remove-total.consumer',
+    deadLetterQueue: metricsUploadRemoveTotalDLQ.cdk.queue,
+  })
   
   // metrics per space
   const spaceMetricsDLQ = new Queue(stack, 'space-metrics-dlq')
@@ -98,17 +109,25 @@ export function UcanInvocationStack({ stack, app }) {
     deadLetterQueue: spaceMetricsDLQ.cdk.queue,
   })
 
-  // metrics upload/remove count
-  const metricsUploadRemoveTotalDLQ = new Queue(stack, 'metrics-upload-remove-total-dlq')
-  const metricsUploadRemoveTotalConsumer = new Function(stack, 'metrics-upload-remove-total-consumer', {
+  // store/add count
+  const spaceMetricsStoreAddTotalConsumer = new Function(stack, 'space-metrics-store-add-total-consumer', {
     environment: {
-      TABLE_NAME: adminMetricsTable.tableName
+      TABLE_NAME: spaceMetricsTable.tableName
     },
-    permissions: [adminMetricsTable],
-    handler: 'functions/metrics-upload-remove-total.consumer',
-    deadLetterQueue: metricsUploadRemoveTotalDLQ.cdk.queue,
+    permissions: [spaceMetricsTable],
+    handler: 'functions/space-metrics-store-add-total.consumer',
+    deadLetterQueue: spaceMetricsDLQ.cdk.queue,
   })
 
+  // store/remove count
+  const spaceMetricsStoreRemoveTotalConsumer = new Function(stack, 'space-metrics-store-remove-total-consumer', {
+    environment: {
+      TABLE_NAME: spaceMetricsTable.tableName
+    },
+    permissions: [spaceMetricsTable],
+    handler: 'functions/space-metrics-store-remove-total.consumer',
+    deadLetterQueue: spaceMetricsDLQ.cdk.queue,
+  })
 
   // create a kinesis stream
   const ucanStream = new KinesisStream(stack, 'ucan-stream', {
@@ -154,6 +173,26 @@ export function UcanInvocationStack({ stack, app }) {
       },
       spaceMetricsUploadAddTotalConsumer: {
         function: spaceMetricsUploadAddTotalConsumer,
+        // TODO: Set kinesis filters when supported by SST
+        // https://github.com/serverless-stack/sst/issues/1407
+        cdk: {
+          eventSource: {
+            ...(getKinesisEventSourceConfig(stack))
+          }
+        }
+      },
+      spaceMetricsStoreAddTotalConsumer: {
+        function: spaceMetricsStoreAddTotalConsumer,
+        // TODO: Set kinesis filters when supported by SST
+        // https://github.com/serverless-stack/sst/issues/1407
+        cdk: {
+          eventSource: {
+            ...(getKinesisEventSourceConfig(stack))
+          }
+        }
+      },
+      spaceMetricsStoreRemoveTotalConsumer: {
+        function: spaceMetricsStoreRemoveTotalConsumer,
         // TODO: Set kinesis filters when supported by SST
         // https://github.com/serverless-stack/sst/issues/1407
         cdk: {

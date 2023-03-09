@@ -6,7 +6,8 @@ import * as StoreCapabilities from '@web3-storage/capabilities/store'
 import { createDynamodDb } from '../helpers/resources.js'
 import { createSpace } from '../helpers/ucanto.js'
 import { randomCAR } from '../helpers/random.js'
-import { createDynamoAdminMetricsTable, getItemFromTable} from '../helpers/tables.js'
+import { createDynamoTable, getItemFromTable} from '../helpers/tables.js'
+import { adminMetricsTableProps } from '../../tables/index.js'
 
 import { updateStoreAddTotal } from '../../functions/metrics-store-add-total.js'
 import { createMetricsTable } from '../../tables/metrics.js'
@@ -157,7 +158,7 @@ test('handles a batch of single invocation without store/add', async t => {
  */
 async function prepareResources (dynamoClient) {
   const [ tableName ] = await Promise.all([
-    createDynamoAdminMetricsTable(dynamoClient),
+    createDynamoTable(dynamoClient, adminMetricsTableProps),
   ])
 
   return {

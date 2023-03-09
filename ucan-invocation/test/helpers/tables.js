@@ -5,18 +5,17 @@ import { marshall, unmarshall } from '@aws-sdk/util-dynamodb'
 
 import { dynamoDBTableConfig } from './resources.js'
 
-import { adminMetricsTableProps } from '../../tables/index.js'
-
 /**
  * @param {import('@aws-sdk/client-dynamodb').DynamoDBClient} dynamo
+ * @param {import("@serverless-stack/resources").TableProps} tableProps
  */
-export async function createDynamoAdminMetricsTable(dynamo) {
+export async function createDynamoTable(dynamo, tableProps) {
   const id = customAlphabet('1234567890abcdefghijklmnopqrstuvwxyz', 10)
   const tableName = id()
 
   await dynamo.send(new CreateTableCommand({
     TableName: tableName,
-    ...dynamoDBTableConfig(adminMetricsTableProps),
+    ...dynamoDBTableConfig(tableProps),
     ProvisionedThroughput: {
       ReadCapacityUnits: 1,
       WriteCapacityUnits: 1

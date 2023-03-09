@@ -59,6 +59,7 @@ test('w3infra integration flow', async t => {
   }
   // Get space metrics before upload
   const spaceBeforeUploadAddMetrics = await getSpaceMetrics(t, spaceDid, SPACE_METRICS_NAMES.UPLOAD_ADD_TOTAL)
+  const spaceBeforeStoreAddMetrics = await getSpaceMetrics(t, spaceDid, SPACE_METRICS_NAMES.STORE_ADD_TOTAL)
 
   // Get metrics before upload
   const beforeOperationMetrics = await getMetrics(t)
@@ -177,12 +178,14 @@ test('w3infra integration flow', async t => {
       const afterStoreAddTotal = afterOperationMetrics.find(row => row.name === METRICS_NAMES.STORE_ADD_TOTAL)
       const afterStoreAddSizeTotal = afterOperationMetrics.find(row => row.name === METRICS_NAMES.STORE_ADD_SIZE_TOTAL)
       const spaceAfterUploadAddMetrics = await getSpaceMetrics(t, spaceDid, SPACE_METRICS_NAMES.UPLOAD_ADD_TOTAL)
+      const spaceAfterStoreAddMetrics = await getSpaceMetrics(t, spaceDid, SPACE_METRICS_NAMES.STORE_ADD_TOTAL)
   
       // If staging accept more broad condition given multiple parallel tests can happen there
       if (stage === 'staging') {
         return (
           afterStoreAddTotal?.value >= beforeStoreAddTotal?.value + 1 &&
           afterStoreAddSizeTotal?.value >= beforeStoreAddSizeTotal.value + carSize &&
+          spaceAfterStoreAddMetrics?.value >= spaceBeforeStoreAddMetrics?.value + 1 &&
           spaceAfterUploadAddMetrics?.value >= spaceBeforeUploadAddMetrics?.value + 1
         )
       }
@@ -190,6 +193,7 @@ test('w3infra integration flow', async t => {
       return (
         afterStoreAddTotal?.value === beforeStoreAddTotal?.value + 1 &&
         afterStoreAddSizeTotal?.value === beforeStoreAddSizeTotal.value + carSize &&
+        spaceAfterStoreAddMetrics?.value === spaceBeforeStoreAddMetrics?.value + 1 &&
         spaceAfterUploadAddMetrics?.value === spaceBeforeUploadAddMetrics?.value + 1
       )
     })

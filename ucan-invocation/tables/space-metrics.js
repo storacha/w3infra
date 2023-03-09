@@ -17,7 +17,7 @@ import { MAX_TRANSACT_WRITE_ITEMS } from './constants.js'
  */
 
 /**
- * Abstraction layer to handle operations on Space Table.
+ * Abstraction layer to handle operations on Space Metrics Table.
  *
  * @param {string} region
  * @param {string} tableName
@@ -33,51 +33,68 @@ export function createSpaceMetricsTable (region, tableName, options = {}) {
 
   return {
     /**
-     * Increment accumulated count from upload add operations.
+     * Increment accumulated count from upload/add operations.
      *
      * @param {Capabilities} uploadAddInv
      */
     incrementUploadAddCount: async (uploadAddInv) => {
-      // Merge same space operations into single one and transform into transaction format
-      // We cannot have multiple operations in a TransactWrite with same key, and we
-      // decrease the probability of reaching the maximum number of transactions.
-      const updateInputTransactions = uploadAddInv.reduce((acc, c) => {
-        const existing = acc?.find((e) => c.with === e.space)
-        if (existing) {
-          existing.value += 1
-        } else {
-          acc.push({
-            // @ts-expect-error
-            space: c.with,
-            value: 1
-          })
-        }
-        return acc
-      }, /** @type {UpdateInput[]} */ ([]))
-
-      if (updateInputTransactions.length >= MAX_TRANSACT_WRITE_ITEMS) {
-        throw new Error(`Attempting to increment space count for more than allowed transactions: ${updateInputTransactions.length}`)
-      }
-
+      const updateInputTransactions = normalizeInvocationsPerSpaceOccurence(uploadAddInv)
       if (!updateInputTransactions.length) {
         return
       }
 
-      /** @type {import('@aws-sdk/client-dynamodb').TransactWriteItem[]} */
-      const transactItems = updateInputTransactions.map(item => ({
-        Update: {
-          TableName: tableName,
-          UpdateExpression: `ADD #value :value`,
-          ExpressionAttributeNames: {'#value': 'value'},
-          ExpressionAttributeValues: {
-            ':value': { N: String(item.value) },
-          },
-          Key: marshall({
-            space: item.space,
-            name: SPACE_METRICS_NAMES.UPLOAD_ADD_TOTAL
-          }),
-        }
-      }))
+      const transactItems = getItemsToIncrementForMetric(
+        updateInputTransactions,
+        tableName,
+        SPACE_METRICS_NAMES.UPLOAD_ADD_TOTAL
+      )
+
+      const cmd = new TransactWriteItemsCommand({
+        TransactItems: transactItems
+      })
+
+      await dynamoDb.send(cmd)
+    },
+    /**
+     * Increment accumulated count from store/add operations.
+     *
+     * @param {Capabilities} storeAddInv
+     */
+    incrementStoreAddCount: async (storeAddInv) => {
+      const updateInputTransactions = normalizeInvocationsPerSpaceOccurence(storeAddInv)
+      if (!updateInputTransactions.length) {
+        return
+      }
+
+      const transactItems = getItemsToIncrementForMetric(
+        updateInputTransactions,
+        tableName,
+        SPACE_METRICS_NAMES.STORE_ADD_TOTAL
+      )
+
+      const cmd = new TransactWriteItemsCommand({
+        TransactItems: transactItems
+      })
+
+      await dynamoDb.send(cmd)
+    },
+    /**
+     * Increment accumulated count from store/remove operations.
+     *
+     * @param {Capabilities} storeRemoveInv
+     */
+    incrementStoreRemoveCount: async (storeRemoveInv) => {
+      const updateInputTransactions = normalizeInvocationsPerSpaceOccurence(storeRemoveInv)
+      if (!updateInputTransactions.length) {
+        return
+      }
+
+      const transactItems = getItemsToIncrementForMetric(
+        updateInputTransactions,
+        tableName,
+        SPACE_METRICS_NAMES.STORE_REMOVE_TOTAL
+      )
+
       const cmd = new TransactWriteItemsCommand({
         TransactItems: transactItems
       })
@@ -85,4 +102,59 @@ export function createSpaceMetricsTable (region, tableName, options = {}) {
       await dynamoDb.send(cmd)
     }
   }
+}
+
+/**
+ * Get items to increment for metric.
+ *
+ * @param {UpdateInput[]} items 
+ * @param {string} tableName 
+ * @param {string} metricName 
+ * @returns {import('@aws-sdk/client-dynamodb').TransactWriteItem[]}
+ */
+function getItemsToIncrementForMetric (items, tableName, metricName) {
+  return items.map(item => ({
+    Update: {
+      TableName: tableName,
+      UpdateExpression: `ADD #value :value`,
+      ExpressionAttributeNames: {'#value': 'value'},
+      ExpressionAttributeValues: {
+        ':value': { N: String(item.value) },
+      },
+      Key: marshall({
+        space: item.space,
+        name: metricName
+      }),
+    }
+  }))
+}
+
+/**
+ * Merge same space operations into single one and transform into transaction format
+ * We cannot have multiple operations in a TransactWrite with same key, and we
+ * decrease the probability of reaching the maximum number of transactions.
+ *
+ * @param {Capabilities} inv
+ * @returns {UpdateInput[]}
+ */
+function normalizeInvocationsPerSpaceOccurence (inv) {
+  const res = inv.reduce((acc, c) => {
+    const existing = acc?.find((e) => c.with === e.space)
+    if (existing) {
+      existing.value += 1
+    } else {
+      acc.push({
+        // @ts-expect-error
+        space: c.with,
+        value: 1
+      })
+    }
+    return acc
+  }, /** @type {UpdateInput[]} */ ([]))
+
+  if (res.length >= MAX_TRANSACT_WRITE_ITEMS) {
+    throw new Error(`Attempting to increment space count for more than allowed transactions: ${res.length}`)
+  }
+
+  return res
 }
