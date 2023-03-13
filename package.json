@@ -16,7 +16,7 @@
     "test-integration": "ava --verbose --timeout=60s test/*.test.js"
   },
   "devDependencies": {
-    "@ipld/car": "^5.0.1",
+    "@ipld/car": "^5.1.0",
     "@ipld/dag-ucan": "^3.0.1",
     "@serverless-stack/cli": "^1.18.0",
     "@serverless-stack/resources": "^1.18.0",
@@ -62,6 +62,7 @@
       "unicorn/no-null": "off",
       "unicorn/no-array-callback-reference": "off",
       "unicorn/no-array-for-each": "off",
+      "unicorn/no-array-reduce": "off",
       "unicorn/no-await-expression-member": "off",
       "unicorn/prefer-set-has": "off",
       "unicorn/prefer-export-from": "off",

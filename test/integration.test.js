@@ -3,7 +3,7 @@ import git from 'git-rev-sync'
 import pWaitFor from 'p-wait-for'
 import { HeadObjectCommand } from '@aws-sdk/client-s3'
 
-import { METRICS_NAMES } from '../ucan-invocation/constants.js'
+import { METRICS_NAMES, SPACE_METRICS_NAMES } from '../ucan-invocation/constants.js'
 import { test } from './helpers/context.js'
 import {
   stage,
@@ -16,25 +16,23 @@ import {
 } from './helpers/deployment.js'
 import { getClient } from './helpers/up-client.js'
 import { randomFile } from './helpers/random.js'
-import { getAllTableRows } from './helpers/table.js'
+import { getTableItem, getAllTableRows } from './helpers/table.js'
 
 test.before(t => {
   t.context = {
     apiEndpoint: getApiEndpoint(),
-    metricsDynamo: getDynamoDb('admin-metrics')
+    metricsDynamo: getDynamoDb('admin-metrics'),
+    spaceMetricsDynamo: getDynamoDb('space-metrics')
   }
 })
 
-test('upload-api GET /', async t => {
-  const apiEndpoint = getApiEndpoint()
-  const response = await fetch(apiEndpoint)
+test('GET /', async t => {
+  const response = await fetch(t.context.apiEndpoint)
   t.is(response.status, 200)
 })
 
-test('upload-api /version', async t => {
-  const apiEndpoint = getApiEndpoint()
-
-  const response = await fetch(`${apiEndpoint}/version`)
+test('GET /version', async t => {
+  const response = await fetch(`${t.context.apiEndpoint}/version`)
   t.is(response.status, 200)
 
   const body = await response.json()
@@ -45,6 +43,12 @@ test('upload-api /version', async t => {
 // Integration test for all flow from uploading a file to Kinesis events consumers and replicator
 test('w3infra integration flow', async t => {
   const client = await getClient(t.context.apiEndpoint)
+  const spaceDid = client.currentSpace()?.did()
+  if (!spaceDid) {
+    throw new Error('Testing space DID must be set')
+  }
+  // Get space metrics before upload
+  const spaceBeforeUploadAddMetrics = await getSpaceMetrics(t, spaceDid, SPACE_METRICS_NAMES.UPLOAD_ADD_TOTAL)
 
   // Get metrics before upload
   const beforeOperationMetrics = await getMetrics(t)
@@ -156,17 +160,26 @@ test('w3infra integration flow', async t => {
   })
 
   // Check metrics were updated
-  beforeStoreAddSizeTotal && await pWaitFor(async () => {
-    const afterOperationMetrics = await getMetrics(t)
-    const afterStoreAddSizeTotal = afterOperationMetrics.find(row => row.name === METRICS_NAMES.STORE_ADD_SIZE_TOTAL)
-
-    // If staging accept more broad condition given multiple parallel tests can happen there
-    if (stage === 'staging') {
-      return afterStoreAddSizeTotal?.value >= beforeStoreAddSizeTotal.value + carSize
-    }
-
-    return afterStoreAddSizeTotal?.value === beforeStoreAddSizeTotal.value + carSize
-  })
+  if (beforeStoreAddSizeTotal && spaceBeforeUploadAddMetrics) {
+    await pWaitFor(async () => {
+      const afterOperationMetrics = await getMetrics(t)
+      const afterStoreAddSizeTotal = afterOperationMetrics.find(row => row.name === METRICS_NAMES.STORE_ADD_SIZE_TOTAL)
+      const spaceAfterUploadAddMetrics = await getSpaceMetrics(t, spaceDid, SPACE_METRICS_NAMES.UPLOAD_ADD_TOTAL)
+  
+      // If staging accept more broad condition given multiple parallel tests can happen there
+      if (stage === 'staging') {
+        return (
+          afterStoreAddSizeTotal?.value >= beforeStoreAddSizeTotal.value + carSize &&
+          spaceAfterUploadAddMetrics?.value >= spaceBeforeUploadAddMetrics?.value + 1
+        )
+      }
+  
+      return (
+        afterStoreAddSizeTotal?.value === beforeStoreAddSizeTotal.value + carSize &&
+        spaceAfterUploadAddMetrics?.value === spaceBeforeUploadAddMetrics?.value + 1
+      )
+    })
+  }
 })
 
 /**
@@ -179,4 +192,19 @@ async function getMetrics (t) {
   )
 
   return metrics
+}
+
+/**
+ * @param {import("ava").ExecutionContext<import("./helpers/context.js").Context>} t
+ * @param {`did:${string}:${string}`} spaceDid
+ * @param {string} name
+ */
+async function getSpaceMetrics (t, spaceDid, name) {
+  const item = await getTableItem(
+    t.context.spaceMetricsDynamo.client,
+    t.context.spaceMetricsDynamo.tableName,
+    { space: spaceDid, name }
+  )
+
+  return item
 }

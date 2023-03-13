@@ -28,7 +28,7 @@ export function UcanInvocationStack({ stack, app }) {
 
   // Get eventBus reference
   const { eventBus } = use(BusStack)
-  const { adminMetricsTable } = use(UploadDbStack)
+  const { adminMetricsTable, spaceMetricsTable } = use(UploadDbStack)
 
   const ucanBucket = new Bucket(stack, 'ucan-store', {
     cors: true,
@@ -61,6 +61,19 @@ export function UcanInvocationStack({ stack, app }) {
     handler: 'functions/metrics-store-add-size-total.consumer',
     deadLetterQueue: metricsStoreAddSizeTotalDLQ.cdk.queue,
   })
+  
+  // metrics per space
+  const spaceMetricsDLQ = new Queue(stack, 'space-metrics-dlq')
+
+  // upload/add count
+  const spaceMetricsUploadAddTotalConsumer = new Function(stack, 'space-metrics-upload-add-total-consumer', {
+    environment: {
+      TABLE_NAME: spaceMetricsTable.tableName
+    },
+    permissions: [spaceMetricsTable],
+    handler: 'functions/space-metrics-upload-add-total.consumer',
+    deadLetterQueue: spaceMetricsDLQ.cdk.queue,
+  })
 
   // create a kinesis stream
   const ucanStream = new KinesisStream(stack, 'ucan-stream', {
@@ -70,9 +83,18 @@ export function UcanInvocationStack({ stack, app }) {
       }
     },
     consumers: {
-      // consumer1: 'functions/consumer1.handler'
       metricsStoreAddSizeTotalConsumer: {
         function: metricsStoreAddSizeTotalConsumer,
+        // TODO: Set kinesis filters when supported by SST
+        // https://github.com/serverless-stack/sst/issues/1407
+        cdk: {
+          eventSource: {
+            ...(getKinesisEventSourceConfig(stack))
+          }
+        }
+      },
+      spaceMetricsUploadAddTotalConsumer: {
+        function: spaceMetricsUploadAddTotalConsumer,
         // TODO: Set kinesis filters when supported by SST
         // https://github.com/serverless-stack/sst/issues/1407
         cdk: {
