@@ -63,15 +63,16 @@ export function UcanInvocationStack({ stack, app }) {
   })
   
   // metrics per space
+  const spaceMetricsDLQ = new Queue(stack, 'space-metrics-dlq')
+
   // upload/add count
-  const spaceMetricsUploadAddTotalDLQ = new Queue(stack, 'space-metrics-upload-add-total-dlq')
   const spaceMetricsUploadAddTotalConsumer = new Function(stack, 'space-metrics-upload-add-total-consumer', {
     environment: {
       TABLE_NAME: spaceMetricsTable.tableName
     },
     permissions: [spaceMetricsTable],
     handler: 'functions/space-metrics-upload-add-total.consumer',
-    deadLetterQueue: spaceMetricsUploadAddTotalDLQ.cdk.queue,
+    deadLetterQueue: spaceMetricsDLQ.cdk.queue,
   })
 
   // create a kinesis stream

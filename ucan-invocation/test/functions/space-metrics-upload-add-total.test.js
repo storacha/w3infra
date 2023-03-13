@@ -13,7 +13,7 @@ import { randomCAR } from '../helpers/random.js'
 
 import { updateUploadCount } from '../../functions/space-metrics-upload-add-total.js'
 import { SPACE_METRICS_NAMES } from '../../constants.js'
-import { createMetricsBySpaceTable } from '../../tables/space-metrics.js'
+import { createSpaceMetricsTable } from '../../tables/space-metrics.js'
 
 const REGION = 'us-west-2'
 
@@ -35,7 +35,7 @@ test('handles a batch of single invocation with upload/add', async t => {
   const { spaceDid } = await createSpace(alice)
   const car = await randomCAR(128)
 
-  const metricsBySpaceTable = createMetricsBySpaceTable(REGION, tableName, {
+  const spaceMetricsTable = createSpaceMetricsTable(REGION, tableName, {
     endpoint: t.context.dbEndpoint
   })
 
@@ -59,7 +59,7 @@ test('handles a batch of single invocation with upload/add', async t => {
 
   // @ts-expect-error
   await updateUploadCount(invocations, {
-    metricsBySpaceTable
+    spaceMetricsTable
   })
 
   const item = await getItemFromTable(t.context.dynamoClient, tableName, spaceDid)
@@ -78,7 +78,7 @@ test('handles batch of single invocation with multiple upload/add attributes', a
     Array.from({ length: 10 }).map(() => randomCAR(128))
   )
 
-  const metricsBySpaceTable = createMetricsBySpaceTable(REGION, tableName, {
+  const spaceMetricsTable = createSpaceMetricsTable(REGION, tableName, {
     endpoint: t.context.dbEndpoint
   })
 
@@ -100,7 +100,7 @@ test('handles batch of single invocation with multiple upload/add attributes', a
 
   // @ts-expect-error
   await updateUploadCount(invocations, {
-    metricsBySpaceTable
+    spaceMetricsTable
   })
 
   const item = await getItemFromTable(t.context.dynamoClient, tableName, spaceDid)
@@ -119,7 +119,7 @@ test('handles batch of multiple invocations with upload/add in same space', asyn
     Array.from({ length: 10 }).map(() => randomCAR(128))
   )
 
-  const metricsBySpaceTable = createMetricsBySpaceTable(REGION, tableName, {
+  const spaceMetricsTable = createSpaceMetricsTable(REGION, tableName, {
     endpoint: t.context.dbEndpoint
   })
 
@@ -143,7 +143,7 @@ test('handles batch of multiple invocations with upload/add in same space', asyn
 
   // @ts-expect-error
   await updateUploadCount(invocations, {
-    metricsBySpaceTable
+    spaceMetricsTable
   })
 
   const item = await getItemFromTable(t.context.dynamoClient, tableName, spaceDid)
@@ -161,7 +161,7 @@ test('handles batch of multiple invocations with upload/add in multiple spaces',
   )
 
   const car = await randomCAR(128)
-  const metricsBySpaceTable = createMetricsBySpaceTable(REGION, tableName, {
+  const spaceMetricsTable = createSpaceMetricsTable(REGION, tableName, {
     endpoint: t.context.dbEndpoint
   })
 
@@ -185,7 +185,7 @@ test('handles batch of multiple invocations with upload/add in multiple spaces',
 
   // @ts-expect-error
   await updateUploadCount(invocations, {
-    metricsBySpaceTable
+    spaceMetricsTable
   })
 
   const items = await Promise.all(
@@ -208,7 +208,7 @@ test('errors handling batch of multiple invocations with more transactions than 
   )
 
   const car = await randomCAR(128)
-  const metricsBySpaceTable = createMetricsBySpaceTable(REGION, tableName, {
+  const spaceMetricsTable = createSpaceMetricsTable(REGION, tableName, {
     endpoint: t.context.dbEndpoint
   })
 
@@ -232,7 +232,7 @@ test('errors handling batch of multiple invocations with more transactions than 
 
   // @ts-expect-error
   await t.throwsAsync(() => updateUploadCount(invocations, {
-    metricsBySpaceTable
+    spaceMetricsTable
   }))
 })
 

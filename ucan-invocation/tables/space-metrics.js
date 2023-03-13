@@ -17,15 +17,15 @@ import { MAX_TRANSACT_WRITE_ITEMS } from './constants.js'
  */
 
 /**
- * Abstraction layer to handle operations on Space Upload Count Table.
+ * Abstraction layer to handle operations on Space Table.
  *
  * @param {string} region
  * @param {string} tableName
  * @param {object} [options]
  * @param {string} [options.endpoint]
- * @returns {import('../types').MetricsBySpaceTable}
+ * @returns {import('../types').SpaceMetricsTable}
  */
-export function createMetricsBySpaceTable (region, tableName, options = {}) {
+export function createSpaceMetricsTable (region, tableName, options = {}) {
   const dynamoDb = new DynamoDBClient({
     region,
     endpoint: options.endpoint
