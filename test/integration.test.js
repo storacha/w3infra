@@ -40,6 +40,16 @@ test('GET /version', async t => {
   t.is(body.commit, git.long('.'))
 })
 
+test('upload-api /metrics', async t => {
+  const apiEndpoint = getApiEndpoint()
+
+  const response = await fetch(`${apiEndpoint}/metrics`)
+  t.is(response.status, 200)
+
+  const body = await response.text()
+  t.truthy(body.includes('_size_total'))
+})
+
 // Integration test for all flow from uploading a file to Kinesis events consumers and replicator
 test('w3infra integration flow', async t => {
   const client = await getClient(t.context.apiEndpoint)
