@@ -6,8 +6,13 @@ export interface MetricsTable {
   incrementStoreAddTotal: (incrementSizeTotal: Capability<Ability, `${string}:${string}`, unknown>[]) => Promise<void>
   incrementStoreAddSizeTotal: (incrementSizeTotal: Capability<Ability, `${string}:${string}`, unknown>[]) => Promise<void>
   incrementStoreRemoveTotal: (incrementSizeTotal: Capability<Ability, `${string}:${string}`, unknown>[]) => Promise<void>
+  incrementStoreRemoveSizeTotal: (incrementSizeTotal: Capability<Ability, `${string}:${string}`, unknown>[]) => Promise<void>
   incrementUploadAddTotal: (incrementSizeTotal: Capability<Ability, `${string}:${string}`, unknown>[]) => Promise<void>
   incrementUploadRemoveTotal: (incrementSizeTotal: Capability<Ability, `${string}:${string}`, unknown>[]) => Promise<void>
+}
+
+export interface CarStoreBucket {
+  getSize: (link: UnknownLink) => Promise<number>
 }
 
 export interface TotalSizeCtx {
@@ -23,9 +28,13 @@ export interface SpaceMetricsTable {
   incrementStoreRemoveCount: (storeRemoveInv: Capability<Ability, `${string}:${string}`, unknown>[]) => Promise<void>
   incrementUploadAddCount: (uploadAddInv: Capability<Ability, `${string}:${string}`, unknown>[]) => Promise<void>
 }
-
 export interface SpaceMetricsTableCtx {
   spaceMetricsTable: SpaceMetricsTable
+}
+
+export interface RemoveSizeCtx {
+  metricsTable: MetricsTable
+  carStoreBucket: CarStoreBucket
 }
 
 export interface UcanInvocation {

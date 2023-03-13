@@ -8,6 +8,7 @@ import {
 import { Duration } from 'aws-cdk-lib'
 
 import { BusStack } from './bus-stack.js'
+import { CarparkStack } from './carpark-stack.js'
 import { UploadDbStack } from './upload-db-stack.js'
 import {
   getBucketConfig,
@@ -26,8 +27,9 @@ export function UcanInvocationStack({ stack, app }) {
   // Setup app monitoring with Sentry
   setupSentry(app, stack)
 
-  // Get eventBus reference
+  // Get dependent stack references
   const { eventBus } = use(BusStack)
+  const { carparkBucket } = use(CarparkStack)
   const { adminMetricsTable, spaceMetricsTable } = use(UploadDbStack)
 
   const ucanBucket = new Bucket(stack, 'ucan-store', {
@@ -94,6 +96,18 @@ export function UcanInvocationStack({ stack, app }) {
     permissions: [adminMetricsTable],
     handler: 'functions/metrics-upload-add-total.consumer',
     deadLetterQueue: metricsUploadAddTotalDLQ.cdk.queue,
+  })
+
+  // store/remove size
+  const metricsStoreRemoveSizeTotalDLQ = new Queue(stack, 'metrics-store-remove-size-total-dlq')
+  const metricsStoreRemoveSizeTotalConsumer = new Function(stack, 'metrics-store-remove-size-total-consumer', {
+    environment: {
+      TABLE_NAME: adminMetricsTable.tableName,
+      STORE_BUCKET_NAME: carparkBucket.bucketName,
+    },
+    permissions: [adminMetricsTable, carparkBucket],
+    handler: 'functions/metrics-store-remove-size-total.consumer',
+    deadLetterQueue: metricsStoreRemoveSizeTotalDLQ.cdk.queue,
   })
 
   // metrics upload/remove count
@@ -174,6 +188,16 @@ export function UcanInvocationStack({ stack, app }) {
           }
         }
       },
+      metricsStoreRemoveSizeTotalConsumer: {
+        function: metricsStoreRemoveSizeTotalConsumer,
+        // TODO: Set kinesis filters when supported by SST
+        // https://github.com/serverless-stack/sst/issues/1407
+        cdk: {
+          eventSource: {
+            ...(getKinesisEventSourceConfig(stack))
+          }
+        }
+      },
       metricsUploadAddTotalConsumer: {
         function: metricsUploadAddTotalConsumer,
         cdk: {
@@ -192,8 +216,6 @@ export function UcanInvocationStack({ stack, app }) {
       },
       spaceMetricsUploadAddTotalConsumer: {
         function: spaceMetricsUploadAddTotalConsumer,
-        // TODO: Set kinesis filters when supported by SST
-        // https://github.com/serverless-stack/sst/issues/1407
         cdk: {
           eventSource: {
             ...(getKinesisEventSourceConfig(stack))

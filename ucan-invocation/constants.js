@@ -30,4 +30,5 @@ export const SPACE_METRICS_NAMES = {
   STORE_ADD_TOTAL: `${STORE_ADD}-total`,
   STORE_ADD_SIZE_TOTAL: `${STORE_ADD}-size-total`,
   STORE_REMOVE_TOTAL: `${STORE_REMOVE}-total`,
+  STORE_REMOVE_SIZE_TOTAL: `${STORE_REMOVE}-size-total`,
 }

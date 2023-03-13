@@ -13,6 +13,8 @@
     "uint8arrays": "^4.0.2"
   },
   "devDependencies": {
+    "@aws-sdk/client-dynamodb": "^3.226.0",
+    "@aws-sdk/client-s3": "^3.226.0",
     "@serverless-stack/resources": "*",
     "@ucanto/interface": "^4.2.3",
     "ava": "^4.3.3",
