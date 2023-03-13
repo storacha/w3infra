@@ -48,7 +48,7 @@ test('can get all metrics with expected values', async t => {
     await dynamo.send(cmd)
   }))
 
-  const metrics = await getMetrics({ metricsTable })
+  const metrics = await getMetrics(metricsTable)
 
   t.is(Object.values(metrics).length, Object.values(METRICS_NAMES).length)
   for (const [, value] of Object.entries(metrics)) {

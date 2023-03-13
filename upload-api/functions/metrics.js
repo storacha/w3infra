@@ -1,6 +1,10 @@
 import * as Sentry from '@sentry/serverless'
-import { METRICS_NAMES } from '@web3-storage/w3infra-ucan-invocation/constants.js'
-import { METRICS_PROM } from '../constants.js'
+import * as Prom from 'prom-client'
+
+import {
+  METRICS_NAMES,
+  STORE_ADD
+} from '@web3-storage/w3infra-ucan-invocation/constants.js'
 
 import { createMetricsTable } from '../tables/metrics.js'
 
@@ -23,35 +27,59 @@ export async function metricsGet () {
     DYNAMO_DB_ENDPOINT: dbEndpoint,
   } = process.env
 
-  const metrics = await getMetrics({
-    metricsTable: createMetricsTable(AWS_REGION, adminTableName, {
-      endpoint: dbEndpoint
-    })
+  const metricsTable = createMetricsTable(AWS_REGION, adminTableName, {
+    endpoint: dbEndpoint
   })
-
-  // conversion to prometheus format
-  const promMetrics = [
-    `# HELP ${METRICS_PROM.STORE_ADD_SIZE_TOTAL} Total bytes committed to be stored.`,
-    `# TYPE ${METRICS_PROM.STORE_ADD_SIZE_TOTAL} counter`,
-    `${METRICS_PROM.STORE_ADD_SIZE_TOTAL} ${metrics[METRICS_NAMES.STORE_ADD_SIZE_TOTAL] || 0}`,
-  ]
+  const { registry, metrics } = createRegistry()
+  await recordMetrics(metrics, metricsTable)
+  registry.metrics()
 
   return {
     statusCode: 200,
     headers: {
       'Cache-Control': `public, max-age=${METRICS_CACHE_MAX_AGE}`
     },
-    body: promMetrics.join('\n')
+    body: await registry.metrics()
   }
 }
 
 /**
- * @param {{ metricsTable: { get: () => Promise<Record<string, any>[]>; }; }} ctx
+ * @param {import('../tables/metrics.js').MetricsTable} metricsTable
  */
-export async function getMetrics (ctx) {
-  const metricsList = await ctx.metricsTable.get()
+export async function getMetrics (metricsTable) {
+  const metricsList = await metricsTable.get()
 
   return metricsList.reduce((obj, item) => Object.assign(obj, { [item.name]: item.value }), {})
+}
+
+/**
+ * @param {Metrics} metrics
+ * @param {import('../tables/metrics.js').MetricsTable} metricsTable
+ */
+export async function recordMetrics (metrics, metricsTable) {
+  const fetchedMetrics = await getMetrics(metricsTable)
+
+  metrics.size.inc({ 'can': STORE_ADD }, fetchedMetrics[METRICS_NAMES.STORE_ADD_SIZE_TOTAL] || 0)
+}
+
+/**
+ * @typedef {object} Metrics
+ * @property {Prom.Counter<'can'>} size
+ */
+
+function createRegistry (ns = 'w3up') {
+  const registry = new Prom.Registry()
+  return {
+    registry,
+    metrics: {
+      size: new Prom.Counter({
+        name: `${ns}_size_total`,
+        help: 'Total bytes associated with each invocation.',
+        labelNames: ['can'],
+        registers: [registry]
+      }),
+    }
+  }
 }
 
 export const handler = Sentry.AWSLambda.wrapHandler(metricsGet)
