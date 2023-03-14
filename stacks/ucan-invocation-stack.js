@@ -154,6 +154,28 @@ export function UcanInvocationStack({ stack, app }) {
     deadLetterQueue: spaceMetricsDLQ.cdk.queue,
   })
 
+  // store/add size
+  const spaceMetricsStoreAddSizeTotalConsumer = new Function(stack, 'space-metrics-store-add-size-total-consumer', {
+    environment: {
+      TABLE_NAME: spaceMetricsTable.tableName,
+      STORE_BUCKET_NAME: carparkBucket.bucketName,
+    },
+    permissions: [spaceMetricsTable, carparkBucket],
+    handler: 'functions/space-metrics-store-add-size-total.consumer',
+    deadLetterQueue: spaceMetricsDLQ.cdk.queue,
+  })
+
+  // store/remove size
+  const spaceMetricsStoreRemoveSizeTotalConsumer = new Function(stack, 'space-metrics-store-remove-size-total-consumer', {
+    environment: {
+      TABLE_NAME: spaceMetricsTable.tableName,
+      STORE_BUCKET_NAME: carparkBucket.bucketName,
+    },
+    permissions: [spaceMetricsTable, carparkBucket],
+    handler: 'functions/space-metrics-store-remove-size-total.consumer',
+    deadLetterQueue: spaceMetricsDLQ.cdk.queue,
+  })
+
   // create a kinesis stream
   const ucanStream = new KinesisStream(stack, 'ucan-stream', {
     cdk: {
@@ -234,6 +256,26 @@ export function UcanInvocationStack({ stack, app }) {
       },
       spaceMetricsStoreRemoveTotalConsumer: {
         function: spaceMetricsStoreRemoveTotalConsumer,
+        // TODO: Set kinesis filters when supported by SST
+        // https://github.com/serverless-stack/sst/issues/1407
+        cdk: {
+          eventSource: {
+            ...(getKinesisEventSourceConfig(stack))
+          }
+        }
+      },
+      spaceMetricsStoreAddSizeTotalConsumer: {
+        function: spaceMetricsStoreAddSizeTotalConsumer,
+        // TODO: Set kinesis filters when supported by SST
+        // https://github.com/serverless-stack/sst/issues/1407
+        cdk: {
+          eventSource: {
+            ...(getKinesisEventSourceConfig(stack))
+          }
+        }
+      },
+      spaceMetricsStoreRemoveSizeTotalConsumer: {
+        function: spaceMetricsStoreRemoveSizeTotalConsumer,
         // TODO: Set kinesis filters when supported by SST
         // https://github.com/serverless-stack/sst/issues/1407
         cdk: {

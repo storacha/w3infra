@@ -71,6 +71,28 @@ export function createSpaceMetricsTable (region, tableName, options = {}) {
         tableName,
         SPACE_METRICS_NAMES.STORE_ADD_TOTAL
       )
+      const cmd = new TransactWriteItemsCommand({
+        TransactItems: transactItems
+      })
+
+      await dynamoDb.send(cmd)
+    },
+    /*
+     * Increment total value from store/add operations.
+     *
+     * @param {Capabilities} operationsInv
+     */
+    incrementStoreAddSizeTotal: async (operationsInv) => {
+      const updateInputTransactions = normalizeInvocationsPerSpaceSize(operationsInv)
+      if (!updateInputTransactions.length) {
+        return
+      }
+
+      const transactItems = getItemsToIncrementForMetric(
+        updateInputTransactions,
+        tableName,
+        SPACE_METRICS_NAMES.STORE_ADD_SIZE_TOTAL
+      )
 
       const cmd = new TransactWriteItemsCommand({
         TransactItems: transactItems
@@ -93,6 +115,28 @@ export function createSpaceMetricsTable (region, tableName, options = {}) {
         updateInputTransactions,
         tableName,
         SPACE_METRICS_NAMES.STORE_REMOVE_TOTAL
+      )
+      const cmd = new TransactWriteItemsCommand({
+        TransactItems: transactItems
+      })
+
+      await dynamoDb.send(cmd)
+    },
+    /*
+     * Increment total value from store/remove operations.
+     *
+     * @param {Capabilities} operationsInv
+     */
+    incrementStoreRemoveSizeTotal: async (operationsInv) => {
+      const updateInputTransactions = normalizeInvocationsPerSpaceSize(operationsInv)
+      if (!updateInputTransactions.length) {
+        return
+      }
+
+      const transactItems = getItemsToIncrementForMetric(
+        updateInputTransactions,
+        tableName,
+        SPACE_METRICS_NAMES.STORE_REMOVE_SIZE_TOTAL
       )
 
       const cmd = new TransactWriteItemsCommand({
@@ -147,6 +191,38 @@ function normalizeInvocationsPerSpaceOccurence (inv) {
         // @ts-expect-error
         space: c.with,
         value: 1
+      })
+    }
+    return acc
+  }, /** @type {UpdateInput[]} */ ([]))
+
+  if (res.length >= MAX_TRANSACT_WRITE_ITEMS) {
+    throw new Error(`Attempting to increment space count for more than allowed transactions: ${res.length}`)
+  }
+
+  return res
+}
+
+/**
+ * Merge same space operations into single one and transform into transaction format
+ * We cannot have multiple operations in a TransactWrite with same key, and we
+ * decrease the probability of reaching the maximum number of transactions.
+ *
+ * @param {Capabilities} inv
+ * @returns {UpdateInput[]}
+ */
+function normalizeInvocationsPerSpaceSize (inv) {
+  const res = inv.reduce((acc, c) => {
+    const existing = acc?.find((e) => c.with === e.space)
+    if (existing) {
+      // @ts-expect-error
+      existing.value += c.nb?.size
+    } else {
+      acc.push({
+        // @ts-expect-error
+        space: c.with,
+        // @ts-expect-error
+        value: c.nb.size
       })
     }
     return acc
