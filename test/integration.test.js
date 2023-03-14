@@ -181,7 +181,7 @@ test('w3infra integration flow', async t => {
       // If staging accept more broad condition given multiple parallel tests can happen there
       if (stage === 'staging') {
         return (
-          afterStoreAddTotal?.value >= beforeStoreAddTotal?.value + carSize &&
+          afterStoreAddTotal?.value >= beforeStoreAddTotal?.value + 1 &&
           afterStoreAddSizeTotal?.value >= beforeStoreAddSizeTotal.value + carSize &&
           spaceAfterUploadAddMetrics?.value >= spaceBeforeUploadAddMetrics?.value + 1
         )
