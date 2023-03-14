@@ -87,18 +87,7 @@ export function UcanInvocationStack({ stack, app }) {
     deadLetterQueue: metricsStoreAddSizeTotalDLQ.cdk.queue,
   })
 
-  // metrics upload/add count
-  const metricsUploadAddTotalDLQ = new Queue(stack, 'metrics-upload-add-total-dlq')
-  const metricsUploadAddTotalConsumer = new Function(stack, 'metrics-upload-add-total-consumer', {
-    environment: {
-      TABLE_NAME: adminMetricsTable.tableName
-    },
-    permissions: [adminMetricsTable],
-    handler: 'functions/metrics-upload-add-total.consumer',
-    deadLetterQueue: metricsUploadAddTotalDLQ.cdk.queue,
-  })
-
-  // store/remove size
+  // metrics store/remove size
   const metricsStoreRemoveSizeTotalDLQ = new Queue(stack, 'metrics-store-remove-size-total-dlq')
   const metricsStoreRemoveSizeTotalConsumer = new Function(stack, 'metrics-store-remove-size-total-consumer', {
     environment: {
@@ -108,6 +97,17 @@ export function UcanInvocationStack({ stack, app }) {
     permissions: [adminMetricsTable, carparkBucket],
     handler: 'functions/metrics-store-remove-size-total.consumer',
     deadLetterQueue: metricsStoreRemoveSizeTotalDLQ.cdk.queue,
+  })
+
+  // metrics upload/add count
+  const metricsUploadAddTotalDLQ = new Queue(stack, 'metrics-upload-add-total-dlq')
+  const metricsUploadAddTotalConsumer = new Function(stack, 'metrics-upload-add-total-consumer', {
+    environment: {
+      TABLE_NAME: adminMetricsTable.tableName
+    },
+    permissions: [adminMetricsTable],
+    handler: 'functions/metrics-upload-add-total.consumer',
+    deadLetterQueue: metricsUploadAddTotalDLQ.cdk.queue,
   })
 
   // metrics upload/remove count
@@ -131,6 +131,16 @@ export function UcanInvocationStack({ stack, app }) {
     },
     permissions: [spaceMetricsTable],
     handler: 'functions/space-metrics-upload-add-total.consumer',
+    deadLetterQueue: spaceMetricsDLQ.cdk.queue,
+  })
+
+  // upload/remove count
+  const spaceMetricsUploadRemoveTotalConsumer = new Function(stack, 'space-metrics-upload-remove-total-consumer', {
+    environment: {
+      TABLE_NAME: spaceMetricsTable.tableName
+    },
+    permissions: [spaceMetricsTable],
+    handler: 'functions/space-metrics-upload-remove-total.consumer',
     deadLetterQueue: spaceMetricsDLQ.cdk.queue,
   })
 
@@ -276,6 +286,16 @@ export function UcanInvocationStack({ stack, app }) {
       },
       spaceMetricsStoreRemoveSizeTotalConsumer: {
         function: spaceMetricsStoreRemoveSizeTotalConsumer,
+        // TODO: Set kinesis filters when supported by SST
+        // https://github.com/serverless-stack/sst/issues/1407
+        cdk: {
+          eventSource: {
+            ...(getKinesisEventSourceConfig(stack))
+          }
+        }
+      },
+      spaceMetricsUploadRemoveTotalConsumer: {
+        function: spaceMetricsUploadRemoveTotalConsumer,
         // TODO: Set kinesis filters when supported by SST
         // https://github.com/serverless-stack/sst/issues/1407
         cdk: {

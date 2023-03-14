@@ -9,7 +9,7 @@ import { randomCAR } from '../helpers/random.js'
 import { createDynamoTable, getItemFromTable} from '../helpers/tables.js'
 import { spaceMetricsTableProps } from '../../tables/index.js'
 
-import { updateUploadCount } from '../../functions/space-metrics-upload-add-total.js'
+import { updateUploadCount } from '../../functions/space-metrics-upload-remove-total.js'
 import { SPACE_METRICS_NAMES } from '../../constants.js'
 import { createSpaceMetricsTable } from '../../tables/space-metrics.js'
 
@@ -26,7 +26,7 @@ test.before(async t => {
   t.context.dynamoClient = dynamo
 })
 
-test('handles a batch of single invocation with upload/add', async t => {
+test('handles a batch of single invocation with upload/remove', async t => {
   const { tableName } = await prepareResources(t.context.dynamoClient)
   const uploadService = await Signer.generate()
   const alice = await Signer.generate()
@@ -41,11 +41,10 @@ test('handles a batch of single invocation with upload/add', async t => {
     carCid: car.cid.toString(),
     value: {
         att: [
-          UploadCapabilities.add.create({
+          UploadCapabilities.remove.create({
             with: spaceDid,
             nb: {
-              root: car.cid,
-              shards: [car.cid]
+              root: car.cid
             }
           })
         ],
@@ -62,14 +61,14 @@ test('handles a batch of single invocation with upload/add', async t => {
 
   const item = await getItemFromTable(t.context.dynamoClient, tableName, {
     space: spaceDid,
-    name: SPACE_METRICS_NAMES.UPLOAD_ADD_TOTAL
+    name: SPACE_METRICS_NAMES.UPLOAD_REMOVE_TOTAL
   })
   t.truthy(item)
   t.is(item?.value, 1)
   t.is(item?.space, spaceDid)
 })
 
-test('handles batch of single invocation with multiple upload/add attributes', async t => {
+test('handles batch of single invocation with multiple upload/remove attributes', async t => {
   const { tableName } = await prepareResources(t.context.dynamoClient)
   const uploadService = await Signer.generate()
   const alice = await Signer.generate()
@@ -86,11 +85,10 @@ test('handles batch of single invocation with multiple upload/add attributes', a
   const invocations = [{
     carCid: cars[0].cid.toString(),
     value: {
-      att: cars.map((car) => UploadCapabilities.add.create({
+      att: cars.map((car) => UploadCapabilities.remove.create({
         with: spaceDid,
         nb: {
-          root: car.cid,
-          shards: [car.cid]
+          root: car.cid
         }
       })),
       aud: uploadService.did(),
@@ -106,14 +104,14 @@ test('handles batch of single invocation with multiple upload/add attributes', a
 
   const item = await getItemFromTable(t.context.dynamoClient, tableName, {
     space: spaceDid,
-    name: SPACE_METRICS_NAMES.UPLOAD_ADD_TOTAL
+    name: SPACE_METRICS_NAMES.UPLOAD_REMOVE_TOTAL
   })
   t.truthy(item)
   t.is(item?.value, cars.length)
   t.is(item?.space, spaceDid)
 })
 
-test('handles batch of multiple invocations with upload/add in same space', async t => {
+test('handles batch of multiple invocations with upload/remove in same space', async t => {
   const { tableName } = await prepareResources(t.context.dynamoClient)
   const uploadService = await Signer.generate()
   const alice = await Signer.generate()
@@ -131,11 +129,10 @@ test('handles batch of multiple invocations with upload/add in same space', asyn
     carCid: car.cid.toString(),
     value: {
         att: [
-          UploadCapabilities.add.create({
+          UploadCapabilities.remove.create({
             with: spaceDid,
             nb: {
-              root: car.cid,
-              shards: [car.cid]
+              root: car.cid
             }
           })
         ],
@@ -152,14 +149,14 @@ test('handles batch of multiple invocations with upload/add in same space', asyn
 
   const item = await getItemFromTable(t.context.dynamoClient, tableName, {
     space: spaceDid,
-    name: SPACE_METRICS_NAMES.UPLOAD_ADD_TOTAL
+    name: SPACE_METRICS_NAMES.UPLOAD_REMOVE_TOTAL
   })
   t.truthy(item)
   t.is(item?.value, cars.length)
   t.is(item?.space, spaceDid)
 })
 
-test('handles batch of multiple invocations with upload/add in multiple spaces', async t => {
+test('handles batch of multiple invocations with upload/remove in multiple spaces', async t => {
   const { tableName } = await prepareResources(t.context.dynamoClient)
   const uploadService = await Signer.generate()
   const alice = await Signer.generate()
@@ -176,11 +173,10 @@ test('handles batch of multiple invocations with upload/add in multiple spaces',
     carCid: car.cid.toString(),
     value: {
         att: [
-          UploadCapabilities.add.create({
+          UploadCapabilities.remove.create({
             with: spaceDid,
             nb: {
-              root: car.cid,
-              shards: [car.cid]
+              root: car.cid
             }
           })
         ],
@@ -198,7 +194,7 @@ test('handles batch of multiple invocations with upload/add in multiple spaces',
   const items = await Promise.all(
     spaces.map(({ spaceDid }) => getItemFromTable(t.context.dynamoClient, tableName, {
       space: spaceDid,
-      name: SPACE_METRICS_NAMES.UPLOAD_ADD_TOTAL
+      name: SPACE_METRICS_NAMES.UPLOAD_REMOVE_TOTAL
     }))
   )
   t.truthy(items)
@@ -226,11 +222,10 @@ test('errors handling batch of multiple invocations with more transactions than 
     carCid: car.cid.toString(),
     value: {
         att: [
-          UploadCapabilities.add.create({
+          UploadCapabilities.remove.create({
             with: spaceDid,
             nb: {
               root: car.cid,
-              shards: [car.cid]
             }
           })
         ],

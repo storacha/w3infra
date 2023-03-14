@@ -2,7 +2,7 @@ import * as Sentry from '@sentry/serverless'
 
 import { createSpaceMetricsTable } from '../tables/space-metrics.js'
 import { parseKinesisEvent } from '../utils/parse-kinesis-event.js'
-import { UPLOAD_ADD } from '../constants.js'
+import { UPLOAD_REMOVE } from '../constants.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -11,12 +11,6 @@ Sentry.AWSLambda.init({
 })
 
 const AWS_REGION = process.env.AWS_REGION || 'us-west-2'
-
-/**
- * @typedef {object} IncrementInput
- * @property {`did:${string}:${string}`} space
- * @property {number} count
- */
 
 /**
  * @param {import('aws-lambda').KinesisStreamEvent} event
@@ -42,11 +36,11 @@ async function handler(event) {
  * @param {import('../types').SpaceMetricsTableCtx} ctx
  */
 export async function updateUploadCount (ucanInvocations, ctx) {
-  const invocationsWithUploadAdd = ucanInvocations.filter(
-    inv => inv.value.att.find(a => a.can === UPLOAD_ADD)
+  const invocationsWithUploadRemove = ucanInvocations.filter(
+    inv => inv.value.att.find(a => a.can === UPLOAD_REMOVE)
   ).flatMap(inv => inv.value.att)
 
-  await ctx.spaceMetricsTable.incrementUploadAddCount(invocationsWithUploadAdd)
+  await ctx.spaceMetricsTable.incrementUploadRemoveCount(invocationsWithUploadRemove)
 }
 
 export const consumer = Sentry.AWSLambda.wrapHandler(handler)
