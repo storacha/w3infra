@@ -99,7 +99,7 @@ export function createMetricsTable (region, tableName, options = {}) {
       await dynamoDb.send(updateCmd)
     },
     /**
-     * Increment total count from store/remove operations.
+     * Increment total count from upload/remove operations.
      *
      * @param {Capabilities} operationsInv
      */
