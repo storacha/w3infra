@@ -1,17 +1,14 @@
 import { testConsumer as test } from '../helpers/context.js'
 
-import { customAlphabet } from 'nanoid'
-import { CreateTableCommand, GetItemCommand } from '@aws-sdk/client-dynamodb'
-import { marshall, unmarshall } from '@aws-sdk/util-dynamodb'
 import * as Signer from '@ucanto/principal/ed25519'
 import * as StoreCapabilities from '@web3-storage/capabilities/store'
 
-import { adminMetricsTableProps } from '../../tables/index.js'
-import { createDynamodDb, dynamoDBTableConfig } from '../helpers/resources.js'
+import { createDynamodDb } from '../helpers/resources.js'
 import { createSpace } from '../helpers/ucanto.js'
 import { randomCAR } from '../helpers/random.js'
+import { createDynamoAdminMetricsTable, getItemFromTable} from '../helpers/tables.js'
 
-import { updateSizeTotal } from '../../functions/metrics-store-add-size-total.js'
+import { updateStoreAddTotal } from '../../functions/metrics-store-add-total.js'
 import { createMetricsTable } from '../../tables/metrics.js'
 import { METRICS_NAMES } from '../../constants.js'
 
@@ -58,14 +55,16 @@ test('handles a batch of single invocation with store/add', async t => {
   }]
 
   // @ts-expect-error
-  await updateSizeTotal(invocations, {
+  await updateStoreAddTotal(invocations, {
     metricsTable
   })
 
-  const item = await getItemFromTable(t.context.dynamoClient, tableName, METRICS_NAMES.STORE_ADD_SIZE_TOTAL)
+  const item = await getItemFromTable(t.context.dynamoClient, tableName, {
+    name: METRICS_NAMES.STORE_ADD_TOTAL
+  })
   t.truthy(item)
-  t.is(item?.name, METRICS_NAMES.STORE_ADD_SIZE_TOTAL)
-  t.is(item?.value, car.size)
+  t.is(item?.name, METRICS_NAMES.STORE_ADD_TOTAL)
+  t.is(item?.value, 1)
 })
 
 test('handles batch of single invocations with multiple store/add attributes', async t => {
@@ -99,14 +98,58 @@ test('handles batch of single invocations with multiple store/add attributes', a
   }]
 
   // @ts-expect-error
-  await updateSizeTotal(invocations, {
+  await updateStoreAddTotal(invocations, {
     metricsTable
   })
 
-  const item = await getItemFromTable(t.context.dynamoClient, tableName, METRICS_NAMES.STORE_ADD_SIZE_TOTAL)
+  const item = await getItemFromTable(t.context.dynamoClient, tableName, {
+    name: METRICS_NAMES.STORE_ADD_TOTAL
+  })
+
   t.truthy(item)
-  t.is(item?.name, METRICS_NAMES.STORE_ADD_SIZE_TOTAL)
-  t.is(item?.value, cars.reduce((acc, c) => acc + c.size, 0))
+  t.is(item?.name, METRICS_NAMES.STORE_ADD_TOTAL)
+  t.is(item?.value, cars.length)
+})
+
+test('handles a batch of single invocation without store/add', async t => {
+  const { tableName } = await prepareResources(t.context.dynamoClient)
+  const uploadService = await Signer.generate()
+  const alice = await Signer.generate()
+  const { spaceDid } = await createSpace(alice)
+  const car = await randomCAR(128)
+
+  const metricsTable = createMetricsTable(REGION, tableName, {
+    endpoint: t.context.dbEndpoint
+  })
+
+  const invocations = [{
+    carCid: car.cid.toString(),
+    value: {
+        att: [
+          StoreCapabilities.remove.create({
+            with: spaceDid,
+            nb: {
+              link: car.cid,
+            }
+          })
+        ],
+        aud: uploadService.did(),
+        iss: alice.did()
+    },
+    ts: Date.now()
+  }]
+
+  // @ts-expect-error
+  await updateStoreAddTotal(invocations, {
+    metricsTable
+  })
+
+  const item = await getItemFromTable(t.context.dynamoClient, tableName, {
+    name: METRICS_NAMES.STORE_ADD_TOTAL
+  })
+  t.truthy(item)
+  t.is(item?.name, METRICS_NAMES.STORE_ADD_TOTAL)
+  t.is(item?.value, 0)
 })
 
 /**
@@ -114,45 +157,10 @@ test('handles batch of single invocations with multiple store/add attributes', a
  */
 async function prepareResources (dynamoClient) {
   const [ tableName ] = await Promise.all([
-    createDynamouploadTable(dynamoClient),
+    createDynamoAdminMetricsTable(dynamoClient),
   ])
 
   return {
     tableName
   }
-}
-
-/**
- * @param {import('@aws-sdk/client-dynamodb').DynamoDBClient} dynamo
- */
-async function createDynamouploadTable(dynamo) {
-  const id = customAlphabet('1234567890abcdefghijklmnopqrstuvwxyz', 10)
-  const tableName = id()
-
-  await dynamo.send(new CreateTableCommand({
-    TableName: tableName,
-    ...dynamoDBTableConfig(adminMetricsTableProps),
-    ProvisionedThroughput: {
-      ReadCapacityUnits: 1,
-      WriteCapacityUnits: 1
-    }
-  }))
-
-  return tableName
-}
-
-/**
- * @param {import('@aws-sdk/client-dynamodb').DynamoDBClient} dynamo
- * @param {string} tableName
- * @param {string} name
- */
-async function getItemFromTable(dynamo, tableName, name) {
-  const params = {
-    TableName: tableName,
-    Key: marshall({
-      name,
-    })
-  }
-  const response = await dynamo.send(new GetItemCommand(params))
-  return response?.Item && unmarshall(response?.Item)
 }
