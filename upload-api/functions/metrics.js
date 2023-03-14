@@ -73,7 +73,7 @@ function createRegistry (ns = 'w3up') {
     registry,
     metrics: {
       size: new Prom.Counter({
-        name: `${ns}_size_total`,
+        name: `${ns}_bytes`,
         help: 'Total bytes associated with each invocation.',
         labelNames: ['can'],
         registers: [registry]
