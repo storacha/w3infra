@@ -98,6 +98,18 @@ export function UcanInvocationStack({ stack, app }) {
     deadLetterQueue: spaceMetricsDLQ.cdk.queue,
   })
 
+  // metrics upload/remove count
+  const metricsUploadRemoveTotalDLQ = new Queue(stack, 'metrics-upload-remove-total-dlq')
+  const metricsUploadRemoveTotalConsumer = new Function(stack, 'metrics-upload-remove-total-consumer', {
+    environment: {
+      TABLE_NAME: adminMetricsTable.tableName
+    },
+    permissions: [adminMetricsTable],
+    handler: 'functions/metrics-upload-remove-total.consumer',
+    deadLetterQueue: metricsUploadRemoveTotalDLQ.cdk.queue,
+  })
+
+
   // create a kinesis stream
   const ucanStream = new KinesisStream(stack, 'ucan-stream', {
     cdk: {
@@ -126,6 +138,14 @@ export function UcanInvocationStack({ stack, app }) {
         function: metricsStoreAddSizeTotalConsumer,
         // TODO: Set kinesis filters when supported by SST
         // https://github.com/serverless-stack/sst/issues/1407
+        cdk: {
+          eventSource: {
+            ...(getKinesisEventSourceConfig(stack))
+          }
+        }
+      },
+      metricsUploadRemoveTotalConsumer: {
+        function: metricsUploadRemoveTotalConsumer,
         cdk: {
           eventSource: {
             ...(getKinesisEventSourceConfig(stack))
