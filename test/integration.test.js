@@ -47,7 +47,7 @@ test('upload-api /metrics', async t => {
   t.is(response.status, 200)
 
   const body = await response.text()
-  t.truthy(body.includes('_size_total'))
+  t.truthy(body.includes('_bytes'))
 })
 
 // Integration test for all flow from uploading a file to Kinesis events consumers and replicator
