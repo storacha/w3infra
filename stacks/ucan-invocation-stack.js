@@ -1,4 +1,5 @@
 import {
+  Api,
   Bucket,
   Function,
   KinesisStream,
@@ -163,6 +164,22 @@ export function UcanInvocationStack({ stack, app }) {
         }
       }
     },
+  })
+
+  const api = new Api(stack, 'ucan-invocation-http-gateway', {
+    // customDomain,
+    defaults: {
+      function: {
+      }
+    },
+    routes: {
+      'POST /':        'functions/ucan-invocation-router.handler',
+    }
+  })
+
+  stack.addOutputs({
+    ApiEndpoint: api.url,
+    // CustomDomain:  customDomain ? `https://${customDomain.domainName}` : 'Set HOSTED_ZONE in env to deploy to a custom domain'
   })
 
   return {
