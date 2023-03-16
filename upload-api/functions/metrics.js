@@ -3,7 +3,10 @@ import * as Prom from 'prom-client'
 
 import {
   METRICS_NAMES,
-  STORE_ADD
+  STORE_ADD,
+  STORE_REMOVE,
+  UPLOAD_ADD,
+  UPLOAD_REMOVE
 } from '@web3-storage/w3infra-ucan-invocation/constants.js'
 
 import { createMetricsTable } from '../tables/metrics.js'
@@ -59,12 +62,21 @@ export async function getMetrics (metricsTable) {
 export async function recordMetrics (metrics, metricsTable) {
   const fetchedMetrics = await getMetrics(metricsTable)
 
-  metrics.size.inc({ 'can': STORE_ADD }, fetchedMetrics[METRICS_NAMES.STORE_ADD_SIZE_TOTAL] || 0)
+  // invocations size
+  metrics.bytes.inc({ 'can': STORE_ADD }, fetchedMetrics[METRICS_NAMES.STORE_ADD_SIZE_TOTAL] || 0)
+  metrics.bytes.inc({ 'can': STORE_REMOVE }, fetchedMetrics[METRICS_NAMES.STORE_REMOVE_SIZE_TOTAL] || 0)
+
+  // invocations count
+  metrics.invocations.inc({ 'can': STORE_ADD }, fetchedMetrics[METRICS_NAMES.STORE_ADD_TOTAL] || 0)
+  metrics.invocations.inc({ 'can': STORE_REMOVE }, fetchedMetrics[METRICS_NAMES.STORE_REMOVE_TOTAL] || 0)
+  metrics.invocations.inc({ 'can': UPLOAD_ADD }, fetchedMetrics[METRICS_NAMES.UPLOAD_ADD_TOTAL] || 0)
+  metrics.invocations.inc({ 'can': UPLOAD_REMOVE }, fetchedMetrics[METRICS_NAMES.UPLOAD_REMOVE_TOTAL] || 0)
 }
 
 /**
  * @typedef {object} Metrics
- * @property {Prom.Counter<'can'>} size
+ * @property {Prom.Counter<'can'>} bytes
+ * @property {Prom.Counter<'can'>} invocations
  */
 
 function createRegistry (ns = 'w3up') {
@@ -72,9 +84,15 @@ function createRegistry (ns = 'w3up') {
   return {
     registry,
     metrics: {
-      size: new Prom.Counter({
+      bytes: new Prom.Counter({
         name: `${ns}_bytes`,
         help: 'Total bytes associated with each invocation.',
+        labelNames: ['can'],
+        registers: [registry]
+      }),
+      invocations: new Prom.Counter({
+        name: `${ns}_invocations_total`,
+        help: 'Total number of invocations.',
         labelNames: ['can'],
         registers: [registry]
       }),
