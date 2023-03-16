@@ -26,9 +26,10 @@ export interface UploadCountIncrement {
 export interface SpaceMetricsTable {
   incrementStoreAddCount: (storeAddInv: Capability<Ability, `${string}:${string}`, unknown>[]) => Promise<void>
   incrementStoreRemoveCount: (storeRemoveInv: Capability<Ability, `${string}:${string}`, unknown>[]) => Promise<void>
-  incrementUploadAddCount: (uploadAddInv: Capability<Ability, `${string}:${string}`, unknown>[]) => Promise<void>
   incrementStoreAddSizeTotal: (incrementSizeTotal: Capability<Ability, `${string}:${string}`, unknown>[]) => Promise<void>
   incrementStoreRemoveSizeTotal: (incrementSizeTotal: Capability<Ability, `${string}:${string}`, unknown>[]) => Promise<void>
+  incrementUploadAddCount: (uploadAddInv: Capability<Ability, `${string}:${string}`, unknown>[]) => Promise<void>
+  incrementUploadRemoveCount: (uploadAddInv: Capability<Ability, `${string}:${string}`, unknown>[]) => Promise<void>
 }
 export interface SpaceMetricsTableCtx {
   spaceMetricsTable: SpaceMetricsTable

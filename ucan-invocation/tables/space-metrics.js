@@ -56,6 +56,29 @@ export function createSpaceMetricsTable (region, tableName, options = {}) {
       await dynamoDb.send(cmd)
     },
     /**
+     * Increment accumulated count from upload/remove operations.
+     *
+     * @param {Capabilities} uploadRemoveInv
+     */
+    incrementUploadRemoveCount: async (uploadRemoveInv) => {
+      const updateInputTransactions = normalizeInvocationsPerSpaceOccurence(uploadRemoveInv)
+      if (!updateInputTransactions.length) {
+        return
+      }
+
+      const transactItems = getItemsToIncrementForMetric(
+        updateInputTransactions,
+        tableName,
+        SPACE_METRICS_NAMES.UPLOAD_REMOVE_TOTAL
+      )
+
+      const cmd = new TransactWriteItemsCommand({
+        TransactItems: transactItems
+      })
+
+      await dynamoDb.send(cmd)
+    },
+    /**
      * Increment accumulated count from store/add operations.
      *
      * @param {Capabilities} storeAddInv
@@ -77,7 +100,7 @@ export function createSpaceMetricsTable (region, tableName, options = {}) {
 
       await dynamoDb.send(cmd)
     },
-    /*
+    /**
      * Increment total value from store/add operations.
      *
      * @param {Capabilities} operationsInv
@@ -122,7 +145,7 @@ export function createSpaceMetricsTable (region, tableName, options = {}) {
 
       await dynamoDb.send(cmd)
     },
-    /*
+    /**
      * Increment total value from store/remove operations.
      *
      * @param {Capabilities} operationsInv
@@ -146,6 +169,7 @@ export function createSpaceMetricsTable (region, tableName, options = {}) {
       await dynamoDb.send(cmd)
     }
   }
+
 }
 
 /**
