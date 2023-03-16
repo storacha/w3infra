@@ -95,6 +95,28 @@ export function createMetricsTable (region, tableName, options = {}) {
           name: METRICS_NAMES.STORE_REMOVE_TOTAL
         })
       })
+      await dynamoDb.send(updateCmd)
+    },
+    /**
+     * Increment total value from new given operations.
+     *
+     * @param {Capabilities} operationsInv
+     */
+    incrementStoreRemoveSizeTotal: async (operationsInv) => {
+      // @ts-expect-error
+      const invTotalSize = operationsInv.reduce((acc, c) => acc + c.nb?.size, 0)
+
+      const updateCmd = new UpdateItemCommand({
+        TableName: tableName,
+        UpdateExpression: `ADD #value :value`,
+          ExpressionAttributeNames: {'#value': 'value'},
+          ExpressionAttributeValues: {
+            ':value': { N: String(invTotalSize) },
+          },
+        Key: marshall({
+          name: METRICS_NAMES.STORE_REMOVE_SIZE_TOTAL
+        })
+      })
 
       await dynamoDb.send(updateCmd)
     },
