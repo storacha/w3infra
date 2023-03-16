@@ -2,6 +2,7 @@ import * as Sentry from '@sentry/serverless'
 
 import { createSpaceMetricsTable } from '../tables/space-metrics.js'
 import { parseKinesisEvent } from '../utils/parse-kinesis-event.js'
+import { STORE_REMOVE } from '../constants.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -9,7 +10,6 @@ Sentry.AWSLambda.init({
   tracesSampleRate: 1.0,
 })
 
-const STORE_REMOVE = 'store/remove'
 const AWS_REGION = process.env.AWS_REGION || 'us-west-2'
 
 /**

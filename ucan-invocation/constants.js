@@ -1,8 +1,17 @@
+import { 
+  add as storeAdd,
+  remove as storeRemove
+} from '@web3-storage/capabilities/store'
+import {
+  add as uploadAdd,
+  remove as uploadRemove
+} from '@web3-storage/capabilities/upload'
+
 // UCAN protocol
-export const STORE_ADD = 'store/add'
-export const STORE_REMOVE = 'store/remove'
-export const UPLOAD_ADD = 'upload/add'
-export const UPLOAD_REMOVE = 'upload/remove'
+export const STORE_ADD = storeAdd.can
+export const STORE_REMOVE = storeRemove.can
+export const UPLOAD_ADD = uploadAdd.can
+export const UPLOAD_REMOVE = uploadRemove.can
 
 // Admin Metrics
 export const METRICS_NAMES = {
