@@ -18,6 +18,8 @@ export interface UploadCountIncrement {
   count: number
 }
 export interface SpaceMetricsTable {
+  incrementStoreAddCount: (storeAddInv: Capability<Ability, `${string}:${string}`, unknown>[]) => Promise<void>
+  incrementStoreRemoveCount: (storeRemoveInv: Capability<Ability, `${string}:${string}`, unknown>[]) => Promise<void>
   incrementUploadAddCount: (uploadAddInv: Capability<Ability, `${string}:${string}`, unknown>[]) => Promise<void>
 }
 
