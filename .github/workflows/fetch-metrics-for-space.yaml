@@ -1,0 +1,37 @@
+name: Fetch metrics for Space
+
+on:
+  workflow_dispatch:
+    inputs:
+      space_did:
+        required: true
+        description: DID of the space
+        type: string
+      env:
+        required: true
+        description: The env to fetch metrics against. Default is production.
+        options: 
+          - staging
+          - production
+        default: production
+
+jobs:
+  fetch-metrics-for-space:
+    name: Fetch metrics for Space
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          registry-url: 'https://registry.npmjs.org'
+          node-version: 16
+          cache: 'npm'
+      - run: npm ci
+      - name: Run job
+        env:
+          DEBUG: '*'
+          ENV: ${{ github.event.inputs.env }}
+          SPACE_DID:  ${{ github.event.inputs.space_did }}
+          TABLE_NAME: 'space-metrics'
+        run: npm run fetch-metrics-for-space
