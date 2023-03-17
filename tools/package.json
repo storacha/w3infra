@@ -1,0 +1,18 @@
+{
+  "name": "tools",
+  "version": "1.0.0",
+  "description": "w3infra tools",
+  "private": true,
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "fetch-metrics-for-space": "node cli.js fetch-metrics-for-space"
+  },
+  "license": "Apache-2.0 OR MIT",
+  "dependencies": {},
+  "devDependencies": {
+    "@aws-sdk/client-dynamodb": "^3.226.0",
+    "@aws-sdk/util-dynamodb": "^3.226.0",
+    "sade": "^1.8.1"
+  }
+}
