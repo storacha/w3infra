@@ -30,6 +30,7 @@ export function UploadApiStack({ stack, app }) {
   const pkg = getApiPackageJson()
   const git = getGitInfo()
   const privateKey = new Config.Secret(stack, 'PRIVATE_KEY')
+  const ucanInvocationPostbasicAuth = new Config.Secret(stack, 'UCAN_INVOCATION_POST_BASIC_AUTH')
 
   const api = new Api(stack, 'http-gateway', {
     customDomain,
@@ -58,17 +59,19 @@ export function UploadApiStack({ stack, app }) {
         },
         bind: [
           privateKey,
+          ucanInvocationPostbasicAuth
         ]
       }
     },
     routes: {
-      'POST /':        'functions/ucan-invocation-router.handler',
-       'GET /':        'functions/get.home',
-       'GET /error':   'functions/get.error',
-       'GET /version': 'functions/get.version',
-       'GET /metrics': 'functions/metrics.handler',
-       // AWS API Gateway does not know trailing slash... and Grafana Agent puts trailing slash
-       'GET /metrics/{proxy+}': 'functions/metrics.handler',
+      'POST /':       'functions/ucan-invocation-router.handler',
+      'POST /ucan':   'functions/ucan.handler',
+      'GET /':        'functions/get.home',
+      'GET /error':   'functions/get.error',
+      'GET /version': 'functions/get.version',
+      'GET /metrics': 'functions/metrics.handler',
+      // AWS API Gateway does not know trailing slash... and Grafana Agent puts trailing slash
+      'GET /metrics/{proxy+}': 'functions/metrics.handler',
     },
     accessLog: {
       format:'{"requestTime":"$context.requestTime","requestId":"$context.requestId","httpMethod":"$context.httpMethod","path":"$context.path","routeKey":"$context.routeKey","status":$context.status,"responseLatency":$context.responseLatency,"integrationRequestId":"$context.integration.requestId","integrationStatus":"$context.integration.status","integrationLatency":"$context.integration.latency","integrationServiceStatus":"$context.integration.integrationStatus","ip":"$context.identity.sourceIp","userAgent":"$context.identity.userAgent"}'

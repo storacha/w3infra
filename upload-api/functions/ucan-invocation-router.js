@@ -1,12 +1,12 @@
 import { DID } from '@ucanto/core'
 import { Kinesis } from '@aws-sdk/client-kinesis'
 import * as Sentry from '@sentry/serverless'
-import { fromString as uint8arrayFromString } from 'uint8arrays/from-string'
 
 import { createAccessClient } from '../access.js'
 import {
   parseUcanInvocationRequest,
   persistUcanInvocation,
+  getKinesisRecord,
 } from '../ucan-invocation.js'
 import { createCarStore } from '../buckets/car-store.js'
 import { createDudewhereStore } from '../buckets/dudewhere-store.js'
@@ -98,20 +98,9 @@ async function ucanInvocationRouter(request) {
   await persistUcanInvocation(ucanInvocation, ucanStoreBucket)
 
   // Put invocation to UCAN stream
-  await kinesisClient.putRecord({
-    Data: uint8arrayFromString(
-      JSON.stringify({
-        carCid: ucanInvocation.carCid,
-        value: ucanInvocation.value,
-        ts: Date.now(),
-      })
-    ),
-    // https://docs.aws.amazon.com/streams/latest/dev/key-concepts.html
-    // A partition key is used to group data by shard within a stream.
-    // It is required, and now we are starting with one shard. We need to study best partition key
-    PartitionKey: 'key',
-    StreamName: ucanLogStreamName,
-  })
+  await kinesisClient.putRecord(
+    getKinesisRecord(ucanInvocation, ucanLogStreamName)
+  )
 
   return toLambdaSuccessResponse(response)
 }

@@ -5,10 +5,10 @@ import * as Signer from '@ucanto/principal/ed25519'
 import { CAR } from '@ucanto/transport'
 import * as UCAN from '@ipld/dag-ucan'
 import * as ucanto from '@ucanto/core'
-import * as UcantoClient from '@ucanto/client'
 
 import { createS3, createBucket } from '../helpers/resources.js'
 import { randomCAR } from '../helpers/random.js'
+import { createSpace } from '../helpers/ucan.js'
 
 import { useUcanStore } from '../../buckets/ucan-store.js'
 import {
@@ -189,22 +189,5 @@ async function prepareResources(s3Client) {
 
   return {
     bucketName,
-  }
-}
-
-/**
- * @param {import('@ucanto/interface').Principal} audience
- */
-export async function createSpace(audience) {
-  const space = await Signer.generate()
-  const spaceDid = space.did()
-
-  return {
-    proof: await UcantoClient.delegate({
-      issuer: space,
-      audience,
-      capabilities: [{ can: '*', with: spaceDid }],
-    }),
-    spaceDid,
   }
 }

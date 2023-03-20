@@ -1,18 +1,17 @@
 import * as CAR from '@ucanto/transport/car'
 import * as UCAN from '@ipld/dag-ucan'
 import * as Link from 'multiformats/link'
+import { fromString as uint8arrayFromString } from 'uint8arrays/from-string'
+
+import {
+  NoTokenError,
+  ExpectedBasicStringError,
+  NoValidTokenError
+} from './errors.js'
 
 /**
- * @typedef {object} UcanInvocation
- * @property {UCAN.Capabilities} att
- * @property {`did:${string}:${string}`} aud
- * @property {`did:${string}:${string}`} iss
- * @property {string[]} prf
- * 
- * @typedef {object} UcanInvocationWrapper
- * @property {string} carCid
- * @property {Uint8Array} bytes
- * @property {UcanInvocation} value
+ * @typedef {import('./types').UcanInvocation} UcanInvocation
+ * @typedef {import('./types').UcanInvocationWrapper} UcanInvocationWrapper
  */
 
 /**
@@ -37,7 +36,6 @@ export async function parseUcanInvocationRequest(request) {
   const bytes = Buffer.from(request.body, 'base64')
   const car = await CAR.codec.decode(bytes)
   const carCid = car.roots[0].cid.toString()
-
   // @ts-expect-error 'ByteView<unknown>' is not assignable to parameter of type 'ByteView<UCAN<Capabilities>>'
   const dagUcan = UCAN.decode(car.roots[0].bytes)
 
@@ -55,6 +53,80 @@ export async function parseUcanInvocationRequest(request) {
       prf: replaceAllLinkValues(dagUcan.prf),
     },
   }
+}
+
+/**
+ * @param {UcanInvocationWrapper} ucanInvocation
+ * @param {string} ucanLogStreamName
+ */
+export function getKinesisRecord (ucanInvocation, ucanLogStreamName) {
+  return {
+    Data: uint8arrayFromString(
+      JSON.stringify({
+        carCid: ucanInvocation.carCid,
+        value: ucanInvocation.value,
+        ts: Date.now(),
+      })
+    ),
+    // https://docs.aws.amazon.com/streams/latest/dev/key-concepts.html
+    // A partition key is used to group data by shard within a stream.
+    // It is required, and now we are starting with one shard. We need to study best partition key
+    PartitionKey: 'key',
+    StreamName: ucanLogStreamName,
+  }
+}
+
+/**
+ * @typedef {object} UcanInvocationCtx
+ * @property {import('@web3-storage/upload-api').UcanBucket} storeBucket
+ * @property {string} basicAuth
+ * @property {string} [streamName]
+ * @property {import('@aws-sdk/client-kinesis').Kinesis} [kinesisClient]
+ */
+
+/**
+ * @param {import('aws-lambda').APIGatewayProxyEventV2} request
+ * @param {UcanInvocationCtx} ctx
+ */
+export async function processUcanInvocation(request, ctx) {
+  const token = getTokenFromRequest(request)
+  if (token !== ctx.basicAuth) {
+    throw new NoValidTokenError('invalid Authorization credentials provided')
+  }
+
+  const ucanInvocation = await parseUcanInvocationRequest(request)
+
+  // persist successful invocation
+  await persistUcanInvocation(ucanInvocation, ctx.storeBucket)
+
+  // Put invocation to UCAN stream
+  ctx.streamName && await ctx.kinesisClient?.putRecord(
+    getKinesisRecord(ucanInvocation, ctx.streamName)
+  )
+}
+
+/**
+ * @param {import('aws-lambda').APIGatewayProxyEventV2} request
+ */
+function getTokenFromRequest (request) {
+  const authHeader = request.headers.Authorization || ''
+  if (!authHeader) {
+    throw new NoTokenError('no Authorization header provided')
+  }
+
+  const token = parseAuthorizationHeader(authHeader)
+  return token
+}
+
+/**
+ * @param {string} header
+ */
+function parseAuthorizationHeader (header) {
+  if (!header.toLowerCase().startsWith('basic ')) {
+    throw new ExpectedBasicStringError('no basic Authorization header provided')
+  }
+
+  return header.slice(6)
 }
 
 /**
