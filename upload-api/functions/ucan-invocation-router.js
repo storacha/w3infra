@@ -4,9 +4,9 @@ import * as Sentry from '@sentry/serverless'
 
 import { createAccessClient } from '../access.js'
 import {
-  parseUcanInvocationRequest,
-  persistUcanInvocation,
-  getKinesisRecord,
+  parseInvocationsCarRequest,
+  persistInvocationsCar,
+  getKinesisInput,
 } from '../ucan-invocation.js'
 import { createCarStore } from '../buckets/car-store.js'
 import { createDudewhereStore } from '../buckets/dudewhere-store.js'
@@ -92,14 +92,14 @@ async function ucanInvocationRouter(request) {
     body: Buffer.from(request.body, 'base64'),
   })
 
-  const ucanInvocation = await parseUcanInvocationRequest(request)
+  const carInvocations = await parseInvocationsCarRequest(request)
 
-  // persist successful invocation handled
-  await persistUcanInvocation(ucanInvocation, ucanStoreBucket)
+  // persist successful CAR handled
+  await persistInvocationsCar(carInvocations, ucanStoreBucket)
 
-  // Put invocation to UCAN stream
-  await kinesisClient.putRecord(
-    getKinesisRecord(ucanInvocation, ucanLogStreamName)
+  // Put CAR invocations to UCAN stream
+  await kinesisClient.putRecords(
+    getKinesisInput(carInvocations, ucanLogStreamName)
   )
 
   return toLambdaSuccessResponse(response)

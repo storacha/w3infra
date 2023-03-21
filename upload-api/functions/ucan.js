@@ -3,7 +3,7 @@ import { Kinesis } from '@aws-sdk/client-kinesis'
 import * as Sentry from '@sentry/serverless'
 
 import { createUcanStore } from '../buckets/ucan-store.js'
-import { processUcanInvocation } from '../ucan-invocation.js'
+import { processInvocationsCar } from '../ucan-invocation.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -35,7 +35,7 @@ async function handlerFn(request) {
   const storeBucket = createUcanStore(AWS_REGION, bucketName)
 
   try {
-    await processUcanInvocation(request, {
+    await processInvocationsCar(request, {
       storeBucket,
       streamName,
       basicAuth: UCAN_INVOCATION_POST_BASIC_AUTH,
