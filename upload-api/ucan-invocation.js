@@ -1,60 +1,143 @@
 import * as CAR from '@ucanto/transport/car'
 import * as UCAN from '@ipld/dag-ucan'
 import * as Link from 'multiformats/link'
+import { fromString as uint8arrayFromString } from 'uint8arrays/from-string'
+
+import {
+  NoTokenError,
+  ExpectedBasicStringError,
+  NoValidTokenError
+} from './errors.js'
 
 /**
- * @typedef {object} UcanInvocation
- * @property {UCAN.Capabilities} att
- * @property {`did:${string}:${string}`} aud
- * @property {`did:${string}:${string}`} iss
- * @property {string[]} prf
- * 
- * @typedef {object} UcanInvocationWrapper
- * @property {string} carCid
- * @property {Uint8Array} bytes
- * @property {UcanInvocation} value
+ * @typedef {import('./types').UcanInvocation} UcanInvocation
+ * @typedef {import('./types').InvocationsCar} InvocationsCar
  */
 
 /**
- * Persist successful UCAN invocations handled by the router.
+ * Persist CAR with handled UCAN invocations by the router.
  *
- * @param {UcanInvocationWrapper} ucanInvocation
+ * @param {InvocationsCar} invocationsCar
  * @param {import('@web3-storage/upload-api').UcanBucket} ucanStore
  */
-export async function persistUcanInvocation(ucanInvocation, ucanStore) {
-  await ucanStore.put(ucanInvocation.carCid, ucanInvocation.bytes)
+export async function persistInvocationsCar(invocationsCar, ucanStore) {
+  await ucanStore.put(invocationsCar.cid, invocationsCar.bytes)
 }
 
 /**
  * @param {import('aws-lambda').APIGatewayProxyEventV2} request
- * @returns {Promise<UcanInvocationWrapper>}
+ * @returns {Promise<InvocationsCar>}
  */
-export async function parseUcanInvocationRequest(request) {
+export async function parseInvocationsCarRequest(request) {
   if (!request.body) {
     throw new Error('service requests are required to have body')
   }
 
   const bytes = Buffer.from(request.body, 'base64')
   const car = await CAR.codec.decode(bytes)
-  const carCid = car.roots[0].cid.toString()
+  if (!car.roots.length) {
+    throw new Error('Invocations CAR must have one root')
+  }
 
-  // @ts-expect-error 'ByteView<unknown>' is not assignable to parameter of type 'ByteView<UCAN<Capabilities>>'
-  const dagUcan = UCAN.decode(car.roots[0].bytes)
+  const cid = car.roots[0].cid.toString()
 
-  return {
-    bytes,
-    carCid,
-    value: {
+  const invocations = car.roots.map(root => {
+    // @ts-expect-error 'ByteView<unknown>' is not assignable to parameter of type 'ByteView<UCAN<Capabilities>>'
+    const dagUcan = UCAN.decode(root.bytes)
+
+    return {
       // Workaround for:
       // https://github.com/web3-storage/ucanto/issues/171
       // https://github.com/multiformats/js-multiformats/issues/228
       // @ts-ignore missing types
-      att: dagUcan.att.map(replaceAllLinkValues),
+      att: /** @type {UCAN.Capabilities} */ (dagUcan.att.map(replaceAllLinkValues)),
       aud: dagUcan.aud.did(),
       iss: dagUcan.iss.did(),
       prf: replaceAllLinkValues(dagUcan.prf),
-    },
+    }
+  })
+
+  return {
+    bytes,
+    cid,
+    invocations,
   }
+}
+
+/**
+ * @param {InvocationsCar} invocationsCar
+ * @param {string} ucanLogStreamName
+ */
+export function getKinesisInput (invocationsCar, ucanLogStreamName) {
+  return {
+    Records: invocationsCar.invocations.map(invocation => ({
+      Data: uint8arrayFromString(
+        JSON.stringify({
+          carCid: invocationsCar.cid,
+          value: invocation,
+          ts: Date.now(),
+        })
+      ),
+      // https://docs.aws.amazon.com/streams/latest/dev/key-concepts.html
+      // A partition key is used to group data by shard within a stream.
+      // It is required, and now we are starting with one shard. We need to study best partition key
+      PartitionKey: 'key',
+    })),
+    StreamName: ucanLogStreamName,
+  }
+}
+
+/**
+ * @typedef {object} UcanInvocationCtx
+ * @property {import('@web3-storage/upload-api').UcanBucket} storeBucket
+ * @property {string} basicAuth
+ * @property {string} [streamName]
+ * @property {import('@aws-sdk/client-kinesis').Kinesis} [kinesisClient]
+ */
+
+/**
+ * @param {import('aws-lambda').APIGatewayProxyEventV2} request
+ * @param {UcanInvocationCtx} ctx
+ */
+export async function processInvocationsCar(request, ctx) {
+  const token = getTokenFromRequest(request)
+  if (token !== ctx.basicAuth) {
+    throw new NoValidTokenError('invalid Authorization credentials provided')
+  }
+
+  const car = await parseInvocationsCarRequest(request)
+
+  // persist successful CAR handled
+  await persistInvocationsCar(car, ctx.storeBucket)
+
+  // Put CAR invocations to UCAN stream
+  ctx.streamName && await ctx.kinesisClient?.putRecords(
+    getKinesisInput(car, ctx.streamName)
+  )
+}
+
+/**
+ * @param {import('aws-lambda').APIGatewayProxyEventV2} request
+ */
+function getTokenFromRequest (request) {
+  const authHeader = request.headers.Authorization || ''
+  if (!authHeader) {
+    throw new NoTokenError('no Authorization header provided')
+  }
+
+  const token = parseAuthorizationHeader(authHeader)
+  return token
+}
+
+/**
+ * @param {string} header
+ */
+function parseAuthorizationHeader (header) {
+  if (!header.toLowerCase().startsWith('basic ')) {
+    throw new ExpectedBasicStringError('no basic Authorization header provided')
+  }
+
+  return header.slice(6)
 }
 
 /**
