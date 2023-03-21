@@ -35,6 +35,10 @@ export async function parseInvocationsCarRequest(request) {
 
   const bytes = Buffer.from(request.body, 'base64')
   const car = await CAR.codec.decode(bytes)
+  if (!car.roots.length) {
+    throw new Error('Invocations CAR must have one root')
+  }
+
   const cid = car.roots[0].cid.toString()
 
   const invocations = car.roots.map(root => {
