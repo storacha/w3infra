@@ -190,7 +190,7 @@ _Example:_ `MgCZG7EvaA...1pX9as=`
 
 #### `UCAN_INVOCATION_POST_BASIC_AUTH`
 
-The HTTP Basic auth token for the UCAN Invocation entrypoin, where UCAN invocations can be stored and proxied to the UCAN Stream.
+The HTTP Basic auth token for the UCAN Invocation entrypoint, where UCAN invocations can be stored and proxied to the UCAN Stream.
 
 _Example:_ `MgCZG7EvaA...1pX9as=`
 

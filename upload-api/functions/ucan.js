@@ -43,7 +43,7 @@ async function handlerFn(request) {
     })
   } catch (/** @type {any} */ error) {
     return {
-      statusCode: error.status,
+      statusCode: error.status ?? 500,
       body: Buffer.from(error.message).toString('base64'),
       isBase64Encoded: true,
     }
