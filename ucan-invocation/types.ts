@@ -30,6 +30,7 @@ export interface SpaceMetricsTable {
   incrementStoreRemoveSizeTotal: (incrementSizeTotal: Capability<Ability, `${string}:${string}`, unknown>[]) => Promise<void>
   incrementUploadAddCount: (uploadAddInv: Capability<Ability, `${string}:${string}`, unknown>[]) => Promise<void>
   incrementUploadRemoveCount: (uploadAddInv: Capability<Ability, `${string}:${string}`, unknown>[]) => Promise<void>
+  incrementConsumerAddTotal: (uploadAddInv: Capability<Ability, `${string}:${string}`, unknown>[]) => Promise<void>
 }
 export interface SpaceMetricsTableCtx {
   spaceMetricsTable: SpaceMetricsTable

@@ -1,3 +1,6 @@
+import {
+  add as consumerAdd,
+} from '@web3-storage/capabilities/consumer'
 import { 
   add as storeAdd,
   remove as storeRemove
@@ -12,6 +15,7 @@ export const STORE_ADD = storeAdd.can
 export const STORE_REMOVE = storeRemove.can
 export const UPLOAD_ADD = uploadAdd.can
 export const UPLOAD_REMOVE = uploadRemove.can
+export const CONSUMER_ADD = consumerAdd.can
 
 // Admin Metrics
 export const METRICS_NAMES = {
