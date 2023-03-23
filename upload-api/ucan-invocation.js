@@ -47,7 +47,7 @@ export async function processUcanLogRequest (request, ctx) {
   }
   const bytes = Buffer.from(request.body, 'base64')
 
-  const contentType = request.headers['Content-Type'] || ''
+  const contentType = request.headers['content-type'] || ''
   if (contentType === CONTENT_TYPE.WORKFLOW) {
     return await processWorkflow(bytes, ctx)
   } else if (contentType === CONTENT_TYPE.RECEIPT) {
@@ -235,7 +235,7 @@ export async function persistReceipt (receiptBlock, invocationBucket, taskBucket
  * @param {import('aws-lambda').APIGatewayProxyEventV2} request
  */
 function getTokenFromRequest (request) {
-  const authHeader = request.headers.Authorization || ''
+  const authHeader = request.headers.authorization || ''
   if (!authHeader) {
     throw new NoTokenError('no Authorization header provided')
   }
