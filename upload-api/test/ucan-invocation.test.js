@@ -20,7 +20,9 @@ import {
   createUcanInvocation
 } from './helpers/ucan.js'
 
-import { useUcanStore } from '../buckets/ucan-store.js'
+import { useInvocationStore } from '../buckets/invocation-store.js'
+import { useTaskStore } from '../buckets/task-store.js'
+import { useWorkflowStore } from '../buckets/workflow-store.js'
 import {
   processUcanLogRequest,
   parseWorkflow,
@@ -83,9 +85,7 @@ test('parses Workflow as CAR with ucan invocations', async (t) => {
 })
 
 test('persists workflow with invocations as CAR file', async (t) => {
-  const { bucketName } = await prepareResources(t.context.s3)
-  const ucanStore = useUcanStore(t.context.s3, bucketName)
-
+  const stores = await getStores(t.context)
   const uploadService = await Signer.generate()
   const alice = await Signer.generate()
 
@@ -102,7 +102,7 @@ test('persists workflow with invocations as CAR file', async (t) => {
   ])
 
   const workflow = await parseWorkflow(workflowRequest.body)
-  await persistWorkflow(workflow, ucanStore)
+  await persistWorkflow(workflow, stores.invocation.bucket, stores.workflow.bucket)
 
   const requestCar = await CAR.codec.decode(workflowRequest.body)
   const workflowCid = requestCar.roots[0].cid.toString()
@@ -111,7 +111,7 @@ test('persists workflow with invocations as CAR file', async (t) => {
   // Verify invocation mapping within workflow stored
   const cmdInvocationStored = new HeadObjectCommand({
     Key: `invocation/${invocationCid}/${workflowCid}.workflow`,
-    Bucket: bucketName,
+    Bucket: stores.invocation.name,
   })
   const s3ResponseInvocationStored = await t.context.s3.send(cmdInvocationStored)
   t.is(s3ResponseInvocationStored.$metadata.httpStatusCode, 200)
@@ -119,7 +119,7 @@ test('persists workflow with invocations as CAR file', async (t) => {
   // Verify Workflow stored
   const cmdCarStored = new GetObjectCommand({
     Key: `workflow/${workflowCid}`,
-    Bucket: bucketName,
+    Bucket: stores.workflow.name,
   })
   const s3ResponseCarStored = await t.context.s3.send(cmdCarStored)
   t.is(s3ResponseCarStored.$metadata.httpStatusCode, 200)
@@ -184,8 +184,7 @@ test('parses a receipt cbor', async (t) => {
 })
 
 test('persists receipt and its associated data', async t => {
-  const { bucketName } = await prepareResources(t.context.s3)
-  const ucanStore = useUcanStore(t.context.s3, bucketName)
+  const stores = await getStores(t.context)
   const uploadService = await Signer.generate()
 
   const data = new Uint8Array([11, 22, 34, 44, 55])
@@ -222,12 +221,12 @@ test('persists receipt and its associated data', async t => {
   
   // Persist receipt
   const receiptBlock = await parseReceiptCbor(receipt.bytes)
-  await persistReceipt(receiptBlock, ucanStore)
+  await persistReceipt(receiptBlock, stores.invocation.bucket, stores.task.bucket)
 
   // Validate invocation receipt block
   const cmdReceiptBlock = new GetObjectCommand({
     Key: `invocation/${invocationCid}.receipt`,
-    Bucket: bucketName,
+    Bucket: stores.invocation.name,
   })
   const s3ResponseReceiptBlock = await t.context.s3.send(cmdReceiptBlock)
   t.is(s3ResponseReceiptBlock.$metadata.httpStatusCode, 200)
@@ -239,7 +238,7 @@ test('persists receipt and its associated data', async t => {
   // Validate stored task result
   const cmdTaskResult = new GetObjectCommand({
     Key: `task/${taskCid}.result`,
-    Bucket: bucketName,
+    Bucket: stores.task.name,
   })
   const s3ResponseTaskResult = await t.context.s3.send(cmdTaskResult)
   t.is(s3ResponseTaskResult.$metadata.httpStatusCode, 200)
@@ -254,7 +253,7 @@ test('persists receipt and its associated data', async t => {
   // Validate task index within invocation stored
   const cmdTaskIndexStored = new HeadObjectCommand({
     Key: `task/${taskCid}/${invocationCid}.invocation`,
-    Bucket: bucketName,
+    Bucket: stores.task.name,
   })
   const s3ResponseTaskIndexStored = await t.context.s3.send(cmdTaskIndexStored)
   t.is(s3ResponseTaskIndexStored.$metadata.httpStatusCode, 200)
@@ -262,10 +261,9 @@ test('persists receipt and its associated data', async t => {
 
 test('can process a ucan log request for a workflow CAR with one invocation', async t => {
   t.plan(11)
-  const { bucketName } = await prepareResources(t.context.s3)
+  const stores = await getStores(t.context)
   const basicAuth = 'test-token'
   const streamName = 'stream-name'
-  const storeBucket = useUcanStore(t.context.s3, bucketName)
 
   // Create workflow with one UCAN invocation
   const data = new Uint8Array([11, 22, 34, 44, 55])
@@ -290,7 +288,9 @@ test('can process a ucan log request for a workflow CAR with one invocation', as
 
   // Handles invocation
   await t.notThrowsAsync(() => processUcanLogRequest(workflowRequest, {
-    storeBucket,
+    invocationBucket: stores.invocation.bucket,
+    taskBucket: stores.task.bucket,
+    workflowBucket: stores.workflow.bucket,
     basicAuth,
     streamName,
     kinesisClient: {
@@ -319,7 +319,7 @@ test('can process a ucan log request for a workflow CAR with one invocation', as
   const invocationCid = workflowCid
   const cmd = new HeadObjectCommand({
     Key: `workflow/${workflowCid}`,
-    Bucket: bucketName,
+    Bucket: stores.workflow.name,
   })
   const s3Response = await t.context.s3.send(cmd)
   t.is(s3Response.$metadata.httpStatusCode, 200)
@@ -327,7 +327,7 @@ test('can process a ucan log request for a workflow CAR with one invocation', as
   // Verify invocation mapping within workflow stored
   const cmdInvocationStored = new HeadObjectCommand({
     Key: `invocation/${invocationCid}/${workflowCid}.workflow`,
-    Bucket: bucketName,
+    Bucket: stores.invocation.name,
   })
   const s3ResponseInvocationStored = await t.context.s3.send(cmdInvocationStored)
   t.is(s3ResponseInvocationStored.$metadata.httpStatusCode, 200)
@@ -335,10 +335,9 @@ test('can process a ucan log request for a workflow CAR with one invocation', as
 
 test('can process a ucan log request for a workflow CAR with multiple invocations', async t => {
   t.plan(11)
-  const { bucketName } = await prepareResources(t.context.s3)
+  const stores = await getStores(t.context)
   const basicAuth = 'test-token'
   const streamName = 'stream-name'
-  const storeBucket = useUcanStore(t.context.s3, bucketName)
 
   // Create workflow with multiple UCAN invocation
   const data = new Uint8Array([11, 22, 34, 44, 55])
@@ -366,7 +365,9 @@ test('can process a ucan log request for a workflow CAR with multiple invocation
 
   // Handles invocation
   await t.notThrowsAsync(() => processUcanLogRequest(workflowRequest, {
-    storeBucket,
+    invocationBucket: stores.invocation.bucket,
+    taskBucket: stores.task.bucket,
+    workflowBucket: stores.workflow.bucket,
     basicAuth,
     streamName,
     kinesisClient: {
@@ -398,7 +399,7 @@ test('can process a ucan log request for a workflow CAR with multiple invocation
   const workflowCid = decodedWorkflowCar.roots[0].cid.toString()
   const cmd = new HeadObjectCommand({
     Key: `workflow/${workflowCid}`,
-    Bucket: bucketName,
+    Bucket: stores.workflow.name,
   })
   const s3Response = await t.context.s3.send(cmd)
   t.is(s3Response.$metadata.httpStatusCode, 200)
@@ -409,7 +410,7 @@ test('can process a ucan log request for a workflow CAR with multiple invocation
     // Verify invocation mapping within workflow stored
     const cmdInvocationStored = new HeadObjectCommand({
       Key: `invocation/${invocationCid}/${workflowCid}.workflow`,
-      Bucket: bucketName,
+      Bucket: stores.invocation.name,
     })
     const s3ResponseInvocationStored = await t.context.s3.send(cmdInvocationStored)
     t.is(s3ResponseInvocationStored.$metadata.httpStatusCode, 200)
@@ -417,10 +418,9 @@ test('can process a ucan log request for a workflow CAR with multiple invocation
 })
 
 test('can process ucan log request for given receipt after its invocation stored', async t => {
-  const { bucketName } = await prepareResources(t.context.s3)
+  const stores = await getStores(t.context)
   const basicAuth = 'test-token'
   const streamName = 'stream-name'
-  const storeBucket = useUcanStore(t.context.s3, bucketName)
   const uploadService = await Signer.generate()
 
   // Create workflow with one UCAN invocation
@@ -449,7 +449,9 @@ test('can process ucan log request for given receipt after its invocation stored
   /** @type {any[]} */
   const kinesisWorkflowInvocations = []
   await t.notThrowsAsync(() => processUcanLogRequest(workflowRequest, {
-    storeBucket,
+    invocationBucket: stores.invocation.bucket,
+    taskBucket: stores.task.bucket,
+    workflowBucket: stores.workflow.bucket,
     basicAuth,
     streamName,
     kinesisClient: {
@@ -483,7 +485,9 @@ test('can process ucan log request for given receipt after its invocation stored
 
   // process ucan log request for receipt
   await t.notThrowsAsync(() => processUcanLogRequest(receiptRequest, {
-    storeBucket,
+    invocationBucket: stores.invocation.bucket,
+    taskBucket: stores.task.bucket,
+    workflowBucket: stores.workflow.bucket,
     basicAuth,
     streamName,
     kinesisClient: {
@@ -507,7 +511,7 @@ test('can process ucan log request for given receipt after its invocation stored
   // Validate invocation receipt block
   const cmdReceiptBlock = new GetObjectCommand({
     Key: `invocation/${invocationCid.toString()}.receipt`,
-    Bucket: bucketName,
+    Bucket: stores.invocation.name,
   })
   const s3ResponseReceiptBlock = await t.context.s3.send(cmdReceiptBlock)
   t.is(s3ResponseReceiptBlock.$metadata.httpStatusCode, 200)
@@ -519,7 +523,7 @@ test('can process ucan log request for given receipt after its invocation stored
   // Validate stored task result
   const cmdTaskResult = new GetObjectCommand({
     Key: `task/${taskCid}.result`,
-    Bucket: bucketName,
+    Bucket: stores.task.name,
   })
   const s3ResponseTaskResult = await t.context.s3.send(cmdTaskResult)
   t.is(s3ResponseTaskResult.$metadata.httpStatusCode, 200)
@@ -534,17 +538,16 @@ test('can process ucan log request for given receipt after its invocation stored
   // Validate task index within invocation stored
   const cmdTaskIndexStored = new HeadObjectCommand({
     Key: `task/${taskCid.toString()}/${invocationCid}.invocation`,
-    Bucket: bucketName,
+    Bucket: stores.task.name,
   })
   const s3ResponseTaskIndexStored = await t.context.s3.send(cmdTaskIndexStored)
   t.is(s3ResponseTaskIndexStored.$metadata.httpStatusCode, 200)
 })
 
 test('fails to process ucan log request for given receipt when no associated invocation is stored', async t => {
-  const { bucketName } = await prepareResources(t.context.s3)
+  const stores = await getStores(t.context)
   const basicAuth = 'test-token'
   const streamName = 'stream-name'
-  const storeBucket = useUcanStore(t.context.s3, bucketName)
   const uploadService = await Signer.generate()
 
   // Create workflow with one UCAN invocation
@@ -578,7 +581,9 @@ test('fails to process ucan log request for given receipt when no associated inv
 
   // Fails handling receipt request given no invocation for it is stored
   await t.throwsAsync(() => processUcanLogRequest(requestReceipt, {
-    storeBucket,
+    invocationBucket: stores.invocation.bucket,
+    taskBucket: stores.task.bucket,
+    workflowBucket: stores.workflow.bucket,
     basicAuth,
     streamName,
     kinesisClient: {
@@ -591,9 +596,8 @@ test('fails to process ucan log request for given receipt when no associated inv
 })
 
 test('fails to process ucan log request with unknown content type', async t => {
-  const { bucketName } = await prepareResources(t.context.s3)
+  const stores = await getStores(t.context)
   const basicAuth = 'test-token'
-  const storeBucket = useUcanStore(t.context.s3, bucketName)
   const request = lambdaUtils.mockEventCreator.createAPIGatewayEvent({
     headers: {
       Authorization: `Basic ${basicAuth}`,
@@ -602,29 +606,31 @@ test('fails to process ucan log request with unknown content type', async t => {
   })
 
   await t.throwsAsync(() => processUcanLogRequest(request, {
-    storeBucket,
+    invocationBucket: stores.invocation.bucket,
+    taskBucket: stores.task.bucket,
+    workflowBucket: stores.workflow.bucket,
     streamName: 'name',
     basicAuth
   }))
 })
 
 test('fails to process ucan log request with no Authorization header', async t => {
-  const { bucketName } = await prepareResources(t.context.s3)
+  const stores = await getStores(t.context)
   const basicAuth = 'test-token'
-  const storeBucket = useUcanStore(t.context.s3, bucketName)
   const request = lambdaUtils.mockEventCreator.createAPIGatewayEvent()
 
   await t.throwsAsync(() => processUcanLogRequest(request, {
-    storeBucket,
+    invocationBucket: stores.invocation.bucket,
+    taskBucket: stores.task.bucket,
+    workflowBucket: stores.workflow.bucket,
     streamName: 'name',
     basicAuth
   }))
 })
 
 test('fails to process ucan log request with no Authorization basic header', async t => {
-  const { bucketName } = await prepareResources(t.context.s3)
+  const stores = await getStores(t.context)
   const basicAuth = 'test-token'
-  const storeBucket = useUcanStore(t.context.s3, bucketName)
   const request = lambdaUtils.mockEventCreator.createAPIGatewayEvent({
     headers: {
       Authorization: 'Bearer token-test'
@@ -632,16 +638,17 @@ test('fails to process ucan log request with no Authorization basic header', asy
   })
 
   await t.throwsAsync(() => processUcanLogRequest(request, {
-    storeBucket,
+    invocationBucket: stores.invocation.bucket,
+    taskBucket: stores.task.bucket,
+    workflowBucket: stores.workflow.bucket,
     streamName: 'name',
     basicAuth
   }))
 })
 
 test('fails to process ucan log request with Authorization basic token empty', async t => {
-  const { bucketName } = await prepareResources(t.context.s3)
+  const stores = await getStores(t.context)
   const basicAuth = 'test-token'
-  const storeBucket = useUcanStore(t.context.s3, bucketName)
   const request = lambdaUtils.mockEventCreator.createAPIGatewayEvent({
     headers: {
       Authorization: 'Basic'
@@ -649,16 +656,17 @@ test('fails to process ucan log request with Authorization basic token empty', a
   })
 
   await t.throwsAsync(() => processUcanLogRequest(request, {
-    storeBucket,
+    invocationBucket: stores.invocation.bucket,
+    taskBucket: stores.task.bucket,
+    workflowBucket: stores.workflow.bucket,
     streamName: 'name',
     basicAuth
   }))
 })
 
 test('fails to process ucan log request with invalid Authorization basic token', async t => {
-  const { bucketName } = await prepareResources(t.context.s3)
+  const stores = await getStores(t.context)
   const basicAuth = 'test-token'
-  const storeBucket = useUcanStore(t.context.s3, bucketName)
   const request = lambdaUtils.mockEventCreator.createAPIGatewayEvent({
     headers: {
       Authorization: 'Basic invalid-token'
@@ -666,7 +674,9 @@ test('fails to process ucan log request with invalid Authorization basic token',
   })
 
   await t.throwsAsync(() => processUcanLogRequest(request, {
-    storeBucket,
+    invocationBucket: stores.invocation.bucket,
+    taskBucket: stores.task.bucket,
+    workflowBucket: stores.workflow.bucket,
     streamName: 'name',
     basicAuth
   }))
@@ -715,13 +725,40 @@ test('replace all link values as object and array', async (t) => {
   )
 })
 
+
+/**
+ * @param {{ s3: any; }} ctx
+ */
+async function getStores (ctx) {
+  const { invocationBucketName, taskBucketName, workflowBucketName } = await prepareResources(ctx.s3)
+
+  return {
+    invocation: {
+      bucket: useInvocationStore(ctx.s3, invocationBucketName),
+      name: invocationBucketName
+    },
+    task: {
+      bucket: useTaskStore(ctx.s3, taskBucketName),
+      name: taskBucketName
+    },
+    workflow: {
+      bucket: useWorkflowStore(ctx.s3, workflowBucketName),
+      name: workflowBucketName
+    }
+  }
+}
+
 /**
  * @param {import("@aws-sdk/client-s3").S3Client} s3Client
  */
 async function prepareResources(s3Client) {
-  const bucketName = await createBucket(s3Client)
+  const invocationBucketName = await createBucket(s3Client)
+  const taskBucketName = await createBucket(s3Client)
+  const workflowBucketName = await createBucket(s3Client)
 
   return {
-    bucketName,
+    invocationBucketName,
+    taskBucketName,
+    workflowBucketName
   }
 }

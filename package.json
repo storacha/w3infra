@@ -73,6 +73,7 @@
       "unicorn/prefer-type-error": "off",
       "unicorn/no-zero-fractions": "off",
       "eqeqeq": "off",
+      "no-new": "off",
       "no-void": "off",
       "no-console": "off",
       "no-continue": "off",

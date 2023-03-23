@@ -14,21 +14,31 @@ export interface UcanStreamCtx {
 }
 
 export interface WorkflowCtx extends UcanStreamCtx {
-  storeBucket: UcanBucket
-  
+  invocationBucket: InvocationBucket
+  taskBucket: TaskBucket
+  workflowBucket: WorkflowBucket
 }
 
 export interface ReceiptBlockCtx extends UcanStreamCtx {
-  storeBucket: UcanBucket
+  invocationBucket: InvocationBucket
+  taskBucket: TaskBucket
+  workflowBucket: WorkflowBucket
 }
 
-export interface UcanBucket {
-  putWorkflow: (workflowCid: string, bytes: Uint8Array) => Promise<void>
-  putInvocationIndex: (invocationCid: string, workflowCid: string) => Promise<void>
-  putInvocationReceipt: (invocationCid: string, bytes: Uint8Array) => Promise<void>
-  putTaskResult: (taskCid: string, bytes: Uint8Array) => Promise<void>
-  putTaskIndex: (taskCid: string, invocationCid: string) => Promise<void>
-  getWorkflowBytesForInvocation: (invocationCid: string) => Promise<Uint8Array|undefined>
+export interface InvocationBucket {
+  putIndex: (cid: string, workflowCid: string) => Promise<void>
+  putReceipt: (cid: string, bytes: Uint8Array) => Promise<void>
+  getIndex: (cid: string) => Promise<string|undefined>
+}
+
+export interface TaskBucket {
+  putResult: (cid: string, bytes: Uint8Array) => Promise<void>
+  putIndex: (cid: string, invocationCid: string) => Promise<void>
+}
+
+export interface WorkflowBucket {
+  put: (Cid: string, bytes: Uint8Array) => Promise<void>
+  get: (Cid: string) => Promise<Uint8Array|undefined>
 }
 
 export interface UcanInvocation {

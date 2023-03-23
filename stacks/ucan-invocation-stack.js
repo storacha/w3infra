@@ -7,7 +7,6 @@ import {
 } from '@serverless-stack/resources'
 import { Duration } from 'aws-cdk-lib'
 
-import { BusStack } from './bus-stack.js'
 import { CarparkStack } from './carpark-stack.js'
 import { UploadDbStack } from './upload-db-stack.js'
 import {
@@ -28,29 +27,33 @@ export function UcanInvocationStack({ stack, app }) {
   setupSentry(app, stack)
 
   // Get dependent stack references
-  const { eventBus } = use(BusStack)
   const { carparkBucket } = use(CarparkStack)
   const { adminMetricsTable, spaceMetricsTable } = use(UploadDbStack)
 
-  const ucanBucket = new Bucket(stack, 'ucan-store', {
+  const workflowBucket = new Bucket(stack, 'workflow-store', {
     cors: true,
     cdk: {
-      bucket: getBucketConfig('ucan-store', app.stage)
+      bucket: getBucketConfig('workflow-store', app.stage)
+    }
+  })
+  const invocationBucket = new Bucket(stack, 'invocation-store', {
+    cors: true,
+    cdk: {
+      bucket: getBucketConfig('invocation-store', app.stage)
+    }
+  })
+  const taskBucket = new Bucket(stack, 'task-store', {
+    cors: true,
+    cdk: {
+      bucket: getBucketConfig('task-store', app.stage)
     }
   })
 
-  // Trigger ucan store events when a CAR is put into the bucket.
-  const ucanPutEventConsumer = new Function(stack, 'ucan-consumer', {
-    environment: {
-      EVENT_BUS_ARN: eventBus.eventBusArn,
-    },
-    permissions: [eventBus],
-    handler: 'functions/ucan-bucket-event.ucanBucketConsumer',
-  })
-  ucanBucket.addNotifications(stack, {
-    newCarPut: {
-      function: ucanPutEventConsumer,
-      events: ['object_created_put'],
+  // TODO: keep for historical content that we might want to process
+  new Bucket(stack, 'ucan-store', {
+    cors: true,
+    cdk: {
+      bucket: getBucketConfig('ucan-store', app.stage)
     }
   })
 
@@ -308,7 +311,9 @@ export function UcanInvocationStack({ stack, app }) {
   })
 
   return {
-    ucanBucket,
+    invocationBucket,
+    taskBucket,
+    workflowBucket,
     ucanStream
   }
 }

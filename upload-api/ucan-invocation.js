@@ -59,7 +59,7 @@ export async function processWorkflow (bytes, ctx) {
   const worflow = await parseWorkflow(bytes)
 
   // persist workflow and its invocations
-  await persistWorkflow(worflow, ctx.storeBucket)
+  await persistWorkflow(worflow, ctx.invocationBucket, ctx.workflowBucket)
 
   // Put workflow invocations to UCAN stream
   await ctx.kinesisClient?.putRecords({
@@ -89,7 +89,12 @@ export async function processWorkflow (bytes, ctx) {
  */
 export async function processTaskReceipt (bytes, ctx) {
   const receiptBlock = await parseReceiptCbor(bytes)
-  const workflowBytes = await ctx.storeBucket.getWorkflowBytesForInvocation(receiptBlock.data.ran.toString())
+  const workflowCid = await ctx.invocationBucket.getIndex(receiptBlock.data.ran.toString())
+  if (!workflowCid) {
+    throw new NoCarFoundForGivenReceiptError()
+  }
+
+  const workflowBytes = await ctx.workflowBucket.get(workflowCid)
   if (!workflowBytes) {
     throw new NoCarFoundForGivenReceiptError()
   }
@@ -101,7 +106,7 @@ export async function processTaskReceipt (bytes, ctx) {
   }
 
   // persist receipt
-  await persistReceipt(receiptBlock, ctx.storeBucket)
+  await persistReceipt(receiptBlock, ctx.invocationBucket, ctx.taskBucket)
 
   // Put Receipt to UCAN Stream
   await ctx.kinesisClient?.putRecord({
@@ -163,13 +168,14 @@ export async function parseWorkflow (bytes) {
  * Persist index per invocation to which workflow they come from.
  *
  * @param {Workflow} workflow
- * @param {import('./types').UcanBucket} ucanStore
+ * @param {import('./types').InvocationBucket} invocationStore
+ * @param {import('./types').WorkflowBucket} workflowStore
  */
-export async function persistWorkflow (workflow, ucanStore) {
+export async function persistWorkflow (workflow, invocationStore, workflowStore) {
   const carCid = workflow.cid.toString()
   const tasks = [
-    ucanStore.putWorkflow(carCid, workflow.bytes),
-    ...workflow.invocations.map(i => ucanStore.putInvocationIndex(i.cid, carCid))
+    workflowStore.put(carCid, workflow.bytes),
+    ...workflow.invocations.map(i => invocationStore.putIndex(i.cid, carCid))
   ]
 
   await Promise.all(tasks)
@@ -192,9 +198,10 @@ export async function parseReceiptCbor (bytes) {
 
 /**
  * @param {ReceiptBlock} receiptBlock
- * @param {import('./types').UcanBucket} ucanStore
+ * @param {import('./types').InvocationBucket} invocationBucket
+ * @param {import('./types').TaskBucket} taskBucket
  */
-export async function persistReceipt (receiptBlock, ucanStore) {
+export async function persistReceipt (receiptBlock, invocationBucket, taskBucket) {
   const invocationCid = receiptBlock.data.ran.toString()
   // TODO: For now we will use delegation CID as both invocation and task CID
   // Delegation CIDs are the roots in the received CAR and CID in the .ran field
@@ -203,7 +210,7 @@ export async function persistReceipt (receiptBlock, ucanStore) {
 
   await Promise.all([
     // Store invocation receipt block
-    ucanStore.putInvocationReceipt(
+    invocationBucket.putReceipt(
       invocationCid,
       receiptBlock.bytes
     ),
@@ -212,10 +219,10 @@ export async function persistReceipt (receiptBlock, ucanStore) {
       const taskResult = await CBOR.codec.write({
         out: receiptBlock.data.out
       })
-      await ucanStore.putTaskResult(taskCid, taskResult.bytes)
+      await taskBucket.putResult(taskCid, taskResult.bytes)
     })(),
     // Store task index
-    ucanStore.putTaskIndex(taskCid, invocationCid)
+    taskBucket.putIndex(taskCid, invocationCid)
   ])
 }
 

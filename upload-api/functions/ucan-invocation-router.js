@@ -12,7 +12,9 @@ import {
 } from '../ucan-invocation.js'
 import { createCarStore } from '../buckets/car-store.js'
 import { createDudewhereStore } from '../buckets/dudewhere-store.js'
-import { createUcanStore } from '../buckets/ucan-store.js'
+import { createInvocationStore } from '../buckets/invocation-store.js'
+import { createTaskStore } from '../buckets/task-store.js'
+import { createWorkflowStore } from '../buckets/workflow-store.js'
 import { createStoreTable } from '../tables/store.js'
 import { createUploadTable } from '../tables/upload.js'
 import { getServiceSigner } from '../config.js'
@@ -55,7 +57,9 @@ async function ucanInvocationRouter(request) {
     STORE_TABLE_NAME: storeTableName = '',
     STORE_BUCKET_NAME: storeBucketName = '',
     UPLOAD_TABLE_NAME: uploadTableName = '',
-    UCAN_BUCKET_NAME: ucanBucketName = '',
+    INVOCATION_BUCKET_NAME: invocationBucketName = '',
+    TASK_BUCKET_NAME: taskBucketName = '',
+    WORKFLOW_BUCKET_NAME: workflowBucketName = '',
     UCAN_LOG_STREAM_NAME: streamName = '',
     // set for testing
     DYNAMO_DB_ENDPOINT: dbEndpoint,
@@ -72,7 +76,10 @@ async function ucanInvocationRouter(request) {
   const { UPLOAD_API_DID } = process.env
   const { PRIVATE_KEY } = Config
   const serviceSigner = getServiceSigner({ UPLOAD_API_DID, PRIVATE_KEY })
-  const storeBucket = createUcanStore(AWS_REGION, ucanBucketName)
+
+  const invocationBucket = createInvocationStore(AWS_REGION, invocationBucketName)
+  const taskBucket = createTaskStore(AWS_REGION, taskBucketName)
+  const workflowBucket = createWorkflowStore(AWS_REGION, workflowBucketName)
 
   const server = await createUcantoServer(serviceSigner, {
     storeTable: createStoreTable(AWS_REGION, storeTableName, {
@@ -97,7 +104,9 @@ async function ucanInvocationRouter(request) {
   })
 
   const processingCtx = {
-    storeBucket,
+    invocationBucket,
+    taskBucket,
+    workflowBucket,
     streamName,
     kinesisClient
   }

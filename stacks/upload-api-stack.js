@@ -23,7 +23,7 @@ export function UploadApiStack({ stack, app }) {
   // Get references to constructs created in other stacks
   const { carparkBucket } = use(CarparkStack)
   const { storeTable, uploadTable, adminMetricsTable } = use(UploadDbStack)
-  const { ucanBucket, ucanStream } = use(UcanInvocationStack)
+  const { invocationBucket, taskBucket, workflowBucket, ucanStream } = use(UcanInvocationStack)
 
   // Setup API
   const customDomain = getCustomDomain(stack.stage, process.env.HOSTED_ZONE)
@@ -36,12 +36,23 @@ export function UploadApiStack({ stack, app }) {
     customDomain,
     defaults: {
       function: {
-        permissions: [storeTable, uploadTable, adminMetricsTable, carparkBucket, ucanBucket, ucanStream],
+        permissions: [
+          storeTable,
+          uploadTable,
+          adminMetricsTable,
+          carparkBucket,
+          invocationBucket,
+          taskBucket,
+          workflowBucket,
+          ucanStream
+        ],
         environment: {
           STORE_TABLE_NAME: storeTable.tableName,
           STORE_BUCKET_NAME: carparkBucket.bucketName,
           UPLOAD_TABLE_NAME: uploadTable.tableName,
-          UCAN_BUCKET_NAME: ucanBucket.bucketName,
+          INVOCATION_BUCKET_NAME: invocationBucket.bucketName,
+          TASK_BUCKET_NAME: taskBucket.bucketName,
+          WORKFLOW_BUCKET_NAME: workflowBucket.bucketName,
           UCAN_LOG_STREAM_NAME: ucanStream.streamName,
           ADMIN_METRICS_TABLE_NAME: adminMetricsTable.tableName,
           NAME: pkg.name,
