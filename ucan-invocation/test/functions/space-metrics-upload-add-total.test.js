@@ -10,7 +10,7 @@ import { createDynamoTable, getItemFromTable} from '../helpers/tables.js'
 import { spaceMetricsTableProps } from '../../tables/index.js'
 
 import { updateUploadCount } from '../../functions/space-metrics-upload-add-total.js'
-import { SPACE_METRICS_NAMES } from '../../constants.js'
+import { SPACE_METRICS_NAMES, CONTENT_TYPE } from '../../constants.js'
 import { createSpaceMetricsTable } from '../../tables/space-metrics.js'
 
 const REGION = 'us-west-2'
@@ -52,6 +52,7 @@ test('handles a batch of single invocation with upload/add', async t => {
         aud: uploadService.did(),
         iss: alice.did()
     },
+    type: CONTENT_TYPE.RECEIPT,
     ts: Date.now()
   }]
 
@@ -96,6 +97,7 @@ test('handles batch of single invocation with multiple upload/add attributes', a
       aud: uploadService.did(),
       iss: alice.did()
     },
+    type: CONTENT_TYPE.RECEIPT,
     ts: Date.now()
   }]
 
@@ -142,6 +144,7 @@ test('handles batch of multiple invocations with upload/add in same space', asyn
         aud: uploadService.did(),
         iss: alice.did()
     },
+    type: CONTENT_TYPE.RECEIPT,
     ts: Date.now()
   }))
 
@@ -187,6 +190,7 @@ test('handles batch of multiple invocations with upload/add in multiple spaces',
         aud: uploadService.did(),
         iss: alice.did()
     },
+    type: CONTENT_TYPE.RECEIPT,
     ts: Date.now()
   }))
 
@@ -237,6 +241,7 @@ test('errors handling batch of multiple invocations with more transactions than 
         aud: uploadService.did(),
         iss: alice.did()
     },
+    type: CONTENT_TYPE.RECEIPT,
     ts: Date.now()
   }))
 

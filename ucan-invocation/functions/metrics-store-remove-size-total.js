@@ -3,7 +3,7 @@ import * as Sentry from '@sentry/serverless'
 import { createCarStore } from '../buckets/car-store.js'
 import { createMetricsTable } from '../tables/metrics.js'
 import { parseKinesisEvent } from '../utils/parse-kinesis-event.js'
-import { STORE_REMOVE } from '../constants.js'
+import { STORE_REMOVE, CONTENT_TYPE } from '../constants.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -36,7 +36,7 @@ async function handler(event) {
  */
 export async function updateRemoveSizeTotal (ucanInvocations, ctx) {
   const invocationsWithStoreRemove = ucanInvocations.filter(
-    inv => inv.value.att.find(a => a.can === STORE_REMOVE)
+    inv => inv.value.att.find(a => a.can === STORE_REMOVE) && inv.type === CONTENT_TYPE.RECEIPT
   ).flatMap(inv => inv.value.att)
 
   // TODO: once we have receipts for store/remove, replace this

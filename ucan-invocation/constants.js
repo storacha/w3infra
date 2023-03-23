@@ -7,6 +7,11 @@ import {
   remove as uploadRemove
 } from '@web3-storage/capabilities/upload'
 
+export const CONTENT_TYPE = {
+  WORKFLOW: 'application/invocations+car',
+  RECEIPT: 'application/receipt+dag-cbor'
+}
+
 // UCAN protocol
 export const STORE_ADD = storeAdd.can
 export const STORE_REMOVE = storeRemove.can
