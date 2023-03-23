@@ -37,7 +37,7 @@ export const useInvocationStore = (s3client, bucketName) => {
     putIndex: async (invocationCid, workflowCid) => {
       const putCmd = new PutObjectCommand({
         Bucket: bucketName,
-        Key: `invocation/${invocationCid}/${workflowCid}.workflow`,
+        Key: `${invocationCid}/${workflowCid}.workflow`,
       })
       await pRetry(() => s3client.send(putCmd))
     },
@@ -50,7 +50,7 @@ export const useInvocationStore = (s3client, bucketName) => {
     putReceipt: async (invocationCid, bytes) => {
       const putCmd = new PutObjectCommand({
         Bucket: bucketName,
-        Key: `invocation/${invocationCid}.receipt`,
+        Key: `${invocationCid}/${invocationCid}.receipt`,
         Body: bytes,
       })
       await pRetry(() => s3client.send(putCmd))
@@ -61,7 +61,7 @@ export const useInvocationStore = (s3client, bucketName) => {
      * @param {string} invocationCid 
      */
     getIndex: async (invocationCid) => {
-      const prefix = `invocation/${invocationCid}/`
+      const prefix = `${invocationCid}/`
       const listObjectCmd = new ListObjectsV2Command({
         Bucket: bucketName,
         Prefix: prefix,

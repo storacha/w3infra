@@ -38,7 +38,7 @@ export const useTaskStore = (s3client, bucketName) => {
     putResult: async (cid, bytes) => {
       const putCmd = new PutObjectCommand({
         Bucket: bucketName,
-        Key: `task/${cid}.result`,
+        Key: `${cid}/${cid}.result`,
         Body: bytes,
       })
       await pRetry(() => s3client.send(putCmd))
@@ -53,7 +53,7 @@ export const useTaskStore = (s3client, bucketName) => {
     putIndex: async (cid, invocationCid) => {
       const putCmd = new PutObjectCommand({
         Bucket: bucketName,
-        Key: `task/${cid}/${invocationCid}.invocation`,
+        Key: `${cid}/${invocationCid}.invocation`,
       })
       await pRetry(() => s3client.send(putCmd))
     },

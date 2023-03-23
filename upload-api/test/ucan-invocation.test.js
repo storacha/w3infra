@@ -110,7 +110,7 @@ test('persists workflow with invocations as CAR file', async (t) => {
 
   // Verify invocation mapping within workflow stored
   const cmdInvocationStored = new HeadObjectCommand({
-    Key: `invocation/${invocationCid}/${workflowCid}.workflow`,
+    Key: `${invocationCid}/${workflowCid}.workflow`,
     Bucket: stores.invocation.name,
   })
   const s3ResponseInvocationStored = await t.context.s3.send(cmdInvocationStored)
@@ -118,7 +118,7 @@ test('persists workflow with invocations as CAR file', async (t) => {
 
   // Verify Workflow stored
   const cmdCarStored = new GetObjectCommand({
-    Key: `workflow/${workflowCid}`,
+    Key: `${workflowCid}/${workflowCid}`,
     Bucket: stores.workflow.name,
   })
   const s3ResponseCarStored = await t.context.s3.send(cmdCarStored)
@@ -225,7 +225,7 @@ test('persists receipt and its associated data', async t => {
 
   // Validate invocation receipt block
   const cmdReceiptBlock = new GetObjectCommand({
-    Key: `invocation/${invocationCid}.receipt`,
+    Key: `${invocationCid}/${invocationCid}.receipt`,
     Bucket: stores.invocation.name,
   })
   const s3ResponseReceiptBlock = await t.context.s3.send(cmdReceiptBlock)
@@ -237,7 +237,7 @@ test('persists receipt and its associated data', async t => {
 
   // Validate stored task result
   const cmdTaskResult = new GetObjectCommand({
-    Key: `task/${taskCid}.result`,
+    Key: `${taskCid}/${taskCid}.result`,
     Bucket: stores.task.name,
   })
   const s3ResponseTaskResult = await t.context.s3.send(cmdTaskResult)
@@ -252,7 +252,7 @@ test('persists receipt and its associated data', async t => {
   
   // Validate task index within invocation stored
   const cmdTaskIndexStored = new HeadObjectCommand({
-    Key: `task/${taskCid}/${invocationCid}.invocation`,
+    Key: `${taskCid}/${invocationCid}.invocation`,
     Bucket: stores.task.name,
   })
   const s3ResponseTaskIndexStored = await t.context.s3.send(cmdTaskIndexStored)
@@ -318,7 +318,7 @@ test('can process a ucan log request for a workflow CAR with one invocation', as
   // Verify workflow persisted
   const invocationCid = workflowCid
   const cmd = new HeadObjectCommand({
-    Key: `workflow/${workflowCid}`,
+    Key: `${workflowCid}/${workflowCid}`,
     Bucket: stores.workflow.name,
   })
   const s3Response = await t.context.s3.send(cmd)
@@ -326,7 +326,7 @@ test('can process a ucan log request for a workflow CAR with one invocation', as
 
   // Verify invocation mapping within workflow stored
   const cmdInvocationStored = new HeadObjectCommand({
-    Key: `invocation/${invocationCid}/${workflowCid}.workflow`,
+    Key: `${invocationCid}/${workflowCid}.workflow`,
     Bucket: stores.invocation.name,
   })
   const s3ResponseInvocationStored = await t.context.s3.send(cmdInvocationStored)
@@ -398,7 +398,7 @@ test('can process a ucan log request for a workflow CAR with multiple invocation
   // Verify workflow persisted
   const workflowCid = decodedWorkflowCar.roots[0].cid.toString()
   const cmd = new HeadObjectCommand({
-    Key: `workflow/${workflowCid}`,
+    Key: `${workflowCid}/${workflowCid}`,
     Bucket: stores.workflow.name,
   })
   const s3Response = await t.context.s3.send(cmd)
@@ -409,7 +409,7 @@ test('can process a ucan log request for a workflow CAR with multiple invocation
     const invocationCid = root.cid.toString()
     // Verify invocation mapping within workflow stored
     const cmdInvocationStored = new HeadObjectCommand({
-      Key: `invocation/${invocationCid}/${workflowCid}.workflow`,
+      Key: `${invocationCid}/${workflowCid}.workflow`,
       Bucket: stores.invocation.name,
     })
     const s3ResponseInvocationStored = await t.context.s3.send(cmdInvocationStored)
@@ -510,7 +510,7 @@ test('can process ucan log request for given receipt after its invocation stored
 
   // Validate invocation receipt block
   const cmdReceiptBlock = new GetObjectCommand({
-    Key: `invocation/${invocationCid.toString()}.receipt`,
+    Key: `${invocationCid.toString()}/${invocationCid.toString()}.receipt`,
     Bucket: stores.invocation.name,
   })
   const s3ResponseReceiptBlock = await t.context.s3.send(cmdReceiptBlock)
@@ -522,7 +522,7 @@ test('can process ucan log request for given receipt after its invocation stored
 
   // Validate stored task result
   const cmdTaskResult = new GetObjectCommand({
-    Key: `task/${taskCid}.result`,
+    Key: `${taskCid}/${taskCid}.result`,
     Bucket: stores.task.name,
   })
   const s3ResponseTaskResult = await t.context.s3.send(cmdTaskResult)
@@ -537,7 +537,7 @@ test('can process ucan log request for given receipt after its invocation stored
   
   // Validate task index within invocation stored
   const cmdTaskIndexStored = new HeadObjectCommand({
-    Key: `task/${taskCid.toString()}/${invocationCid}.invocation`,
+    Key: `${taskCid}/${invocationCid}.invocation`,
     Bucket: stores.task.name,
   })
   const s3ResponseTaskIndexStored = await t.context.s3.send(cmdTaskIndexStored)

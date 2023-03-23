@@ -37,8 +37,7 @@ export const useWorkflowStore = (s3client, bucketName) => {
     put: async (cid, bytes) => {
       const putCmd = new PutObjectCommand({
         Bucket: bucketName,
-        // TODO: for bucket rate limit, shouldn't we do double CID?
-        Key: `workflow/${cid}`,
+        Key: `${cid}/${cid}`,
         Body: bytes,
       })
       await pRetry(() => s3client.send(putCmd))
@@ -51,7 +50,7 @@ export const useWorkflowStore = (s3client, bucketName) => {
     get: async (cid) => {
       const getObjectCmd = new GetObjectCommand({
         Bucket: bucketName,
-        Key: `workflow/${cid}`,
+        Key: `${cid}/${cid}`,
       })
       const s3Object = await s3client.send(getObjectCmd)
       const bytes = await s3Object.Body?.transformToByteArray()
