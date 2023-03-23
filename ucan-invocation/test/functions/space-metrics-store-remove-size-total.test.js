@@ -15,7 +15,7 @@ import { createSpace } from '../helpers/ucanto.js'
 import { randomCAR } from '../helpers/random.js'
 
 import { updateRemoveSizeTotal } from '../../functions/space-metrics-store-remove-size-total.js'
-import { SPACE_METRICS_NAMES, CONTENT_TYPE } from '../../constants.js'
+import { SPACE_METRICS_NAMES, STREAM_TYPE } from '../../constants.js'
 import { createSpaceMetricsTable } from '../../tables/space-metrics.js'
 import { createCarStore } from '../../buckets/car-store.js'
 
@@ -72,7 +72,7 @@ test('handles a batch of single invocation with store/remove', async t => {
       aud: uploadService.did(),
       iss: alice.did()
     },
-    type: CONTENT_TYPE.RECEIPT,
+    type: STREAM_TYPE.RECEIPT,
     ts: Date.now()
   }]
 
@@ -129,7 +129,7 @@ test('handles batch of single invocation with multiple store/remove attributes',
       aud: uploadService.did(),
       iss: alice.did()
     },
-    type: CONTENT_TYPE.RECEIPT,
+    type: STREAM_TYPE.RECEIPT,
     ts: Date.now()
   }]
 
@@ -188,7 +188,7 @@ test('handles batch of multiple invocations with store/remove in same space', as
       aud: uploadService.did(),
       iss: alice.did()
     },
-    type: CONTENT_TYPE.RECEIPT,
+    type: STREAM_TYPE.RECEIPT,
     ts: Date.now()
   }))
 
@@ -245,7 +245,7 @@ test('handles batch of multiple invocations with store/remove in multiple spaces
       aud: uploadService.did(),
       iss: alice.did()
     },
-    type: CONTENT_TYPE.RECEIPT,
+    type: STREAM_TYPE.RECEIPT,
     ts: Date.now()
   }))
 
@@ -308,7 +308,7 @@ test('errors handling batch of multiple invocations with more transactions than 
         aud: uploadService.did(),
         iss: alice.did()
     },
-    type: CONTENT_TYPE.RECEIPT,
+    type: STREAM_TYPE.RECEIPT,
     ts: Date.now()
   }))
 

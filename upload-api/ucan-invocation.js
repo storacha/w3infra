@@ -19,6 +19,11 @@ export const CONTENT_TYPE = {
   RECEIPT: 'application/receipt+dag-cbor'
 }
 
+export const STREAM_TYPE = {
+  WORKFLOW: 'workflow',
+  RECEIPT: 'receipt'
+}
+
 /**
  * @typedef {import('./types').UcanLogCtx} UcanLogCtx
  * @typedef {import('./types').WorkflowCtx} WorkflowCtx
@@ -69,7 +74,7 @@ export async function processWorkflow (bytes, ctx) {
           carCid: worflow.cid.toString(),
           value: invocation,
           ts: Date.now(),
-          type: CONTENT_TYPE.WORKFLOW
+          type: STREAM_TYPE.WORKFLOW
         })
       ),
       // https://docs.aws.amazon.com/streams/latest/dev/key-concepts.html
@@ -116,7 +121,7 @@ export async function processInvocationReceipt (bytes, ctx) {
         invocationCid: receiptBlock.cid.toString(),
         value: invocation,
         ts: Date.now(),
-        type: CONTENT_TYPE.RECEIPT
+        type: STREAM_TYPE.RECEIPT
       })
     ),
     // https://docs.aws.amazon.com/streams/latest/dev/key-concepts.html
