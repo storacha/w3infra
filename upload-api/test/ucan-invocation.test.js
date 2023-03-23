@@ -261,7 +261,7 @@ test('persists receipt and its associated data', async t => {
 })
 
 test('can process a ucan log request for a workflow CAR with one invocation', async t => {
-  t.plan(7)
+  t.plan(11)
   const { bucketName } = await prepareResources(t.context.s3)
   const basicAuth = 'test-token'
   const streamName = 'stream-name'
@@ -270,14 +270,14 @@ test('can process a ucan log request for a workflow CAR with one invocation', as
   // Create workflow with one UCAN invocation
   const data = new Uint8Array([11, 22, 34, 44, 55])
   const link = await CAR.codec.link(data)
+  const can = storeAdd.can
+  const nb = { link, size: data.byteLength }
 
   const workflow = await CAR.encode([
-    await createUcanInvocation(
-      storeAdd.can,
-      { link, size: data.byteLength }
-    )
+    await createUcanInvocation(can, nb)
   ])
   const decodedWorkflowCar = await CAR.codec.decode(workflow.body)
+  const workflowCid = decodedWorkflowCar.roots[0].cid.toString()
 
   // Create Workflow request with car
   const workflowRequest = lambdaUtils.mockEventCreator.createAPIGatewayEvent({
@@ -304,7 +304,11 @@ test('can process a ucan log request for a workflow CAR with one invocation', as
           }
           const invocation = JSON.parse(toString(record.Data))
           t.truthy(invocation)
+          t.truthy(invocation.ts)
           t.is(invocation.type, CONTENT_TYPE.WORKFLOW)
+          t.is(invocation.carCid, workflowCid)
+          t.is(invocation.value.att[0].can, can)
+          t.deepEqual(invocation.value.att[0].nb, replaceAllLinkValues(nb))
         }
         return Promise.resolve()
       }
@@ -312,7 +316,6 @@ test('can process a ucan log request for a workflow CAR with one invocation', as
   }))
 
   // Verify workflow persisted
-  const workflowCid = decodedWorkflowCar.roots[0].cid.toString()
   const invocationCid = workflowCid
   const cmd = new HeadObjectCommand({
     Key: `workflow/${workflowCid}`,
@@ -331,7 +334,7 @@ test('can process a ucan log request for a workflow CAR with one invocation', as
 })
 
 test('can process a ucan log request for a workflow CAR with multiple invocations', async t => {
-  t.plan(10)
+  t.plan(11)
   const { bucketName } = await prepareResources(t.context.s3)
   const basicAuth = 'test-token'
   const streamName = 'stream-name'
@@ -372,6 +375,7 @@ test('can process a ucan log request for a workflow CAR with multiple invocation
         t.is(input.StreamName, streamName)
         t.is(input.Records?.length, decodedWorkflowCar.roots.length)
 
+        const can = new Set()
         for (const record of input.Records || []) {
           if (!record.Data) {
             throw new Error('must have Data')
@@ -379,7 +383,12 @@ test('can process a ucan log request for a workflow CAR with multiple invocation
           const invocation = JSON.parse(toString(record.Data))
           t.truthy(invocation)
           t.is(invocation.type, CONTENT_TYPE.WORKFLOW)
+          can.add(invocation.value.att[0].can)
         }
+
+        // 2 different invocations
+        t.is(can.size, 2)
+
         return Promise.resolve()
       }
     }
@@ -450,6 +459,7 @@ test('can process ucan log request for given receipt after its invocation stored
           if (!record.Data) {
             throw new Error('must have Data')
           }
+
           kinesisWorkflowInvocations?.push(JSON.parse(toString(record.Data)))
         }
         return Promise.resolve()
