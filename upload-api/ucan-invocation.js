@@ -46,7 +46,7 @@ export async function processUcanLogRequest (request, ctx) {
   if (contentType === CONTENT_TYPE.WORKFLOW) {
     return await processWorkflow(bytes, ctx)
   } else if (contentType === CONTENT_TYPE.RECEIPT) {
-    return await processTaskReceipt(bytes, ctx)
+    return await processInvocationReceipt(bytes, ctx)
   }
   throw new BadContentTypeError()
 }
@@ -87,9 +87,9 @@ export async function processWorkflow (bytes, ctx) {
  * @param {Uint8Array} bytes
  * @param {ReceiptBlockCtx} ctx
  */
-export async function processTaskReceipt (bytes, ctx) {
+export async function processInvocationReceipt (bytes, ctx) {
   const receiptBlock = await parseReceiptCbor(bytes)
-  const workflowCid = await ctx.invocationBucket.getIndex(receiptBlock.data.ran.toString())
+  const workflowCid = await ctx.invocationBucket.getWorkflowLink(receiptBlock.data.ran.toString())
   if (!workflowCid) {
     throw new NoCarFoundForGivenReceiptError()
   }
@@ -175,7 +175,7 @@ export async function persistWorkflow (workflow, invocationStore, workflowStore)
   const carCid = workflow.cid.toString()
   const tasks = [
     workflowStore.put(carCid, workflow.bytes),
-    ...workflow.invocations.map(i => invocationStore.putIndex(i.cid, carCid))
+    ...workflow.invocations.map(i => invocationStore.putWorkflowLink(i.cid, carCid))
   ]
 
   await Promise.all(tasks)
@@ -221,8 +221,8 @@ export async function persistReceipt (receiptBlock, invocationBucket, taskBucket
       })
       await taskBucket.putResult(taskCid, taskResult.bytes)
     })(),
-    // Store task index
-    taskBucket.putIndex(taskCid, invocationCid)
+    // Store task invocation link
+    taskBucket.putInvocationLink(taskCid, invocationCid)
   ])
 }
 

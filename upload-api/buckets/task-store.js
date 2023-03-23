@@ -28,17 +28,17 @@ export function createTaskStore(region, bucketName, options = {}) {
 export const useTaskStore = (s3client, bucketName) => {
   return {
     /**
-     * Put block containing `out` filed of the receipt. So that when we get an invocation
+     * Put block containing `out` field of the receipt, so that when we get an invocation
      * with the same task we can read the result and issue receipt without rerunning
      * a task. Could be written on first receipt.
      *
-     * @param {string} cid
+     * @param {string} taskCid
      * @param {Uint8Array} bytes
      */
-    putResult: async (cid, bytes) => {
+    putResult: async (taskCid, bytes) => {
       const putCmd = new PutObjectCommand({
         Bucket: bucketName,
-        Key: `${cid}/${cid}.result`,
+        Key: `${taskCid}/${taskCid}.result`,
         Body: bytes,
       })
       await pRetry(() => s3client.send(putCmd))
@@ -47,13 +47,13 @@ export const useTaskStore = (s3client, bucketName) => {
      * Put mapping for where each task lives in an invocation file.
      * Enables lookup invocations & receipts by task.
      *
-     * @param {string} cid 
+     * @param {string} taskCid 
      * @param {string} invocationCid 
      */
-    putIndex: async (cid, invocationCid) => {
+    putInvocationLink: async (taskCid, invocationCid) => {
       const putCmd = new PutObjectCommand({
         Bucket: bucketName,
-        Key: `${cid}/${invocationCid}.invocation`,
+        Key: `${taskCid}/${invocationCid}.invocation`,
       })
       await pRetry(() => s3client.send(putCmd))
     },

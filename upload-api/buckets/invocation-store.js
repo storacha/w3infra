@@ -34,7 +34,7 @@ export const useInvocationStore = (s3client, bucketName) => {
      * @param {string} invocationCid
      * @param {string} workflowCid
      */
-    putIndex: async (invocationCid, workflowCid) => {
+    putWorkflowLink: async (invocationCid, workflowCid) => {
       const putCmd = new PutObjectCommand({
         Bucket: bucketName,
         Key: `${invocationCid}/${workflowCid}.workflow`,
@@ -56,11 +56,11 @@ export const useInvocationStore = (s3client, bucketName) => {
       await pRetry(() => s3client.send(putCmd))
     },
     /**
-     * Get CAR bytes for a given invocation.
+     * Get the workflow CID for an invocation.
      *
      * @param {string} invocationCid 
      */
-    getIndex: async (invocationCid) => {
+    getWorkflowLink: async (invocationCid) => {
       const prefix = `${invocationCid}/`
       const listObjectCmd = new ListObjectsV2Command({
         Bucket: bucketName,

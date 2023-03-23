@@ -8,7 +8,7 @@ import * as Sentry from '@sentry/serverless'
 import { createAccessClient } from '../access.js'
 import {
   processWorkflow,
-  processTaskReceipt
+  processInvocationReceipt
 } from '../ucan-invocation.js'
 import { createCarStore } from '../buckets/car-store.js'
 import { createDudewhereStore } from '../buckets/dudewhere-store.js'
@@ -138,7 +138,7 @@ async function ucanInvocationRouter(request) {
 
   for (const receipt of results) {
     out.push(receipt.data.out.error || receipt.data.out.ok)
-    forks.push(processTaskReceipt(receipt.bytes, processingCtx))
+    forks.push(processInvocationReceipt(receipt.bytes, processingCtx))
   }
 
   await Promise.all(forks)

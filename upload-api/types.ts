@@ -26,14 +26,14 @@ export interface ReceiptBlockCtx extends UcanStreamCtx {
 }
 
 export interface InvocationBucket {
-  putIndex: (cid: string, workflowCid: string) => Promise<void>
+  putWorkflowLink: (cid: string, workflowCid: string) => Promise<void>
   putReceipt: (cid: string, bytes: Uint8Array) => Promise<void>
-  getIndex: (cid: string) => Promise<string|undefined>
+  getWorkflowLink: (cid: string) => Promise<string|undefined>
 }
 
 export interface TaskBucket {
-  putResult: (cid: string, bytes: Uint8Array) => Promise<void>
-  putIndex: (cid: string, invocationCid: string) => Promise<void>
+  putResult: (taskCid: string, bytes: Uint8Array) => Promise<void>
+  putInvocationLink: (taskCid: string, invocationCid: string) => Promise<void>
 }
 
 export interface WorkflowBucket {
