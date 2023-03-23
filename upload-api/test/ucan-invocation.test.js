@@ -424,7 +424,8 @@ test('can process ucan log request for given receipt after its invocation stored
     )
   ])
   const requestCar = await CAR.codec.decode(workflow.body)
-  const requestCarRootCid = requestCar.roots[0].cid
+  const invocationCid = requestCar.roots[0].cid
+  const taskCid = invocationCid
 
   // Create Workflow request with car
   const workflowRequest = lambdaUtils.mockEventCreator.createAPIGatewayEvent({
@@ -457,20 +458,17 @@ test('can process ucan log request for given receipt after its invocation stored
   }))
 
   // create receipt
-  const receipt = await createReceipt(
-    requestCarRootCid,
-    { ok: 'Done' },
-    uploadService.signer
-  )
+  const out = { ok: 'Done' }
+  const receipt = await createReceipt(invocationCid, out, uploadService.signer)
 
   // Create receipt request with cbor
-  const { bytes: receiptBytes, cid: receiptCid } = await CBOR.codec.write(receipt)
+  const receiptBlock = await CBOR.codec.write(receipt)
   const receiptRequest = lambdaUtils.mockEventCreator.createAPIGatewayEvent({
     headers: {
       Authorization: `Basic ${basicAuth}`,
       'Content-Type': CONTENT_TYPE.RECEIPT
     },
-    body: toString(receiptBytes, 'base64')
+    body: toString(receiptBlock.bytes, 'base64')
   })
 
   // process ucan log request for receipt
@@ -487,8 +485,8 @@ test('can process ucan log request for given receipt after its invocation stored
         }
         const data = JSON.parse(toString(input.Data))
         t.truthy(data)
-        t.is(data.carCid, requestCarRootCid.toString())
-        t.is(data.invocationCid, receiptCid.toString())
+        t.is(data.carCid, invocationCid.toString())
+        t.is(data.invocationCid, receiptBlock.cid.toString())
         t.is(data.type, CONTENT_TYPE.RECEIPT)
         t.deepEqual(data.value, kinesisWorkflowInvocations[0].value)
         return Promise.resolve()
@@ -496,14 +494,40 @@ test('can process ucan log request for given receipt after its invocation stored
     }
   }))
 
-  // Verify persisted
-  // const workflowCid = decodedWorkflowCar.roots[0].cid.toString()
-  // const cmd = new HeadObjectCommand({
-  //   Key: `workflow/${workflowCid}`,
-  //   Bucket: bucketName,
-  // })
-  // const s3Response = await t.context.s3.send(cmd)
-  // t.is(s3Response.$metadata.httpStatusCode, 200)
+  // Validate invocation receipt block
+  const cmdReceiptBlock = new GetObjectCommand({
+    Key: `invocation/${invocationCid.toString()}.receipt`,
+    Bucket: bucketName,
+  })
+  const s3ResponseReceiptBlock = await t.context.s3.send(cmdReceiptBlock)
+  t.is(s3ResponseReceiptBlock.$metadata.httpStatusCode, 200)
+
+  // @ts-expect-error AWS types with readable stream
+  const s3ReceiptBlockBytes = (await s3ResponseReceiptBlock.Body.toArray())[0]
+  t.truthy(equals(s3ReceiptBlockBytes, receiptBlock.bytes))
+
+  // Validate stored task result
+  const cmdTaskResult = new GetObjectCommand({
+    Key: `task/${taskCid}.result`,
+    Bucket: bucketName,
+  })
+  const s3ResponseTaskResult = await t.context.s3.send(cmdTaskResult)
+  t.is(s3ResponseTaskResult.$metadata.httpStatusCode, 200)
+
+  // @ts-expect-error AWS types with readable stream
+  const s3TaskResultBytes = (await s3ResponseTaskResult.Body.toArray())[0]
+  const taskResult = await CBOR.codec.write({
+    out
+  })
+  t.truthy(equals(s3TaskResultBytes, taskResult.bytes))
+  
+  // Validate task index within invocation stored
+  const cmdTaskIndexStored = new HeadObjectCommand({
+    Key: `task/${taskCid.toString()}/${invocationCid}.invocation`,
+    Bucket: bucketName,
+  })
+  const s3ResponseTaskIndexStored = await t.context.s3.send(cmdTaskIndexStored)
+  t.is(s3ResponseTaskIndexStored.$metadata.httpStatusCode, 200)
 })
 
 test('fails to process ucan log request for given receipt when no associated invocation is stored', async t => {
