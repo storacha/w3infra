@@ -22,7 +22,7 @@
     "@web-std/fetch": "^4.1.0",
     "@web3-storage/access": "^10.0.0",
     "@web3-storage/capabilities": "^3.2.0",
-    "@web3-storage/upload-api": "^1.0.4",
+    "@web3-storage/upload-api": "^2.0.0",
     "@web3-storage/w3infra-ucan-invocation": "*",
     "multiformats": "^11.0.1",
     "prom-client": "^14.2.0",
