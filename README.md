@@ -136,10 +136,6 @@ Bucket name to replicate written .idx files.
 
 Bucket name to replicate root CID to car CIDs mapping.
 
-#### `R2_UCAN_BUCKET_NAME`
-
-Bucket name to persist the CAR files of UCAN invocations handled by the service.
-
 #### `SENTRY_DSN`
 
 Data source name for Sentry application monitoring service.

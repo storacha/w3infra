@@ -2,8 +2,10 @@ import { Config } from '@serverless-stack/node/config/index.js'
 import { Kinesis } from '@aws-sdk/client-kinesis'
 import * as Sentry from '@sentry/serverless'
 
-import { createUcanStore } from '../buckets/ucan-store.js'
-import { processInvocationsCar } from '../ucan-invocation.js'
+import { createInvocationStore } from '../buckets/invocation-store.js'
+import { createTaskStore } from '../buckets/task-store.js'
+import { createWorkflowStore } from '../buckets/workflow-store.js'
+import { processUcanLogRequest } from '../ucan-invocation.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -26,17 +28,23 @@ const AWS_REGION = process.env.AWS_REGION || 'us-west-2'
  */
 async function handlerFn(request) {
   const {
-    UCAN_BUCKET_NAME: bucketName = '',
+    INVOCATION_BUCKET_NAME: invocationBucketName = '',
+    TASK_BUCKET_NAME: taskBucketName = '',
+    WORKFLOW_BUCKET_NAME: workflowBucketName = '',
     UCAN_LOG_STREAM_NAME: streamName = '',
   } = process.env
 
   const { UCAN_INVOCATION_POST_BASIC_AUTH } = Config
 
-  const storeBucket = createUcanStore(AWS_REGION, bucketName)
+  const invocationBucket = createInvocationStore(AWS_REGION, invocationBucketName)
+  const taskBucket = createTaskStore(AWS_REGION, taskBucketName)
+  const workflowBucket = createWorkflowStore(AWS_REGION, workflowBucketName)
 
   try {
-    await processInvocationsCar(request, {
-      storeBucket,
+    await processUcanLogRequest(request, {
+      invocationBucket,
+      taskBucket,
+      workflowBucket,
       streamName,
       basicAuth: UCAN_INVOCATION_POST_BASIC_AUTH,
       kinesisClient

@@ -11,6 +11,42 @@ export class HTTPError extends Error {
   }
 }
 
+export class BadContentTypeError extends HTTPError {
+  constructor (msg = 'Bad content type header found') {
+    super(msg, 400)
+    this.name = 'BadContentType'
+    this.code = BadContentTypeError.CODE
+  }
+}
+BadContentTypeError.CODE = 'ERROR_BAD_CONTENT_TYPE'
+
+export class BadBodyError extends HTTPError {
+  constructor (msg = 'Bad body received') {
+    super(msg, 400)
+    this.name = 'BadBody'
+    this.code = BadBodyError.CODE
+  }
+}
+BadBodyError.CODE = 'ERROR_BAD_BODY'
+
+export class NoInvocationFoundForGivenReceiptError extends HTTPError {
+  constructor (msg = 'No invocation found for given receipt') {
+    super(msg, 404)
+    this.name = 'NoInvocationFoundForGivenReceipt'
+    this.code = NoInvocationFoundForGivenReceiptError.CODE
+  }
+}
+NoInvocationFoundForGivenReceiptError.CODE = 'ERROR_INVOCATION_NOT_FOUND_FOR_RECEIPT'
+
+export class NoCarFoundForGivenReceiptError extends HTTPError {
+  constructor (msg = 'No car found for given receipt') {
+    super(msg, 404)
+    this.name = 'NoCarFoundForGivenReceipt'
+    this.code = NoCarFoundForGivenReceiptError.CODE
+  }
+}
+NoCarFoundForGivenReceiptError.CODE = 'ERROR_CAR_NOT_FOUND_FOR_RECEIPT'
+
 export class NoTokenError extends HTTPError {
   constructor (msg = 'No token found in `Authorization: Basic ` header') {
     super(msg, 401)
