@@ -4,7 +4,7 @@ import { UnknownLink } from 'multiformats'
 import { Kinesis } from '@aws-sdk/client-kinesis'
 
 
-export interface UcanLogCtx extends InvocationsCarCtx, ReceiptBlockCtx {
+export interface UcanLogCtx extends WorkflowCtx, ReceiptBlockCtx {
   basicAuth: string
 }
 
@@ -13,7 +13,7 @@ export interface UcanStreamCtx {
   kinesisClient?: Kinesis
 }
 
-export interface InvocationsCarCtx extends UcanStreamCtx {
+export interface WorkflowCtx extends UcanStreamCtx {
   storeBucket: UcanBucket
   
 }
@@ -23,10 +23,12 @@ export interface ReceiptBlockCtx extends UcanStreamCtx {
 }
 
 export interface UcanBucket {
-  putCar: (carCid: string, bytes: Uint8Array) => Promise<void>
-  putInvocation: (invocationCid: string, carCid: string) => Promise<void>
-  putReceipt: (invocationCid: string, receiptCid: string, bytes: Uint8Array) => Promise<void>
-  getCarBytesForInvocation: (invocationCid: string) => Promise<Uint8Array|undefined>
+  putWorkflow: (workflowCid: string, bytes: Uint8Array) => Promise<void>
+  putInvocationIndex: (invocationCid: string, workflowCid: string) => Promise<void>
+  putInvocationReceipt: (invocationCid: string, bytes: Uint8Array) => Promise<void>
+  putTaskResult: (taskCid: string, bytes: Uint8Array) => Promise<void>
+  putTaskIndex: (taskCid: string, invocationCid: string) => Promise<void>
+  getWorkflowBytesForInvocation: (invocationCid: string) => Promise<Uint8Array|undefined>
 }
 
 export interface UcanInvocation {
@@ -36,7 +38,7 @@ export interface UcanInvocation {
   cid: string
 }
 
-export interface InvocationsCar {
+export interface Workflow {
   cid: UnknownLink
   bytes: Uint8Array
   invocations: UcanInvocation[]

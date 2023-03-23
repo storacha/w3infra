@@ -7,8 +7,8 @@ import * as Sentry from '@sentry/serverless'
 
 import { createAccessClient } from '../access.js'
 import {
-  processInvocationsCar,
-  processReceiptCbor
+  processWorkflow,
+  processTaskReceipt
 } from '../ucan-invocation.js'
 import { createCarStore } from '../buckets/car-store.js'
 import { createDudewhereStore } from '../buckets/dudewhere-store.js'
@@ -110,12 +110,12 @@ async function ucanInvocationRouter(request) {
     headers: request.headers,
   })
 
-  // Process Invocations CAR
+  // Process workflow
   // We block until we can log the UCAN invocation if this fails we return a 500
   // to the client. That is because in the future we expect that invocations will
   // be written to a queue first and then processed asynchronously, so if we
   // fail to queue the invocation we should not handle it.
-  await processInvocationsCar(body, processingCtx)
+  await processWorkflow(body, processingCtx)
 
   // Execute invocations
   const results = await Promise.all(
@@ -129,7 +129,7 @@ async function ucanInvocationRouter(request) {
 
   for (const receipt of results) {
     out.push(receipt.data.out.error || receipt.data.out.ok)
-    forks.push(processReceiptCbor(receipt.bytes, processingCtx))
+    forks.push(processTaskReceipt(receipt.bytes, processingCtx))
   }
 
   await Promise.all(forks)

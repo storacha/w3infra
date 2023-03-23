@@ -4,6 +4,7 @@ import {
   GetObjectCommand,
   ListObjectsV2Command,
 } from '@aws-sdk/client-s3'
+import pRetry from 'p-retry'
 
 /**
  * Abstraction layer with Factory to perform operations on bucket storing
@@ -29,68 +30,99 @@ export function createUcanStore(region, bucketName, options = {}) {
 export const useUcanStore = (s3client, bucketName) => {
   return {
     /**
-     * Put CAR file with UCAN invocations into bucket.
+     * Put Workflow file with UCAN invocations into bucket.
      *
-     * @param {string} carCid
+     * @param {string} cid
      * @param {Uint8Array} bytes
      */
-    putCar: async (carCid, bytes) => {
+    putWorkflow: async (cid, bytes) => {
       const putCmd = new PutObjectCommand({
         Bucket: bucketName,
-        Key: `${carCid}/${carCid}.car`,
+        // TODO: for bucket rate limit, shouldn't we do double CID?
+        Key: `workflow/${cid}`,
         Body: bytes,
       })
-      await s3client.send(putCmd)
+      await pRetry(() => s3client.send(putCmd))
     },
     /**
-     * Put mapping for where each invocation lives in a CAR file.
+     * Put mapping for where each invocation lives in a Workflow file.
      *
      * @param {string} invocationCid
-     * @param {string} carCid
+     * @param {string} workflowCid
      */
-    putInvocation: async (invocationCid, carCid) => {
+    putInvocationIndex: async (invocationCid, workflowCid) => {
       const putCmd = new PutObjectCommand({
         Bucket: bucketName,
-        Key: `${invocationCid}/${carCid}.invocation`,
+        Key: `invocation/${invocationCid}/${workflowCid}.workflow`,
       })
-      await s3client.send(putCmd)
+      await pRetry(() => s3client.send(putCmd))
     },
     /**
      * Put block with receipt for a given invocation.
      *
      * @param {string} invocationCid
-     * @param {string} receiptCid
      * @param {Uint8Array} bytes
      */
-    putReceipt: async (invocationCid, receiptCid, bytes) => {
+    putInvocationReceipt: async (invocationCid, bytes) => {
       const putCmd = new PutObjectCommand({
         Bucket: bucketName,
-        Key: `${invocationCid}/${receiptCid}.receipt`,
+        Key: `invocation/${invocationCid}.receipt`,
         Body: bytes,
       })
-      await s3client.send(putCmd)
+      await pRetry(() => s3client.send(putCmd))
+    },
+    /**
+     * Put block containing `out` filed of the receipt. So that when we get an invocation
+     * with the same task we can read the result and issue receipt without rerunning
+     * a task. Could be written on first receipt.
+     *
+     * @param {string} taskCid
+     * @param {Uint8Array} bytes
+     */
+    putTaskResult: async (taskCid, bytes) => {
+      const putCmd = new PutObjectCommand({
+        Bucket: bucketName,
+        Key: `task/${taskCid}.result`,
+        Body: bytes,
+      })
+      await pRetry(() => s3client.send(putCmd))
+    },
+    /**
+     * Put mapping for where each task lives in an invocation file.
+     * Enables lookup invocations & receipts by task.
+     *
+     * @param {string} taskCid 
+     * @param {string} invocationCid 
+     */
+    putTaskIndex: async (taskCid, invocationCid) => {
+      const putCmd = new PutObjectCommand({
+        Bucket: bucketName,
+        Key: `task/${taskCid}/${invocationCid}.invocation`,
+      })
+      await pRetry(() => s3client.send(putCmd))
     },
     /**
      * Get CAR bytes for a given invocation.
      *
      * @param {string} invocationCid 
      */
-    getCarBytesForInvocation: async (invocationCid) => {
+    getWorkflowBytesForInvocation: async (invocationCid) => {
+      const prefix = `invocation/${invocationCid}/`
       const listObjectCmd = new ListObjectsV2Command({
         Bucket: bucketName,
-        Prefix: `${invocationCid}/`,
+        Prefix: prefix,
       })
       const listObject = await s3client.send(listObjectCmd)
       const carEntry = listObject.Contents?.find(
-        content => content.Key?.endsWith('.invocation')
+        content => content.Key?.endsWith('.workflow')
       )
       if (!carEntry) {
         return
       }
-      const carCid = carEntry.Key?.replace(`${invocationCid}/`, '').replace('.invocation', '')
+      const carCid = carEntry.Key?.replace(prefix, '').replace('.workflow', '')
       const getObjectCmd = new GetObjectCommand({
         Bucket: bucketName,
-        Key: `${carCid}/${carCid}.car`,
+        Key: `workflow/${carCid}`,
       })
       const s3Object = await s3client.send(getObjectCmd)
       const bytes = await s3Object.Body?.transformToByteArray()

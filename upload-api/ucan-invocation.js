@@ -15,15 +15,15 @@ import {
 } from './errors.js'
 
 export const CONTENT_TYPE = {
-  INVOCATIONS: 'application/invocations+car',
+  WORKFLOW: 'application/invocations+car',
   RECEIPT: 'application/receipt+dag-cbor'
 }
 
 /**
  * @typedef {import('./types').UcanLogCtx} UcanLogCtx
- * @typedef {import('./types').InvocationsCarCtx} InvocationsCarCtx
+ * @typedef {import('./types').WorkflowCtx} WorkflowCtx
  * @typedef {import('./types').ReceiptBlockCtx} ReceiptBlockCtx
- * @typedef {import('./types').InvocationsCar} InvocationsCar
+ * @typedef {import('./types').Workflow} Workflow
  * @typedef {import('./types').ReceiptBlock} ReceiptBlock
  */
 
@@ -43,33 +43,33 @@ export async function processUcanLogRequest (request, ctx) {
   const bytes = Buffer.from(request.body, 'base64')
 
   const contentType = request.headers['Content-Type'] || ''
-  if (contentType === CONTENT_TYPE.INVOCATIONS) {
-    return await processInvocationsCar(bytes, ctx)
+  if (contentType === CONTENT_TYPE.WORKFLOW) {
+    return await processWorkflow(bytes, ctx)
   } else if (contentType === CONTENT_TYPE.RECEIPT) {
-    return await processReceiptCbor(bytes, ctx)
+    return await processTaskReceipt(bytes, ctx)
   }
   throw new BadContentTypeError()
 }
 
 /**
  * @param {Uint8Array} bytes
- * @param {InvocationsCarCtx} ctx
+ * @param {WorkflowCtx} ctx
  */
-export async function processInvocationsCar (bytes, ctx) {
-  const invocationsCar = await parseInvocationsCar(bytes)
+export async function processWorkflow (bytes, ctx) {
+  const worflow = await parseWorkflow(bytes)
 
-  // persist CAR and invocations
-  await persistInvocationsCar(invocationsCar, ctx.storeBucket)
+  // persist workflow and its invocations
+  await persistWorkflow(worflow, ctx.storeBucket)
 
-  // Put CAR invocations to UCAN stream
+  // Put workflow invocations to UCAN stream
   await ctx.kinesisClient?.putRecords({
-    Records: invocationsCar.invocations.map(invocation => ({
+    Records: worflow.invocations.map(invocation => ({
       Data: uint8arrayFromString(
         JSON.stringify({
-          carCid: invocationsCar.cid.toString(),
+          carCid: worflow.cid.toString(),
           value: invocation,
           ts: Date.now(),
-          type: CONTENT_TYPE.INVOCATIONS
+          type: CONTENT_TYPE.WORKFLOW
         })
       ),
       // https://docs.aws.amazon.com/streams/latest/dev/key-concepts.html
@@ -80,34 +80,34 @@ export async function processInvocationsCar (bytes, ctx) {
     StreamName: ctx.streamName,
   })
 
-  return invocationsCar
+  return worflow
 }
 
 /**
  * @param {Uint8Array} bytes
  * @param {ReceiptBlockCtx} ctx
  */
-export async function processReceiptCbor (bytes, ctx) {
+export async function processTaskReceipt (bytes, ctx) {
   const receiptBlock = await parseReceiptCbor(bytes)
-  const carBytes = await ctx.storeBucket.getCarBytesForInvocation(receiptBlock.data.ran.toString())
-  if (!carBytes) {
+  const workflowBytes = await ctx.storeBucket.getWorkflowBytesForInvocation(receiptBlock.data.ran.toString())
+  if (!workflowBytes) {
     throw new NoCarFoundForGivenReceiptError()
   }
 
-  const car = await parseInvocationsCar(carBytes)
-  const invocation = car.invocations.find(invocation => invocation.cid.toString() === receiptBlock.data.ran.toString())
+  const workflow = await parseWorkflow(workflowBytes)
+  const invocation = workflow.invocations.find(invocation => invocation.cid.toString() === receiptBlock.data.ran.toString())
   if (!invocation) {
     throw new NoInvocationFoundForGivenReceiptError()
   }
 
   // persist receipt
-  await persistReceipt(receiptBlock)
+  await persistReceipt(receiptBlock, ctx.storeBucket)
 
   // Put Receipt to UCAN Stream
   await ctx.kinesisClient?.putRecord({
     Data: uint8arrayFromString(
       JSON.stringify({
-        carCid: car.cid.toString(),
+        carCid: workflow.cid.toString(),
         invocationCid: receiptBlock.cid.toString(),
         value: invocation,
         ts: Date.now(),
@@ -126,16 +126,15 @@ export async function processReceiptCbor (bytes, ctx) {
 
 /**
  * @param {Uint8Array} bytes
- * @returns {Promise<InvocationsCar>}
+ * @returns {Promise<Workflow>}
  */
-export async function parseInvocationsCar (bytes) {
+export async function parseWorkflow (bytes) {
   const car = await CAR.codec.decode(bytes)
   if (!car.roots.length) {
     throw new Error('Invocations CAR must have one root')
   }
 
   const cid = car.roots[0].cid
-
   const invocations = car.roots.map(root => {
     // @ts-expect-error 'ByteView<unknown>' is not assignable to parameter of type 'ByteView<UCAN<Capabilities>>'
     const dagUcan = UCAN.decode(root.bytes)
@@ -160,16 +159,17 @@ export async function parseInvocationsCar (bytes) {
 }
 
 /**
- * Persist CAR with handled UCAN invocations by the router.
+ * Persist workflow with invocations to be handled by the router.
+ * Persist index per invocation to which workflow they come from.
  *
- * @param {InvocationsCar} invocationsCar
+ * @param {Workflow} workflow
  * @param {import('./types').UcanBucket} ucanStore
  */
-export async function persistInvocationsCar (invocationsCar, ucanStore) {
-  const carCid = invocationsCar.cid.toString()
+export async function persistWorkflow (workflow, ucanStore) {
+  const carCid = workflow.cid.toString()
   const tasks = [
-    ucanStore.putCar(carCid, invocationsCar.bytes),
-    ...invocationsCar.invocations.map(i => ucanStore.putInvocation(i.cid, carCid))
+    ucanStore.putWorkflow(carCid, workflow.bytes),
+    ...workflow.invocations.map(i => ucanStore.putInvocationIndex(i.cid, carCid))
   ]
 
   await Promise.all(tasks)
@@ -192,14 +192,31 @@ export async function parseReceiptCbor (bytes) {
 
 /**
  * @param {ReceiptBlock} receiptBlock
- * @param {import('./types').UcanBucket} [ucanStore]
+ * @param {import('./types').UcanBucket} ucanStore
  */
-async function persistReceipt (receiptBlock, ucanStore) {
-  await ucanStore?.putReceipt(
-    receiptBlock.data.ran.toString(),
-    receiptBlock.cid.toString(),
-    receiptBlock.bytes
-  )
+export async function persistReceipt (receiptBlock, ucanStore) {
+  const invocationCid = receiptBlock.data.ran.toString()
+  // TODO: For now we will use delegation CID as both invocation and task CID
+  // Delegation CIDs are the roots in the received CAR and CID in the .ran field
+  // of the received receipt.
+  const taskCid = invocationCid
+
+  await Promise.all([
+    // Store invocation receipt block
+    ucanStore.putInvocationReceipt(
+      invocationCid,
+      receiptBlock.bytes
+    ),
+    // Store Task result
+    (async () => {
+      const taskResult = await CBOR.codec.write({
+        out: receiptBlock.data.out
+      })
+      await ucanStore.putTaskResult(taskCid, taskResult.bytes)
+    })(),
+    // Store task index
+    ucanStore.putTaskIndex(taskCid, invocationCid)
+  ])
 }
 
 /**
