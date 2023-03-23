@@ -30,7 +30,8 @@ import {
   parseReceiptCbor,
   persistReceipt,
   replaceAllLinkValues,
-  CONTENT_TYPE
+  CONTENT_TYPE,
+  STREAM_TYPE
 } from '../ucan-invocation.js'
 
 
@@ -305,7 +306,7 @@ test('can process a ucan log request for a workflow CAR with one invocation', as
           const invocation = JSON.parse(toString(record.Data))
           t.truthy(invocation)
           t.truthy(invocation.ts)
-          t.is(invocation.type, CONTENT_TYPE.WORKFLOW)
+          t.is(invocation.type, STREAM_TYPE.WORKFLOW)
           t.is(invocation.carCid, workflowCid)
           t.is(invocation.value.att[0].can, can)
           t.deepEqual(invocation.value.att[0].nb, replaceAllLinkValues(nb))
@@ -383,7 +384,7 @@ test('can process a ucan log request for a workflow CAR with multiple invocation
           }
           const invocation = JSON.parse(toString(record.Data))
           t.truthy(invocation)
-          t.is(invocation.type, CONTENT_TYPE.WORKFLOW)
+          t.is(invocation.type, STREAM_TYPE.WORKFLOW)
           can.add(invocation.value.att[0].can)
         }
 
@@ -501,7 +502,7 @@ test('can process ucan log request for given receipt after its invocation stored
         t.truthy(data)
         t.is(data.carCid, invocationCid.toString())
         t.is(data.invocationCid, receiptBlock.cid.toString())
-        t.is(data.type, CONTENT_TYPE.RECEIPT)
+        t.is(data.type, STREAM_TYPE.RECEIPT)
         t.deepEqual(data.value, kinesisWorkflowInvocations[0].value)
         return Promise.resolve()
       }

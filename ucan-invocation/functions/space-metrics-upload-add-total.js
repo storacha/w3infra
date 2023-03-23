@@ -2,7 +2,7 @@ import * as Sentry from '@sentry/serverless'
 
 import { createSpaceMetricsTable } from '../tables/space-metrics.js'
 import { parseKinesisEvent } from '../utils/parse-kinesis-event.js'
-import { UPLOAD_ADD, CONTENT_TYPE } from '../constants.js'
+import { UPLOAD_ADD, STREAM_TYPE } from '../constants.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -43,7 +43,7 @@ async function handler(event) {
  */
 export async function updateUploadCount (ucanInvocations, ctx) {
   const invocationsWithUploadAdd = ucanInvocations.filter(
-    inv => inv.value.att.find(a => a.can === UPLOAD_ADD) && inv.type === CONTENT_TYPE.RECEIPT
+    inv => inv.value.att.find(a => a.can === UPLOAD_ADD) && inv.type === STREAM_TYPE.RECEIPT
   ).flatMap(inv => inv.value.att)
 
   await ctx.spaceMetricsTable.incrementUploadAddCount(invocationsWithUploadAdd)

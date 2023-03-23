@@ -11,7 +11,7 @@ import { adminMetricsTableProps } from '../../tables/index.js'
 
 import { updateStoreRemoveTotal } from '../../functions/metrics-store-remove-total.js'
 import { createMetricsTable } from '../../tables/metrics.js'
-import { METRICS_NAMES, CONTENT_TYPE } from '../../constants.js'
+import { METRICS_NAMES, STREAM_TYPE } from '../../constants.js'
 
 const REGION = 'us-west-2'
 
@@ -51,7 +51,7 @@ test('handles a batch of single invocation with store/remove', async t => {
         aud: uploadService.did(),
         iss: alice.did()
     },
-    type: CONTENT_TYPE.RECEIPT,
+    type: STREAM_TYPE.RECEIPT,
     ts: Date.now()
   }]
 
@@ -94,7 +94,7 @@ test('handles batch of single invocations with multiple store/remove attributes'
       aud: uploadService.did(),
       iss: alice.did()
     },
-    type: CONTENT_TYPE.RECEIPT,
+    type: STREAM_TYPE.RECEIPT,
     ts: Date.now()
   }]
 
@@ -138,7 +138,7 @@ test('handles a batch of single invocation without store/remove', async t => {
         aud: uploadService.did(),
         iss: alice.did()
     },
-    type: CONTENT_TYPE.RECEIPT,
+    type: STREAM_TYPE.RECEIPT,
     ts: Date.now()
   }]
 
@@ -181,7 +181,7 @@ test('handles a batch of single invocation without receipts', async t => {
         aud: uploadService.did(),
         iss: alice.did()
     },
-    type: CONTENT_TYPE.WORKFLOW,
+    type: STREAM_TYPE.WORKFLOW,
     ts: Date.now()
   }]
 
