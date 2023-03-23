@@ -281,8 +281,8 @@ test('can process a ucan log request for a workflow CAR with one invocation', as
   // Create Workflow request with car
   const workflowRequest = lambdaUtils.mockEventCreator.createAPIGatewayEvent({
     headers: {
-      Authorization: `Basic ${basicAuth}`,
-      'Content-Type': CONTENT_TYPE.WORKFLOW
+      authorization: `Basic ${basicAuth}`,
+      'content-type': CONTENT_TYPE.WORKFLOW
     },
     body: toString(workflow.body, 'base64')
   })
@@ -358,8 +358,8 @@ test('can process a ucan log request for a workflow CAR with multiple invocation
   // Create Workflow request with car
   const workflowRequest = lambdaUtils.mockEventCreator.createAPIGatewayEvent({
     headers: {
-      Authorization: `Basic ${basicAuth}`,
-      'Content-Type': CONTENT_TYPE.WORKFLOW
+      authorization: `Basic ${basicAuth}`,
+      'content-type': CONTENT_TYPE.WORKFLOW
     },
     body: toString(workflow.body, 'base64')
   })
@@ -440,8 +440,8 @@ test('can process ucan log request for given receipt after its invocation stored
   // Create Workflow request with car
   const workflowRequest = lambdaUtils.mockEventCreator.createAPIGatewayEvent({
     headers: {
-      Authorization: `Basic ${basicAuth}`,
-      'Content-Type': CONTENT_TYPE.WORKFLOW
+      authorization: `Basic ${basicAuth}`,
+      'content-type': CONTENT_TYPE.WORKFLOW
     },
     body: toString(workflow.body, 'base64')
   })
@@ -478,8 +478,8 @@ test('can process ucan log request for given receipt after its invocation stored
   const receiptBlock = await CBOR.codec.write(receipt)
   const receiptRequest = lambdaUtils.mockEventCreator.createAPIGatewayEvent({
     headers: {
-      Authorization: `Basic ${basicAuth}`,
-      'Content-Type': CONTENT_TYPE.RECEIPT
+      authorization: `Basic ${basicAuth}`,
+      'content-type': CONTENT_TYPE.RECEIPT
     },
     body: toString(receiptBlock.bytes, 'base64')
   })
@@ -574,8 +574,8 @@ test('fails to process ucan log request for given receipt when no associated inv
   const { bytes: receiptBytes } = await CBOR.codec.write(receipt)
   const requestReceipt = lambdaUtils.mockEventCreator.createAPIGatewayEvent({
     headers: {
-      Authorization: `Basic ${basicAuth}`,
-      'Content-Type': CONTENT_TYPE.RECEIPT
+      authorization: `Basic ${basicAuth}`,
+      'content-type': CONTENT_TYPE.RECEIPT
     },
     body: toString(receiptBytes, 'base64')
   })
@@ -601,8 +601,8 @@ test('fails to process ucan log request with unknown content type', async t => {
   const basicAuth = 'test-token'
   const request = lambdaUtils.mockEventCreator.createAPIGatewayEvent({
     headers: {
-      Authorization: `Basic ${basicAuth}`,
-      'Content-Type': 'unknown'
+      authorization: `Basic ${basicAuth}`,
+      'content-type': 'unknown'
     }
   })
 
@@ -634,7 +634,7 @@ test('fails to process ucan log request with no Authorization basic header', asy
   const basicAuth = 'test-token'
   const request = lambdaUtils.mockEventCreator.createAPIGatewayEvent({
     headers: {
-      Authorization: 'Bearer token-test'
+      authorization: 'Bearer token-test'
     }
   })
 
@@ -652,7 +652,7 @@ test('fails to process ucan log request with Authorization basic token empty', a
   const basicAuth = 'test-token'
   const request = lambdaUtils.mockEventCreator.createAPIGatewayEvent({
     headers: {
-      Authorization: 'Basic'
+      authorization: 'Basic'
     }
   })
 
@@ -670,7 +670,7 @@ test('fails to process ucan log request with invalid Authorization basic token',
   const basicAuth = 'test-token'
   const request = lambdaUtils.mockEventCreator.createAPIGatewayEvent({
     headers: {
-      Authorization: 'Basic invalid-token'
+      authorization: 'Basic invalid-token'
     }
   })
 
