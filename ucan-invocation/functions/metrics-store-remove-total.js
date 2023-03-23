@@ -2,7 +2,7 @@ import * as Sentry from '@sentry/serverless'
 
 import { createMetricsTable } from '../tables/metrics.js'
 import { parseKinesisEvent } from '../utils/parse-kinesis-event.js'
-import { STORE_REMOVE } from '../constants.js'
+import { STORE_REMOVE, CONTENT_TYPE } from '../constants.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -37,7 +37,7 @@ async function handler(event) {
  */
 export async function updateStoreRemoveTotal (ucanInvocations, ctx) {
   const invocationsWithStoreRemove = ucanInvocations.filter(
-    inv => inv.value.att.find(a => a.can === STORE_REMOVE)
+    inv => inv.value.att.find(a => a.can === STORE_REMOVE) && inv.type === CONTENT_TYPE.RECEIPT
   ).flatMap(inv => inv.value.att)
 
   await ctx.metricsTable.incrementStoreRemoveTotal(invocationsWithStoreRemove)

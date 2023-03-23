@@ -189,8 +189,17 @@ export function UcanInvocationStack({ stack, app }) {
     deadLetterQueue: spaceMetricsDLQ.cdk.queue,
   })
 
+  // TODO: keep for historical content that we might want to process
+  new KinesisStream(stack, 'ucan-stream', {
+    cdk: {
+      stream: {
+        retentionPeriod: Duration.days(365)
+      }
+    },
+  })
+
   // create a kinesis stream
-  const ucanStream = new KinesisStream(stack, 'ucan-stream', {
+  const ucanStream = new KinesisStream(stack, 'ucan-stream-v2', {
     cdk: {
       stream: {
         retentionPeriod: Duration.days(365)

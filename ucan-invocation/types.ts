@@ -44,10 +44,13 @@ export interface MetricsBySpaceWithBucketCtx {
   carStoreBucket: CarStoreBucket
 }
 
+export type UcanInvocationType = 'application/invocations+car' | 'application/receipt+dag-cbor'
+
 export interface UcanInvocation {
-  carCid: string,
-  value: UcanInvocationValue,
+  carCid: string
+  value: UcanInvocationValue
   ts: number
+  type: UcanInvocationType
 }
 
 export interface UcanInvocationValue {
