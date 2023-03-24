@@ -51,6 +51,7 @@ export interface UcanInvocation {
   value: UcanInvocationValue
   ts: number
   type: UcanInvocationType
+  out?: ReceiptResult
 }
 
 export interface UcanInvocationValue {
@@ -63,3 +64,19 @@ export interface UcanInvocationValue {
 export interface LinkJSON<T extends UnknownLink = UnknownLink> {
   '/': ToString<T>
 }
+
+/**
+ * Defines result type as per invocation spec
+ *
+ * @see https://github.com/ucan-wg/invocation/#6-result
+ */
+export type ReceiptResult<T = unknown, X extends {} = {}> = Variant<{
+  ok: T
+  error: X
+}>
+
+export type Variant<U extends Record<string, unknown>> = {
+  [Key in keyof U]: { [K in Exclude<keyof U, Key>]?: never } & {
+    [K in Key]: U[Key]
+  }
+}[keyof U]

@@ -503,6 +503,7 @@ test('can process ucan log request for given receipt after its invocation stored
         t.is(data.carCid, invocationCid.toString())
         t.is(data.invocationCid, receiptBlock.cid.toString())
         t.is(data.type, STREAM_TYPE.RECEIPT)
+        t.deepEqual(data.out, out)
         t.deepEqual(data.value, kinesisWorkflowInvocations[0].value)
         return Promise.resolve()
       }

@@ -2,8 +2,9 @@ import * as Sentry from '@sentry/serverless'
 
 import { createCarStore } from '../buckets/car-store.js'
 import { createSpaceMetricsTable } from '../tables/space-metrics.js'
+import { hasOkReceipt } from '../utils/receipt.js'
 import { parseKinesisEvent } from '../utils/parse-kinesis-event.js'
-import { STORE_ADD, STREAM_TYPE } from '../constants.js'
+import { STORE_ADD } from '../constants.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -36,7 +37,7 @@ async function handler(event) {
  */
 export async function updateAddSizeTotal (ucanInvocations, ctx) {
   const invocationsWithStoreAdd = ucanInvocations.filter(
-    inv => inv.value.att.find(a => a.can === STORE_ADD) && inv.type === STREAM_TYPE.RECEIPT
+    inv => inv.value.att.find(a => a.can === STORE_ADD) && hasOkReceipt(inv)
   ).flatMap(inv => inv.value.att)
 
   await ctx.spaceMetricsTable.incrementStoreAddSizeTotal(invocationsWithStoreAdd)

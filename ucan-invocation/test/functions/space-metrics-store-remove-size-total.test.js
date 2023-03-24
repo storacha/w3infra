@@ -73,6 +73,9 @@ test('handles a batch of single invocation with store/remove', async t => {
       iss: alice.did()
     },
     type: STREAM_TYPE.RECEIPT,
+    out: {
+      ok: true
+    },
     ts: Date.now()
   }]
 
@@ -130,6 +133,9 @@ test('handles batch of single invocation with multiple store/remove attributes',
       iss: alice.did()
     },
     type: STREAM_TYPE.RECEIPT,
+    out: {
+      ok: true
+    },
     ts: Date.now()
   }]
 
@@ -189,6 +195,9 @@ test('handles batch of multiple invocations with store/remove in same space', as
       iss: alice.did()
     },
     type: STREAM_TYPE.RECEIPT,
+    out: {
+      ok: true
+    },
     ts: Date.now()
   }))
 
@@ -246,6 +255,9 @@ test('handles batch of multiple invocations with store/remove in multiple spaces
       iss: alice.did()
     },
     type: STREAM_TYPE.RECEIPT,
+    out: {
+      ok: true
+    },
     ts: Date.now()
   }))
 
@@ -309,6 +321,9 @@ test('errors handling batch of multiple invocations with more transactions than 
         iss: alice.did()
     },
     type: STREAM_TYPE.RECEIPT,
+    out: {
+      ok: true
+    },
     ts: Date.now()
   }))
 

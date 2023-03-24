@@ -52,6 +52,9 @@ test('handles a batch of single invocation with upload/remove', async t => {
         iss: alice.did()
     },
     type: STREAM_TYPE.RECEIPT,
+    out: {
+      ok: true
+    },
     ts: Date.now()
   }]
 
@@ -96,6 +99,9 @@ test('handles batch of single invocation with multiple upload/remove attributes'
       iss: alice.did()
     },
     type: STREAM_TYPE.RECEIPT,
+    out: {
+      ok: true
+    },
     ts: Date.now()
   }]
 
@@ -142,6 +148,9 @@ test('handles batch of multiple invocations with upload/remove in same space', a
         iss: alice.did()
     },
     type: STREAM_TYPE.RECEIPT,
+    out: {
+      ok: true
+    },
     ts: Date.now()
   }))
 
@@ -187,6 +196,9 @@ test('handles batch of multiple invocations with upload/remove in multiple space
         iss: alice.did()
     },
     type: STREAM_TYPE.RECEIPT,
+    out: {
+      ok: true
+    },
     ts: Date.now()
   }))
 
@@ -237,6 +249,9 @@ test('errors handling batch of multiple invocations with more transactions than 
         iss: alice.did()
     },
     type: STREAM_TYPE.RECEIPT,
+    out: {
+      ok: true
+    },
     ts: Date.now()
   }))
 

@@ -53,6 +53,9 @@ test('handles a batch of single invocation with store/add', async t => {
         iss: alice.did()
     },
     type: STREAM_TYPE.RECEIPT,
+    out: {
+      ok: true
+    },
     ts: Date.now()
   }]
 
@@ -97,6 +100,9 @@ test('handles batch of single invocations with multiple store/add attributes', a
       iss: alice.did()
     },
     type: STREAM_TYPE.RECEIPT,
+    out: {
+      ok: true
+    },
     ts: Date.now()
   }]
 
@@ -140,6 +146,9 @@ test('handles a batch of single invocation without store/add', async t => {
         iss: alice.did()
     },
     type: STREAM_TYPE.RECEIPT,
+    out: {
+      ok: true
+    },
     ts: Date.now()
   }]
 
