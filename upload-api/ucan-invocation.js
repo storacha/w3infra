@@ -121,7 +121,8 @@ export async function processInvocationReceipt (bytes, ctx) {
         invocationCid: receiptBlock.cid.toString(),
         value: invocation,
         ts: Date.now(),
-        type: STREAM_TYPE.RECEIPT
+        type: STREAM_TYPE.RECEIPT,
+        out: receiptBlock.data.out
       })
     ),
     // https://docs.aws.amazon.com/streams/latest/dev/key-concepts.html

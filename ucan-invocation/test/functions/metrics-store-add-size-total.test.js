@@ -53,6 +53,9 @@ test('handles a batch of single invocation with store/add', async t => {
         iss: alice.did()
     },
     type: STREAM_TYPE.RECEIPT,
+    out: {
+      ok: true,
+    },
     ts: Date.now()
   }]
 
@@ -97,6 +100,9 @@ test('handles batch of single invocations with multiple store/add attributes', a
       iss: alice.did()
     },
     type: STREAM_TYPE.RECEIPT,
+    out: {
+      ok: true,
+    },
     ts: Date.now()
   }]
 
@@ -140,6 +146,9 @@ test('handles a batch of single invocation without store/add', async t => {
         iss: alice.did()
     },
     type: STREAM_TYPE.RECEIPT,
+    out: {
+      ok: true,
+    },
     ts: Date.now()
   }]
 
@@ -183,6 +192,52 @@ test('handles a batch of single invocation without receipts', async t => {
         iss: alice.did()
     },
     type: STREAM_TYPE.WORKFLOW,
+    ts: Date.now()
+  }]
+
+  // @ts-expect-error
+  await updateSizeTotal(invocations, {
+    metricsTable
+  })
+
+  const item = await getItemFromTable(t.context.dynamoClient, tableName, {
+    name: METRICS_NAMES.STORE_ADD_SIZE_TOTAL
+  })
+  t.truthy(item)
+  t.is(item?.name, METRICS_NAMES.STORE_ADD_SIZE_TOTAL)
+  t.is(item?.value, 0)
+})
+
+test('handles a batch of single invocation with error receipt', async t => {
+  const { tableName } = await prepareResources(t.context.dynamoClient)
+  const uploadService = await Signer.generate()
+  const alice = await Signer.generate()
+  const { spaceDid } = await createSpace(alice)
+  const car = await randomCAR(128)
+
+  const metricsTable = createMetricsTable(REGION, tableName, {
+    endpoint: t.context.dbEndpoint
+  })
+
+  const invocations = [{
+    carCid: car.cid.toString(),
+    value: {
+        att: [
+          StoreCapabilities.add.create({
+            with: spaceDid,
+            nb: {
+              link: car.cid,
+              size: car.size
+            }
+          })
+        ],
+        aud: uploadService.did(),
+        iss: alice.did()
+    },
+    type: STREAM_TYPE.RECEIPT,
+    out: {
+      error: true,
+    },
     ts: Date.now()
   }]
 
