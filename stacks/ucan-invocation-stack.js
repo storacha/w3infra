@@ -123,6 +123,17 @@ export function UcanInvocationStack({ stack, app }) {
     handler: 'functions/metrics-upload-remove-total.consumer',
     deadLetterQueue: metricsUploadRemoveTotalDLQ.cdk.queue,
   })
+
+  // metrics provider/add count
+  const metricsProviderAddTotalDLQ = new Queue(stack, 'metrics-provider-add-total-dlq')
+  const metricsProviderAddTotalConsumer = new Function(stack, 'metrics-provider-add-total-consumer', {
+    environment: {
+      TABLE_NAME: adminMetricsTable.tableName
+    },
+    permissions: [adminMetricsTable],
+    handler: 'functions/metrics-provider-add-total.consumer',
+    deadLetterQueue: metricsProviderAddTotalDLQ.cdk.queue,
+  })
   
   // metrics per space
   const spaceMetricsDLQ = new Queue(stack, 'space-metrics-dlq')
@@ -252,6 +263,14 @@ export function UcanInvocationStack({ stack, app }) {
       },
       metricsUploadRemoveTotalConsumer: {
         function: metricsUploadRemoveTotalConsumer,
+        cdk: {
+          eventSource: {
+            ...(getKinesisEventSourceConfig(stack))
+          }
+        }
+      },
+      metricsConsumerAddTotalConsumer: {
+        function: metricsProviderAddTotalConsumer,
         cdk: {
           eventSource: {
             ...(getKinesisEventSourceConfig(stack))

@@ -1,3 +1,6 @@
+import {
+  add as providerAdd,
+} from '@web3-storage/capabilities/provider'
 import { 
   add as storeAdd,
   remove as storeRemove
@@ -17,6 +20,7 @@ export const STORE_ADD = storeAdd.can
 export const STORE_REMOVE = storeRemove.can
 export const UPLOAD_ADD = uploadAdd.can
 export const UPLOAD_REMOVE = uploadRemove.can
+export const PROVIDER_ADD = providerAdd.can
 
 // Admin Metrics
 export const METRICS_NAMES = {
@@ -26,6 +30,7 @@ export const METRICS_NAMES = {
   STORE_ADD_SIZE_TOTAL: `${STORE_ADD}-size-total`,
   STORE_REMOVE_TOTAL: `${STORE_REMOVE}-total`,
   STORE_REMOVE_SIZE_TOTAL: `${STORE_REMOVE}-size-total`,
+  PROVIDER_ADD_TOTAL: `${PROVIDER_ADD}-total`,
 }
 
 // Spade Metrics

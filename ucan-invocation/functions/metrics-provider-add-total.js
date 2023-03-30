@@ -1,9 +1,9 @@
 import * as Sentry from '@sentry/serverless'
 
-import { createMetricsTable } from '../tables/metrics.js'
 import { hasOkReceipt } from '../utils/receipt.js'
+import { createMetricsTable } from '../tables/metrics.js'
 import { parseKinesisEvent } from '../utils/parse-kinesis-event.js'
-import { UPLOAD_ADD } from '../constants.js'
+import { PROVIDER_ADD } from '../constants.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -25,7 +25,7 @@ async function handler(event) {
     DYNAMO_DB_ENDPOINT: dbEndpoint,
   } = process.env
 
-  await updateUploadAddTotal(ucanInvocations, {
+  await updateProviderAddTotal(ucanInvocations, {
     metricsTable: createMetricsTable(AWS_REGION, tableName, {
       endpoint: dbEndpoint
     })
@@ -36,12 +36,12 @@ async function handler(event) {
  * @param {import('../types').UcanInvocation[]} ucanInvocations
  * @param {import('../types').TotalSizeCtx} ctx
  */
-export async function updateUploadAddTotal (ucanInvocations, ctx) {
-  const invocationsWithUploadAdd = ucanInvocations.filter(
-    inv => inv.value.att.find(a => a.can === UPLOAD_ADD) && hasOkReceipt(inv)
+export async function updateProviderAddTotal (ucanInvocations, ctx) {
+  const invocationsWithConsumerAdd = ucanInvocations.filter(
+    inv => inv.value.att.find(a => a.can === PROVIDER_ADD) && hasOkReceipt(inv)
   ).flatMap(inv => inv.value.att)
 
-  await ctx.metricsTable.incrementUploadAddTotal(invocationsWithUploadAdd)
+  await ctx.metricsTable.incrementProviderAddTotal(invocationsWithConsumerAdd)
 }
 
 export const consumer = Sentry.AWSLambda.wrapHandler(handler)

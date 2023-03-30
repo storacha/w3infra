@@ -164,6 +164,28 @@ export function createMetricsTable (region, tableName, options = {}) {
       })
 
       await dynamoDb.send(updateCmd)
+    },
+    /**
+     * Increment total count from provider/add operations.
+     *
+     * @param {Capabilities} operationsInv
+     */
+    incrementProviderAddTotal: async (operationsInv) => {
+      const invTotalSize = operationsInv.length
+
+      const updateCmd = new UpdateItemCommand({
+        TableName: tableName,
+        UpdateExpression: `ADD #value :value`,
+          ExpressionAttributeNames: {'#value': 'value'},
+          ExpressionAttributeValues: {
+            ':value': { N: String(invTotalSize) },
+          },
+        Key: marshall({
+          name: METRICS_NAMES.PROVIDER_ADD_TOTAL
+        })
+      })
+
+      await dynamoDb.send(updateCmd)
     }
   }
 }

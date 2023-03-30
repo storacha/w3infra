@@ -1,4 +1,5 @@
 import * as UcantoClient from '@ucanto/client'
+import * as principal from '@ucanto/principal'
 import * as Signer from '@ucanto/principal/ed25519'
 
 /**
@@ -16,4 +17,8 @@ export async function createSpace (audience) {
     }),
     spaceDid
   }
+}
+
+export function createAccount () {
+  return principal.Absentee.from({ id: 'did:mailto:foo' })
 }
