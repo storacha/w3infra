@@ -126,7 +126,6 @@ test('handles a batch of single invocation without provider/add', async t => {
   const uploadService = await Signer.generate()
   const alice = await Signer.generate()
   const { spaceDid } = await createSpace(alice)
-  const account = createAccount()
   const car = await randomCAR(128)
 
   const metricsTable = createMetricsTable(REGION, tableName, {
