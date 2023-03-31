@@ -1,6 +1,6 @@
 # UCAN Invocation Stream
 
-> UCAN invocations are behind the transactions that make w3up platform mutate. The history of these invocations will be an audit of the system, which we can rely on for playback operations from a given time, as well as for asynchronous computations for Telemetry, Metrics, User Facing aggregations, among others.
+> UCAN invocations cause transactions that mutate the w3up platform. The history of these invocations will be an audit of the system, which we can rely on for playback operations from a given time, as well as for asynchronous computations for Telemetry, Metrics, User Facing aggregations, among others.
 
 ## Background
 
