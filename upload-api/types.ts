@@ -28,6 +28,9 @@ export interface ReceiptBlockCtx extends UcanStreamCtx {
 export interface InvocationBucket {
   putWorkflowLink: (cid: string, workflowCid: string) => Promise<void>
   putReceipt: (cid: string, bytes: Uint8Array) => Promise<void>
+  putInLink: (cid: string, workflowCid: string) => Promise<void>
+  putOutLink: (cid: string, workflowCid: string) => Promise<void>
+  getInLink: (cid: string) => Promise<string|undefined>
   getWorkflowLink: (cid: string) => Promise<string|undefined>
 }
 

@@ -29,6 +29,52 @@ export function createInvocationStore(region, bucketName, options = {}) {
 export const useInvocationStore = (s3client, bucketName) => {
   return {
     /**
+     * Put mapping for where each invocation lives in agent message file.
+     *
+     * @param {string} invocationCid
+     * @param {string} messageCid
+     */
+    putInLink: async (invocationCid, messageCid) => {
+      const putCmd = new PutObjectCommand({
+        Bucket: bucketName,
+        Key: `${invocationCid}/${messageCid}.in`,
+      })
+      await pRetry(() => s3client.send(putCmd))
+    },
+    /**
+     * Put mapping for where each receipt lives in agent message file.
+     *
+     * @param {string} invocationCid
+     * @param {string} messageCid
+     */
+    putOutLink: async (invocationCid, messageCid) => {
+      const putCmd = new PutObjectCommand({
+        Bucket: bucketName,
+        Key: `${invocationCid}/${messageCid}.out`,
+      })
+      await pRetry(() => s3client.send(putCmd))
+    },
+    /**
+     * Get the agent message file CID for an invocation.
+     *
+     * @param {string} invocationCid 
+     */
+    getInLink: async (invocationCid) => {
+      const prefix = `${invocationCid}/`
+      const listObjectCmd = new ListObjectsV2Command({
+        Bucket: bucketName,
+        Prefix: prefix,
+      })
+      const listObject = await s3client.send(listObjectCmd)
+      const carEntry = listObject.Contents?.find(
+        content => content.Key?.endsWith('.in')
+      )
+      if (!carEntry) {
+        return
+      }
+      return carEntry.Key?.replace(prefix, '').replace('.in', '')
+    },
+    /**
      * Put mapping for where each invocation lives in a Workflow file.
      *
      * @param {string} invocationCid

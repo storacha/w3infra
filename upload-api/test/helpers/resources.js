@@ -4,7 +4,7 @@ import { S3Client, CreateBucketCommand } from '@aws-sdk/client-s3'
 import { DynamoDBClient, CreateTableCommand } from '@aws-sdk/client-dynamodb'
 import * as Signer from '@ucanto/principal/ed25519'
 import * as Server from '@ucanto/server'
-import { CAR, CBOR } from '@ucanto/transport'
+import { CAR, CBOR } from '@ucanto/transport-legacy'
 import * as HTTP from 'http'
 
 /**

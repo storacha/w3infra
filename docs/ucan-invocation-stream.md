@@ -8,6 +8,7 @@ UCAN is a chained-capability format. A UCAN contains all of the information that
 
 We can identify three core components on our services built relying on UCANs:
 - Task to be executed (`with`, `can` and `nb` fields of UCAN)
+  - Bear in mind that in UCAN world `task` is now referred as `instruction`.
 - Invocation (task to be executed together with the provable authority to do so `proofs` + `signature`)
 - Workflow (file containing one or more invocations to be executed)
 
@@ -17,7 +18,7 @@ With the above components, we can say that:
 
 ## Architecture
 
-The entry point for the UCAN Invocation stream is an HTTP endpoint `POST /ucan`. It will receive `workflows` and `receipts` from other services. All invocations and their receipts are persisted in buckets and added into the Stream.
+The entry point for the UCAN Invocation stream is an HTTP endpoint `POST /ucan`. It will receive [Agent Messages](https://github.com/web3-storage/ucanto/blob/main/packages/core/src/message.js) from from other services with invocations to be executed and/or reported receipts. All invocations and their receipts are persisted in buckets and added into the UCAN Stream.
 
 AWS Kinesis is the central piece of this architecture. Multiple stream consumers can be hooked into AWS Kinesis for post processing of UCAN invocations.
 
@@ -29,11 +30,11 @@ Note that at the time of writing Event Archival flow is still to be implemented.
 
 UCAN Invocation Stack contains 3 buckets so that it can keep an audit of the entire system, while allowing this information to be queried in multiple fashions.
 
-Firstly, the **`workflow-store` bucket** stores the entire encoded file containing one or more invocations to be executed. It is stored as received from UCAN services interacting with UCAN Invocation Stream. It is keyed as `${workflow.cid}/${workflow.cid}` and its value is likely in CAR format. However, CID codec should tell if it is something else.
+Firstly, the **`workflow-store` bucket** stores the entire encoded agent message files containing invocations to be executed, and/or created receipts for ran invocations. It is stored as received from UCAN services interacting with UCAN Invocation Stream. It is keyed as `${agentMessage.cid}/${agentMessage.cid}` and its value is likely in CAR format. However, CID codec should tell if it is something else.
 
 At the invocation level, the **`invocation-store` bucket** is responsible for storing two types of values related to UCAN invocations:
-- a pseudo symlink to `/${workflow.cid}/${workflow.cid}` via key `${invocation.cid}/${workflow.cid}.workflow` to track where each invocation lives in a Workflow file. As a pseudo symlink, it is an empty object.
-- a receipt block issued for a specific task invocation via key `${invocation.cid}/${invocation.cid}.receipt` with block bytes as value.
+- a pseudo symlink to `/${agentMessage.cid}/${agentMessage.cid}` via key `${invocation.cid}/${agentMessage.cid}.in` to track where each invocation lives in a agent message file. As a pseudo symlink, it is an empty object.
+- a pseudo symlink to `/${agentMessage.cid}/${agentMessage.cid}` via key `${invocation.cid}/${agentMessage.cid}.out` to track where each receipt lives in a agent message file. As a pseudo symlink, it is an empty object.
 
 In the tasks context, the **`task-store` bucket** stores two types of values related to executed tasks:
 - a pseudo symlink to `/${invocation.cid}/${invocation.cid}` via `${task.cid}/${invocation.cid}.invocation` to enable looking up invocations and receipts by a task. As a pseudo symlink, it is an empty object.

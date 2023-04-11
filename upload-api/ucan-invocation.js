@@ -1,5 +1,6 @@
 import * as CAR from '@ucanto/transport/car'
-import * as CBOR from '@ucanto/transport/cbor'
+import * as CAR_LEGACY from '@ucanto/transport-legacy/car'
+import * as CBOR_LEGACY from '@ucanto/transport-legacy/cbor'
 import * as UCAN from '@ipld/dag-ucan'
 import * as Link from 'multiformats/link'
 import { fromString as uint8arrayFromString } from 'uint8arrays/from-string'
@@ -16,7 +17,8 @@ import {
 
 export const CONTENT_TYPE = {
   WORKFLOW: 'application/invocations+car',
-  RECEIPT: 'application/receipt+dag-cbor'
+  RECEIPT: 'application/receipt+dag-cbor',
+  CAR: 'application/vnd.ipld.car'
 }
 
 export const STREAM_TYPE = {
@@ -26,6 +28,9 @@ export const STREAM_TYPE = {
 
 /**
  * @typedef {import('./types').UcanLogCtx} UcanLogCtx
+ * @typedef {import('@ucanto/core-next').API.AgentMessage} AgentMessage
+ * @typedef {import('@ucanto/core-next').API.HTTPRequest<AgentMessage>} ApiRequest
+ *
  * @typedef {import('./types').WorkflowCtx} WorkflowCtx
  * @typedef {import('./types').ReceiptBlockCtx} ReceiptBlockCtx
  * @typedef {import('./types').Workflow} Workflow
@@ -48,12 +53,192 @@ export async function processUcanLogRequest (request, ctx) {
   const bytes = Buffer.from(request.body, 'base64')
 
   const contentType = request.headers['content-type'] || ''
+  if (contentType === CONTENT_TYPE.CAR) {
+    const apiRequest = {
+      body: bytes,
+      headers: {
+        'content-type': contentType
+      }
+    }
+    return await processAgentMessageCar(apiRequest, ctx)
+  }
+  // Fallbacks for older clients
   if (contentType === CONTENT_TYPE.WORKFLOW) {
     return await processWorkflow(bytes, ctx)
   } else if (contentType === CONTENT_TYPE.RECEIPT) {
     return await processInvocationReceipt(bytes, ctx)
   }
   throw new BadContentTypeError()
+}
+
+/**
+ * @param {ApiRequest} request
+ * @param {WorkflowCtx} ctx
+ */
+export async function processAgentMessageCar (request, ctx) {
+  const agentMessage = await CAR.request.decode(request)
+  const messageCid = agentMessage.root.cid.toString()
+
+  // persist workflow message and its invocations/receipts
+  await persistMessage(agentMessage, request, ctx.invocationBucket, ctx.workflowBucket)
+
+  // Process message content
+  await Promise.all([
+    processMessageInvocations(agentMessage.invocations, messageCid, ctx),
+    processMessageReceipts([...agentMessage.receipts.values()], messageCid, ctx)
+  ])
+
+  return agentMessage
+}
+
+/**
+ * Processes given invocations by adding them to the UCAN Stream.
+ *
+ * @param {import('@ucanto/core-next').API.Invocation[]} invocations
+ * @param {string} carCid
+ * @param {WorkflowCtx} ctx
+ */
+async function processMessageInvocations (invocations, carCid, ctx) {
+  if (!invocations.length) {
+    return
+  }
+
+  await ctx.kinesisClient?.putRecords({
+    Records: invocations.map(invocation => ({
+      Data: uint8arrayFromString(
+        JSON.stringify({
+          carCid,
+          value: normalizeInvocation(invocation),
+          ts: Date.now(),
+          type: STREAM_TYPE.WORKFLOW
+        })
+      ),
+      // https://docs.aws.amazon.com/streams/latest/dev/key-concepts.html
+      // A partition key is used to group data by shard within a stream.
+      // It is required, and now we are starting with one shard. We need to study best partition key
+      PartitionKey: 'key',
+    })),
+    StreamName: ctx.streamName,
+  })
+}
+
+/**
+ * Processes given receipts by persisting them and adding them to the UCAN Stream.
+ *
+ * @param {import('@ucanto/core-next').API.Receipt[]} receipts
+ * @param {string} carCid
+ * @param {import("./types").WorkflowCtx} ctx
+ */
+async function processMessageReceipts (receipts, carCid, ctx) {
+  const tasks = []
+  const records = []
+
+  for (const receipt of receipts.values()) {
+    const invocationCid = receipt.ran.link().toString()
+    const taskCid = invocationCid
+    const agentMessageWithInvocationCid = await ctx.invocationBucket.getInLink(invocationCid)
+
+    if (!agentMessageWithInvocationCid) {
+      throw new NoCarFoundForGivenReceiptError()
+    }
+
+    const agentMessageBytes = await ctx.workflowBucket.get(agentMessageWithInvocationCid)
+    if (!agentMessageBytes) {
+      throw new NoCarFoundForGivenReceiptError()
+    }
+
+    // @ts-expect-error headers are not needed
+    const agentMessage = await CAR.request.decode({ body: agentMessageBytes })
+    const invocation = agentMessage.invocations.find(invocation => invocation.cid.toString() === invocationCid)
+    if (!invocation) {
+      throw new NoInvocationFoundForGivenReceiptError()
+    }
+
+    // keep records for UCAN Stream
+    records.push({
+      carCid,
+      invocationCid,
+      value: normalizeInvocation(invocation),
+      ts: Date.now(),
+      type: STREAM_TYPE.RECEIPT,
+      out: receipt.out
+    })
+
+    tasks.push(
+      // Store Task result
+      (async () => {
+        const taskResult = await CBOR_LEGACY.codec.write({
+          out: receipt.out
+        })
+        await ctx.taskBucket.putResult(taskCid, taskResult.bytes)
+      })(),
+      // Store task invocation link
+      ctx.taskBucket.putInvocationLink(taskCid, invocationCid)
+    )
+  }
+
+  if (!records.length) {
+    return
+  }
+
+  // Write to stores
+  await Promise.all(tasks)
+
+  // write to UCAN Stream
+  await ctx.kinesisClient?.putRecords({
+    Records: records.map(r => ({
+      Data: uint8arrayFromString(
+        JSON.stringify(r)
+      ),
+      // https://docs.aws.amazon.com/streams/latest/dev/key-concepts.html
+      // A partition key is used to group data by shard within a stream.
+      // It is required, and now we are starting with one shard. We need to study best partition key
+      PartitionKey: 'key',
+    })),
+    StreamName: ctx.streamName,
+  })
+}
+
+/**
+ * Persist agent message with invocations to be handled by the router.
+ * Persist symlink per invocation to which workflow they come from.
+ *
+ * @param {AgentMessage} agentMessage
+ * @param {ApiRequest} request
+ * @param {import('./types').InvocationBucket} invocationStore
+ * @param {import('./types').WorkflowBucket} workflowStore
+ */
+export async function persistMessage (agentMessage, request, invocationStore, workflowStore) {
+  const carCid = agentMessage.root.cid.toString()
+  const invocations = agentMessage.invocations
+  const receipts = [...agentMessage.receipts.values()]
+
+  const tasks = [
+    workflowStore.put(carCid, request.body),
+    invocations.map(i => invocationStore.putInLink(
+      i.cid.toString(),
+      carCid
+    )),
+    receipts.map(r => invocationStore.putOutLink(
+      r.ran.link().toString(),
+      carCid
+    ))
+  ]
+
+  await Promise.all(tasks)
+}
+
+/**
+ * @param {import('@ucanto/core-next').API.Invocation} invocation
+ * @returns {import('./types').UcanInvocation}
+ */
+function normalizeInvocation (invocation) {
+  return {
+    att: /** @type {UCAN.Capabilities} */ (invocation.capabilities.map(replaceAllLinkValues)),
+    aud: invocation.audience.did(),
+    iss: invocation.issuer.did(),
+    cid: invocation.cid.toString()
+  }
 }
 
 /**
@@ -140,7 +325,7 @@ export async function processInvocationReceipt (bytes, ctx) {
  * @returns {Promise<Workflow>}
  */
 export async function parseWorkflow (bytes) {
-  const car = await CAR.codec.decode(bytes)
+  const car = await CAR_LEGACY.codec.decode(bytes)
   if (!car.roots.length) {
     throw new Error('Invocations CAR must have one root')
   }
@@ -192,8 +377,8 @@ export async function persistWorkflow (workflow, invocationStore, workflowStore)
  * @returns {Promise<ReceiptBlock>}
  */
 export async function parseReceiptCbor (bytes) {
-  const data = await CBOR.codec.decode(bytes)
-  const cid = await CBOR.codec.link(bytes)
+  const data = await CBOR_LEGACY.codec.decode(bytes)
+  const cid = await CBOR_LEGACY.codec.link(bytes)
 
   return {
     bytes,
@@ -222,7 +407,7 @@ export async function persistReceipt (receiptBlock, invocationBucket, taskBucket
     ),
     // Store Task result
     (async () => {
-      const taskResult = await CBOR.codec.write({
+      const taskResult = await CBOR_LEGACY.codec.write({
         out: receiptBlock.data.out
       })
       await taskBucket.putResult(taskCid, taskResult.bytes)

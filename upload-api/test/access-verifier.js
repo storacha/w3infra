@@ -3,7 +3,7 @@ import * as API from '@web3-storage/upload-api'
 import { Space } from '@web3-storage/capabilities'
 import * as Server from '@ucanto/server'
 import * as Client from '@ucanto/client'
-import { CAR, CBOR } from '@ucanto/transport'
+import { CAR, CBOR } from '@ucanto/transport-legacy'
 import { Failure } from '@ucanto/server'
 
 /**
