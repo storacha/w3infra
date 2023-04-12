@@ -60,7 +60,7 @@ export async function processUcanLogRequest (request, ctx) {
         'content-type': contentType
       }
     }
-    return await processAgentMessageCar(apiRequest, ctx)
+    return await processAgentMessageArchive(apiRequest, ctx)
   }
   // Fallbacks for older clients
   if (contentType === CONTENT_TYPE.WORKFLOW) {
@@ -75,20 +75,20 @@ export async function processUcanLogRequest (request, ctx) {
  * @param {ApiRequest} request
  * @param {WorkflowCtx} ctx
  */
-export async function processAgentMessageCar (request, ctx) {
-  const agentMessage = await CAR.request.decode(request)
-  const messageCid = agentMessage.root.cid.toString()
+export async function processAgentMessageArchive (request, ctx) {
+  const agentMessageCar = await CAR.request.decode(request)
+  const messageCid = agentMessageCar.root.cid.toString()
 
   // persist workflow message and its invocations/receipts
-  await persistMessage(agentMessage, request, ctx.invocationBucket, ctx.workflowBucket)
+  await persistAgentMessageArchive(agentMessageCar, request, ctx.invocationBucket, ctx.workflowBucket)
 
   // Process message content
   await Promise.all([
-    processMessageInvocations(agentMessage.invocations, messageCid, ctx),
-    processMessageReceipts([...agentMessage.receipts.values()], messageCid, ctx)
+    processMessageInvocations(agentMessageCar.invocations, messageCid, ctx),
+    processMessageReceipts([...agentMessageCar.receipts.values()], messageCid, ctx)
   ])
 
-  return agentMessage
+  return agentMessageCar
 }
 
 /**
@@ -203,7 +203,7 @@ async function processMessageReceipts (receipts, carCid, ctx) {
 }
 
 /**
- * Persist agent message with invocations to be handled by the router.
+ * Persist agent message archive with invocations to be handled by the router.
  * Persist symlink per invocation to which workflow they come from.
  *
  * @param {AgentMessage} agentMessage
@@ -211,7 +211,7 @@ async function processMessageReceipts (receipts, carCid, ctx) {
  * @param {import('./types').InvocationBucket} invocationStore
  * @param {import('./types').WorkflowBucket} workflowStore
  */
-export async function persistMessage (agentMessage, request, invocationStore, workflowStore) {
+export async function persistAgentMessageArchive (agentMessage, request, invocationStore, workflowStore) {
   const carCid = agentMessage.root.cid.toString()
   const invocations = agentMessage.invocations
   const receipts = [...agentMessage.receipts.values()]

@@ -30,11 +30,11 @@ Note that at the time of writing Event Archival flow is still to be implemented.
 
 UCAN Invocation Stack contains 3 buckets so that it can keep an audit of the entire system, while allowing this information to be queried in multiple fashions.
 
-Firstly, the **`workflow-store` bucket** stores the entire encoded agent message files containing invocations to be executed, and/or created receipts for ran invocations. It is stored as received from UCAN services interacting with UCAN Invocation Stream. It is keyed as `${agentMessage.cid}/${agentMessage.cid}` and its value is likely in CAR format. However, CID codec should tell if it is something else.
+Firstly, the **`workflow-store` bucket** stores the entire encoded agent message files containing invocations to be executed, and/or created receipts for ran invocations. It is stored as received from UCAN services interacting with UCAN Invocation Stream. It is keyed as `${agentMessageArchive.cid}/${agentMessageArchive.cid}` and its value is likely in CAR format. However, CID codec should tell if it is something else.
 
 At the invocation level, the **`invocation-store` bucket** is responsible for storing two types of values related to UCAN invocations:
-- a pseudo symlink to `/${agentMessage.cid}/${agentMessage.cid}` via key `${invocation.cid}/${agentMessage.cid}.in` to track where each invocation lives in a agent message file. As a pseudo symlink, it is an empty object.
-- a pseudo symlink to `/${agentMessage.cid}/${agentMessage.cid}` via key `${invocation.cid}/${agentMessage.cid}.out` to track where each receipt lives in a agent message file. As a pseudo symlink, it is an empty object.
+- a pseudo symlink to `/${agentMessageArchive.cid}/${agentMessageArchive.cid}` via key `${invocation.cid}/${agentMessageArchive.cid}.in` to track where each invocation lives in a agent message file. As a pseudo symlink, it is an empty object.
+- a pseudo symlink to `/${agentMessageArchive.cid}/${agentMessageArchive.cid}` via key `${invocation.cid}/${agentMessageArchive.cid}.out` to track where each receipt lives in a agent message file. As a pseudo symlink, it is an empty object.
 
 In the tasks context, the **`task-store` bucket** stores two types of values related to executed tasks:
 - a pseudo symlink to `/${invocation.cid}/${invocation.cid}` via `${task.cid}/${invocation.cid}.invocation` to enable looking up invocations and receipts by a task. As a pseudo symlink, it is an empty object.

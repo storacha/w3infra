@@ -86,7 +86,6 @@ test('processes agent message as CAR with multiple invocations', async t => {
     })
   ))
 
-  // @ts-ignore type incompat?
   const message = await Message.build({
     invocations: /** @type {Invocation} */ (invocations)
   })
