@@ -8,7 +8,7 @@ UCAN is a chained-capability format. A UCAN contains all of the information that
 
 We can identify three core components on our services built relying on UCANs:
 - Task to be executed (`with`, `can` and `nb` fields of UCAN)
-  - Bear in mind that in UCAN world `task` is now referred as `instruction`.
+  - Bear in mind that in UCAN world `task` was renamed to `instruction`, and `task` is used to refer to an invocation without authorization.
 - Invocation (task to be executed together with the provable authority to do so `proofs` + `signature`)
 - Workflow (file containing one or more invocations to be executed)
 
@@ -18,7 +18,7 @@ With the above components, we can say that:
 
 ## Architecture
 
-The entry point for the UCAN Invocation stream is an HTTP endpoint `POST /ucan`. It will receive [Agent Messages](https://github.com/web3-storage/ucanto/blob/main/packages/core/src/message.js) from from other services with invocations to be executed and/or reported receipts. All invocations and their receipts are persisted in buckets and added into the UCAN Stream.
+The entry point for the UCAN Invocation stream is an HTTP endpoint `POST /ucan`. It will receive [Agent Messages](https://github.com/web3-storage/ucanto/blob/main/packages/core/src/message.js) from other services with invocations to be executed and/or reported receipts. All invocations and their receipts are persisted in buckets and added into the UCAN Stream.
 
 AWS Kinesis is the central piece of this architecture. Multiple stream consumers can be hooked into AWS Kinesis for post processing of UCAN invocations.
 
