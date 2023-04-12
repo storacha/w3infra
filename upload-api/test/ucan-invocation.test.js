@@ -2,8 +2,10 @@ import { s3 as test } from './helpers/context.js'
 
 import { GetObjectCommand, HeadObjectCommand } from '@aws-sdk/client-s3'
 import * as Signer from '@ucanto/principal/ed25519'
+import { Message } from '@ucanto/core-next'
 import * as CAR from '@ucanto/transport/car'
-import * as CBOR from '@ucanto/transport/cbor'
+import * as CAR_LEGACY from '@ucanto/transport-legacy/car'
+import * as CBOR_LEGACY from '@ucanto/transport-legacy/cbor'
 import * as UCAN from '@ipld/dag-ucan'
 import { add as storeAdd } from '@web3-storage/capabilities/store'
 import { add as uploadAdd } from '@web3-storage/capabilities/upload'
@@ -17,7 +19,9 @@ import { randomCAR } from './helpers/random.js'
 import {
   createSpace,
   createReceipt,
-  createUcanInvocation
+  createUcanInvocation,
+  createInvocation,
+  createAgentMessageReceipt
 } from './helpers/ucan.js'
 
 import { useInvocationStore } from '../buckets/invocation-store.js'
@@ -34,6 +38,10 @@ import {
   STREAM_TYPE
 } from '../ucan-invocation.js'
 
+/**
+ * @typedef {import('@ucanto/core-next').API.IssuedInvocation} IssuedInvocation
+ * @typedef {import('@ucanto/core-next').API.Tuple<IssuedInvocation>} Invocation
+ */
 
 test.before(async (t) => {
   const { client: s3 } = await createS3({
@@ -43,17 +51,364 @@ test.before(async (t) => {
   t.context.s3 = s3
 })
 
+test('processes agent message as CAR with multiple invocations', async t => {
+  t.plan(18)
+  const stores = await getStores(t.context)
+  const basicAuth = 'test-token'
+  const streamName = 'stream-name'
+
+  // Create agent message with two invocations
+  const uploadService = await Signer.generate()
+  const alice = await Signer.generate()
+  const { proof, spaceDid } = await createSpace(alice)
+
+  const data = new Uint8Array([11, 22, 34, 44, 55])
+  const link = await CAR_LEGACY.codec.link(data)
+
+  const capabilities = [
+    {
+      can: storeAdd.can,
+      nb: { link, size: data.byteLength }
+    },
+    {
+      can: uploadAdd.can,
+      nb: { root: link }
+    }
+  ]
+
+  /** @type {IssuedInvocation[]} */
+  const invocations = await Promise.all(capabilities.map(cap => 
+    createInvocation(cap.can, cap.nb, {
+      issuer: alice,
+      audience: uploadService,
+      withDid: spaceDid,
+      proofs: [proof]
+    })
+  ))
+
+  const message = await Message.build({
+    invocations: /** @type {Invocation} */ (invocations)
+  })
+  const car = CAR.request.encode(message)
+
+   // Create request with car
+   const carRequest = lambdaUtils.mockEventCreator.createAPIGatewayEvent({
+    headers: {
+      authorization: `Basic ${basicAuth}`,
+      'content-type': car.headers['content-type']
+    },
+    body: toString(car.body, 'base64')
+  })
+
+  // Decode request for expectations
+  const decodedCar = await CAR.codec.decode(new Uint8Array(car.body.buffer))
+  const agentMessageCarCid = decodedCar.roots[0].cid.toString()
+  const agentMessage = await CAR.request.decode(car)
+  
+  await t.notThrowsAsync(() => processUcanLogRequest(carRequest, {
+    invocationBucket: stores.invocation.bucket,
+    taskBucket: stores.task.bucket,
+    workflowBucket: stores.workflow.bucket,
+    basicAuth,
+    streamName,
+    kinesisClient: {
+      // @ts-expect-error not same return type
+      putRecords: (input) => {
+        t.is(input.StreamName, streamName)
+        t.is(input.Records?.length, invocations.length)
+        for (const record of input.Records || []) {
+          if (!record.Data) {
+            throw new Error('must have Data')
+          }
+          const invocation = JSON.parse(toString(record.Data))
+          t.truthy(invocation)
+          t.truthy(invocation.ts)
+          t.is(invocation.type, STREAM_TYPE.WORKFLOW)
+          t.is(invocation.carCid, agentMessageCarCid)
+
+
+          const cap = capabilities.find(cap => cap.can === invocation.value.att[0].can)
+          t.truthy(cap)
+          t.deepEqual(replaceAllLinkValues(cap?.nb), invocation.value.att[0].nb)
+        }
+
+        return Promise.resolve()
+      }
+    }
+  }))
+
+  // Minio might take a bit
+  await new Promise((resolve) => setTimeout(() => resolve(true), 100))
+
+  // Verify CAR agent message persisted
+  const cmd = new HeadObjectCommand({
+    Key: `${agentMessageCarCid}/${agentMessageCarCid}`,
+    Bucket: stores.workflow.name,
+  })
+  const s3Response = await t.context.s3.send(cmd)
+  t.is(s3Response.$metadata.httpStatusCode, 200)
+
+  // Verify invocation symlink for car agent message stored
+  for (const invocation of agentMessage.invocations) {
+    const cmdInvocationStored = new HeadObjectCommand({
+      Key: `${invocation.cid.toString()}/${agentMessageCarCid}.in`,
+      Bucket: stores.invocation.name,
+    })
+    const s3ResponseInvocationStored = await t.context.s3.send(cmdInvocationStored)
+    t.is(s3ResponseInvocationStored.$metadata.httpStatusCode, 200)
+  }
+})
+
+test('processes agent message as CAR with receipt', async t => {
+  t.plan(15)
+  const stores = await getStores(t.context)
+  const basicAuth = 'test-token'
+  const streamName = 'stream-name'
+
+  const uploadService = await Signer.generate()
+  const alice = await Signer.generate()
+  const { proof, spaceDid } = await createSpace(alice)
+
+  // Create message with one UCAN invocation
+  const data = new Uint8Array([11, 22, 34, 44, 55])
+  const link = await CAR_LEGACY.codec.link(data)
+
+  const capabilities = [
+    {
+      can: storeAdd.can,
+      nb: { link, size: data.byteLength }
+    },
+  ]
+
+  const invocations = await Promise.all(capabilities.map(cap => 
+    createInvocation(cap.can, cap.nb, {
+      issuer: alice,
+      audience: uploadService,
+      withDid: spaceDid,
+      proofs: [proof]
+    })
+  ))
+
+  // @ts-ignore type incompat?
+  const messageInvocations = await Message.build({ invocations })
+  const carInvocations = CAR.request.encode(messageInvocations)
+
+  // Create request with car
+  const carInvocationsRequest = lambdaUtils.mockEventCreator.createAPIGatewayEvent({
+    headers: {
+      authorization: `Basic ${basicAuth}`,
+      'content-type': carInvocations.headers['content-type']
+    },
+    body: toString(carInvocations.body, 'base64')
+  })
+
+  // process ucan log request for message
+  /** @type {any[]} */
+  const kinesisWorkflowInvocations = []
+  await t.notThrowsAsync(() => processUcanLogRequest(carInvocationsRequest, {
+    invocationBucket: stores.invocation.bucket,
+    taskBucket: stores.task.bucket,
+    workflowBucket: stores.workflow.bucket,
+    basicAuth,
+    streamName,
+    kinesisClient: {
+      // @ts-expect-error not same return type
+      putRecords: (input) => {
+        for (const record of input.Records || []) {
+          if (!record.Data) {
+            throw new Error('must have Data')
+          }
+
+          kinesisWorkflowInvocations?.push(JSON.parse(toString(record.Data)))
+        }
+        return Promise.resolve()
+      }
+    }
+  }))
+
+  // Create receipts
+  const result = {
+    ok: {
+      deleted: true
+    }
+  }
+  const receipts = await Promise.all(invocations.map(i => createAgentMessageReceipt(i, {
+    result
+  })))
+
+  // @ts-ignore type incompat?
+  const messageReceipts = await Message.build({ receipts })
+  const carReceipts = CAR.request.encode(messageReceipts)
+
+  // Decode request for expectations
+  const decodedCarReceipts = await CAR.codec.decode(new Uint8Array(carReceipts.body.buffer))
+  const agentMessageCarReceiptsCid = decodedCarReceipts.roots[0].cid.toString()
+  const agentMessageReceipts = await CAR.request.decode(carReceipts)
+  const invocationCid = [...agentMessageReceipts.receipts.values()][0].ran.link().toString()
+
+  // Create request with car
+  const carReceiptsRequest = lambdaUtils.mockEventCreator.createAPIGatewayEvent({
+    headers: {
+      authorization: `Basic ${basicAuth}`,
+      'content-type': carReceipts.headers['content-type']
+    },
+    body: toString(carReceipts.body, 'base64')
+  })
+
+  // process ucan log request for message
+  /** @type {any[]} */
+  await t.notThrowsAsync(() => processUcanLogRequest(carReceiptsRequest, {
+    invocationBucket: stores.invocation.bucket,
+    taskBucket: stores.task.bucket,
+    workflowBucket: stores.workflow.bucket,
+    basicAuth,
+    streamName,
+    kinesisClient: {
+      // @ts-expect-error not same return type
+      putRecords: (input) => {
+        t.is(input.StreamName, streamName)
+        t.is(input.Records?.length, receipts.length)
+        for (const record of input.Records || []) {
+          if (!record.Data) {
+            throw new Error('must have Data')
+          }
+          const data = JSON.parse(toString(record.Data))
+          t.truthy(data)
+          t.is(data.carCid, agentMessageCarReceiptsCid.toString())
+          t.is(data.invocationCid, invocationCid)
+          t.is(data.type, STREAM_TYPE.RECEIPT)
+          t.deepEqual(data.out, result)
+          t.deepEqual(data.value, kinesisWorkflowInvocations[0].value)
+        }
+        return Promise.resolve()
+      }
+    }
+  }))
+
+  // Verify CAR agent message persisted
+  const cmd = new HeadObjectCommand({
+    Key: `${agentMessageCarReceiptsCid}/${agentMessageCarReceiptsCid}`,
+    Bucket: stores.workflow.name,
+  })
+  const s3Response = await t.context.s3.send(cmd)
+  t.is(s3Response.$metadata.httpStatusCode, 200)
+
+  // Verify receipts
+  for (const receipt of agentMessageReceipts.receipts.values()) {
+    const invocationCid = receipt.ran.link().toString()
+    const taskCid = invocationCid
+
+    // Verify receipt symlink for car agent message stored
+    const cmdInvocationStored = new HeadObjectCommand({
+      Key: `${invocationCid}/${agentMessageCarReceiptsCid}.out`,
+      Bucket: stores.invocation.name,
+    })
+    const s3ResponseInvocationStored = await t.context.s3.send(cmdInvocationStored)
+    t.is(s3ResponseInvocationStored.$metadata.httpStatusCode, 200)
+
+    // Validate stored task result
+    const cmdTaskResult = new GetObjectCommand({
+      Key: `${taskCid}/${taskCid}.result`,
+      Bucket: stores.task.name,
+    })
+    const s3ResponseTaskResult = await t.context.s3.send(cmdTaskResult)
+    t.is(s3ResponseTaskResult.$metadata.httpStatusCode, 200)
+
+    // @ts-expect-error AWS types with readable stream
+    const s3TaskResultBytes = (await s3ResponseTaskResult.Body.toArray())[0]
+    const taskResult = await CBOR_LEGACY.codec.write({ out: result })
+    t.truthy(equals(s3TaskResultBytes, taskResult.bytes))
+
+    // Validate task index within invocation stored
+    const cmdTaskIndexStored = new HeadObjectCommand({
+      Key: `${taskCid}/${invocationCid}.invocation`,
+      Bucket: stores.task.name,
+    })
+    const s3ResponseTaskIndexStored = await t.context.s3.send(cmdTaskIndexStored)
+    t.is(s3ResponseTaskIndexStored.$metadata.httpStatusCode, 200)
+  }
+})
+
+test('fails to process agent message as CAR with receipt when there is no invocation previously stored', async t => {
+  const stores = await getStores(t.context)
+  const basicAuth = 'test-token'
+  const streamName = 'stream-name'
+
+  const uploadService = await Signer.generate()
+  const alice = await Signer.generate()
+  const { proof, spaceDid } = await createSpace(alice)
+
+  // Create message with one UCAN invocation
+  const data = new Uint8Array([11, 22, 34, 44, 55])
+  const link = await CAR_LEGACY.codec.link(data)
+
+  const capabilities = [
+    {
+      can: storeAdd.can,
+      nb: { link, size: data.byteLength }
+    },
+  ]
+
+  const invocations = await Promise.all(capabilities.map(cap => 
+    createInvocation(cap.can, cap.nb, {
+      issuer: alice,
+      audience: uploadService,
+      withDid: spaceDid,
+      proofs: [proof]
+    })
+  ))
+
+  // Create receipts
+  const result = {
+    ok: {
+      deleted: true
+    }
+  }
+  const receipts = await Promise.all(invocations.map(i => createAgentMessageReceipt(i, {
+    result
+  })))
+
+  // @ts-ignore type incompat?
+  const messageReceipts = await Message.build({ receipts })
+  const carReceipts = CAR.request.encode(messageReceipts)
+
+  // Create request with car
+  const carReceiptsRequest = lambdaUtils.mockEventCreator.createAPIGatewayEvent({
+    headers: {
+      authorization: `Basic ${basicAuth}`,
+      'content-type': carReceipts.headers['content-type']
+    },
+    body: toString(carReceipts.body, 'base64')
+  })
+
+  // fails to process ucan log request for message
+  /** @type {any[]} */
+  await t.throwsAsync(() => processUcanLogRequest(carReceiptsRequest, {
+    invocationBucket: stores.invocation.bucket,
+    taskBucket: stores.task.bucket,
+    workflowBucket: stores.workflow.bucket,
+    basicAuth,
+    streamName,
+    kinesisClient: {
+      // @ts-expect-error not same return type
+      putRecords: () => {
+        return Promise.resolve()
+      }
+    }
+  }))
+})
+
 test('parses Workflow as CAR with ucan invocations', async (t) => {
   const uploadService = await Signer.generate()
   const alice = await Signer.generate()
   const { proof, spaceDid } = await createSpace(alice)
 
   const data = new Uint8Array([11, 22, 34, 44, 55])
-  const link = await CAR.codec.link(data)
+  const link = await CAR_LEGACY.codec.link(data)
   const nb = { link, size: data.byteLength }
   const can = 'store/add'
 
-  const workflowRequest = await CAR.encode([
+  const workflowRequest = await CAR_LEGACY.encode([
     await createUcanInvocation(can, nb, {
       issuer: alice,
       audience: uploadService,
@@ -63,14 +418,14 @@ test('parses Workflow as CAR with ucan invocations', async (t) => {
   ])
 
   const workflow = await parseWorkflow(workflowRequest.body)
-  const requestCar = await CAR.codec.decode(workflowRequest.body)
+  const requestCar = await CAR_LEGACY.codec.decode(workflowRequest.body)
   const requestCarRootCid = requestCar.roots[0].cid
 
   t.is(workflow.cid.toString(), requestCarRootCid.toString())
   t.truthy(workflow.bytes)
   
   // Decode and validate bytes
-  const workflowCar = await CAR.codec.decode(workflow.bytes)
+  const workflowCar = await CAR_LEGACY.codec.decode(workflow.bytes)
   // @ts-expect-error UCAN.View<UCAN.Capabilities> inferred as UCAN.View<unknown>
   const invocation = UCAN.decode(workflowCar.roots[0].bytes)
 
@@ -91,11 +446,11 @@ test('persists workflow with invocations as CAR file', async (t) => {
   const alice = await Signer.generate()
 
   const data = new Uint8Array([11, 22, 34, 44, 55])
-  const link = await CAR.codec.link(data)
+  const link = await CAR_LEGACY.codec.link(data)
   const nb = { link, size: data.byteLength }
   const can = 'store/add'
 
-  const workflowRequest = await CAR.encode([
+  const workflowRequest = await CAR_LEGACY.encode([
     await createUcanInvocation(can, nb, {
       issuer: alice,
       audience: uploadService
@@ -105,7 +460,7 @@ test('persists workflow with invocations as CAR file', async (t) => {
   const workflow = await parseWorkflow(workflowRequest.body)
   await persistWorkflow(workflow, stores.invocation.bucket, stores.workflow.bucket)
 
-  const requestCar = await CAR.codec.decode(workflowRequest.body)
+  const requestCar = await CAR_LEGACY.codec.decode(workflowRequest.body)
   const workflowCid = requestCar.roots[0].cid.toString()
   const invocationCid = workflowCid
 
@@ -128,7 +483,7 @@ test('persists workflow with invocations as CAR file', async (t) => {
   // @ts-expect-error AWS types with readable stream
   const bytes = (await s3ResponseCarStored.Body.toArray())[0]
 
-  const workflowCar = await CAR.codec.decode(bytes)
+  const workflowCar = await CAR_LEGACY.codec.decode(bytes)
   const workflowCarRootCid = workflowCar.roots[0].cid.toString()
 
   t.is(workflowCid, workflowCarRootCid)
@@ -148,25 +503,25 @@ test('parses a receipt cbor', async (t) => {
   const uploadService = await Signer.generate()
 
   const data = new Uint8Array([11, 22, 34, 44, 55])
-  const link = await CAR.codec.link(data)
+  const link = await CAR_LEGACY.codec.link(data)
   const nb = { link, size: data.byteLength }
   const can = 'store/add'
 
   // Create workflow request
-  const workflowRequest = await CAR.encode([
+  const workflowRequest = await CAR_LEGACY.encode([
     await createUcanInvocation(can, nb, {
       audience: uploadService
     })
   ])
 
-  const requestCar = await CAR.codec.decode(workflowRequest.body)
+  const requestCar = await CAR_LEGACY.codec.decode(workflowRequest.body)
   const invocationCid = requestCar.roots[0].cid
 
   // Create receipt
   const out = {
     ok: 'Done'
   }
-  const receipt = await CBOR.codec.write({
+  const receipt = await CBOR_LEGACY.codec.write({
     ran: invocationCid,
     out,
     fx: { fork: [] },
@@ -189,18 +544,18 @@ test('persists receipt and its associated data', async t => {
   const uploadService = await Signer.generate()
 
   const data = new Uint8Array([11, 22, 34, 44, 55])
-  const link = await CAR.codec.link(data)
+  const link = await CAR_LEGACY.codec.link(data)
   const nb = { link, size: data.byteLength }
   const can = 'store/add'
 
   // Create workflow request
-  const workflowRequest = await CAR.encode([
+  const workflowRequest = await CAR_LEGACY.encode([
     await createUcanInvocation(can, nb, {
       audience: uploadService
     })
   ])
 
-  const requestCar = await CAR.codec.decode(workflowRequest.body)
+  const requestCar = await CAR_LEGACY.codec.decode(workflowRequest.body)
   const invocationCid = requestCar.roots[0].cid
   // TODO: For now we will use delegation CID as both invocation and task CID
   // Delegation CIDs are the roots in the received CAR and CID in the .ran field
@@ -211,7 +566,7 @@ test('persists receipt and its associated data', async t => {
   const out = {
     ok: 'Done'
   }
-  const receipt = await CBOR.codec.write({
+  const receipt = await CBOR_LEGACY.codec.write({
     ran: invocationCid,
     out,
     fx: { fork: [] },
@@ -246,7 +601,7 @@ test('persists receipt and its associated data', async t => {
 
   // @ts-expect-error AWS types with readable stream
   const s3TaskResultBytes = (await s3ResponseTaskResult.Body.toArray())[0]
-  const taskResult = await CBOR.codec.write({
+  const taskResult = await CBOR_LEGACY.codec.write({
     out
   })
   t.truthy(equals(s3TaskResultBytes, taskResult.bytes))
@@ -268,14 +623,14 @@ test('can process a ucan log request for a workflow CAR with one invocation', as
 
   // Create workflow with one UCAN invocation
   const data = new Uint8Array([11, 22, 34, 44, 55])
-  const link = await CAR.codec.link(data)
+  const link = await CAR_LEGACY.codec.link(data)
   const can = storeAdd.can
   const nb = { link, size: data.byteLength }
 
-  const workflow = await CAR.encode([
+  const workflow = await CAR_LEGACY.encode([
     await createUcanInvocation(can, nb)
   ])
-  const decodedWorkflowCar = await CAR.codec.decode(workflow.body)
+  const decodedWorkflowCar = await CAR_LEGACY.codec.decode(workflow.body)
   const workflowCid = decodedWorkflowCar.roots[0].cid.toString()
 
   // Create Workflow request with car
@@ -342,8 +697,8 @@ test('can process a ucan log request for a workflow CAR with multiple invocation
 
   // Create workflow with multiple UCAN invocation
   const data = new Uint8Array([11, 22, 34, 44, 55])
-  const link = await CAR.codec.link(data)
-  const workflow = await CAR.encode([
+  const link = await CAR_LEGACY.codec.link(data)
+  const workflow = await CAR_LEGACY.encode([
     await createUcanInvocation(
       storeAdd.can,
       { link, size: data.byteLength }
@@ -353,7 +708,7 @@ test('can process a ucan log request for a workflow CAR with multiple invocation
       { root: link }
     )
   ])
-  const decodedWorkflowCar = await CAR.codec.decode(workflow.body)
+  const decodedWorkflowCar = await CAR_LEGACY.codec.decode(workflow.body)
 
   // Create Workflow request with car
   const workflowRequest = lambdaUtils.mockEventCreator.createAPIGatewayEvent({
@@ -426,14 +781,14 @@ test('can process ucan log request for given receipt after its invocation stored
 
   // Create workflow with one UCAN invocation
   const data = new Uint8Array([11, 22, 34, 44, 55])
-  const link = await CAR.codec.link(data)
-  const workflow = await CAR.encode([
+  const link = await CAR_LEGACY.codec.link(data)
+  const workflow = await CAR_LEGACY.encode([
     await createUcanInvocation(
       storeAdd.can,
       { link, size: data.byteLength }
     )
   ])
-  const requestCar = await CAR.codec.decode(workflow.body)
+  const requestCar = await CAR_LEGACY.codec.decode(workflow.body)
   const invocationCid = requestCar.roots[0].cid
   const taskCid = invocationCid
 
@@ -475,7 +830,7 @@ test('can process ucan log request for given receipt after its invocation stored
   const receipt = await createReceipt(invocationCid, out, uploadService.signer)
 
   // Create receipt request with cbor
-  const receiptBlock = await CBOR.codec.write(receipt)
+  const receiptBlock = await CBOR_LEGACY.codec.write(receipt)
   const receiptRequest = lambdaUtils.mockEventCreator.createAPIGatewayEvent({
     headers: {
       authorization: `Basic ${basicAuth}`,
@@ -532,7 +887,7 @@ test('can process ucan log request for given receipt after its invocation stored
 
   // @ts-expect-error AWS types with readable stream
   const s3TaskResultBytes = (await s3ResponseTaskResult.Body.toArray())[0]
-  const taskResult = await CBOR.codec.write({
+  const taskResult = await CBOR_LEGACY.codec.write({
     out
   })
   t.truthy(equals(s3TaskResultBytes, taskResult.bytes))
@@ -554,14 +909,14 @@ test('fails to process ucan log request for given receipt when no associated inv
 
   // Create workflow with one UCAN invocation
   const data = new Uint8Array([11, 22, 34, 44, 55])
-  const link = await CAR.codec.link(data)
-  const workflow = await CAR.encode([
+  const link = await CAR_LEGACY.codec.link(data)
+  const workflow = await CAR_LEGACY.encode([
     await createUcanInvocation(
       storeAdd.can,
       { link, size: data.byteLength }
     )
   ])
-  const requestCar = await CAR.codec.decode(workflow.body)
+  const requestCar = await CAR_LEGACY.codec.decode(workflow.body)
   const requestCarRootCid = requestCar.roots[0].cid
 
   // create receipt
@@ -572,7 +927,7 @@ test('fails to process ucan log request for given receipt when no associated inv
   )
 
   // Create receipt request with cbor
-  const { bytes: receiptBytes } = await CBOR.codec.write(receipt)
+  const { bytes: receiptBytes } = await CBOR_LEGACY.codec.write(receipt)
   const requestReceipt = lambdaUtils.mockEventCreator.createAPIGatewayEvent({
     headers: {
       authorization: `Basic ${basicAuth}`,

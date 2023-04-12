@@ -1,7 +1,7 @@
 import * as Space from '@web3-storage/capabilities/space'
 import { connect } from '@ucanto/client'
 import { Failure } from '@ucanto/server'
-import { CAR, CBOR, HTTP } from '@ucanto/transport'
+import { CAR, CBOR, HTTP } from '@ucanto/transport-legacy'
 import fetch from '@web-std/fetch'
 
 /**

@@ -1,7 +1,7 @@
 import { DID } from '@ucanto/core'
 import * as Server from '@ucanto/server'
-import * as CAR from '@ucanto/transport/car'
-import * as CBOR from '@ucanto/transport/cbor'
+import * as CAR from '@ucanto/transport-legacy/car'
+import * as CBOR from '@ucanto/transport-legacy/cbor'
 import { Kinesis } from '@aws-sdk/client-kinesis'
 import * as Sentry from '@sentry/serverless'
 

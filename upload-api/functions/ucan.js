@@ -16,8 +16,6 @@ Sentry.AWSLambda.init({
 const kinesisClient = new Kinesis({})
 const AWS_REGION = process.env.AWS_REGION || 'us-west-2'
 
-
-
 /**
  * AWS HTTP Gateway handler for POST / with ucan invocation router.
  *
