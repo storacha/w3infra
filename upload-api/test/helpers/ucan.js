@@ -2,7 +2,7 @@ import * as ucanto from '@ucanto/core'
 import { invoke, Receipt } from '@ucanto/core-next'
 import * as Signer from '@ucanto/principal/ed25519'
 import * as UcantoClient from '@ucanto/client'
-import * as CBOR from '@ucanto/transport-legacy/cbor'
+import * as CBOR from '@ucanto/core-next/cbor'
 
 /**
  * @param {import('@ucanto/interface').Principal} audience
@@ -38,7 +38,7 @@ export async function createReceipt (invocationCid, out, signer) {
 
   return {
     ...receiptPayload,
-    s: await signer.sign(CBOR.codec.encode(receiptPayload))
+    s: await signer.sign(CBOR.encode(receiptPayload))
   }
 }
 
@@ -82,6 +82,8 @@ export async function createUcanInvocation (can, nb, options = {}) {
 }
 
 /**
+ * Create an invocation with given capabilities.
+ *
  * @param {import('@ucanto/interface').Ability} can
  * @param {any} nb
  * @param {object} [options]
@@ -90,7 +92,7 @@ export async function createUcanInvocation (can, nb, options = {}) {
  * @param {`did:key:${string}`} [options.withDid]
  * @param {Signer.Delegation[]} [options.proofs]
  */
-export async function createAgentMessageInvocation (can, nb, options = {}) {
+export async function createInvocation (can, nb, options = {}) {
   const audience = options.audience || await Signer.generate()
   const issuer = options.issuer || await Signer.generate()
 
@@ -134,7 +136,7 @@ export async function createAgentMessageReceipt (run, {
   const delegation = await run.buildIPLDView()
 
   return await Receipt.issue({
-    // @ts-ignore
+    // @ts-ignore Mismatch between types for Principal and Signer
     issuer: run.audience,
     result,
     ran: delegation.link(),

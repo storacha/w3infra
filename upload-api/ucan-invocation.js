@@ -1,6 +1,6 @@
 import * as CAR from '@ucanto/transport/car'
 import * as CAR_LEGACY from '@ucanto/transport-legacy/car'
-import * as CBOR_LEGACY from '@ucanto/transport-legacy/cbor'
+import * as CBOR from '@ucanto/core-next/cbor'
 import * as UCAN from '@ipld/dag-ucan'
 import * as Link from 'multiformats/link'
 import { fromString as uint8arrayFromString } from 'uint8arrays/from-string'
@@ -135,6 +135,10 @@ async function processMessageReceipts (receipts, carCid, ctx) {
 
   for (const receipt of receipts.values()) {
     const invocationCid = receipt.ran.link().toString()
+    // When we implement invocation spec, instruction CID will be different.
+    // That combined with the fact that it will be unlikely that invocation blocks will be included with CAR responses,
+    // we will not be able to derive instruction CID from receipt itself.
+    // We need to discuss / consider what to do about it.
     const taskCid = invocationCid
     const agentMessageWithInvocationCid = await ctx.invocationBucket.getInLink(invocationCid)
 
@@ -147,8 +151,7 @@ async function processMessageReceipts (receipts, carCid, ctx) {
       throw new NoCarFoundForGivenReceiptError()
     }
 
-    // @ts-expect-error headers are not needed
-    const agentMessage = await CAR.request.decode({ body: agentMessageBytes })
+    const agentMessage = await CAR.request.decode({ body: agentMessageBytes, headers: {} })
     const invocation = agentMessage.invocations.find(invocation => invocation.cid.toString() === invocationCid)
     if (!invocation) {
       throw new NoInvocationFoundForGivenReceiptError()
@@ -167,7 +170,7 @@ async function processMessageReceipts (receipts, carCid, ctx) {
     tasks.push(
       // Store Task result
       (async () => {
-        const taskResult = await CBOR_LEGACY.codec.write({
+        const taskResult = await CBOR.write({
           out: receipt.out
         })
         await ctx.taskBucket.putResult(taskCid, taskResult.bytes)
@@ -234,7 +237,7 @@ export async function persistMessage (agentMessage, request, invocationStore, wo
  */
 function normalizeInvocation (invocation) {
   return {
-    att: /** @type {UCAN.Capabilities} */ (invocation.capabilities.map(replaceAllLinkValues)),
+    att: invocation.capabilities,
     aud: invocation.audience.did(),
     iss: invocation.issuer.did(),
     cid: invocation.cid.toString()
@@ -377,8 +380,8 @@ export async function persistWorkflow (workflow, invocationStore, workflowStore)
  * @returns {Promise<ReceiptBlock>}
  */
 export async function parseReceiptCbor (bytes) {
-  const data = await CBOR_LEGACY.codec.decode(bytes)
-  const cid = await CBOR_LEGACY.codec.link(bytes)
+  const data = await CBOR.decode(bytes)
+  const cid = await CBOR.link(bytes)
 
   return {
     bytes,
@@ -407,7 +410,7 @@ export async function persistReceipt (receiptBlock, invocationBucket, taskBucket
     ),
     // Store Task result
     (async () => {
-      const taskResult = await CBOR_LEGACY.codec.write({
+      const taskResult = await CBOR.write({
         out: receiptBlock.data.out
       })
       await taskBucket.putResult(taskCid, taskResult.bytes)

@@ -61,6 +61,8 @@ export const useInvocationStore = (s3client, bucketName) => {
      */
     getInLink: async (invocationCid) => {
       const prefix = `${invocationCid}/`
+      // Multiple entries may match the key prefix. Picking an arbitrary one is fine given
+      //  can receive same invocations in multiple CAR files.
       const listObjectCmd = new ListObjectsV2Command({
         Bucket: bucketName,
         Prefix: prefix,

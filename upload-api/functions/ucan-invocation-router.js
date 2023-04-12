@@ -1,7 +1,7 @@
 import { DID } from '@ucanto/core'
 import * as Server from '@ucanto/server'
 import * as CAR from '@ucanto/transport-legacy/car'
-import * as CBOR from '@ucanto/transport-legacy/cbor'
+import * as CBOR from '@ucanto/core-next/cbor'
 import { Kinesis } from '@aws-sdk/client-kinesis'
 import * as Sentry from '@sentry/serverless'
 
@@ -142,9 +142,13 @@ async function ucanInvocationRouter(request) {
   }
 
   await Promise.all(forks)
-  const response = await CBOR.encode(out)
 
-  return toLambdaSuccessResponse(response)
+  return toLambdaSuccessResponse({
+    headers: {
+      'content-type': CBOR.contentType
+    },
+    body: CBOR.encode(out)
+  })
 }
 
 export const handler = Sentry.AWSLambda.wrapHandler(ucanInvocationRouter)
@@ -187,11 +191,11 @@ const execute = async (invocation, server, ctx) => {
   // create a receipt by signing the payload with a server key
   const receipt = {
     ...payload,
-    s: await ctx.signer.sign(CBOR.codec.encode(payload)),
+    s: await ctx.signer.sign(CBOR.encode(payload)),
   }
 
   return {
     data: receipt,
-    ...(await CBOR.codec.write(receipt)),
+    ...(await CBOR.write(receipt)),
   }
 }

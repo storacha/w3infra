@@ -20,7 +20,7 @@ import {
   createSpace,
   createReceipt,
   createUcanInvocation,
-  createAgentMessageInvocation,
+  createInvocation,
   createAgentMessageReceipt
 } from './helpers/ucan.js'
 
@@ -38,6 +38,10 @@ import {
   STREAM_TYPE
 } from '../ucan-invocation.js'
 
+/**
+ * @typedef {import('@ucanto/core-next').API.IssuedInvocation} IssuedInvocation
+ * @typedef {import('@ucanto/core-next').API.Tuple<IssuedInvocation>} Invocation
+ */
 
 test.before(async (t) => {
   const { client: s3 } = await createS3({
@@ -72,8 +76,9 @@ test('processes agent message as CAR with multiple invocations', async t => {
     }
   ]
 
+  /** @type {IssuedInvocation[]} */
   const invocations = await Promise.all(capabilities.map(cap => 
-    createAgentMessageInvocation(cap.can, cap.nb, {
+    createInvocation(cap.can, cap.nb, {
       issuer: alice,
       audience: uploadService,
       withDid: spaceDid,
@@ -82,7 +87,9 @@ test('processes agent message as CAR with multiple invocations', async t => {
   ))
 
   // @ts-ignore type incompat?
-  const message = await Message.build({ invocations })
+  const message = await Message.build({
+    invocations: /** @type {Invocation} */ (invocations)
+  })
   const car = CAR.request.encode(message)
 
    // Create request with car
@@ -119,6 +126,7 @@ test('processes agent message as CAR with multiple invocations', async t => {
           t.truthy(invocation.ts)
           t.is(invocation.type, STREAM_TYPE.WORKFLOW)
           t.is(invocation.carCid, agentMessageCarCid)
+
 
           const cap = capabilities.find(cap => cap.can === invocation.value.att[0].can)
           t.truthy(cap)
@@ -174,7 +182,7 @@ test('processes agent message as CAR with receipt', async t => {
   ]
 
   const invocations = await Promise.all(capabilities.map(cap => 
-    createAgentMessageInvocation(cap.can, cap.nb, {
+    createInvocation(cap.can, cap.nb, {
       issuer: alice,
       audience: uploadService,
       withDid: spaceDid,
@@ -322,7 +330,7 @@ test('processes agent message as CAR with receipt', async t => {
   }
 })
 
-test('fails to process agent message as CAR with receipt when there is no invocation', async t => {
+test('fails to process agent message as CAR with receipt when there is no invocation previously stored', async t => {
   const stores = await getStores(t.context)
   const basicAuth = 'test-token'
   const streamName = 'stream-name'
@@ -343,7 +351,7 @@ test('fails to process agent message as CAR with receipt when there is no invoca
   ]
 
   const invocations = await Promise.all(capabilities.map(cap => 
-    createAgentMessageInvocation(cap.can, cap.nb, {
+    createInvocation(cap.can, cap.nb, {
       issuer: alice,
       audience: uploadService,
       withDid: spaceDid,
