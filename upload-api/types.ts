@@ -1,6 +1,7 @@
 import * as UCAN from '@ipld/dag-ucan'
 import { DID, Link, Delegation, Signature, Block } from '@ucanto/interface'
 import { UnknownLink } from 'multiformats'
+import { CID } from 'multiformats/cid'
 import { Kinesis } from '@aws-sdk/client-kinesis'
 
 
@@ -42,6 +43,11 @@ export interface TaskBucket {
 export interface WorkflowBucket {
   put: (Cid: string, bytes: Uint8Array) => Promise<void>
   get: (Cid: string) => Promise<Uint8Array|undefined>
+}
+
+export interface DelegationsBucket {
+  put: (cid: CID, bytes: Uint8Array) => Promise<void>
+  get: (cid: CID) => Promise<Uint8Array|undefined>
 }
 
 export interface UcanInvocation {
