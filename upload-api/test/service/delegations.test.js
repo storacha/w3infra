@@ -1,9 +1,7 @@
 /* eslint-disable no-loop-func */
 import { test } from '../helpers/context.js'
 import * as principal from '@ucanto/principal'
-import * as Ucanto from '@ucanto/interface'
 import * as ucanto from '@ucanto/core'
-import * as assert from 'node:assert'
 import { collect } from 'streaming-iterables'
 import {
   createS3,
@@ -22,8 +20,8 @@ import { useDelegationsStore } from '../../buckets/delegations-store.js'
  * @param {object} options
  * @param {PromiseLike<principal.ed25519.EdSigner>} [options.audience]
  * @param {PromiseLike<principal.ed25519.EdSigner>} [options.issuer]
- * @param {Ucanto.URI} [options.with]
- * @param {Ucanto.Ability} [options.can]
+ * @param {import('@ucanto/interface').URI} [options.with]
+ * @param {import('@ucanto/interface').Ability} [options.can]
  */
 export async function createSampleDelegation(options = {}) {
   const {
@@ -45,14 +43,13 @@ export async function createSampleDelegation(options = {}) {
 }
 
 /**
+ * TODO: migrate back to function originally defined in w3up access-api/test/delegations-storage.testjs
  * 
- *  * TODO: migrate back to function originally defined in w3up access-api/test/delegations-storage.testjs
-
  * @param {object} [opts]
- * @param {Ucanto.Signer<Ucanto.DID>} [opts.issuer]
- * @param {Ucanto.Principal} [opts.audience]
- * @param {Ucanto.Capabilities} [opts.capabilities]
- * @returns {Promise<Ucanto.Delegation>}
+ * @param {import('@ucanto/interface').Signer<import('@ucanto/interface').DID>} [opts.issuer]
+ * @param {import('@ucanto/interface').Principal} [opts.audience]
+ * @param {import('@ucanto/interface').Capabilities} [opts.capabilities]
+ * @returns {Promise<import('@ucanto/interface').Delegation>}
  */
 async function createDelegation(opts = {}) {
   const {
