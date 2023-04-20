@@ -1,19 +1,13 @@
-import * as Ucanto from '@ucanto/interface'
 import { base32 } from 'multiformats/bases/base32'
 import {
   DynamoDBClient,
-  GetItemCommand,
-  PutItemCommand,
-  DeleteItemCommand,
   QueryCommand,
   BatchWriteItemCommand,
   DescribeTableCommand,
 } from '@aws-sdk/client-dynamodb'
 import { marshall, unmarshall } from '@aws-sdk/util-dynamodb'
-import { S3Client } from '@aws-sdk/client-s3'
 
 import { CID } from 'multiformats/cid'
-import * as Link from 'multiformats/link'
 import {
   bytesToDelegations,
   delegationsToBytes
@@ -96,7 +90,7 @@ export function useDelegationsTable (dynamoDb, tableName, bucket) {
 /**
  * TODO: fix the return type to use CID and DID string types
  * 
- * @param {Ucanto.Delegation} d
+ * @param {import('@ucanto/interface').Delegation} d
  * @returns {{cid: string, audience: string, issuer: string}}}
  */
 function createDelegationItem (d) {
@@ -107,27 +101,11 @@ function createDelegationItem (d) {
   }
 }
 
-/**
- * TODO: fix the return type to use CID and DID string types
- * 
- * @param {string} tableName
- * @param {Ucanto.Delegation} d
- * @returns {PutItemCommand}
- */
-function createDelegationPutItemCommand (tableName, d) {
-  return new PutItemCommand({
-    TableName: tableName,
-    Item: marshall(
-      createDelegationItem(d),
-      { removeUndefinedValues: true }),
-  })
-}
-
 /** 
-  * @param {import('../types').DelegationsBucket} bucket
-  * @param {CID} cid
-  * @returns {Promise<Ucanto.Delegation>}
-  */
+ * @param {import('../types').DelegationsBucket} bucket
+ * @param {CID} cid
+ * @returns {Promise<import('@ucanto/interface').Delegation>}
+ */
 async function cidToDelegation (bucket, cid) {
   const delegationCarBytes = await bucket.get(cid)
   if (!delegationCarBytes) {
@@ -145,7 +123,7 @@ async function cidToDelegation (bucket, cid) {
  * TODO: can we use the function in w3up access-api/src/models/delegations.js?
  * 
  * @param {import('../types').DelegationsBucket} bucket
- * @param {Iterable<Ucanto.Delegation>} delegations
+ * @param {Iterable<import('@ucanto/interface').Delegation>} delegations
  */
 async function writeDelegations (bucket, delegations) {
   return writeEntries(
@@ -160,6 +138,7 @@ async function writeDelegations (bucket, delegations) {
 
 /**
  * TODO: can we use the function in w3up access-api/src/models/delegations.js?
+ * 
  * @param {import('../types').DelegationsBucket} bucket
  * @param {Iterable<readonly [key: CID, value: Uint8Array ]>} entries
  */

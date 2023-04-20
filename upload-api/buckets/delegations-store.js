@@ -4,8 +4,9 @@ import {
   GetObjectCommand,
 } from '@aws-sdk/client-s3'
 import pRetry from 'p-retry'
-import { CID } from 'multiformats/cid'
 import { base32 } from 'multiformats/bases/base32'
+
+/** @typedef {import('multiformats/cid').CID} CID */
 
 /**
  * Abstraction layer with Factory to perform operations on bucket.
