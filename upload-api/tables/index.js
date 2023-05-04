@@ -52,7 +52,8 @@ export const provisionsTableProps = {
     insertedAt: 'string', // `2022-12-24T...`
     updatedAt: 'string',  // `2022-12-24T...`
   },
-  // TODO do we need a sort key? cid should be sufficiently random to meet the criteria in https://aws.amazon.com/blogs/database/choosing-the-right-dynamodb-partition-key/ so maybe not?
+  // TODO does this index setup seem right?
+  // we want to query by consumer, and I think it should be unique?
   // TODO also are we sure that a single invocation will only create a single provision? the D1 schema used CID as a PRIMARY KEY so I think this should be fine, but will it always be true?
-  primaryIndex: { partitionKey: 'cid' },
+  primaryIndex: { partitionKey: 'consumer' },
 }
