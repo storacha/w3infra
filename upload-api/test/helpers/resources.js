@@ -5,7 +5,6 @@ import { DynamoDBClient, CreateTableCommand } from '@aws-sdk/client-dynamodb'
 import * as Signer from '@ucanto/principal/ed25519'
 import * as Server from '@ucanto/server'
 import * as Legacy from '@ucanto/transport/legacy'
-// import { CAR, CBOR } from '@ucanto/transport-legacy'
 import * as HTTP from 'http'
 
 /**

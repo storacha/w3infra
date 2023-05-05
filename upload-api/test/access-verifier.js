@@ -62,8 +62,6 @@ export const create = ({ id }) => {
   const client = Client.connect({
     id,
     channel: server,
-    // encoder: CAR,
-    // decoder: CBOR,
     codec: CAR.outbound,
   })
 
