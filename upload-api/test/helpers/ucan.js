@@ -1,6 +1,8 @@
-import { invoke, delegate, Receipt, CBOR, CAR, API } from '@ucanto/core'
+import { invoke, delegate, Receipt, API, Message } from '@ucanto/core'
+import * as CAR from '@ucanto/transport/car'
 import * as Signer from '@ucanto/principal/ed25519'
 import * as UcantoClient from '@ucanto/client'
+export { API }
 
 /**
  * @param {API.Principal} audience
@@ -16,27 +18,6 @@ export async function createSpace(audience) {
       capabilities: [{ can: '*', with: spaceDid }],
     }),
     spaceDid,
-  }
-}
-
-/**
- * @param {API.UCAN.IPLDLink<unknown, number, number, 0 | 1>} invocationCid
- * @param {any} out
- * @param {Signer.EdSigner} signer
- */
-export async function createReceipt(invocationCid, out, signer) {
-  const receiptPayload = {
-    ran: invocationCid,
-    out,
-    fx: { fork: [] },
-    meta: {},
-    iss: signer.did(),
-    prf: [],
-  }
-
-  return {
-    ...receiptPayload,
-    s: await signer.sign(CBOR.encode(receiptPayload)),
   }
 }
 
@@ -145,25 +126,17 @@ export async function createAgentMessageReceipt(
 }
 
 /**
- * Creates a request in the legacy format.
- * @see https://github.com/web3-storage/ucanto/blob/5341416a5f1ba5048c41476bb6c6059556e8e27b/packages/transport/src/car/request.js
- *
- * @param {API.IssuedInvocation[]} invocations
+ * @param {object} source
+ * @param {API.IssuedInvocation[]} [source.invocations]
+ * @param {API.Receipt[]} [source.receipts]
  */
-export const createLegacyRequest = async (invocations) => {
-  const roots = []
-  const blocks = new Map()
-  for (const invocation of invocations) {
-    const dag = await invocation.buildIPLDView()
-    roots.push(dag.root)
-    for (const block of dag.iterateIPLDBlocks()) {
-      blocks.set(block.cid.toString(), block)
-    }
-  }
+export const encodeAgentMessage = async (source) => {
+  const message = await Message.build({
+    invocations: /** @type {API.Tuple<API.IssuedInvocation>} */ (
+      source.invocations
+    ),
+    receipts: /** @type {API.Tuple<API.Receipt>} */ (source.receipts),
+  })
 
-  return {
-    headers: { 'content-type': 'application/car' },
-    /** @type {Uint8Array} */
-    body: CAR.encode({ roots, blocks }),
-  }
+  return await CAR.request.encode(message)
 }
