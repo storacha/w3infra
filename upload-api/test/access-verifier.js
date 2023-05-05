@@ -3,7 +3,6 @@ import * as API from '@web3-storage/upload-api'
 import { Space } from '@web3-storage/capabilities'
 import * as Server from '@ucanto/server'
 import * as Client from '@ucanto/client'
-// import { CAR, CBOR } from '@ucanto/transport-legacy'
 import * as Legacy from '@ucanto/transport/legacy'
 import * as CAR from '@ucanto/transport/car'
 import { Failure } from '@ucanto/server'
@@ -40,8 +39,6 @@ export const createServer = (context) =>
   Server.create({
     id: context.id,
     service: createService(context),
-    // encoder: CBOR,
-    // decoder: CAR,
     codec: Legacy.inbound,
   })
 
