@@ -15,7 +15,7 @@ import { createUploadTable } from '../tables/upload.js'
 import { getServiceSigner } from '../config.js'
 import { createUcantoServer } from '../service.js'
 import { Config } from '@serverless-stack/node/config/index.js'
-import { CAR } from '@ucanto/transport/lib.js'
+import { CAR } from '@ucanto/transport'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
