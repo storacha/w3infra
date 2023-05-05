@@ -47,6 +47,7 @@ for (const [title, unit] of Object.entries(Upload.test)) {
 
     await unit(
       {
+        ok: (actual, message) => t.truthy(actual, message),
         equal: (actual, expect, message) =>
           t.is(actual, expect, message ? String(message) : undefined),
         deepEqual: (actual, expect, message) =>

@@ -1,7 +1,7 @@
 import * as Space from '@web3-storage/capabilities/space'
 import { connect } from '@ucanto/client'
 import { Failure } from '@ucanto/server'
-import { CAR, CBOR, HTTP } from '@ucanto/transport-legacy'
+import { CAR, HTTP } from '@ucanto/transport'
 import fetch from '@web-std/fetch'
 
 /**
@@ -14,14 +14,13 @@ export function createAccessClient(issuer, serviceDID, serviceURL) {
   /** @type {import('@ucanto/server').ConnectionView<import('@web3-storage/access/types').Service>} */
   const conn = connect({
     id: serviceDID,
-    encoder: CAR,
-    decoder: CBOR,
+    codec: CAR.outbound,
     channel: HTTP.open({ url: serviceURL, method: 'POST', fetch }),
   })
 
   return {
     async allocateSpace(invocation) {
-      if (!invocation.capabilities.length) return true
+      if (!invocation.capabilities.length) return { ok: {} }
       // if info capability is derivable from the passed capability, then we'll
       // receive a response and know that the invocation issuer has verified
       // themselves with w3access.
@@ -33,14 +32,18 @@ export function createAccessClient(issuer, serviceDID, serviceURL) {
         proofs: [invocation],
       })
 
-      const result = await info.execute(conn)
+      const { out: result } = await info.execute(conn)
 
       if (result.error) {
-        return result.error && result.name === 'SpaceUnknown'
-          ? new Failure(`Space has no storage provider`, { cause: result })
+        return result.error.name === 'SpaceUnknown'
+          ? {
+              error: new Failure(`Space has no storage provider`, {
+                cause: result,
+              }),
+            }
           : result
       } else {
-        return {}
+        return { ok: {} }
       }
     },
   }

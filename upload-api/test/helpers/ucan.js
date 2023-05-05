@@ -1,13 +1,11 @@
-import * as ucanto from '@ucanto/core'
-import { invoke, Receipt } from '@ucanto/core-next'
+import { invoke, delegate, Receipt, CBOR, CAR, API } from '@ucanto/core'
 import * as Signer from '@ucanto/principal/ed25519'
 import * as UcantoClient from '@ucanto/client'
-import * as CBOR from '@ucanto/core-next/cbor'
 
 /**
- * @param {import('@ucanto/interface').Principal} audience
+ * @param {API.Principal} audience
  */
-export async function createSpace (audience) {
+export async function createSpace(audience) {
   const space = await Signer.generate()
   const spaceDid = space.did()
 
@@ -22,11 +20,11 @@ export async function createSpace (audience) {
 }
 
 /**
- * @param {ucanto.UCAN.IPLDLink<unknown, number, number, 0 | 1>} invocationCid
+ * @param {API.UCAN.IPLDLink<unknown, number, number, 0 | 1>} invocationCid
  * @param {any} out
  * @param {Signer.EdSigner} signer
  */
-export async function createReceipt (invocationCid, out, signer) {
+export async function createReceipt(invocationCid, out, signer) {
   const receiptPayload = {
     ran: invocationCid,
     out,
@@ -38,12 +36,12 @@ export async function createReceipt (invocationCid, out, signer) {
 
   return {
     ...receiptPayload,
-    s: await signer.sign(CBOR.encode(receiptPayload))
+    s: await signer.sign(CBOR.encode(receiptPayload)),
   }
 }
 
 /**
- * @param {import('@ucanto/interface').Ability} can
+ * @param {API.Ability} can
  * @param {any} nb
  * @param {object} [options]
  * @param {Signer.EdSigner} [options.audience]
@@ -51,9 +49,9 @@ export async function createReceipt (invocationCid, out, signer) {
  * @param {`did:key:${string}`} [options.withDid]
  * @param {Signer.Delegation[]} [options.proofs]
  */
-export async function createUcanInvocation (can, nb, options = {}) {
-  const audience = options.audience || await Signer.generate()
-  const issuer = options.issuer || await Signer.generate()
+export async function createUcanInvocation(can, nb, options = {}) {
+  const audience = options.audience || (await Signer.generate())
+  const issuer = options.issuer || (await Signer.generate())
 
   let proofs
   let withDid
@@ -66,8 +64,8 @@ export async function createUcanInvocation (can, nb, options = {}) {
     proofs = options.proofs
     withDid = options.withDid
   }
-  
-  return await ucanto.delegate({
+
+  return await delegate({
     issuer,
     audience,
     capabilities: [
@@ -84,7 +82,7 @@ export async function createUcanInvocation (can, nb, options = {}) {
 /**
  * Create an invocation with given capabilities.
  *
- * @param {import('@ucanto/interface').Ability} can
+ * @param {API.Ability} can
  * @param {any} nb
  * @param {object} [options]
  * @param {Signer.EdSigner} [options.audience]
@@ -92,9 +90,9 @@ export async function createUcanInvocation (can, nb, options = {}) {
  * @param {`did:key:${string}`} [options.withDid]
  * @param {Signer.Delegation[]} [options.proofs]
  */
-export async function createInvocation (can, nb, options = {}) {
-  const audience = options.audience || await Signer.generate()
-  const issuer = options.issuer || await Signer.generate()
+export async function createInvocation(can, nb, options = {}) {
+  const audience = options.audience || (await Signer.generate())
+  const issuer = options.issuer || (await Signer.generate())
 
   let proofs
   let withDid
@@ -116,7 +114,6 @@ export async function createInvocation (can, nb, options = {}) {
       with: withDid,
       nb,
     },
-    // @ts-expect-error old client still in use
     proofs,
   })
 
@@ -124,15 +121,15 @@ export async function createInvocation (can, nb, options = {}) {
 }
 
 /**
- * @param {import('@ucanto/core-next').API.IssuedInvocation} run
+ * @param {API.IssuedInvocation} run
  * @param {object} options
  * @param {any} [options.result]
  * @param {any} [options.meta]
  */
-export async function createAgentMessageReceipt (run, {
-  result = { ok: {} },
-  meta = { test: 'metadata' },
-}) {
+export async function createAgentMessageReceipt(
+  run,
+  { result = { ok: {} }, meta = { test: 'metadata' } }
+) {
   const delegation = await run.buildIPLDView()
 
   return await Receipt.issue({
@@ -145,4 +142,28 @@ export async function createAgentMessageReceipt (run, {
       fork: [],
     },
   })
+}
+
+/**
+ * Creates a request in the legacy format.
+ * @see https://github.com/web3-storage/ucanto/blob/5341416a5f1ba5048c41476bb6c6059556e8e27b/packages/transport/src/car/request.js
+ *
+ * @param {API.IssuedInvocation[]} invocations
+ */
+export const createLegacyRequest = async (invocations) => {
+  const roots = []
+  const blocks = new Map()
+  for (const invocation of invocations) {
+    const dag = await invocation.buildIPLDView()
+    roots.push(dag.root)
+    for (const block of dag.iterateIPLDBlocks()) {
+      blocks.set(block.cid.toString(), block)
+    }
+  }
+
+  return {
+    headers: { 'content-type': 'application/car' },
+    /** @type {Uint8Array} */
+    body: CAR.encode({ roots, blocks }),
+  }
 }
