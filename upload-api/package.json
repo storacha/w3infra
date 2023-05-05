@@ -21,7 +21,7 @@
     "@ucanto/server": "^7.0.2",
     "@ucanto/transport": "^7.0.3",
     "@web-std/fetch": "^4.1.0",
-    "@web3-storage/access": "^10.0.0",
+    "@web3-storage/access": "^13.0.0",
     "@web3-storage/capabilities": "^5.0.0",
     "@web3-storage/upload-api": "^3.0.0",
     "@web3-storage/w3infra-ucan-invocation": "*",
