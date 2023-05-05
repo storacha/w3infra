@@ -27,6 +27,7 @@
     "@web3-storage/w3infra-ucan-invocation": "*",
     "multiformats": "^11.0.1",
     "prom-client": "^14.2.0",
+    "streaming-iterables": "^7.1.0",
     "uint8arrays": "^4.0.2"
   },
   "devDependencies": {

@@ -80,16 +80,27 @@ export function useProvisionsTable (dynamoDb, tableName, services) {
         provider: item.provider,
         sponsor: item.account,
       }
-      const hasProvider = await hasStorageProvider(dynamoDb, tableName, row.consumer)
-      if (hasProvider) {
-        return new ConflictError({
-          message: `Space ${row.consumer} cannot be provisioned with ${row.provider}: it already has a provider`
-        })
+      try {
+        await dynamoDb.send(new PutItemCommand({
+          TableName: tableName,
+          Item: marshall(row),
+          ConditionExpression: `attribute_not_exists(consumer) OR ((cid = :cid) AND (consumer = :consumer) AND (provider = :provider) AND (sponsor = :sponsor))`,
+          ExpressionAttributeValues: {
+            ':cid': { 'S': row.cid },
+            ':consumer': { 'S': row.consumer },
+            ':provider': { 'S': row.provider },
+            ':sponsor': { 'S': row.sponsor }
+          }
+        }))
+      } catch (error) {
+        if (error instanceof Error && error.message === 'The conditional request failed') {
+          return new ConflictError({
+            message: `Space ${row.consumer} cannot be provisioned with ${row.provider}: it already has a provider`
+          })
+        } else {
+          throw error
+        }
       }
-      await dynamoDb.send(new PutItemCommand({
-        TableName: tableName,
-        Item: marshall(row)
-      }))
       return {}
     },
 
