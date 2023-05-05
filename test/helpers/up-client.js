@@ -70,7 +70,7 @@ function getUploadServiceConnection(serviceUrl) {
 
   return connect({
     id: uploadServicePrincipal,
-    transport: CAR.outbound,
+    codec: CAR.outbound,
     channel: HTTP.open({
       url: uploadServiceURL,
       method: 'POST'
