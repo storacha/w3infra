@@ -128,7 +128,7 @@ export async function ucanInvocationRouter(request) {
   const outgoing = await Server.execute(incoming, server)
   const response = CAR.response.encode(outgoing)
 
-  processAgentMessageArchive(response, processingCtx)
+  await processAgentMessageArchive(response, processingCtx)
 
   return toLambdaSuccessResponse(response)
 }
