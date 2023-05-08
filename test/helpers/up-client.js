@@ -1,5 +1,5 @@
 import { connect } from '@ucanto/client'
-import { CAR, CBOR, HTTP } from '@ucanto/transport'
+import { CAR, HTTP } from '@ucanto/transport'
 import * as DID from '@ipld/dag-ucan/did'
 import * as Signer from '@ucanto/principal/ed25519'
 import { importDAG } from '@ucanto/core/delegation'
@@ -53,8 +53,7 @@ function getAccessServiceConnection() {
 
   return connect({
     id: accessServicePrincipal,
-    encoder: CAR,
-    decoder: CBOR,
+    codec: CAR.outbound,
     channel: HTTP.open({
       url: accessServiceURL,
       method: 'POST'
@@ -71,8 +70,7 @@ function getUploadServiceConnection(serviceUrl) {
 
   return connect({
     id: uploadServicePrincipal,
-    encoder: CAR,
-    decoder: CBOR,
+    codec: CAR.outbound,
     channel: HTTP.open({
       url: uploadServiceURL,
       method: 'POST'

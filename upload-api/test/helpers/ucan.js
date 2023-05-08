@@ -1,13 +1,13 @@
-import * as ucanto from '@ucanto/core'
-import { invoke, Receipt } from '@ucanto/core-next'
+import { invoke, delegate, Receipt, API, Message } from '@ucanto/core'
+import * as CAR from '@ucanto/transport/car'
 import * as Signer from '@ucanto/principal/ed25519'
 import * as UcantoClient from '@ucanto/client'
-import * as CBOR from '@ucanto/core-next/cbor'
+export { API }
 
 /**
- * @param {import('@ucanto/interface').Principal} audience
+ * @param {API.Principal} audience
  */
-export async function createSpace (audience) {
+export async function createSpace(audience) {
   const space = await Signer.generate()
   const spaceDid = space.did()
 
@@ -22,28 +22,7 @@ export async function createSpace (audience) {
 }
 
 /**
- * @param {ucanto.UCAN.IPLDLink<unknown, number, number, 0 | 1>} invocationCid
- * @param {any} out
- * @param {Signer.EdSigner} signer
- */
-export async function createReceipt (invocationCid, out, signer) {
-  const receiptPayload = {
-    ran: invocationCid,
-    out,
-    fx: { fork: [] },
-    meta: {},
-    iss: signer.did(),
-    prf: [],
-  }
-
-  return {
-    ...receiptPayload,
-    s: await signer.sign(CBOR.encode(receiptPayload))
-  }
-}
-
-/**
- * @param {import('@ucanto/interface').Ability} can
+ * @param {API.Ability} can
  * @param {any} nb
  * @param {object} [options]
  * @param {Signer.EdSigner} [options.audience]
@@ -51,9 +30,9 @@ export async function createReceipt (invocationCid, out, signer) {
  * @param {`did:key:${string}`} [options.withDid]
  * @param {Signer.Delegation[]} [options.proofs]
  */
-export async function createUcanInvocation (can, nb, options = {}) {
-  const audience = options.audience || await Signer.generate()
-  const issuer = options.issuer || await Signer.generate()
+export async function createUcanInvocation(can, nb, options = {}) {
+  const audience = options.audience || (await Signer.generate())
+  const issuer = options.issuer || (await Signer.generate())
 
   let proofs
   let withDid
@@ -66,8 +45,8 @@ export async function createUcanInvocation (can, nb, options = {}) {
     proofs = options.proofs
     withDid = options.withDid
   }
-  
-  return await ucanto.delegate({
+
+  return await delegate({
     issuer,
     audience,
     capabilities: [
@@ -84,7 +63,7 @@ export async function createUcanInvocation (can, nb, options = {}) {
 /**
  * Create an invocation with given capabilities.
  *
- * @param {import('@ucanto/interface').Ability} can
+ * @param {API.Ability} can
  * @param {any} nb
  * @param {object} [options]
  * @param {Signer.EdSigner} [options.audience]
@@ -92,9 +71,9 @@ export async function createUcanInvocation (can, nb, options = {}) {
  * @param {`did:key:${string}`} [options.withDid]
  * @param {Signer.Delegation[]} [options.proofs]
  */
-export async function createInvocation (can, nb, options = {}) {
-  const audience = options.audience || await Signer.generate()
-  const issuer = options.issuer || await Signer.generate()
+export async function createInvocation(can, nb, options = {}) {
+  const audience = options.audience || (await Signer.generate())
+  const issuer = options.issuer || (await Signer.generate())
 
   let proofs
   let withDid
@@ -116,7 +95,6 @@ export async function createInvocation (can, nb, options = {}) {
       with: withDid,
       nb,
     },
-    // @ts-expect-error old client still in use
     proofs,
   })
 
@@ -124,15 +102,15 @@ export async function createInvocation (can, nb, options = {}) {
 }
 
 /**
- * @param {import('@ucanto/core-next').API.IssuedInvocation} run
+ * @param {API.IssuedInvocation} run
  * @param {object} options
  * @param {any} [options.result]
  * @param {any} [options.meta]
  */
-export async function createAgentMessageReceipt (run, {
-  result = { ok: {} },
-  meta = { test: 'metadata' },
-}) {
+export async function createAgentMessageReceipt(
+  run,
+  { result = { ok: {} }, meta = { test: 'metadata' } }
+) {
   const delegation = await run.buildIPLDView()
 
   return await Receipt.issue({
@@ -145,4 +123,20 @@ export async function createAgentMessageReceipt (run, {
       fork: [],
     },
   })
+}
+
+/**
+ * @param {object} source
+ * @param {API.IssuedInvocation[]} [source.invocations]
+ * @param {API.Receipt[]} [source.receipts]
+ */
+export const encodeAgentMessage = async (source) => {
+  const message = await Message.build({
+    invocations: /** @type {API.Tuple<API.IssuedInvocation>} */ (
+      source.invocations
+    ),
+    receipts: /** @type {API.Tuple<API.Receipt>} */ (source.receipts),
+  })
+
+  return await CAR.request.encode(message)
 }

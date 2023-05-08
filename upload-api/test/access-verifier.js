@@ -3,7 +3,8 @@ import * as API from '@web3-storage/upload-api'
 import { Space } from '@web3-storage/capabilities'
 import * as Server from '@ucanto/server'
 import * as Client from '@ucanto/client'
-import { CAR, CBOR } from '@ucanto/transport-legacy'
+import * as Legacy from '@ucanto/transport/legacy'
+import * as CAR from '@ucanto/transport/car'
 import { Failure } from '@ucanto/server'
 
 /**
@@ -18,13 +19,12 @@ export const createService = (context) => ({
       if (!results) {
         /** @type {API.SpaceUnknown} */
         const spaceUnknownFailure = {
-          error: true,
           name: 'SpaceUnknown',
           message: `Space not found.`,
         }
-        return spaceUnknownFailure
+        return { error: spaceUnknownFailure }
       }
-      return results
+      return { ok: results }
     }),
   },
 })
@@ -39,8 +39,7 @@ export const createServer = (context) =>
   Server.create({
     id: context.id,
     service: createService(context),
-    encoder: CBOR,
-    decoder: CAR,
+    codec: Legacy.inbound,
   })
 
 /**
@@ -60,8 +59,7 @@ export const create = ({ id }) => {
   const client = Client.connect({
     id,
     channel: server,
-    encoder: CAR,
-    decoder: CBOR,
+    codec: CAR.outbound,
   })
 
   return {
@@ -72,7 +70,7 @@ export const create = ({ id }) => {
       // if info capability is derivable from the passed capability, then we'll
       // receive a response and know that the invocation issuer has verified
       // themselves with w3access.
-      const result = await Space.info
+      const { out: result } = await Space.info
         .invoke({
           issuer: id,
           audience: id,
@@ -83,11 +81,15 @@ export const create = ({ id }) => {
         .execute(client)
 
       if (result.error) {
-        return result.error && result.name === 'SpaceUnknown'
-          ? new Failure(`Space has no storage provider`, { cause: result })
+        return result.error.name === 'SpaceUnknown'
+          ? {
+              error: new Failure(`Space has no storage provider`, {
+                cause: result,
+              }),
+            }
           : result
       } else {
-        return {}
+        return { ok: {} }
       }
     },
   }

@@ -1,15 +1,10 @@
-import { DID } from '@ucanto/core'
+import { DID, API } from '@ucanto/core'
 import * as Server from '@ucanto/server'
-import * as CAR from '@ucanto/transport-legacy/car'
-import * as CBOR from '@ucanto/transport-legacy/cbor'
 import { Kinesis } from '@aws-sdk/client-kinesis'
 import * as Sentry from '@sentry/serverless'
 
 import { createAccessClient } from '../access.js'
-import {
-  processWorkflow,
-  processInvocationReceipt
-} from '../ucan-invocation.js'
+import { processAgentMessageArchive } from '../ucan-invocation.js'
 import { createCarStore } from '../buckets/car-store.js'
 import { createDudewhereStore } from '../buckets/dudewhere-store.js'
 import { createInvocationStore } from '../buckets/invocation-store.js'
@@ -20,6 +15,7 @@ import { createUploadTable } from '../tables/upload.js'
 import { getServiceSigner } from '../config.js'
 import { createUcantoServer } from '../service.js'
 import { Config } from '@serverless-stack/node/config/index.js'
+import { CAR } from '@ucanto/transport'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -27,6 +23,7 @@ Sentry.AWSLambda.init({
   tracesSampleRate: 1.0,
 })
 
+export { API }
 /**
  * @typedef {import('../types').Receipt} Receipt
  * @typedef {import('@ucanto/interface').Block<Receipt>} BlockReceipt
@@ -52,7 +49,7 @@ const R2_ENDPOINT = process.env.R2_ENDPOINT || ``
  *
  * @param {import('aws-lambda').APIGatewayProxyEventV2} request
  */
-async function ucanInvocationRouter(request) {
+export async function ucanInvocationRouter(request) {
   const {
     STORE_TABLE_NAME: storeTableName = '',
     STORE_BUCKET_NAME: storeBucketName = '',
@@ -77,7 +74,10 @@ async function ucanInvocationRouter(request) {
   const { PRIVATE_KEY } = Config
   const serviceSigner = getServiceSigner({ UPLOAD_API_DID, PRIVATE_KEY })
 
-  const invocationBucket = createInvocationStore(AWS_REGION, invocationBucketName)
+  const invocationBucket = createInvocationStore(
+    AWS_REGION,
+    invocationBucketName
+  )
   const taskBucket = createTaskStore(AWS_REGION, taskBucketName)
   const workflowBucket = createWorkflowStore(AWS_REGION, workflowBucketName)
 
@@ -108,41 +108,27 @@ async function ucanInvocationRouter(request) {
     taskBucket,
     workflowBucket,
     streamName,
-    kinesisClient
+    kinesisClient,
   }
-
-  // Decode body and its invocations
-  const body = Buffer.from(request.body, 'base64')
-  const invocations = await CAR.decode({
-    body,
-    // @ts-expect-error - type is Record<string, string|string[]|undefined>
-    headers: request.headers,
-  })
 
   // Process workflow
   // We block until we can log the UCAN invocation if this fails we return a 500
   // to the client. That is because in the future we expect that invocations will
   // be written to a queue first and then processed asynchronously, so if we
   // fail to queue the invocation we should not handle it.
-  await processWorkflow(body, processingCtx)
-
-  // Execute invocations
-  const results = await Promise.all(
-    invocations.map((invocation) => execute(invocation, server, {
-      signer: serviceSigner
-    }))
+  const incoming = await processAgentMessageArchive(
+    {
+      headers: /** @type {Record<string, string>} */ (request.headers),
+      body: Buffer.from(request.body, 'base64'),
+    },
+    processingCtx
   )
 
-  const forks = []
-  const out = []
+  // Execute invocations
+  const outgoing = await Server.execute(incoming, server)
+  const response = CAR.response.encode(outgoing)
 
-  for (const receipt of results) {
-    out.push(receipt.data.out.error || receipt.data.out.ok)
-    forks.push(processInvocationReceipt(receipt.bytes, processingCtx))
-  }
-
-  await Promise.all(forks)
-  const response = await CBOR.encode(out)
+  await processAgentMessageArchive(response, processingCtx)
 
   return toLambdaSuccessResponse(response)
 }
@@ -150,48 +136,13 @@ async function ucanInvocationRouter(request) {
 export const handler = Sentry.AWSLambda.wrapHandler(ucanInvocationRouter)
 
 /**
- * @param {import('@ucanto/server').HTTPResponse<any>} response
+ * @param {API.HTTPResponse} response
  */
-function toLambdaSuccessResponse(response) {
+export function toLambdaSuccessResponse({ status = 200, headers, body }) {
   return {
-    statusCode: 200,
-    headers: response.headers,
-    body: Buffer.from(response.body).toString('base64'),
+    statusCode: status,
+    headers,
+    body: Buffer.from(body).toString('base64'),
     isBase64Encoded: true,
-  }
-}
-
-/**
- *
- * @param {Server.Invocation} invocation
- * @param {Server.ServerView<*>} server
- * @param {ExecuteCtx} ctx
- * @returns {Promise<Required<BlockReceipt>>}
- */
-const execute = async (invocation, server, ctx) => {
-  /** @type {[Server.Result<*, Server.API.Failure>]} */
-  const [result] = await Server.execute([invocation], server)
-  const out = result?.error ? { error: result } : { ok: result }
-
-  // Create a receipt payload for the invocation conforming to the spec
-  // @see https://github.com/ucan-wg/invocation/#8-receipt
-  const payload = {
-    ran: invocation.cid,
-    out,
-    fx: { fork: [] },
-    meta: {},
-    iss: ctx.signer.did(),
-    prf: [],
-  }
-
-  // create a receipt by signing the payload with a server key
-  const receipt = {
-    ...payload,
-    s: await ctx.signer.sign(CBOR.codec.encode(payload)),
-  }
-
-  return {
-    data: receipt,
-    ...(await CBOR.codec.write(receipt)),
   }
 }
