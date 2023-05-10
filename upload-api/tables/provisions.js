@@ -24,26 +24,6 @@ export function createProvisionsTable (region, tableName, services, options = {}
 
   return useProvisionsTable(dynamoDb, tableName, services)
 }
-/**
- * @param {DynamoDBClient} dynamoDb
- * @param {string} tableName
- * @param {import('@ucanto/interface').DID<'key'>} consumer
- */
-async function hasStorageProvider (dynamoDb, tableName, consumer) {
-  const cmd = new QueryCommand({
-    TableName: tableName,
-    KeyConditions: {
-      consumer: {
-        ComparisonOperator: 'EQ',
-        AttributeValueList: [{ S: consumer }]
-      }
-    },
-    AttributesToGet: ['cid']
-  })
-  const response = await dynamoDb.send(cmd)
-  const itemCount = response.Items?.length || 0
-  return itemCount > 0
-}
 
 class ConflictError extends Failure {
   /**
@@ -66,7 +46,19 @@ export function useProvisionsTable (dynamoDb, tableName, services) {
   return {
     services,
     hasStorageProvider: async (consumer) => {
-      return hasStorageProvider(dynamoDb, tableName, consumer)
+      const cmd = new QueryCommand({
+        TableName: tableName,
+        KeyConditions: {
+          consumer: {
+            ComparisonOperator: 'EQ',
+            AttributeValueList: [{ S: consumer }]
+          }
+        },
+        AttributesToGet: ['cid']
+      })
+      const response = await dynamoDb.send(cmd)
+      const itemCount = response.Items?.length || 0
+      return { ok: itemCount > 0 }
     },
     /**
      * ensure item is stored
@@ -94,14 +86,16 @@ export function useProvisionsTable (dynamoDb, tableName, services) {
         }))
       } catch (error) {
         if (error instanceof Error && error.message === 'The conditional request failed') {
-          return new ConflictError({
-            message: `Space ${row.consumer} cannot be provisioned with ${row.provider}: it already has a provider`
-          })
+          return {
+            error: new ConflictError({
+              message: `Space ${row.consumer} cannot be provisioned with ${row.provider}: it already has a provider`
+            })
+          }
         } else {
           throw error
         }
       }
-      return {}
+      return { ok: {} }
     },
 
     /**
@@ -110,6 +104,82 @@ export function useProvisionsTable (dynamoDb, tableName, services) {
     count: async () => {
       const result = await dynamoDb.send(new DescribeTableCommand({
         TableName: tableName
+      }))
+
+      return BigInt(result.Table?.ItemCount ?? -1)
+    }
+  }
+}
+
+/**
+ * @param {DynamoDBClient} dynamoDb
+ * @param {string} subscriptionsTableName
+ * @param {string} consumersTableName
+ * @param {import('@ucanto/interface').DID<'web'>[]} services
+ * @returns {import('../access-types').ProvisionsStorage}
+ */
+export function useProvisionsStorage (dynamoDb, subscriptionsTableName, consumersTableName, services) {
+  return {
+    services,
+    hasStorageProvider: async (consumer) => {
+      const cmd = new QueryCommand({
+        TableName: consumersTableName,
+        KeyConditions: {
+          consumer: {
+            ComparisonOperator: 'EQ',
+            AttributeValueList: [{ S: consumer }]
+          }
+        },
+        AttributesToGet: ['cid']
+      })
+      const response = await dynamoDb.send(cmd)
+      const itemCount = response.Items?.length || 0
+      return { ok: itemCount > 0 }
+    },
+    /**
+     * ensure item is stored
+     *
+     * @param item - provision to store
+     */
+    put: async (item) => {
+      const row = {
+        cid: item.invocation.cid.toString(),
+        consumer: item.space,
+        provider: item.provider,
+        sponsor: item.account,
+      }
+      try {
+        await dynamoDb.send(new PutItemCommand({
+          TableName: subscriptionsTableName,
+          Item: marshall(row),
+          ConditionExpression: `attribute_not_exists(consumer) OR ((cid = :cid) AND (consumer = :consumer) AND (provider = :provider) AND (sponsor = :sponsor))`,
+          ExpressionAttributeValues: {
+            ':cid': { 'S': row.cid },
+            ':consumer': { 'S': row.consumer },
+            ':provider': { 'S': row.provider },
+            ':sponsor': { 'S': row.sponsor }
+          }
+        }))
+      } catch (error) {
+        if (error instanceof Error && error.message === 'The conditional request failed') {
+          return {
+            error: new ConflictError({
+              message: `Space ${row.consumer} cannot be provisioned with ${row.provider}: it already has a provider`
+            })
+          }
+        } else {
+          throw error
+        }
+      }
+      return { ok: {} }
+    },
+
+    /**
+     * get number of stored items
+     */
+    count: async () => {
+      const result = await dynamoDb.send(new DescribeTableCommand({
+        TableName: consumersTableName
       }))
 
       return BigInt(result.Table?.ItemCount ?? -1)

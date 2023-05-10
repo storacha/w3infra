@@ -48,7 +48,7 @@ export const provisionsTableProps = {
     cid: 'string',        // `baf...x` (CID of invocation that created this provision)
     consumer: 'string',   // `did:key:space` (DID of the actor that is consuming the provider, e.g. a space DID)
     provider: 'string',   // `did:web:service` (DID of the provider, e.g. a storage provider)
-    sponsor: 'string',    // `did:key:agent` (DID of the actor that authorized this provision)
+    customer: 'string',    // `did:key:agent` (DID of the actor that authorized this provision)
     insertedAt: 'string', // `2022-12-24T...`
     updatedAt: 'string',  // `2022-12-24T...`
   },
@@ -56,4 +56,35 @@ export const provisionsTableProps = {
   // we want to query by consumer, and I think it should be unique?
   // TODO also are we sure that a single invocation will only create a single provision? the D1 schema used CID as a PRIMARY KEY so I think this should be fine, but will it always be true?
   primaryIndex: { partitionKey: 'consumer' },
+}
+
+/** VS */
+
+
+/** @type TableProps */
+export const subscriptionsTableProps = {
+  fields: {
+    cause: 'string',        // `baf...x` (CID of invocation that created this provision)
+    provider: 'string',   // `did:web:service` (DID of the provider, e.g. a storage provider)
+    customer: 'string',   // `did:mailto:agent` (DID of the user account)
+    order: 'string',      // string (arbitrary string associated with this subscription)
+    insertedAt: 'string', // `2022-12-24T...`
+    updatedAt: 'string',  // `2022-12-24T...`
+  },
+  // TODO does this index setup seem right?
+  primaryIndex: { partitionKey: 'provider', sortKey: 'order' },
+}
+
+/** @type TableProps */
+export const consumersTableProps = {
+  fields: {
+    cause: 'string',        // `baf...x` (CID of invocation that created this provision)
+    consumer: 'string',   // `did:key:space` (DID of the actor that is consuming the provider, e.g. a space DID)
+    provider: 'string',   // `did:web:service` (DID of the provider, e.g. a storage provider)
+    order: 'string',      // string (arbitrary string associated with this subscription)
+    insertedAt: 'string', // `2022-12-24T...`
+    updatedAt: 'string',  // `2022-12-24T...`
+  },
+  // TODO does this index setup seem right?
+  primaryIndex: { partitionKey: 'provider', sortKey: 'order' },
 }
