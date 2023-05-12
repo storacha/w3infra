@@ -8,6 +8,11 @@ export const adminMetricsTableProps = {
   },
   // name must be unique to satisfy index constraint
   primaryIndex: { partitionKey: 'name' },
+  cdk: {
+    table: {
+      pointInTimeRecovery: false
+    }
+  }
 }
 
 /** @type TableProps */
@@ -19,4 +24,9 @@ export const spaceMetricsTableProps = {
   },
   // space+name must be unique to satisfy index constraint
   primaryIndex: { partitionKey: 'space', sortKey: 'name' },
+  cdk: {
+    table: {
+      pointInTimeRecovery: false
+    }
+  }
 }
