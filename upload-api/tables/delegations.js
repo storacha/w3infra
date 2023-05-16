@@ -6,12 +6,17 @@ import {
   DescribeTableCommand,
 } from '@aws-sdk/client-dynamodb'
 import { marshall, unmarshall } from '@aws-sdk/util-dynamodb'
+import * as Ucanto from '@ucanto/interface'
 
 import { CID } from 'multiformats/cid'
 import {
   bytesToDelegations,
   delegationsToBytes
 } from '@web3-storage/access/encoding'
+
+/**
+ * @typedef {Ucanto.Delegation} Delegation
+ */
 
 /**
  * Abstraction layer to handle operations on Store Table.
@@ -35,13 +40,15 @@ export function createDelegationsTable (region, tableName, bucket, options = {})
  * @param {DynamoDBClient} dynamoDb
  * @param {string} tableName
  * @param {import('../types').DelegationsBucket} bucket
- * @returns {import('../access-types').DelegationsStorage}
+ * @returns {import('@web3-storage/upload-api').DelegationsStorage}
  */
 export function useDelegationsTable (dynamoDb, tableName, bucket) {
   return {
     putMany: async (...delegations) => {
       if (delegations.length === 0) {
-        return
+        return {
+          ok: {}
+        }
       }
       await writeDelegations(bucket, delegations)
       // TODO: we should look at the return value of this BatchWriteItemCommand and either retry or clean up delegations that we fail to index
@@ -57,7 +64,11 @@ export function useDelegationsTable (dynamoDb, tableName, bucket) {
           )
         }
       }))
+      return {
+        ok: {}
+      }
     },
+
     count: async () => {
       const result = await dynamoDb.send(new DescribeTableCommand({
         TableName: tableName
@@ -65,7 +76,8 @@ export function useDelegationsTable (dynamoDb, tableName, bucket) {
 
       return BigInt(result.Table?.ItemCount ?? -1)
     },
-    find: async function* find (query) {
+
+    find: async (query) => {
       const cmd = new QueryCommand({
         TableName: tableName,
         // Limit: options.size || 20, // TODO should we introduce a limit here?
@@ -79,9 +91,13 @@ export function useDelegationsTable (dynamoDb, tableName, bucket) {
       })
       const response = await dynamoDb.send(cmd)
 
+      const delegations = []
       for (const result of response.Items ?? []) {
         const { cid } = unmarshall(result)
-        yield cidToDelegation(bucket, CID.parse(cid))
+        delegations.push(await cidToDelegation(bucket, CID.parse(cid)))
+      }
+      return {
+        ok: delegations
       }
     }
   }
@@ -90,7 +106,7 @@ export function useDelegationsTable (dynamoDb, tableName, bucket) {
 /**
  * TODO: fix the return type to use CID and DID string types
  * 
- * @param {import('@ucanto/interface').Delegation} d
+ * @param {Delegation} d
  * @returns {{cid: string, audience: string, issuer: string}}}
  */
 function createDelegationItem (d) {
@@ -120,10 +136,9 @@ async function cidToDelegation (bucket, cid) {
 }
 
 /**
- * TODO: can we use the function in w3up access-api/src/models/delegations.js?
  * 
  * @param {import('../types').DelegationsBucket} bucket
- * @param {Iterable<import('@ucanto/interface').Delegation>} delegations
+ * @param {Ucanto.Delegation<Ucanto.Tuple<Ucanto.Capability>>[]} delegations
  */
 async function writeDelegations (bucket, delegations) {
   return writeEntries(
@@ -137,7 +152,6 @@ async function writeDelegations (bucket, delegations) {
 }
 
 /**
- * TODO: can we use the function in w3up access-api/src/models/delegations.js?
  * 
  * @param {import('../types').DelegationsBucket} bucket
  * @param {Iterable<readonly [key: CID, value: Uint8Array ]>} entries

@@ -40,7 +40,7 @@ class ConflictError extends Failure {
  * @param {DynamoDBClient} dynamoDb
  * @param {string} tableName
  * @param {import('@ucanto/interface').DID<'web'>[]} services
- * @returns {import('../access-types').ProvisionsStorage}
+ * @returns {import('@web3-storage/upload-api').ProvisionsStorage}
  */
 export function useProvisionsTable (dynamoDb, tableName, services) {
   return {
@@ -67,21 +67,21 @@ export function useProvisionsTable (dynamoDb, tableName, services) {
      */
     put: async (item) => {
       const row = {
-        cid: item.invocation.cid.toString(),
-        consumer: item.space,
+        cid: item.cause.cid.toString(),
+        consumer: item.consumer,
         provider: item.provider,
-        sponsor: item.account,
+        customer: item.customer,
       }
       try {
         await dynamoDb.send(new PutItemCommand({
           TableName: tableName,
           Item: marshall(row),
-          ConditionExpression: `attribute_not_exists(consumer) OR ((cid = :cid) AND (consumer = :consumer) AND (provider = :provider) AND (sponsor = :sponsor))`,
+          ConditionExpression: `attribute_not_exists(consumer) OR ((cid = :cid) AND (consumer = :consumer) AND (provider = :provider) AND (customer = :customer))`,
           ExpressionAttributeValues: {
             ':cid': { 'S': row.cid },
             ':consumer': { 'S': row.consumer },
             ':provider': { 'S': row.provider },
-            ':sponsor': { 'S': row.sponsor }
+            ':customer': { 'S': row.customer }
           }
         }))
       } catch (error) {
@@ -116,7 +116,7 @@ export function useProvisionsTable (dynamoDb, tableName, services) {
  * @param {string} subscriptionsTableName
  * @param {string} consumersTableName
  * @param {import('@ucanto/interface').DID<'web'>[]} services
- * @returns {import('../access-types').ProvisionsStorage}
+ * @returns {import('@web3-storage/upload-api').ProvisionsStorage}
  */
 export function useProvisionsStorage (dynamoDb, subscriptionsTableName, consumersTableName, services) {
   return {
@@ -143,21 +143,21 @@ export function useProvisionsStorage (dynamoDb, subscriptionsTableName, consumer
      */
     put: async (item) => {
       const row = {
-        cid: item.invocation.cid.toString(),
-        consumer: item.space,
+        cid: item.cause.cid.toString(),
+        consumer: item.consumer,
         provider: item.provider,
-        sponsor: item.account,
+        customer: item.customer,
       }
       try {
         await dynamoDb.send(new PutItemCommand({
           TableName: subscriptionsTableName,
           Item: marshall(row),
-          ConditionExpression: `attribute_not_exists(consumer) OR ((cid = :cid) AND (consumer = :consumer) AND (provider = :provider) AND (sponsor = :sponsor))`,
+          ConditionExpression: `attribute_not_exists(consumer) OR ((cid = :cid) AND (consumer = :consumer) AND (provider = :provider) AND (customer = :customer))`,
           ExpressionAttributeValues: {
             ':cid': { 'S': row.cid },
             ':consumer': { 'S': row.consumer },
             ':provider': { 'S': row.provider },
-            ':sponsor': { 'S': row.sponsor }
+            ':customer': { 'S': row.customer }
           }
         }))
       } catch (error) {
