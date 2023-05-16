@@ -2,7 +2,6 @@
 import { test } from '../helpers/context.js'
 import * as principal from '@ucanto/principal'
 import * as ucanto from '@ucanto/core'
-import { collect } from 'streaming-iterables'
 import {
   createS3,
   createBucket,
@@ -131,20 +130,14 @@ test('can retrieve delegations by audience', async (t) => {
 
   await delegations.putMany(...delegationsForAlice, ...delegationsForBob)
 
-  const aliceDelegations = await collect(
-    delegations.find({ audience: alice.did() })
-  )
-  t.deepEqual(aliceDelegations.length, delegationsForAlice.length)
+  const aliceDelegations = (await delegations.find({ audience: alice.did() })).ok
+  t.deepEqual(aliceDelegations?.length, delegationsForAlice.length)
 
-  const bobDelegations = await collect(
-    delegations.find({ audience: bob.did() })
-  )
-  t.deepEqual(bobDelegations.length, delegationsForBob.length)
+  const bobDelegations = (await delegations.find({ audience: bob.did() })).ok
+  t.deepEqual(bobDelegations?.length, delegationsForBob.length)
 
   const carol = await principal.ed25519.generate()
-  const carolDelegations = await collect(
-    delegations.find({ audience: carol.did() })
-  )
-  t.deepEqual(carolDelegations.length, 0)
+  const carolDelegations = (await delegations.find({ audience: carol.did() })).ok
+  t.deepEqual(carolDelegations?.length, 0)
 })
 

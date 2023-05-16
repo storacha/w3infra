@@ -1,7 +1,5 @@
 import { test } from '../helpers/context.js'
 import {
-  createS3,
-  createBucket,
   createDynamodDb,
   createTable,
 } from '../helpers/resources.js'
@@ -9,7 +7,6 @@ import { useProvisionsTable } from '../../tables/provisions.js'
 import * as principal from '@ucanto/principal'
 import { Signer } from '@ucanto/principal/ed25519'
 import { Provider } from '@web3-storage/capabilities'
-import { CID } from 'multiformats'
 import { provisionsTableProps } from '../../tables/index.js'
 
 test.before(async (t) => {
@@ -45,12 +42,12 @@ test('should persist provisions', async (t) => {
       },
     })
     .delegate()
-  /** @type {import('../../access-types').Provision<'did:web:web3.storage:providers:w3up-alpha'>} */
+  /** @type {import('@web3-storage/upload-api').Provision} */
   const provision = {
-    invocation,
-    space: spaceA.did(),
+    cause: invocation,
+    consumer: spaceA.did(),
     provider: 'did:web:web3.storage:providers:w3up-alpha',
-    account: issuer.did(),
+    customer: issuer.did(),
   }
 
   t.deepEqual(await storage.count(), BigInt(0))
