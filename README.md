@@ -128,9 +128,17 @@ Endpoint for S3 like cloud object storage to replicate content into.
 
 Bucket name to replicate written CAR files.
 
+#### `R2_CARPARK_BUCKET_PUBLIC_URL`
+
+Bucket public URL where replicated CAR files are written into.
+
 #### `R2_SATNAV_BUCKET_NAME`
 
 Bucket name to replicate written .idx files.
+
+#### `R2_SATNAV_BUCKET_PUBLIC_URL`
+
+Bucket public URL where replicated .idx files are written into.
 
 #### `R2_DUDEWHERE_BUCKET_NAME`
 
