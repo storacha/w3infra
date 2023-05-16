@@ -16,6 +16,10 @@ import { getServiceSigner } from '../config.js'
 import { createUcantoServer } from '../service.js'
 import { Config } from '@serverless-stack/node/config/index.js'
 import { CAR, Legacy, Codec } from '@ucanto/transport'
+import { Email } from '../email.js'
+import { createProvisionsTable } from '../tables/provisions.js'
+import { createDelegationsTable } from '../tables/delegations.js'
+import { createDelegationsStore } from '../buckets/delegations-store.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -71,15 +75,19 @@ const codec = Codec.inbound({
  *
  * @param {import('aws-lambda').APIGatewayProxyEventV2} request
  */
-export async function ucanInvocationRouter(request) {
+export async function ucanInvocationRouter (request) {
   const {
     STORE_TABLE_NAME: storeTableName = '',
     STORE_BUCKET_NAME: storeBucketName = '',
     UPLOAD_TABLE_NAME: uploadTableName = '',
+    PROVISIONS_TABLE_NAME: provisionsTableName = '',
+    DELEGATIONS_TABLE_NAME: delegationsBucketName = '',
+    BUCKET_NAME: delegationsTableName = '',
     INVOCATION_BUCKET_NAME: invocationBucketName = '',
     TASK_BUCKET_NAME: taskBucketName = '',
     WORKFLOW_BUCKET_NAME: workflowBucketName = '',
     UCAN_LOG_STREAM_NAME: streamName = '',
+    POSTMARK_TOKEN: postmarkToken = '',
     // set for testing
     DYNAMO_DB_ENDPOINT: dbEndpoint,
     ACCESS_SERVICE_DID: accessServiceDID = '',
@@ -102,6 +110,7 @@ export async function ucanInvocationRouter(request) {
   )
   const taskBucket = createTaskStore(AWS_REGION, taskBucketName)
   const workflowBucket = createWorkflowStore(AWS_REGION, workflowBucketName)
+  const delegationsBucket = createDelegationsStore(AWS_REGION, delegationsBucketName)
 
   const server = await createUcantoServer(serviceSigner, {
     codec,
@@ -124,6 +133,15 @@ export async function ucanInvocationRouter(request) {
       DID.parse(accessServiceDID),
       new URL(accessServiceURL)
     ),
+    signer: serviceSigner,
+    // TODO: we should set URL from a different env var, doing this for now to avoid that refactor
+    url: new URL(accessServiceURL),
+    email: new Email({ token: postmarkToken }),
+    provisionsStorage: createProvisionsTable(AWS_REGION, provisionsTableName, [
+      /** @type {import('@web3-storage/upload-api').ServiceDID} */
+      (accessServiceDID)
+    ]),
+    delegationsStorage: createDelegationsTable(AWS_REGION, delegationsTableName, delegationsBucket)
   })
 
   const processingCtx = {
@@ -171,7 +189,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(ucanInvocationRouter)
 /**
  * @param {API.HTTPResponse} response
  */
-export function toLambdaSuccessResponse({ status = 200, headers, body }) {
+export function toLambdaSuccessResponse ({ status = 200, headers, body }) {
   return {
     statusCode: status,
     headers,
