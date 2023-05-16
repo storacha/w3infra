@@ -59,7 +59,7 @@ test('should persist provisions', async (t) => {
   const spaceHasStorageProvider = await storage.hasStorageProvider(
     spaceA.did()
   )
-  t.deepEqual(spaceHasStorageProvider, true)
+  t.deepEqual(spaceHasStorageProvider?.ok, true)
 
   // ensure no error if we try to store same provision twice
   const dupeResult = await storage.put(provision)
