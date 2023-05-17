@@ -8,7 +8,7 @@ import {
   createDynamodDb,
   createTable,
 } from '../helpers/resources.js'
-import { delegationsTableProps } from '../../tables/index.js'
+import { delegationTableProps } from '../../tables/index.js'
 import { useDelegationsTable } from '../../tables/delegations.js'
 import { useDelegationsStore } from '../../buckets/delegations-store.js'
 
@@ -82,7 +82,7 @@ test('should persist delegations', async (t) => {
   const delegationsBucket = useDelegationsStore(s3, bucketName)
   const delegationsStorage = useDelegationsTable(
     dynamo,
-    await createTable(dynamo, delegationsTableProps),
+    await createTable(dynamo, delegationTableProps),
     delegationsBucket
   )
   const count = Math.round(Math.random() * 10)
@@ -100,7 +100,7 @@ test('can retrieve delegations by audience', async (t) => {
   const delegationsBucket = useDelegationsStore(s3, bucketName)
   const delegations = useDelegationsTable(
     dynamo,
-    await createTable(dynamo, delegationsTableProps),
+    await createTable(dynamo, delegationTableProps),
     delegationsBucket
   )
   const issuer = await principal.ed25519.generate()

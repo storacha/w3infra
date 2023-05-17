@@ -28,7 +28,7 @@ export const uploadTableProps = {
 }
 
 /** @type TableProps */
-export const delegationsTableProps = {
+export const delegationTableProps = {
   fields: {
     cid: 'string',        // `baf...x`
     audience: 'string',   // `did:web:service`
@@ -43,7 +43,7 @@ export const delegationsTableProps = {
 }
 
 /** @type TableProps */
-export const provisionsTableProps = {
+export const provisionTableProps = {
   fields: {
     cid: 'string',        // `baf...x` (CID of invocation that created this provision)
     consumer: 'string',   // `did:key:space` (DID of the actor that is consuming the provider, e.g. a space DID)
@@ -62,7 +62,7 @@ export const provisionsTableProps = {
 
 
 /** @type TableProps */
-export const subscriptionsTableProps = {
+export const subscriptionTableProps = {
   fields: {
     cause: 'string',        // `baf...x` (CID of invocation that created this provision)
     provider: 'string',   // `did:web:service` (DID of the provider, e.g. a storage provider)
@@ -76,7 +76,7 @@ export const subscriptionsTableProps = {
 }
 
 /** @type TableProps */
-export const consumersTableProps = {
+export const consumerTableProps = {
   fields: {
     cause: 'string',        // `baf...x` (CID of invocation that created this provision)
     consumer: 'string',   // `did:key:space` (DID of the actor that is consuming the provider, e.g. a space DID)

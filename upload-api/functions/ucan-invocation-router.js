@@ -80,9 +80,9 @@ export async function ucanInvocationRouter (request) {
     STORE_TABLE_NAME: storeTableName = '',
     STORE_BUCKET_NAME: storeBucketName = '',
     UPLOAD_TABLE_NAME: uploadTableName = '',
-    PROVISIONS_TABLE_NAME: provisionsTableName = '',
-    DELEGATIONS_TABLE_NAME: delegationsBucketName = '',
-    BUCKET_NAME: delegationsTableName = '',
+    PROVISION_TABLE_NAME: provisionTableName = '',
+    DELEGATION_TABLE_NAME: delegationTableName = '',
+    DELEGATION_BUCKET_NAME: delegationBucketName = '',
     INVOCATION_BUCKET_NAME: invocationBucketName = '',
     TASK_BUCKET_NAME: taskBucketName = '',
     WORKFLOW_BUCKET_NAME: workflowBucketName = '',
@@ -110,9 +110,9 @@ export async function ucanInvocationRouter (request) {
   )
   const taskBucket = createTaskStore(AWS_REGION, taskBucketName)
   const workflowBucket = createWorkflowStore(AWS_REGION, workflowBucketName)
-  const delegationsBucket = createDelegationsStore(AWS_REGION, delegationsBucketName)
+  const delegationBucket = createDelegationsStore(AWS_REGION, delegationBucketName)
 
-  const server = await createUcantoServer(serviceSigner, {
+  const server = createUcantoServer(serviceSigner, {
     codec,
     storeTable: createStoreTable(AWS_REGION, storeTableName, {
       endpoint: dbEndpoint,
@@ -137,11 +137,11 @@ export async function ucanInvocationRouter (request) {
     // TODO: we should set URL from a different env var, doing this for now to avoid that refactor
     url: new URL(accessServiceURL),
     email: new Email({ token: postmarkToken }),
-    provisionsStorage: createProvisionsTable(AWS_REGION, provisionsTableName, [
+    provisionsStorage: createProvisionsTable(AWS_REGION, provisionTableName, [
       /** @type {import('@web3-storage/upload-api').ServiceDID} */
       (accessServiceDID)
     ]),
-    delegationsStorage: createDelegationsTable(AWS_REGION, delegationsTableName, delegationsBucket)
+    delegationsStorage: createDelegationsTable(AWS_REGION, delegationTableName, delegationBucket)
   })
 
   const processingCtx = {

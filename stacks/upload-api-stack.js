@@ -22,7 +22,7 @@ export function UploadApiStack({ stack, app }) {
 
   // Get references to constructs created in other stacks
   const { carparkBucket } = use(CarparkStack)
-  const { storeTable, uploadTable, adminMetricsTable } = use(UploadDbStack)
+  const { storeTable, uploadTable, provisionTable, delegationTable, delegationBucket, adminMetricsTable } = use(UploadDbStack)
   const { invocationBucket, taskBucket, workflowBucket, ucanStream } = use(UcanInvocationStack)
 
   // Setup API
@@ -39,6 +39,9 @@ export function UploadApiStack({ stack, app }) {
         permissions: [
           storeTable,
           uploadTable,
+          provisionTable,
+          delegationTable,
+          delegationBucket,
           adminMetricsTable,
           carparkBucket,
           invocationBucket,
@@ -50,6 +53,9 @@ export function UploadApiStack({ stack, app }) {
           STORE_TABLE_NAME: storeTable.tableName,
           STORE_BUCKET_NAME: carparkBucket.bucketName,
           UPLOAD_TABLE_NAME: uploadTable.tableName,
+          PROVISION_TABLE_NAME: provisionTable.tableName,
+          DELEGATION_TABLE_NAME: delegationTable.tableName,
+          DELEGATION_BUCKET_NAME: delegationBucket.bucketName,
           INVOCATION_BUCKET_NAME: invocationBucket.bucketName,
           TASK_BUCKET_NAME: taskBucket.bucketName,
           WORKFLOW_BUCKET_NAME: workflowBucket.bucketName,
@@ -78,6 +84,8 @@ export function UploadApiStack({ stack, app }) {
       'POST /':       'functions/ucan-invocation-router.handler',
       'POST /ucan':   'functions/ucan.handler',
       'GET /':        'functions/get.home',
+      'GET /validate-email': 'functions/validate-email.preValidateEmail',
+      'POST /validate-email': 'functions/validate-email.validateEmail',
       'GET /error':   'functions/get.error',
       'GET /version': 'functions/get.version',
       'GET /metrics': 'functions/metrics.handler',

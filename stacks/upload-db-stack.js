@@ -1,14 +1,16 @@
-import { Table } from '@serverless-stack/resources'
+import { Bucket, Table } from '@serverless-stack/resources'
 
 import {
   storeTableProps,
   uploadTableProps,
+  provisionTableProps,
+  delegationTableProps
 } from '../upload-api/tables/index.js'
 import {
   adminMetricsTableProps,
   spaceMetricsTableProps
 } from '../ucan-invocation/tables/index.js'
-import { setupSentry } from './config.js'
+import { getBucketConfig, setupSentry } from './config.js'
 
 /**
  * @param {import('@serverless-stack/resources').StackContext} properties
@@ -31,6 +33,23 @@ export function UploadDbStack({ stack, app }) {
   const uploadTable = new Table(stack, 'upload', uploadTableProps)
 
   /**
+   * This table tracks space provisioning.
+   */
+  const provisionTable = new Table(stack, 'provision', provisionTableProps)
+
+  /**
+   * This table tracks metrics per space.
+   */
+  const delegationTable = new Table(stack, 'delegation', delegationTableProps)
+
+  const delegationBucket = new Bucket(stack, 'delegation-store', {
+    cors: true,
+    cdk: {
+      bucket: getBucketConfig('delegation', app.stage)
+    }
+  })
+
+  /**
    * This table tracks w3 wider metrics.
    */
   const adminMetricsTable = new Table(stack, 'admin-metrics', adminMetricsTableProps)
@@ -43,6 +62,9 @@ export function UploadDbStack({ stack, app }) {
   return {
     storeTable,
     uploadTable,
+    provisionTable,
+    delegationBucket,
+    delegationTable,
     adminMetricsTable,
     spaceMetricsTable
   }

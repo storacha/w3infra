@@ -26,6 +26,8 @@
     "@web3-storage/upload-api": "file:../../w3up/packages/upload-api",
     "@web3-storage/w3infra-ucan-invocation": "*",
     "multiformats": "^11.0.1",
+    "preact": "^10.14.1",
+    "preact-render-to-string": "^5.2.6",
     "prom-client": "^14.2.0",
     "uint8arrays": "^4.0.2"
   },

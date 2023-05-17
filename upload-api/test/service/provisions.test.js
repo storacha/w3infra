@@ -7,7 +7,7 @@ import { useProvisionsTable } from '../../tables/provisions.js'
 import * as principal from '@ucanto/principal'
 import { Signer } from '@ucanto/principal/ed25519'
 import { Provider } from '@web3-storage/capabilities'
-import { provisionsTableProps } from '../../tables/index.js'
+import { provisionTableProps } from '../../tables/index.js'
 
 test.before(async (t) => {
   Object.assign(t.context, {
@@ -25,7 +25,7 @@ test('should persist provisions', async (t) => {
   const { dynamo, service } = t.context
   const storage = useProvisionsTable(
     dynamo,
-    await createTable(dynamo, provisionsTableProps),
+    await createTable(dynamo, provisionTableProps),
     [service.did()]
   )
   const spaceA = await principal.ed25519.generate()
