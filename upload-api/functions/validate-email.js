@@ -76,7 +76,6 @@ export async function validateEmailPost (request) {
 
   const authorizeResult = await authorize(encodedUcan, createAuthorizeContext())
   if (authorizeResult.error) {
-    // TODO make this prettier
     return new HtmlResponse(
       <ValidateEmailError msg={`Oops something went wrong: ${authorizeResult.error.message}`} />,
       { status: 500 }

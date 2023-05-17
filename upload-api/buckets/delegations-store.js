@@ -24,8 +24,6 @@ export function createDelegationsStore(region, bucketName, options = {}) {
 }
 
 /**
- * TODO: this should use the function in w3up access-api/src/models/delegations.js
- * 
  * @param { CID} cid
  */
 function createDelegationsBucketKey (cid) {
