@@ -1,7 +1,6 @@
 /* eslint-disable no-loop-func */
 import { test } from '../helpers/context.js'
-import * as principal from '@ucanto/principal'
-import * as ucanto from '@ucanto/core'
+import { testDelegationsStorageVariant } from '@web3-storage/upload-api/test'
 import {
   createS3,
   createBucket,
@@ -12,62 +11,6 @@ import { delegationTableProps } from '../../tables/index.js'
 import { useDelegationsTable } from '../../tables/delegations.js'
 import { useDelegationsStore } from '../../buckets/delegations-store.js'
 
-/**
- * 
- * TODO: migrate back to function originally defined in w3up access-api/src/utils/ucan.js
- * 
- * @param {object} options
- * @param {PromiseLike<principal.ed25519.EdSigner>} [options.audience]
- * @param {PromiseLike<principal.ed25519.EdSigner>} [options.issuer]
- * @param {import('@ucanto/interface').URI} [options.with]
- * @param {import('@ucanto/interface').Ability} [options.can]
- */
-export async function createSampleDelegation(options = {}) {
-  const {
-    issuer = Promise.resolve(principal.ed25519.generate()),
-    audience = Promise.resolve(principal.ed25519.generate()),
-    can,
-  } = options
-  const delegation = await ucanto.delegate({
-    issuer: await issuer,
-    audience: await audience,
-    capabilities: [
-      {
-        with: options.with || 'urn:',
-        can: can || 'test/*',
-      },
-    ],
-  })
-  return delegation
-}
-
-/**
- * TODO: migrate back to function originally defined in w3up access-api/test/delegations-storage.testjs
- * 
- * @param {object} [opts]
- * @param {import('@ucanto/interface').Signer<import('@ucanto/interface').DID>} [opts.issuer]
- * @param {import('@ucanto/interface').Principal} [opts.audience]
- * @param {import('@ucanto/interface').Capabilities} [opts.capabilities]
- * @returns {Promise<import('@ucanto/interface').Delegation>}
- */
-async function createDelegation(opts = {}) {
-  const {
-    issuer = await principal.ed25519.generate(),
-    audience = issuer,
-    capabilities = [
-      {
-        can: 'test/*',
-        with: issuer.did(),
-      },
-    ],
-  } = opts
-  return await ucanto.delegate({
-    issuer,
-    audience,
-    capabilities,
-  })
-}
-
 test.before(async (t) => {
   Object.assign(t.context, {
     dynamo: await createDynamodDb(),
@@ -75,69 +18,16 @@ test.before(async (t) => {
   })
 })
 
-// TODO migrate back to using testVariant in w3up access-api/test/delegations-storage.test.js
-test('should persist delegations', async (t) => {
-  const { dynamo, s3 } = t.context
-  const bucketName = await createBucket(s3)
-  const delegationsBucket = useDelegationsStore(s3, bucketName)
-  const delegationsStorage = useDelegationsTable(
-    dynamo,
-    await createTable(dynamo, delegationTableProps),
-    delegationsBucket
-  )
-  const count = Math.round(Math.random() * 10)
-  const delegations = await Promise.all(
-    Array.from({ length: count }).map(() => createSampleDelegation())
-  )
-  await delegationsStorage.putMany(...delegations)
-  t.deepEqual(await delegationsStorage.count(), BigInt(delegations.length))
-})
-
-// TODO migrate back to using testVariant in w3up access-api/test/delegations-storage.test.js
-test('can retrieve delegations by audience', async (t) => {
-  const { dynamo, s3 } = t.context
-  const bucketName = await createBucket(s3)
-  const delegationsBucket = useDelegationsStore(s3, bucketName)
-  const delegations = useDelegationsTable(
-    dynamo,
-    await createTable(dynamo, delegationTableProps),
-    delegationsBucket
-  )
-  const issuer = await principal.ed25519.generate()
-
-  const alice = await principal.ed25519.generate()
-  const delegationsForAlice = await Promise.all(
-    Array.from({ length: 1 }).map(() =>
-      createDelegation({ issuer, audience: alice })
+testDelegationsStorageVariant(
+  async (/** @type {any} */ t) => {
+    const { dynamo, s3 } = t.context
+    const bucketName = await createBucket(s3)
+    
+    return useDelegationsTable(
+      dynamo,
+      await createTable(dynamo, delegationTableProps),
+      useDelegationsStore(s3, bucketName)
     )
-  )
-
-  const bob = await principal.ed25519.generate()
-  const delegationsForBob = await Promise.all(
-    Array.from({ length: 2 }).map((e, i) =>
-      createDelegation({
-        issuer,
-        audience: bob,
-        capabilities: [
-          {
-            can: `test/${i}`,
-            with: alice.did(),
-          },
-        ],
-      })
-    )
-  )
-
-  await delegations.putMany(...delegationsForAlice, ...delegationsForBob)
-
-  const aliceDelegations = (await delegations.find({ audience: alice.did() })).ok
-  t.deepEqual(aliceDelegations?.length, delegationsForAlice.length)
-
-  const bobDelegations = (await delegations.find({ audience: bob.did() })).ok
-  t.deepEqual(bobDelegations?.length, delegationsForBob.length)
-
-  const carol = await principal.ed25519.generate()
-  const carolDelegations = (await delegations.find({ audience: carol.did() })).ok
-  t.deepEqual(carolDelegations?.length, 0)
-})
-
+  },
+  test
+)
