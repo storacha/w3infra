@@ -1,5 +1,5 @@
 import * as UCAN from '@ipld/dag-ucan'
-import { DID, Link, Delegation, Signature, Block } from '@ucanto/interface'
+import { DID, Link, Delegation, Signature, Block, UCANLink } from '@ucanto/interface'
 import { UnknownLink } from 'multiformats'
 import { CID } from 'multiformats/cid'
 import { Kinesis } from '@aws-sdk/client-kinesis'
@@ -48,6 +48,36 @@ export interface WorkflowBucket {
 export interface DelegationsBucket {
   put: (cid: CID, bytes: Uint8Array) => Promise<void>
   get: (cid: CID) => Promise<Uint8Array|undefined>
+}
+
+export interface SubscriptionInput {
+  customer: DID,
+  provider: DID,
+  order: string,
+  cause: UCANLink
+}
+
+export interface Subscription {
+
+}
+
+export interface SubscriptionTable {
+  insert: (consumer: SubscriptionInput) => Promise<Subscription>
+}
+
+export interface ConsumerInput {
+  consumer: DID,
+  provider: DID,
+  order: string,
+  cause: UCANLink
+}
+
+export interface Consumer {
+
+}
+
+export interface ConsumerTable {
+  insert: (consumer: ConsumerInput) => Promise<Consumer>
 }
 
 export interface UcanInvocation {

@@ -64,7 +64,7 @@ export const provisionTableProps = {
 /** @type TableProps */
 export const subscriptionTableProps = {
   fields: {
-    cause: 'string',        // `baf...x` (CID of invocation that created this provision)
+    cause: 'string',        // `baf...x` (CID of invocation that created this subscription)
     provider: 'string',   // `did:web:service` (DID of the provider, e.g. a storage provider)
     customer: 'string',   // `did:mailto:agent` (DID of the user account)
     order: 'string',      // string (arbitrary string associated with this subscription)
@@ -72,13 +72,13 @@ export const subscriptionTableProps = {
     updatedAt: 'string',  // `2022-12-24T...`
   },
   // TODO does this index setup seem right?
-  primaryIndex: { partitionKey: 'provider', sortKey: 'order' },
+  primaryIndex: { partitionKey: 'customer', sortKey: 'order' },
 }
 
 /** @type TableProps */
 export const consumerTableProps = {
   fields: {
-    cause: 'string',        // `baf...x` (CID of invocation that created this provision)
+    cause: 'string',        // `baf...x` (CID of invocation that created this consumer record)
     consumer: 'string',   // `did:key:space` (DID of the actor that is consuming the provider, e.g. a space DID)
     provider: 'string',   // `did:web:service` (DID of the provider, e.g. a storage provider)
     order: 'string',      // string (arbitrary string associated with this subscription)
@@ -86,5 +86,5 @@ export const consumerTableProps = {
     updatedAt: 'string',  // `2022-12-24T...`
   },
   // TODO does this index setup seem right?
-  primaryIndex: { partitionKey: 'provider', sortKey: 'order' },
+  primaryIndex: { partitionKey: 'consumer', sortKey: 'order' },
 }
