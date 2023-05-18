@@ -1,5 +1,5 @@
 import * as UCAN from '@ipld/dag-ucan'
-import { DID, Link, Delegation, Signature, Block, UCANLink } from '@ucanto/interface'
+import { DID, Link, Delegation, Signature, Block, UCANLink, Result } from '@ucanto/interface'
 import { UnknownLink } from 'multiformats'
 import { CID } from 'multiformats/cid'
 import { Kinesis } from '@aws-sdk/client-kinesis'
@@ -63,6 +63,7 @@ export interface Subscription {
 
 export interface SubscriptionTable {
   insert: (consumer: SubscriptionInput) => Promise<Subscription>
+  count: () => Promise<bigint>
 }
 
 export interface ConsumerInput {
@@ -78,6 +79,8 @@ export interface Consumer {
 
 export interface ConsumerTable {
   insert: (consumer: ConsumerInput) => Promise<Consumer>
+  count: () => Promise<bigint>
+  hasStorageProvider: (consumer: DID) => Promise<boolean>
 }
 
 export interface UcanInvocation {

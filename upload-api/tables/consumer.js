@@ -1,13 +1,15 @@
 import {
   DynamoDBClient,
-  GetItemCommand,
+  //GetItemCommand,
   PutItemCommand,
-  DeleteItemCommand,
+  //DeleteItemCommand,
+  DescribeTableCommand,
   QueryCommand,
 } from '@aws-sdk/client-dynamodb'
-import { marshall, unmarshall } from '@aws-sdk/util-dynamodb'
-import { CID } from 'multiformats/cid'
-import * as Link from 'multiformats/link'
+import { Failure } from '@ucanto/server'
+import { marshall/*, unmarshall*/ } from '@aws-sdk/util-dynamodb'
+//import { CID } from 'multiformats/cid'
+//import * as Link from 'multiformats/link'
 
 /**
  * @typedef {import('../types').ConsumerTable} ConsumerTable
@@ -32,6 +34,18 @@ export function createConsumerTable (region, tableName, options = {}) {
   return useConsumerTable(dynamoDb, tableName)
 }
 
+
+class ConflictError extends Failure {
+  /**
+   * @param {object} input
+   * @param {string} input.message
+   */
+  constructor({ message }) {
+    super(message)
+    this.name = 'ConflictError'
+  }
+}
+
 /**
  * @param {DynamoDBClient} dynamoDb
  * @param {string} tableName
@@ -48,7 +62,7 @@ export function useConsumerTable (dynamoDb, tableName) {
     insert: async ({ consumer, provider, order, cause }) => {
       const insertedAt = new Date().toISOString()
 
-      const item = {
+      const row = {
         consumer,
         provider,
         order,
@@ -56,13 +70,63 @@ export function useConsumerTable (dynamoDb, tableName) {
         insertedAt,
       }
 
-      const cmd = new PutItemCommand({
-        TableName: tableName,
-        Item: marshall(item, { removeUndefinedValues: true }),
-      })
+      try {
+        await dynamoDb.send(new PutItemCommand({
+          TableName: tableName,
+          Item: marshall(row),
+          ConditionExpression: `attribute_not_exists(consumer) OR ((cid = :cid) AND (consumer = :consumer) AND (provider = :provider) AND (customer = :customer))`,
+          ExpressionAttributeValues: {
+            ':cause': { 'S': row.cause },
+            ':consumer': { 'S': row.consumer },
+            ':provider': { 'S': row.provider },
+            ':order': { 'S': row.order }
+          }
+        }))
+        return {}
+      } catch (error) {
+        if (error instanceof Error && error.message === 'The conditional request failed') {
+          throw new ConflictError({
+            message: `Space ${row.consumer} cannot be provisioned with ${row.provider}: it already has a provider`
+          })
+        } else {
+          throw error
+        }
+      }
 
-      await dynamoDb.send(cmd)
-      return {}
+      // const cmd = new PutItemCommand({
+      //   TableName: tableName,
+      //   Item: marshall(item, { removeUndefinedValues: true }),
+      // })
+
+      // await dynamoDb.send(cmd)
+      // return {}
+    },
+
+    hasStorageProvider: async (consumer) => {
+      const cmd = new QueryCommand({
+        TableName: tableName,
+        KeyConditions: {
+          consumer: {
+            ComparisonOperator: 'EQ',
+            AttributeValueList: [{ S: consumer }]
+          }
+        },
+        AttributesToGet: ['provider']
+      })
+      const response = await dynamoDb.send(cmd)
+      const itemCount = response.Items?.length || 0
+      return itemCount > 0
+    },
+
+    /**
+     * get number of stored items
+     */
+    count: async () => {
+      const result = await dynamoDb.send(new DescribeTableCommand({
+        TableName: tableName
+      }))
+
+      return BigInt(result.Table?.ItemCount ?? -1)
     }
   }
 }

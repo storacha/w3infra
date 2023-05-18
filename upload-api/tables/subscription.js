@@ -1,13 +1,14 @@
 import {
+  DescribeTableCommand,
   DynamoDBClient,
-  GetItemCommand,
+  //GetItemCommand,
   PutItemCommand,
-  DeleteItemCommand,
-  QueryCommand,
+  //DeleteItemCommand,
+  //QueryCommand,
 } from '@aws-sdk/client-dynamodb'
-import { marshall, unmarshall } from '@aws-sdk/util-dynamodb'
-import { CID } from 'multiformats/cid'
-import * as Link from 'multiformats/link'
+import { marshall, /*unmarshall*/ } from '@aws-sdk/util-dynamodb'
+//import { CID } from 'multiformats/cid'
+//import * as Link from 'multiformats/link'
 
 /**
  * @typedef {import('../types').SubscriptionTable} SubscriptionTable
@@ -63,6 +64,17 @@ export function useSubscriptionTable (dynamoDb, tableName) {
 
       await dynamoDb.send(cmd)
       return {}
+    },
+
+    /**
+     * get number of stored items
+     */
+    count: async () => {
+      const result = await dynamoDb.send(new DescribeTableCommand({
+        TableName: tableName
+      }))
+
+      return BigInt(result.Table?.ItemCount ?? -1)
     }
   }
 }
