@@ -7,6 +7,8 @@ import {
 import { Failure } from '@ucanto/server'
 import { marshall, } from '@aws-sdk/util-dynamodb'
 
+import { ConflictError as ConsumerConflictError } from '../tables/consumer.js'
+
 /**
  * Abstraction layer to handle operations on Provision Table.
  *
@@ -57,14 +59,14 @@ export function useProvisionStore (subscriptionTable, consumerTable, services) {
      */
     put: async (item) => {
       const { cause, consumer, customer, provider } = item
-      // by setting order to customer we make it so each customer can have at most one subscription
+      // by setting subscription to customer we make it so each customer can have at most one subscription
       // TODO is this what we want?
-      const order = customer
+      const subscription = customer
       await subscriptionTable.insert({
         cause: cause.cid,
         provider,
         customer,
-        order
+        subscription
       })
       // TODO: what should we do if this fails? 
       // TODO: should definitely continue if subscription simply already exists
@@ -74,13 +76,18 @@ export function useProvisionStore (subscriptionTable, consumerTable, services) {
           cause: cause.cid,
           provider,
           consumer,
-          order
+          subscription
         })
         return { ok: {} }
       } catch (error) {
-        return { error }
+        if (error instanceof ConsumerConflictError) {
+          return {
+            error
+          }
+        } else {
+          throw error
+        }
       }
-
     },
 
     /**

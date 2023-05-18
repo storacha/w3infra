@@ -35,7 +35,7 @@ export function createConsumerTable (region, tableName, options = {}) {
 }
 
 
-class ConflictError extends Failure {
+export class ConflictError extends Failure {
   /**
    * @param {object} input
    * @param {string} input.message
@@ -59,13 +59,13 @@ export function useConsumerTable (dynamoDb, tableName) {
      * @param {ConsumerInput} item
      * @returns {Promise<Consumer>}
      */
-    insert: async ({ consumer, provider, order, cause }) => {
+    insert: async ({ consumer, provider, subscription, cause }) => {
       const insertedAt = new Date().toISOString()
 
       const row = {
         consumer,
         provider,
-        order,
+        subscription,
         cause: cause.toString(),
         insertedAt,
       }
@@ -74,12 +74,12 @@ export function useConsumerTable (dynamoDb, tableName) {
         await dynamoDb.send(new PutItemCommand({
           TableName: tableName,
           Item: marshall(row),
-          ConditionExpression: `attribute_not_exists(consumer) OR ((cid = :cid) AND (consumer = :consumer) AND (provider = :provider) AND (customer = :customer))`,
+          ConditionExpression: `attribute_not_exists(consumer) OR ((cause = :cause) AND (consumer = :consumer) AND (provider = :provider) AND (subscription = :subscription))`,
           ExpressionAttributeValues: {
             ':cause': { 'S': row.cause },
             ':consumer': { 'S': row.consumer },
             ':provider': { 'S': row.provider },
-            ':order': { 'S': row.order }
+            ':subscription': { 'S': row.subscription }
           }
         }))
         return {}
@@ -92,14 +92,6 @@ export function useConsumerTable (dynamoDb, tableName) {
           throw error
         }
       }
-
-      // const cmd = new PutItemCommand({
-      //   TableName: tableName,
-      //   Item: marshall(item, { removeUndefinedValues: true }),
-      // })
-
-      // await dynamoDb.send(cmd)
-      // return {}
     },
 
     hasStorageProvider: async (consumer) => {

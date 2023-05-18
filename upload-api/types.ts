@@ -1,5 +1,5 @@
 import * as UCAN from '@ipld/dag-ucan'
-import { DID, Link, Delegation, Signature, Block, UCANLink, Result } from '@ucanto/interface'
+import { DID, Link, Delegation, Signature, Block, UCANLink } from '@ucanto/interface'
 import { UnknownLink } from 'multiformats'
 import { CID } from 'multiformats/cid'
 import { Kinesis } from '@aws-sdk/client-kinesis'
@@ -53,7 +53,7 @@ export interface DelegationsBucket {
 export interface SubscriptionInput {
   customer: DID,
   provider: DID,
-  order: string,
+  subscription: string,
   cause: UCANLink
 }
 
@@ -69,7 +69,7 @@ export interface SubscriptionTable {
 export interface ConsumerInput {
   consumer: DID,
   provider: DID,
-  order: string,
+  subscription: string,
   cause: UCANLink
 }
 

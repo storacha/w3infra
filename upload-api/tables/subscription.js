@@ -46,13 +46,13 @@ export function useSubscriptionTable (dynamoDb, tableName) {
      * @param {SubscriptionInput} item
      * @returns {Promise<Subscription>}
      */
-    insert: async ({ customer, provider, order, cause }) => {
+    insert: async ({ customer, provider, subscription, cause }) => {
       const insertedAt = new Date().toISOString()
 
       const item = {
         customer,
         provider,
-        order,
+        subscription,
         cause: cause.toString(),
         insertedAt,
       }
