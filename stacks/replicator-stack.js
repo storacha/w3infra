@@ -38,7 +38,11 @@ export function ReplicatorStack({ stack, app }) {
         REPLICATOR_BUCKET_PUBLIC_URL: process.env.R2_CARPARK_BUCKET_PUBLIC_URL || '',
         EVENT_BUS_ARN: eventBus.eventBusArn
       },
-      permissions: ['s3:*'],
+      permissions: [
+        's3:*',
+        'events:*',
+        eventBus
+      ],
       handler: 'functions/replicator.handler',
       timeout: 15 * 60,
     }
@@ -58,7 +62,11 @@ export function ReplicatorStack({ stack, app }) {
         REPLICATOR_BUCKET_PUBLIC_URL: process.env.R2_SATNAV_BUCKET_PUBLIC_URL || '',
         EVENT_BUS_ARN: eventBus.eventBusArn
       },
-      permissions: ['s3:*'],
+      permissions: [
+        's3:*',
+        'events:*',
+        eventBus
+      ],
       handler: 'functions/replicator.handler',
       timeout: 15 * 60,
     }
