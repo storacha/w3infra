@@ -73,6 +73,9 @@ export const subscriptionTableProps = {
   },
   // TODO does this index setup seem right?
   primaryIndex: { partitionKey: 'customer', sortKey: 'subscription' },
+  globalIndexes: {
+    provider: { partitionKey: 'provider', projection: ['customer'] }
+  }
 }
 
 /** @type TableProps */
@@ -87,4 +90,7 @@ export const consumerTableProps = {
   },
   // TODO does this index setup seem right?
   primaryIndex: { partitionKey: 'consumer', sortKey: 'subscription' },
+  globalIndexes: {
+    provider: { partitionKey: 'provider', projection: ['consumer'] }
+  }
 }

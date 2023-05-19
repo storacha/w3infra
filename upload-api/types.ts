@@ -66,6 +66,10 @@ export interface SubscriptionTable {
   count: () => Promise<bigint>
 }
 
+export interface UnstableSubscriptionTable extends SubscriptionTable {
+  findCustomersByProvider: (provider: DID) => Promise<DID[]>
+}
+
 export interface ConsumerInput {
   consumer: DID,
   provider: DID,
@@ -81,6 +85,10 @@ export interface ConsumerTable {
   insert: (consumer: ConsumerInput) => Promise<Consumer>
   count: () => Promise<bigint>
   hasStorageProvider: (consumer: DID) => Promise<boolean>
+}
+
+export interface UnstableConsumerTable extends ConsumerTable {
+  findConsumersByProvider: (provider: DID) => Promise<DID[]>
 }
 
 export interface UcanInvocation {

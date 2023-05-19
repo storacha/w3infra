@@ -2,12 +2,14 @@ import {
   DescribeTableCommand,
   DynamoDBClient,
   PutItemCommand,
+  QueryCommand,
 } from '@aws-sdk/client-dynamodb'
 import { Failure } from '@ucanto/server'
 import { marshall } from '@aws-sdk/util-dynamodb'
 
 /**
  * @typedef {import('../types').SubscriptionTable} SubscriptionTable
+ * @typedef {import('../types').UnstableSubscriptionTable} UnstableSubscriptionTable
  * @typedef {import('../types').SubscriptionInput} SubscriptionInput
  * @typedef {import('../types').Subscription} Subscription
  */
@@ -43,7 +45,7 @@ export function createSubscriptionTable (region, tableName, options = {}) {
 /**
  * @param {DynamoDBClient} dynamoDb
  * @param {string} tableName
- * @returns {SubscriptionTable}
+ * @returns {UnstableSubscriptionTable}
  */
 export function useSubscriptionTable (dynamoDb, tableName) {
   return {
@@ -90,6 +92,31 @@ export function useSubscriptionTable (dynamoDb, tableName) {
       }))
 
       return BigInt(result.Table?.ItemCount ?? -1)
+    },
+
+    /**
+     * !!! the following methods are unstable and may be changed at any time !!!
+     * !!!      they are included here for testing and design purposes       !!!
+     */
+
+    findCustomersByProvider: async (provider) => {
+      const cmd = new QueryCommand({
+        TableName: tableName,
+        IndexName: 'provider',
+        KeyConditions: {
+          provider: {
+            ComparisonOperator: 'EQ',
+            AttributeValueList: [{ S: provider }]
+          }
+        },
+        AttributesToGet: ['customer']
+      })
+      const response = await dynamoDb.send(cmd)
+      if (response.Items) {
+        return response.Items.map(item => /** @type{import('@ucanto/interface').DID}*/ (item.customer.S))
+      } else {
+        return []
+      }
     }
   }
 }
