@@ -1,15 +1,11 @@
 import {
   DynamoDBClient,
-  //GetItemCommand,
   PutItemCommand,
-  //DeleteItemCommand,
   DescribeTableCommand,
   QueryCommand,
 } from '@aws-sdk/client-dynamodb'
 import { Failure } from '@ucanto/server'
-import { marshall/*, unmarshall*/ } from '@aws-sdk/util-dynamodb'
-//import { CID } from 'multiformats/cid'
-//import * as Link from 'multiformats/link'
+import { marshall } from '@aws-sdk/util-dynamodb'
 
 /**
  * @typedef {import('../types').ConsumerTable} ConsumerTable

@@ -1,20 +1,27 @@
 import {
   DescribeTableCommand,
   DynamoDBClient,
-  //GetItemCommand,
   PutItemCommand,
-  //DeleteItemCommand,
-  //QueryCommand,
 } from '@aws-sdk/client-dynamodb'
-import { marshall, /*unmarshall*/ } from '@aws-sdk/util-dynamodb'
-//import { CID } from 'multiformats/cid'
-//import * as Link from 'multiformats/link'
+import { Failure } from '@ucanto/server'
+import { marshall } from '@aws-sdk/util-dynamodb'
 
 /**
  * @typedef {import('../types').SubscriptionTable} SubscriptionTable
  * @typedef {import('../types').SubscriptionInput} SubscriptionInput
  * @typedef {import('../types').Subscription} Subscription
  */
+
+export class ConflictError extends Failure {
+  /**
+   * @param {object} input
+   * @param {string} input.message
+   */
+  constructor({ message }) {
+    super(message)
+    this.name = 'ConflictError'
+  }
+}
 
 /**
  * Abstraction layer to handle operations on Store Table.
@@ -56,14 +63,22 @@ export function useSubscriptionTable (dynamoDb, tableName) {
         cause: cause.toString(),
         insertedAt,
       }
-
-      const cmd = new PutItemCommand({
-        TableName: tableName,
-        Item: marshall(item, { removeUndefinedValues: true }),
-      })
-
-      await dynamoDb.send(cmd)
-      return {}
+      try {
+        await dynamoDb.send(new PutItemCommand({
+          TableName: tableName,
+          ConditionExpression: `attribute_not_exists(consumer) AND attribute_not_exists(subscription)`,
+          Item: marshall(item, { removeUndefinedValues: true }),
+        }))
+        return {}
+      } catch (error) {
+        if (error instanceof Error && error.message === 'The conditional request failed') {
+          throw new ConflictError({
+            message: `Customer ${item.customer} cannot be given a subscription for ${item.provider}: it already has a subscription`
+          })
+        } else {
+          throw error
+        }
+      }
     },
 
     /**
