@@ -73,13 +73,10 @@ export function useSubscriptionTable (dynamoDb, tableName) {
         }))
         return {}
       } catch (error) {
-        if (error instanceof Error && error.message === 'The conditional request failed') {
-          throw new ConflictError({
+        const error_ = error instanceof Error && error.message === 'The conditional request failed' ? new ConflictError({
             message: `Customer ${item.customer} cannot be given a subscription for ${item.provider}: it already has a subscription`
-          })
-        } else {
-          throw error
-        }
+          }) : error;
+        throw error_;
       }
     },
 
@@ -113,7 +110,7 @@ export function useSubscriptionTable (dynamoDb, tableName) {
       })
       const response = await dynamoDb.send(cmd)
       if (response.Items) {
-        return response.Items.map(item => /** @type{import('@ucanto/interface').DID}*/ (item.customer.S))
+        return response.Items.map(item => /** @type{import('@ucanto/interface').DID} */ (item.customer.S))
       } else {
         return []
       }

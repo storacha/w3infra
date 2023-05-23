@@ -77,7 +77,7 @@ function globalIndexPropsToGlobalIndexSpec (indexName, props) {
       ProjectionType: "ALL",
       NonKeyAttributes: undefined
     }
-  } else if (projection instanceof Array) {
+  } else if (Array.isArray(projection)) {
     spec.Projection = {
       ProjectionType: 'INCLUDE',
       NonKeyAttributes: projection
