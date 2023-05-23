@@ -60,11 +60,6 @@ export function useProvisionsTable (dynamoDb, tableName, services) {
       const itemCount = response.Items?.length || 0
       return { ok: itemCount > 0 }
     },
-    /**
-     * ensure item is stored
-     *
-     * @param item - provision to store
-     */
     put: async (item) => {
       const row = {
         cid: item.cause.cid.toString(),
@@ -136,11 +131,6 @@ export function useProvisionsStorage (dynamoDb, subscriptionsTableName, consumer
       const itemCount = response.Items?.length || 0
       return { ok: itemCount > 0 }
     },
-    /**
-     * ensure item is stored
-     *
-     * @param item - provision to store
-     */
     put: async (item) => {
       const row = {
         cid: item.cause.cid.toString(),

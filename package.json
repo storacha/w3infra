@@ -53,10 +53,13 @@
   },
   "eslintConfig": {
     "extends": [
-      "./node_modules/hd-scripts/eslint/index.js"
+      "./node_modules/hd-scripts/eslint/preact.js"
     ],
     "parserOptions": {
-      "project": "./tsconfig.json"
+      "project": "./tsconfig.json",
+      "ecmaFeatures": {
+        "jsx": true
+      }
     },
     "rules": {
       "unicorn/prefer-number-properties": "off",
@@ -72,6 +75,7 @@
       "unicorn/explicit-length-check": "off",
       "unicorn/prefer-type-error": "off",
       "unicorn/no-zero-fractions": "off",
+      "unicorn/expiring-todo-comments": "off",
       "eqeqeq": "off",
       "no-new": "off",
       "no-void": "off",
@@ -79,7 +83,9 @@
       "no-continue": "off",
       "no-warning-comments": "off",
       "jsdoc/check-indentation": "off",
-      "jsdoc/require-hyphen-before-param-description": "off"
+      "jsdoc/require-hyphen-before-param-description": "off",
+      "react-hooks/rules-of-hooks": "off",
+      "react/no-danger": "off"
     }
   },
   "workspaces": [

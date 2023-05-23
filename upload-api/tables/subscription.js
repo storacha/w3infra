@@ -109,11 +109,9 @@ export function useSubscriptionTable (dynamoDb, tableName) {
         AttributesToGet: ['customer']
       })
       const response = await dynamoDb.send(cmd)
-      if (response.Items) {
-        return response.Items.map(item => /** @type{import('@ucanto/interface').DID} */ (item.customer.S))
-      } else {
-        return []
-      }
+      return response.Items ? (
+        response.Items.map(item => /** @type { import('@ucanto/interface').DID } */ (item.customer.S))
+      ) : []
     }
   }
 }

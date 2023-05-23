@@ -1,6 +1,5 @@
-import {
-  DynamoDBClient
-} from '@aws-sdk/client-dynamodb'
+// eslint-disable-next-line no-unused-vars
+import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
 import { test } from './helpers/context.js'
 import {
   createDynamodDb,

@@ -1,5 +1,4 @@
 import {
-  DynamoDBClient,
   QueryCommand,
   PutItemCommand,
   DescribeTableCommand,
@@ -9,25 +8,6 @@ import { marshall, } from '@aws-sdk/util-dynamodb'
 
 import { ConflictError as ConsumerConflictError } from '../tables/consumer.js'
 import { ConflictError as SubscriptionConflictError } from '../tables/subscription.js'
-
-/**
- * Abstraction layer to handle operations on Provision Table.
- *
- * @param {string} region
- * @param {string} tableName
- * @param {import('@ucanto/interface').DID<'web'>[]} services
- * @param {object} [options]
- * @param {string} [options.endpoint]
- 
-export function createProvisionStore (region, tableName, services, options = {}) {
-  const dynamoDb = new DynamoDBClient({
-    region,
-    endpoint: options.endpoint,
-  })
-
-  return useProvisionStore(dynamoDb, tableName, services)
-}
-*/
 
 class ConflictError extends Failure {
   /**
@@ -53,11 +33,6 @@ export function useProvisionStore (subscriptionTable, consumerTable, services) {
       { ok: await consumerTable.hasStorageProvider(consumer) }
     ),
 
-    /**
-     * ensure item is stored
-     *
-     * @param item - provision to store
-     */
     put: async (item) => {
       const { cause, consumer, customer, provider } = item
       // by setting subscription to customer we make it so each customer can have at most one subscription
@@ -108,7 +83,7 @@ export function useProvisionStore (subscriptionTable, consumerTable, services) {
 }
 
 /**
- * @param {DynamoDBClient} dynamoDb
+ * @param {import('@aws-sdk/client-dynamodb').DynamoDBClient} dynamoDb
  * @param {string} subscriptionsTableName
  * @param {string} consumersTableName
  * @param {import('@ucanto/interface').DID<'web'>[]} services
@@ -132,11 +107,7 @@ export function useProvisionsStorage (dynamoDb, subscriptionsTableName, consumer
       const itemCount = response.Items?.length || 0
       return { ok: itemCount > 0 }
     },
-    /**
-     * ensure item is stored
-     *
-     * @param item - provision to store
-     */
+
     put: async (item) => {
       const row = {
         cid: item.cause.cid.toString(),

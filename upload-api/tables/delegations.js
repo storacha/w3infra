@@ -6,13 +6,14 @@ import {
   DescribeTableCommand,
 } from '@aws-sdk/client-dynamodb'
 import { marshall, unmarshall } from '@aws-sdk/util-dynamodb'
-import * as Ucanto from '@ucanto/interface'
 
 import { CID } from 'multiformats/cid'
 import {
   bytesToDelegations,
   delegationsToBytes
 } from '@web3-storage/access/encoding'
+// eslint-disable-next-line no-unused-vars
+import * as Ucanto from '@ucanto/interface'
 
 /**
  * @typedef {Ucanto.Delegation} Delegation
@@ -120,7 +121,7 @@ function createDelegationItem (d) {
 /** 
  * @param {import('../types').DelegationsBucket} bucket
  * @param {CID} cid
- * @returns {Promise<import('@ucanto/interface').Delegation>}
+ * @returns {Promise<Ucanto.Delegation>}
  */
 async function cidToDelegation (bucket, cid) {
   const delegationCarBytes = await bucket.get(cid)

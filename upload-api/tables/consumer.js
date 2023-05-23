@@ -82,8 +82,8 @@ export function useConsumerTable (dynamoDb, tableName) {
         return {}
       } catch (error) {
         const error_ = error instanceof Error && error.message === 'The conditional request failed' ? new ConflictError({
-            message: `Space ${row.consumer} cannot be provisioned with ${row.provider}: it already has a provider`
-          }) : error;
+          message: `Space ${row.consumer} cannot be provisioned with ${row.provider}: it already has a provider`
+        }) : error;
         throw error_;
       }
     },
@@ -133,11 +133,9 @@ export function useConsumerTable (dynamoDb, tableName) {
         AttributesToGet: ['consumer']
       })
       const response = await dynamoDb.send(cmd)
-      if (response.Items) {
-        return response.Items.map(item => /** @type{import('@ucanto/interface').DID} */ (item.consumer.S))
-      } else {
-        return []
-      }
+      return response.Items ? (
+        response.Items.map(item => /** @type { import('@ucanto/interface').DID } */ (item.consumer.S))
+      ) : []
     }
   }
 }
