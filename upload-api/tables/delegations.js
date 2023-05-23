@@ -88,14 +88,14 @@ export function useDelegationsTable (dynamoDb, tableName, bucket) {
             AttributeValueList: [{ S: query.audience }]
           }
         },
-        AttributesToGet: ['cid']
+        AttributesToGet: ['link']
       })
       const response = await dynamoDb.send(cmd)
 
       const delegations = []
       for (const result of response.Items ?? []) {
-        const { cid } = unmarshall(result)
-        delegations.push(await cidToDelegation(bucket, CID.parse(cid)))
+        const { link } = unmarshall(result)
+        delegations.push(await cidToDelegation(bucket, CID.parse(link)))
       }
       return {
         ok: delegations
@@ -105,14 +105,12 @@ export function useDelegationsTable (dynamoDb, tableName, bucket) {
 }
 
 /**
- * TODO: fix the return type to use CID and DID string types
- * 
  * @param {Delegation} d
- * @returns {{cid: string, audience: string, issuer: string}}}
+ * @returns {{link: string, audience: string, issuer: string}}}
  */
 function createDelegationItem (d) {
   return {
-    cid: d.cid.toString(),
+    link: d.cid.toString(),
     audience: d.audience.did(),
     issuer: d.issuer.did(),
   }

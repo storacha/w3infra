@@ -30,7 +30,7 @@ export const uploadTableProps = {
 /** @type TableProps */
 export const delegationTableProps = {
   fields: {
-    cid: 'string',        // `baf...x`
+    link: 'string',        // `baf...x`
     audience: 'string',   // `did:web:service`
     issuer: 'string',     // `did:key:agent`
     expiration: 'string', // `9256939505` (unix timestamp)
@@ -39,7 +39,7 @@ export const delegationTableProps = {
   },
   // TODO does this index setup seem right?
   // we want to query by audience, but that won't necessarily be unique, so use cid as sortKey
-  primaryIndex: { partitionKey: 'audience', sortKey: 'cid' },
+  primaryIndex: { partitionKey: 'audience', sortKey: 'link' },
 }
 
 /** @type TableProps */

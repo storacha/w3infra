@@ -83,7 +83,7 @@ export function useProvisionsTable (dynamoDb, tableName, services) {
         if (error instanceof Error && error.message === 'The conditional request failed') {
           return {
             error: new ConflictError({
-              message: `Space ${row.consumer} cannot be provisioned with ${row.provider}: it already has a provider`
+              message: `Space ${row.consumer} cannot be provisioned with ${row.provider}: it already has a provider. If you have the capabilities, you can already upload to this space.`
             })
           }
         } else {
