@@ -3,7 +3,8 @@ import { Table } from '@serverless-stack/resources'
 import {
   storeTableProps,
   uploadTableProps,
-  provisionTableProps,
+  consumerTableProps,
+  subscriptionTableProps,
   delegationTableProps
 } from '../upload-api/tables/index.js'
 import {
@@ -33,9 +34,14 @@ export function UploadDbStack({ stack, app }) {
   const uploadTable = new Table(stack, 'upload', uploadTableProps)
 
   /**
-   * This table tracks space provisioning.
+   * This table tracks the relationship between customers and providers.
    */
-  const provisionTable = new Table(stack, 'provision', provisionTableProps)
+  const subscriptionTable = new Table(stack, 'subscription', subscriptionTableProps)
+
+  /**
+   * This table tracks the relationship between subscriptions and consumers (ie, spaces).
+   */
+  const consumerTable = new Table(stack, 'consumer', consumerTableProps)
 
   /**
    * This table indexes delegations.
@@ -55,7 +61,8 @@ export function UploadDbStack({ stack, app }) {
   return {
     storeTable,
     uploadTable,
-    provisionTable,
+    consumerTable,
+    subscriptionTable,
     delegationTable,
     adminMetricsTable,
     spaceMetricsTable

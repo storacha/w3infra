@@ -17,9 +17,11 @@ import { createUcantoServer } from '../service.js'
 import { Config } from '@serverless-stack/node/config/index.js'
 import { CAR, Legacy, Codec } from '@ucanto/transport'
 import { Email } from '../email.js'
-import { createProvisionsTable } from '../tables/provisions.js'
+import { useProvisionStore } from '../stores/provisions.js'
 import { createDelegationsTable } from '../tables/delegations.js'
 import { createDelegationsStore } from '../buckets/delegations-store.js'
+import { createSubscriptionTable } from '../tables/subscription.js'
+import { createConsumerTable } from '../tables/consumer.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -80,7 +82,8 @@ export async function ucanInvocationRouter (request) {
     STORE_TABLE_NAME: storeTableName = '',
     STORE_BUCKET_NAME: storeBucketName = '',
     UPLOAD_TABLE_NAME: uploadTableName = '',
-    PROVISION_TABLE_NAME: provisionTableName = '',
+    CONSUMER_TABLE_NAME: consumerTableName = '',
+    SUBSCRIPTION_TABLE_NAME: subscriptionTableName = '',
     DELEGATION_TABLE_NAME: delegationTableName = '',
     DELEGATION_BUCKET_NAME: delegationBucketName = '',
     INVOCATION_BUCKET_NAME: invocationBucketName = '',
@@ -111,6 +114,12 @@ export async function ucanInvocationRouter (request) {
   const taskBucket = createTaskStore(AWS_REGION, taskBucketName)
   const workflowBucket = createWorkflowStore(AWS_REGION, workflowBucketName)
   const delegationBucket = createDelegationsStore(AWS_REGION, delegationBucketName)
+  const subscriptionTable = createSubscriptionTable(AWS_REGION, subscriptionTableName, {
+    endpoint: dbEndpoint
+  });
+  const consumerTable = createConsumerTable(AWS_REGION, consumerTableName, {
+    endpoint: dbEndpoint
+  });
 
   const server = createUcantoServer(serviceSigner, {
     codec,
@@ -137,7 +146,7 @@ export async function ucanInvocationRouter (request) {
     // TODO: we should set URL from a different env var, doing this for now to avoid that refactor
     url: new URL(accessServiceURL),
     email: new Email({ token: postmarkToken }),
-    provisionsStorage: createProvisionsTable(AWS_REGION, provisionTableName, [
+    provisionsStorage: useProvisionStore(subscriptionTable, consumerTable, [
       /** @type {import('@web3-storage/upload-api').ServiceDID} */
       (accessServiceDID)
     ]),

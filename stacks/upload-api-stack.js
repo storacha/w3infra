@@ -23,7 +23,7 @@ export function UploadApiStack({ stack, app }) {
 
   // Get references to constructs created in other stacks
   const { carparkBucket } = use(CarparkStack)
-  const { storeTable, uploadTable, provisionTable, delegationTable, adminMetricsTable } = use(UploadDbStack)
+  const { storeTable, uploadTable, delegationTable, adminMetricsTable, consumerTable, subscriptionTable } = use(UploadDbStack)
   const { invocationBucket, taskBucket, workflowBucket, ucanStream } = use(UcanInvocationStack)
 
   // Resources for this stack
@@ -48,7 +48,6 @@ export function UploadApiStack({ stack, app }) {
         permissions: [
           storeTable,
           uploadTable,
-          provisionTable,
           delegationTable,
           delegationBucket,
           adminMetricsTable,
@@ -62,7 +61,8 @@ export function UploadApiStack({ stack, app }) {
           STORE_TABLE_NAME: storeTable.tableName,
           STORE_BUCKET_NAME: carparkBucket.bucketName,
           UPLOAD_TABLE_NAME: uploadTable.tableName,
-          PROVISION_TABLE_NAME: provisionTable.tableName,
+          CONSUMER_TABLE_NAME: consumerTable.tableName,
+          SUBSCRIPTION_TABLE_NAME: subscriptionTable.tableName,
           DELEGATION_TABLE_NAME: delegationTable.tableName,
           DELEGATION_BUCKET_NAME: delegationBucket.bucketName,
           INVOCATION_BUCKET_NAME: invocationBucket.bucketName,

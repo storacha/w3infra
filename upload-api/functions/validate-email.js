@@ -2,9 +2,11 @@ import * as Sentry from '@sentry/serverless'
 import { authorize } from '@web3-storage/upload-api/validate'
 import { getServiceSigner } from '../config.js'
 import { Email } from '../email.js'
-import { createProvisionsTable } from '../tables/provisions.js'
 import { createDelegationsTable } from '../tables/delegations.js'
 import { createDelegationsStore } from '../buckets/delegations-store.js'
+import { createSubscriptionTable } from '../tables/subscription.js'
+import { createConsumerTable } from '../tables/consumer.js'
+import { useProvisionStore } from '../stores/provisions.js'
 import {
   HtmlResponse,
   ValidateEmail,
@@ -44,17 +46,26 @@ function createAuthorizeContext () {
     DELEGATION_BUCKET_NAME = '',
     POSTMARK_TOKEN = '',
     PRIVATE_KEY = '',
-    PROVISION_TABLE_NAME = '',
-    UPLOAD_API_DID = ''
+    SUBSCRIPTION_TABLE_NAME = '',
+    CONSUMER_TABLE_NAME = '',
+    UPLOAD_API_DID = '',
+    // set for testing
+    DYNAMO_DB_ENDPOINT: dbEndpoint,
   } = process.env
   const delegationBucket = createDelegationsStore(AWS_REGION, DELEGATION_BUCKET_NAME)
+  const subscriptionTable = createSubscriptionTable(AWS_REGION, SUBSCRIPTION_TABLE_NAME, {
+    endpoint: dbEndpoint
+  });
+  const consumerTable = createConsumerTable(AWS_REGION, CONSUMER_TABLE_NAME, {
+    endpoint: dbEndpoint
+  });
   return {
     // TODO: we should set URL from a different env var, doing this for now to avoid that refactor
     url: new URL(ACCESS_SERVICE_URL),
     email: new Email({ token: POSTMARK_TOKEN }),
     signer: getServiceSigner({ UPLOAD_API_DID, PRIVATE_KEY }),
     delegationsStorage: createDelegationsTable(AWS_REGION, DELEGATION_TABLE_NAME, delegationBucket),
-    provisionsStorage: createProvisionsTable(AWS_REGION, PROVISION_TABLE_NAME, [
+    provisionsStorage: useProvisionStore(subscriptionTable, consumerTable, [
       /** @type {import('@web3-storage/upload-api').ServiceDID} */
       (ACCESS_SERVICE_DID)
     ]),
