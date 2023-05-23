@@ -19,6 +19,12 @@ export async function randomBytes(size) {
   return bytes
 }
 
+export async function randomCID() {
+  const bytes = await randomBytes(10)
+  const hash = await sha256.digest(bytes)
+  return CID.create(1, raw.code, hash)
+}
+
 /** @param {number} size */
 export async function randomCAR(size) {
   const bytes = await randomBytes(size)

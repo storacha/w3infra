@@ -30,7 +30,7 @@ export const uploadTableProps = {
 /** @type TableProps */
 export const delegationTableProps = {
   fields: {
-    cid: 'string',        // `baf...x`
+    link: 'string',        // `baf...x`
     audience: 'string',   // `did:web:service`
     issuer: 'string',     // `did:key:agent`
     expiration: 'string', // `9256939505` (unix timestamp)
@@ -39,7 +39,7 @@ export const delegationTableProps = {
   },
   // TODO does this index setup seem right?
   // we want to query by audience, but that won't necessarily be unique, so use cid as sortKey
-  primaryIndex: { partitionKey: 'audience', sortKey: 'cid' },
+  primaryIndex: { partitionKey: 'audience', sortKey: 'link' },
 }
 
 /** @type TableProps */
@@ -64,27 +64,33 @@ export const provisionTableProps = {
 /** @type TableProps */
 export const subscriptionTableProps = {
   fields: {
-    cause: 'string',        // `baf...x` (CID of invocation that created this provision)
+    cause: 'string',        // `baf...x` (CID of invocation that created this subscription)
     provider: 'string',   // `did:web:service` (DID of the provider, e.g. a storage provider)
     customer: 'string',   // `did:mailto:agent` (DID of the user account)
-    order: 'string',      // string (arbitrary string associated with this subscription)
+    subscription: 'string',      // string (arbitrary string associated with this subscription)
     insertedAt: 'string', // `2022-12-24T...`
     updatedAt: 'string',  // `2022-12-24T...`
   },
   // TODO does this index setup seem right?
-  primaryIndex: { partitionKey: 'provider', sortKey: 'order' },
+  primaryIndex: { partitionKey: 'customer', sortKey: 'subscription' },
+  globalIndexes: {
+    provider: { partitionKey: 'provider', projection: ['customer'] }
+  }
 }
 
 /** @type TableProps */
 export const consumerTableProps = {
   fields: {
-    cause: 'string',        // `baf...x` (CID of invocation that created this provision)
+    cause: 'string',        // `baf...x` (CID of invocation that created this consumer record)
     consumer: 'string',   // `did:key:space` (DID of the actor that is consuming the provider, e.g. a space DID)
     provider: 'string',   // `did:web:service` (DID of the provider, e.g. a storage provider)
-    order: 'string',      // string (arbitrary string associated with this subscription)
+    subscription: 'string',      // string (arbitrary string associated with this subscription)
     insertedAt: 'string', // `2022-12-24T...`
     updatedAt: 'string',  // `2022-12-24T...`
   },
   // TODO does this index setup seem right?
-  primaryIndex: { partitionKey: 'provider', sortKey: 'order' },
+  primaryIndex: { partitionKey: 'consumer', sortKey: 'subscription' },
+  globalIndexes: {
+    provider: { partitionKey: 'provider', projection: ['consumer'] }
+  }
 }

@@ -1,5 +1,5 @@
 import * as UCAN from '@ipld/dag-ucan'
-import { DID, Link, Delegation, Signature, Block } from '@ucanto/interface'
+import { DID, Link, Delegation, Signature, Block, UCANLink, ByteView } from '@ucanto/interface'
 import { UnknownLink } from 'multiformats'
 import { CID } from 'multiformats/cid'
 import { Kinesis } from '@aws-sdk/client-kinesis'
@@ -46,8 +46,49 @@ export interface WorkflowBucket {
 }
 
 export interface DelegationsBucket {
-  put: (cid: CID, bytes: Uint8Array) => Promise<void>
-  get: (cid: CID) => Promise<Uint8Array|undefined>
+  put: (cid: CID, bytes: ByteView<Delegation>) => Promise<void>
+  get: (cid: CID) => Promise<ByteView<Delegation>|undefined>
+}
+
+export interface SubscriptionInput {
+  customer: DID,
+  provider: DID,
+  subscription: string,
+  cause: UCANLink
+}
+
+export interface Subscription {
+
+}
+
+export interface SubscriptionTable {
+  insert: (consumer: SubscriptionInput) => Promise<Subscription>
+  count: () => Promise<bigint>
+}
+
+export interface UnstableSubscriptionTable extends SubscriptionTable {
+  findCustomersByProvider: (provider: DID) => Promise<DID[]>
+}
+
+export interface ConsumerInput {
+  consumer: DID,
+  provider: DID,
+  subscription: string,
+  cause: UCANLink
+}
+
+export interface Consumer {
+
+}
+
+export interface ConsumerTable {
+  insert: (consumer: ConsumerInput) => Promise<Consumer>
+  count: () => Promise<bigint>
+  hasStorageProvider: (consumer: DID) => Promise<boolean>
+}
+
+export interface UnstableConsumerTable extends ConsumerTable {
+  findConsumersByProvider: (provider: DID) => Promise<DID[]>
 }
 
 export interface UcanInvocation {

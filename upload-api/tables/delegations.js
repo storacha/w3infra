@@ -6,13 +6,14 @@ import {
   DescribeTableCommand,
 } from '@aws-sdk/client-dynamodb'
 import { marshall, unmarshall } from '@aws-sdk/util-dynamodb'
-import * as Ucanto from '@ucanto/interface'
 
 import { CID } from 'multiformats/cid'
 import {
   bytesToDelegations,
   delegationsToBytes
 } from '@web3-storage/access/encoding'
+// eslint-disable-next-line no-unused-vars
+import * as Ucanto from '@ucanto/interface'
 
 /**
  * @typedef {Ucanto.Delegation} Delegation
@@ -87,14 +88,14 @@ export function useDelegationsTable (dynamoDb, tableName, bucket) {
             AttributeValueList: [{ S: query.audience }]
           }
         },
-        AttributesToGet: ['cid']
+        AttributesToGet: ['link']
       })
       const response = await dynamoDb.send(cmd)
 
       const delegations = []
       for (const result of response.Items ?? []) {
-        const { cid } = unmarshall(result)
-        delegations.push(await cidToDelegation(bucket, CID.parse(cid)))
+        const { link } = unmarshall(result)
+        delegations.push(await cidToDelegation(bucket, CID.parse(link)))
       }
       return {
         ok: delegations
@@ -104,14 +105,12 @@ export function useDelegationsTable (dynamoDb, tableName, bucket) {
 }
 
 /**
- * TODO: fix the return type to use CID and DID string types
- * 
  * @param {Delegation} d
- * @returns {{cid: string, audience: string, issuer: string}}}
+ * @returns {{link: string, audience: string, issuer: string}}}
  */
 function createDelegationItem (d) {
   return {
-    cid: d.cid.toString(),
+    link: d.cid.toString(),
     audience: d.audience.did(),
     issuer: d.issuer.did(),
   }
@@ -120,7 +119,7 @@ function createDelegationItem (d) {
 /** 
  * @param {import('../types').DelegationsBucket} bucket
  * @param {CID} cid
- * @returns {Promise<import('@ucanto/interface').Delegation>}
+ * @returns {Promise<Ucanto.Delegation>}
  */
 async function cidToDelegation (bucket, cid) {
   const delegationCarBytes = await bucket.get(cid)

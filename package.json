@@ -23,14 +23,14 @@
     "@serverless-stack/resources": "^1.18.0",
     "@tsconfig/node16": "^1.0.3",
     "@types/git-rev-sync": "^2.0.0",
-    "@ucanto/client": "^7.0.1",
-    "@ucanto/core": "^7.1.1",
-    "@ucanto/interface": "^7.1.0",
-    "@ucanto/principal": "^7.0.0",
-    "@ucanto/transport": "^7.0.3",
+    "@ucanto/client": "^8.0.0",
+    "@ucanto/core": "^8.0.0",
+    "@ucanto/interface": "^8.0.0",
+    "@ucanto/principal": "^8.0.0",
+    "@ucanto/transport": "^8.0.0",
+    "@ucanto/validator": "^8.0.0",
     "@web-std/blob": "^3.0.4",
     "@web-std/fetch": "^4.1.0",
-    "@web3-storage/access": "^13.0.0",
     "@web3-storage/w3up-client": "^6.0.0",
     "ava": "^4.3.3",
     "dotenv": "^16.0.3",
@@ -53,10 +53,13 @@
   },
   "eslintConfig": {
     "extends": [
-      "./node_modules/hd-scripts/eslint/index.js"
+      "./node_modules/hd-scripts/eslint/preact.js"
     ],
     "parserOptions": {
-      "project": "./tsconfig.json"
+      "project": "./tsconfig.json",
+      "ecmaFeatures": {
+        "jsx": true
+      }
     },
     "rules": {
       "unicorn/prefer-number-properties": "off",
@@ -72,6 +75,7 @@
       "unicorn/explicit-length-check": "off",
       "unicorn/prefer-type-error": "off",
       "unicorn/no-zero-fractions": "off",
+      "unicorn/expiring-todo-comments": "off",
       "eqeqeq": "off",
       "no-new": "off",
       "no-void": "off",
@@ -79,7 +83,9 @@
       "no-continue": "off",
       "no-warning-comments": "off",
       "jsdoc/check-indentation": "off",
-      "jsdoc/require-hyphen-before-param-description": "off"
+      "jsdoc/require-hyphen-before-param-description": "off",
+      "react-hooks/rules-of-hooks": "off",
+      "react/no-danger": "off"
     }
   },
   "workspaces": [

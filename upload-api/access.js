@@ -1,4 +1,4 @@
-import * as Space from '@web3-storage/capabilities/space'
+import { Space } from '@web3-storage/capabilities'
 import { connect } from '@ucanto/client'
 import { Failure } from '@ucanto/server'
 import { CAR, HTTP } from '@ucanto/transport'
@@ -24,27 +24,21 @@ export function createAccessClient(issuer, serviceDID, serviceURL) {
       // if info capability is derivable from the passed capability, then we'll
       // receive a response and know that the invocation issuer has verified
       // themselves with w3access.
-      const info = Space.info.invoke({
-        issuer,
-        audience: serviceDID,
-        // @ts-expect-error
-        with: invocation.capabilities[0].with,
-        proofs: [invocation],
-      })
+      const { out: result } = await Space.info
+        .invoke({
+          issuer,
+          audience: serviceDID,
+          // @ts-expect-error
+          with: invocation.capabilities[0].with,
+          proofs: [invocation],
+        })
+        .execute(conn)
 
-      const { out: result } = await info.execute(conn)
-
-      if (result.error) {
-        return result.error.name === 'SpaceUnknown'
-          ? {
-              error: new Failure(`Space has no storage provider`, {
-                cause: result,
-              }),
-            }
-          : result
-      } else {
-        return { ok: {} }
-      }
+      return result.error ? ({
+          error: new Failure(`Failed to get info about space, could not allocate.`, {
+            cause: result.error
+          })
+        }) : { ok: {} };
     },
   }
 }

@@ -1,5 +1,4 @@
 import {
-  DynamoDBClient,
   QueryCommand,
   PutItemCommand,
   DescribeTableCommand,
@@ -7,23 +6,8 @@ import {
 import { Failure } from '@ucanto/server'
 import { marshall, } from '@aws-sdk/util-dynamodb'
 
-/**
- * Abstraction layer to handle operations on Provision Table.
- *
- * @param {string} region
- * @param {string} tableName
- * @param {import('@ucanto/interface').DID<'web'>[]} services
- * @param {object} [options]
- * @param {string} [options.endpoint]
- */
-export function createProvisionsTable (region, tableName, services, options = {}) {
-  const dynamoDb = new DynamoDBClient({
-    region,
-    endpoint: options.endpoint,
-  })
-
-  return useProvisionsTable(dynamoDb, tableName, services)
-}
+import { ConflictError as ConsumerConflictError } from '../tables/consumer.js'
+import { ConflictError as SubscriptionConflictError } from '../tables/subscription.js'
 
 class ConflictError extends Failure {
   /**
@@ -37,77 +21,69 @@ class ConflictError extends Failure {
 }
 
 /**
- * @param {DynamoDBClient} dynamoDb
- * @param {string} tableName
+ * @param {import('../types').SubscriptionTable} subscriptionTable
+ * @param {import('../types').ConsumerTable} consumerTable
  * @param {import('@ucanto/interface').DID<'web'>[]} services
  * @returns {import('@web3-storage/upload-api').ProvisionsStorage}
  */
-export function useProvisionsTable (dynamoDb, tableName, services) {
+export function useProvisionStore (subscriptionTable, consumerTable, services) {
   return {
     services,
-    hasStorageProvider: async (consumer) => {
-      const cmd = new QueryCommand({
-        TableName: tableName,
-        KeyConditions: {
-          consumer: {
-            ComparisonOperator: 'EQ',
-            AttributeValueList: [{ S: consumer }]
-          }
-        },
-        AttributesToGet: ['cid']
-      })
-      const response = await dynamoDb.send(cmd)
-      const itemCount = response.Items?.length || 0
-      return { ok: itemCount > 0 }
-    },
+    hasStorageProvider: async (consumer) => (
+      { ok: await consumerTable.hasStorageProvider(consumer) }
+    ),
+
     put: async (item) => {
-      const row = {
-        cid: item.cause.cid.toString(),
-        consumer: item.consumer,
-        provider: item.provider,
-        customer: item.customer,
-      }
+      const { cause, consumer, customer, provider } = item
+      // by setting subscription to customer we make it so each customer can have at most one subscription
+      // TODO is this what we want?
+      const subscription = customer
+
       try {
-        await dynamoDb.send(new PutItemCommand({
-          TableName: tableName,
-          Item: marshall(row),
-          ConditionExpression: `attribute_not_exists(consumer) OR ((cid = :cid) AND (consumer = :consumer) AND (provider = :provider) AND (customer = :customer))`,
-          ExpressionAttributeValues: {
-            ':cid': { 'S': row.cid },
-            ':consumer': { 'S': row.consumer },
-            ':provider': { 'S': row.provider },
-            ':customer': { 'S': row.customer }
-          }
-        }))
+        await subscriptionTable.insert({
+          cause: cause.cid,
+          provider,
+          customer,
+          subscription
+        })
       } catch (error) {
-        if (error instanceof Error && error.message === 'The conditional request failed') {
+        // if we got a conflict error, ignore - it means the subscription already exists and
+        // can be used to create a consumer/provider relationship below
+        if (!(error instanceof SubscriptionConflictError)) {
+          throw error
+        }
+      }
+
+      try {
+        await consumerTable.insert({
+          cause: cause.cid,
+          provider,
+          consumer,
+          subscription
+        })
+        return { ok: {} }
+      } catch (error) {
+        if (error instanceof ConsumerConflictError) {
           return {
-            error: new ConflictError({
-              message: `Space ${row.consumer} cannot be provisioned with ${row.provider}: it already has a provider. If you have the capabilities, you can already upload to this space.`
-            })
+            error
           }
         } else {
           throw error
         }
       }
-      return { ok: {} }
     },
 
     /**
      * get number of stored items
      */
     count: async () => {
-      const result = await dynamoDb.send(new DescribeTableCommand({
-        TableName: tableName
-      }))
-
-      return BigInt(result.Table?.ItemCount ?? -1)
+      return consumerTable.count()
     }
   }
 }
 
 /**
- * @param {DynamoDBClient} dynamoDb
+ * @param {import('@aws-sdk/client-dynamodb').DynamoDBClient} dynamoDb
  * @param {string} subscriptionsTableName
  * @param {string} consumersTableName
  * @param {import('@ucanto/interface').DID<'web'>[]} services
@@ -131,6 +107,7 @@ export function useProvisionsStorage (dynamoDb, subscriptionsTableName, consumer
       const itemCount = response.Items?.length || 0
       return { ok: itemCount > 0 }
     },
+
     put: async (item) => {
       const row = {
         cid: item.cause.cid.toString(),
