@@ -43,25 +43,6 @@ export const delegationTableProps = {
 }
 
 /** @type TableProps */
-export const provisionTableProps = {
-  fields: {
-    cid: 'string',        // `baf...x` (CID of invocation that created this provision)
-    consumer: 'string',   // `did:key:space` (DID of the actor that is consuming the provider, e.g. a space DID)
-    provider: 'string',   // `did:web:service` (DID of the provider, e.g. a storage provider)
-    customer: 'string',    // `did:key:agent` (DID of the actor that authorized this provision)
-    insertedAt: 'string', // `2022-12-24T...`
-    updatedAt: 'string',  // `2022-12-24T...`
-  },
-  // TODO does this index setup seem right?
-  // we want to query by consumer, and I think it should be unique?
-  // TODO also are we sure that a single invocation will only create a single provision? the D1 schema used CID as a PRIMARY KEY so I think this should be fine, but will it always be true?
-  primaryIndex: { partitionKey: 'consumer' },
-}
-
-/** VS */
-
-
-/** @type TableProps */
 export const subscriptionTableProps = {
   fields: {
     cause: 'string',        // `baf...x` (CID of invocation that created this subscription)
