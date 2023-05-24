@@ -4,8 +4,11 @@ import { getServiceSigner } from '../config.js'
 import { Email } from '../email.js'
 import { createDelegationsTable } from '../tables/delegations.js'
 import { createDelegationsStore } from '../buckets/delegations-store.js'
+import { createInvocationStore } from '../buckets/invocation-store.js'
+import { createWorkflowStore } from '../buckets/workflow-store.js'
 import { createSubscriptionTable } from '../tables/subscription.js'
 import { createConsumerTable } from '../tables/consumer.js'
+
 import { useProvisionStore } from '../stores/provisions.js'
 import {
   HtmlResponse,
@@ -44,6 +47,8 @@ function createAuthorizeContext () {
     AWS_REGION = '',
     DELEGATION_TABLE_NAME = '',
     DELEGATION_BUCKET_NAME = '',
+    INVOCATION_BUCKET_NAME = '',
+    WORKFLOW_BUCKET_NAME = '',
     POSTMARK_TOKEN = '',
     PRIVATE_KEY = '',
     SUBSCRIPTION_TABLE_NAME = '',
@@ -52,6 +57,11 @@ function createAuthorizeContext () {
     // set for testing
     DYNAMO_DB_ENDPOINT: dbEndpoint,
   } = process.env
+  const invocationBucket = createInvocationStore(
+    AWS_REGION,
+    INVOCATION_BUCKET_NAME
+  )
+  const workflowBucket = createWorkflowStore(AWS_REGION, WORKFLOW_BUCKET_NAME)
   const delegationBucket = createDelegationsStore(AWS_REGION, DELEGATION_BUCKET_NAME)
   const subscriptionTable = createSubscriptionTable(AWS_REGION, SUBSCRIPTION_TABLE_NAME, {
     endpoint: dbEndpoint
@@ -64,7 +74,7 @@ function createAuthorizeContext () {
     url: new URL(ACCESS_SERVICE_URL),
     email: new Email({ token: POSTMARK_TOKEN }),
     signer: getServiceSigner({ UPLOAD_API_DID, PRIVATE_KEY }),
-    delegationsStorage: createDelegationsTable(AWS_REGION, DELEGATION_TABLE_NAME, delegationBucket),
+    delegationsStorage: createDelegationsTable(AWS_REGION, DELEGATION_TABLE_NAME, delegationBucket, invocationBucket, workflowBucket),
     provisionsStorage: useProvisionStore(subscriptionTable, consumerTable, [
       /** @type {import('@web3-storage/upload-api').ServiceDID} */
       (ACCESS_SERVICE_DID)

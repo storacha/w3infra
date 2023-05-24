@@ -150,7 +150,7 @@ export async function ucanInvocationRouter (request) {
       /** @type {import('@web3-storage/upload-api').ServiceDID} */
       (accessServiceDID)
     ]),
-    delegationsStorage: createDelegationsTable(AWS_REGION, delegationTableName, delegationBucket)
+    delegationsStorage: createDelegationsTable(AWS_REGION, delegationTableName, delegationBucket, invocationBucket, workflowBucket)
   })
 
   const processingCtx = {
