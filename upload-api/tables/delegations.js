@@ -106,8 +106,8 @@ export function useDelegationsTable (dynamoDb, tableName, bucket, invocationBuck
         if (cause) {
           delegations.push(await findDelegationInInvocation(
             invocationBucket, workflowBucket,
-            CID.parse(cause), delegationCid)
-          )
+            CID.parse(cause), delegationCid
+          ))
         } else {
           delegations.push(await cidToDelegation(bucket, delegationCid))
         }
