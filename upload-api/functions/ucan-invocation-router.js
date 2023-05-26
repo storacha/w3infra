@@ -19,7 +19,7 @@ import { CAR, Legacy, Codec } from '@ucanto/transport'
 import { Email } from '../email.js'
 import { useProvisionStore } from '../stores/provisions.js'
 import { createDelegationsTable } from '../tables/delegations.js'
-import { createDelegationsStore } from '../buckets/delegations-store.js'
+import { useR2DelegationsStore } from '../buckets/delegations-store.js'
 import { createSubscriptionTable } from '../tables/subscription.js'
 import { createConsumerTable } from '../tables/consumer.js'
 
@@ -86,6 +86,9 @@ export async function ucanInvocationRouter (request) {
     SUBSCRIPTION_TABLE_NAME: subscriptionTableName = '',
     DELEGATION_TABLE_NAME: delegationTableName = '',
     DELEGATION_BUCKET_NAME: delegationBucketName = '',
+    R2_DELEGATION_BUCKET_ENDPOINT: r2DelegationBucketEndpoint = '',
+    R2_DELEGATION_BUCKET_ACCESS_KEY_ID: r2DelegationBucketAccessKeyId = '',
+    R2_DELEGATION_BUCKET_SECRET_ACCESS_KEY: r2DelegationBucketSecretAccessKey = '',
     INVOCATION_BUCKET_NAME: invocationBucketName = '',
     TASK_BUCKET_NAME: taskBucketName = '',
     WORKFLOW_BUCKET_NAME: workflowBucketName = '',
@@ -113,7 +116,7 @@ export async function ucanInvocationRouter (request) {
   )
   const taskBucket = createTaskStore(AWS_REGION, taskBucketName)
   const workflowBucket = createWorkflowStore(AWS_REGION, workflowBucketName)
-  const delegationBucket = createDelegationsStore(AWS_REGION, delegationBucketName)
+  const delegationBucket = useR2DelegationsStore(r2DelegationBucketEndpoint, r2DelegationBucketAccessKeyId, r2DelegationBucketSecretAccessKey, delegationBucketName)
   const subscriptionTable = createSubscriptionTable(AWS_REGION, subscriptionTableName, {
     endpoint: dbEndpoint
   });

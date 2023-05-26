@@ -24,6 +24,25 @@ export function createDelegationsStore(region, bucketName, options = {}) {
 }
 
 /**
+ * 
+ * @param {string} endpoint 
+ * @param {string} accessKeyId 
+ * @param {string} secretAccessKey 
+ * @param {string} bucketName
+ */
+export function useR2DelegationsStore(endpoint, accessKeyId, secretAccessKey, bucketName){
+  const s3Client = new S3Client({
+    region: 'auto',
+    endpoint,
+    credentials: {
+      accessKeyId,
+      secretAccessKey,
+    },
+  })
+  return useDelegationsStore(s3Client, bucketName)
+}
+
+/**
  * @param { CID} cid
  */
 function createDelegationsBucketKey (cid) {
