@@ -112,6 +112,22 @@ export function useSubscriptionTable (dynamoDb, tableName) {
       return response.Items ? (
         response.Items.map(item => /** @type { import('@ucanto/interface').DID } */ (item.customer.S))
       ) : []
+    },
+
+    findCustomerForSubscription: async (subscription) => {
+      const cmd = new QueryCommand({
+        TableName: tableName,
+        IndexName: 'subscription',
+        KeyConditions: {
+          subscription: {
+            ComparisonOperator: 'EQ',
+            AttributeValueList: [{ S: subscription }]
+          }
+        },
+        AttributesToGet: ['customer']
+      })
+      const response = await dynamoDb.send(cmd)
+      return response.Items ? /** @type { import('@ucanto/interface').DID } */ (response.Items[0].customer.S) : undefined
     }
   }
 }

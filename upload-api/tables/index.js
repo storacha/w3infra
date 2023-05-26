@@ -55,7 +55,10 @@ export const subscriptionTableProps = {
   // TODO does this index setup seem right?
   primaryIndex: { partitionKey: 'customer', sortKey: 'subscription' },
   globalIndexes: {
-    provider: { partitionKey: 'provider', projection: ['customer'] }
+    // TODO: I don't think we should keep this index - partitioning by provider is basically useless and won't be much faster than a table scan
+    provider: { partitionKey: 'provider', projection: ['customer'] },
+    subscription: { partitionKey: 'subscription', projection: ['customer'] }
+
   }
 }
 
