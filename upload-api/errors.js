@@ -47,6 +47,24 @@ export class NoCarFoundForGivenReceiptError extends HTTPError {
 }
 NoCarFoundForGivenReceiptError.CODE = 'ERROR_CAR_NOT_FOUND_FOR_RECEIPT'
 
+export class NoInvocationFoundForGivenCidError extends HTTPError {
+  constructor (msg = 'No invocation found for CID') {
+    super(msg, 404)
+    this.name = 'NoInvocationFoundForGivenCid'
+    this.code = NoInvocationFoundForGivenCidError.CODE
+  }
+}
+NoInvocationFoundForGivenCidError.CODE = 'ERROR_INVOCATION_NOT_FOUND_FOR_CID'
+
+export class NoDelegationFoundForGivenCidError extends HTTPError {
+  constructor (msg = 'No delegation found for CID') {
+    super(msg, 404)
+    this.name = 'NoDelegationFoundForGivenCid'
+    this.code = NoDelegationFoundForGivenCidError.CODE
+  }
+}
+NoDelegationFoundForGivenCidError.CODE = 'ERROR_DELEGATION_NOT_FOUND_FOR_CID'
+
 export class NoTokenError extends HTTPError {
   constructor (msg = 'No token found in `Authorization: Basic ` header') {
     super(msg, 401)

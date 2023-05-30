@@ -3,7 +3,7 @@ import { authorize } from '@web3-storage/upload-api/validate'
 import { getServiceSigner } from '../config.js'
 import { Email } from '../email.js'
 import { createDelegationsTable } from '../tables/delegations.js'
-import { createDelegationsStore } from '../buckets/delegations-store.js'
+import { createR2DelegationsStore } from '../buckets/delegations-store.js'
 import { createInvocationStore } from '../buckets/invocation-store.js'
 import { createWorkflowStore } from '../buckets/workflow-store.js'
 import { createSubscriptionTable } from '../tables/subscription.js'
@@ -62,7 +62,7 @@ function createAuthorizeContext () {
     INVOCATION_BUCKET_NAME
   )
   const workflowBucket = createWorkflowStore(AWS_REGION, WORKFLOW_BUCKET_NAME)
-  const delegationBucket = createDelegationsStore(AWS_REGION, DELEGATION_BUCKET_NAME)
+  const delegationBucket = createR2DelegationsStore(AWS_REGION, DELEGATION_BUCKET_NAME)
   const subscriptionTable = createSubscriptionTable(AWS_REGION, SUBSCRIPTION_TABLE_NAME, {
     endpoint: dbEndpoint
   });

@@ -85,10 +85,10 @@ export async function ucanInvocationRouter (request) {
     CONSUMER_TABLE_NAME: consumerTableName = '',
     SUBSCRIPTION_TABLE_NAME: subscriptionTableName = '',
     DELEGATION_TABLE_NAME: delegationTableName = '',
-    DELEGATION_BUCKET_NAME: delegationBucketName = '',
     R2_DELEGATION_BUCKET_ENDPOINT: r2DelegationBucketEndpoint = '',
     R2_DELEGATION_BUCKET_ACCESS_KEY_ID: r2DelegationBucketAccessKeyId = '',
     R2_DELEGATION_BUCKET_SECRET_ACCESS_KEY: r2DelegationBucketSecretAccessKey = '',
+    R2_DELEGATION_BUCKET_NAME: r2DelegationBucketName = '',
     INVOCATION_BUCKET_NAME: invocationBucketName = '',
     TASK_BUCKET_NAME: taskBucketName = '',
     WORKFLOW_BUCKET_NAME: workflowBucketName = '',
@@ -116,7 +116,7 @@ export async function ucanInvocationRouter (request) {
   )
   const taskBucket = createTaskStore(AWS_REGION, taskBucketName)
   const workflowBucket = createWorkflowStore(AWS_REGION, workflowBucketName)
-  const delegationBucket = useR2DelegationsStore(r2DelegationBucketEndpoint, r2DelegationBucketAccessKeyId, r2DelegationBucketSecretAccessKey, delegationBucketName)
+  const delegationBucket = useR2DelegationsStore(r2DelegationBucketEndpoint, r2DelegationBucketAccessKeyId, r2DelegationBucketSecretAccessKey, r2DelegationBucketName)
   const subscriptionTable = createSubscriptionTable(AWS_REGION, subscriptionTableName, {
     endpoint: dbEndpoint
   });

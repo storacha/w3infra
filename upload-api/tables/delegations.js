@@ -15,8 +15,8 @@ import {
 // eslint-disable-next-line no-unused-vars
 import * as Ucanto from '@ucanto/interface'
 import {
-  NoInvocationFoundForGivenReceiptError,
-  NoCarFoundForGivenReceiptError,
+  NoInvocationFoundForGivenCidError,
+  NoDelegationFoundForGivenCidError
 } from '../errors.js'
 
 /**
@@ -169,14 +169,14 @@ async function findDelegationInInvocation (invocationBucket, workflowBucket, inv
   )
 
   if (!agentMessageWithInvocationCid) {
-    throw new NoCarFoundForGivenReceiptError()
+    throw new NoInvocationFoundForGivenCidError()
   }
 
   const agentMessageBytes = await workflowBucket.get(
     agentMessageWithInvocationCid
   )
   if (!agentMessageBytes) {
-    throw new NoCarFoundForGivenReceiptError()
+    throw new NoInvocationFoundForGivenCidError()
   }
 
   const agentMessage = await CAR.request.decode({
@@ -188,7 +188,7 @@ async function findDelegationInInvocation (invocationBucket, workflowBucket, inv
   )
 
   if (!invocation) {
-    throw new NoInvocationFoundForGivenReceiptError()
+    throw new NoInvocationFoundForGivenCidError()
   }
 
   const proofDelegations = invocation.proofs.flatMap((proof) =>
@@ -197,7 +197,7 @@ async function findDelegationInInvocation (invocationBucket, workflowBucket, inv
   const foundDelegation = proofDelegations.find(proof => proof.cid)
 
   if (!foundDelegation) {
-    throw new NoInvocationFoundForGivenReceiptError()
+    throw new NoDelegationFoundForGivenCidError()
   }
 
   return foundDelegation

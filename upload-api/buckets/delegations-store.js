@@ -15,7 +15,7 @@ import { base32 } from 'multiformats/bases/base32'
  * @param {string} bucketName
  * @param {import('@aws-sdk/client-s3').ServiceInputTypes} [options]
  */
-export function createDelegationsStore(region, bucketName, options = {}) {
+export function createR2DelegationsStore(region, bucketName, options = {}) {
   const s3client = new S3Client({
     region,
     ...options,
