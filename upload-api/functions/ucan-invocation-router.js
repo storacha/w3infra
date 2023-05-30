@@ -164,36 +164,50 @@ export async function ucanInvocationRouter (request) {
     kinesisClient,
   }
 
-  const payload = {
-    headers: /** @type {Record<string, string>} */ (request.headers),
-    body: Buffer.from(request.body, 'base64'),
-  }
+  const payload = fromLambdaRequest(request)
 
   const result = server.codec.accept(payload)
-  // TODO: better error handling
+  // if we can not select a codec we respond with error.
   if (result.error) {
-    throw result.error
+    return toLambdaResponse({
+      status: result.error.status,
+      headers: result.error.headers || {},
+      body: Buffer.from(result.error.message || ''),
+    })
   }
 
-  const connection = result.ok
+  const { encoder, decoder } = result.ok
 
+  const contentType = payload.headers['content-type']
   // Process workflow
   // We block until we can log the UCAN invocation if this fails we return a 500
   // to the client. That is because in the future we expect that invocations will
   // be written to a queue first and then processed asynchronously, so if we
   // fail to queue the invocation we should not handle it.
   const incoming = await processAgentMessageArchive(
-    CAR.request.encode(await connection.decoder.decode(payload)),
+    // If the `content-type` is set to `application/vnd.ipld.car` use CAR codec
+    // format is already up to date so we pass payload as is. Otherwise we
+    // transform the payload into modern CAR format.
+    contentType === CAR.contentType
+      ? payload
+      : CAR.request.encode(await decoder.decode(payload)),
     processingCtx
   )
 
   // Execute invocations
   const outgoing = await Server.execute(incoming, server)
 
-  await processAgentMessageArchive(CAR.response.encode(outgoing), processingCtx)
-  const response = await connection.encoder.encode(outgoing)
+  const response = await encoder.encode(outgoing)
+  await processAgentMessageArchive(
+    // If response is already in CAR format we pass it as is. Otherwise we
+    // transform the response into legacy CAR format.
+    response.headers['content-type'] === CAR.contentType
+      ? response
+      : CAR.response.encode(outgoing),
+    processingCtx
+  )
 
-  return toLambdaSuccessResponse(response)
+  return toLambdaResponse(response)
 }
 
 export const handler = Sentry.AWSLambda.wrapHandler(ucanInvocationRouter)
@@ -201,7 +215,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(ucanInvocationRouter)
 /**
  * @param {API.HTTPResponse} response
  */
-export function toLambdaSuccessResponse ({ status = 200, headers, body }) {
+export function toLambdaResponse({ status = 200, headers, body }) {
   return {
     statusCode: status,
     headers,
@@ -209,3 +223,11 @@ export function toLambdaSuccessResponse ({ status = 200, headers, body }) {
     isBase64Encoded: true,
   }
 }
+
+/**
+ * @param {import('aws-lambda').APIGatewayProxyEventV2} request
+ */
+export const fromLambdaRequest = (request) => ({
+  headers: /** @type {Record<string, string>} */ (request.headers),
+  body: Buffer.from(request.body || '', 'base64'),
+})
