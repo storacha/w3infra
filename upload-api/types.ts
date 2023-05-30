@@ -69,6 +69,7 @@ export interface SubscriptionTable {
 export interface UnstableSubscriptionTable extends SubscriptionTable {
   findCustomersByProvider: (provider: DID) => Promise<DID[]>
   findCustomerForSubscription: (subscription: string) => Promise<DID | undefined>
+  findSubscriptionsForCustomer: (customer: string) => Promise<DID[] | undefined>
 }
 
 export interface ConsumerInput {
