@@ -74,7 +74,7 @@ function createAuthorizeContext () {
     url: new URL(ACCESS_SERVICE_URL),
     email: new Email({ token: POSTMARK_TOKEN }),
     signer: getServiceSigner({ UPLOAD_API_DID, PRIVATE_KEY }),
-    delegationsStorage: createDelegationsTable(AWS_REGION, DELEGATION_TABLE_NAME, delegationBucket, invocationBucket, workflowBucket),
+    delegationsStorage: createDelegationsTable(AWS_REGION, DELEGATION_TABLE_NAME, { bucket: delegationBucket, invocationBucket, workflowBucket }),
     provisionsStorage: useProvisionStore(subscriptionTable, consumerTable, [
       /** @type {import('@web3-storage/upload-api').ServiceDID} */
       (ACCESS_SERVICE_DID)

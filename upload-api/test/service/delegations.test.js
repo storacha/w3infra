@@ -27,13 +27,15 @@ testDelegationsStorageVariant(
     const invocationsBucketName = await createBucket(s3)
     const workflowBucketName = await createBucket(s3)
 
-    
+
     return useDelegationsTable(
       dynamo,
       await createTable(dynamo, delegationTableProps),
-      useDelegationsStore(s3, delegationsBucketName),
-      useInvocationStore(s3, invocationsBucketName),
-      useWorkflowStore(s3, workflowBucketName)
+      {
+        bucket: useDelegationsStore (s3, delegationsBucketName),
+        invocationBucket: useInvocationStore (s3, invocationsBucketName),
+        workflowBucket: useWorkflowStore (s3, workflowBucketName)
+      }
     )
   },
   test

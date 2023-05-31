@@ -65,6 +65,15 @@ export class NoDelegationFoundForGivenCidError extends HTTPError {
 }
 NoDelegationFoundForGivenCidError.CODE = 'ERROR_DELEGATION_NOT_FOUND_FOR_CID'
 
+export class FailedToDecodeDelegationForGivenCidError extends HTTPError {
+  constructor (msg = 'Failed to decode delegation with given CID') {
+    super(msg, 404)
+    this.name = 'FailedToDecodeDelegationForGivenCid'
+    this.code = FailedToDecodeDelegationForGivenCidError.CODE
+  }
+}
+FailedToDecodeDelegationForGivenCidError.CODE = 'ERROR_DELEGATION_DECODE_FAILED_FOR_CID'
+
 export class NoTokenError extends HTTPError {
   constructor (msg = 'No token found in `Authorization: Basic ` header') {
     super(msg, 401)
