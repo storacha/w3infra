@@ -10,27 +10,13 @@ import { base32 } from 'multiformats/bases/base32'
 
 /**
  * Abstraction layer with Factory to perform operations on bucket.
- *
- * @param {string} region
- * @param {string} bucketName
- * @param {import('@aws-sdk/client-s3').ServiceInputTypes} [options]
- */
-export function createR2DelegationsStore(region, bucketName, options = {}) {
-  const s3client = new S3Client({
-    region,
-    ...options,
-  })
-  return useDelegationsStore(s3client, bucketName)
-}
-
-/**
  * 
  * @param {string} endpoint 
  * @param {string} accessKeyId 
  * @param {string} secretAccessKey 
  * @param {string} bucketName
  */
-export function useR2DelegationsStore(endpoint, accessKeyId, secretAccessKey, bucketName){
+export function createR2DelegationsStore(endpoint, accessKeyId, secretAccessKey, bucketName){
   const s3Client = new S3Client({
     region: 'auto',
     endpoint,
