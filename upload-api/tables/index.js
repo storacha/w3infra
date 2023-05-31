@@ -30,7 +30,8 @@ export const uploadTableProps = {
 /** @type TableProps */
 export const delegationTableProps = {
   fields: {
-    link: 'string',        // `baf...x`
+    cause: 'string',      // `baf...x`(CID of the invocation)
+    link: 'string',       // `baf...x` (CID of the delegation)
     audience: 'string',   // `did:web:service`
     issuer: 'string',     // `did:key:agent`
     expiration: 'string', // `9256939505` (unix timestamp)
@@ -58,7 +59,6 @@ export const subscriptionTableProps = {
     // TODO: I don't think we should keep this index - partitioning by provider is basically useless and won't be much faster than a table scan
     provider: { partitionKey: 'provider', projection: ['customer'] },
     subscription: { partitionKey: 'subscription', projection: ['customer'] }
-
   }
 }
 
@@ -75,6 +75,7 @@ export const consumerTableProps = {
   // TODO does this index setup seem right?
   primaryIndex: { partitionKey: 'consumer', sortKey: 'subscription' },
   globalIndexes: {
+    // TODO: I don't think we should keep this index - partitioning by provider is basically useless and won't be much faster than a table scan
     provider: { partitionKey: 'provider', projection: ['consumer'] }
   }
 }

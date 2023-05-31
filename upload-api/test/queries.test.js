@@ -137,6 +137,9 @@ test('provider getting per customer/consumer/subscription stats', async (t) => {
 
 
 test('space finding its providers/subscribers', async (t) => {
+  const { consumers, consumer, subscription } = await consumersTestFixture(t.context)
+  const foundSubscriptions = await consumers.findSubscriptionsForConsumer(consumer)
+  t.deepEqual(foundSubscriptions, [subscription])
 })
 
 test('space removing a provider', async (t) => {
@@ -150,6 +153,9 @@ test('customer canceling its subscription', async (t) => {
 })
 
 test('customer listing its subscription', async (t) => {
+  const { subscriptions, customer, subscription } = await subscriptionsTestFixture(t.context)
+  const foundSubscriptions = await subscriptions.findSubscriptionsForCustomer(customer)
+  t.deepEqual(foundSubscriptions, [subscription])
 })
 
 test('customer getting subscription stats (data stored, etc)', async (t) => {

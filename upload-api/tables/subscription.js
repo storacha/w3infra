@@ -5,7 +5,7 @@ import {
   QueryCommand,
 } from '@aws-sdk/client-dynamodb'
 import { Failure } from '@ucanto/server'
-import { marshall } from '@aws-sdk/util-dynamodb'
+import { marshall, unmarshall } from '@aws-sdk/util-dynamodb'
 
 /**
  * @typedef {import('../types').SubscriptionTable} SubscriptionTable
@@ -128,6 +128,21 @@ export function useSubscriptionTable (dynamoDb, tableName) {
       })
       const response = await dynamoDb.send(cmd)
       return response.Items ? /** @type { import('@ucanto/interface').DID } */ (response.Items[0].customer.S) : undefined
+    },
+
+    findSubscriptionsForCustomer: async (customer) => {
+      const cmd = new QueryCommand({
+        TableName: tableName,
+        KeyConditions: {
+          customer: {
+            ComparisonOperator: 'EQ',
+            AttributeValueList: [{ S: customer }]
+          }
+        },
+        AttributesToGet: ['subscription']
+      })
+      const response = await dynamoDb.send(cmd)
+      return response.Items?.map(i => unmarshall(i).subscription)
     }
   }
 }

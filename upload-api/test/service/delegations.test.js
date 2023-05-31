@@ -10,6 +10,8 @@ import {
 import { delegationTableProps } from '../../tables/index.js'
 import { useDelegationsTable } from '../../tables/delegations.js'
 import { useDelegationsStore } from '../../buckets/delegations-store.js'
+import { useInvocationStore } from '../../buckets/invocation-store.js'
+import { useWorkflowStore } from '../../buckets/workflow-store.js'
 
 test.before(async (t) => {
   Object.assign(t.context, {
@@ -21,12 +23,19 @@ test.before(async (t) => {
 testDelegationsStorageVariant(
   async (/** @type {any} */ t) => {
     const { dynamo, s3 } = t.context
-    const bucketName = await createBucket(s3)
-    
+    const delegationsBucketName = await createBucket(s3)
+    const invocationsBucketName = await createBucket(s3)
+    const workflowBucketName = await createBucket(s3)
+
+
     return useDelegationsTable(
       dynamo,
       await createTable(dynamo, delegationTableProps),
-      useDelegationsStore(s3, bucketName)
+      {
+        bucket: useDelegationsStore (s3, delegationsBucketName),
+        invocationBucket: useInvocationStore (s3, invocationsBucketName),
+        workflowBucket: useWorkflowStore (s3, workflowBucketName)
+      }
     )
   },
   test
