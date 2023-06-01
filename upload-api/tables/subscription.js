@@ -91,6 +91,25 @@ export function useSubscriptionTable (dynamoDb, tableName) {
       return BigInt(result.Table?.ItemCount ?? -1)
     },
 
+    findProviderSubscriptionsForCustomer: async (customer, provider) => {
+      const cmd = new QueryCommand({
+        TableName: tableName,
+        IndexName: 'customerProvider',
+        KeyConditionExpression: "customer = :customer AND provider = :provider",
+        ExpressionAttributeValues: {
+          ':customer': { S: customer },
+          ':provider': { S: provider }
+        },
+        ProjectionExpression: 'subscription'
+      })
+      const response = await dynamoDb.send(cmd)
+      return response.Items ? response.Items.map(i => {
+        return {
+          subscription: i.subscription.toString()
+        }
+      }) : []
+    },
+
     /**
      * !!! the following methods are unstable and may be changed at any time !!!
      * !!!      they are included here for testing and design purposes       !!!

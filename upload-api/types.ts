@@ -64,6 +64,8 @@ export interface Subscription {
 export interface SubscriptionTable {
   insert: (consumer: SubscriptionInput) => Promise<Subscription>
   count: () => Promise<bigint>
+  findProviderSubscriptionsForCustomer: (customer: DID, provider: DID) =>
+    Promise<{ subscription: string }[]>
 }
 
 export interface UnstableSubscriptionTable extends SubscriptionTable {

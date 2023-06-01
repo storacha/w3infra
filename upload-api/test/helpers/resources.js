@@ -50,7 +50,7 @@ export async function createDynamodDb(opts = {}) {
  * @param {import('@serverless-stack/resources').TableGlobalIndexProps} props 
  */
 function globalIndexPropsToGlobalIndexSpec (indexName, props) {
-  const { partitionKey, projection } = props
+  const { partitionKey, projection, sortKey } = props
   /**
    * @type {import('@aws-sdk/client-dynamodb').GlobalSecondaryIndex}
    */
@@ -71,6 +71,9 @@ function globalIndexPropsToGlobalIndexSpec (indexName, props) {
       ProjectionType: "KEYS_ONLY",
       NonKeyAttributes: undefined
     }
+  }
+  if (sortKey) {
+    spec.KeySchema?.push({ AttributeName: sortKey, KeyType: 'RANGE' })
   }
   if (projection && projection == 'all') {
     spec.Projection = {

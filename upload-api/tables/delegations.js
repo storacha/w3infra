@@ -55,7 +55,7 @@ export function createDelegationsTable (region, tableName, { bucket, invocationB
  */
 export function useDelegationsTable (dynamoDb, tableName, { bucket, invocationBucket, workflowBucket} ) {
   return {
-    putMany: async (cause, ...delegations) => {
+    putMany: async (cause, delegations) => {
       if (delegations.length === 0) {
         return {
           ok: {}
