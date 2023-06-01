@@ -16,7 +16,7 @@ import { base32 } from 'multiformats/bases/base32'
  * @param {string} secretAccessKey 
  * @param {string} bucketName
  */
-export function createR2DelegationsStore(endpoint, accessKeyId, secretAccessKey, bucketName){
+export function createDelegationsStore(endpoint, accessKeyId, secretAccessKey, bucketName){
   const s3Client = new S3Client({
     region: 'auto',
     endpoint,

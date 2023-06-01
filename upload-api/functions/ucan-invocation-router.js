@@ -19,7 +19,7 @@ import { CAR, Legacy, Codec } from '@ucanto/transport'
 import { Email } from '../email.js'
 import { useProvisionStore } from '../stores/provisions.js'
 import { createDelegationsTable } from '../tables/delegations.js'
-import { useR2DelegationsStore } from '../buckets/delegations-store.js'
+import { createDelegationsStore } from '../buckets/delegations-store.js'
 import { createSubscriptionTable } from '../tables/subscription.js'
 import { createConsumerTable } from '../tables/consumer.js'
 
@@ -116,7 +116,7 @@ export async function ucanInvocationRouter (request) {
   )
   const taskBucket = createTaskStore(AWS_REGION, taskBucketName)
   const workflowBucket = createWorkflowStore(AWS_REGION, workflowBucketName)
-  const delegationBucket = useR2DelegationsStore(r2DelegationBucketEndpoint, r2DelegationBucketAccessKeyId, r2DelegationBucketSecretAccessKey, r2DelegationBucketName)
+  const delegationBucket = createDelegationsStore(r2DelegationBucketEndpoint, r2DelegationBucketAccessKeyId, r2DelegationBucketSecretAccessKey, r2DelegationBucketName)
   const subscriptionTable = createSubscriptionTable(AWS_REGION, subscriptionTableName, {
     endpoint: dbEndpoint
   });
