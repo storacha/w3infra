@@ -91,6 +91,7 @@ export function useDelegationsTable (dynamoDb, tableName, { bucket, invocationBu
     find: async (query) => {
       const cmd = new QueryCommand({
         TableName: tableName,
+        IndexName: 'audience',
         // Limit: options.size || 20, // TODO should we introduce a limit here?
         KeyConditions: {
           audience: {
