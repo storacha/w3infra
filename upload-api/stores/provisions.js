@@ -1,5 +1,18 @@
 import { ConflictError as ConsumerConflictError } from '../tables/consumer.js'
 import { ConflictError as SubscriptionConflictError } from '../tables/subscription.js'
+import { CBOR, Failure } from '@ucanto/server'
+
+/**
+ * Create a subscription ID for a given provision. Currently 
+ * uses the CID of `customer` which ensures each customer
+ * will get at most one subscription. This can be relaxed (ie,
+ * by deriving subscription ID from customer AND consumer) in the future
+ * or by other providers for flexibility.
+ * 
+ * @param {import('@web3-storage/upload-api').Provision} item 
+ */
+export const createProvisionSubscriptionId = async ({ customer }) =>
+  (await CBOR.write(customer)).cid.toString()
 
 /**
  * @param {import('../types').SubscriptionTable} subscriptionTable
@@ -18,10 +31,11 @@ export function useProvisionStore (subscriptionTable, consumerTable, services) {
       const { cause, consumer, customer, provider } = item
       // by setting subscription to customer we make it so each customer can have at most one subscription
       // TODO is this what we want?
-      const subscription = customer
+      const { cid } = await CBOR.write({ customer })
+      const subscription = cid.toString()
 
       try {
-        await subscriptionTable.insert({
+        await subscriptionTable.add({
           cause: cause.cid,
           provider,
           customer,
@@ -31,12 +45,16 @@ export function useProvisionStore (subscriptionTable, consumerTable, services) {
         // if we got a conflict error, ignore - it means the subscription already exists and
         // can be used to create a consumer/provider relationship below
         if (!(error instanceof SubscriptionConflictError)) {
-          throw error
+          return {
+            error: new Failure('Unknown error adding subscription', {
+              cause: error
+            })
+          }
         }
       }
 
       try {
-        await consumerTable.insert({
+        await consumerTable.add({
           cause: cause.cid,
           provider,
           consumer,
@@ -44,13 +62,17 @@ export function useProvisionStore (subscriptionTable, consumerTable, services) {
         })
         return { ok: {} }
       } catch (error) {
-        if (error instanceof ConsumerConflictError) {
-          return {
+        return (error instanceof ConsumerConflictError) ? (
+          {
             error
           }
-        } else {
-          throw error
-        }
+        ) : (
+          {
+            error: new Failure('Unknown error adding consumer', {
+              cause: error
+            })
+          }
+        )
       }
     },
 

@@ -34,7 +34,7 @@ export const delegationTableProps = {
     link: 'string',       // `baf...x` (CID of the delegation)
     audience: 'string',   // `did:web:service`
     issuer: 'string',     // `did:key:agent`
-    expiration: 'string', // `9256939505` (unix timestamp)
+    expiration: 'number', // `9256939505` (unix timestamp in seconds)
     insertedAt: 'string', // `2022-12-24T...`
     updatedAt: 'string',  // `2022-12-24T...`
   },
@@ -53,10 +53,10 @@ export const subscriptionTableProps = {
     insertedAt: 'string', // `2022-12-24T...`
     updatedAt: 'string',  // `2022-12-24T...`
   },
-  // TODO does this index setup seem right?
-  primaryIndex: { partitionKey: 'customer', sortKey: 'subscription' },
+  primaryIndex: { partitionKey: 'subscription', sortKey: 'provider' },
   globalIndexes: {
     customerProvider: { partitionKey: 'customer', sortKey: 'provider', projection: ['cause', 'subscription'] },
+    customer: { partitionKey: 'customer', projection: ['subscription']},
     // TODO: I don't think we should keep this index - partitioning by provider is basically useless and won't be much faster than a table scan
     provider: { partitionKey: 'provider', projection: ['customer'] },
     subscription: { partitionKey: 'subscription', projection: ['customer'] }
@@ -73,9 +73,9 @@ export const consumerTableProps = {
     insertedAt: 'string', // `2022-12-24T...`
     updatedAt: 'string',  // `2022-12-24T...`
   },
-  // TODO does this index setup seem right?
-  primaryIndex: { partitionKey: 'consumer', sortKey: 'subscription' },
+  primaryIndex: { partitionKey: 'subscription', sortKey: 'provider' },
   globalIndexes: {
+    consumer: { partitionKey: 'consumer', projection: ['provider', 'subscription']},
     // TODO: I don't think we should keep this index - partitioning by provider is basically useless and won't be much faster than a table scan
     provider: { partitionKey: 'provider', projection: ['consumer'] }
   }

@@ -11,7 +11,6 @@ import { marshall, unmarshall } from '@aws-sdk/util-dynamodb'
  * @typedef {import('../types').SubscriptionTable} SubscriptionTable
  * @typedef {import('../types').UnstableSubscriptionTable} UnstableSubscriptionTable
  * @typedef {import('../types').SubscriptionInput} SubscriptionInput
- * @typedef {import('../types').Subscription} Subscription
  */
 
 export class ConflictError extends Failure {
@@ -53,9 +52,9 @@ export function useSubscriptionTable (dynamoDb, tableName) {
      * Record the fact that a subscription is consuming a provider via a subscription
      *
      * @param {SubscriptionInput} item
-     * @returns {Promise<Subscription>}
+     * @returns {Promise<{}>}
      */
-    insert: async ({ customer, provider, subscription, cause }) => {
+    add: async ({ customer, provider, subscription, cause }) => {
       const insertedAt = new Date().toISOString()
 
       const item = {
@@ -152,6 +151,7 @@ export function useSubscriptionTable (dynamoDb, tableName) {
     findSubscriptionsForCustomer: async (customer) => {
       const cmd = new QueryCommand({
         TableName: tableName,
+        IndexName: 'customer',
         KeyConditions: {
           customer: {
             ComparisonOperator: 'EQ',

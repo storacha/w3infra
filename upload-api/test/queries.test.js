@@ -72,7 +72,7 @@ async function subscriptionsTestFixture (context) {
   const { dynamo } = context
   const subscriptions = await subscriptionsTable(dynamo)
   const { customer, provider, subscription, cause } = await loadStaticFixtures()
-  await subscriptions.insert({ customer, provider, subscription, cause })
+  await subscriptions.add({ customer, provider, subscription, cause })
   return ({
     subscriptions,
     customer,
@@ -91,7 +91,7 @@ async function consumersTestFixture (context) {
   const { dynamo } = context
   const consumers = await consumersTable(dynamo)
   const { consumer, provider, subscription, cause } = await loadStaticFixtures()
-  await consumers.insert({ consumer, provider, subscription, cause })
+  await consumers.add({ consumer, provider, subscription, cause })
   return ({
     consumers,
     consumer,

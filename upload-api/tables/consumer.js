@@ -11,7 +11,6 @@ import { marshall } from '@aws-sdk/util-dynamodb'
  * @typedef {import('../types').ConsumerTable} ConsumerTable
  * @typedef {import('../types').UnstableConsumerTable} UnstableConsumerTable
  * @typedef {import('../types').ConsumerInput} ConsumerInput
- * @typedef {import('../types').Consumer} Consumer
  */
 
 /**
@@ -54,9 +53,9 @@ export function useConsumerTable (dynamoDb, tableName) {
      * Record the fact that a consumer is consuming a provider via a subscription
      *
      * @param {ConsumerInput} item
-     * @returns {Promise<Consumer>}
+     * @returns {Promise<{}>}
      */
-    insert: async ({ consumer, provider, subscription, cause }) => {
+    add: async ({ consumer, provider, subscription, cause }) => {
       const insertedAt = new Date().toISOString()
 
       const row = {
@@ -71,7 +70,7 @@ export function useConsumerTable (dynamoDb, tableName) {
         await dynamoDb.send(new PutItemCommand({
           TableName: tableName,
           Item: marshall(row),
-          ConditionExpression: `attribute_not_exists(consumer) OR ((cause = :cause) AND (consumer = :consumer) AND (provider = :provider) AND (subscription = :subscription))`,
+          ConditionExpression: `(attribute_not_exists(subscription) AND attribute_not_exists(provider)) OR ((cause = :cause) AND (consumer = :consumer) AND (provider = :provider) AND (subscription = :subscription))`,
           ExpressionAttributeValues: {
             ':cause': { 'S': row.cause },
             ':consumer': { 'S': row.consumer },
@@ -82,7 +81,7 @@ export function useConsumerTable (dynamoDb, tableName) {
         return {}
       } catch (error) {
         const error_ = error instanceof Error && error.message === 'The conditional request failed' ? new ConflictError({
-          message: `Space ${row.consumer} cannot be provisioned with ${row.provider}: it already has a provider`
+          message: `Space ${row.consumer} cannot be provisioned with ${row.subscription} and ${row.provider}: that subscription is already in use`
         }) : error;
         throw error_;
       }
@@ -91,6 +90,7 @@ export function useConsumerTable (dynamoDb, tableName) {
     hasStorageProvider: async (consumer) => {
       const cmd = new QueryCommand({
         TableName: tableName,
+        IndexName: 'consumer',
         KeyConditions: {
           consumer: {
             ComparisonOperator: 'EQ',
@@ -141,6 +141,7 @@ export function useConsumerTable (dynamoDb, tableName) {
     findSubscriptionsForConsumer: async (consumer) => {
       const cmd = new QueryCommand({
         TableName: tableName,
+        IndexName: 'consumer',
         KeyConditions: {
           consumer: {
             ComparisonOperator: 'EQ',

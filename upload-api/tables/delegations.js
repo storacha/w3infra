@@ -12,6 +12,7 @@ import {
 } from '@web3-storage/access/encoding'
 // eslint-disable-next-line no-unused-vars
 import * as Ucanto from '@ucanto/interface'
+import { Failure } from '@ucanto/server'
 import { CAR, Delegation, parseLink } from '@ucanto/core'
 import {
   NoInvocationFoundForGivenCidError,
@@ -53,7 +54,7 @@ export function createDelegationsTable (region, tableName, { bucket, invocationB
  * @param {import('../types').WorkflowBucket} deps.workflowBucket
  * @returns {import('@web3-storage/upload-api').DelegationsStorage}
  */
-export function useDelegationsTable (dynamoDb, tableName, { bucket, invocationBucket, workflowBucket} ) {
+export function useDelegationsTable (dynamoDb, tableName, { bucket, invocationBucket, workflowBucket }) {
   return {
     putMany: async (cause, delegations) => {
       if (delegations.length === 0) {
@@ -118,12 +119,18 @@ export function useDelegationsTable (dynamoDb, tableName, { bucket, invocationBu
           if (result.ok) {
             delegations.push(result.ok)
           } else {
-            console.warn(`could not find delegation ${delegationCid} from invocation ${invocationCid}`)
-            // TODO: should we do anything else here?
+            return { error: new Failure(`could not find delegation ${delegationCid} from invocation ${invocationCid}`) }
           }
         } else {
           // otherwise, we'll try to find the delegation in the R2 bucket we used to stash them in
-          delegations.push(await cidToDelegation(bucket, delegationCid))
+          const result = await cidToDelegation(bucket, delegationCid)
+          if (result.ok){
+            delegations.push(result.ok)
+          } else {
+            return {error: new Failure(`failed to get delegation ${delegationCid} from legacy delegations bucket`, {
+              cause: result.error
+            })}
+          }
         }
       }
       return {
@@ -136,7 +143,7 @@ export function useDelegationsTable (dynamoDb, tableName, { bucket, invocationBu
 /**
  * @param {Ucanto.Link} cause
  * @param {Delegation} d
- * @returns {{cause: string, link: string, audience: string, issuer: string}}}
+ * @returns {{cause: string, link: string, audience: string, issuer: string, expiration: number}}}
  */
 function createDelegationItem (cause, d) {
   return {
@@ -144,25 +151,26 @@ function createDelegationItem (cause, d) {
     link: d.cid.toString(),
     audience: d.audience.did(),
     issuer: d.issuer.did(),
+    expiration: d.expiration
   }
 }
 
 /** 
  * @param {import('../types').DelegationsBucket} bucket
  * @param {Ucanto.Link} cid
- * @returns {Promise<Ucanto.Delegation>}
+ * @returns {Promise<Ucanto.Result<Ucanto.Delegation, Ucanto.Failure>>}
  */
 async function cidToDelegation (bucket, cid) {
-  const delegationCarBytes = await bucket.get(/** @type {import('multiformats/cid').CID} */ (cid))
+  const delegationCarBytes = await bucket.get(/** @type {import('multiformats/cid').CID} */(cid))
   if (!delegationCarBytes) {
-    throw new Error(`failed to read car bytes for cid ${cid.toString(base32)}`)
+    return { error: new Failure(`failed to read car bytes for cid ${cid.toString(base32)}`) }
   }
   const delegations = bytesToDelegations(delegationCarBytes)
   const delegation = delegations.find((d) => d.cid.equals(cid))
   if (!delegation) {
-    throw new Error(`failed to parse delegation with expected cid ${cid.toString(base32)}`)
+    return { error: new Failure(`failed to parse delegation with expected cid ${cid.toString(base32)}`) }
   }
-  return delegation
+  return { ok: delegation }
 }
 
 /** 
