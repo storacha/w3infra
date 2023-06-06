@@ -48,19 +48,17 @@ export const delegationTableProps = {
 export const subscriptionTableProps = {
   fields: {
     cause: 'string',        // `baf...x` (CID of invocation that created this subscription)
-    provider: 'string',   // `did:web:service` (DID of the provider, e.g. a storage provider)
-    customer: 'string',   // `did:mailto:agent` (DID of the user account)
-    subscription: 'string',      // string (arbitrary string associated with this subscription)
-    insertedAt: 'string', // `2022-12-24T...`
-    updatedAt: 'string',  // `2022-12-24T...`
+    provider: 'string',     // `did:web:service` (DID of the provider, e.g. a storage provider)
+    customer: 'string',     // `did:mailto:agent` (DID of the user account)
+    subscription: 'string', // string (arbitrary string associated with this subscription)
+    insertedAt: 'string',   // `2022-12-24T...`
+    updatedAt: 'string',    // `2022-12-24T...`
   },
   primaryIndex: { partitionKey: 'subscription', sortKey: 'provider' },
   globalIndexes: {
-    customerProvider: { partitionKey: 'customer', sortKey: 'provider', projection: ['cause', 'subscription'] },
-    customer: { partitionKey: 'customer', projection: ['subscription'] },
+    customer: { partitionKey: 'customer', sortKey: 'provider', projection: ['cause', 'subscription'] },
     // TODO: I don't think we should keep this index - partitioning by provider is basically useless and won't be much faster than a table scan
-    provider: { partitionKey: 'provider', projection: ['customer'] },
-    subscription: { partitionKey: 'subscription', projection: ['customer'] }
+    provider: { partitionKey: 'provider', projection: ['customer'] }
   }
 }
 
@@ -68,11 +66,11 @@ export const subscriptionTableProps = {
 export const consumerTableProps = {
   fields: {
     cause: 'string',        // `baf...x` (CID of invocation that created this consumer record)
-    consumer: 'string',   // `did:key:space` (DID of the actor that is consuming the provider, e.g. a space DID)
-    provider: 'string',   // `did:web:service` (DID of the provider, e.g. a storage provider)
-    subscription: 'string',      // string (arbitrary string associated with this subscription)
-    insertedAt: 'string', // `2022-12-24T...`
-    updatedAt: 'string',  // `2022-12-24T...`
+    consumer: 'string',     // `did:key:space` (DID of the actor that is consuming the provider, e.g. a space DID)
+    provider: 'string',     // `did:web:service` (DID of the provider, e.g. a storage provider)
+    subscription: 'string', // string (arbitrary string associated with this subscription)
+    insertedAt: 'string',   // `2022-12-24T...`
+    updatedAt: 'string',    // `2022-12-24T...`
   },
   primaryIndex: { partitionKey: 'subscription', sortKey: 'provider' },
   globalIndexes: {

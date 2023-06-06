@@ -93,7 +93,7 @@ export function useSubscriptionTable (dynamoDb, tableName) {
     findProviderSubscriptionsForCustomer: async (customer, provider) => {
       const cmd = new QueryCommand({
         TableName: tableName,
-        IndexName: 'customerProvider',
+        IndexName: 'customer',
         KeyConditionExpression: "customer = :customer AND provider = :provider",
         ExpressionAttributeValues: {
           ':customer': { S: customer },
@@ -135,7 +135,6 @@ export function useSubscriptionTable (dynamoDb, tableName) {
     findCustomerForSubscription: async (subscription) => {
       const cmd = new QueryCommand({
         TableName: tableName,
-        IndexName: 'subscription',
         KeyConditions: {
           subscription: {
             ComparisonOperator: 'EQ',
