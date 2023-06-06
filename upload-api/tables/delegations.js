@@ -6,9 +6,11 @@ import {
   DescribeTableCommand,
 } from '@aws-sdk/client-dynamodb'
 import { marshall, unmarshall } from '@aws-sdk/util-dynamodb'
-
+// eslint-disable-next-line no-unused-vars
+import { CID } from 'multiformats/cid'
 import {
   bytesToDelegations,
+  delegationsToBytes
 } from '@web3-storage/access/encoding'
 // eslint-disable-next-line no-unused-vars
 import * as Ucanto from '@ucanto/interface'
@@ -19,6 +21,14 @@ import {
   NoDelegationFoundForGivenCidError,
   FailedToDecodeDelegationForGivenCidError
 } from '../errors.js'
+
+
+// Feature flag for looking up delegations in the invocations in which
+// they were originally embeded.
+// As of 6/6/2023 not all delegations have corresponding invocations
+// because our access/confirm provider creates delegations.
+// Once we change this, we can re-enable this optimization.
+const FIND_DELEGATIONS_IN_INVOCATIONS = false
 
 /**
  * @typedef {Ucanto.Delegation} Delegation
@@ -56,18 +66,19 @@ export function createDelegationsTable (region, tableName, { bucket, invocationB
  */
 export function useDelegationsTable (dynamoDb, tableName, { bucket, invocationBucket, workflowBucket }) {
   return {
-    putMany: async (cause, delegations) => {
+    putMany: async (delegations, options = {}) => {
       if (delegations.length === 0) {
         return {
           ok: {}
         }
       }
+      await writeDelegations(bucket, delegations)
       await dynamoDb.send(new BatchWriteItemCommand({
         RequestItems: {
           [tableName]: delegations.map(d => ({
             PutRequest: {
               Item: marshall(
-                createDelegationItem(cause, d),
+                createDelegationItem(d, options.cause),
                 { removeUndefinedValues: true })
             }
           })
@@ -107,7 +118,7 @@ export function useDelegationsTable (dynamoDb, tableName, { bucket, invocationBu
       for (const result of response.Items ?? []) {
         const { cause, link } = unmarshall(result)
         const delegationCid = /** @type {Ucanto.Link} */ (parseLink(link))
-        if (cause) {
+        if (FIND_DELEGATIONS_IN_INVOCATIONS && cause) {
           // if this row has a cause, it is the CID of the invocation that contained these delegations
           // and we can pull them from there
           const invocationCid = /** @type {Ucanto.Link} */ (parseLink(cause))
@@ -142,13 +153,38 @@ export function useDelegationsTable (dynamoDb, tableName, { bucket, invocationBu
 }
 
 /**
- * @param {Ucanto.Link} cause
- * @param {Delegation} d
- * @returns {{cause: string, link: string, audience: string, issuer: string, expiration: number}}}
+ * 
+ * @param {import('../types').DelegationsBucket} bucket
+ * @param {Ucanto.Delegation<Ucanto.Tuple<Ucanto.Capability>>[]} delegations
  */
-function createDelegationItem (cause, d) {
+async function writeDelegations (bucket, delegations) {
+  return writeEntries(
+    bucket,
+    [...delegations].map((delegation) => {
+      const carBytes = delegationsToBytes([delegation])
+      const value = carBytes
+      return /** @type {[key: CID, value: Uint8Array]} */ ([delegation.cid, value])
+    })
+  )
+}
+
+/**
+ * 
+ * @param {import('../types').DelegationsBucket} bucket
+ * @param {Iterable<readonly [key: CID, value: Uint8Array ]>} entries
+ */
+async function writeEntries (bucket, entries) {
+  await Promise.all([...entries].map(([key, value]) => bucket.put(key, value)))
+}
+
+/**
+ * @param {Delegation} d
+ * @param {Ucanto.Link | undefined} cause
+ * @returns {{cause?: string, link: string, audience: string, issuer: string, expiration: number}}}
+ */
+function createDelegationItem (d, cause) {
   return {
-    cause: cause.toString(),
+    cause: cause?.toString(),
     link: d.cid.toString(),
     audience: d.audience.did(),
     issuer: d.issuer.did(),

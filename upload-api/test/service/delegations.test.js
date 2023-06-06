@@ -15,17 +15,9 @@ test.before(async (t) => {
 
 for (const [title, unit] of Object.entries(delegationsStorageTests)) {
   test(title, async (t) => {
-    // skip "can retrieve delegations by audience" because it currently relies on the ucan invocation 
-    // router's out-of-band storage of the invocation where the delegations were originally created, which
-    // does not happen in these tests. 
-    // TODO: figure out how to get that in the mix here or write an integration test for this somehow
-    if (title === 'can retrieve delegations by audience') {
-      console.log(`skipping ${title}`)
-    } else {
-      await unit(
-        assertsFromExecutionContext(t),
-        await executionContextToUcantoTestServerContext(t)
-      )
-    }
+    await unit(
+      assertsFromExecutionContext(t),
+      await executionContextToUcantoTestServerContext(t)
+    )
   })
 }
