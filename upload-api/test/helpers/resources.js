@@ -9,7 +9,6 @@ import * as HTTP from 'http'
 
 /**
  * @typedef {Partial<{
- *   voucher: Partial<import('@web3-storage/access/types').Service['voucher']>
  *   account: Partial<import('@web3-storage/access/types').Service['space']>
  * }>} PartialAccessService
  * @typedef {ReturnType<mockAccessService>} MockedAccessService
@@ -270,15 +269,8 @@ const notImplemented = () => {
 /** @param {PartialAccessService} [impl] */
 function mockAccessService(impl = {}) {
   return {
-    voucher: {
-      claim: withCallCount(impl.voucher?.claim ?? notImplemented),
-      redeem: withCallCount(impl.voucher?.redeem ?? notImplemented),
-    },
     space: {
       info: withCallCount(impl.account?.info ?? notImplemented),
-      'recover-validation': withCallCount(
-        impl.account?.['recover-validation'] ?? notImplemented
-      ),
     },
   }
 }
