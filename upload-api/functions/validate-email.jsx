@@ -15,7 +15,7 @@ import {
   ValidateEmail,
   ValidateEmailError,
   PendingValidateEmail,
-} from '../html.js'
+} from '../html.jsx'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
