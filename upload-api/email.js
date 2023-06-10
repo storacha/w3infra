@@ -1,3 +1,5 @@
+import fetch from '@web-std/fetch'
+
 /**
  * @typedef { import('@web3-storage/upload-api').ValidationEmailSend } ValidationEmailSend
  */
