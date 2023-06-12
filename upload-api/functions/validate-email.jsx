@@ -26,11 +26,13 @@ Sentry.AWSLambda.init({
 /**
  * @param {HtmlResponse} response
  */
-export function toLambdaResponse ({ status = 200, headers, body }) {
+export function toLambdaResponse (response) {
+  const { status = 200, headers, body } = response
   return {
     statusCode: status,
     headers,
-    body
+    body: body && Buffer.from(response.getStringBody()).toString('base64'),
+    isBase64Encoded: true
   }
 }
 

@@ -83,7 +83,13 @@ export class HtmlResponse extends Response {
         'content-type': 'text/html; charset=utf-8',
       },
     }
-    super(buildDocument(render(body)), { ...init, ...headers })
+    const stringBody = buildDocument(render(body))
+    super(stringBody, { ...init, ...headers })
+    this.stringBody = stringBody
+  }
+
+  getStringBody(){
+    return this.stringBody
   }
 
   /**
