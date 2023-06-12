@@ -24,18 +24,29 @@ Sentry.AWSLambda.init({
 })
 
 /**
+ * @param {HtmlResponse} response
+ */
+export function toLambdaResponse ({ status = 200, headers, body }) {
+  return {
+    statusCode: status,
+    headers,
+    body
+  }
+}
+
+/**
  * AWS HTTP Gateway handler for GET /validate-email
  *
  * @param {import('aws-lambda').APIGatewayProxyEventV2} request
  */
 export async function validateEmailGet (request) {
   if (!request.queryStringParameters?.ucan) {
-    return new HtmlResponse(
+    return toLambdaResponse(new HtmlResponse(
       <ValidateEmailError msg={'Missing delegation in the URL.'} />
-    )
+    ))  
   }
 
-  return new HtmlResponse(<PendingValidateEmail autoApprove={true} />)
+  return toLambdaResponse(new HtmlResponse(<PendingValidateEmail autoApprove={true} />))
 }
 
 export const preValidateEmail = Sentry.AWSLambda.wrapHandler(validateEmailGet)
@@ -95,28 +106,28 @@ function createAuthorizeContext () {
 export async function validateEmailPost (request) {
   const encodedUcan = request.queryStringParameters?.ucan
   if (!encodedUcan) {
-    return new HtmlResponse(
+    return toLambdaResponse(new HtmlResponse(
       <ValidateEmailError msg={'Missing delegation in the URL.'} />
-    )
+    ))
   }
 
   const authorizeResult = await authorize(encodedUcan, createAuthorizeContext())
   if (authorizeResult.error) {
-    return new HtmlResponse(
+    return toLambdaResponse(new HtmlResponse(
       <ValidateEmailError msg={`Oops something went wrong: ${authorizeResult.error.message}`} />,
       { status: 500 }
-    )
+    ))
   }
 
   const { email, audience, ucan } = authorizeResult.ok
 
-  return new HtmlResponse(
+  return toLambdaResponse(new HtmlResponse(
     <ValidateEmail
       email={email}
       audience={audience}
       ucan={ucan}
     />
-  )
+  ))
 }
 
 export const validateEmail = Sentry.AWSLambda.wrapHandler(validateEmailPost)
