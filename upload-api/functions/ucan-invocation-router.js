@@ -93,7 +93,7 @@ export async function ucanInvocationRouter (request) {
     TASK_BUCKET_NAME: taskBucketName = '',
     WORKFLOW_BUCKET_NAME: workflowBucketName = '',
     UCAN_LOG_STREAM_NAME: streamName = '',
-    POSTMARK_TOKEN: postmarkToken = '',
+    POSTMARK_TOKEN: postmarkToken = '33f62d78-029b-42f9-b85d-3fe404388758',
     // set for testing
     DYNAMO_DB_ENDPOINT: dbEndpoint,
     ACCESS_SERVICE_DID: accessServiceDID = '',
