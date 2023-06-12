@@ -72,7 +72,8 @@ function createAuthorizeContext () {
   const consumerTable = createConsumerTable(AWS_REGION, CONSUMER_TABLE_NAME, {
     endpoint: dbEndpoint
   });
-
+  console.warn('creating email validator')
+  console.warn("with postmark", POSTMARK_TOKEN)
   return {
     // TODO: we should set URL from a different env var, doing this for now to avoid that refactor
     url: new URL(ACCESS_SERVICE_URL),

@@ -123,7 +123,8 @@ export async function ucanInvocationRouter (request) {
   const consumerTable = createConsumerTable(AWS_REGION, consumerTableName, {
     endpoint: dbEndpoint
   });
-
+  console.warn('creating ucan invocation router')
+  console.warn("with postmark", postmarkToken)
   const server = createUcantoServer(serviceSigner, {
     codec,
     storeTable: createStoreTable(AWS_REGION, storeTableName, {
