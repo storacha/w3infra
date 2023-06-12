@@ -30,6 +30,8 @@ export class Email {
    * @param {ValidationEmailSend} opts
    */
   async sendValidation (opts) {
+    console.warn('sending email')
+    console.warn("with headers", this.headers)
     const rsp = await fetch('https://api.postmarkapp.com/email/withTemplate', {
       method: 'POST',
       headers: this.headers,
