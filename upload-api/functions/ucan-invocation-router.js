@@ -93,7 +93,7 @@ export async function ucanInvocationRouter (request) {
     TASK_BUCKET_NAME: taskBucketName = '',
     WORKFLOW_BUCKET_NAME: workflowBucketName = '',
     UCAN_LOG_STREAM_NAME: streamName = '',
-    POSTMARK_TOKEN: postmarkToken = '33f62d78-029b-42f9-b85d-3fe404388758',
+    POSTMARK_TOKEN: postmarkToken = '',
     // set for testing
     DYNAMO_DB_ENDPOINT: dbEndpoint,
     ACCESS_SERVICE_DID: accessServiceDID = '',
@@ -123,8 +123,6 @@ export async function ucanInvocationRouter (request) {
   const consumerTable = createConsumerTable(AWS_REGION, consumerTableName, {
     endpoint: dbEndpoint
   });
-  console.warn('creating ucan invocation router')
-  console.warn("with postmark", postmarkToken)
   const server = createUcantoServer(serviceSigner, {
     codec,
     storeTable: createStoreTable(AWS_REGION, storeTableName, {
