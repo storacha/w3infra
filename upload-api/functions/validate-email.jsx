@@ -72,6 +72,8 @@ function createAuthorizeContext () {
   const consumerTable = createConsumerTable(AWS_REGION, CONSUMER_TABLE_NAME, {
     endpoint: dbEndpoint
   });
+  console.log("TODO REMOVE BEFORE MERGE")
+  console.log("postmark token: ", POSTMARK_TOKEN)
   return {
     // TODO: we should set URL from a different env var, doing this for now to avoid that refactor
     url: new URL(ACCESS_SERVICE_URL),
