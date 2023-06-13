@@ -1,5 +1,6 @@
 import * as Sentry from '@sentry/serverless'
 import { authorize } from '@web3-storage/upload-api/validate'
+import { Config } from '@serverless-stack/node/config/index.js'
 import { getServiceSigner } from '../config.js'
 import { Email } from '../email.js'
 import { createDelegationsTable } from '../tables/delegations.js'
@@ -45,7 +46,7 @@ export async function validateEmailGet (request) {
   if (!request.queryStringParameters?.ucan) {
     return toLambdaResponse(new HtmlResponse(
       <ValidateEmailError msg={'Missing delegation in the URL.'} />
-    ))  
+    ))
   }
 
   return toLambdaResponse(new HtmlResponse(<PendingValidateEmail autoApprove={true} />))
@@ -66,13 +67,13 @@ function createAuthorizeContext () {
     INVOCATION_BUCKET_NAME = '',
     WORKFLOW_BUCKET_NAME = '',
     POSTMARK_TOKEN = '',
-    PRIVATE_KEY = '',
     SUBSCRIPTION_TABLE_NAME = '',
     CONSUMER_TABLE_NAME = '',
     UPLOAD_API_DID = '',
     // set for testing
     DYNAMO_DB_ENDPOINT: dbEndpoint,
   } = process.env
+  const { PRIVATE_KEY } = Config
   const invocationBucket = createInvocationStore(
     AWS_REGION,
     INVOCATION_BUCKET_NAME
