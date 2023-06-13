@@ -60,9 +60,9 @@ function createAuthorizeContext () {
     ACCESS_SERVICE_DID = '',
     AWS_REGION = '',
     DELEGATION_TABLE_NAME = '',
-    R2_DELEGATION_BUCKET_ENDPOINT = '',
-    R2_DELEGATION_BUCKET_ACCESS_KEY_ID = '',
-    R2_DELEGATION_BUCKET_SECRET_ACCESS_KEY = '',
+    R2_ENDPOINT = '',
+    R2_ACCESS_KEY_ID = '',
+    R2_SECRET_ACCESS_KEY = '',
     R2_DELEGATION_BUCKET_NAME = '',
     INVOCATION_BUCKET_NAME = '',
     WORKFLOW_BUCKET_NAME = '',
@@ -79,7 +79,7 @@ function createAuthorizeContext () {
     INVOCATION_BUCKET_NAME
   )
   const workflowBucket = createWorkflowStore(AWS_REGION, WORKFLOW_BUCKET_NAME)
-  const delegationBucket = createDelegationsStore(R2_DELEGATION_BUCKET_ENDPOINT, R2_DELEGATION_BUCKET_ACCESS_KEY_ID, R2_DELEGATION_BUCKET_SECRET_ACCESS_KEY, R2_DELEGATION_BUCKET_NAME)
+  const delegationBucket = createDelegationsStore(R2_ENDPOINT, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_DELEGATION_BUCKET_NAME)
   const subscriptionTable = createSubscriptionTable(AWS_REGION, SUBSCRIPTION_TABLE_NAME, {
     endpoint: dbEndpoint
   });
