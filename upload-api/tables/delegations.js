@@ -183,7 +183,7 @@ async function writeEntries (bucket, entries) {
 /**
  * @param {Delegation} d
  * @param {Ucanto.Link | undefined} cause
- * @returns {{cause?: string, link: string, audience: string, issuer: string, expiration: number}}}
+ * @returns {{cause?: string, link: string, audience: string, issuer: string, expiration: number | null}}}
  */
 function createDelegationItem (d, cause) {
   return {
@@ -191,7 +191,7 @@ function createDelegationItem (d, cause) {
     link: d.cid.toString(),
     audience: d.audience.did(),
     issuer: d.issuer.did(),
-    expiration: d.expiration
+    expiration: (d.expiration === Infinity ? null : d.expiration)
   }
 }
 
