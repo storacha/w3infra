@@ -111,8 +111,9 @@ export async function validateEmailPost (request) {
       <ValidateEmailError msg={'Missing delegation in the URL.'} />
     ))
   }
-
+  console.info('authorizing')
   const authorizeResult = await authorize(encodedUcan, createAuthorizeContext())
+  console.info('authorized')
   if (authorizeResult.error) {
     console.error(authorizeResult.error)
     return toLambdaResponse(new HtmlResponse(

@@ -72,7 +72,9 @@ export function useDelegationsTable (dynamoDb, tableName, { bucket, invocationBu
           ok: {}
         }
       }
+      console.info("writing delegations", delegations.length)
       await writeDelegations(bucket, delegations)
+      console.info("wrote delegations")
       await dynamoDb.send(new BatchWriteItemCommand({
         RequestItems: {
           [tableName]: delegations.map(d => ({
@@ -85,6 +87,7 @@ export function useDelegationsTable (dynamoDb, tableName, { bucket, invocationBu
           )
         }
       }))
+      console.info("wrote to dynamo")
       // TODO: we should look at the return value of this BatchWriteItemCommand and either retry unprocessed items or return a Failure
       return {
         ok: {}
