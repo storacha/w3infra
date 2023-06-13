@@ -114,6 +114,7 @@ export async function validateEmailPost (request) {
 
   const authorizeResult = await authorize(encodedUcan, createAuthorizeContext())
   if (authorizeResult.error) {
+    console.error(authorizeResult.error)
     return toLambdaResponse(new HtmlResponse(
       <ValidateEmailError msg={`Oops something went wrong: ${authorizeResult.error.message}`} />,
       { status: 500 }
