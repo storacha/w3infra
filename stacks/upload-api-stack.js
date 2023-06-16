@@ -50,6 +50,8 @@ export function UploadApiStack({ stack, app }) {
           uploadTable,
           delegationTable,
           delegationBucket,
+          consumerTable,
+          subscriptionTable,
           adminMetricsTable,
           carparkBucket,
           invocationBucket,
