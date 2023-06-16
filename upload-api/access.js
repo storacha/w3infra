@@ -33,7 +33,7 @@ export function createAccessClient(issuer, serviceDID, serviceURL) {
           proofs: [invocation],
         })
         .execute(conn)
-
+      if (result.error) console.error(result.error)
       return result.error ? ({
           error: new Failure(`Failed to get info about space, could not allocate.`, {
             cause: result.error
