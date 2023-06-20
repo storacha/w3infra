@@ -87,15 +87,17 @@ export function useDelegationsTable (dynamoDb, tableName, { bucket, invocationBu
         }
       }))
       const unprocessedItemCount = batchWriteResult?.UnprocessedItems?.[tableName]?.length || 0
-      if (unprocessedItemCount > 0) {
-        return {
-          error: new Failure(`failed to index ${unprocessedItemCount} delegations - please try again`)
-        }
-      } else {
-        return {
-          ok: {}
-        }
-      }
+      return (unprocessedItemCount > 0) ?
+        (
+          {
+            error: new Failure(`failed to index ${unprocessedItemCount} delegations - please try again`)
+          }
+        ) : (
+          {
+            ok: {}
+          }
+        )
+
     },
 
     count: async () => {
