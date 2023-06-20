@@ -147,7 +147,7 @@ test('w3infra integration flow', async t => {
           Key: `${shards[0].toString()}/${shards[0].toString()}.car.idx`
         })
       )
-    } catch { }
+    } catch {}
 
     return satnavRequest?.$metadata.httpStatusCode === 200
   }, {
@@ -165,7 +165,7 @@ test('w3infra integration flow', async t => {
           Key: `${shards[0].toString()}/${shards[0].toString()}.car`
         })
       )
-    } catch { }
+    } catch {}
 
     return carpark?.$metadata.httpStatusCode === 200
   }, {
@@ -182,7 +182,7 @@ test('w3infra integration flow', async t => {
           Key: `${shards[0].toString()}/${shards[0].toString()}.car.idx`
         })
       )
-    } catch { }
+    } catch {}
 
     return satnav?.$metadata.httpStatusCode === 200
   }, {

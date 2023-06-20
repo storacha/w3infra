@@ -79,7 +79,6 @@ function createAuthorizeContext () {
     INVOCATION_BUCKET_NAME
   )
   const workflowBucket = createWorkflowStore(AWS_REGION, WORKFLOW_BUCKET_NAME)
-  console.info("creating delegations bucket", R2_ENDPOINT, R2_ACCESS_KEY_ID.length, R2_SECRET_ACCESS_KEY.length, R2_DELEGATION_BUCKET_NAME)
   const delegationBucket = createDelegationsStore(R2_ENDPOINT, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_DELEGATION_BUCKET_NAME)
   const subscriptionTable = createSubscriptionTable(AWS_REGION, SUBSCRIPTION_TABLE_NAME, {
     endpoint: dbEndpoint
@@ -112,9 +111,7 @@ export async function validateEmailPost (request) {
       <ValidateEmailError msg={'Missing delegation in the URL.'} />
     ))
   }
-  console.info('authorizing')
   const authorizeResult = await authorize(encodedUcan, createAuthorizeContext())
-  console.info('authorized')
   if (authorizeResult.error) {
     console.error(authorizeResult.error)
     return toLambdaResponse(new HtmlResponse(

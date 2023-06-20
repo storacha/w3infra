@@ -10,9 +10,10 @@ import { CBOR, Failure } from '@ucanto/server'
  * or by other providers for flexibility.
  * 
  * @param {import('@web3-storage/upload-api').Provision} item 
+ * @returns string
  */
 export const createProvisionSubscriptionId = async ({ customer }) =>
-  (await CBOR.write(customer)).cid.toString()
+  (await CBOR.write({ customer })).cid.toString()
 
 /**
  * @param {import('../types').SubscriptionTable} subscriptionTable
@@ -29,10 +30,7 @@ export function useProvisionStore (subscriptionTable, consumerTable, services) {
 
     put: async (item) => {
       const { cause, consumer, customer, provider } = item
-      // by setting subscription to customer we make it so each customer can have at most one subscription
-      // TODO is this what we want?
-      const { cid } = await CBOR.write({ customer })
-      const subscription = cid.toString()
+      const subscription = await createProvisionSubscriptionId(item)
 
       try {
         await subscriptionTable.add({

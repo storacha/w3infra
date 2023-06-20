@@ -101,7 +101,6 @@ async function consumersTestFixture (context) {
   })
 }
 
-// TODO: is this really valuable? we can remove the subscriptions global index on providers if not
 test('provider finding its customers', async (t) => {
   const { subscriptions, provider, customer } = await subscriptionsTestFixture(t.context)
   const customers = await subscriptions.findCustomersByProvider(provider)
@@ -109,7 +108,6 @@ test('provider finding its customers', async (t) => {
   t.deepEqual(customers, [customer])
 })
 
-// TODO: is this really valuable? we can remove the consumers global index on providers if not
 test('provider finding its consumers', async (t) => {
   const { consumers, provider, consumer } = await consumersTestFixture(t.context)
   const foundConsumers = await consumers.findConsumersByProvider(provider)
@@ -126,13 +124,13 @@ test('finding the customer responsible for a space', async (t) => {
   t.is(foundCustomer, customer)
 })
 
-test('provider canceling a subscription', async (t) => {
+test.skip('provider canceling a subscription', async (t) => {
 })
 
-test('provider blocking a customer', async (t) => {
+test.skip('provider blocking a customer', async (t) => {
 })
 
-test('provider getting per customer/consumer/subscription stats', async (t) => {
+test.skip('provider getting per customer/consumer/subscription stats', async (t) => {
 })
 
 
@@ -142,14 +140,14 @@ test('space finding its providers/subscribers', async (t) => {
   t.deepEqual(foundSubscriptions, [subscription])
 })
 
-test('space removing a provider', async (t) => {
+test.skip('space removing a provider', async (t) => {
 })
 
-test('space finding its storage limits', async (t) => {
+test.skip('space finding its storage limits', async (t) => {
 })
 
 
-test('customer canceling its subscription', async (t) => {
+test.skip('customer canceling its subscription', async (t) => {
 })
 
 test('customer listing its subscription', async (t) => {
@@ -158,5 +156,5 @@ test('customer listing its subscription', async (t) => {
   t.deepEqual(foundSubscriptions, [subscription])
 })
 
-test('customer getting subscription stats (data stored, etc)', async (t) => {
+test.skip('customer getting subscription stats (data stored, etc)', async (t) => {
 })

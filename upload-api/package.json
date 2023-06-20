@@ -24,7 +24,7 @@
     "@web-std/fetch": "^4.1.0",
     "@web3-storage/access": "^14.0.0",
     "@web3-storage/capabilities": "^6.0.1",
-    "@web3-storage/upload-api": "^4.0.0",
+    "@web3-storage/upload-api": "^4.1.0",
     "@web3-storage/w3infra-ucan-invocation": "*",
     "multiformats": "^11.0.1",
     "preact": "^10.14.1",
@@ -50,8 +50,5 @@
     "singleQuote": true,
     "trailingComma": "es5",
     "semi": false
-  },
-  "ava": {
-    "failWithoutAssertions": false
   }
 }

@@ -77,7 +77,7 @@ const codec = Codec.inbound({
  *
  * @param {import('aws-lambda').APIGatewayProxyEventV2} request
  */
-export async function ucanInvocationRouter (request) {
+export async function ucanInvocationRouter(request) {
   const {
     STORE_TABLE_NAME: storeTableName = '',
     STORE_BUCKET_NAME: storeBucketName = '',

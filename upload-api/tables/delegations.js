@@ -29,6 +29,7 @@ import {
 // because our access/confirm provider creates delegations.
 // Once we change this, we can re-enable this optimization.
 const FIND_DELEGATIONS_IN_INVOCATIONS = false
+const DELEGATIONS_FIND_DEFAULT_LIMIT = 1000
 
 /**
  * @typedef {Ucanto.Delegation} Delegation
@@ -72,10 +73,8 @@ export function useDelegationsTable (dynamoDb, tableName, { bucket, invocationBu
           ok: {}
         }
       }
-      console.info("writing delegations", delegations.length)
       await writeDelegations(bucket, delegations)
-      console.info("wrote delegations")
-      await dynamoDb.send(new BatchWriteItemCommand({
+      const batchWriteResult = await dynamoDb.send(new BatchWriteItemCommand({
         RequestItems: {
           [tableName]: delegations.map(d => ({
             PutRequest: {
@@ -87,10 +86,15 @@ export function useDelegationsTable (dynamoDb, tableName, { bucket, invocationBu
           )
         }
       }))
-      console.info("wrote to dynamo")
-      // TODO: we should look at the return value of this BatchWriteItemCommand and either retry unprocessed items or return a Failure
-      return {
-        ok: {}
+      const unprocessedItemCount = batchWriteResult?.UnprocessedItems?.[tableName]?.length || 0
+      if (unprocessedItemCount > 0) {
+        return {
+          error: new Failure(`failed to index ${unprocessedItemCount} delegations - please try again`)
+        }
+      } else {
+        return {
+          ok: {}
+        }
       }
     },
 
@@ -106,7 +110,7 @@ export function useDelegationsTable (dynamoDb, tableName, { bucket, invocationBu
       const cmd = new QueryCommand({
         TableName: tableName,
         IndexName: 'audience',
-        // Limit: options.size || 20, // TODO should we introduce a limit here?
+        Limit: DELEGATIONS_FIND_DEFAULT_LIMIT, // TODO this should probably be configurable using an `options` hash
         KeyConditions: {
           audience: {
             ComparisonOperator: 'EQ',
@@ -139,12 +143,14 @@ export function useDelegationsTable (dynamoDb, tableName, { bucket, invocationBu
         } else {
           // otherwise, we'll try to find the delegation in the R2 bucket we used to stash them in
           const result = await cidToDelegation(bucket, delegationCid)
-          if (result.ok){
+          if (result.ok) {
             delegations.push(result.ok)
           } else {
-            return {error: new Failure(`failed to get delegation ${delegationCid} from legacy delegations bucket`, {
-              cause: result.error
-            })}
+            return {
+              error: new Failure(`failed to get delegation ${delegationCid} from legacy delegations bucket`, {
+                cause: result.error
+              })
+            }
           }
         }
       }
