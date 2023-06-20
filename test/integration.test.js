@@ -14,7 +14,7 @@ import {
   getCarparkBucketInfo,
   getDynamoDb
 } from './helpers/deployment.js'
-import { getClient } from './helpers/up-client.js'
+import { setupNewClient } from './helpers/up-client.js'
 import { randomFile } from './helpers/random.js'
 import { getTableItem, getAllTableRows } from './helpers/table.js'
 
@@ -67,11 +67,12 @@ test('upload-api /metrics', async t => {
 
 // Integration test for all flow from uploading a file to Kinesis events consumers and replicator
 test('w3infra integration flow', async t => {
-  const client = await getClient(t.context.apiEndpoint)
+  const client = await setupNewClient(t.context.apiEndpoint)
   const spaceDid = client.currentSpace()?.did()
   if (!spaceDid) {
     throw new Error('Testing space DID must be set')
   }
+
   // Get space metrics before upload
   const spaceBeforeUploadAddMetrics = await getSpaceMetrics(t, spaceDid, SPACE_METRICS_NAMES.UPLOAD_ADD_TOTAL)
   const spaceBeforeStoreAddMetrics = await getSpaceMetrics(t, spaceDid, SPACE_METRICS_NAMES.STORE_ADD_TOTAL)
@@ -146,7 +147,7 @@ test('w3infra integration flow', async t => {
           Key: `${shards[0].toString()}/${shards[0].toString()}.car.idx`
         })
       )
-    } catch {}
+    } catch { }
 
     return satnavRequest?.$metadata.httpStatusCode === 200
   }, {
@@ -164,7 +165,7 @@ test('w3infra integration flow', async t => {
           Key: `${shards[0].toString()}/${shards[0].toString()}.car`
         })
       )
-    } catch {}
+    } catch { }
 
     return carpark?.$metadata.httpStatusCode === 200
   }, {
@@ -181,7 +182,7 @@ test('w3infra integration flow', async t => {
           Key: `${shards[0].toString()}/${shards[0].toString()}.car.idx`
         })
       )
-    } catch {}
+    } catch { }
 
     return satnav?.$metadata.httpStatusCode === 200
   }, {
@@ -198,7 +199,7 @@ test('w3infra integration flow', async t => {
       const spaceAfterUploadAddMetrics = await getSpaceMetrics(t, spaceDid, SPACE_METRICS_NAMES.UPLOAD_ADD_TOTAL)
       const spaceAfterStoreAddMetrics = await getSpaceMetrics(t, spaceDid, SPACE_METRICS_NAMES.STORE_ADD_TOTAL)
       const spaceAfterStoreAddSizeMetrics = await getSpaceMetrics(t, spaceDid, SPACE_METRICS_NAMES.STORE_ADD_SIZE_TOTAL)
-  
+
       // If staging accept more broad condition given multiple parallel tests can happen there
       if (stage === 'staging') {
         return (
@@ -210,7 +211,7 @@ test('w3infra integration flow', async t => {
           spaceAfterStoreAddSizeMetrics?.value >= spaceBeforeStoreAddSizeMetrics?.value + carSize
         )
       }
-  
+
       return (
         afterStoreAddTotal?.value === beforeStoreAddTotal?.value + 1 &&
         afterUploadAddTotal?.value === beforeUploadAddTotal?.value + 1 &&

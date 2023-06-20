@@ -46,7 +46,7 @@ export function UploadDbStack({ stack, app }) {
   /**
    * This table indexes delegations.
    */
-  const delegationTable = new Table(stack, 'delegation', delegationTableProps)
+  const delegationTable = new Table(stack, 'delegation-table', delegationTableProps)
 
   /**
    * This table tracks w3 wider metrics.

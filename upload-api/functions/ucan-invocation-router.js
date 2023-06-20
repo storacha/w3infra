@@ -123,6 +123,12 @@ export async function ucanInvocationRouter (request) {
   const consumerTable = createConsumerTable(AWS_REGION, consumerTableName, {
     endpoint: dbEndpoint
   });
+  const provisionsStorage = useProvisionStore(subscriptionTable, consumerTable, [
+    /** @type {import('@web3-storage/upload-api').ServiceDID} */
+    (accessServiceDID)
+  ])
+  const delegationsStorage = createDelegationsTable(AWS_REGION, delegationTableName, { bucket: delegationBucket, invocationBucket, workflowBucket })
+
   const server = createUcantoServer(serviceSigner, {
     codec,
     storeTable: createStoreTable(AWS_REGION, storeTableName, {
@@ -142,17 +148,15 @@ export async function ucanInvocationRouter (request) {
     access: createAccessClient(
       serviceSigner,
       DID.parse(accessServiceDID),
-      new URL(accessServiceURL)
+      provisionsStorage,
+      delegationsStorage
     ),
     signer: serviceSigner,
     // TODO: we should set URL from a different env var, doing this for now to avoid that refactor
     url: new URL(accessServiceURL),
     email: new Email({ token: postmarkToken }),
-    provisionsStorage: useProvisionStore(subscriptionTable, consumerTable, [
-      /** @type {import('@web3-storage/upload-api').ServiceDID} */
-      (accessServiceDID)
-    ]),
-    delegationsStorage: createDelegationsTable(AWS_REGION, delegationTableName, { bucket: delegationBucket, invocationBucket, workflowBucket })
+    provisionsStorage,
+    delegationsStorage
   })
 
   const processingCtx = {

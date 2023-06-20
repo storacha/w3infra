@@ -3,6 +3,7 @@ import { DID, Link, Delegation, Signature, Block, UCANLink, ByteView } from '@uc
 import { UnknownLink } from 'multiformats'
 import { CID } from 'multiformats/cid'
 import { Kinesis } from '@aws-sdk/client-kinesis'
+import { Service } from '@web3-storage/upload-api'
 
 
 export interface UcanLogCtx extends WorkflowCtx, ReceiptBlockCtx {
@@ -112,6 +113,8 @@ export interface UnstableConsumerTable extends ConsumerTable {
   findConsumersByProvider: (provider: DID) => Promise<DID[]>
   findSubscriptionsForConsumer: (consumer: DID) => Promise<DID[]>
 }
+
+export type SpaceService = Pick<Service, "space">
 
 export interface UcanInvocation {
   att: UCAN.Capabilities
