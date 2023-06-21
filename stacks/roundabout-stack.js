@@ -25,7 +25,7 @@ export function RoundaboutStack({ stack, app }) {
         environment: {
           BUCKET_ENDPOINT: process.env.R2_ENDPOINT ?? '',
           BUCKET_REGION: process.env.R2_REGION ?? '',
-          BUCKET_BUCKET_NAME: process.env.R2_CARPARK_BUCKET_NAME ?? '',
+          BUCKET_NAME: process.env.R2_CARPARK_BUCKET_NAME ?? '',
           BUCKET_ACCESS_KEY_ID: process.env.R2_ACCESS_KEY_ID ?? '',
           BUCKET_SECRET_ACCESS_KEY: process.env.R2_SECRET_ACCESS_KEY ?? '',
         }

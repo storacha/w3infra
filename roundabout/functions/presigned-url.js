@@ -3,7 +3,7 @@ import { S3Client } from '@aws-sdk/client-s3'
 import { CID } from 'multiformats/cid'
 
 import { getSigner } from '../index.js'
-import { getEnv } from '../utils.js'
+import { getEnv, parseQueryStringParameters } from '../utils.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -23,19 +23,19 @@ export async function presignedUrlGet(request) {
     BUCKET_REGION,
     BUCKET_ACCESS_KEY_ID,
     BUCKET_SECRET_ACCESS_KEY,
-    BUCKET_BUCKET_NAME,
+    BUCKET_NAME,
   } = getEnv()
 
-  const expiresIn = request.queryStringParameters?.expires ?
-    Number(request.pathParameters?.expires)
-    : 3 * 24 * 60 * 60 // 3 days in seconds by default
-
-  const cidString = request.pathParameters?.cid
-  let cid
+  let cid, expiresIn
   try {
+    const parsedQueryParams = parseQueryStringParameters(request.queryStringParameters)
+    expiresIn = parsedQueryParams.expiresIn
+
+    const cidString = request.pathParameters?.cid
     cid = CID.parse(cidString || '')
-  } catch {
+  } catch (err) {
     return {
+      body: err.message,
       statusCode: 400
     }
   }
@@ -49,7 +49,7 @@ export async function presignedUrlGet(request) {
     },
   })
 
-  const signer = getSigner(s3Client, BUCKET_BUCKET_NAME)
+  const signer = getSigner(s3Client, BUCKET_NAME)
   const signedUrl = await signer.getUrl(cid, {
     expiresIn
   })

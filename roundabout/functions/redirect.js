@@ -22,7 +22,7 @@ export async function redirectGet(request) {
     BUCKET_REGION,
     BUCKET_ACCESS_KEY_ID,
     BUCKET_SECRET_ACCESS_KEY,
-    BUCKET_BUCKET_NAME,
+    BUCKET_NAME,
   } = getEnv()
 
   const cidString = request.pathParameters?.cid
@@ -44,7 +44,7 @@ export async function redirectGet(request) {
     },
   })
 
-  const signer = getSigner(s3Client, BUCKET_BUCKET_NAME)
+  const signer = getSigner(s3Client, BUCKET_NAME)
   const signedUrl = await signer.getUrl(cid)
   if (!signedUrl) {
     return {
