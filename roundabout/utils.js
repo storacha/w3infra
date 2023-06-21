@@ -14,8 +14,11 @@ export function parseQueryStringParameters (queryStringParameters) {
     throw new Error(`Bad request with not acceptable expires parameter: ${queryStringParameters?.expires}`)
   }
 
+  const bucketName = queryStringParameters?.bucket
+
   return {
-    expiresIn
+    expiresIn,
+    bucketName
   }
 }
 
