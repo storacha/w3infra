@@ -32,8 +32,8 @@ export function RoundaboutStack({ stack, app }) {
       }
     },
     routes: {
-      'GET /{cid}':               'functions/redirect.handler',
-      'GET /presigned-url/{cid}': 'functions/presigned-url.handler',
+      'GET /{cid}':       'functions/redirect.handler',
+      'HEAD /{cid}':      'functions/redirect.handler',
     },
     accessLog: {
       format:'{"requestTime":"$context.requestTime","requestId":"$context.requestId","httpMethod":"$context.httpMethod","path":"$context.path","routeKey":"$context.routeKey","status":$context.status,"responseLatency":$context.responseLatency,"integrationRequestId":"$context.integration.requestId","integrationStatus":"$context.integration.status","integrationLatency":"$context.integration.latency","integrationServiceStatus":"$context.integration.integrationStatus","ip":"$context.identity.sourceIp","userAgent":"$context.identity.userAgent"}'

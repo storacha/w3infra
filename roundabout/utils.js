@@ -1,14 +1,14 @@
 // Per https://developers.cloudflare.com/r2/api/s3/presigned-urls/
 export const MAX_EXPIRES_IN = 3 * 24 * 60 * 60 // 7 days in seconds
 export const MIN_EXPIRES_IN = 1
+export const DEFAULT_EXPIRES_IN = 3 * 24 * 60 * 60 // 3 days in seconds by default
 
 /**
  * @param {import('aws-lambda').APIGatewayProxyEventPathParameters | undefined} queryStringParameters
  */
 export function parseQueryStringParameters (queryStringParameters) {
   const expiresIn = queryStringParameters?.expires ?
-    parseInt(queryStringParameters?.expires)
-    : 3 * 24 * 60 * 60 // 3 days in seconds by default
+    parseInt(queryStringParameters?.expires) : DEFAULT_EXPIRES_IN
   
   if (expiresIn > MAX_EXPIRES_IN || expiresIn < MIN_EXPIRES_IN) {
     throw new Error(`Bad request with not acceptable expires parameter: ${queryStringParameters?.expires}`)

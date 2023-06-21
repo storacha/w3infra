@@ -8,18 +8,40 @@ The given API is currently public.
 
 ### `GET /{carCid}`
 
-Redirects to a URL where the requested CAR file (by its CID) can be downloaded from. The request will return a `302 Redirect` to a created signed URL.
+Redirects to a URL where the requested CAR file (by its CID) can be downloaded from. The request will return a `302 Redirect` to a created presigned URL.
+
+It also supports a query parameter `expires` with the number of seconds this presigned URL should be valid for. You can set a value from one second to 7 days (604,800 seconds). By default the expiration is set for 
+
+## Usage
+
+### Download CAR file via CURL
 
 ```console
-curl -L -v https://roundabout.web3.storage/presigned-url/bagbaiera222226db4v4oli5fldqghzgbv5rqv3n4ykyfxk7shfr42bfnqwua --output bagbaiera222226db4v4oli5fldqghzgbv5rqv3n4ykyfxk7shfr42bfnqwua.car
+curl -L -v https://roundabout.web3.storage/bagbaiera222226db4v4oli5fldqghzgbv5rqv3n4ykyfxk7shfr42bfnqwua --output bagbaiera222226db4v4oli5fldqghzgbv5rqv3n4ykyfxk7shfr42bfnqwua.car
 ```
 
-### `GET /presigned-url/{carCid}`
+### Get presigned URL for CAR file via CURL
 
-Gets a presigned URL to get the content of a CAR file (by its CID). This presigned URL is valid by 3 days by default. This also supports a query parameter `expires` with the number of seconds this presigned URL should be valid for.
+For some use cases, the immediate redirect might not be desirable. Therefore, it is also possible to rely on a HEAD request to get the presigned URL present in the `location` header of the response.
 
 ```console
-curl -v https://roundabout.web3.storage/bagbaiera222226db4v4oli5fldqghzgbv5rqv3n4ykyfxk7shfr42bfnqwua
+curl --head https://roundabout.web3.storage/bagbaiera222226db4v4oli5fldqghzgbv5rqv3n4ykyfxk7shfr42bfnqwua
 
-https://carpark-prod-0.fffa4b4363a7e5250af8357087263b3a.r2.cloudflarestorage.com/bagbaiera222226db4v4oli5fldqghzgbv5rqv3n4ykyfxk7shfr42bfnqwua/bagbaiera222226db4v4oli5fldqghzgbv5rqv3n4ykyfxk7shfr42bfnqwua.car?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=a314d2872c5c092e911e3e2c7b5e5c3f%2F20230614%2Fauto%2Fs3%2Faws4_request&X-Amz-Date=20230614T134031Z&X-Amz-Expires=259200&X-Amz-Signature=8ec453f58c87d095d63b055fe5e26db37153a4033443b358b18f0ab657f3adab&X-Amz-SignedHeaders=host&x-id=GetObject%
+HTTP/2 302
+date: Wed, 21 Jun 2023 10:12:15 GMT
+content-length: 0
+location: https://carpark-prod-0.fffa4b4363a7e5250af8357087263b3a.r2.cloudflarestorage.com/bagbaiera222226db4v4oli5fldqghzgbv5rqv3n4ykyfxk7shfr42bfnqwua/bagbaiera222226db4v4oli5fldqghzgbv5rqv3n4ykyfxk7shfr42bfnqwua.car?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=a314d2872c5c092e911e3e2c7b5e5c3f%2F20230621%2Fauto%2Fs3%2Faws4_request&X-Amz-Date=20230621T101215Z&X-Amz-Expires=259200&X-Amz-Signature=f61b984f0dad126f0f8e151cbb2eb0b9e10adb68b4ead7a0263a044a5b1985a9&X-Amz-SignedHeaders=host&x-id=GetObject
+apigw-requestid: G3T3xg1LvHcEPxA=
+```
+
+### Get presigned URL with custom expiration
+
+```console
+curl --head https://roundabout.web3.storage/bagbaiera222226db4v4oli5fldqghzgbv5rqv3n4ykyfxk7shfr42bfnqwua?expires=900
+
+HTTP/2 302
+date: Wed, 21 Jun 2023 10:12:15 GMT
+content-length: 0
+location: https://carpark-prod-0.fffa4b4363a7e5250af8357087263b3a.r2.cloudflarestorage.com/bagbaiera222226db4v4oli5fldqghzgbv5rqv3n4ykyfxk7shfr42bfnqwua/bagbaiera222226db4v4oli5fldqghzgbv5rqv3n4ykyfxk7shfr42bfnqwua.car?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=a314d2872c5c092e911e3e2c7b5e5c3f%2F20230621%2Fauto%2Fs3%2Faws4_request&X-Amz-Date=20230621T101215Z&X-Amz-Expires=900&X-Amz-Signature=f61b984f0dad126f0f8e151cbb2eb0b9e10adb68b4ead7a0263a044a5b1985a9&X-Amz-SignedHeaders=host&x-id=GetObject
+apigw-requestid: G3T3xg1LvHcEPxA=
 ```

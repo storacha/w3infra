@@ -3,7 +3,7 @@ import { S3Client } from '@aws-sdk/client-s3'
 import { CID } from 'multiformats/cid'
 
 import { getSigner } from '../index.js'
-import { getEnv } from '../utils.js'
+import { getEnv, parseQueryStringParameters } from '../utils.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -25,12 +25,16 @@ export async function redirectGet(request) {
     BUCKET_NAME,
   } = getEnv()
 
-  const cidString = request.pathParameters?.cid
-  let cid
+  let cid, expiresIn
   try {
+    const parsedQueryParams = parseQueryStringParameters(request.queryStringParameters)
+    expiresIn = parsedQueryParams.expiresIn
+
+    const cidString = request.pathParameters?.cid
     cid = CID.parse(cidString || '')
-  } catch {
+  } catch (err) {
     return {
+      body: err.message,
       statusCode: 400
     }
   }
@@ -45,7 +49,9 @@ export async function redirectGet(request) {
   })
 
   const signer = getSigner(s3Client, BUCKET_NAME)
-  const signedUrl = await signer.getUrl(cid)
+  const signedUrl = await signer.getUrl(cid, {
+    expiresIn
+  })
   if (!signedUrl) {
     return {
       statusCode: 404
