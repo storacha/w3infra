@@ -18,7 +18,8 @@ test('HEAD /{cid}', async t => {
   const response = await fetch(
     `${t.context.roundaboutEndpoint}/${carparkCid}`,
     {
-      method: 'HEAD'
+      method: 'GET',
+      redirect: 'manual'
     }
   )
   t.is(response.status, 302)
@@ -31,7 +32,8 @@ test('HEAD /raw/{key}', async t => {
   const response = await fetch(
     `${t.context.roundaboutEndpoint}/raw/${key}?bucket=${bucketName}`,
     {
-      method: 'HEAD'
+      method: 'GET',
+      redirect: 'manual'
     }
   )
   t.is(response.status, 302)
