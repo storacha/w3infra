@@ -12,7 +12,7 @@
     "console": "sst console",
     "lint": "tsc && eslint '**/*.js'",
     "clean": "rm -rf dist node_modules package-lock.json ./*/{.cache,dist,node_modules}",
-    "test": "npm test  -w roundabout",
+    "test": "npm test -w upload-api -w carpark -w replicator -w satnav -w ucan-invocation -w roundabout",
     "test-integration": "ava --verbose --timeout=60s test/*.test.js",
     "fetch-metrics-for-space": "npm run fetch-metrics-for-space -w tools"
   },
