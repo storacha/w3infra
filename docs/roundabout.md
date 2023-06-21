@@ -10,7 +10,7 @@ The given API is currently public.
 
 Redirects to a URL where the requested CAR file (by its CID) can be downloaded from. The request will return a `302 Redirect` to a created presigned URL.
 
-It also supports a query parameter `expires` with the number of seconds this presigned URL should be valid for. You can set a value from one second to 7 days (604,800 seconds). By default the expiration is set for 
+It also supports a query parameter `expires` with the number of seconds this presigned URL should be valid for. You can set a value from one second to 7 days (604,800 seconds). By default the expiration is set for 3 days (259,200 seconds).
 
 ## Usage
 
@@ -22,7 +22,7 @@ curl -L -v https://roundabout.web3.storage/bagbaiera222226db4v4oli5fldqghzgbv5rq
 
 ### Get presigned URL for CAR file via CURL
 
-For some use cases, the immediate redirect might not be desirable. Therefore, it is also possible to rely on a HEAD request to get the presigned URL present in the `location` header of the response.
+For some use cases, just getting a presigned URL to use later might be needed. Therefore, it is also possible to rely on a HEAD request to get the presigned URL present in the `location` header of the response.
 
 ```console
 curl --head https://roundabout.web3.storage/bagbaiera222226db4v4oli5fldqghzgbv5rqv3n4ykyfxk7shfr42bfnqwua
