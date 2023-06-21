@@ -28,7 +28,13 @@ Sentry.AWSLambda.init({
  * @param {HtmlResponse} response
  */
 export function toLambdaResponse (response) {
-  const { status = 200, headers, body } = response
+  const { status = 200, headers: responseHeaders, body } = response
+  // translate headers from Response format to Lambda format
+  /** @type {Record<string, string>} */
+  const headers = {}
+  responseHeaders.forEach((value, key) => {
+    headers[key] = value
+  })
   return {
     statusCode: status,
     headers,
