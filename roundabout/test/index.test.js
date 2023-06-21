@@ -62,6 +62,14 @@ test('parses valid expires', t => {
   t.is(param.expiresIn, parseInt(queryParams.expires))
 })
 
+test('parses bucket name', t => {
+  const queryParams = {
+    bucket: 'dagcargo'
+  }
+  const param = parseQueryStringParameters(queryParams)
+  t.is(param.bucketName, queryParams.bucket)
+})
+
 test('parses valid expires query parameter', t => {
   const queryParams = {
     expires: '900'
