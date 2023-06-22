@@ -26,11 +26,11 @@ test('HEAD /{cid}', async t => {
   t.truthy(response.headers.get('location'))
 })
 
-test('HEAD /raw/{key}', async t => {
+test('HEAD /key/{key}', async t => {
   const key = '0000c19bd9cd7fa9c532eba81428eda0_baga6ea4seaqpohse35l4xucs5mtabgewpp4mgtle7yym7em6ouvhgjb7wc2pcmq.car'
   const bucketName = 'dagcargo'
   const response = await fetch(
-    `${t.context.roundaboutEndpoint}/raw/${key}?bucket=${bucketName}`,
+    `${t.context.roundaboutEndpoint}/key/${key}?bucket=${bucketName}`,
     {
       method: 'GET',
       redirect: 'manual'

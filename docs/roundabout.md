@@ -12,9 +12,9 @@ Redirects to a presigned URL where the requested CAR file (by its CID) can be do
 
 It also supports a query parameter `expires` with the number of seconds this presigned URL should be valid for. You can set a value from one second to 7 days (604,800 seconds). By default the expiration is set for 3 days (259,200 seconds).
 
-### `GET /raw/{key}?bucket=bucket-name`
+### `GET /key/{key}?bucket=bucket-name`
 
-Redirects to a presigned URL where the requested bucket value can be downloaded from by its key. Unlike `GET /{carCid}`, this endpoint takes a raw key and is compatible with any web3.storage account bucket. The request will return a `302 Redirect` to a created presigned URL.
+Redirects to a presigned URL where the requested bucket value can be downloaded from by its key. Unlike `GET /{carCid}`, this endpoint takes a key and is compatible with any web3.storage account bucket. The request will return a `302 Redirect` to a created presigned URL.
 
 It also supports a query parameter `expires` with the number of seconds this presigned URL should be valid for. You can set a value from one second to 7 days (604,800 seconds). By default the expiration is set for 3 days (259,200 seconds).
 
@@ -52,8 +52,8 @@ location: https://carpark-prod-0.fffa4b4363a7e5250af8357087263b3a.r2.cloudflares
 apigw-requestid: G3T3xg1LvHcEPxA=
 ```
 
-### Get presigned URL for raw file with custom bucket via CURL
+### Get presigned URL for file with key and custom bucket via CURL
 
 ```console
-curl -L https://roundabout.web3.storage/raw/0000c19bd9cd7fa9c532eba81428eda0_baga6ea4seaqpohse35l4xucs5mtabgewpp4mgtle7yym7em6ouvhgjb7wc2pcmq.car?bucket\=dagcargo
+curl -L https://roundabout.web3.storage/key/0000c19bd9cd7fa9c532eba81428eda0_baga6ea4seaqpohse35l4xucs5mtabgewpp4mgtle7yym7em6ouvhgjb7wc2pcmq.car?bucket\=dagcargo
 ```

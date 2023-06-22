@@ -44,11 +44,11 @@ export async function redirectCarGet(request) {
 }
 
 /**
- * AWS HTTP Gateway handler for GET /raw/{key} by bucket key
+ * AWS HTTP Gateway handler for GET /key/{key} by bucket key
  *
  * @param {import('aws-lambda').APIGatewayProxyEventV2} request
  */
-export async function redirectRawGet(request) {
+export async function redirectKeyGet(request) {
   const { BUCKET_NAME } = getEnv()
   const s3Client = getS3Client()
 
@@ -115,4 +115,4 @@ function getS3Client(){
 }
 
 export const handler = Sentry.AWSLambda.wrapHandler(redirectCarGet)
-export const rawHandler = Sentry.AWSLambda.wrapHandler(redirectRawGet)
+export const keyHandler = Sentry.AWSLambda.wrapHandler(redirectKeyGet)

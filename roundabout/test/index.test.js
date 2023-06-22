@@ -70,6 +70,13 @@ test('parses bucket name', t => {
   t.is(param.bucketName, queryParams.bucket)
 })
 
+test('fails to parse bucket name not accepted', t => {
+  const queryParams = {
+    bucket: 'dagcargo-not-this'
+  }
+  t.throws(() => parseQueryStringParameters(queryParams))
+})
+
 test('parses valid expires query parameter', t => {
   const queryParams = {
     expires: '900'
