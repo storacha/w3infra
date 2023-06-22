@@ -49,14 +49,13 @@ export async function redirectCarGet(request) {
  * @param {import('aws-lambda').APIGatewayProxyEventV2} request
  */
 export async function redirectKeyGet(request) {
-  const { BUCKET_NAME } = getEnv()
   const s3Client = getS3Client()
 
   let key, expiresIn, bucketName
   try {
     const parsedQueryParams = parseQueryStringParameters(request.queryStringParameters)
     expiresIn = parsedQueryParams.expiresIn
-    bucketName = parsedQueryParams.bucketName || BUCKET_NAME
+    bucketName = parsedQueryParams.bucketName
 
     key = request.pathParameters?.key
     if (!key) {

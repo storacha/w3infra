@@ -18,6 +18,8 @@ Redirects to a presigned URL where the requested bucket value can be downloaded 
 
 It also supports a query parameter `expires` with the number of seconds this presigned URL should be valid for. You can set a value from one second to 7 days (604,800 seconds). By default the expiration is set for 3 days (259,200 seconds).
 
+Note that there is a bucket list of accepted buckets.
+
 ## Usage
 
 ### Download CAR file via CURL
