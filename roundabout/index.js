@@ -17,12 +17,10 @@ export function getSigner (s3Client, bucketName) {
   return {
     /**
      * 
-     * @param {import('multiformats').CID} cid
+     * @param {string} key
      * @param {RequestPresigningArguments} [options]
      */
-    getUrl: async (cid, options) => {
-      const key = `${cid}/${cid}.car`
-
+    getUrl: async (key, options) => {
       // Validate bucket has requested cid
       const headCommand = new HeadObjectCommand({
         Bucket: bucketName,

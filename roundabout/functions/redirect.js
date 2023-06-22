@@ -12,18 +12,13 @@ Sentry.AWSLambda.init({
 })
 
 /**
- * AWS HTTP Gateway handler for GET /{cid}
+ * AWS HTTP Gateway handler for GET /{cid} by car CID
  *
  * @param {import('aws-lambda').APIGatewayProxyEventV2} request
  */
-export async function redirectGet(request) {
-  const {
-    BUCKET_ENDPOINT,
-    BUCKET_REGION,
-    BUCKET_ACCESS_KEY_ID,
-    BUCKET_SECRET_ACCESS_KEY,
-    BUCKET_NAME,
-  } = getEnv()
+export async function redirectCarGet(request) {
+  const { BUCKET_NAME } = getEnv()
+  const s3Client = getS3Client()
 
   let cid, expiresIn
   try {
@@ -39,19 +34,53 @@ export async function redirectGet(request) {
     }
   }
 
-  const s3Client = new S3Client({
-    region: BUCKET_REGION,
-    endpoint: BUCKET_ENDPOINT,
-    credentials: {
-      accessKeyId: BUCKET_ACCESS_KEY_ID,
-      secretAccessKey: BUCKET_SECRET_ACCESS_KEY,
-    },
-  })
-
   const signer = getSigner(s3Client, BUCKET_NAME)
-  const signedUrl = await signer.getUrl(cid, {
+  const key = `${cid}/${cid}.car`
+  const signedUrl = await signer.getUrl(key, {
     expiresIn
   })
+  
+  return toLambdaResponse(signedUrl)
+}
+
+/**
+ * AWS HTTP Gateway handler for GET /key/{key} by bucket key
+ *
+ * @param {import('aws-lambda').APIGatewayProxyEventV2} request
+ */
+export async function redirectKeyGet(request) {
+  const s3Client = getS3Client()
+
+  let key, expiresIn, bucketName
+  try {
+    const parsedQueryParams = parseQueryStringParameters(request.queryStringParameters)
+    expiresIn = parsedQueryParams.expiresIn
+    bucketName = parsedQueryParams.bucketName
+
+    key = request.pathParameters?.key
+    if (!key) {
+      throw new Error('no path key provided')
+    }
+
+  } catch (err) {
+    return {
+      body: err.message,
+      statusCode: 400
+    }
+  }
+
+  const signer = getSigner(s3Client, bucketName)
+  const signedUrl = await signer.getUrl(key, {
+    expiresIn
+  })
+  
+  return toLambdaResponse(signedUrl)
+}
+
+/**
+ * @param {string | undefined} signedUrl 
+ */
+function toLambdaResponse(signedUrl) {
   if (!signedUrl) {
     return {
       statusCode: 404
@@ -66,4 +95,23 @@ export async function redirectGet(request) {
   }
 }
 
-export const handler = Sentry.AWSLambda.wrapHandler(redirectGet)
+function getS3Client(){
+  const {
+    BUCKET_ENDPOINT,
+    BUCKET_REGION,
+    BUCKET_ACCESS_KEY_ID,
+    BUCKET_SECRET_ACCESS_KEY,
+  } = getEnv()
+
+  return new S3Client({
+    region: BUCKET_REGION,
+    endpoint: BUCKET_ENDPOINT,
+    credentials: {
+      accessKeyId: BUCKET_ACCESS_KEY_ID,
+      secretAccessKey: BUCKET_SECRET_ACCESS_KEY,
+    },
+  })
+}
+
+export const handler = Sentry.AWSLambda.wrapHandler(redirectCarGet)
+export const keyHandler = Sentry.AWSLambda.wrapHandler(redirectKeyGet)

@@ -33,7 +33,8 @@ test('can create signed url for object in bucket', async t => {
   const expiresIn = 3 * 24 * 60 * 60 // 3 days in seconds
 
   const signer = getSigner(t.context.s3Client, bucketName)
-  const signedUrl = await signer.getUrl(carCid, {
+  const key = `${carCid}/${carCid}.car`
+  const signedUrl = await signer.getUrl(key, {
     expiresIn
   })
 
@@ -47,7 +48,8 @@ test('fails to create signed url for object not in bucket', async t => {
   const carCid = CID.parse('bagbaiera222226db4v4oli5fldqghzgbv5rqv3n4ykyfxk7shfr42bfnqwua')
 
   const signer = getSigner(t.context.s3Client, bucketName)
-  const signedUrl = await signer.getUrl(carCid)
+  const key = `${carCid}/${carCid}.car`
+  const signedUrl = await signer.getUrl(key)
 
   t.falsy(signedUrl)
 })
@@ -58,6 +60,21 @@ test('parses valid expires', t => {
   }
   const param = parseQueryStringParameters(queryParams)
   t.is(param.expiresIn, parseInt(queryParams.expires))
+})
+
+test('parses bucket name', t => {
+  const queryParams = {
+    bucket: 'dagcargo'
+  }
+  const param = parseQueryStringParameters(queryParams)
+  t.is(param.bucketName, queryParams.bucket)
+})
+
+test('fails to parse bucket name not accepted', t => {
+  const queryParams = {
+    bucket: 'dagcargo-not-this'
+  }
+  t.throws(() => parseQueryStringParameters(queryParams))
 })
 
 test('parses valid expires query parameter', t => {

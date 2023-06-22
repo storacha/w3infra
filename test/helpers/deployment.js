@@ -42,6 +42,20 @@ export const getApiEndpoint = () => {
   return testEnv[`${getStackName()}-${id}`].ApiEndpoint
 }
 
+export const getRoundaboutEndpoint = () => {
+  // CI/CD deployment
+  if (process.env.SEED_APP_NAME) {
+    return `https://${stage}.roundabout.web3.storage`
+  }
+
+  const require = createRequire(import.meta.url)
+  const testEnv = require('../../.test-env.json')
+
+  // Get Roundabout API endpoint
+  const id = 'RoundaboutStack'
+  return testEnv[`${getStackName()}-${id}`].ApiEndpoint
+}
+
 export const getSatnavBucketInfo = () => {
   // CI/CD deployment
   if (process.env.SEED_APP_NAME) {
