@@ -1,4 +1,4 @@
-import { Table } from '@serverless-stack/resources'
+import { Table, Bucket } from '@serverless-stack/resources'
 
 import {
   storeTableProps,
@@ -11,7 +11,7 @@ import {
   adminMetricsTableProps,
   spaceMetricsTableProps
 } from '../ucan-invocation/tables/index.js'
-import { setupSentry } from './config.js'
+import { setupSentry, getBucketConfig } from './config.js'
 
 /**
  * @param {import('@serverless-stack/resources').StackContext} properties
@@ -42,11 +42,21 @@ export function UploadDbStack({ stack, app }) {
    * This table tracks the relationship between subscriptions and consumers (ie, spaces).
    */
   const consumerTable = new Table(stack, 'consumer', consumerTableProps)
+  
+  /**
+   * This bucket stores delegations extracted from UCAN invocations.
+   */
+  const delegationBucket = new Bucket(stack, 'delegation-store', {
+    cors: true,
+    cdk: {
+      bucket: getBucketConfig('delegation', app.stage)
+    }
+  })
 
   /**
    * This table indexes delegations.
    */
-  const delegationTable = new Table(stack, 'delegation-table', delegationTableProps)
+  const delegationTable = new Table(stack, 'delegation', delegationTableProps)
 
   /**
    * This table tracks w3 wider metrics.
@@ -63,6 +73,7 @@ export function UploadDbStack({ stack, app }) {
     uploadTable,
     consumerTable,
     subscriptionTable,
+    delegationBucket,
     delegationTable,
     adminMetricsTable,
     spaceMetricsTable

@@ -148,6 +148,14 @@ AWS ARN for Elastic IPFS SQS indexer used to request Elastic IPFS to index given
 
 AWS URL for Elastic IPFS SQS indexer used to request Elastic IPFS to index given CAR files.
 
+#### `POSTMARK_TOKEN`
+
+Postmark API token, which is used by the email verification system to send emails.
+
+#### `MAILSLURP_API_KEY`
+
+API token for [Mailslurp](https://www.mailslurp.com/), which is used in [integration tests](./test/integration.test.js). To invalidate or refresh tokens, head to the [Mailslurp dashboard](https://app.mailslurp.com/dashboard/).
+
 ### Secrets
 
 Set production secrets in aws SSM via [`sst secrets`](https://docs.sst.dev/config#sst-secrets). The region must be set to the one you deploy that stage to

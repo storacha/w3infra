@@ -28,6 +28,7 @@ import {
 // As of 6/6/2023 not all delegations have corresponding invocations
 // because our access/confirm provider creates delegations.
 // Once we change this, we can re-enable this optimization.
+// This work is being tracked in https://github.com/web3-storage/w3infra/issues/210
 const FIND_DELEGATIONS_IN_INVOCATIONS = false
 const DELEGATIONS_FIND_DEFAULT_LIMIT = 1000
 

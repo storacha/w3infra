@@ -1,14 +1,13 @@
 import {
   Api,
   Config,
-  Bucket,
   use
 } from '@serverless-stack/resources'
 import { UploadDbStack } from './upload-db-stack.js'
 import { CarparkStack } from './carpark-stack.js'
 import { UcanInvocationStack } from './ucan-invocation-stack.js'
 
-import { getCustomDomain, getApiPackageJson, getGitInfo, setupSentry, getBucketConfig } from './config.js'
+import { getCustomDomain, getApiPackageJson, getGitInfo, setupSentry } from './config.js'
 
 /**
  * @param {import('@serverless-stack/resources').StackContext} properties
@@ -23,16 +22,8 @@ export function UploadApiStack({ stack, app }) {
 
   // Get references to constructs created in other stacks
   const { carparkBucket } = use(CarparkStack)
-  const { storeTable, uploadTable, delegationTable, adminMetricsTable, consumerTable, subscriptionTable } = use(UploadDbStack)
+  const { storeTable, uploadTable, delegationBucket, delegationTable, adminMetricsTable, consumerTable, subscriptionTable } = use(UploadDbStack)
   const { invocationBucket, taskBucket, workflowBucket, ucanStream } = use(UcanInvocationStack)
-
-  // Resources for this stack
-  const delegationBucket = new Bucket(stack, 'delegation-store', {
-    cors: true,
-    cdk: {
-      bucket: getBucketConfig('delegation', app.stage)
-    }
-  })
 
   // Setup API
   const customDomain = getCustomDomain(stack.stage, process.env.HOSTED_ZONE)

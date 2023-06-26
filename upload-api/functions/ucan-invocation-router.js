@@ -152,7 +152,7 @@ export async function ucanInvocationRouter(request) {
       delegationsStorage
     ),
     signer: serviceSigner,
-    // TODO: we should set URL from a different env var, doing this for now to avoid that refactor
+    // TODO: we should set URL from a different env var, doing this for now to avoid that refactor - tracking in https://github.com/web3-storage/w3infra/issues/209
     url: new URL(accessServiceURL),
     email: new Email({ token: postmarkToken }),
     provisionsStorage,

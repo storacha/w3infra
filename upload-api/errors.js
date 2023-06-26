@@ -67,7 +67,7 @@ NoDelegationFoundForGivenCidError.CODE = 'ERROR_DELEGATION_NOT_FOUND_FOR_CID'
 
 export class FailedToDecodeDelegationForGivenCidError extends HTTPError {
   constructor (msg = 'Failed to decode delegation with given CID') {
-    super(msg, 404)
+    super(msg, 400)
     this.name = 'FailedToDecodeDelegationForGivenCid'
     this.code = FailedToDecodeDelegationForGivenCidError.CODE
   }

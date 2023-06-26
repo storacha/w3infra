@@ -2,38 +2,9 @@ import { connect } from '@ucanto/client'
 import { CAR, HTTP } from '@ucanto/transport'
 import * as DID from '@ipld/dag-ucan/did'
 import * as Signer from '@ucanto/principal/ed25519'
-import { importDAG } from '@ucanto/core/delegation'
-import { CarReader } from '@ipld/car'
 import { AgentData } from '@web3-storage/access/agent'
 import { Client } from '@web3-storage/w3up-client'
 import { MailSlurp } from "mailslurp-client"
-
-/**
- * Get w3up-client configured with staging endpoints and CI Keys.
- *
- * @param {string} uploadServiceUrl
- * @param {object} [options]
- * @param {boolean} [options.shouldRegister]
- */
-export async function getClient(uploadServiceUrl, options = {}) {
-  // Load client with specific private key
-  const principal = Signer.parse(process.env.INTEGRATION_TESTS_UCAN_KEY || '')
-  const data = await AgentData.create({ principal })
-
-  const client = new Client(data, {
-    serviceConf: {
-      upload: getUploadServiceConnection(uploadServiceUrl),
-      access: getAccessServiceConnection(uploadServiceUrl)
-    },
-  })
-
-  // Add proof that this agent has been delegated capabilities on the space
-  const proof = await parseProof(process.env.INTEGRATION_TESTS_PROOF || '')
-  const space = await client.addSpace(proof)
-  await client.setCurrentSpace(space.did())
-
-  return client
-}
 
 /**
  * 
@@ -42,7 +13,7 @@ export async function getClient(uploadServiceUrl, options = {}) {
  */
 function getAuthLinkFromEmail (email, uploadServiceUrl) {
   // forgive me for I have s̵i̵n̴n̴e̵d̴ ̸a̸n̵d̷ ̷p̶a̵r̵s̵e̸d̷ Ȟ̷̞T̷̢̈́M̸̼̿L̴̎ͅ ̵̗̍ẅ̵̝́ï̸ͅt̴̬̅ḫ̸̔ ̵͚̔ŗ̵͊e̸͍͐g̶̜͒ė̷͖x̴̱̌
-  // TODO we should update the email and add an ID to this element to make this more robust at some point 
+  // TODO we should update the email and add an ID to this element to make this more robust - tracked in https://github.com/web3-storage/w3infra/issues/208
   const link = email.match(/<a href="([^"]*)".*Verify email address/)[1]
 
   // test auth services always link to the staging URL but we want to hit the service we're testing
@@ -86,17 +57,6 @@ export async function setupNewClient (uploadServiceUrl, options = {}) {
   }
 
   return client
-}
-
-/** @param {string} data Base64 encoded CAR file */
-async function parseProof (data) {
-  const blocks = []
-  const reader = await CarReader.fromBytes(Buffer.from(data, 'base64'))
-  for await (const block of reader.blocks()) {
-    blocks.push(block)
-  }
-  // @ts-expect-error incompatible CID type versions in dependencies
-  return importDAG(blocks)
 }
 
 /**

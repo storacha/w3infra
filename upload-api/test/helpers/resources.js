@@ -61,7 +61,6 @@ function globalIndexPropsToGlobalIndexSpec (indexName, props) {
         KeyType: "HASH",
       },
     ],
-    // TODO: is this the right number for ProvisionedThroughput?
     ProvisionedThroughput: {
       ReadCapacityUnits: 5,
       WriteCapacityUnits: 5
