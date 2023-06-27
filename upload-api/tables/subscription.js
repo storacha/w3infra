@@ -5,10 +5,11 @@ import {
   QueryCommand,
 } from '@aws-sdk/client-dynamodb'
 import { Failure } from '@ucanto/server'
-import { marshall } from '@aws-sdk/util-dynamodb'
+import { marshall, unmarshall } from '@aws-sdk/util-dynamodb'
 
 /**
  * @typedef {import('../types').SubscriptionTable} SubscriptionTable
+ * @typedef {import('../types').UnstableSubscriptionTable} UnstableSubscriptionTable
  * @typedef {import('../types').SubscriptionInput} SubscriptionInput
  */
 
@@ -43,7 +44,7 @@ export function createSubscriptionTable (region, tableName, options = {}) {
 /**
  * @param {DynamoDBClient} dynamoDb
  * @param {string} tableName
- * @returns {SubscriptionTable}
+ * @returns {UnstableSubscriptionTable}
  */
 export function useSubscriptionTable (dynamoDb, tableName) {
   return {
@@ -106,6 +107,60 @@ export function useSubscriptionTable (dynamoDb, tableName) {
           subscription: i.subscription.toString()
         }
       }) : []
+    },
+
+    /**
+     * !!! the following methods are unstable and may be changed at any time !!!
+     * !!!      they are included here for testing and design purposes       !!!
+     */
+
+    findCustomersByProvider: async (provider) => {
+      const cmd = new QueryCommand({
+        TableName: tableName,
+        IndexName: 'provider',
+        KeyConditions: {
+          provider: {
+            ComparisonOperator: 'EQ',
+            AttributeValueList: [{ S: provider }]
+          }
+        },
+        AttributesToGet: ['customer']
+      })
+      const response = await dynamoDb.send(cmd)
+      return response.Items ? (
+        response.Items.map(item => /** @type { import('@ucanto/interface').DID } */ (item.customer.S))
+      ) : []
+    },
+
+    findCustomerForSubscription: async (subscription) => {
+      const cmd = new QueryCommand({
+        TableName: tableName,
+        KeyConditions: {
+          subscription: {
+            ComparisonOperator: 'EQ',
+            AttributeValueList: [{ S: subscription }]
+          }
+        },
+        AttributesToGet: ['customer']
+      })
+      const response = await dynamoDb.send(cmd)
+      return response.Items ? /** @type { import('@ucanto/interface').DID } */ (response.Items[0].customer.S) : undefined
+    },
+
+    findSubscriptionsForCustomer: async (customer) => {
+      const cmd = new QueryCommand({
+        TableName: tableName,
+        IndexName: 'customer',
+        KeyConditions: {
+          customer: {
+            ComparisonOperator: 'EQ',
+            AttributeValueList: [{ S: customer }]
+          }
+        },
+        AttributesToGet: ['subscription']
+      })
+      const response = await dynamoDb.send(cmd)
+      return response.Items?.map(i => unmarshall(i).subscription)
     }
   }
 }

@@ -9,6 +9,7 @@ import { marshall } from '@aws-sdk/util-dynamodb'
 
 /**
  * @typedef {import('../types').ConsumerTable} ConsumerTable
+ * @typedef {import('../types').UnstableConsumerTable} UnstableConsumerTable
  * @typedef {import('../types').ConsumerInput} ConsumerInput
  */
 
@@ -44,7 +45,7 @@ export class ConflictError extends Failure {
 /**
  * @param {DynamoDBClient} dynamoDb
  * @param {string} tableName
- * @returns {ConsumerTable}
+ * @returns {UnstableConsumerTable}
  */
 export function useConsumerTable (dynamoDb, tableName) {
   return {
@@ -112,6 +113,47 @@ export function useConsumerTable (dynamoDb, tableName) {
       }))
 
       return BigInt(result.Table?.ItemCount ?? -1)
+    },
+
+    /**
+     * !!! the following methods are unstable and may be changed at any time !!!
+     * !!!      they are included here for testing and design purposes       !!!
+     */
+
+    findConsumersByProvider: async (provider) => {
+      const cmd = new QueryCommand({
+        TableName: tableName,
+        IndexName: 'provider',
+        KeyConditions: {
+          provider: {
+            ComparisonOperator: 'EQ',
+            AttributeValueList: [{ S: provider }]
+          }
+        },
+        AttributesToGet: ['consumer']
+      })
+      const response = await dynamoDb.send(cmd)
+      return response.Items ? (
+        response.Items.map(item => /** @type { import('@ucanto/interface').DID } */ (item.consumer.S))
+      ) : []
+    },
+
+    findSubscriptionsForConsumer: async (consumer) => {
+      const cmd = new QueryCommand({
+        TableName: tableName,
+        IndexName: 'consumer',
+        KeyConditions: {
+          consumer: {
+            ComparisonOperator: 'EQ',
+            AttributeValueList: [{ S: consumer }]
+          }
+        },
+        AttributesToGet: ['subscription']
+      })
+      const response = await dynamoDb.send(cmd)
+      return response.Items ? (
+        response.Items.map(item => /** @type { import('@ucanto/interface').DID } */ (item.subscription.S))
+      ) : []
     }
   }
 }

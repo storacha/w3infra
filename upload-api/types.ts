@@ -77,6 +77,15 @@ export interface SubscriptionTable {
     Promise<{ subscription: string }[]>
 }
 
+/**
+ * functions that are useful for testing and prototyping - should only be used in tests for now
+ */
+export interface UnstableSubscriptionTable extends SubscriptionTable {
+  findCustomersByProvider: (provider: DID) => Promise<DID[]>
+  findCustomerForSubscription: (subscription: string) => Promise<DID | undefined>
+  findSubscriptionsForCustomer: (customer: string) => Promise<DID[] | undefined>
+}
+
 export interface ConsumerInput {
   /** the DID of the consumer (eg, a space) for whom services are being provisioned */
   consumer: DID,
@@ -95,6 +104,14 @@ export interface ConsumerTable {
   count: () => Promise<bigint>
   /** return a boolean indicating whether the given consumer has a storage provider */
   hasStorageProvider: (consumer: DID) => Promise<boolean>
+}
+
+/**
+ * functions that are useful for testing and prototyping - should only be used in tests for now
+ */
+export interface UnstableConsumerTable extends ConsumerTable {
+  findConsumersByProvider: (provider: DID) => Promise<DID[]>
+  findSubscriptionsForConsumer: (consumer: DID) => Promise<DID[]>
 }
 
 export type SpaceService = Pick<Service, "space">
