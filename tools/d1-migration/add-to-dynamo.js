@@ -8,26 +8,23 @@ import fs from 'fs/promises'
 
 export async function addToDynamo () {
   const {
-    ENV,
-    DELEGATIONS_TABLE_NAME,
-    CONSUMERS_TABLE_NAME,
-    SUBSCRIPTIONS_TABLE_NAME
+    STAGE,
   } = getEnv()
 
   const { client: delegationsClient, tableName: delegationsTableName } = getDynamoDb(
-    DELEGATIONS_TABLE_NAME,
-    ENV,
-    getRegion(ENV)
+    'delegation',
+    STAGE,
+    getRegion(STAGE)
   )
   const { client: subscriptionsClient, tableName: subscriptionsTableName } = getDynamoDb(
-    SUBSCRIPTIONS_TABLE_NAME,
-    ENV,
-    getRegion(ENV)
+    'subscription',
+    STAGE,
+    getRegion(STAGE)
   )
-  const { client: provisionsClient, tableName: provisionsTableName } = getDynamoDb(
-    CONSUMERS_TABLE_NAME,
-    ENV,
-    getRegion(ENV)
+  const { client: consumersClient, tableName: consumersTableName } = getDynamoDb(
+    'consumer',
+    STAGE,
+    getRegion(STAGE)
   )
   const allDelegations =
     /** @type {{cid: string, audience: string, issuer: string, expiration: number | null, inserted_at: string, updated_at: string}[]} */
@@ -50,8 +47,13 @@ export async function addToDynamo () {
         }))
       }
     })
-    console.log(cmd)
-    //await delegationsClient.send(cmd)
+    console.log("PUTting delegations")
+    const delResult = await delegationsClient.send(cmd)
+    delResult.UnprocessedItems
+    if (delResult.UnprocessedItems && Object.keys(delResult.UnprocessedItems).length > 0) {
+      console.log("found unprocessed subscription results", delResult.UnprocessedItems)
+    }
+
   }
 
   const allProvisions =
@@ -59,25 +61,31 @@ export async function addToDynamo () {
     (JSON.parse((await fs.readFile(`d1-migration/data/provisions.json`)).toString()))
 
   for (const provisions of chunks(allProvisions, 25)) {
-    const subscriptionsCmd = new BatchWriteItemCommand({
+    console.log("PUTting subscriptions")
+    const subsResult = await subscriptionsClient.send(
+      new BatchWriteItemCommand({
+        RequestItems: {
+          [subscriptionsTableName]: await Promise.all(provisions.map(async p => ({
+            PutRequest: {
+              Item: marshall({
+                provider: p.provider,
+                customer: p.sponsor,
+                subscription: await customerToSubscription(p.sponsor),
+                insertedAt: p.inserted_at,
+                updatedAt: p.updated_at
+              })
+            }
+          })))
+        }
+      }))
+    if (subsResult.UnprocessedItems && Object.keys(subsResult.UnprocessedItems).length > 0) {
+      console.log("found unprocessed subscription results", subsResult.UnprocessedItems)
+    }
+
+    console.log("PUTting consumers")
+    const consResult = await consumersClient.send(new BatchWriteItemCommand({
       RequestItems: {
-        [subscriptionsTableName]: await Promise.all(provisions.map(async p => ({
-          PutRequest: {
-            Item: marshall({
-              provider: p.provider,
-              customer: p.sponsor,
-              subscription: await customerToSubscription(p.sponsor),
-              insertedAt: p.inserted_at,
-              updatedAt: p.updated_at
-            })
-          }
-        })))
-      }
-    })
-    
-    const provisionsCmd = new BatchWriteItemCommand({
-      RequestItems: {
-        [provisionsTableName]: await Promise.all(provisions.map(async p => ({
+        [consumersTableName]: await Promise.all(provisions.map(async p => ({
           PutRequest: {
             Item: marshall({
               consumer: p.consumer,
@@ -89,13 +97,18 @@ export async function addToDynamo () {
           }
         })))
       }
-    })
-    console.log(subscriptionsCmd)
-    console.log(provisionsCmd)
-    //await subscriptionsClient.send(subscriptionsCmd)
-    //await provisionsClient.send(provisionsCmd)
+    }))
+    if (consResult.UnprocessedItems && Object.keys(consResult.UnprocessedItems).length > 0) {
+      console.log("found unprocessed consumer results", consResult.UnprocessedItems)
+    }
   }
 }
+
+// a map to de-dupe subscriptions - we need to do this because we didn't previously enforce one-space-per-customer
+/**
+ * @type Record<string, number>
+ */
+const subscriptions = {}
 
 /**
  * Convert customer string to a subscription the way we do in upload-api/stores/provisions.js#34
@@ -104,7 +117,21 @@ export async function addToDynamo () {
  * @returns string
  */
 async function customerToSubscription (customer) {
-  const { cid } = await CBOR.write({ customer })
+  /**
+   * @type {{customer: string, ordinality?: number}}
+   */
+  const s = { customer }
+
+  // to support existing customers who have created more than one space, we add an extra "ordinality" 
+  // field to the CBOR struct we use to generate a subscription ID for all but the first subscription
+  // we find for a particular customer
+  if (subscriptions[customer]) {
+    s.ordinality = subscriptions[customer]
+    subscriptions[customer] = subscriptions[customer] + 1
+  } else {
+    subscriptions[customer] = 1
+  }
+  const { cid } = await CBOR.write(s)
   return cid.toString()
 }
 
@@ -113,7 +140,7 @@ async function customerToSubscription (customer) {
  */
 function getEnv () {
   return {
-    ENV: mustGetEnv('ENV'),
+    STAGE: mustGetEnv('STAGE'),
     DELEGATIONS_TABLE_NAME: process.env.DELEGATIONS_TABLE_NAME ?? 'delegations',
     SUBSCRIPTIONS_TABLE_NAME: process.env.SUBSCRIPTIONS_TABLE_NAME ?? 'subscriptions',
     CONSUMERS_TABLE_NAME: process.env.CONSUMERS_TABLE_NAME ?? 'consumers',
