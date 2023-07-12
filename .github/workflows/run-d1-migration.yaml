@@ -7,6 +7,7 @@ on:
         required: true
         description: "Stage to run this in (eg: travis, pr194, staging, prod)"
         type: string
+  push: -- here to get github to register this 
 
 jobs:
   migrate:
