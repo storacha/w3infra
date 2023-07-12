@@ -1,6 +1,9 @@
 name: D1 to Dynamo migration
 
 on:
+  push:
+    branches:
+      - "feat/dynamo-migration"
   workflow_dispatch:
     inputs:
       stage:
