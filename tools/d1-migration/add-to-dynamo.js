@@ -29,6 +29,7 @@ async function loadFromD1 () {
 
   const dbName = (STAGE === 'prod') ? 'access' : 'access-staging'
   try {
+    console.log(await exec('which wrangler'))
     const delegations = JSON.parse(await exec(`wrangler d1 execute ${dbName} --command 'SELECT * from delegations_v3' --json`))[0].results
     const provisions = JSON.parse(await exec(`wrangler d1 execute ${dbName} --command 'SELECT * from provisions' --json`))[0].results
     console.log(`found ${delegations.length} delegations and ${provisions.length} provisions`)
