@@ -1,7 +1,6 @@
 name: D1 to Dynamo migration
 
 on:
-  push: -- here as a hack
   workflow_dispatch:
     inputs:
       stage:
@@ -20,7 +19,7 @@ jobs:
           fetch-depth: 0
       - uses: cloudflare/wrangler-action@2.0.0
         with:
-          apiToken: ${{ secrets.CF_API_TOKEN }}
+          apiToken: ${{ secrets.CF_TOKEN }}
       - name: Setup node
         uses: actions/setup-node@v2
         with:
