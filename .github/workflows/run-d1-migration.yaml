@@ -34,4 +34,4 @@ jobs:
       - name: Run job
         env:
           STAGE: ${{ github.event.inputs.stage }}
-        run: npm run d1-dynamo-migration
+        run: STAGE=pr194 npm run d1-dynamo-migration
