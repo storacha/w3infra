@@ -15,6 +15,12 @@ import { exec as childProcessExec } from 'child_process'
 const exec = async (command) => {
   return new Promise((resolve, reject) => {
     childProcessExec(command, (error, stdout, stderr) => {
+      if (error || stderr){
+        console.log("command failed")
+        console.log('stdout', stdout)
+        console.log('error', error)
+        console.log('stderr', stderr)
+      }
       if (error !== null) reject(error)
       if (stderr !== '') reject(stderr)
       else resolve(stdout)
