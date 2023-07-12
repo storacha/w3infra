@@ -1,6 +1,7 @@
-name: D1 -> Dynamo migration
+name: D1 to Dynamo migration
 
 on:
+  push: -- here as a hack
   workflow_dispatch:
     inputs:
       stage:
