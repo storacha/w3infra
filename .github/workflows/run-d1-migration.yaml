@@ -33,4 +33,4 @@ jobs:
         env:
           STAGE: pr194
           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_TOKEN }}
-        run: wrangler whoami
+        run: npm run d1-dynamo-migration
