@@ -4,9 +4,42 @@ import {
 } from '@aws-sdk/client-dynamodb'
 import { marshall } from '@aws-sdk/util-dynamodb'
 import { CBOR } from '@ucanto/server'
-import fs from 'fs/promises'
 
-export async function addToDynamo () {
+import { exec as childProcessExec } from 'child_process'
+
+/**
+ * 
+ * @param {string} command 
+ * @returns 
+ */
+const exec = async (command) => {
+  return new Promise((resolve, reject) => {
+    childProcessExec(command, (error, stdout, stderr) => {
+      if (error !== null) reject(error)
+      if (stderr !== '') reject(stderr)
+      else resolve(stdout)
+    })
+  })
+}
+
+async function loadFromD1 () {
+  const {
+    STAGE,
+  } = getEnv()
+
+  const dbName = (STAGE === 'prod') ? 'access' : 'access-staging'
+  const delegations = JSON.parse(await exec(`wrangler d1 execute ${dbName} --command 'SELECT * from delegations_v3' --json`))[0].results
+  const provisions = JSON.parse(await exec(`wrangler d1 execute ${dbName} --command 'SELECT * from provisions' --json`))[0].results
+  console.log(`found ${delegations.length} delegations and ${provisions.length} provisions`)
+  return { delegations, provisions }
+}
+
+/** 
+ * @typedef {{cid: string, audience: string, issuer: string, expiration: number | null, inserted_at: string, updated_at: string}} Delegation
+ * @typedef {{cid: string, consumer: string, provider: string, sponsor: string, inserted_at: string, updated_at: string}} Provision
+ * @param {{delegations: Delegation[], provisions: Provision[]}} data
+ */
+async function addToDynamo ({delegations: allDelegations, provisions: allProvisions}) {
   const {
     STAGE,
   } = getEnv()
@@ -26,9 +59,6 @@ export async function addToDynamo () {
     STAGE,
     getRegion(STAGE)
   )
-  const allDelegations =
-    /** @type {{cid: string, audience: string, issuer: string, expiration: number | null, inserted_at: string, updated_at: string}[]} */
-    (JSON.parse((await fs.readFile(`d1-migration/data/delegations.json`)).toString()))
 
   for (const delegations of chunks(allDelegations, 25)) {
     const cmd = new BatchWriteItemCommand({
@@ -47,7 +77,7 @@ export async function addToDynamo () {
         }))
       }
     })
-    console.log("PUTting delegations")
+    console.log(`PUTting delegations to ${delegationsTableName}`)
     const delResult = await delegationsClient.send(cmd)
     delResult.UnprocessedItems
     if (delResult.UnprocessedItems && Object.keys(delResult.UnprocessedItems).length > 0) {
@@ -56,12 +86,8 @@ export async function addToDynamo () {
 
   }
 
-  const allProvisions =
-    /** @type {{cid: string, consumer: string, provider: string, sponsor: string, inserted_at: string, updated_at: string}[]} */
-    (JSON.parse((await fs.readFile(`d1-migration/data/provisions.json`)).toString()))
-
   for (const provisions of chunks(allProvisions, 25)) {
-    console.log("PUTting subscriptions")
+    console.log(`PUTting subscriptions to ${subscriptionsTableName}`)
     const subsResult = await subscriptionsClient.send(
       new BatchWriteItemCommand({
         RequestItems: {
@@ -82,7 +108,7 @@ export async function addToDynamo () {
       console.log("found unprocessed subscription results", subsResult.UnprocessedItems)
     }
 
-    console.log("PUTting consumers")
+    console.log(`PUTting consumers to ${consumersTableName}`)
     const consResult = await consumersClient.send(new BatchWriteItemCommand({
       RequestItems: {
         [consumersTableName]: await Promise.all(provisions.map(async p => ({
@@ -165,7 +191,7 @@ function mustGetEnv (name) {
  * @param {string} env
  */
 function getRegion (env) {
-  if (env === 'staging') {
+  if ((env === 'staging') || (env === 'pr194')) {
     return 'us-east-2'
   }
 
@@ -200,4 +226,8 @@ function* chunks (arr, chunkSize) {
   for (let i = 0; i < arr.length; i += chunkSize) {
     yield arr.slice(i, i + chunkSize);
   }
+}
+
+export async function migrateFromD1ToDynamo () {
+  await addToDynamo(await loadFromD1())
 }
