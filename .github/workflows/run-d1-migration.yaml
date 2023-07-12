@@ -27,10 +27,5 @@ jobs:
           node-version: 16
       - name: install wrangler
         run: npm install -g wrangler
-      - name: Install dependencies
-        uses: bahmutov/npm-install@v1
-      - name: Run migration
-        env:
-          STAGE: pr194
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_TOKEN }}
-        run: npm run d1-dynamo-migration
+      - name: test wrangler
+        run: wrangler d1 execute access-staging --command 'SELECT * from delegations_v3' --json
