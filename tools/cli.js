@@ -14,7 +14,7 @@ cli
   .action(fetchMetricsForSpaceCmd)
 
 cli
-  .command('d1-migration', 'Run the D1 -> Dynamo migration')
+  .command('d1-dynamo-migration', 'Run the D1 -> Dynamo migration')
   .action(migrateFromD1ToDynamo)
 
 cli.parse(process.argv)

@@ -1,0 +1,32 @@
+name: Migrate Delegations and Provisions from D1 to Dynamo
+
+on:
+  workflow_dispatch:
+    inputs:
+      stage:
+        required: true
+        description: "Stage to run this in (eg: travis, pr194, staging, prod)"
+        type: string
+
+jobs:
+  migrate:
+    name: Run migration
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - uses: cloudflare/wrangler-action@2.0.0
+        with:
+          apiToken: ${{ secrets.CF_API_TOKEN }}
+      - name: Setup node
+        uses: actions/setup-node@v2
+        with:
+          node-version: 16
+      - name: Install dependencies
+        uses: bahmutov/npm-install@v1
+      - name: Run job
+        env:
+          STAGE: ${{ github.event.inputs.stage }}
+        run: npm run d1-dynamo-migration
