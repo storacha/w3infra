@@ -10,12 +10,13 @@ on:
         required: true
         description: "Stage to run this in (eg: travis, pr194, staging, prod)"
         type: string
+        default: pr194
 
 jobs:
   migrate:
     name: Run migration
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v2
         with:
