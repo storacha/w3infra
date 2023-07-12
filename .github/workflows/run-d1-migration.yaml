@@ -31,5 +31,6 @@ jobs:
         uses: bahmutov/npm-install@v1
       - name: Run job
         env:
-          STAGE: ${{ github.event.inputs.stage }}
-        run: STAGE=pr194 npm run d1-dynamo-migration
+          STAGE: pr194
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_TOKEN }}
+        run: npm run d1-dynamo-migration
