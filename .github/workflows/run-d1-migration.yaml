@@ -29,7 +29,7 @@ jobs:
         run: npm install -g wrangler
       - name: Install dependencies
         uses: bahmutov/npm-install@v1
-      - name: Run job
+      - name: Run migration
         env:
           STAGE: pr194
           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_TOKEN }}
