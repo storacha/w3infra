@@ -28,10 +28,15 @@ async function loadFromD1 () {
   } = getEnv()
 
   const dbName = (STAGE === 'prod') ? 'access' : 'access-staging'
-  const delegations = JSON.parse(await exec(`wrangler d1 execute ${dbName} --command 'SELECT * from delegations_v3' --json`))[0].results
-  const provisions = JSON.parse(await exec(`wrangler d1 execute ${dbName} --command 'SELECT * from provisions' --json`))[0].results
-  console.log(`found ${delegations.length} delegations and ${provisions.length} provisions`)
-  return { delegations, provisions }
+  try {
+    const delegations = JSON.parse(await exec(`wrangler d1 execute ${dbName} --command 'SELECT * from delegations_v3' --json`))[0].results
+    const provisions = JSON.parse(await exec(`wrangler d1 execute ${dbName} --command 'SELECT * from provisions' --json`))[0].results
+    console.log(`found ${delegations.length} delegations and ${provisions.length} provisions`)
+    return { delegations, provisions }
+  } catch (e){
+    console.log('failed to load delegations and provisions from D1', e)
+    throw e
+  }
 }
 
 /** 
@@ -39,7 +44,7 @@ async function loadFromD1 () {
  * @typedef {{cid: string, consumer: string, provider: string, sponsor: string, inserted_at: string, updated_at: string}} Provision
  * @param {{delegations: Delegation[], provisions: Provision[]}} data
  */
-async function addToDynamo ({delegations: allDelegations, provisions: allProvisions}) {
+async function addToDynamo ({ delegations: allDelegations, provisions: allProvisions }) {
   const {
     STAGE,
   } = getEnv()
