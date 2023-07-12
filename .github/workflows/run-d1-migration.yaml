@@ -28,6 +28,4 @@ jobs:
       - name: install wrangler
         run: npm install -g wrangler
       - name: test wrangler
-        env:
-           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_TOKEN }}
         run: wrangler d1 execute access-staging --command 'SELECT * from delegations_v3' --json
