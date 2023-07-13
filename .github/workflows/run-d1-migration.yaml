@@ -31,4 +31,4 @@ jobs:
         env:
           STAGE: pr194
           CLOUDFLARE_API_TOKEN: ${{ secrets.D1_MIGRATION_CLOUDFLARE_API_TOKEN }}
-        run: echo $CLOUDFLARE_API_TOKEN
+        run: wrangler d1 execute access-staging --command 'SELECT * from delegations_v3' --json
