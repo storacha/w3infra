@@ -156,8 +156,8 @@ async function customerToSubscription (customer) {
   // field to the CBOR struct we use to generate a subscription ID for all but the first subscription
   // we find for a particular customer
   if (subscriptions[customer]) {
-    s.ordinality = subscriptions[customer]
-    subscriptions[customer] = subscriptions[customer] + 1
+    s.order = subscriptions[customer]
+    subscriptions[customer] += 1
   } else {
     subscriptions[customer] = 1
   }
