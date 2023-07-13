@@ -86,25 +86,26 @@ async function addToDynamo ({ delegations: allDelegations, provisions: allProvis
     if (delResult.UnprocessedItems && Object.keys(delResult.UnprocessedItems).length > 0) {
       console.log("found unprocessed subscription results", delResult.UnprocessedItems)
     }
-
   }
 
   for (const provisions of chunks(allProvisions, 25)) {
     console.log(`PUTting subscriptions to ${subscriptionsTableName}`)
+    // calculate subscription ids once since customerToSubscription is not a pure function and increments a counter each time it's called
+    const subscriptionIds = await Promise.all(provisions.map(p => customerToSubscription(p.sponsor, p.provider)))
     const subsResult = await subscriptionsClient.send(
       new BatchWriteItemCommand({
         RequestItems: {
-          [subscriptionsTableName]: await Promise.all(provisions.map(async p => ({
+          [subscriptionsTableName]: provisions.map((p, i) => ({
             PutRequest: {
               Item: marshall({
                 provider: p.provider,
                 customer: p.sponsor,
-                subscription: await customerToSubscription(p.sponsor),
+                subscription: subscriptionIds[i],
                 insertedAt: p.inserted_at,
                 updatedAt: p.updated_at
               })
             }
-          })))
+          }))
         }
       }))
     if (subsResult.UnprocessedItems && Object.keys(subsResult.UnprocessedItems).length > 0) {
@@ -114,17 +115,17 @@ async function addToDynamo ({ delegations: allDelegations, provisions: allProvis
     console.log(`PUTting consumers to ${consumersTableName}`)
     const consResult = await consumersClient.send(new BatchWriteItemCommand({
       RequestItems: {
-        [consumersTableName]: await Promise.all(provisions.map(async p => ({
+        [consumersTableName]: provisions.map((p, i) => ({
           PutRequest: {
             Item: marshall({
               consumer: p.consumer,
               provider: p.provider,
-              subscription: await customerToSubscription(p.sponsor),
+              subscription: subscriptionIds[i],
               insertedAt: p.inserted_at,
               updatedAt: p.updated_at
             })
           }
-        })))
+        }))
       }
     }))
     if (consResult.UnprocessedItems && Object.keys(consResult.UnprocessedItems).length > 0) {
@@ -135,7 +136,7 @@ async function addToDynamo ({ delegations: allDelegations, provisions: allProvis
 
 // a map to de-dupe subscriptions - we need to do this because we didn't previously enforce one-space-per-customer
 /**
- * @type Record<string, number>
+ * @type Record<string, Record<string, number>>
  */
 const subscriptions = {}
 
@@ -143,9 +144,10 @@ const subscriptions = {}
  * Convert customer string to a subscription the way we do in upload-api/stores/provisions.js#34
  * 
  * @param {string} customer 
+ * @param {string} provider
  * @returns string
  */
-async function customerToSubscription (customer) {
+async function customerToSubscription (customer, provider) {
   /**
    * @type {{customer: string, order?: number}}
    */
@@ -154,13 +156,15 @@ async function customerToSubscription (customer) {
   // to support existing customers who have created more than one space, we add an extra "order" 
   // field to the CBOR struct we use to generate a subscription ID for all but the first subscription
   // we find for a particular customer
-  if (subscriptions[customer]) {
-    s.order = subscriptions[customer]
-    subscriptions[customer] += 1
+  if (subscriptions[provider]?.[customer]) {
+    s.order = subscriptions[provider][customer]
+    subscriptions[provider][customer] += 1
   } else {
-    subscriptions[customer] = 1
+    subscriptions[provider] ||= {}
+    subscriptions[provider][customer] = 1
   }
   const { cid } = await CBOR.write(s)
+  console.log(`saving customer ${customer} with provider ${provider} as ${cid.toString()}. this is number ${s.order}`)
   return cid.toString()
 }
 

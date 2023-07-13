@@ -66,23 +66,25 @@ async function verifyInDynamo ({ delegations: allDelegations, provisions: allPro
     getRegion(STAGE)
   )
 
-  // console.log('verifying delegations')
-  // for (const delegation of allDelegations) {
-  //   console.log(`looking for delegation ${delegation.cid}`)
-  //   const result = await delegationsClient.send(new GetItemCommand({
-  //     TableName: delegationsTableName,
-  //     Key: {
-  //       link: {
-  //         S: delegation.cid
-  //       }
-  //     }
-  //   }))
-  //   if (!result.Item) {
-  //     throw new Error(`failed to find delegation ${delegation.cid} in Dynamo!`)
-  //   }
-  // }
+  console.log('verifying delegations')
+  for (const delegation of allDelegations) {
+    console.log(`looking for delegation ${delegation.cid}`)
+    const result = await delegationsClient.send(new GetItemCommand({
+      TableName: delegationsTableName,
+      Key: {
+        link: {
+          S: delegation.cid
+        }
+      }
+    }))
+    if (!result.Item) {
+      throw new Error(`failed to find delegation ${delegation.cid} in Dynamo!`)
+    }
+  }
 
-  console.log('verifying provisions')
+
+  console.log('verifying each customer has at least one space named the default way')
+  // ensure each customer has at least one space - don't worry about additional spaces for now, we'll check that below
   for (const provision of allProvisions) {
     const subscriptionId = await customerToSubscription(provision.sponsor)
     console.log(`looking for subscription for customer ${provision.sponsor} with provider ${provision.provider} and subscription id ${subscriptionId}`)
@@ -101,13 +103,99 @@ async function verifyInDynamo ({ delegations: allDelegations, provisions: allPro
       throw new Error(`failed to find subscription for customer ${provision.sponsor} with provider ${provision.provider} and subscription id ${subscriptionId} in Dynamo!`)
     }
   }
-}
 
-// a map to de-dupe subscriptions - we need to do this because we didn't previously enforce one-space-per-customer
-/**
- * @type Record<string, number>
- */
-const subscriptions = {}
+  // next, look through all of the customers and make sure they have the expected subscription and consumer records
+
+  /**
+   * @type {Record<string, Record<string, string[]>>}
+   */
+  const consumersByCustomerAndProvider = allProvisions.reduce((m, p) => {
+    m[p.sponsor] ||= {}
+    m[p.sponsor][p.provider] ||= /** @type {string[]} */([])
+    m[p.sponsor][p.provider].push(p.consumer)
+    return m
+  }, /**@type {Record<string, Record<string, string[]>>}*/({}))
+
+  for (const [customer, providers] of Object.entries(consumersByCustomerAndProvider)) {
+    for (const provider of Object.keys(providers)) {
+      console.log(`verifying customer ${customer} with provider ${provider}`)
+      const consumers = providers[provider]
+
+      const result = await subscriptionsClient.send(new QueryCommand({
+        TableName: subscriptionsTableName,
+        IndexName: 'customer',
+        KeyConditionExpression: 'customer = :c and provider = :p',
+        ExpressionAttributeValues: {
+          ':c': {
+            S: customer
+          },
+          ':p': {
+            S: provider
+          }
+        }
+      }))
+      if (result.Items && (result.Items.length === providers[provider].length)) {
+        console.log(`verified ${customer} at ${provider} has ${result.Items?.length} subscription(s) in D1 and Dynamo`)
+      } else {
+        throw new Error(`found ${result.Items?.length} items in dynamo for ${customer} at ${provider} but expected ${consumers.length}`)
+      }
+
+      // for each consumer we found in D1, find corresponding records in the Dynamo consumers table and make sure they have 
+      // the corresponding subscription records that we expect
+      for (const consumer of consumers) {
+        console.log(`verifying consumer ${consumer} has expected subscriptions`)
+        const result = await consumersClient.send(new QueryCommand({
+          TableName: consumersTableName,
+          IndexName: 'consumer',
+          KeyConditionExpression: 'consumer = :c',
+          ExpressionAttributeValues: {
+            ':c': {
+              S: consumer
+            },
+          },
+        }))
+
+        if (result.Items) {
+          for (const item of result.Items) {
+            const subscriptionId = item.subscription.S
+            if (subscriptionId) {
+              console.log(`checking ${subscriptionId} to make sure it has the right attributes in the subscription table`)
+              const subscriptionGetResult = await subscriptionsClient.send(new GetItemCommand({
+                TableName: subscriptionsTableName,
+                Key: {
+                  subscription: {
+                    S: subscriptionId
+                  },
+                  provider: {
+                    S: provider
+                  }
+                }
+              }))
+              const subscription = subscriptionGetResult.Item
+              if (subscription) {
+                if (subscription.provider.S !== provider){
+                  throw new Error(`subscription ${subscriptionId} has provider ${provider} in D1 but ${subscription.provider.S} in Dynamo`)
+                }
+                if (subscription.customer.S !== customer){
+                  throw new Error(`subscription ${subscriptionId} has customer ${customer} in D1 but ${subscription.provider.S} in Dynamo`)
+                }
+              } else {
+                throw new Error(`found consumer record with subscription ID ${subscriptionId} in consumers table but could not find it in the subscriptions table`)
+              }
+            } else {
+              throw new Error(`consumer record for ${consumer} at ${provider} has no subscription id`)
+            }
+          }
+        } else {
+          throw new Error(`found no items in dynamo for consumer ${consumer}`)
+        }
+      }
+
+    }
+  }
+
+  //const uniqueCustomers = Array.from(new Set(allProvisions.map(p => p.sponsor )))
+}
 
 /**
  * Convert customer string to a subscription the way we do in upload-api/stores/provisions.js#34
@@ -120,16 +208,6 @@ async function customerToSubscription (customer) {
    * @type {{customer: string, order?: number}}
    */
   const s = { customer }
-
-  // to support existing customers who have created more than one space, we add an extra "ordinality" 
-  // field to the CBOR struct we use to generate a subscription ID for all but the first subscription
-  // we find for a particular customer
-  if (subscriptions[customer]) {
-    s.order = subscriptions[customer]
-    subscriptions[customer] += 1
-  } else {
-    subscriptions[customer] = 1
-  }
   const { cid } = await CBOR.write(s)
   return cid.toString()
 }
