@@ -83,7 +83,6 @@ async function addToDynamo ({ delegations: allDelegations, provisions: allProvis
     })
     console.log(`PUTting delegations to ${delegationsTableName}`)
     const delResult = await delegationsClient.send(cmd)
-    delResult.UnprocessedItems
     if (delResult.UnprocessedItems && Object.keys(delResult.UnprocessedItems).length > 0) {
       console.log("found unprocessed subscription results", delResult.UnprocessedItems)
     }
@@ -148,11 +147,11 @@ const subscriptions = {}
  */
 async function customerToSubscription (customer) {
   /**
-   * @type {{customer: string, ordinality?: number}}
+   * @type {{customer: string, order?: number}}
    */
   const s = { customer }
 
-  // to support existing customers who have created more than one space, we add an extra "ordinality" 
+  // to support existing customers who have created more than one space, we add an extra "order" 
   // field to the CBOR struct we use to generate a subscription ID for all but the first subscription
   // we find for a particular customer
   if (subscriptions[customer]) {
