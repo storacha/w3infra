@@ -5,6 +5,7 @@ import sade from 'sade'
 import { fetchMetricsForSpaceCmd } from './fetch-metrics-for-space.js'
 import { migrateFromD1ToDynamo } from './d1-migration/add-to-dynamo.js'
 import { printD1ProvisionsEmails } from './d1-migration/print-d1-emails.js'
+import { verifyD1DynamoMigration } from './d1-migration/verify-d1-dynamo-migration.js'
 
 const cli = sade('w3infra-cli')
 
@@ -21,5 +22,9 @@ cli
 cli
   .command('print-d1-emails', 'Log emails recorded in D1 provisions table to stdout')
   .action(printD1ProvisionsEmails)
+
+  cli
+  .command('verify-d1-migration', 'Verify D1 data has migrated successfully to Dynamo')
+  .action(verifyD1DynamoMigration)
 
 cli.parse(process.argv)
