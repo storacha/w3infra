@@ -31,4 +31,4 @@ jobs:
         env:
           STAGE: pr194
           CLOUDFLARE_API_TOKEN: ${{ secrets.D1_MIGRATION_CLOUDFLARE_API_TOKEN }}
-        run: echo $STAGE
+        run: echo $CLOUDFLARE_API_TOKEN
