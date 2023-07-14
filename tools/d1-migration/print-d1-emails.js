@@ -22,10 +22,10 @@ async function loadD1ProvisionsEmails () {
   } = getEnv()
 
   const dbName = (STAGE === 'prod') ? 'access' : 'access-staging'
-  const emails = JSON.parse(await exec(`wrangler d1 execute ${dbName} --command 'SELECT * from provisions' --json`))[0].results.map((provision) => {
+  const emails = JSON.parse(await exec(`wrangler d1 execute ${dbName} --command 'SELECT * from provisions' --json`))[0].results.map(/** @param {{sponsor: `did:mailto:${string}:${string}`}} provision */(provision) => {
     return DidMailto.toEmail(provision.sponsor)
   })
-  return Array.from(new Set(emails))
+  return [...new Set(emails)]
 }
 
 /**

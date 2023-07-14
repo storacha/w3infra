@@ -1,10 +1,9 @@
+/* eslint max-depth: 0 */
 import {
   DynamoDBClient,
-  BatchWriteItemCommand,
   QueryCommand,
   GetItemCommand
 } from '@aws-sdk/client-dynamodb'
-import { marshall } from '@aws-sdk/util-dynamodb'
 import { CBOR } from '@ucanto/server'
 
 import { exec as childProcessExec } from 'child_process'
@@ -114,7 +113,7 @@ async function verifyInDynamo ({ delegations: allDelegations, provisions: allPro
     m[p.sponsor][p.provider] ||= /** @type {string[]} */([])
     m[p.sponsor][p.provider].push(p.consumer)
     return m
-  }, /**@type {Record<string, Record<string, string[]>>}*/({}))
+  }, /** @type {Record<string, Record<string, string[]>>} */({}))
 
   for (const [customer, providers] of Object.entries(consumersByCustomerAndProvider)) {
     for (const provider of Object.keys(providers)) {
@@ -193,8 +192,6 @@ async function verifyInDynamo ({ delegations: allDelegations, provisions: allPro
 
     }
   }
-
-  //const uniqueCustomers = Array.from(new Set(allProvisions.map(p => p.sponsor )))
 }
 
 /**
@@ -264,18 +261,6 @@ function getDynamoDb (tableName, env, region) {
     }),
     tableName: `${env}-w3infra-${tableName}`,
     endpoint
-  }
-}
-
-/**
- * @template T
- * @param {Array<T>} arr
- * @param {number} chunkSize 
- * @yields {Array<T>}
- */
-function* chunks (arr, chunkSize) {
-  for (let i = 0; i < arr.length; i += chunkSize) {
-    yield arr.slice(i, i + chunkSize);
   }
 }
 
