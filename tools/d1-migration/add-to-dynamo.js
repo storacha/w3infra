@@ -29,6 +29,7 @@ async function loadFromD1 () {
 
   const dbName = (STAGE === 'prod') ? 'access' : 'access-staging'
   try {
+    // wrangler commands return an array with a single member, which is an object that has the query results in a `results` attribute
     const delegations = JSON.parse(await exec(`wrangler d1 execute ${dbName} --command 'SELECT * from delegations_v3' --json`))[0].results
     const provisions = JSON.parse(await exec(`wrangler d1 execute ${dbName} --command 'SELECT * from provisions' --json`))[0].results
     return { delegations, provisions }
