@@ -43,7 +43,7 @@ export async function setupNewClient (uploadServiceUrl, options = {}) {
     },
   })
 
-  const timeoutMs = 30_000
+  const timeoutMs = process.env.MAILSLURP_TIMEOUT ? parseInt(process.env.MAILSLURP_TIMEOUT) : 60_000
   const authorizePromise = client.authorize(email)
   // click link in email
   const latestEmail = await mailslurp.waitForLatestEmail(inboxId, timeoutMs)
