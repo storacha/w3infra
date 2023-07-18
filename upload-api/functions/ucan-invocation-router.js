@@ -107,6 +107,7 @@ export async function ucanInvocationRouter(request) {
   }
 
   console.log(`using access service at ${accessServiceURL}`)
+  console.log(`using r2 delegations bucket at ${r2DelegationBucketEndpoint} ${r2DelegationBucketName}`)
 
   const { UPLOAD_API_DID } = process.env
   const { PRIVATE_KEY } = Config
