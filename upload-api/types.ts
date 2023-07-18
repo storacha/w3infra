@@ -1,7 +1,9 @@
 import * as UCAN from '@ipld/dag-ucan'
-import { DID, Link, Delegation, Signature, Block } from '@ucanto/interface'
+import { DID, Link, Delegation, Signature, Block, UCANLink, ByteView } from '@ucanto/interface'
 import { UnknownLink } from 'multiformats'
+import { CID } from 'multiformats/cid'
 import { Kinesis } from '@aws-sdk/client-kinesis'
+import { Service } from '@web3-storage/upload-api'
 
 
 export interface UcanLogCtx extends WorkflowCtx, ReceiptBlockCtx {
@@ -43,6 +45,59 @@ export interface WorkflowBucket {
   put: (Cid: string, bytes: Uint8Array) => Promise<void>
   get: (Cid: string) => Promise<Uint8Array|undefined>
 }
+
+export interface DelegationsBucket {
+  /** put a delegation into the delegations bucket */
+  put: (cid: CID, bytes: ByteView<Delegation>) => Promise<void>
+  /** get a delegation from the delegations bucket */
+  get: (cid: CID) => Promise<ByteView<Delegation>|undefined>
+}
+
+/**
+ * 
+ */
+export interface SubscriptionInput {
+  /** DID of the customer who maintains this subscription */
+  customer: DID,
+  /** DID of the provider who services this subscription */
+  provider: DID,
+  /** ID of this subscription - should be unique per-provider */
+  subscription: string,
+  /** CID of the invocation that created this subscription */
+  cause: UCANLink
+}
+
+export interface SubscriptionTable {
+  /** add a subscription - a relationship between a customer and a provider that will allow for provisioning of consumers */
+  add: (consumer: SubscriptionInput) => Promise<{}>
+  /** return the count of subscriptions in the system */
+  count: () => Promise<bigint>
+  /** return a list of the subscriptions a customer has with a provider */
+  findProviderSubscriptionsForCustomer: (customer: DID, provider: DID) =>
+    Promise<{ subscription: string }[]>
+}
+
+export interface ConsumerInput {
+  /** the DID of the consumer (eg, a space) for whom services are being provisioned */
+  consumer: DID,
+  /** the DID of the provider who will provide services for the consumer */
+  provider: DID,
+  /** the ID of the subscription representing the relationship between the consumer and provider */
+  subscription: string,
+  /** the CID of the UCAN invocation that created this record */
+  cause: UCANLink
+}
+
+export interface ConsumerTable {
+  /** add a consumer - a relationship between a provider, subscription and consumer */
+  add: (consumer: ConsumerInput) => Promise<{}>
+  /** return the number of consumers */
+  count: () => Promise<bigint>
+  /** return a boolean indicating whether the given consumer has a storage provider */
+  hasStorageProvider: (consumer: DID) => Promise<boolean>
+}
+
+export type SpaceService = Pick<Service, "space">
 
 export interface UcanInvocation {
   att: UCAN.Capabilities

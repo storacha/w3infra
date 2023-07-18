@@ -14,13 +14,10 @@
 EIPFS_INDEXER_SQS_ARN = 'arn:aws:sqs:us-west-2:505595374361:staging-ep-indexer-topic'
 EIPFS_INDEXER_SQS_URL = 'https://sqs.us-west-2.amazonaws.com/505595374361/staging-ep-indexer-topic'
 
-# Following variables are only required to run integration tests
-INTEGRATION_TESTS_UCAN_KEY = ''
-INTEGRATION_TESTS_PROOF = ''
-
 ACCESS_SERVICE_DID = ''
 UPLOAD_API_DID = ''
 ACCESS_SERVICE_URL = ''
+POSTMARK_TOKEN = ''
 R2_ACCESS_KEY_ID = ''
 R2_CARPARK_BUCKET_NAME = ''
 R2_DUDEWHERE_BUCKET_NAME = ''
@@ -30,3 +27,10 @@ R2_SATNAV_BUCKET_NAME = ''
 R2_SECRET_ACCESS_KEY = ''
 R2_UCAN_BUCKET_NAME = ''
 SATNAV_BUCKET_NAME = ''
+
+# Following variables are only required to run integration tests
+
+# Mailslurp
+MAILSLURP_API_KEY = ''
+MAILSLURP_TIMEOUT = '120000'
+

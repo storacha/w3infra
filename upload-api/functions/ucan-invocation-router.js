@@ -16,6 +16,12 @@ import { getServiceSigner } from '../config.js'
 import { createUcantoServer } from '../service.js'
 import { Config } from '@serverless-stack/node/config/index.js'
 import { CAR, Legacy, Codec } from '@ucanto/transport'
+import { Email } from '../email.js'
+import { useProvisionStore } from '../stores/provisions.js'
+import { createDelegationsTable } from '../tables/delegations.js'
+import { createDelegationsStore } from '../buckets/delegations-store.js'
+import { createSubscriptionTable } from '../tables/subscription.js'
+import { createConsumerTable } from '../tables/consumer.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -76,10 +82,18 @@ export async function ucanInvocationRouter(request) {
     STORE_TABLE_NAME: storeTableName = '',
     STORE_BUCKET_NAME: storeBucketName = '',
     UPLOAD_TABLE_NAME: uploadTableName = '',
+    CONSUMER_TABLE_NAME: consumerTableName = '',
+    SUBSCRIPTION_TABLE_NAME: subscriptionTableName = '',
+    DELEGATION_TABLE_NAME: delegationTableName = '',
+    R2_ENDPOINT: r2DelegationBucketEndpoint = '',
+    R2_ACCESS_KEY_ID: r2DelegationBucketAccessKeyId = '',
+    R2_SECRET_ACCESS_KEY: r2DelegationBucketSecretAccessKey = '',
+    R2_DELEGATION_BUCKET_NAME: r2DelegationBucketName = '',
     INVOCATION_BUCKET_NAME: invocationBucketName = '',
     TASK_BUCKET_NAME: taskBucketName = '',
     WORKFLOW_BUCKET_NAME: workflowBucketName = '',
     UCAN_LOG_STREAM_NAME: streamName = '',
+    POSTMARK_TOKEN: postmarkToken = '',
     // set for testing
     DYNAMO_DB_ENDPOINT: dbEndpoint,
     ACCESS_SERVICE_DID: accessServiceDID = '',
@@ -102,8 +116,20 @@ export async function ucanInvocationRouter(request) {
   )
   const taskBucket = createTaskStore(AWS_REGION, taskBucketName)
   const workflowBucket = createWorkflowStore(AWS_REGION, workflowBucketName)
+  const delegationBucket = createDelegationsStore(r2DelegationBucketEndpoint, r2DelegationBucketAccessKeyId, r2DelegationBucketSecretAccessKey, r2DelegationBucketName)
+  const subscriptionTable = createSubscriptionTable(AWS_REGION, subscriptionTableName, {
+    endpoint: dbEndpoint
+  });
+  const consumerTable = createConsumerTable(AWS_REGION, consumerTableName, {
+    endpoint: dbEndpoint
+  });
+  const provisionsStorage = useProvisionStore(subscriptionTable, consumerTable, [
+    /** @type {import('@web3-storage/upload-api').ServiceDID} */
+    (accessServiceDID)
+  ])
+  const delegationsStorage = createDelegationsTable(AWS_REGION, delegationTableName, { bucket: delegationBucket, invocationBucket, workflowBucket })
 
-  const server = await createUcantoServer(serviceSigner, {
+  const server = createUcantoServer(serviceSigner, {
     codec,
     storeTable: createStoreTable(AWS_REGION, storeTableName, {
       endpoint: dbEndpoint,
@@ -122,8 +148,15 @@ export async function ucanInvocationRouter(request) {
     access: createAccessClient(
       serviceSigner,
       DID.parse(accessServiceDID),
-      new URL(accessServiceURL)
+      provisionsStorage,
+      delegationsStorage
     ),
+    signer: serviceSigner,
+    // TODO: we should set URL from a different env var, doing this for now to avoid that refactor - tracking in https://github.com/web3-storage/w3infra/issues/209
+    url: new URL(accessServiceURL),
+    email: new Email({ token: postmarkToken }),
+    provisionsStorage,
+    delegationsStorage
   })
 
   const processingCtx = {

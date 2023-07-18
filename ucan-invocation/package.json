@@ -9,14 +9,14 @@
     "@aws-sdk/client-dynamodb": "^3.226.0",
     "@aws-sdk/client-eventbridge": "^3.218.0",
     "@sentry/serverless": "^7.22.0",
-    "@web3-storage/capabilities": "^5.0.0",
+    "@web3-storage/capabilities": "^6.0.1",
     "uint8arrays": "^4.0.2"
   },
   "devDependencies": {
     "@aws-sdk/client-dynamodb": "^3.226.0",
     "@aws-sdk/client-s3": "^3.226.0",
     "@serverless-stack/resources": "*",
-    "@ucanto/interface": "^7.1.0",
+    "@ucanto/interface": "^8.0.0",
     "ava": "^4.3.3",
     "multiformats": "^11.0.1",
     "nanoid": "4.0.0",

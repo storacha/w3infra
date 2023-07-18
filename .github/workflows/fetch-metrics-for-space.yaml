@@ -25,7 +25,7 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           registry-url: 'https://registry.npmjs.org'
-          node-version: 16
+          node-version: 18
           cache: 'npm'
       - run: npm ci
       - name: Run job

@@ -9,7 +9,6 @@ import * as HTTP from 'http'
 
 /**
  * @typedef {Partial<{
- *   voucher: Partial<import('@web3-storage/access/types').Service['voucher']>
  *   account: Partial<import('@web3-storage/access/types').Service['space']>
  * }>} PartialAccessService
  * @typedef {ReturnType<mockAccessService>} MockedAccessService
@@ -45,18 +44,68 @@ export async function createDynamodDb(opts = {}) {
 }
 
 /**
+ * 
+ * @param {string} indexName 
+ * @param {import('@serverless-stack/resources').TableGlobalIndexProps} props 
+ */
+function globalIndexPropsToGlobalIndexSpec (indexName, props) {
+  const { partitionKey, projection, sortKey } = props
+  /**
+   * @type {import('@aws-sdk/client-dynamodb').GlobalSecondaryIndex}
+   */
+  const spec = {
+    IndexName: indexName,
+    KeySchema: [
+      {
+        AttributeName: partitionKey,
+        KeyType: "HASH",
+      },
+    ],
+    ProvisionedThroughput: {
+      ReadCapacityUnits: 5,
+      WriteCapacityUnits: 5
+    },
+    Projection: {
+      ProjectionType: "KEYS_ONLY",
+      NonKeyAttributes: undefined
+    }
+  }
+  if (sortKey) {
+    spec.KeySchema?.push({ AttributeName: sortKey, KeyType: 'RANGE' })
+  }
+  if (projection && projection == 'all') {
+    spec.Projection = {
+      ProjectionType: "ALL",
+      NonKeyAttributes: undefined
+    }
+  } else if (Array.isArray(projection)) {
+    spec.Projection = {
+      ProjectionType: 'INCLUDE',
+      NonKeyAttributes: projection
+    }
+  }
+  return spec
+}
+
+/**
  * Convert SST TableProps to DynamoDB `CreateTableCommandInput` config
  *
  * @typedef {import('@aws-sdk/client-dynamodb').CreateTableCommandInput} CreateTableCommandInput
  * @typedef {import('@serverless-stack/resources').TableProps} TableProps
  *
  * @param {TableProps} props
- * @returns {Pick<CreateTableCommandInput, 'AttributeDefinitions' | 'KeySchema'>}
+ * @returns {Pick<CreateTableCommandInput, 'AttributeDefinitions' | 'KeySchema' | 'GlobalSecondaryIndexes'>}
  */
-export function dynamoDBTableConfig({ fields, primaryIndex }) {
+export function dynamoDBTableConfig ({ fields, primaryIndex, globalIndexes }) {
   if (!primaryIndex || !fields)
     throw new Error('Expected primaryIndex and fields on TableProps')
   const attributes = Object.values(primaryIndex)
+  if (globalIndexes) {
+    for (const index of Object.values(globalIndexes)) {
+      if (index.partitionKey) attributes.push(index.partitionKey)
+      if (index.sortKey) attributes.push(index.sortKey)
+    }
+  }
   const AttributeDefinitions = Object.entries(fields)
     .filter(([k]) => attributes.includes(k)) // 'The number of attributes in key schema must match the number of attributes defined in attribute definitions'
     .map(([k, v]) => ({
@@ -69,10 +118,17 @@ export function dynamoDBTableConfig({ fields, primaryIndex }) {
   if (primaryIndex.sortKey) {
     KeySchema.push({ AttributeName: primaryIndex.sortKey, KeyType: 'RANGE' })
   }
-  return {
+  /** @type {Pick<CreateTableCommandInput, 'AttributeDefinitions' | 'KeySchema' | 'GlobalSecondaryIndexes'>} */
+  const result = {
     AttributeDefinitions,
-    KeySchema,
+    KeySchema
   }
+  if (globalIndexes) {
+    result.GlobalSecondaryIndexes = Object.entries(globalIndexes).map(
+      ([indexName, props]) => globalIndexPropsToGlobalIndexSpec(indexName, props)
+    )
+  }
+  return result
 }
 
 /**
@@ -212,15 +268,8 @@ const notImplemented = () => {
 /** @param {PartialAccessService} [impl] */
 function mockAccessService(impl = {}) {
   return {
-    voucher: {
-      claim: withCallCount(impl.voucher?.claim ?? notImplemented),
-      redeem: withCallCount(impl.voucher?.redeem ?? notImplemented),
-    },
     space: {
       info: withCallCount(impl.account?.info ?? notImplemented),
-      'recover-validation': withCallCount(
-        impl.account?.['recover-validation'] ?? notImplemented
-      ),
     },
   }
 }
