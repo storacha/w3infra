@@ -9,10 +9,11 @@ import { info } from '@web3-storage/upload-api/space'
  * @param {import('@ucanto/interface').Principal} servicePrincipal Principal signer of the Access service.
  * @param {import('@web3-storage/upload-api').ProvisionsStorage} provisionsStorage
  * @param {import('@web3-storage/upload-api').DelegationsStorage} delegationsStorage
+ * @param {import('@web3-storage/upload-api').RateLimitsStorage} rateLimitsStorage
  * @returns {import('@web3-storage/upload-api').AccessVerifier}
  */
-export function createAccessClient (issuer, servicePrincipal, provisionsStorage, delegationsStorage) {
-  const ctx = { provisionsStorage, delegationsStorage }
+export function createAccessClient (issuer, servicePrincipal, provisionsStorage, delegationsStorage, rateLimitsStorage) {
+  const ctx = { provisionsStorage, delegationsStorage, rateLimitsStorage }
   /** @type {Server.ServerView<import('./types').SpaceService>} */
   const server = Server.create({
     id: issuer,

@@ -9,7 +9,7 @@ import {
   createBucket,
   createTable
 } from '../helpers/resources.js';
-import { storeTableProps, uploadTableProps, consumerTableProps, delegationTableProps, subscriptionTableProps } from '../../tables/index.js';
+import { storeTableProps, uploadTableProps, consumerTableProps, delegationTableProps, subscriptionTableProps, rateLimitTableProps } from '../../tables/index.js';
 import { useCarStore } from '../../buckets/car-store.js';
 import { useDudewhereStore } from '../../buckets/dudewhere-store.js';
 import { useStoreTable } from '../../tables/store.js';
@@ -22,6 +22,7 @@ import { useDelegationsTable } from '../../tables/delegations.js';
 import { useDelegationsStore } from '../../buckets/delegations-store.js';
 import { useInvocationStore } from '../../buckets/invocation-store.js';
 import { useWorkflowStore } from '../../buckets/workflow-store.js';
+import { useRateLimitTable } from '../../tables/rate-limit.js';
 
 export { API }
 
@@ -207,7 +208,10 @@ export async function executionContextToUcantoTestServerContext (t) {
       workflowBucket: useWorkflowStore(s3, workflowBucketName)
     }
   );
-
+  const rateLimitsStorage = useRateLimitTable(
+    dynamo,
+    await createTable(dynamo, rateLimitTableProps)
+  )
   const subscriptionTable = useSubscriptionTable(
     dynamo,
     await createTable(dynamo, subscriptionTableProps)
@@ -231,6 +235,7 @@ export async function executionContextToUcantoTestServerContext (t) {
     url: new URL('http://example.com'),
     provisionsStorage,
     delegationsStorage,
+    rateLimitsStorage,
     errorReporter: {
       catch (error) {
         t.fail(error.message);

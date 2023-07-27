@@ -22,6 +22,7 @@ import { createDelegationsTable } from '../tables/delegations.js'
 import { createDelegationsStore } from '../buckets/delegations-store.js'
 import { createSubscriptionTable } from '../tables/subscription.js'
 import { createConsumerTable } from '../tables/consumer.js'
+import { createRateLimitTable } from '../tables/rate-limit.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -85,6 +86,7 @@ export async function ucanInvocationRouter(request) {
     CONSUMER_TABLE_NAME: consumerTableName = '',
     SUBSCRIPTION_TABLE_NAME: subscriptionTableName = '',
     DELEGATION_TABLE_NAME: delegationTableName = '',
+    RATE_LIMIT_TABLE_NAME: rateLimitTableName = '',
     R2_ENDPOINT: r2DelegationBucketEndpoint = '',
     R2_ACCESS_KEY_ID: r2DelegationBucketAccessKeyId = '',
     R2_SECRET_ACCESS_KEY: r2DelegationBucketSecretAccessKey = '',
@@ -123,6 +125,7 @@ export async function ucanInvocationRouter(request) {
   const consumerTable = createConsumerTable(AWS_REGION, consumerTableName, {
     endpoint: dbEndpoint
   });
+  const rateLimitsStorage = createRateLimitTable(AWS_REGION, rateLimitTableName)
   const provisionsStorage = useProvisionStore(subscriptionTable, consumerTable, [
     /** @type {import('@web3-storage/upload-api').ServiceDID} */
     (accessServiceDID)
@@ -149,14 +152,16 @@ export async function ucanInvocationRouter(request) {
       serviceSigner,
       DID.parse(accessServiceDID),
       provisionsStorage,
-      delegationsStorage
+      delegationsStorage,
+      rateLimitsStorage
     ),
     signer: serviceSigner,
     // TODO: we should set URL from a different env var, doing this for now to avoid that refactor - tracking in https://github.com/web3-storage/w3infra/issues/209
     url: new URL(accessServiceURL),
     email: new Email({ token: postmarkToken }),
     provisionsStorage,
-    delegationsStorage
+    delegationsStorage,
+    rateLimitsStorage
   })
 
   const processingCtx = {
