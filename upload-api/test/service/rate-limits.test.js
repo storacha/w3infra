@@ -1,12 +1,11 @@
-/* eslint-disable no-loop-func */
-import { Store } from '@web3-storage/upload-api/test'
 import { test } from '../helpers/context.js'
+import { executionContextToUcantoTestServerContext } from "../helpers/ucan.js"
+import { assertsFromExecutionContext } from '../helpers/assert.js'
+import { rateLimitsStorageTests } from '@web3-storage/upload-api/test'
 import {
   createS3,
   createDynamodDb,
 } from '../helpers/resources.js'
-import { executionContextToUcantoTestServerContext } from '../helpers/ucan.js'
-import { assertsFromExecutionContext } from '../helpers/assert.js'
 
 test.before(async (t) => {
   Object.assign(t.context, {
@@ -15,10 +14,10 @@ test.before(async (t) => {
   })
 })
 
-for (const [title, unit] of Object.entries(Store.test)) {
+for (const [title, unit] of Object.entries(rateLimitsStorageTests)) {
   const define = title.startsWith('only ')
-    ? test.only
-    : title.startsWith('skip ')
+      ? test.only
+      : title.startsWith('skip ')
       ? test.skip
       : test
   define(title, async (t) => {

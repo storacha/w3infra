@@ -193,7 +193,6 @@ export async function executionContextToUcantoTestServerContext (t) {
   const signer = await Signer.Signer.generate();
   const id = signer.withDID('did:web:test.web3.storage');
 
-  const access = createAccessVerifier({ id });
   const delegationsBucketName = await createBucket(s3);
   const invocationsBucketName = await createBucket(s3);
   const workflowBucketName = await createBucket(s3);
@@ -246,7 +245,6 @@ export async function executionContextToUcantoTestServerContext (t) {
     uploadTable,
     carStoreBucket,
     dudewhereBucket,
-    access,
   };
   const connection = connect({
     id: serviceContext.id,
@@ -260,7 +258,6 @@ export async function executionContextToUcantoTestServerContext (t) {
     service: id,
     connection,
     testStoreTable: storeTable,
-    testSpaceRegistry: access,
     fetch
   };
 }

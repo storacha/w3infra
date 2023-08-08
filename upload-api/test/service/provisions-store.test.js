@@ -15,7 +15,12 @@ test.before(async (t) => {
 })
 
 for (const [title, unit] of Object.entries(provisionsStorageTests)) {
-  test(title, async (t) => {
+  const define = title.startsWith('only ')
+    ? test.only
+    : title.startsWith('skip ')
+      ? test.skip
+      : test
+  define(title, async (t) => {
     await unit(
       assertsFromExecutionContext(t),
       await executionContextToUcantoTestServerContext(t)
