@@ -31,17 +31,21 @@ async function createMailSlurpInbox() {
   }
 }
 
-export async function setupNewClient (uploadServiceUrl, options = {}) {
-  // create an inbox
-  const { mailslurp, id: inboxId, email } = await createMailSlurpInbox()
+export async function createNewClient(uploadServiceUrl) {
   const principal = await Signer.generate()
   const data = await AgentData.create({ principal })
-  const client = new Client(data, {
+  return new Client(data, {
     serviceConf: {
       upload: getUploadServiceConnection(uploadServiceUrl),
       access: getAccessServiceConnection(uploadServiceUrl)
     },
   })
+}
+
+export async function setupNewClient (uploadServiceUrl, options = {}) {
+  // create an inbox
+  const { mailslurp, id: inboxId, email } = await createMailSlurpInbox()
+  const client = await createNewClient(uploadServiceUrl)
 
   const timeoutMs = process.env.MAILSLURP_TIMEOUT ? parseInt(process.env.MAILSLURP_TIMEOUT) : 60_000
   const authorizePromise = client.authorize(email)

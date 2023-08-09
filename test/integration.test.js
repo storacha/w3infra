@@ -2,6 +2,10 @@ import { fetch } from '@web-std/fetch'
 import git from 'git-rev-sync'
 import pWaitFor from 'p-wait-for'
 import { HeadObjectCommand } from '@aws-sdk/client-s3'
+import {
+  PutItemCommand
+} from '@aws-sdk/client-dynamodb'
+import { marshall } from '@aws-sdk/util-dynamodb'
 
 import { METRICS_NAMES, SPACE_METRICS_NAMES } from '../ucan-invocation/constants.js'
 import { test } from './helpers/context.js'
@@ -14,7 +18,7 @@ import {
   getCarparkBucketInfo,
   getDynamoDb
 } from './helpers/deployment.js'
-import { setupNewClient } from './helpers/up-client.js'
+import { createNewClient, setupNewClient } from './helpers/up-client.js'
 import { randomFile } from './helpers/random.js'
 import { getTableItem, getAllTableRows } from './helpers/table.js'
 
@@ -22,7 +26,8 @@ test.before(t => {
   t.context = {
     apiEndpoint: getApiEndpoint(),
     metricsDynamo: getDynamoDb('admin-metrics'),
-    spaceMetricsDynamo: getDynamoDb('space-metrics')
+    spaceMetricsDynamo: getDynamoDb('space-metrics'),
+    rateLimitsDynamo: getDynamoDb('rate-limit')
   }
 })
 
@@ -63,6 +68,48 @@ test('upload-api /metrics', async t => {
    * w3up_invocations_total{can="upload/remove"} 1
    */
   t.is((body.match(/w3up_invocations_total/g) || []).length, 6)
+})
+
+test('authorizations can be blocked by email or domain', async t => {
+  const client = await createNewClient(t.context.apiEndpoint)
+
+  // test email blocking
+  await t.context.rateLimitsDynamo.client.send(new PutItemCommand({
+    TableName: t.context.rateLimitsDynamo.tableName,
+    Item: marshall({
+      id: Math.random().toString(10),
+      subject: 'travis@example.com',
+      rate: 0
+    })
+  }))
+
+  // it would be nice to use t.throwsAsync here, but that doesn't work with errors that aren't exceptions: https://github.com/avajs/ava/issues/2517
+  try {
+    await client.authorize('travis@example.com')
+    t.fail('authorize should fail with a blocked email address')
+  } catch (e) {
+    t.is(e.name, 'AccountBlocked')
+    t.is(e.message, 'Account identified by did:mailto:example.com:travis is blocked')
+  }
+
+  // test domain blocking
+  await t.context.rateLimitsDynamo.client.send(new PutItemCommand({
+    TableName: t.context.rateLimitsDynamo.tableName,
+    Item: marshall({
+      id: Math.random().toString(10),
+      subject: 'example2.com',
+      rate: 0
+    })
+  }))
+  
+  // it would be nice to use t.throwsAsync here, but that doesn't work with errors that aren't exceptions: https://github.com/avajs/ava/issues/2517
+  try {
+    await client.authorize('travis@example2.com')
+    t.fail('authorize should fail with a blocked domain')
+  } catch (e) {
+    t.is(e.name, 'AccountBlocked')
+    t.is(e.message, 'Account identified by did:mailto:example2.com:travis is blocked')
+  }
 })
 
 // Integration test for all flow from uploading a file to Kinesis events consumers and replicator
@@ -222,6 +269,21 @@ test('w3infra integration flow', async t => {
       )
     })
   }
+
+  // verify that blocking a space makes it impossible to upload a file to it
+  await t.context.rateLimitsDynamo.client.send(new PutItemCommand({
+    TableName: t.context.rateLimitsDynamo.tableName,
+    Item: marshall({
+      id: Math.random().toString(10),
+      subject: client.currentSpace().did(),
+      rate: 0
+    })
+  }))
+  const uploadError = await t.throwsAsync(async () => {
+    await client.uploadFile(await randomFile(100))
+  })
+
+  t.is(uploadError.message, 'failed store/add invocation')
 })
 
 /**
