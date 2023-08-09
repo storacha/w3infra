@@ -14,7 +14,6 @@ import { useCarStore } from '../../buckets/car-store.js';
 import { useDudewhereStore } from '../../buckets/dudewhere-store.js';
 import { useStoreTable } from '../../tables/store.js';
 import { useUploadTable } from '../../tables/upload.js';
-import { create as createAccessVerifier } from '../access-verifier.js';
 import { useProvisionStore } from '../../stores/provisions.js';
 import { useConsumerTable } from '../../tables/consumer.js';
 import { useSubscriptionTable } from '../../tables/subscription.js';

@@ -1,3 +1,4 @@
+/* eslint-disable no-nested-ternary, no-only-tests/no-only-tests */
 import { test } from '../helpers/context.js'
 import { executionContextToUcantoTestServerContext } from "../helpers/ucan.js"
 import { assertsFromExecutionContext } from '../helpers/assert.js'

@@ -1,9 +1,8 @@
-import { DID, API } from '@ucanto/core'
+import { API } from '@ucanto/core'
 import * as Server from '@ucanto/server'
 import { Kinesis } from '@aws-sdk/client-kinesis'
 import * as Sentry from '@sentry/serverless'
 
-import { createAccessClient } from '../access.js'
 import { processAgentMessageArchive } from '../ucan-invocation.js'
 import { createCarStore } from '../buckets/car-store.js'
 import { createDudewhereStore } from '../buckets/dudewhere-store.js'
@@ -148,13 +147,6 @@ export async function ucanInvocationRouter(request) {
     uploadTable: createUploadTable(AWS_REGION, uploadTableName, {
       endpoint: dbEndpoint,
     }),
-    access: createAccessClient(
-      serviceSigner,
-      DID.parse(accessServiceDID),
-      provisionsStorage,
-      delegationsStorage,
-      rateLimitsStorage
-    ),
     signer: serviceSigner,
     // TODO: we should set URL from a different env var, doing this for now to avoid that refactor - tracking in https://github.com/web3-storage/w3infra/issues/209
     url: new URL(accessServiceURL),

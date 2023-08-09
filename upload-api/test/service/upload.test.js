@@ -1,4 +1,4 @@
-/* eslint-disable no-loop-func */
+/* eslint-disable no-loop-func, no-nested-ternary, no-only-tests/no-only-tests */
 import { Upload } from '@web3-storage/upload-api/test'
 import { test } from '../helpers/context.js'
 import {

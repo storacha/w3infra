@@ -1,4 +1,4 @@
-/* eslint-disable no-loop-func */
+/* eslint-disable no-loop-func, no-nested-ternary, no-only-tests/no-only-tests */
 import { Store } from '@web3-storage/upload-api/test'
 import { test } from '../helpers/context.js'
 import {
@@ -16,6 +16,7 @@ test.before(async (t) => {
 })
 
 for (const [title, unit] of Object.entries(Store.test)) {
+
   const define = title.startsWith('only ')
     ? test.only
     : title.startsWith('skip ')
