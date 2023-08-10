@@ -46,6 +46,7 @@ export function useRateLimitTable (dynamoDb, tableName) {
       }))
       return { ok: { id } }
     },
+
     remove: async (id) => {
       await dynamoDb.send(new DeleteItemCommand({
         TableName: tableName,
@@ -53,6 +54,7 @@ export function useRateLimitTable (dynamoDb, tableName) {
       }))
       return { ok: {} }
     },
+
     list: async (subject) => {
       const response = await dynamoDb.send(new QueryCommand({
         TableName: tableName,
