@@ -114,7 +114,9 @@ test('authorizations can be blocked by email or domain', async t => {
 
 // Integration test for all flow from uploading a file to Kinesis events consumers and replicator
 test('w3infra integration flow', async t => {
+  console.log("setting up new client")
   const client = await setupNewClient(t.context.apiEndpoint)
+  console.log("set up new client")
   const spaceDid = client.currentSpace()?.did()
   if (!spaceDid) {
     throw new Error('Testing space DID must be set')
