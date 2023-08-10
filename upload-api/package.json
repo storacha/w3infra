@@ -3,7 +3,7 @@
   "version": "3.0.0",
   "type": "module",
   "scripts": {
-    "test": "ava --node-arguments='--experimental-fetch' --verbose --timeout=60s '**/*.test.js'"
+    "test": "ava --node-arguments='--experimental-fetch' --verbose --timeout=60s --no-worker-threads --serial '**/*.test.js'"
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.226.0",
