@@ -57,7 +57,8 @@ export async function setupNewClient (uploadServiceUrl, options = {}) {
   console.log("got auth link")
   const authLink = getAuthLinkFromEmail(latestEmail.body, uploadServiceUrl)
   console.log("clicking auth link")
-  await fetch(authLink, { method: 'POST' })
+  const authResult = await fetch(authLink, { method: 'POST' })
+  console.log("got auth result", authResult.status, authResult.statusText, await authResult.text())
   console.log("waiting for authorize to return")
   await authorizePromise
   if (!client.currentSpace()) {
