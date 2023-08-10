@@ -271,19 +271,19 @@ test('w3infra integration flow', async t => {
   }
 
   // verify that blocking a space makes it impossible to upload a file to it
-  // await t.context.rateLimitsDynamo.client.send(new PutItemCommand({
-  //   TableName: t.context.rateLimitsDynamo.tableName,
-  //   Item: marshall({
-  //     id: Math.random().toString(10),
-  //     subject: client.currentSpace().did(),
-  //     rate: 0
-  //   })
-  // }))
-  // const uploadError = await t.throwsAsync(async () => {
-  //   await client.uploadFile(await randomFile(100))
-  // })
+  await t.context.rateLimitsDynamo.client.send(new PutItemCommand({
+    TableName: t.context.rateLimitsDynamo.tableName,
+    Item: marshall({
+      id: Math.random().toString(10),
+      subject: client.currentSpace().did(),
+      rate: 0
+    })
+  }))
+  const uploadError = await t.throwsAsync(async () => {
+    await client.uploadFile(await randomFile(100))
+  })
 
-  // t.is(uploadError.message, 'failed store/add invocation')
+  t.is(uploadError.message, 'failed store/add invocation')
 })
 
 /**
