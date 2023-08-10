@@ -44,31 +44,21 @@ export async function createNewClient(uploadServiceUrl) {
 
 export async function setupNewClient (uploadServiceUrl, options = {}) {
   // create an inbox
-  console.log("creating mailslurp inbox")
   const { mailslurp, id: inboxId, email } = await createMailSlurpInbox()
-  console.log("creating new client")
   const client = await createNewClient(uploadServiceUrl)
-  console.log("created new client")
+
   const timeoutMs = process.env.MAILSLURP_TIMEOUT ? parseInt(process.env.MAILSLURP_TIMEOUT) : 120_000
   const authorizePromise = client.authorize(email)
   // click link in email
-  console.log("waiting for email")
   const latestEmail = await mailslurp.waitForLatestEmail(inboxId, timeoutMs)
-  console.log("got auth link")
   const authLink = getAuthLinkFromEmail(latestEmail.body, uploadServiceUrl)
-  console.log("clicking auth link")
   await fetch(authLink, { method: 'POST' })
-  console.log("waiting for authorize to return")
   await authorizePromise
   if (!client.currentSpace()) {
-    console.log("creating space")
     const space = await client.createSpace("test space")
-    console.log("setting current space")
     await client.setCurrentSpace(space.did())
-    console.log("registering space")
     await client.registerSpace(email)
   }
-  console.log("done with setup")
 
   return client
 }
