@@ -85,13 +85,21 @@ export function useProvisionStore (subscriptionTable, consumerTable, services) {
       const subscriptions = await subscriptionTable.findProviderSubscriptionsForCustomer(customer, provider)
       // if we don't have any subscriptions for a customer
       if (subscriptions.length === 0) {
-        return { ok: null }
+        return { error: { name: 'CustomerNotFound', message: `could not find ${customer}` } }
       }
       return {
         ok: {
           did: customer
         }
       }
+    },
+
+    getConsumer: async (provider, consumer) => {
+      return { error: { name: 'ConsumerNotFound', message: 'unimplemented' } }
+    },
+
+    getSubscription: async (provider, subscription) => {
+      return { error: { name: 'SubscriptionNotFound', message: 'unimplemented' } }
     }
   }
 }

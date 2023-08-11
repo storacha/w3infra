@@ -77,3 +77,19 @@ export const consumerTableProps = {
     provider: { partitionKey: 'provider', projection: ['consumer'] }
   }
 }
+
+/** @type TableProps */
+export const rateLimitTableProps = {
+  fields: {
+    id: 'string',           // arbitrary identifier for this limit
+    cause: 'string',        // `baf...x` (CID of invocation that created record)
+    subject: 'string',      // string (arbitrary string identifying the subject to be limited)
+    rate: 'number',         // unitless number representing the rate to which the subject is limited
+    insertedAt: 'string',   // `2022-12-24T...`
+    updatedAt: 'string',    // `2022-12-24T...`
+  },
+  primaryIndex: { partitionKey: 'id' },
+  globalIndexes: {
+    subject: { partitionKey: 'subject', projection: ['rate', 'id'] },
+  }
+}

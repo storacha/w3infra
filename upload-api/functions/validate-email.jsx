@@ -17,6 +17,7 @@ import {
   ValidateEmailError,
   PendingValidateEmail,
 } from '../html.jsx'
+import { createRateLimitTable } from '../tables/rate-limit.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -65,6 +66,7 @@ function createAuthorizeContext () {
     ACCESS_SERVICE_URL = '',
     AWS_REGION = '',
     DELEGATION_TABLE_NAME = '',
+    RATE_LIMIT_TABLE_NAME = '',
     R2_ENDPOINT = '',
     R2_ACCESS_KEY_ID = '',
     R2_SECRET_ACCESS_KEY = '',
@@ -99,6 +101,7 @@ function createAuthorizeContext () {
     signer: getServiceSigner({ UPLOAD_API_DID, PRIVATE_KEY }),
     delegationsStorage: createDelegationsTable(AWS_REGION, DELEGATION_TABLE_NAME, { bucket: delegationBucket, invocationBucket, workflowBucket }),
     provisionsStorage: useProvisionStore(subscriptionTable, consumerTable, parseProviders(PROVIDERS)),
+    rateLimitsStorage: createRateLimitTable(AWS_REGION, RATE_LIMIT_TABLE_NAME)
   }
 }
 

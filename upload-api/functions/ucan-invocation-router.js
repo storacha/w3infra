@@ -1,9 +1,8 @@
-import { DID, API } from '@ucanto/core'
+import { API } from '@ucanto/core'
 import * as Server from '@ucanto/server'
 import { Kinesis } from '@aws-sdk/client-kinesis'
 import * as Sentry from '@sentry/serverless'
 
-import { createAccessClient } from '../access.js'
 import { processAgentMessageArchive } from '../ucan-invocation.js'
 import { createCarStore } from '../buckets/car-store.js'
 import { createDudewhereStore } from '../buckets/dudewhere-store.js'
@@ -22,6 +21,7 @@ import { createDelegationsTable } from '../tables/delegations.js'
 import { createDelegationsStore } from '../buckets/delegations-store.js'
 import { createSubscriptionTable } from '../tables/subscription.js'
 import { createConsumerTable } from '../tables/consumer.js'
+import { createRateLimitTable } from '../tables/rate-limit.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -85,6 +85,7 @@ export async function ucanInvocationRouter(request) {
     CONSUMER_TABLE_NAME: consumerTableName = '',
     SUBSCRIPTION_TABLE_NAME: subscriptionTableName = '',
     DELEGATION_TABLE_NAME: delegationTableName = '',
+    RATE_LIMIT_TABLE_NAME: rateLimitTableName = '',
     R2_ENDPOINT: r2DelegationBucketEndpoint = '',
     R2_ACCESS_KEY_ID: r2DelegationBucketAccessKeyId = '',
     R2_SECRET_ACCESS_KEY: r2DelegationBucketSecretAccessKey = '',
@@ -97,7 +98,6 @@ export async function ucanInvocationRouter(request) {
     PROVIDERS: providers = '',
     // set for testing
     DYNAMO_DB_ENDPOINT: dbEndpoint,
-    ACCESS_SERVICE_DID: accessServiceDID = '',
     ACCESS_SERVICE_URL: accessServiceURL = '',
   } = process.env
 
@@ -124,6 +124,7 @@ export async function ucanInvocationRouter(request) {
   const consumerTable = createConsumerTable(AWS_REGION, consumerTableName, {
     endpoint: dbEndpoint
   });
+  const rateLimitsStorage = createRateLimitTable(AWS_REGION, rateLimitTableName)
   const provisionsStorage = useProvisionStore(subscriptionTable, consumerTable, parseProviders(providers))
   const delegationsStorage = createDelegationsTable(AWS_REGION, delegationTableName, { bucket: delegationBucket, invocationBucket, workflowBucket })
 
@@ -143,18 +144,13 @@ export async function ucanInvocationRouter(request) {
     uploadTable: createUploadTable(AWS_REGION, uploadTableName, {
       endpoint: dbEndpoint,
     }),
-    access: createAccessClient(
-      serviceSigner,
-      DID.parse(accessServiceDID),
-      provisionsStorage,
-      delegationsStorage
-    ),
     signer: serviceSigner,
     // TODO: we should set URL from a different env var, doing this for now to avoid that refactor - tracking in https://github.com/web3-storage/w3infra/issues/209
     url: new URL(accessServiceURL),
     email: new Email({ token: postmarkToken }),
     provisionsStorage,
-    delegationsStorage
+    delegationsStorage,
+    rateLimitsStorage
   })
 
   const processingCtx = {
