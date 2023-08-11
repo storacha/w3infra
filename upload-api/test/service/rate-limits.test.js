@@ -2,7 +2,7 @@
 import { test } from '../helpers/context.js'
 import { executionContextToUcantoTestServerContext } from "../helpers/ucan.js"
 import { assertsFromExecutionContext } from '../helpers/assert.js'
-import { provisionsStorageTests } from '@web3-storage/upload-api/test'
+import { rateLimitsStorageTests } from '@web3-storage/upload-api/test'
 import {
   createS3,
   createDynamodDb,
@@ -15,10 +15,10 @@ test.before(async (t) => {
   })
 })
 
-for (const [title, unit] of Object.entries(provisionsStorageTests)) {
+for (const [title, unit] of Object.entries(rateLimitsStorageTests)) {
   const define = title.startsWith('only ')
-    ? test.only
-    : title.startsWith('skip ')
+      ? test.only
+      : title.startsWith('skip ')
       ? test.skip
       : test
   define(title, async (t) => {

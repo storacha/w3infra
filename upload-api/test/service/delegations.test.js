@@ -1,3 +1,4 @@
+/* eslint-disable no-nested-ternary, no-only-tests/no-only-tests */
 import { test } from '../helpers/context.js'
 import { executionContextToUcantoTestServerContext } from "../helpers/ucan.js"
 import { assertsFromExecutionContext } from '../helpers/assert.js'
@@ -15,7 +16,12 @@ test.before(async (t) => {
 })
 
 for (const [title, unit] of Object.entries(delegationsStorageTests)) {
-  test(title, async (t) => {
+  const define = title.startsWith('only ')
+    ? test.only
+    : title.startsWith('skip ')
+      ? test.skip
+      : test
+  define(title, async (t) => {
     await unit(
       assertsFromExecutionContext(t),
       await executionContextToUcantoTestServerContext(t)

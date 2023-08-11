@@ -5,7 +5,8 @@ import {
   uploadTableProps,
   consumerTableProps,
   subscriptionTableProps,
-  delegationTableProps
+  delegationTableProps,
+  rateLimitTableProps
 } from '../upload-api/tables/index.js'
 import {
   adminMetricsTableProps,
@@ -25,7 +26,7 @@ export function UploadDbStack({ stack, app }) {
    * This table takes a stored CAR and makes an entry in the store table
    * Used by the store/* service capabilities.
    */
-   const storeTable = new Table(stack, 'store', storeTableProps)
+  const storeTable = new Table(stack, 'store', storeTableProps)
 
   /**
    * This table maps stored CAR files (shards) to an upload root cid.
@@ -42,7 +43,12 @@ export function UploadDbStack({ stack, app }) {
    * This table tracks the relationship between subscriptions and consumers (ie, spaces).
    */
   const consumerTable = new Table(stack, 'consumer', consumerTableProps)
-  
+
+  /**
+   * This table tracks rate limits we have imposed on subjects.
+   */
+  const rateLimitTable = new Table(stack, 'rate-limit', rateLimitTableProps)
+
   /**
    * This bucket stores delegations extracted from UCAN invocations.
    */
@@ -73,6 +79,7 @@ export function UploadDbStack({ stack, app }) {
     uploadTable,
     consumerTable,
     subscriptionTable,
+    rateLimitTable,
     delegationBucket,
     delegationTable,
     adminMetricsTable,

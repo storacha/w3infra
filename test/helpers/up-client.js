@@ -17,7 +17,7 @@ function getAuthLinkFromEmail (email, uploadServiceUrl) {
   const link = email.match(/<a href="([^"]*)".*Verify email address/)[1]
 
   // test auth services always link to the staging URL but we want to hit the service we're testing
-  return link.replace("https://w3access-staging.protocol-labs.workers.dev", uploadServiceUrl)
+  return link.replace("https://staging.up.web3.storage", uploadServiceUrl)
 }
 
 async function createMailSlurpInbox() {
@@ -31,17 +31,21 @@ async function createMailSlurpInbox() {
   }
 }
 
-export async function setupNewClient (uploadServiceUrl, options = {}) {
-  // create an inbox
-  const { mailslurp, id: inboxId, email } = await createMailSlurpInbox()
+export async function createNewClient(uploadServiceUrl) {
   const principal = await Signer.generate()
   const data = await AgentData.create({ principal })
-  const client = new Client(data, {
+  return new Client(data, {
     serviceConf: {
       upload: getUploadServiceConnection(uploadServiceUrl),
       access: getAccessServiceConnection(uploadServiceUrl)
     },
   })
+}
+
+export async function setupNewClient (uploadServiceUrl, options = {}) {
+  // create an inbox
+  const { mailslurp, id: inboxId, email } = await createMailSlurpInbox()
+  const client = await createNewClient(uploadServiceUrl)
 
   const timeoutMs = process.env.MAILSLURP_TIMEOUT ? parseInt(process.env.MAILSLURP_TIMEOUT) : 60_000
   const authorizePromise = client.authorize(email)
