@@ -97,6 +97,7 @@ export async function ucanInvocationRouter(request) {
     PROVIDERS: providers = '',
     // set for testing
     DYNAMO_DB_ENDPOINT: dbEndpoint,
+    ACCESS_SERVICE_DID: accessServiceDID = '',
     ACCESS_SERVICE_URL: accessServiceURL = '',
   } = process.env
 
