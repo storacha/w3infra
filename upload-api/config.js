@@ -22,7 +22,7 @@ export function getServiceSigner(config) {
  * Given a string, parse into provider service DIDs. 
  * 
  * @param {string} providersEnvVar 
- * @return {import('@web3-storage/upload-api').ServiceDID[]}
+ * @returns {import('@web3-storage/upload-api').ServiceDID[]}
  */
 export function parseProviders(providersEnvVar) {
   return /** @type {import('@web3-storage/upload-api').ServiceDID[]} */(
