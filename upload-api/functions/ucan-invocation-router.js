@@ -12,7 +12,7 @@ import { createTaskStore } from '../buckets/task-store.js'
 import { createWorkflowStore } from '../buckets/workflow-store.js'
 import { createStoreTable } from '../tables/store.js'
 import { createUploadTable } from '../tables/upload.js'
-import { getServiceSigner } from '../config.js'
+import { getServiceSigner, parseProviders } from '../config.js'
 import { createUcantoServer } from '../service.js'
 import { Config } from '@serverless-stack/node/config/index.js'
 import { CAR, Legacy, Codec } from '@ucanto/transport'
@@ -94,9 +94,9 @@ export async function ucanInvocationRouter(request) {
     WORKFLOW_BUCKET_NAME: workflowBucketName = '',
     UCAN_LOG_STREAM_NAME: streamName = '',
     POSTMARK_TOKEN: postmarkToken = '',
+    PROVIDERS: providers = '',
     // set for testing
     DYNAMO_DB_ENDPOINT: dbEndpoint,
-    ACCESS_SERVICE_DID: accessServiceDID = '',
     ACCESS_SERVICE_URL: accessServiceURL = '',
   } = process.env
 
@@ -123,10 +123,7 @@ export async function ucanInvocationRouter(request) {
   const consumerTable = createConsumerTable(AWS_REGION, consumerTableName, {
     endpoint: dbEndpoint
   });
-  const provisionsStorage = useProvisionStore(subscriptionTable, consumerTable, [
-    /** @type {import('@web3-storage/upload-api').ServiceDID} */
-    (accessServiceDID)
-  ])
+  const provisionsStorage = useProvisionStore(subscriptionTable, consumerTable, parseProviders(providers))
   const delegationsStorage = createDelegationsTable(AWS_REGION, delegationTableName, { bucket: delegationBucket, invocationBucket, workflowBucket })
 
   const server = createUcantoServer(serviceSigner, {

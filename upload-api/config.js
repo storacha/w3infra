@@ -9,11 +9,23 @@ import * as DID from '@ipld/dag-ucan/did'
  * @param {string} [config.UPLOAD_API_DID] - public DID for the upload service (did:key:... derived from PRIVATE_KEY if not set)
  * @returns {import('@ucanto/principal/ed25519').Signer.Signer}
  */
- export function getServiceSigner(config) {
+export function getServiceSigner(config) {
   const signer = ed25519.parse(config.PRIVATE_KEY)
   if (config.UPLOAD_API_DID) {
     const did = DID.parse(config.UPLOAD_API_DID).did()
     return signer.withDID(did)
   }
   return signer
+}
+
+/**
+ * Given a string, parse into provider service DIDs. 
+ * 
+ * @param {string} providersEnvVar 
+ * @return {import('@web3-storage/upload-api').ServiceDID[]}
+ */
+export function parseProviders(providersEnvVar) {
+  return /** @type {import('@web3-storage/upload-api').ServiceDID[]} */(
+    providersEnvVar.split(',').map(s => s.trim())
+  )
 }
