@@ -27,23 +27,21 @@
     "@web3-storage/upload-api": "^5.0.0",
     "@web3-storage/w3infra-ucan-invocation": "*",
     "multiformats": "^11.0.1",
+    "nanoid": "^4.0.2",
     "preact": "^10.14.1",
     "preact-render-to-string": "^5.2.6",
     "prom-client": "^14.2.0",
-    "uint8arrays": "^4.0.2",
-    "uuid": "^9.0.0"
+    "uint8arrays": "^4.0.2"
   },
   "devDependencies": {
     "@ipld/car": "^5.0.1",
     "@serverless-stack/resources": "*",
     "@types/aws-lambda": "^8.10.108",
-    "@types/uuid": "^9.0.2",
     "@ucanto/core": "^8.0.0",
     "@web-std/blob": "3.0.4",
     "@web3-storage/sigv4": "^1.0.2",
     "ava": "^4.3.3",
     "aws-lambda-test-utils": "^1.3.0",
-    "nanoid": "^4.0.0",
     "testcontainers": "^8.13.0"
   },
   "engines": {
