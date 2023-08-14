@@ -72,6 +72,7 @@ export function UploadApiStack({ stack, app }) {
           ACCESS_SERVICE_DID: process.env.ACCESS_SERVICE_DID ?? '',
           ACCESS_SERVICE_URL: process.env.ACCESS_SERVICE_URL ?? '',
           POSTMARK_TOKEN: process.env.POSTMARK_TOKEN ?? '',
+          PROVIDERS: process.env.PROVIDERS ?? '',
           R2_ACCESS_KEY_ID: process.env.R2_ACCESS_KEY_ID ?? '',
           R2_SECRET_ACCESS_KEY: process.env.R2_SECRET_ACCESS_KEY ?? '',
           R2_REGION: process.env.R2_REGION ?? '',

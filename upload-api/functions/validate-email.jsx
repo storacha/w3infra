@@ -1,7 +1,7 @@
 import * as Sentry from '@sentry/serverless'
 import { authorize } from '@web3-storage/upload-api/validate'
 import { Config } from '@serverless-stack/node/config/index.js'
-import { getServiceSigner } from '../config.js'
+import { getServiceSigner, parseServiceDids } from '../config.js'
 import { Email } from '../email.js'
 import { createDelegationsTable } from '../tables/delegations.js'
 import { createDelegationsStore } from '../buckets/delegations-store.js'
@@ -64,7 +64,6 @@ export const preValidateEmail = Sentry.AWSLambda.wrapHandler(validateEmailGet)
 function createAuthorizeContext () {
   const {
     ACCESS_SERVICE_URL = '',
-    ACCESS_SERVICE_DID = '',
     AWS_REGION = '',
     DELEGATION_TABLE_NAME = '',
     RATE_LIMIT_TABLE_NAME = '',
@@ -78,6 +77,7 @@ function createAuthorizeContext () {
     SUBSCRIPTION_TABLE_NAME = '',
     CONSUMER_TABLE_NAME = '',
     UPLOAD_API_DID = '',
+    PROVIDERS = '',
     // set for testing
     DYNAMO_DB_ENDPOINT: dbEndpoint,
   } = process.env
@@ -100,10 +100,7 @@ function createAuthorizeContext () {
     email: new Email({ token: POSTMARK_TOKEN }),
     signer: getServiceSigner({ UPLOAD_API_DID, PRIVATE_KEY }),
     delegationsStorage: createDelegationsTable(AWS_REGION, DELEGATION_TABLE_NAME, { bucket: delegationBucket, invocationBucket, workflowBucket }),
-    provisionsStorage: useProvisionStore(subscriptionTable, consumerTable, [
-      /** @type {import('@web3-storage/upload-api').ServiceDID} */
-      (ACCESS_SERVICE_DID)
-    ]),
+    provisionsStorage: useProvisionStore(subscriptionTable, consumerTable, parseServiceDids(PROVIDERS)),
     rateLimitsStorage: createRateLimitTable(AWS_REGION, RATE_LIMIT_TABLE_NAME)
   }
 }
