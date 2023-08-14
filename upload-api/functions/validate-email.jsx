@@ -1,7 +1,7 @@
 import * as Sentry from '@sentry/serverless'
 import { authorize } from '@web3-storage/upload-api/validate'
 import { Config } from '@serverless-stack/node/config/index.js'
-import { getServiceSigner, parseProviders } from '../config.js'
+import { getServiceSigner, parseServiceDids } from '../config.js'
 import { Email } from '../email.js'
 import { createDelegationsTable } from '../tables/delegations.js'
 import { createDelegationsStore } from '../buckets/delegations-store.js'
@@ -100,7 +100,7 @@ function createAuthorizeContext () {
     email: new Email({ token: POSTMARK_TOKEN }),
     signer: getServiceSigner({ UPLOAD_API_DID, PRIVATE_KEY }),
     delegationsStorage: createDelegationsTable(AWS_REGION, DELEGATION_TABLE_NAME, { bucket: delegationBucket, invocationBucket, workflowBucket }),
-    provisionsStorage: useProvisionStore(subscriptionTable, consumerTable, parseProviders(PROVIDERS)),
+    provisionsStorage: useProvisionStore(subscriptionTable, consumerTable, parseServiceDids(PROVIDERS)),
     rateLimitsStorage: createRateLimitTable(AWS_REGION, RATE_LIMIT_TABLE_NAME)
   }
 }

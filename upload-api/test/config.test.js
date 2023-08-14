@@ -58,47 +58,47 @@ test('getServiceSigner errors if config.UPLOAD_API_DID is provided but not a DID
   }, { message: /^Invalid DID/ })
 })
 
-test('parseProviders parses one DID', async (t) => {
+test('parseServiceDids parses one DID', async (t) => {
   t.deepEqual(
-    configModule.parseProviders('did:web:example.com'),
+    configModule.parseServiceDids('did:web:example.com'),
     ['did:web:example.com']
   )
 })
 
-test('parseProviders parses more than one DID', async (t) => {
+test('parseServiceDids parses more than one DID', async (t) => {
   t.deepEqual(
-    configModule.parseProviders('did:web:example.com,did:web:two.example.com'),
+    configModule.parseServiceDids('did:web:example.com,did:web:two.example.com'),
     ['did:web:example.com', 'did:web:two.example.com']
   )
 
   t.deepEqual(
-    configModule.parseProviders('did:web:example.com,did:web:two.example.com,did:web:three.example.com'),
+    configModule.parseServiceDids('did:web:example.com,did:web:two.example.com,did:web:three.example.com'),
     ['did:web:example.com', 'did:web:two.example.com', 'did:web:three.example.com']
   )
 })
 
-test('parseProviders trims space around dids', async (t) => {
+test('parseServiceDids trims space around dids', async (t) => {
   t.deepEqual(
-    configModule.parseProviders(' did:web:example.com, did:web:two.example.com '),
+    configModule.parseServiceDids(' did:web:example.com, did:web:two.example.com '),
     ['did:web:example.com', 'did:web:two.example.com']
   )
 })
 
-test('parseProviders throws an exception if a non-DID is provided', async (t) => {
+test('parseServiceDids throws an exception if a non-DID is provided', async (t) => {
   t.throws(
-    () => configModule.parseProviders('http://example.com'),
+    () => configModule.parseServiceDids('http://example.com'),
     { message: /^Invalid DID/}
   )
 })
 
-test('parseProviders throws an exception if a non-ServiceDID is provided', async (t) => {
+test('parseServiceDids throws an exception if a non-ServiceDID is provided', async (t) => {
   t.throws(
-    () => configModule.parseProviders('did:mailto:abc123'),
+    () => configModule.parseServiceDids('did:mailto:abc123'),
     { message: /^Invalid ServiceDID/}
   )
 
   t.throws(
-    () => configModule.parseProviders('did:key:z6Mkfy8k2JJUdNWCJtvzYrko5QRc7GXP6pksKDG19gxYzyi4'),
+    () => configModule.parseServiceDids('did:key:z6Mkfy8k2JJUdNWCJtvzYrko5QRc7GXP6pksKDG19gxYzyi4'),
     { message: /^Invalid ServiceDID/}
   )
 })

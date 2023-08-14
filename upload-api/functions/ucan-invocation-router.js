@@ -11,7 +11,7 @@ import { createTaskStore } from '../buckets/task-store.js'
 import { createWorkflowStore } from '../buckets/workflow-store.js'
 import { createStoreTable } from '../tables/store.js'
 import { createUploadTable } from '../tables/upload.js'
-import { getServiceSigner, parseProviders } from '../config.js'
+import { getServiceSigner, parseServiceDids } from '../config.js'
 import { createUcantoServer } from '../service.js'
 import { Config } from '@serverless-stack/node/config/index.js'
 import { CAR, Legacy, Codec } from '@ucanto/transport'
@@ -125,7 +125,7 @@ export async function ucanInvocationRouter(request) {
     endpoint: dbEndpoint
   });
   const rateLimitsStorage = createRateLimitTable(AWS_REGION, rateLimitTableName)
-  const provisionsStorage = useProvisionStore(subscriptionTable, consumerTable, parseProviders(providers))
+  const provisionsStorage = useProvisionStore(subscriptionTable, consumerTable, parseServiceDids(providers))
   const delegationsStorage = createDelegationsTable(AWS_REGION, delegationTableName, { bucket: delegationBucket, invocationBucket, workflowBucket })
 
   const server = createUcantoServer(serviceSigner, {

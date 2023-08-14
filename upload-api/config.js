@@ -21,12 +21,12 @@ export function getServiceSigner(config) {
 /**
  * Given a string, parse into provider ServiceDIDs. 
  * 
- * @param {string} providersEnvVar 
+ * @param {string} serviceDids a comma-separated string of ServiceDIDs
  * @returns {import('@web3-storage/upload-api').ServiceDID[]}
  */
-export function parseProviders(providersEnvVar) {
+export function parseServiceDids(serviceDids) {
   return /** @type {import('@web3-storage/upload-api').ServiceDID[]} */(
-    providersEnvVar.split(',').map(s => {
+    serviceDids.split(',').map(s => {
       const did = DID.parse(s.trim()).did()
       if (!did.startsWith('did:web:')) {
         throw new Error(`Invalid ServiceDID - ServiceDID must be a did:web: ${did}`)
