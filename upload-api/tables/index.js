@@ -25,6 +25,9 @@ export const uploadTableProps = {
   },
   // space + root must be unique to satisfy index constraint
   primaryIndex: { partitionKey: 'space', sortKey: 'root' },
+  globalIndexes: {
+    cid: { partitionKey: 'root', projection: ['space', 'insertedAt'] }
+  }
 }
 
 /** @type TableProps */
