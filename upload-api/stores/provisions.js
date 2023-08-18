@@ -18,10 +18,11 @@ export const createProvisionSubscriptionId = async ({ customer }) =>
 /**
  * @param {import('../types').SubscriptionTable} subscriptionTable
  * @param {import('../types').ConsumerTable} consumerTable
+ * @param {import('../types').SpaceMetricsTable} spaceMetricsTable
  * @param {import('@ucanto/interface').DID<'web'>[]} services
  * @returns {import('@web3-storage/upload-api').ProvisionsStorage}
  */
-export function useProvisionStore (subscriptionTable, consumerTable, services) {
+export function useProvisionStore (subscriptionTable, consumerTable, spaceMetricsTable, services) {
   return {
     services,
     hasStorageProvider: async (consumer) => (
@@ -95,7 +96,20 @@ export function useProvisionStore (subscriptionTable, consumerTable, services) {
     },
 
     getConsumer: async (provider, consumer) => {
-      return { error: { name: 'ConsumerNotFound', message: 'unimplemented' } }
+      const [consumerRecord, allocated] = await Promise.all([
+        consumerTable.get(provider, consumer),
+        spaceMetricsTable.getAllocated(consumer)
+      ])
+      return consumerRecord ? ({
+        ok: {
+          did: consumer,
+          allocated,
+          total: 1_000_000_000, // set to an arbitrarily high number because we currently don't enforce any limits
+          subscription: consumerRecord.subscription
+        }
+      }) : (
+        { error: { name: 'ConsumerNotFound', message: `could not find ${consumer}` } }
+      )
     },
 
     getSubscription: async (provider, subscription) => {

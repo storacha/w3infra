@@ -47,7 +47,7 @@ export async function metricsGet () {
 }
 
 /**
- * @param {import('../tables/metrics.js').MetricsTable} metricsTable
+ * @param {import('../types.js').MetricsTable} metricsTable
  */
 export async function getMetrics (metricsTable) {
   const metricsList = await metricsTable.get()
@@ -57,7 +57,7 @@ export async function getMetrics (metricsTable) {
 
 /**
  * @param {Metrics} metrics
- * @param {import('../tables/metrics.js').MetricsTable} metricsTable
+ * @param {import('../types.js').MetricsTable} metricsTable
  */
 export async function recordMetrics (metrics, metricsTable) {
   const fetchedMetrics = await getMetrics(metricsTable)

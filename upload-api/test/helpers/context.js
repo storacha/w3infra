@@ -9,7 +9,7 @@ import anyTest from 'ava'
  * @typedef {object} ServiceContext
  * @property {Signer} service
  * @typedef {object} MetricsContext
- * @property {import('../../tables/metrics').MetricsTable} metricsTable
+ * @property {import('../../types').MetricsTable} metricsTable
  * @property {string} tableName
  *
  * @typedef {import("ava").TestFn<DynamoContext & S3Context & ServiceContext>} Test

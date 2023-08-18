@@ -1,9 +1,9 @@
 import * as UCAN from '@ipld/dag-ucan'
-import { DID, Link, Delegation, Signature, Block, UCANLink, ByteView } from '@ucanto/interface'
+import { DID, Link, Delegation, Signature, Block, UCANLink, ByteView, DIDKey } from '@ucanto/interface'
 import { UnknownLink } from 'multiformats'
 import { CID } from 'multiformats/cid'
 import { Kinesis } from '@aws-sdk/client-kinesis'
-import { Service } from '@web3-storage/upload-api'
+import { ProviderDID, Service } from '@web3-storage/upload-api'
 
 
 export interface UcanLogCtx extends WorkflowCtx, ReceiptBlockCtx {
@@ -53,6 +53,21 @@ export interface DelegationsBucket {
   get: (cid: CID) => Promise<ByteView<Delegation>|undefined>
 }
 
+export interface MetricsTable {
+  /**
+   * Get all metrics from table.
+   */
+  get: () => Promise<Record<string, any>[]>
+}
+
+
+export interface SpaceMetricsTable {
+  /**
+   * Return the total amount of of storage a space has used.
+   */
+  getAllocated: (consumer: DIDKey) => Promise<number>
+}
+
 /**
  * 
  */
@@ -88,13 +103,24 @@ export interface ConsumerInput {
   cause: UCANLink
 }
 
+export interface ConsumerRecord {
+  /** the ID of the subscription representing the relationship between the consumer and provider */
+  subscription: string,
+  /** the CID of the UCAN invocation that created this record */
+  cause: UCANLink
+}
+
 export interface ConsumerTable {
+  /** get a consumer record for a given provider */
+  get: (provider: ProviderDID, consumer: DIDKey) => Promise<{ subscription: string } | null>
   /** add a consumer - a relationship between a provider, subscription and consumer */
   add: (consumer: ConsumerInput) => Promise<{}>
   /** return the number of consumers */
   count: () => Promise<bigint>
   /** return a boolean indicating whether the given consumer has a storage provider */
   hasStorageProvider: (consumer: DID) => Promise<boolean>
+  /** return a list of storage providers the given consumer has registered with */
+  getStorageProviders: (consumer: DID) => Promise<ProviderDID[]>
 }
 
 export type SpaceService = Pick<Service, "space">
