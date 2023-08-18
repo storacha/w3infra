@@ -83,6 +83,8 @@ export interface SubscriptionInput {
 }
 
 export interface SubscriptionTable {
+  get: (provider: ProviderDID, subscription: string) =>
+    Promise<{ customer: DID }>
   /** add a subscription - a relationship between a customer and a provider that will allow for provisioning of consumers */
   add: (consumer: SubscriptionInput) => Promise<{}>
   /** return the count of subscriptions in the system */
@@ -113,6 +115,8 @@ export interface ConsumerRecord {
 export interface ConsumerTable {
   /** get a consumer record for a given provider */
   get: (provider: ProviderDID, consumer: DIDKey) => Promise<{ subscription: string } | null>
+  /** get a consumer record for a given subscription */
+  getBySubscription: (provider: ProviderDID, subscription: string) => Promise<{ consumer: DID } | null>
   /** add a consumer - a relationship between a provider, subscription and consumer */
   add: (consumer: ConsumerInput) => Promise<{}>
   /** return the number of consumers */

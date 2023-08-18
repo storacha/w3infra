@@ -113,7 +113,23 @@ export function useProvisionStore (subscriptionTable, consumerTable, spaceMetric
     },
 
     getSubscription: async (provider, subscription) => {
-      return { error: { name: 'SubscriptionNotFound', message: 'unimplemented' } }
+      const [subscriptionRecord, consumerRecord] = await Promise.all([
+        subscriptionTable.get(provider, subscription),
+        consumerTable.getBySubscription(provider, subscription)
+      ])
+      if (subscriptionRecord) {
+        /** @type {import('@web3-storage/upload-api/dist/src/types/provisions').Subscription} */
+        const result = {
+          customer: /** @type {import('@web3-storage/upload-api').AccountDID} */(subscriptionRecord.customer)
+        }
+        if (consumerRecord) {
+          result.consumer = /** @type {import('@ucanto/interface').DIDKey} */(consumerRecord.consumer)
+        }
+        return { ok: result }
+
+      } else {
+        return { error: { name: 'SubscriptionNotFound', message: 'unimplemented' } }
+      }
     }
   }
 }
