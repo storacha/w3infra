@@ -76,7 +76,7 @@ export function CarparkStack({ stack, app }) {
   carparkBucket.addNotifications(stack, {
     newCarPut: {
       function: carparkPutEventConsumer,
-      events: ['object_created_put'],
+      events: ['object_created'],
     }
   })
 
