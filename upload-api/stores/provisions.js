@@ -90,7 +90,8 @@ export function useProvisionStore (subscriptionTable, consumerTable, spaceMetric
       }
       return {
         ok: {
-          did: customer
+          did: customer,
+          subscriptions: subscriptions.map(s => s.subscription)
         }
       }
     },
