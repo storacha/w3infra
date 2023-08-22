@@ -105,7 +105,7 @@ export function useProvisionStore (subscriptionTable, consumerTable, spaceMetric
         ok: {
           did: consumer,
           allocated,
-          total: 1_000_000_000, // set to an arbitrarily high number because we currently don't enforce any limits
+          limit: 1_000_000_000, // set to an arbitrarily high number because we currently don't enforce any limits
           subscription: consumerRecord.subscription
         }
       }) : (
