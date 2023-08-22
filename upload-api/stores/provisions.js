@@ -29,6 +29,10 @@ export function useProvisionStore (subscriptionTable, consumerTable, spaceMetric
       { ok: await consumerTable.hasStorageProvider(consumer) }
     ),
 
+    getStorageProviders: async (consumer) => (
+      { ok: await consumerTable.getStorageProviders(consumer) }
+    ),
+
     put: async (item) => {
       const { cause, consumer, customer, provider } = item
       const subscription = await createProvisionSubscriptionId(item)

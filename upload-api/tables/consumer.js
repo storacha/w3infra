@@ -3,6 +3,7 @@ import {
   PutItemCommand,
   DescribeTableCommand,
   QueryCommand,
+  GetItemCommand,
 } from '@aws-sdk/client-dynamodb'
 import { Failure } from '@ucanto/server'
 import { marshall, unmarshall } from '@aws-sdk/util-dynamodb'
@@ -98,6 +99,32 @@ export function useConsumerTable (dynamoDb, tableName) {
       } else {
         return null
       }
+    },
+
+    /**
+     * Get the consumer attached to a given subscription.
+     * 
+     * @param {import('@web3-storage/upload-api').ProviderDID} provider 
+     * @param {string} subscription 
+     * @returns 
+     */
+    getBySubscription: async (provider, subscription) => {
+      const response = await dynamoDb.send(new GetItemCommand({
+        TableName: tableName,
+        Key: {
+          provider: {
+            S: provider
+          },
+          subscription: {
+            S: subscription
+          }
+        }
+      }))
+      return response.Item ? (
+        {
+          consumer: unmarshall(response.Item).consumer
+        }
+      ) : null
     },
 
     /**
