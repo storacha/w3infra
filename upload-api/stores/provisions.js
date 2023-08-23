@@ -63,7 +63,7 @@ export function useProvisionStore (subscriptionTable, consumerTable, spaceMetric
           consumer,
           subscription
         })
-        return { ok: {} }
+        return { ok: { id: subscription } }
       } catch (error) {
         return (error instanceof ConsumerConflictError) ? (
           {

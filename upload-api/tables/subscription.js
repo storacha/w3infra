@@ -131,7 +131,7 @@ export function useSubscriptionTable (dynamoDb, tableName) {
       const response = await dynamoDb.send(cmd)
       return response.Items ? response.Items.map(i => {
         return {
-          subscription: i.subscription.toString()
+          subscription: unmarshall(i).subscription
         }
       }) : []
     }
