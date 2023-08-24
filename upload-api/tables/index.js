@@ -13,6 +13,9 @@ export const storeTableProps = {
   },
   // space + link must be unique to satisfy index constraint
   primaryIndex: { partitionKey: 'space', sortKey: 'link' },
+  globalIndexes: {
+    cid: { partitionKey: 'link', sortKey: 'space', projection: ['space', 'insertedAt'] }
+  }
 }
 
 /** @type TableProps */
