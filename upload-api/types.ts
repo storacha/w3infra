@@ -63,7 +63,7 @@ export interface MetricsTable {
 
 export interface SpaceMetricsTable {
   /**
-   * Return the total amount of of storage a space has used.
+   * Return the total amount of storage a space has used.
    */
   getAllocated: (consumer: DIDKey) => Promise<number>
 }
