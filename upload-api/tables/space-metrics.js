@@ -3,6 +3,8 @@ import {
   GetItemCommand,
 } from '@aws-sdk/client-dynamodb'
 import { marshall, unmarshall } from '@aws-sdk/util-dynamodb'
+import { METRICS_NAMES } from '@web3-storage/w3infra-ucan-invocation/constants'
+
 
 /**
  * Abstraction layer to handle operations on space metrics Table.
@@ -38,7 +40,7 @@ export function useSpaceMetricsTable(dynamoDb, tableName) {
         TableName: tableName,
         Key: marshall({
           consumer,
-          name: 'store/add-size-total'
+          name:  METRICS_NAMES.STORE_ADD_SIZE_TOTAL
         }),
         AttributesToGet: ['value']
       }))

@@ -89,14 +89,7 @@ export function useSubscriptionTable (dynamoDb, tableName) {
     get: async (provider, subscription) => {
       const response = await dynamoDb.send(new GetItemCommand({
         TableName: tableName,
-        Key: {
-          provider: {
-            S: provider
-          },
-          subscription: {
-            S: subscription
-          }
-        }
+        Key: marshall({provider, subscription})
       }))
       return response.Item ?
         (

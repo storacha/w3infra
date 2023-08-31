@@ -62,6 +62,8 @@ async function getStorageProviders (dynamoDb, tableName, consumer) {
     AttributesToGet: ['provider']
   })
   const response = await dynamoDb.send(cmd)
+  // TODO: handle pulling the entire list. currently we only support 2 providers so
+  // this list should not be longer than the default page size so this is not terribly urgent.
   return response.Items ? response.Items.map(item => {
     const row = unmarshall(item)
     return /** @type {import('@web3-storage/upload-api').ProviderDID} */ (row.provider)
@@ -111,14 +113,7 @@ export function useConsumerTable (dynamoDb, tableName) {
     getBySubscription: async (provider, subscription) => {
       const response = await dynamoDb.send(new GetItemCommand({
         TableName: tableName,
-        Key: {
-          provider: {
-            S: provider
-          },
-          subscription: {
-            S: subscription
-          }
-        }
+        Key: marshall({ provider, subscription })
       }))
       return response.Item ? (
         {
