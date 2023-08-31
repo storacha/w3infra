@@ -22,6 +22,8 @@ import { useDelegationsStore } from '../../buckets/delegations-store.js';
 import { useInvocationStore } from '../../buckets/invocation-store.js';
 import { useWorkflowStore } from '../../buckets/workflow-store.js';
 import { useRateLimitTable } from '../../tables/rate-limit.js';
+import { useSpaceMetricsTable } from '../../tables/space-metrics.js';
+import { spaceMetricsTableProps } from '@web3-storage/w3infra-ucan-invocation/tables/index.js';
 
 export { API }
 
@@ -218,9 +220,14 @@ export async function executionContextToUcantoTestServerContext (t) {
     dynamo,
     await createTable(dynamo, consumerTableProps)
   );
+  const spaceMetricsTable = useSpaceMetricsTable(
+    dynamo,
+    await createTable(dynamo, spaceMetricsTableProps)
+  )
   const provisionsStorage = useProvisionStore(
     subscriptionTable,
     consumerTable,
+    spaceMetricsTable,
     [service.did()]
   );
   const email = new DebugEmail();

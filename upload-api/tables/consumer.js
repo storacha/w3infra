@@ -3,9 +3,10 @@ import {
   PutItemCommand,
   DescribeTableCommand,
   QueryCommand,
+  GetItemCommand,
 } from '@aws-sdk/client-dynamodb'
 import { Failure } from '@ucanto/server'
-import { marshall } from '@aws-sdk/util-dynamodb'
+import { marshall, unmarshall } from '@aws-sdk/util-dynamodb'
 
 /**
  * @typedef {import('../types').ConsumerTable} ConsumerTable
@@ -42,12 +43,85 @@ export class ConflictError extends Failure {
 }
 
 /**
+ * 
+ * @param {DynamoDBClient} dynamoDb
+ * @param {string} tableName 
+ * @param {import('@ucanto/interface').DID} consumer 
+ * @returns {Promise<import('@web3-storage/upload-api').ProviderDID[]>}
+ */
+async function getStorageProviders (dynamoDb, tableName, consumer) {
+  const cmd = new QueryCommand({
+    TableName: tableName,
+    IndexName: 'consumer',
+    KeyConditions: {
+      consumer: {
+        ComparisonOperator: 'EQ',
+        AttributeValueList: [{ S: consumer }]
+      }
+    },
+    AttributesToGet: ['provider']
+  })
+  const response = await dynamoDb.send(cmd)
+  // TODO: handle pulling the entire list. currently we only support 2 providers so
+  // this list should not be longer than the default page size so this is not terribly urgent.
+  return response.Items ? response.Items.map(item => {
+    const row = unmarshall(item)
+    return /** @type {import('@web3-storage/upload-api').ProviderDID} */ (row.provider)
+  }) : []
+}
+
+/**
  * @param {DynamoDBClient} dynamoDb
  * @param {string} tableName
  * @returns {ConsumerTable}
  */
 export function useConsumerTable (dynamoDb, tableName) {
   return {
+    /**
+     * Get a consumer record.
+     * 
+     * @param {import('@web3-storage/upload-api').ProviderDID} provider the provider whose records we should query
+     * @param {import('@ucanto/interface').DIDKey} consumer the consumer whose record we should return
+     */
+    get: async (provider, consumer) => {
+      const response = await dynamoDb.send(new QueryCommand({
+        TableName: tableName,
+        IndexName: 'consumer',
+        KeyConditionExpression: "consumer = :consumer and provider = :provider",
+        ExpressionAttributeValues: {
+          ':consumer': { S: consumer },
+          ':provider': { S: provider }
+        },
+      }))
+      if (response.Items && (response.Items.length > 0)) {
+        const record = unmarshall(response.Items[0])
+        return {
+          subscription: record.subscription
+        }
+      } else {
+        return null
+      }
+    },
+
+    /**
+     * Get the consumer attached to a given subscription.
+     * 
+     * @param {import('@web3-storage/upload-api').ProviderDID} provider 
+     * @param {string} subscription 
+     * @returns 
+     */
+    getBySubscription: async (provider, subscription) => {
+      const response = await dynamoDb.send(new GetItemCommand({
+        TableName: tableName,
+        Key: marshall({ provider, subscription })
+      }))
+      return response.Item ? (
+        {
+          consumer: unmarshall(response.Item).consumer
+        }
+      ) : null
+    },
+
     /**
      * Record the fact that a consumer is consuming a provider via a subscription
      *
@@ -86,21 +160,13 @@ export function useConsumerTable (dynamoDb, tableName) {
       }
     },
 
+    getStorageProviders: async (consumer) => {
+      return getStorageProviders(dynamoDb, tableName, consumer)
+    },
+
     hasStorageProvider: async (consumer) => {
-      const cmd = new QueryCommand({
-        TableName: tableName,
-        IndexName: 'consumer',
-        KeyConditions: {
-          consumer: {
-            ComparisonOperator: 'EQ',
-            AttributeValueList: [{ S: consumer }]
-          }
-        },
-        AttributesToGet: ['provider']
-      })
-      const response = await dynamoDb.send(cmd)
-      const itemCount = response.Items?.length || 0
-      return itemCount > 0
+      const providers = await getStorageProviders(dynamoDb, tableName, consumer)
+      return providers.length > 0
     },
 
     /**

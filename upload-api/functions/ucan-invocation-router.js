@@ -22,6 +22,7 @@ import { createDelegationsStore } from '../buckets/delegations-store.js'
 import { createSubscriptionTable } from '../tables/subscription.js'
 import { createConsumerTable } from '../tables/consumer.js'
 import { createRateLimitTable } from '../tables/rate-limit.js'
+import { createSpaceMetricsTable } from '../tables/space-metrics.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -85,6 +86,7 @@ export async function ucanInvocationRouter(request) {
     CONSUMER_TABLE_NAME: consumerTableName = '',
     SUBSCRIPTION_TABLE_NAME: subscriptionTableName = '',
     DELEGATION_TABLE_NAME: delegationTableName = '',
+    SPACE_METRICS_TABLE: spaceMetricsTableName = '',
     RATE_LIMIT_TABLE_NAME: rateLimitTableName = '',
     R2_ENDPOINT: r2DelegationBucketEndpoint = '',
     R2_ACCESS_KEY_ID: r2DelegationBucketAccessKeyId = '',
@@ -125,7 +127,9 @@ export async function ucanInvocationRouter(request) {
     endpoint: dbEndpoint
   });
   const rateLimitsStorage = createRateLimitTable(AWS_REGION, rateLimitTableName)
-  const provisionsStorage = useProvisionStore(subscriptionTable, consumerTable, parseServiceDids(providers))
+  const spaceMetricsTable = createSpaceMetricsTable(AWS_REGION, spaceMetricsTableName)
+
+  const provisionsStorage = useProvisionStore(subscriptionTable, consumerTable, spaceMetricsTable, parseServiceDids(providers))
   const delegationsStorage = createDelegationsTable(AWS_REGION, delegationTableName, { bucket: delegationBucket, invocationBucket, workflowBucket })
 
   const server = createUcantoServer(serviceSigner, {

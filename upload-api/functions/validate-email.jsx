@@ -18,6 +18,7 @@ import {
   PendingValidateEmail,
 } from '../html.jsx'
 import { createRateLimitTable } from '../tables/rate-limit.js'
+import { createSpaceMetricsTable } from '../tables/space-metrics.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -67,6 +68,7 @@ function createAuthorizeContext () {
     AWS_REGION = '',
     DELEGATION_TABLE_NAME = '',
     RATE_LIMIT_TABLE_NAME = '',
+    SPACE_METRICS_TABLE_NAME = '',
     R2_ENDPOINT = '',
     R2_ACCESS_KEY_ID = '',
     R2_SECRET_ACCESS_KEY = '',
@@ -94,13 +96,14 @@ function createAuthorizeContext () {
   const consumerTable = createConsumerTable(AWS_REGION, CONSUMER_TABLE_NAME, {
     endpoint: dbEndpoint
   });
+  const spaceMetricsTable = createSpaceMetricsTable(AWS_REGION, SPACE_METRICS_TABLE_NAME)
   return {
     // TODO: we should set URL from a different env var, doing this for now to avoid that refactor
     url: new URL(ACCESS_SERVICE_URL),
     email: new Email({ token: POSTMARK_TOKEN }),
     signer: getServiceSigner({ UPLOAD_API_DID, PRIVATE_KEY }),
     delegationsStorage: createDelegationsTable(AWS_REGION, DELEGATION_TABLE_NAME, { bucket: delegationBucket, invocationBucket, workflowBucket }),
-    provisionsStorage: useProvisionStore(subscriptionTable, consumerTable, parseServiceDids(PROVIDERS)),
+    provisionsStorage: useProvisionStore(subscriptionTable, consumerTable, spaceMetricsTable, parseServiceDids(PROVIDERS)),
     rateLimitsStorage: createRateLimitTable(AWS_REGION, RATE_LIMIT_TABLE_NAME)
   }
 }

@@ -1,11 +1,12 @@
 import {
   DescribeTableCommand,
   DynamoDBClient,
+  GetItemCommand,
   PutItemCommand,
   QueryCommand,
 } from '@aws-sdk/client-dynamodb'
 import { Failure } from '@ucanto/server'
-import { marshall } from '@aws-sdk/util-dynamodb'
+import { marshall, unmarshall } from '@aws-sdk/util-dynamodb'
 
 /**
  * @typedef {import('../types').SubscriptionTable} SubscriptionTable
@@ -72,10 +73,30 @@ export function useSubscriptionTable (dynamoDb, tableName) {
         return {}
       } catch (error) {
         const error_ = error instanceof Error && error.message === 'The conditional request failed' ? new ConflictError({
-            message: `Customer ${item.customer} cannot be given a subscription for ${item.provider}: it already has a subscription`
-          }) : error;
+          message: `Customer ${item.customer} cannot be given a subscription for ${item.provider}: it already has a subscription`
+        }) : error;
         throw error_;
       }
+    },
+
+    /**
+     * Get a subscription by ID.
+     * 
+     * @param {import('@web3-storage/upload-api').ProviderDID} provider 
+     * @param {string} subscription 
+     * @returns 
+     */
+    get: async (provider, subscription) => {
+      const response = await dynamoDb.send(new GetItemCommand({
+        TableName: tableName,
+        Key: marshall({provider, subscription})
+      }))
+      return response.Item ?
+        (
+          {
+            customer: unmarshall(response.Item).customer
+          }
+        ) : null
     },
 
     /**
@@ -103,7 +124,7 @@ export function useSubscriptionTable (dynamoDb, tableName) {
       const response = await dynamoDb.send(cmd)
       return response.Items ? response.Items.map(i => {
         return {
-          subscription: i.subscription.toString()
+          subscription: unmarshall(i).subscription
         }
       }) : []
     }
