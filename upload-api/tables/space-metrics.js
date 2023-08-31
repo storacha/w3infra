@@ -3,7 +3,7 @@ import {
   GetItemCommand,
 } from '@aws-sdk/client-dynamodb'
 import { marshall, unmarshall } from '@aws-sdk/util-dynamodb'
-import { METRICS_NAMES } from '../../ucan-invocation/constants'
+import { METRICS_NAMES } from '../../ucan-invocation/constants.js'
 
 
 /**
