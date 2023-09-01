@@ -86,7 +86,7 @@ export async function ucanInvocationRouter(request) {
     CONSUMER_TABLE_NAME: consumerTableName = '',
     SUBSCRIPTION_TABLE_NAME: subscriptionTableName = '',
     DELEGATION_TABLE_NAME: delegationTableName = '',
-    SPACE_METRICS_TABLE: spaceMetricsTableName = '',
+    SPACE_METRICS_TABLE_NAME: spaceMetricsTableName = '',
     RATE_LIMIT_TABLE_NAME: rateLimitTableName = '',
     R2_ENDPOINT: r2DelegationBucketEndpoint = '',
     R2_ACCESS_KEY_ID: r2DelegationBucketAccessKeyId = '',
