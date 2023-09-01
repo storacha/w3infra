@@ -39,10 +39,9 @@ export function useSpaceMetricsTable(dynamoDb, tableName) {
       const response = await dynamoDb.send(new GetItemCommand({
         TableName: tableName,
         Key: marshall({
-          consumer,
+          space: consumer,
           name:  METRICS_NAMES.STORE_ADD_SIZE_TOTAL
-        }),
-        AttributesToGet: ['value']
+        })
       }))
       return response.Item ? unmarshall(response.Item).value : 0
     }
