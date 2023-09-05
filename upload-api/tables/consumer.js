@@ -87,20 +87,17 @@ export function useConsumerTable (dynamoDb, tableName) {
       const response = await dynamoDb.send(new QueryCommand({
         TableName: tableName,
         IndexName: 'consumer',
-        KeyConditionExpression: "consumer = :consumer and provider = :provider",
+        KeyConditionExpression: "consumer = :consumer",
         ExpressionAttributeValues: {
           ':consumer': { S: consumer },
-          ':provider': { S: provider }
-        },
-      }))
-      if (response.Items && (response.Items.length > 0)) {
-        const record = unmarshall(response.Items[0])
-        return {
-          subscription: record.subscription
         }
-      } else {
-        return null
-      }
+      }))
+      // we may need to worry about pagination in the future if we end up supporting many many subscriptions for a single
+      // provider/consumer pair, but I suspect we'll never get there
+      const record = response.Items?.map(i => unmarshall(i)).find(i => i.provider === provider)
+      return record ? {
+        subscription: record.subscription
+      } : null
     },
 
     /**
