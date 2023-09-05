@@ -95,13 +95,9 @@ export function useConsumerTable (dynamoDb, tableName) {
       // we may need to worry about pagination in the future if we end up supporting many many subscriptions for a single
       // provider/consumer pair, but I suspect we'll never get there
       const record = response.Items?.map(i => unmarshall(i)).find(i => i.provider === provider)
-      if (record) {
-        return {
-          subscription: record.subscription
-        }
-      } else {
-        return null
-      }
+      return record ? {
+        subscription: record.subscription
+      } : null
     },
 
     /**
