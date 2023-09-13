@@ -20,13 +20,14 @@ import {
 } from './helpers/deployment.js'
 import { createNewClient, setupNewClient } from './helpers/up-client.js'
 import { randomFile } from './helpers/random.js'
-import { getTableItem, getAllTableRows } from './helpers/table.js'
+import { getTableItem, getAllTableRows, pollQueryTable } from './helpers/table.js'
 
 test.before(t => {
   t.context = {
     apiEndpoint: getApiEndpoint(),
     metricsDynamo: getDynamoDb('admin-metrics'),
     spaceMetricsDynamo: getDynamoDb('space-metrics'),
+    pieceDynamo: getDynamoDb('piece'),
     rateLimitsDynamo: getDynamoDb('rate-limit')
   }
 })
@@ -236,6 +237,12 @@ test('w3infra integration flow', async t => {
     interval: 100,
   })
 
+  // Check filecoin piece computed after leaving queue
+  const pieces = await getPieces(t, shards[0].toString())
+  t.assert(pieces)
+  t.is(pieces?.length, 1)
+  t.truthy(pieces?.[0].piece)
+
   // Check metrics were updated
   if (beforeStoreAddSizeTotal && spaceBeforeUploadAddMetrics && spaceBeforeStoreAddSizeMetrics && beforeUploadAddTotal) {
     await pWaitFor(async () => {
@@ -275,7 +282,7 @@ test('w3infra integration flow', async t => {
     TableName: t.context.rateLimitsDynamo.tableName,
     Item: marshall({
       id: Math.random().toString(10),
-      subject: client.currentSpace().did(),
+      subject: client.currentSpace()?.did(),
       rate: 0
     })
   }))
@@ -283,7 +290,7 @@ test('w3infra integration flow', async t => {
     await client.uploadFile(await randomFile(100))
   })
 
-  t.is(uploadError.message, 'failed store/add invocation')
+  t.is(uploadError?.message, 'failed store/add invocation')
 })
 
 /**
@@ -308,6 +315,28 @@ async function getSpaceMetrics (t, spaceDid, name) {
     t.context.spaceMetricsDynamo.client,
     t.context.spaceMetricsDynamo.tableName,
     { space: spaceDid, name }
+  )
+
+  return item
+}
+
+/**
+ * @param {import("ava").ExecutionContext<import("./helpers/context.js").Context>} t
+ * @param {string} link
+ */
+async function getPieces (t, link) {
+  const item = await pollQueryTable(
+    t.context.pieceDynamo.client,
+    t.context.pieceDynamo.tableName,
+    {
+      link: {
+        ComparisonOperator: 'EQ',
+        AttributeValueList: [{ S: link }]
+      }
+    },
+    {
+      indexName: 'link'
+    }
   )
 
   return item

@@ -1,0 +1,23 @@
+{
+  "name": "@web3-storage/w3infra-filecoin",
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "test": "ava --verbose --timeout=60s **/*.test.js"
+  },
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.211.0",
+    "@aws-sdk/client-s3": "^3.211.0",
+    "@aws-sdk/client-sqs": "^3.226.0",
+    "@sentry/serverless": "^7.22.0",
+    "@web3-storage/data-segment": "^3.0.1",
+    "fr32-sha2-256-trunc254-padded-binary-tree-multihash": "github:web3-storage/fr32-sha2-256-trunc254-padded-binary-tree-multihash",
+    "multiformats": "^12.1.1"
+  },
+  "devDependencies": {
+    "@serverless-stack/resources": "*",
+    "ava": "^4.3.3",
+    "nanoid": "^4.0.0",
+    "testcontainers": "^8.13.0"
+  }
+}

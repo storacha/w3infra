@@ -9,6 +9,7 @@ dist
 # misc
 .DS_Store
 .vscode
+cdk.context.json
 
 # local env files
 .env*.local

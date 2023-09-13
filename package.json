@@ -33,7 +33,7 @@
     "@ucanto/validator": "^8.0.0",
     "@web-std/blob": "^3.0.4",
     "@web-std/fetch": "^4.1.0",
-    "@web3-storage/capabilities": "^6.0.1",
+    "@web3-storage/capabilities": "^9.3.0",
     "@web3-storage/w3up-client": "^6.0.0",
     "ava": "^4.3.3",
     "dotenv": "^16.0.3",
@@ -99,6 +99,7 @@
     "satnav",
     "ucan-invocation",
     "upload-api",
+    "filecoin",
     "tools"
   ],
   "prettier": {
