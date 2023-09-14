@@ -140,6 +140,10 @@ Bucket name to replicate root CID to car CIDs mapping.
 
 Bucket name where delegations are stored.
 
+#### `PROVIDERS`
+
+A comma-separated string of ServiceDIDs in use.
+
 #### `SENTRY_DSN`
 
 Data source name for Sentry application monitoring service.
