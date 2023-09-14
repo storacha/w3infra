@@ -140,6 +140,10 @@ Bucket name to replicate written .idx files.
 
 Bucket name to replicate root CID to car CIDs mapping.
 
+#### `R2_DELEGATION_BUCKET_NAME`
+
+Bucket name where delegations are stored.
+
 #### `SENTRY_DSN`
 
 Data source name for Sentry application monitoring service.
