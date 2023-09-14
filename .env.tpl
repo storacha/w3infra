@@ -15,7 +15,6 @@ EIPFS_INDEXER_SQS_ARN = 'arn:aws:sqs:us-west-2:505595374361:staging-ep-indexer-t
 EIPFS_INDEXER_SQS_URL = 'https://sqs.us-west-2.amazonaws.com/505595374361/staging-ep-indexer-topic'
 
 PROVIDERS = ''
-ACCESS_SERVICE_DID = ''
 UPLOAD_API_DID = ''
 ACCESS_SERVICE_URL = ''
 POSTMARK_TOKEN = ''

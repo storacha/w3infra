@@ -104,10 +104,6 @@ The root domain to deploy the w3up API to. e.g `up.web3.storage`. The value shou
 
 The domain to deploy the roundabout API to. e.g `roundabout.web3.storage`. The value should match a hosted zone configured in route53 that your aws account has access to.
 
-#### `ACCESS_SERVICE_DID`
-
-DID of the w3access service.
-
 #### `ACCESS_SERVICE_URL`
 
 URL of the w3access service.
