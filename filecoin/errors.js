@@ -1,22 +1,7 @@
-export class Failure extends Error {
-  describe() {
-    return this.toString()
-  }
-
-  get message() {
-    return this.describe()
-  }
-
-  toJSON() {
-    const { name, message, stack } = this
-    return { name, message, stack }
-  }
-}
-
 export const DatabaseOperationErrorName = /** @type {const} */ (
   'DatabaseOperationFailed'
 )
-export class DatabaseOperationFailed extends Failure {
+export class DatabaseOperationFailed extends Error {
   get reason() {
     return this.message
   }
@@ -29,7 +14,7 @@ export class DatabaseOperationFailed extends Failure {
 export const GetCarErrorName = /** @type {const} */ (
   'GetCarFailed'
 )
-export class GetCarFailed extends Failure {
+export class GetCarFailed extends Error {
   get reason() {
     return this.message
   }
@@ -42,7 +27,7 @@ export class GetCarFailed extends Failure {
 export const ComputePieceErrorName = /** @type {const} */ (
   'ComputePieceFailed'
 )
-export class ComputePieceFailed extends Failure {
+export class ComputePieceFailed extends Error {
   get reason() {
     return this.message
   }

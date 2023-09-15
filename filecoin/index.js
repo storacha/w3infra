@@ -1,14 +1,11 @@
-import {
-  GetObjectCommand,
-} from '@aws-sdk/client-s3'
-// @@ts-expect-error needs final dep
-// import * as Hasher from 'fr32-sha2-256-trunc254-padded-binary-tree-multihash'
-// import * as Digest from 'multiformats/hashes/digest'
+import { GetObjectCommand, } from '@aws-sdk/client-s3'
+
+import * as Hasher from 'fr32-sha2-256-trunc254-padded-binary-tree-multihash'
+import * as Digest from 'multiformats/hashes/digest'
 import { Piece } from '@web3-storage/data-segment'
 import { CID } from 'multiformats/cid'
 
-// import { GetCarFailed, ComputePieceFailed } from './errors.js'
-import { GetCarFailed } from './errors.js'
+import { GetCarFailed, ComputePieceFailed } from './errors.js'
 
 /**
  * @typedef {object} EventRecord
@@ -51,26 +48,24 @@ export async function computePieceCid({
     }
   }
 
-  // let piece
-  // try {
-  //   const hasher = Hasher.create()
-  //   const digestBytes = new Uint8Array(36)
+  let piece
+  try {
+    const hasher = Hasher.create()
+    const digestBytes = new Uint8Array(36)
 
-  //   // @ts-expect-error aws Readable stream types are not good
-  //   for await (const chunk of res.Body.transformToWebStream()) {
-  //     hasher.write(chunk)
-  //   }
-  //   hasher.digestInto(digestBytes, 0, true)
-
-  //   const digest = Digest.decode(digestBytes)
-  //   // @ts-expect-error some properties from PieceDigest are not present in MultihashDigest
-  //   piece = Piece.fromDigest(digest)
-  // } catch (/** @type {any} */ error) {
-  //   return {
-  //     error: new ComputePieceFailed(error.cause)
-  //   }
-  // }
-  const piece = Piece.fromPayload(await res.Body.transformToByteArray()) 
+    // @ts-expect-error aws Readable stream types are not good
+    for await (const chunk of res.Body) {
+      hasher.write(chunk)
+    }
+    hasher.digestInto(digestBytes, 0, true)
+    const digest = Digest.decode(digestBytes)
+    // @ts-expect-error some properties from PieceDigest are not present in MultihashDigest
+    piece = Piece.fromDigest(digest)
+  } catch (/** @type {any} */ error) {
+    return {
+      error: new ComputePieceFailed(error.cause)
+    }
+  }
 
   // Write to table
   const { ok, error } = await pieceTable.insert({
