@@ -87,6 +87,21 @@ export function getKinesisEventSourceConfig (stack) {
   }
 }
 
+/**
+ * @param {import('@serverless-stack/resources').Stack} stack
+ */
+export function getKinesisStreamConfig (stack) {
+  if (stack.stage !== 'production') {
+    return {
+      retentionPeriod: Duration.hours(24)
+    }
+  }
+
+  return {
+    retentionPeriod: Duration.days(365)
+  }
+}
+
 export function getApiPackageJson () {
   // @ts-expect-error ts thinks this is unused becuase of the ignore
   const require = createRequire(import.meta.url)
