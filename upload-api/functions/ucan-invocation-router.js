@@ -23,6 +23,7 @@ import { createSubscriptionTable } from '../tables/subscription.js'
 import { createConsumerTable } from '../tables/consumer.js'
 import { createRateLimitTable } from '../tables/rate-limit.js'
 import { createSpaceMetricsTable } from '../tables/space-metrics.js'
+import { mustGetEnv } from './utils.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -80,28 +81,28 @@ const codec = Codec.inbound({
  */
 export async function ucanInvocationRouter(request) {
   const {
-    STORE_TABLE_NAME: storeTableName = '',
-    STORE_BUCKET_NAME: storeBucketName = '',
-    UPLOAD_TABLE_NAME: uploadTableName = '',
-    CONSUMER_TABLE_NAME: consumerTableName = '',
-    SUBSCRIPTION_TABLE_NAME: subscriptionTableName = '',
-    DELEGATION_TABLE_NAME: delegationTableName = '',
-    SPACE_METRICS_TABLE_NAME: spaceMetricsTableName = '',
-    RATE_LIMIT_TABLE_NAME: rateLimitTableName = '',
-    R2_ENDPOINT: r2DelegationBucketEndpoint = '',
-    R2_ACCESS_KEY_ID: r2DelegationBucketAccessKeyId = '',
-    R2_SECRET_ACCESS_KEY: r2DelegationBucketSecretAccessKey = '',
-    R2_DELEGATION_BUCKET_NAME: r2DelegationBucketName = '',
-    INVOCATION_BUCKET_NAME: invocationBucketName = '',
-    TASK_BUCKET_NAME: taskBucketName = '',
-    WORKFLOW_BUCKET_NAME: workflowBucketName = '',
-    UCAN_LOG_STREAM_NAME: streamName = '',
-    POSTMARK_TOKEN: postmarkToken = '',
-    PROVIDERS: providers = '',
+    storeTableName,
+    storeBucketName,
+    uploadTableName,
+    consumerTableName,
+    subscriptionTableName,
+    delegationTableName,
+    spaceMetricsTableName,
+    rateLimitTableName,
+    r2DelegationBucketEndpoint,
+    r2DelegationBucketAccessKeyId,
+    r2DelegationBucketSecretAccessKey,
+    r2DelegationBucketName,
+    invocationBucketName,
+    taskBucketName,
+    workflowBucketName,
+    streamName,
+    postmarkToken,
+    providers,
     // set for testing
-    DYNAMO_DB_ENDPOINT: dbEndpoint,
-    ACCESS_SERVICE_URL: accessServiceURL = '',
-  } = process.env
+    dbEndpoint,
+    accessServiceURL,
+  } = getLambdaEnv()
 
   if (request.body === undefined) {
     return {
@@ -232,3 +233,29 @@ export const fromLambdaRequest = (request) => ({
   headers: /** @type {Record<string, string>} */ (request.headers),
   body: Buffer.from(request.body || '', 'base64'),
 })
+
+function getLambdaEnv () {
+  return {
+    storeTableName: mustGetEnv('STORE_TABLE_NAME'),
+    storeBucketName: mustGetEnv('STORE_BUCKET_NAME'),
+    uploadTableName: mustGetEnv('UPLOAD_TABLE_NAME'),
+    consumerTableName: mustGetEnv('CONSUMER_TABLE_NAME'),
+    subscriptionTableName: mustGetEnv('SUBSCRIPTION_TABLE_NAME'),
+    delegationTableName: mustGetEnv('DELEGATION_TABLE_NAME'),
+    spaceMetricsTableName: mustGetEnv('SPACE_METRICS_TABLE_NAME'),
+    rateLimitTableName: mustGetEnv('RATE_LIMIT_TABLE_NAME'),
+    r2DelegationBucketEndpoint: mustGetEnv('R2_ENDPOINT'),
+    r2DelegationBucketAccessKeyId: mustGetEnv('R2_ACCESS_KEY_ID'),
+    r2DelegationBucketSecretAccessKey: mustGetEnv('R2_SECRET_ACCESS_KEY'),
+    r2DelegationBucketName: mustGetEnv('R2_DELEGATION_BUCKET_NAME'),
+    invocationBucketName: mustGetEnv('INVOCATION_BUCKET_NAME'),
+    taskBucketName: mustGetEnv('TASK_BUCKET_NAME'),
+    workflowBucketName: mustGetEnv('WORKFLOW_BUCKET_NAME'),
+    streamName: mustGetEnv('UCAN_LOG_STREAM_NAME'),
+    postmarkToken: mustGetEnv('POSTMARK_TOKEN'),
+    providers: mustGetEnv('PROVIDERS'),
+    accessServiceURL: mustGetEnv('ACCESS_SERVICE_URL'),
+    // set for testing
+    dbEndpoint: process.env.DYNAMO_DB_ENDPOINT,
+  }
+}

@@ -1,4 +1,4 @@
-import { Table, Bucket } from '@serverless-stack/resources'
+import { Table, Bucket, Config } from '@serverless-stack/resources'
 
 import {
   storeTableProps,
@@ -12,6 +12,9 @@ import {
   adminMetricsTableProps,
   spaceMetricsTableProps
 } from '../ucan-invocation/tables/index.js'
+import {
+  pieceTableProps
+} from '../filecoin/tables/index.js'
 import { setupSentry, getBucketConfig } from './config.js'
 
 /**
@@ -21,6 +24,8 @@ export function UploadDbStack({ stack, app }) {
 
   // Setup app monitoring with Sentry
   setupSentry(app, stack)
+
+  const privateKey = new Config.Secret(stack, 'PRIVATE_KEY')
 
   /**
    * This table takes a stored CAR and makes an entry in the store table
@@ -33,6 +38,16 @@ export function UploadDbStack({ stack, app }) {
    * Used by the upload/* capabilities.
    */
   const uploadTable = new Table(stack, 'upload', uploadTableProps)
+
+  /**
+   * This table takes a stored CAR and makes an entry in the piece table
+   * Used by the filecoin/* service capabilities. // TODO
+   */
+  const pieceTable = new Table(stack, 'piece', {
+    ...pieceTableProps,
+    // information that will be written to the stream
+    stream: 'new_image',
+  })
 
   /**
    * This table tracks the relationship between customers and providers.
@@ -77,12 +92,14 @@ export function UploadDbStack({ stack, app }) {
   return {
     storeTable,
     uploadTable,
+    pieceTable,
     consumerTable,
     subscriptionTable,
     rateLimitTable,
     delegationBucket,
     delegationTable,
     adminMetricsTable,
-    spaceMetricsTable
+    spaceMetricsTable,
+    privateKey
   }
 }
