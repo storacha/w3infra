@@ -182,6 +182,33 @@ export function useUploadTable(dynamoDb, tableName) {
         results: options.pre ? results.reverse() : results,
       }
     },
+
+    /**
+     * Get information about a CID.
+     * 
+     * @param {import('@web3-storage/upload-api').UnknownLink} link 
+     */
+    inspect: async (link) => {
+      const response = await dynamoDb.send(new QueryCommand({
+        TableName: tableName,
+        IndexName: 'cid',
+        KeyConditionExpression: "root = :root",
+        ExpressionAttributeValues: {
+          ':root': { S: link.toString() }
+        }
+      }))
+      return {
+        spaces: response.Items ? response.Items.map(
+          i => {
+            const item = unmarshall(i)
+            return ({
+              did: item.space,
+              insertedAt: item.insertedAt
+            })
+          }
+        ) : []
+      }
+    }
   }
 }
 
