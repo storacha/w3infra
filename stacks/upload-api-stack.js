@@ -22,14 +22,13 @@ export function UploadApiStack({ stack, app }) {
 
   // Get references to constructs created in other stacks
   const { carparkBucket } = use(CarparkStack)
-  const { storeTable, uploadTable, delegationBucket, delegationTable, adminMetricsTable, spaceMetricsTable, consumerTable, subscriptionTable, rateLimitTable } = use(UploadDbStack)
+  const { storeTable, uploadTable, delegationBucket, delegationTable, adminMetricsTable, spaceMetricsTable, consumerTable, subscriptionTable, rateLimitTable, privateKey } = use(UploadDbStack)
   const { invocationBucket, taskBucket, workflowBucket, ucanStream } = use(UcanInvocationStack)
 
   // Setup API
   const customDomain = getCustomDomain(stack.stage, process.env.HOSTED_ZONE)
   const pkg = getApiPackageJson()
   const git = getGitInfo()
-  const privateKey = new Config.Secret(stack, 'PRIVATE_KEY')
   const ucanInvocationPostbasicAuth = new Config.Secret(stack, 'UCAN_INVOCATION_POST_BASIC_AUTH')
 
   const api = new Api(stack, 'http-gateway', {

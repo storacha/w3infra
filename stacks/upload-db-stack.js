@@ -1,4 +1,4 @@
-import { Table, Bucket } from '@serverless-stack/resources'
+import { Table, Bucket, Config } from '@serverless-stack/resources'
 
 import {
   storeTableProps,
@@ -25,6 +25,8 @@ export function UploadDbStack({ stack, app }) {
   // Setup app monitoring with Sentry
   setupSentry(app, stack)
 
+  const privateKey = new Config.Secret(stack, 'PRIVATE_KEY')
+
   /**
    * This table takes a stored CAR and makes an entry in the store table
    * Used by the store/* service capabilities.
@@ -41,7 +43,11 @@ export function UploadDbStack({ stack, app }) {
    * This table takes a stored CAR and makes an entry in the piece table
    * Used by the filecoin/* service capabilities. // TODO
    */
-  const pieceTable = new Table(stack, 'piece', pieceTableProps)
+  const pieceTable = new Table(stack, 'piece', {
+    ...pieceTableProps,
+    // information that will be written to the stream
+    stream: 'new_image',
+  })
 
   /**
    * This table tracks the relationship between customers and providers.
@@ -93,6 +99,7 @@ export function UploadDbStack({ stack, app }) {
     delegationBucket,
     delegationTable,
     adminMetricsTable,
-    spaceMetricsTable
+    spaceMetricsTable,
+    privateKey
   }
 }

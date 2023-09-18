@@ -4,6 +4,7 @@ import * as Hasher from 'fr32-sha2-256-trunc254-padded-binary-tree-multihash'
 import * as Digest from 'multiformats/hashes/digest'
 import { Piece } from '@web3-storage/data-segment'
 import { CID } from 'multiformats/cid'
+import { Aggregator } from '@web3-storage/filecoin-client'
 
 import { GetCarFailed, ComputePieceFailed } from './errors.js'
 
@@ -79,5 +80,36 @@ export async function computePieceCid({
   return {
     ok,
     error
+  }
+}
+
+/**
+ * @param {object} props
+ * @param {import('@web3-storage/data-segment').PieceLink} props.piece
+ * @param {string} props.group
+ * @param {import('@web3-storage/filecoin-client/types').InvocationConfig} props.invocationConfig
+ * @param {import('@ucanto/principal/ed25519').ConnectionView<any>} props.aggregateServiceConnection
+ */
+export async function reportPieceCid ({
+  piece,
+  group,
+  invocationConfig,
+  aggregateServiceConnection
+}) {
+  // Add piece for aggregation
+  const aggregateQueue = await Aggregator.aggregateQueue(
+    invocationConfig,
+    piece,
+    group,
+    { connection: aggregateServiceConnection }
+  )
+
+  if (aggregateQueue.out.error) {
+    return {
+      error: aggregateQueue.out.error
+    }
+  }
+  return {
+    ok: {},
   }
 }

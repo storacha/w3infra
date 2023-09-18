@@ -108,6 +108,14 @@ The domain to deploy the roundabout API to. e.g `roundabout.web3.storage`. The v
 
 URL of the w3access service.
 
+#### `AGGREGATOR_SERVICE_DID`
+
+DID of the filecoin aggregator service.
+
+#### `AGGREGATOR_SERVICE_URL`
+
+URL of the filecoin aggregator service.
+
 #### `UPLOAD_API_DID`
 
 [DID](https://www.w3.org/TR/did-core/) of the upload-api ucanto server. e.g. `did:web:up.web3.storage`. Optional: if omitted, a `did:key` will be derrived from `PRIVATE_KEY`

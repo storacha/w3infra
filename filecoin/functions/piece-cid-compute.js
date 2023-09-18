@@ -2,6 +2,7 @@ import { S3Client } from '@aws-sdk/client-s3'
 import * as Sentry from '@sentry/serverless'
 
 import { computePieceCid } from '../index.js'
+import { mustGetEnv } from './utils.js'
 import { createPieceTable } from '../tables/piece.js'
 
 Sentry.AWSLambda.init({
@@ -60,16 +61,6 @@ function getEnv () {
   return {
     pieceTableName: mustGetEnv('PIECE_TABLE_NAME'),
   }
-}
-
-/**
- * @param {string} name 
- * @returns {string}
- */
-function mustGetEnv (name) {
-  const value = process.env[name]
-  if (!value) throw new Error(`Missing env var: ${name}`)
-  return value
 }
 
 /**
