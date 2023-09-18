@@ -1,3 +1,8 @@
+import {
+  Signer,
+  DID,
+  Principal,
+} from '@ucanto/interface'
 import { UnknownLink } from 'multiformats'
 import { PieceLink } from '@web3-storage/data-segment'
 
@@ -20,6 +25,21 @@ export interface GetCarError extends Error {
 }
 export interface ComputePieceError extends Error {
   name: 'ComputePieceFailed'
+}
+
+export interface ClaimsInvocationConfig {
+  /**
+   * Signing authority that is issuing the UCAN invocation(s).
+   */
+  issuer: Signer
+  /**
+   * The principal delegated to in the current UCAN.
+   */
+  audience: Principal
+  /**
+   * The resource the invocation applies to.
+   */
+  with: DID
 }
 
 export class Failure extends Error {

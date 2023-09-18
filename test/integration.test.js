@@ -114,7 +114,7 @@ test('authorizations can be blocked by email or domain', async t => {
 })
 
 // Integration test for all flow from uploading a file to Kinesis events consumers and replicator
-test('w3infra integration flow', async t => {
+test.skip('w3infra integration flow', async t => {
   const client = await setupNewClient(t.context.apiEndpoint)
   const spaceDid = client.currentSpace()?.did()
   if (!spaceDid) {

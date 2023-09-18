@@ -143,6 +143,8 @@ export function getEnv() {
     UPLOAD_API_DID: mustGetEnv('UPLOAD_API_DID'),
     AGGREGATOR_DID: mustGetEnv('AGGREGATOR_DID'),
     AGGREGATOR_URL: mustGetEnv('AGGREGATOR_URL'),
+    CONTENT_CLAIMS_DID: mustGetEnv('CONTENT_CLAIMS_DID'),
+    CONTENT_CLAIMS_URL: mustGetEnv('CONTENT_CLAIMS_URL'),
   }
 }
 
