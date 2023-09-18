@@ -31,20 +31,17 @@ export async function pollQueryTable (dynamo, tableName, keyConditions, options 
     IndexName: options.indexName,
   })
 
-  let response
-  try {
-    response = await pRetry(async () => {
-      const r = await dynamo.send(cmd)
-      if (r.$metadata.httpStatusCode === 404 || !r.Count) {
-        throw new Error('not found in dynamoDB yet')
-      }
-      return r
-    }, {
-      maxTimeout: 2000,
-      minTimeout: 1000,
-      retries: 100
-    })
-  } catch {}
+  const response = await pRetry(async () => {
+    const r = await dynamo.send(cmd)
+    if (r.$metadata.httpStatusCode === 404 || !r.Count) {
+      throw new Error('not found in dynamoDB yet')
+    }
+    return r
+  }, {
+    maxTimeout: 2000,
+    minTimeout: 1000,
+    retries: 100
+  })
 
   return response?.Items && response?.Items.map(i => unmarshall(i))
 }

@@ -37,6 +37,8 @@ async function computeHandler (event) {
   })
 
   if (error) {
+    console.error(error)
+
     return {
       statusCode: 500,
       body: error.message

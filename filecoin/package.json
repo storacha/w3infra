@@ -11,7 +11,7 @@
     "@aws-sdk/client-sqs": "^3.226.0",
     "@sentry/serverless": "^7.22.0",
     "@web3-storage/data-segment": "^3.0.1",
-    "fr32-sha2-256-trunc254-padded-binary-tree-multihash": "github:web3-storage/fr32-sha2-256-trunc254-padded-binary-tree-multihash",
+    "fr32-sha2-256-trunc254-padded-binary-tree-multihash": "^1.0.0",
     "multiformats": "^12.1.1"
   },
   "devDependencies": {

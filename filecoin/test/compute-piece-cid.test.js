@@ -34,7 +34,7 @@ test.before(async t => {
   })
 })
 
-test('computes piece cid from a CAR file in the bucket', async t => {
+test('computes piece CID from a CAR file in the bucket', async t => {
   const { tableName, bucketName } = await prepareResources(t.context.dynamoClient, t.context.s3Client)
   const { body, checksum, key, piece, link } = await createCar()
   const pieceTable = createPieceTable(AWS_REGION, tableName, {
