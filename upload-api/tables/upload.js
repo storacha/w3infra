@@ -188,7 +188,7 @@ export function useUploadTable(dynamoDb, tableName) {
      * 
      * @param {import('@web3-storage/upload-api').UnknownLink} link 
      */
-    async getCID (link) {
+    inspect: async (link) => {
       const response = await dynamoDb.send(new QueryCommand({
         TableName: tableName,
         IndexName: 'cid',
