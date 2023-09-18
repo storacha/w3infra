@@ -16,6 +16,8 @@ dotenv.config({
  * @property {string} apiEndpoint
  * @property {Dynamo} metricsDynamo
  * @property {Dynamo} spaceMetricsDynamo
+ * @property {Dynamo} pieceDynamo
+ * @property {Dynamo} rateLimitsDynamo
  * 
  * @typedef {object} RoundaboutContext
  * @property {string} roundaboutEndpoint

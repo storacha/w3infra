@@ -5,6 +5,7 @@ import { UploadDbStack } from './upload-db-stack.js'
 import { UcanInvocationStack } from './ucan-invocation-stack.js'
 import { BusStack } from './bus-stack.js'
 import { CarparkStack } from './carpark-stack.js'
+import { FilecoinStack } from './filecoin-stack.js'
 import { SatnavStack } from './satnav-stack.js'
 import { ReplicatorStack } from './replicator-stack.js'
 import { RoundaboutStack } from './roundabout-stack.js'
@@ -21,7 +22,7 @@ export default function (app) {
   app.setDefaultFunctionProps({
     runtime: 'nodejs16.x',
     environment: {
-      NODE_OPTIONS: "--enable-source-maps",
+      NODE_OPTIONS: "--enable-source-maps --experimental-fetch",
     },
     bundle: {
       format: 'esm',
@@ -32,6 +33,7 @@ export default function (app) {
   app.stack(UploadDbStack)
   app.stack(CarparkStack)
   app.stack(UcanInvocationStack)
+  app.stack(FilecoinStack)
   app.stack(SatnavStack)
   app.stack(UploadApiStack)
   app.stack(ReplicatorStack)

@@ -12,6 +12,9 @@ import {
   adminMetricsTableProps,
   spaceMetricsTableProps
 } from '../ucan-invocation/tables/index.js'
+import {
+  pieceTableProps
+} from '../filecoin/tables/index.js'
 import { setupSentry, getBucketConfig } from './config.js'
 
 /**
@@ -33,6 +36,12 @@ export function UploadDbStack({ stack, app }) {
    * Used by the upload/* capabilities.
    */
   const uploadTable = new Table(stack, 'upload', uploadTableProps)
+
+  /**
+   * This table takes a stored CAR and makes an entry in the piece table
+   * Used by the filecoin/* service capabilities. // TODO
+   */
+  const pieceTable = new Table(stack, 'piece', pieceTableProps)
 
   /**
    * This table tracks the relationship between customers and providers.
@@ -77,6 +86,7 @@ export function UploadDbStack({ stack, app }) {
   return {
     storeTable,
     uploadTable,
+    pieceTable,
     consumerTable,
     subscriptionTable,
     rateLimitTable,
