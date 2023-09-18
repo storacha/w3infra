@@ -4,11 +4,12 @@ import {
   use,
 } from '@serverless-stack/resources'
 import { Duration, aws_events as awsEvents } from 'aws-cdk-lib'
+import { StartingPosition } from 'aws-cdk-lib/aws-lambda'
 
 import { BusStack } from './bus-stack.js'
 import { CarparkStack } from './carpark-stack.js'
 import { UploadDbStack } from './upload-db-stack.js'
-import { setupSentry } from './config.js'
+import { setupSentry, getEnv } from './config.js'
 import { CARPARK_EVENT_BRIDGE_SOURCE_EVENT } from '../carpark/event-bus/source.js'
 
 /**
@@ -19,6 +20,8 @@ export function FilecoinStack({ stack, app }) {
     srcPath: 'filecoin'
   })
 
+  const { AGGREGATOR_DID, AGGREGATOR_URL } = getEnv()
+
   // Setup app monitoring with Sentry
   setupSentry(app, stack)
 
@@ -27,7 +30,37 @@ export function FilecoinStack({ stack, app }) {
   // Get eventBus reference
   const { eventBus } = use(BusStack)
   // Get store table reference
-  const { pieceTable } = use(UploadDbStack)
+  const { pieceTable, privateKey } = use(UploadDbStack)
+
+  // piece-cid reporting
+  pieceTable.addConsumers(stack, {
+    handleNewPiece: {
+      function: {
+        handler: 'functions/piece-cid-report.handler',
+        environment: {
+          AGGREGATOR_DID,
+          AGGREGATOR_URL,
+        },
+        timeout: 3 * 60,
+        bind: [
+          privateKey,
+        ]
+      },
+      cdk: {
+        // https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_lambda_event_sources.DynamoEventSourceProps.html#filters
+        eventSource: {
+          batchSize: 1,
+          // Start reading at the last untrimmed record in the shard in the system.
+          startingPosition: StartingPosition.TRIM_HORIZON,
+        },
+      },
+      filters: [
+        {
+          eventName: ['INSERT']
+        }
+      ]
+    }
+  })
 
   // piece-cid compute
   const pieceCidComputeHandler = new Function(

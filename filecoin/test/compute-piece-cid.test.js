@@ -1,16 +1,10 @@
 import { test } from './helpers/context.js'
 
 import { PutObjectCommand } from '@aws-sdk/client-s3'
-import { encode } from 'multiformats/block'
-import { identity } from 'multiformats/hashes/identity'
-import { sha256 as hasher } from 'multiformats/hashes/sha2'
-import * as pb from '@ipld/dag-pb'
-import { CarBufferWriter } from '@ipld/car'
-import { toString } from 'uint8arrays'
-import { Piece } from '@web3-storage/data-segment'
 
 import { createS3, createBucket, createDynamodDb } from './helpers/resources.js'
 import { createDynamoTable, getItemsFromTable } from './helpers/tables.js'
+import { createCar } from './helpers/car.js'
 
 import { computePieceCid } from '../index.js'
 import { pieceTableProps } from '../tables/index.js'
@@ -76,39 +70,6 @@ test('computes piece CID from a CAR file in the bucket', async t => {
   t.is(storedItems?.length, 1)
   t.is(storedItems?.[0].piece, piece.toString())
 })
-
-async function createCar () {
-  const id = await encode({
-    value: pb.prepare({ Data: 'a red car on the street!' }),
-    codec: pb,
-    hasher: identity,
-  })
-
-  const parent = await encode({
-    value: pb.prepare({ Links: [id.cid] }),
-    codec: pb,
-    hasher,
-  })
-  const car = CarBufferWriter.createWriter(Buffer.alloc(1000), {
-    roots: [parent.cid],
-  })
-  car.write(parent)
-
-  const body = car.close()
-  const digest = await hasher.digest(body)
-  const checksum = toString(digest.digest, 'base64pad')
-
-  const key = `${parent.cid.toString()}/${parent.cid.toString()}`
-  const piece = Piece.fromPayload(body)
-
-  return {
-    body,
-    checksum,
-    key,
-    link: parent.cid,
-    piece: piece.link
-  }
-}
 
 /**
  * @param {import('@aws-sdk/client-dynamodb').DynamoDBClient} dynamoClient
