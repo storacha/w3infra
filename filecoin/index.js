@@ -41,10 +41,13 @@ export async function computePieceCid({
     Bucket: record.bucketName,
     Key: key,
   })
-  const res = await s3Client.send(getCmd)
-  if (!res.Body) {
+  let res
+  try {
+    res = await s3Client.send(getCmd)
+    if (!res.Body) throw new Error('missing body')
+  } catch (err) {
     return {
-      error: new GetCarFailed(`failed to get CAR file with key ${key} in bucket ${record.bucketName}`)
+      error: new GetCarFailed(`failed to get CAR: ${record.bucketName}/${key}`, { cause: err })
     }
   }
 
@@ -63,7 +66,7 @@ export async function computePieceCid({
     piece = Piece.fromDigest(digest)
   } catch (/** @type {any} */ error) {
     return {
-      error: new ComputePieceFailed(error.cause)
+      error: new ComputePieceFailed(`failed to compute piece CID for CAR: ${cidString}`, { cause: error })
     }
   }
 

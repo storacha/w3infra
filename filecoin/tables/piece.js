@@ -52,7 +52,7 @@ export function usePieceTable(dynamoDb, tableName) {
         await dynamoDb.send(cmd)
       } catch (/** @type {any} */ error) {
         return {
-          error: new DatabaseOperationFailed(error.cause)
+          error: new DatabaseOperationFailed(`failed put to dynamo piece table, link: ${input.link}, piece: ${input.piece}`, { cause: error })
         }
       }
 

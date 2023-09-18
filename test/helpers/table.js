@@ -46,8 +46,6 @@ export async function pollQueryTable (dynamo, tableName, keyConditions, options 
     })
   } catch {}
 
-  console.log('items', response?.Items)
-
   return response?.Items && response?.Items.map(i => unmarshall(i))
 }
 
