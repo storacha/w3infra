@@ -3,6 +3,7 @@ import { S3Client } from '@aws-sdk/client-s3'
 import { CID } from 'multiformats/cid'
 
 import { getSigner } from '../index.js'
+import { asPieceCid, findEquivalentCarCids } from '../piece.js'
 import { getEnv, parseQueryStringParameters } from '../utils.js'
 
 Sentry.AWSLambda.init({
@@ -33,14 +34,32 @@ export async function redirectCarGet(request) {
       statusCode: 400
     }
   }
-
-  const signer = getSigner(s3Client, BUCKET_NAME)
-  const key = `${cid}/${cid}.car`
-  const signedUrl = await signer.getUrl(key, {
-    expiresIn
-  })
   
-  return toLambdaResponse(signedUrl)
+  const signer = getSigner(s3Client, BUCKET_NAME)
+
+  if (asPieceCid(cid) !== undefined) {
+    const cars = await findEquivalentCarCids(cid)
+    for (const carCid of cars) {
+      // getUrl returns undefined if we don't have that car, so keep trying till we find a good one.
+      const signedUrl = await signer.getUrl(`${carCid}/${carCid}.car`, { expiresIn }) 
+      if (signedUrl) {
+        return toLambdaResponse(signedUrl)
+      }
+    }
+  }
+
+  if (asCarCid(cid) !== undefined) {
+    const key = `${cid}/${cid}.car`
+    const signedUrl = await signer.getUrl(key, {
+      expiresIn
+    })
+    return toLambdaResponse(signedUrl)
+  }
+
+  return {
+    body: 'NOT FOUND',
+    statusCode: 404
+  }
 }
 
 /**

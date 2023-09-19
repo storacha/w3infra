@@ -9,6 +9,7 @@
     "@aws-sdk/client-s3": "^3.226.0",
     "@aws-sdk/s3-request-presigner": "^3.226.0",
     "@sentry/serverless": "^7.22.0",
+    "@web3-storage/content-claims": "^3.0.1",
     "multiformats": "^11.0.2"
   },
   "devDependencies": {
@@ -17,6 +18,7 @@
     "ava": "^4.3.3",
     "multiformats": "^11.0.2",
     "nanoid": "^4.0.0",
-    "testcontainers": "^8.13.0"
+    "testcontainers": "^8.13.0",
+    "@web3-storage/w3up-client": "^6.0.0"
   }
 }
