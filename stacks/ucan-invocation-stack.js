@@ -5,12 +5,13 @@ import {
   Queue,
   use
 } from '@serverless-stack/resources'
-import { Duration } from 'aws-cdk-lib'
+
 import { CarparkStack } from './carpark-stack.js'
 import { UploadDbStack } from './upload-db-stack.js'
 import {
   getBucketConfig,
   getKinesisEventSourceConfig,
+  getKinesisStreamConfig,
   setupSentry
 } from './config.js'
 
@@ -189,20 +190,19 @@ export function UcanInvocationStack({ stack, app }) {
   })
 
   // TODO: keep for historical content that we might want to process
-  new KinesisStream(stack, 'ucan-stream', {
-    cdk: {
-      stream: {
-        retentionPeriod: Duration.days(365)
-      }
-    },
-  })
+  // only needed for production
+  if (stack.stage === 'production') {
+    new KinesisStream(stack, 'ucan-stream', {
+      cdk: {
+        stream: getKinesisStreamConfig(stack)
+      },
+    })
+  }
 
   // create a kinesis stream
   const ucanStream = new KinesisStream(stack, 'ucan-stream-v2', {
     cdk: {
-      stream: {
-        retentionPeriod: Duration.days(365)
-      }
+      stream: getKinesisStreamConfig(stack)
     },
     consumers: {
       metricsStoreAddTotalConsumer: {
