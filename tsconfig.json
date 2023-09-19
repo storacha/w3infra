@@ -5,6 +5,8 @@
     // project options
     "allowJs": true,
     "checkJs": true,
+    "jsx": "react-jsx",
+    "jsxImportSource": "preact",
     "target": "ES2022",
     "module": "ES2022",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
@@ -33,5 +35,5 @@
     "stripInternal": true,
     "resolveJsonModule": true,
   },
-  "include": [ "upload-api", "stacks", "carpark", "replicator", "satnav", "ucan-invocation", "tools" ]
+  "include": [ "upload-api", "stacks", "carpark", "replicator", "satnav", "ucan-invocation", "filecoin", "tools" ]
 }

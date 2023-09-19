@@ -22,14 +22,13 @@ export function UploadApiStack({ stack, app }) {
 
   // Get references to constructs created in other stacks
   const { carparkBucket } = use(CarparkStack)
-  const { storeTable, uploadTable, adminMetricsTable } = use(UploadDbStack)
+  const { storeTable, uploadTable, delegationBucket, delegationTable, adminMetricsTable, spaceMetricsTable, consumerTable, subscriptionTable, rateLimitTable, privateKey } = use(UploadDbStack)
   const { invocationBucket, taskBucket, workflowBucket, ucanStream } = use(UcanInvocationStack)
 
   // Setup API
   const customDomain = getCustomDomain(stack.stage, process.env.HOSTED_ZONE)
   const pkg = getApiPackageJson()
   const git = getGitInfo()
-  const privateKey = new Config.Secret(stack, 'PRIVATE_KEY')
   const ucanInvocationPostbasicAuth = new Config.Secret(stack, 'UCAN_INVOCATION_POST_BASIC_AUTH')
 
   const api = new Api(stack, 'http-gateway', {
@@ -39,7 +38,13 @@ export function UploadApiStack({ stack, app }) {
         permissions: [
           storeTable,
           uploadTable,
+          delegationTable,
+          delegationBucket,
+          consumerTable,
+          subscriptionTable,
+          rateLimitTable,
           adminMetricsTable,
+          spaceMetricsTable,
           carparkBucket,
           invocationBucket,
           taskBucket,
@@ -50,6 +55,12 @@ export function UploadApiStack({ stack, app }) {
           STORE_TABLE_NAME: storeTable.tableName,
           STORE_BUCKET_NAME: carparkBucket.bucketName,
           UPLOAD_TABLE_NAME: uploadTable.tableName,
+          CONSUMER_TABLE_NAME: consumerTable.tableName,
+          SUBSCRIPTION_TABLE_NAME: subscriptionTable.tableName,
+          SPACE_METRICS_TABLE_NAME: spaceMetricsTable.tableName,
+          RATE_LIMIT_TABLE_NAME: rateLimitTable.tableName,
+          DELEGATION_TABLE_NAME: delegationTable.tableName,
+          DELEGATION_BUCKET_NAME: delegationBucket.bucketName,
           INVOCATION_BUCKET_NAME: invocationBucket.bucketName,
           TASK_BUCKET_NAME: taskBucket.bucketName,
           WORKFLOW_BUCKET_NAME: workflowBucket.bucketName,
@@ -59,12 +70,14 @@ export function UploadApiStack({ stack, app }) {
           VERSION: pkg.version,
           COMMIT: git.commmit,
           STAGE: stack.stage,
-          ACCESS_SERVICE_DID: process.env.ACCESS_SERVICE_DID ?? '',
           ACCESS_SERVICE_URL: process.env.ACCESS_SERVICE_URL ?? '',
+          POSTMARK_TOKEN: process.env.POSTMARK_TOKEN ?? '',
+          PROVIDERS: process.env.PROVIDERS ?? '',
           R2_ACCESS_KEY_ID: process.env.R2_ACCESS_KEY_ID ?? '',
           R2_SECRET_ACCESS_KEY: process.env.R2_SECRET_ACCESS_KEY ?? '',
           R2_REGION: process.env.R2_REGION ?? '',
           R2_DUDEWHERE_BUCKET_NAME: process.env.R2_DUDEWHERE_BUCKET_NAME ?? '',
+          R2_DELEGATION_BUCKET_NAME: process.env.R2_DELEGATION_BUCKET_NAME ?? '',
           R2_ENDPOINT: process.env.R2_ENDPOINT ?? '',
           UPLOAD_API_DID: process.env.UPLOAD_API_DID ?? '',
         },
@@ -78,6 +91,8 @@ export function UploadApiStack({ stack, app }) {
       'POST /':       'functions/ucan-invocation-router.handler',
       'POST /ucan':   'functions/ucan.handler',
       'GET /':        'functions/get.home',
+      'GET /validate-email': 'functions/validate-email.preValidateEmail',
+      'POST /validate-email': 'functions/validate-email.validateEmail',
       'GET /error':   'functions/get.error',
       'GET /version': 'functions/get.version',
       'GET /metrics': 'functions/metrics.handler',

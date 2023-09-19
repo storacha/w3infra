@@ -64,7 +64,7 @@ Next, ensure the `AWS_REGION`, `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` e
 not need to be set to real values - the following works in `bash`-like shells:
 
 ```
-export AWS_REGION='us-west-2'; export AWS_ACCESS_KEY_ID='NOSUCH'; export AWS_SECRET_ACCESS_KEY='NOSUCH
+export AWS_REGION='us-west-2'; export AWS_ACCESS_KEY_ID='NOSUCH'; export AWS_SECRET_ACCESS_KEY='NOSUCH'
 ```
 
 Finally, to run the tests for all packages, run:
@@ -98,15 +98,23 @@ Ensure the following variables are set in the env when deploying
 
 #### `HOSTED_ZONE`
 
-The root domain to deploy the API to. e.g `up.web3.storage`. The value should match a hosted zone configured in route53 that your aws account has access to.
+The root domain to deploy the w3up API to. e.g `up.web3.storage`. The value should match a hosted zone configured in route53 that your aws account has access to.
 
-#### `ACCESS_SERVICE_DID`
+#### `ROUNDABOUT_HOSTED_ZONE`
 
-DID of the w3access service.
+The domain to deploy the roundabout API to. e.g `roundabout.web3.storage`. The value should match a hosted zone configured in route53 that your aws account has access to.
 
 #### `ACCESS_SERVICE_URL`
 
 URL of the w3access service.
+
+#### `AGGREGATOR_SERVICE_DID`
+
+DID of the filecoin aggregator service.
+
+#### `AGGREGATOR_SERVICE_URL`
+
+URL of the filecoin aggregator service.
 
 #### `UPLOAD_API_DID`
 
@@ -136,6 +144,14 @@ Bucket name to replicate written .idx files.
 
 Bucket name to replicate root CID to car CIDs mapping.
 
+#### `R2_DELEGATION_BUCKET_NAME`
+
+Bucket name where delegations are stored.
+
+#### `PROVIDERS`
+
+A comma-separated string of ServiceDIDs in use.
+
 #### `SENTRY_DSN`
 
 Data source name for Sentry application monitoring service.
@@ -147,6 +163,14 @@ AWS ARN for Elastic IPFS SQS indexer used to request Elastic IPFS to index given
 #### `EIPFS_INDEXER_SQS_URL`
 
 AWS URL for Elastic IPFS SQS indexer used to request Elastic IPFS to index given CAR files.
+
+#### `POSTMARK_TOKEN`
+
+Postmark API token, which is used by the email verification system to send emails.
+
+#### `MAILSLURP_API_KEY`
+
+API token for [Mailslurp](https://www.mailslurp.com/), which is used in [integration tests](./test/integration.test.js). To invalidate or refresh tokens, head to the [Mailslurp dashboard](https://app.mailslurp.com/dashboard/).
 
 ### Secrets
 

@@ -6,7 +6,9 @@
   "main": "src/index.js",
   "type": "module",
   "scripts": {
-    "fetch-metrics-for-space": "node cli.js fetch-metrics-for-space"
+    "fetch-metrics-for-space": "node cli.js fetch-metrics-for-space",
+    "d1-dynamo-migration": "node cli.js d1-dynamo-migration"
+
   },
   "license": "Apache-2.0 OR MIT",
   "dependencies": {},

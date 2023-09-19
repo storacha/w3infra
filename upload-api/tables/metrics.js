@@ -5,11 +5,6 @@ import {
 import { unmarshall } from '@aws-sdk/util-dynamodb'
 
 /**
- * @typedef {object} MetricsTable
- * @property {() => Promise<Record<string, any>[]>} get
- */
-
-/**
  * Abstraction layer to handle operations on admin metrics Table.
  *
  * @param {string} region
@@ -29,7 +24,7 @@ export function createMetricsTable(region, tableName, options = {}) {
 /**
  * @param {DynamoDBClient} dynamoDb
  * @param {string} tableName
- * @returns {MetricsTable}
+ * @returns {import('../types').MetricsTable}
  */
 export function useMetricsTable(dynamoDb, tableName) {
   return {

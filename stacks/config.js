@@ -134,9 +134,12 @@ export function setupSentry (app, stack) {
 /**
  * Get Env validating it is set.
  */
- function getEnv() {
+export function getEnv() {
   return {
     SENTRY_DSN: mustGetEnv('SENTRY_DSN'),
+    UPLOAD_API_DID: mustGetEnv('UPLOAD_API_DID'),
+    AGGREGATOR_DID: mustGetEnv('AGGREGATOR_DID'),
+    AGGREGATOR_URL: mustGetEnv('AGGREGATOR_URL'),
   }
 }
 

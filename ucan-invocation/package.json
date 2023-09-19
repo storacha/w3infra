@@ -3,20 +3,20 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "test": "ava --verbose --timeout=60s test/{*.test.js,**/*.test.js}"
+    "test": "ava --verbose --timeout=60s --no-worker-threads --serial test/{*.test.js,**/*.test.js}"
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.226.0",
     "@aws-sdk/client-eventbridge": "^3.218.0",
     "@sentry/serverless": "^7.22.0",
-    "@web3-storage/capabilities": "^3.2.0",
+    "@web3-storage/capabilities": "^9.0.0",
     "uint8arrays": "^4.0.2"
   },
   "devDependencies": {
     "@aws-sdk/client-dynamodb": "^3.226.0",
     "@aws-sdk/client-s3": "^3.226.0",
     "@serverless-stack/resources": "*",
-    "@ucanto/interface": "^4.2.3",
+    "@ucanto/interface": "^8.0.0",
     "ava": "^4.3.3",
     "multiformats": "^11.0.1",
     "nanoid": "4.0.0",

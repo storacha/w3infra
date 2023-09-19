@@ -1,15 +1,9 @@
-import { DID } from '@ucanto/core'
+import { API } from '@ucanto/core'
 import * as Server from '@ucanto/server'
-import * as CAR from '@ucanto/transport-legacy/car'
-import * as CBOR from '@ucanto/transport-legacy/cbor'
 import { Kinesis } from '@aws-sdk/client-kinesis'
 import * as Sentry from '@sentry/serverless'
 
-import { createAccessClient } from '../access.js'
-import {
-  processWorkflow,
-  processInvocationReceipt
-} from '../ucan-invocation.js'
+import { processAgentMessageArchive } from '../ucan-invocation.js'
 import { createCarStore } from '../buckets/car-store.js'
 import { createDudewhereStore } from '../buckets/dudewhere-store.js'
 import { createInvocationStore } from '../buckets/invocation-store.js'
@@ -17,9 +11,19 @@ import { createTaskStore } from '../buckets/task-store.js'
 import { createWorkflowStore } from '../buckets/workflow-store.js'
 import { createStoreTable } from '../tables/store.js'
 import { createUploadTable } from '../tables/upload.js'
-import { getServiceSigner } from '../config.js'
+import { getServiceSigner, parseServiceDids } from '../config.js'
 import { createUcantoServer } from '../service.js'
 import { Config } from '@serverless-stack/node/config/index.js'
+import { CAR, Legacy, Codec } from '@ucanto/transport'
+import { Email } from '../email.js'
+import { useProvisionStore } from '../stores/provisions.js'
+import { createDelegationsTable } from '../tables/delegations.js'
+import { createDelegationsStore } from '../buckets/delegations-store.js'
+import { createSubscriptionTable } from '../tables/subscription.js'
+import { createConsumerTable } from '../tables/consumer.js'
+import { createRateLimitTable } from '../tables/rate-limit.js'
+import { createSpaceMetricsTable } from '../tables/space-metrics.js'
+import { mustGetEnv } from './utils.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -27,6 +31,7 @@ Sentry.AWSLambda.init({
   tracesSampleRate: 1.0,
 })
 
+export { API }
 /**
  * @typedef {import('../types').Receipt} Receipt
  * @typedef {import('@ucanto/interface').Block<Receipt>} BlockReceipt
@@ -45,6 +50,28 @@ const R2_DUDEWHERE_BUCKET_NAME = process.env.R2_DUDEWHERE_BUCKET_NAME || ''
 const R2_ENDPOINT = process.env.R2_ENDPOINT || ``
 
 /**
+ * We define a ucanto codec that will switch encoder / decoder based on the
+ * `content-type` and `accept` headers of the request.
+ */
+const codec = Codec.inbound({
+  decoders: {
+    // If the `content-type` is set to `application/vnd.ipld.car` use CAR codec.
+    [CAR.contentType]: CAR.request,
+    // If the `content-type` is set to `application/car` use legacy CAR codec
+    // which unlike current CAR codec used CAR roots to signal invocations.
+    [Legacy.contentType]: Legacy.request,
+  },
+  encoders: {
+    // Legacy clients did not set `accept` header so catch them using `*/*`
+    // and encode responses using legacy (CBOR) encoder.
+    '*/*;q=0.1': Legacy.response,
+    // Modern clients set `accept` header to `application/vnd.ipld.car` and
+    // we encode responses to them in CAR encoding.
+    [CAR.contentType]: CAR.response,
+  },
+})
+
+/**
  * AWS HTTP Gateway handler for POST / with ucan invocation router.
  *
  * We provide responses in Payload format v2.0
@@ -52,20 +79,30 @@ const R2_ENDPOINT = process.env.R2_ENDPOINT || ``
  *
  * @param {import('aws-lambda').APIGatewayProxyEventV2} request
  */
-async function ucanInvocationRouter(request) {
+export async function ucanInvocationRouter(request) {
   const {
-    STORE_TABLE_NAME: storeTableName = '',
-    STORE_BUCKET_NAME: storeBucketName = '',
-    UPLOAD_TABLE_NAME: uploadTableName = '',
-    INVOCATION_BUCKET_NAME: invocationBucketName = '',
-    TASK_BUCKET_NAME: taskBucketName = '',
-    WORKFLOW_BUCKET_NAME: workflowBucketName = '',
-    UCAN_LOG_STREAM_NAME: streamName = '',
+    storeTableName,
+    storeBucketName,
+    uploadTableName,
+    consumerTableName,
+    subscriptionTableName,
+    delegationTableName,
+    spaceMetricsTableName,
+    rateLimitTableName,
+    r2DelegationBucketEndpoint,
+    r2DelegationBucketAccessKeyId,
+    r2DelegationBucketSecretAccessKey,
+    r2DelegationBucketName,
+    invocationBucketName,
+    taskBucketName,
+    workflowBucketName,
+    streamName,
+    postmarkToken,
+    providers,
     // set for testing
-    DYNAMO_DB_ENDPOINT: dbEndpoint,
-    ACCESS_SERVICE_DID: accessServiceDID = '',
-    ACCESS_SERVICE_URL: accessServiceURL = '',
-  } = process.env
+    dbEndpoint,
+    accessServiceURL,
+  } = getLambdaEnv()
 
   if (request.body === undefined) {
     return {
@@ -77,11 +114,27 @@ async function ucanInvocationRouter(request) {
   const { PRIVATE_KEY } = Config
   const serviceSigner = getServiceSigner({ UPLOAD_API_DID, PRIVATE_KEY })
 
-  const invocationBucket = createInvocationStore(AWS_REGION, invocationBucketName)
+  const invocationBucket = createInvocationStore(
+    AWS_REGION,
+    invocationBucketName
+  )
   const taskBucket = createTaskStore(AWS_REGION, taskBucketName)
   const workflowBucket = createWorkflowStore(AWS_REGION, workflowBucketName)
+  const delegationBucket = createDelegationsStore(r2DelegationBucketEndpoint, r2DelegationBucketAccessKeyId, r2DelegationBucketSecretAccessKey, r2DelegationBucketName)
+  const subscriptionTable = createSubscriptionTable(AWS_REGION, subscriptionTableName, {
+    endpoint: dbEndpoint
+  });
+  const consumerTable = createConsumerTable(AWS_REGION, consumerTableName, {
+    endpoint: dbEndpoint
+  });
+  const rateLimitsStorage = createRateLimitTable(AWS_REGION, rateLimitTableName)
+  const spaceMetricsTable = createSpaceMetricsTable(AWS_REGION, spaceMetricsTableName)
 
-  const server = await createUcantoServer(serviceSigner, {
+  const provisionsStorage = useProvisionStore(subscriptionTable, consumerTable, spaceMetricsTable, parseServiceDids(providers))
+  const delegationsStorage = createDelegationsTable(AWS_REGION, delegationTableName, { bucket: delegationBucket, invocationBucket, workflowBucket })
+
+  const server = createUcantoServer(serviceSigner, {
+    codec,
     storeTable: createStoreTable(AWS_REGION, storeTableName, {
       endpoint: dbEndpoint,
     }),
@@ -96,11 +149,13 @@ async function ucanInvocationRouter(request) {
     uploadTable: createUploadTable(AWS_REGION, uploadTableName, {
       endpoint: dbEndpoint,
     }),
-    access: createAccessClient(
-      serviceSigner,
-      DID.parse(accessServiceDID),
-      new URL(accessServiceURL)
-    ),
+    signer: serviceSigner,
+    // TODO: we should set URL from a different env var, doing this for now to avoid that refactor - tracking in https://github.com/web3-storage/w3infra/issues/209
+    url: new URL(accessServiceURL),
+    email: new Email({ token: postmarkToken }),
+    provisionsStorage,
+    delegationsStorage,
+    rateLimitsStorage
   })
 
   const processingCtx = {
@@ -108,90 +163,99 @@ async function ucanInvocationRouter(request) {
     taskBucket,
     workflowBucket,
     streamName,
-    kinesisClient
+    kinesisClient,
   }
 
-  // Decode body and its invocations
-  const body = Buffer.from(request.body, 'base64')
-  const invocations = await CAR.decode({
-    body,
-    // @ts-expect-error - type is Record<string, string|string[]|undefined>
-    headers: request.headers,
-  })
+  const payload = fromLambdaRequest(request)
 
+  const result = server.codec.accept(payload)
+  // if we can not select a codec we respond with error.
+  if (result.error) {
+    return toLambdaResponse({
+      status: result.error.status,
+      headers: result.error.headers || {},
+      body: Buffer.from(result.error.message || ''),
+    })
+  }
+
+  const { encoder, decoder } = result.ok
+
+  const contentType = payload.headers['content-type']
   // Process workflow
   // We block until we can log the UCAN invocation if this fails we return a 500
   // to the client. That is because in the future we expect that invocations will
   // be written to a queue first and then processed asynchronously, so if we
   // fail to queue the invocation we should not handle it.
-  await processWorkflow(body, processingCtx)
-
-  // Execute invocations
-  const results = await Promise.all(
-    invocations.map((invocation) => execute(invocation, server, {
-      signer: serviceSigner
-    }))
+  const incoming = await processAgentMessageArchive(
+    // If the `content-type` is set to `application/vnd.ipld.car` use CAR codec
+    // format is already up to date so we pass payload as is. Otherwise we
+    // transform the payload into modern CAR format.
+    contentType === CAR.contentType
+      ? payload
+      : CAR.request.encode(await decoder.decode(payload)),
+    processingCtx
   )
 
-  const forks = []
-  const out = []
+  // Execute invocations
+  const outgoing = await Server.execute(incoming, server)
 
-  for (const receipt of results) {
-    out.push(receipt.data.out.error || receipt.data.out.ok)
-    forks.push(processInvocationReceipt(receipt.bytes, processingCtx))
-  }
+  const response = await encoder.encode(outgoing)
+  await processAgentMessageArchive(
+    // If response is already in CAR format we pass it as is. Otherwise we
+    // transform the response into legacy CAR format.
+    response.headers['content-type'] === CAR.contentType
+      ? response
+      : CAR.response.encode(outgoing),
+    processingCtx
+  )
 
-  await Promise.all(forks)
-  const response = await CBOR.encode(out)
-
-  return toLambdaSuccessResponse(response)
+  return toLambdaResponse(response)
 }
 
 export const handler = Sentry.AWSLambda.wrapHandler(ucanInvocationRouter)
 
 /**
- * @param {import('@ucanto/server').HTTPResponse<any>} response
+ * @param {API.HTTPResponse} response
  */
-function toLambdaSuccessResponse(response) {
+export function toLambdaResponse({ status = 200, headers, body }) {
   return {
-    statusCode: 200,
-    headers: response.headers,
-    body: Buffer.from(response.body).toString('base64'),
+    statusCode: status,
+    headers,
+    body: Buffer.from(body).toString('base64'),
     isBase64Encoded: true,
   }
 }
 
 /**
- *
- * @param {Server.Invocation} invocation
- * @param {Server.ServerView<*>} server
- * @param {ExecuteCtx} ctx
- * @returns {Promise<Required<BlockReceipt>>}
+ * @param {import('aws-lambda').APIGatewayProxyEventV2} request
  */
-const execute = async (invocation, server, ctx) => {
-  /** @type {[Server.Result<*, Server.API.Failure>]} */
-  const [result] = await Server.execute([invocation], server)
-  const out = result?.error ? { error: result } : { ok: result }
+export const fromLambdaRequest = (request) => ({
+  headers: /** @type {Record<string, string>} */ (request.headers),
+  body: Buffer.from(request.body || '', 'base64'),
+})
 
-  // Create a receipt payload for the invocation conforming to the spec
-  // @see https://github.com/ucan-wg/invocation/#8-receipt
-  const payload = {
-    ran: invocation.cid,
-    out,
-    fx: { fork: [] },
-    meta: {},
-    iss: ctx.signer.did(),
-    prf: [],
-  }
-
-  // create a receipt by signing the payload with a server key
-  const receipt = {
-    ...payload,
-    s: await ctx.signer.sign(CBOR.codec.encode(payload)),
-  }
-
+function getLambdaEnv () {
   return {
-    data: receipt,
-    ...(await CBOR.codec.write(receipt)),
+    storeTableName: mustGetEnv('STORE_TABLE_NAME'),
+    storeBucketName: mustGetEnv('STORE_BUCKET_NAME'),
+    uploadTableName: mustGetEnv('UPLOAD_TABLE_NAME'),
+    consumerTableName: mustGetEnv('CONSUMER_TABLE_NAME'),
+    subscriptionTableName: mustGetEnv('SUBSCRIPTION_TABLE_NAME'),
+    delegationTableName: mustGetEnv('DELEGATION_TABLE_NAME'),
+    spaceMetricsTableName: mustGetEnv('SPACE_METRICS_TABLE_NAME'),
+    rateLimitTableName: mustGetEnv('RATE_LIMIT_TABLE_NAME'),
+    r2DelegationBucketEndpoint: mustGetEnv('R2_ENDPOINT'),
+    r2DelegationBucketAccessKeyId: mustGetEnv('R2_ACCESS_KEY_ID'),
+    r2DelegationBucketSecretAccessKey: mustGetEnv('R2_SECRET_ACCESS_KEY'),
+    r2DelegationBucketName: mustGetEnv('R2_DELEGATION_BUCKET_NAME'),
+    invocationBucketName: mustGetEnv('INVOCATION_BUCKET_NAME'),
+    taskBucketName: mustGetEnv('TASK_BUCKET_NAME'),
+    workflowBucketName: mustGetEnv('WORKFLOW_BUCKET_NAME'),
+    streamName: mustGetEnv('UCAN_LOG_STREAM_NAME'),
+    postmarkToken: mustGetEnv('POSTMARK_TOKEN'),
+    providers: mustGetEnv('PROVIDERS'),
+    accessServiceURL: mustGetEnv('ACCESS_SERVICE_URL'),
+    // set for testing
+    dbEndpoint: process.env.DYNAMO_DB_ENDPOINT,
   }
 }

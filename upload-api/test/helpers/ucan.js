@@ -1,13 +1,36 @@
-import * as ucanto from '@ucanto/core'
-import { invoke, Receipt } from '@ucanto/core-next'
+import { invoke, delegate, Receipt, API, Message } from '@ucanto/core'
+import * as CAR from '@ucanto/transport/car'
 import * as Signer from '@ucanto/principal/ed25519'
 import * as UcantoClient from '@ucanto/client'
-import * as CBOR from '@ucanto/core-next/cbor'
+
+import { connect, createServer } from '@web3-storage/upload-api';
+import { DebugEmail } from '@web3-storage/upload-api/test';
+import {
+  createBucket,
+  createTable
+} from '../helpers/resources.js';
+import { storeTableProps, uploadTableProps, consumerTableProps, delegationTableProps, subscriptionTableProps, rateLimitTableProps } from '../../tables/index.js';
+import { useCarStore } from '../../buckets/car-store.js';
+import { useDudewhereStore } from '../../buckets/dudewhere-store.js';
+import { useStoreTable } from '../../tables/store.js';
+import { useUploadTable } from '../../tables/upload.js';
+import { useProvisionStore } from '../../stores/provisions.js';
+import { useConsumerTable } from '../../tables/consumer.js';
+import { useSubscriptionTable } from '../../tables/subscription.js';
+import { useDelegationsTable } from '../../tables/delegations.js';
+import { useDelegationsStore } from '../../buckets/delegations-store.js';
+import { useInvocationStore } from '../../buckets/invocation-store.js';
+import { useWorkflowStore } from '../../buckets/workflow-store.js';
+import { useRateLimitTable } from '../../tables/rate-limit.js';
+import { useSpaceMetricsTable } from '../../tables/space-metrics.js';
+import { spaceMetricsTableProps } from '@web3-storage/w3infra-ucan-invocation/tables/index.js';
+
+export { API }
 
 /**
- * @param {import('@ucanto/interface').Principal} audience
+ * @param {API.Principal} audience
  */
-export async function createSpace (audience) {
+export async function createSpace(audience) {
   const space = await Signer.generate()
   const spaceDid = space.did()
 
@@ -22,28 +45,7 @@ export async function createSpace (audience) {
 }
 
 /**
- * @param {ucanto.UCAN.IPLDLink<unknown, number, number, 0 | 1>} invocationCid
- * @param {any} out
- * @param {Signer.EdSigner} signer
- */
-export async function createReceipt (invocationCid, out, signer) {
-  const receiptPayload = {
-    ran: invocationCid,
-    out,
-    fx: { fork: [] },
-    meta: {},
-    iss: signer.did(),
-    prf: [],
-  }
-
-  return {
-    ...receiptPayload,
-    s: await signer.sign(CBOR.encode(receiptPayload))
-  }
-}
-
-/**
- * @param {import('@ucanto/interface').Ability} can
+ * @param {API.Ability} can
  * @param {any} nb
  * @param {object} [options]
  * @param {Signer.EdSigner} [options.audience]
@@ -51,9 +53,9 @@ export async function createReceipt (invocationCid, out, signer) {
  * @param {`did:key:${string}`} [options.withDid]
  * @param {Signer.Delegation[]} [options.proofs]
  */
-export async function createUcanInvocation (can, nb, options = {}) {
-  const audience = options.audience || await Signer.generate()
-  const issuer = options.issuer || await Signer.generate()
+export async function createUcanInvocation(can, nb, options = {}) {
+  const audience = options.audience || (await Signer.generate())
+  const issuer = options.issuer || (await Signer.generate())
 
   let proofs
   let withDid
@@ -66,8 +68,8 @@ export async function createUcanInvocation (can, nb, options = {}) {
     proofs = options.proofs
     withDid = options.withDid
   }
-  
-  return await ucanto.delegate({
+
+  return await delegate({
     issuer,
     audience,
     capabilities: [
@@ -84,7 +86,7 @@ export async function createUcanInvocation (can, nb, options = {}) {
 /**
  * Create an invocation with given capabilities.
  *
- * @param {import('@ucanto/interface').Ability} can
+ * @param {API.Ability} can
  * @param {any} nb
  * @param {object} [options]
  * @param {Signer.EdSigner} [options.audience]
@@ -92,9 +94,9 @@ export async function createUcanInvocation (can, nb, options = {}) {
  * @param {`did:key:${string}`} [options.withDid]
  * @param {Signer.Delegation[]} [options.proofs]
  */
-export async function createInvocation (can, nb, options = {}) {
-  const audience = options.audience || await Signer.generate()
-  const issuer = options.issuer || await Signer.generate()
+export async function createInvocation(can, nb, options = {}) {
+  const audience = options.audience || (await Signer.generate())
+  const issuer = options.issuer || (await Signer.generate())
 
   let proofs
   let withDid
@@ -116,7 +118,6 @@ export async function createInvocation (can, nb, options = {}) {
       with: withDid,
       nb,
     },
-    // @ts-expect-error old client still in use
     proofs,
   })
 
@@ -124,15 +125,15 @@ export async function createInvocation (can, nb, options = {}) {
 }
 
 /**
- * @param {import('@ucanto/core-next').API.IssuedInvocation} run
+ * @param {API.IssuedInvocation} run
  * @param {object} options
  * @param {any} [options.result]
  * @param {any} [options.meta]
  */
-export async function createAgentMessageReceipt (run, {
-  result = { ok: {} },
-  meta = { test: 'metadata' },
-}) {
+export async function createAgentMessageReceipt(
+  run,
+  { result = { ok: {} }, meta = { test: 'metadata' } }
+) {
   const delegation = await run.buildIPLDView()
 
   return await Receipt.issue({
@@ -145,4 +146,124 @@ export async function createAgentMessageReceipt (run, {
       fork: [],
     },
   })
+}
+
+/**
+ * @param {object} source
+ * @param {API.IssuedInvocation[]} [source.invocations]
+ * @param {API.Receipt[]} [source.receipts]
+ */
+export const encodeAgentMessage = async (source) => {
+  const message = await Message.build({
+    invocations: /** @type {API.Tuple<API.IssuedInvocation>} */ (
+      source.invocations
+    ),
+    receipts: /** @type {API.Tuple<API.Receipt>} */ (source.receipts),
+  })
+
+  return await CAR.request.encode(message)
+}
+
+
+/**
+ *
+ * @param {import('ava').ExecutionContext} t
+ * @returns {Promise<import('@web3-storage/upload-api').UcantoServerTestContext>}
+ */
+
+export async function executionContextToUcantoTestServerContext (t) {
+  const service = Signer.Signer.parse('MgCYWjE6vp0cn3amPan2xPO+f6EZ3I+KwuN1w2vx57vpJ9O0Bn4ci4jn8itwc121ujm7lDHkCW24LuKfZwIdmsifVysY=').withDID(
+    'did:web:test.web3.storage'
+  );
+  const { dynamo, s3 } = t.context;
+  const bucketName = await createBucket(s3);
+
+  const storeTable = useStoreTable(
+    dynamo,
+    await createTable(dynamo, storeTableProps)
+  );
+
+  const uploadTable = useUploadTable(
+    dynamo,
+    await createTable(dynamo, uploadTableProps)
+  );
+  const carStoreBucket = useCarStore(s3, bucketName);
+
+  const dudewhereBucket = useDudewhereStore(s3, bucketName);
+
+  const signer = await Signer.Signer.generate();
+  const id = signer.withDID('did:web:test.web3.storage');
+
+  const delegationsBucketName = await createBucket(s3);
+  const invocationsBucketName = await createBucket(s3);
+  const workflowBucketName = await createBucket(s3);
+
+
+  const delegationsStorage = useDelegationsTable(
+    dynamo,
+    await createTable(dynamo, delegationTableProps),
+    {
+      bucket: useDelegationsStore(s3, delegationsBucketName),
+      invocationBucket: useInvocationStore(s3, invocationsBucketName),
+      workflowBucket: useWorkflowStore(s3, workflowBucketName)
+    }
+  );
+  const rateLimitsStorage = useRateLimitTable(
+    dynamo,
+    await createTable(dynamo, rateLimitTableProps)
+  )
+  const subscriptionTable = useSubscriptionTable(
+    dynamo,
+    await createTable(dynamo, subscriptionTableProps)
+  );
+  const consumerTable = useConsumerTable(
+    dynamo,
+    await createTable(dynamo, consumerTableProps)
+  );
+  const spaceMetricsTable = useSpaceMetricsTable(
+    dynamo,
+    await createTable(dynamo, spaceMetricsTableProps)
+  )
+  const provisionsStorage = useProvisionStore(
+    subscriptionTable,
+    consumerTable,
+    spaceMetricsTable,
+    [service.did()]
+  );
+  const email = new DebugEmail();
+
+  /** @type {import('@web3-storage/upload-api').UcantoServerContext} */
+  const serviceContext = {
+    id,
+    signer: id,
+    email,
+    url: new URL('http://example.com'),
+    provisionsStorage,
+    delegationsStorage,
+    rateLimitsStorage,
+    errorReporter: {
+      catch (error) {
+        t.fail(error.message);
+      },
+    },
+    maxUploadSize: 5_000_000_000,
+    storeTable,
+    uploadTable,
+    carStoreBucket,
+    dudewhereBucket,
+  };
+  const connection = connect({
+    id: serviceContext.id,
+    channel: createServer(serviceContext)
+  });
+
+
+  return {
+    ...serviceContext,
+    mail: email,
+    service: id,
+    connection,
+    testStoreTable: storeTable,
+    fetch
+  };
 }

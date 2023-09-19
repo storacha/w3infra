@@ -2,6 +2,10 @@ import { fetch } from '@web-std/fetch'
 import git from 'git-rev-sync'
 import pWaitFor from 'p-wait-for'
 import { HeadObjectCommand } from '@aws-sdk/client-s3'
+import {
+  PutItemCommand
+} from '@aws-sdk/client-dynamodb'
+import { marshall } from '@aws-sdk/util-dynamodb'
 
 import { METRICS_NAMES, SPACE_METRICS_NAMES } from '../ucan-invocation/constants.js'
 import { test } from './helpers/context.js'
@@ -14,15 +18,17 @@ import {
   getCarparkBucketInfo,
   getDynamoDb
 } from './helpers/deployment.js'
-import { getClient } from './helpers/up-client.js'
+import { createNewClient, setupNewClient } from './helpers/up-client.js'
 import { randomFile } from './helpers/random.js'
-import { getTableItem, getAllTableRows } from './helpers/table.js'
+import { getTableItem, getAllTableRows, pollQueryTable } from './helpers/table.js'
 
 test.before(t => {
   t.context = {
     apiEndpoint: getApiEndpoint(),
     metricsDynamo: getDynamoDb('admin-metrics'),
-    spaceMetricsDynamo: getDynamoDb('space-metrics')
+    spaceMetricsDynamo: getDynamoDb('space-metrics'),
+    pieceDynamo: getDynamoDb('piece'),
+    rateLimitsDynamo: getDynamoDb('rate-limit')
   }
 })
 
@@ -65,13 +71,56 @@ test('upload-api /metrics', async t => {
   t.is((body.match(/w3up_invocations_total/g) || []).length, 6)
 })
 
+test('authorizations can be blocked by email or domain', async t => {
+  const client = await createNewClient(t.context.apiEndpoint)
+
+  // test email blocking
+  await t.context.rateLimitsDynamo.client.send(new PutItemCommand({
+    TableName: t.context.rateLimitsDynamo.tableName,
+    Item: marshall({
+      id: Math.random().toString(10),
+      subject: 'travis@example.com',
+      rate: 0
+    })
+  }))
+
+  // it would be nice to use t.throwsAsync here, but that doesn't work with errors that aren't exceptions: https://github.com/avajs/ava/issues/2517
+  try {
+    await client.authorize('travis@example.com')
+    t.fail('authorize should fail with a blocked email address')
+  } catch (e) {
+    t.is(e.name, 'AccountBlocked')
+    t.is(e.message, 'Account identified by did:mailto:example.com:travis is blocked')
+  }
+
+  // test domain blocking
+  await t.context.rateLimitsDynamo.client.send(new PutItemCommand({
+    TableName: t.context.rateLimitsDynamo.tableName,
+    Item: marshall({
+      id: Math.random().toString(10),
+      subject: 'example2.com',
+      rate: 0
+    })
+  }))
+  
+  // it would be nice to use t.throwsAsync here, but that doesn't work with errors that aren't exceptions: https://github.com/avajs/ava/issues/2517
+  try {
+    await client.authorize('travis@example2.com')
+    t.fail('authorize should fail with a blocked domain')
+  } catch (e) {
+    t.is(e.name, 'AccountBlocked')
+    t.is(e.message, 'Account identified by did:mailto:example2.com:travis is blocked')
+  }
+})
+
 // Integration test for all flow from uploading a file to Kinesis events consumers and replicator
 test('w3infra integration flow', async t => {
-  const client = await getClient(t.context.apiEndpoint)
+  const client = await setupNewClient(t.context.apiEndpoint)
   const spaceDid = client.currentSpace()?.did()
   if (!spaceDid) {
     throw new Error('Testing space DID must be set')
   }
+
   // Get space metrics before upload
   const spaceBeforeUploadAddMetrics = await getSpaceMetrics(t, spaceDid, SPACE_METRICS_NAMES.UPLOAD_ADD_TOTAL)
   const spaceBeforeStoreAddMetrics = await getSpaceMetrics(t, spaceDid, SPACE_METRICS_NAMES.STORE_ADD_TOTAL)
@@ -188,6 +237,12 @@ test('w3infra integration flow', async t => {
     interval: 100,
   })
 
+  // Check filecoin piece computed after leaving queue
+  const pieces = await getPieces(t, shards[0].toString())
+  t.assert(pieces)
+  t.is(pieces?.length, 1)
+  t.truthy(pieces?.[0].piece)
+
   // Check metrics were updated
   if (beforeStoreAddSizeTotal && spaceBeforeUploadAddMetrics && spaceBeforeStoreAddSizeMetrics && beforeUploadAddTotal) {
     await pWaitFor(async () => {
@@ -198,7 +253,7 @@ test('w3infra integration flow', async t => {
       const spaceAfterUploadAddMetrics = await getSpaceMetrics(t, spaceDid, SPACE_METRICS_NAMES.UPLOAD_ADD_TOTAL)
       const spaceAfterStoreAddMetrics = await getSpaceMetrics(t, spaceDid, SPACE_METRICS_NAMES.STORE_ADD_TOTAL)
       const spaceAfterStoreAddSizeMetrics = await getSpaceMetrics(t, spaceDid, SPACE_METRICS_NAMES.STORE_ADD_SIZE_TOTAL)
-  
+
       // If staging accept more broad condition given multiple parallel tests can happen there
       if (stage === 'staging') {
         return (
@@ -210,7 +265,7 @@ test('w3infra integration flow', async t => {
           spaceAfterStoreAddSizeMetrics?.value >= spaceBeforeStoreAddSizeMetrics?.value + carSize
         )
       }
-  
+
       return (
         afterStoreAddTotal?.value === beforeStoreAddTotal?.value + 1 &&
         afterUploadAddTotal?.value === beforeUploadAddTotal?.value + 1 &&
@@ -221,6 +276,21 @@ test('w3infra integration flow', async t => {
       )
     })
   }
+
+  // verify that blocking a space makes it impossible to upload a file to it
+  await t.context.rateLimitsDynamo.client.send(new PutItemCommand({
+    TableName: t.context.rateLimitsDynamo.tableName,
+    Item: marshall({
+      id: Math.random().toString(10),
+      subject: client.currentSpace()?.did(),
+      rate: 0
+    })
+  }))
+  const uploadError = await t.throwsAsync(async () => {
+    await client.uploadFile(await randomFile(100))
+  })
+
+  t.is(uploadError?.message, 'failed store/add invocation')
 })
 
 /**
@@ -245,6 +315,28 @@ async function getSpaceMetrics (t, spaceDid, name) {
     t.context.spaceMetricsDynamo.client,
     t.context.spaceMetricsDynamo.tableName,
     { space: spaceDid, name }
+  )
+
+  return item
+}
+
+/**
+ * @param {import("ava").ExecutionContext<import("./helpers/context.js").Context>} t
+ * @param {string} link
+ */
+async function getPieces (t, link) {
+  const item = await pollQueryTable(
+    t.context.pieceDynamo.client,
+    t.context.pieceDynamo.tableName,
+    {
+      link: {
+        ComparisonOperator: 'EQ',
+        AttributeValueList: [{ S: link }]
+      }
+    },
+    {
+      indexName: 'link'
+    }
   )
 
   return item
