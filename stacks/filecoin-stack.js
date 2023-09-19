@@ -30,7 +30,7 @@ export function FilecoinStack({ stack, app }) {
   // Get eventBus reference
   const { eventBus } = use(BusStack)
   // Get store table reference
-  const { pieceTable, privateKey } = use(UploadDbStack)
+  const { pieceTable, privateKey, contentClaimsPrivateKey } = use(UploadDbStack)
 
   // piece-cid reporting
   pieceTable.addConsumers(stack, {
@@ -46,6 +46,7 @@ export function FilecoinStack({ stack, app }) {
         timeout: 3 * 60,
         bind: [
           privateKey,
+          contentClaimsPrivateKey
         ]
       },
       cdk: {

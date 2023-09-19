@@ -18,8 +18,8 @@ Sentry.AWSLambda.init({
  * @param {import('aws-lambda').DynamoDBStreamEvent} event
  */
 async function pieceCidReport (event) {
-  const { aggregatorDid, aggregatorUrl } = getEnv()
-  const { PRIVATE_KEY: privateKey } = Config
+  const { aggregatorDid, aggregatorUrl, contentClaimsDid, contentClaimsUrl } = getEnv()
+  const { PRIVATE_KEY: privateKey, CONTENT_CLAIMS_PRIVATE_KEY: contentClaimsPrivateKey } = Config
 
   const records = parseDynamoDbEvent(event)
   if (records.length > 1) {
@@ -36,28 +36,31 @@ async function pieceCidReport (event) {
     url: aggregatorUrl
   })
   const claimsServiceConnection = getServiceConnection({
-    did: aggregatorDid,
-    url: aggregatorUrl
+    did: contentClaimsDid,
+    url: contentClaimsUrl
   })
-  const issuer = getServiceSigner({
+  const storefrontIssuer = getServiceSigner({
     privateKey
+  })
+  const claimsIssuer = getServiceSigner({
+    privateKey: contentClaimsPrivateKey
   })
 
   const { ok, error } = await reportPieceCid({
     piece,
     content,
-    group: issuer.did(),
+    group: storefrontIssuer.did(),
     aggregateServiceConnection,
     aggregateInvocationConfig: /** @type {import('@web3-storage/filecoin-client/types').InvocationConfig} */ ({
-      issuer,
+      issuer: storefrontIssuer,
       audience: aggregateServiceConnection.id,
-      with: issuer.did(),
+      with: storefrontIssuer.did(),
     }),
     claimsServiceConnection,
     claimsInvocationConfig: /** @type {import('../types').ClaimsInvocationConfig} */ ({
-      issuer,
+      issuer: claimsIssuer,
       audience: claimsServiceConnection.id,
-      with: issuer.did(),
+      with: claimsIssuer.did(),
     })
   })
 
