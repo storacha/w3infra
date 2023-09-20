@@ -56,10 +56,8 @@ export async function redirectCarGet(request) {
     return toLambdaResponse(signedUrl)
   }
 
-  return {
-    body: 'NOT FOUND',
-    statusCode: 404
-  }
+  // 404
+  return toLambdaResponse()
 }
 
 /**
