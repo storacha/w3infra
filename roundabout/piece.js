@@ -5,10 +5,10 @@ import './globals.js'
 import { read } from '@web3-storage/content-claims/client'
 import * as Raw from 'multiformats/codecs/raw'
 
-export const CAR_CODE = 0x0202
+export const CAR_CODE = 0x02_02
 
 /** @see https://github.com/multiformats/multicodec/pull/331/files */
-export const PIECE_V2_CODE = 0x1011
+export const PIECE_V2_CODE = 0x10_11
 
 /** 
  * @typedef {import('multiformats/cid').Link} Link
@@ -18,6 +18,7 @@ export const PIECE_V2_CODE = 0x1011
 
 /**
  * Return the cid if it is a Piece CID or undefined if not
+ *
  * @param {Link} cid
  */
 export function asPieceCid(cid) {
@@ -28,6 +29,7 @@ export function asPieceCid(cid) {
 
 /**
  * Return the cid if it is a CAR CID or undefined if not
+ *
  * @param {Link} cid
  */
 export function asCarCid(cid) {

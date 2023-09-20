@@ -19,7 +19,7 @@ test('findEquivalentCarCids', async t => {
     ]
   })
   t.is(carSet.size, 1, 'should return 1 unique carCid')
-  t.is(Array.from(carSet).at(0).toString(), carCid.toString())
+  t.is([...carSet].at(0).toString(), carCid.toString())
 })
 
 test('findEquivalentCarCids from content-claims api', async t => {
