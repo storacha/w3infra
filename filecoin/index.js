@@ -112,7 +112,9 @@ export async function reportPieceCid ({
       nb: {
         content,
         equals: piece
-      }
+      },
+      expiration: Infinity,
+      proofs: claimsInvocationConfig.proofs
     })
     .execute(claimsServiceConnection)
   if (claimResult.out.error) {
