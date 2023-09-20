@@ -13,7 +13,7 @@ Sentry.AWSLambda.init({
 })
 
 /**
- * AWS HTTP Gateway handler for GET /{cid} by car CID
+ * AWS HTTP Gateway handler for GET /{cid} by CAR CID or Piece CID
  *
  * @param {import('aws-lambda').APIGatewayProxyEventV2} request
  */
@@ -40,8 +40,9 @@ export async function redirectCarGet(request) {
   if (asPieceCid(cid) !== undefined) {
     const cars = await findEquivalentCarCids(cid)
     for (const carCid of cars) {
+      const key = `${carCid}/${carCid}.car`
       // getUrl returns undefined if we don't have that car, so keep trying till we find a good one.
-      const signedUrl = await signer.getUrl(`${carCid}/${carCid}.car`, { expiresIn }) 
+      const signedUrl = await signer.getUrl(key, { expiresIn }) 
       if (signedUrl) {
         return toLambdaResponse(signedUrl)
       }

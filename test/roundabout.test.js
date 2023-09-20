@@ -12,18 +12,34 @@ test.before(t => {
   }
 })
 
-const carparkCid = 'bagbaiera223xmiutg62dsthdyd6kqgsft25knslnlaxxvwe6nc4zrwezezeq'
-
 test('HEAD /{cid}', async t => {
+  const carparkCid = 'bagbaiera223xmiutg62dsthdyd6kqgsft25knslnlaxxvwe6nc4zrwezezeq'
   const response = await fetch(
     `${t.context.roundaboutEndpoint}/${carparkCid}`,
     {
-      method: 'GET',
+      method: 'HEAD',
       redirect: 'manual'
     }
   )
   t.is(response.status, 302)
   t.truthy(response.headers.get('location'))
+})
+
+test('HEAD /{pieceCid}', async t => {
+  const pieceCid = 'bafkzcibband7offrs5xxampc4etmefycbsoyu2qqav6sbjbmuzhoeetht5ncs'
+  const carCid = 'bagbaieraky3zsxcozokb33wunu5bmxixfpkz2t2pe25rs6tokqcgm3h3d5ya'
+  const response = await fetch(
+    `${t.context.roundaboutEndpoint}/${pieceCid}`,
+    {
+      method: 'HEAD',
+      redirect: 'manual'
+    }
+  )
+  t.is(response.status, 302)
+  const location = response.headers.get('location')
+  t.truthy(location)
+  t.true(location.includes(carCid))
+  console.log(response.headers.get('location'))
 })
 
 test('HEAD /key/{key}', async t => {
@@ -32,7 +48,7 @@ test('HEAD /key/{key}', async t => {
   const response = await fetch(
     `${t.context.roundaboutEndpoint}/key/${key}?bucket=${bucketName}`,
     {
-      method: 'GET',
+      method: 'HEAD',
       redirect: 'manual'
     }
   )
