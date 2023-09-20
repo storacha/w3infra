@@ -9,7 +9,7 @@ export const PIECE_V2_CODE = 0x1011
 /** 
  * @typedef {import('multiformats/cid').Link} Link
  * @typedef {import('@web3-storage/w3up-client/types').CARLink} CARLink
- * @typedef {import('@web3-storage/content-claims/server/api').Claim} Claim
+ * @typedef {import('@web3-storage/content-claims/client/api').Claim} Claim
  **/
 
 /**
