@@ -2,6 +2,7 @@ import {
   Signer,
   DID,
   Principal,
+  Proof,
 } from '@ucanto/interface'
 import { UnknownLink } from 'multiformats'
 import { PieceLink } from '@web3-storage/data-segment'
@@ -40,6 +41,10 @@ export interface ClaimsInvocationConfig {
    * The resource the invocation applies to.
    */
   with: DID
+  /**
+   * Proof(s) the issuer has the capability to perform the action.
+   */
+  proofs?: Proof[]
 }
 
 export class Failure extends Error {

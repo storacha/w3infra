@@ -142,6 +142,7 @@ test('w3infra integration flow', async t => {
   const fileLink = await client.uploadFile(file, {
     onShardStored: (meta) => {
       shards.push(meta.cid)
+      console.log('shard file written', meta.cid)
     }
   })
   t.truthy(fileLink)
@@ -242,6 +243,8 @@ test('w3infra integration flow', async t => {
   t.assert(pieces)
   t.is(pieces?.length, 1)
   t.truthy(pieces?.[0].piece)
+
+  console.log('piece written', pieces?.[0].piece)
 
   // Check metrics were updated
   if (beforeStoreAddSizeTotal && spaceBeforeUploadAddMetrics && spaceBeforeStoreAddSizeMetrics && beforeUploadAddTotal) {

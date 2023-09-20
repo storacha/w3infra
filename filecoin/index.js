@@ -115,7 +115,6 @@ export async function reportPieceCid ({
       }
     })
     .execute(claimsServiceConnection)
-  
   if (claimResult.out.error) {
     return {
       error: claimResult.out.error

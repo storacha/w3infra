@@ -20,7 +20,7 @@ export function FilecoinStack({ stack, app }) {
     srcPath: 'filecoin'
   })
 
-  const { AGGREGATOR_DID, AGGREGATOR_URL, CONTENT_CLAIMS_DID, CONTENT_CLAIMS_URL } = getEnv()
+  const { AGGREGATOR_DID, AGGREGATOR_URL, CONTENT_CLAIMS_DID, CONTENT_CLAIMS_URL, CONTENT_CLAIMS_PROOF } = getEnv()
 
   // Setup app monitoring with Sentry
   setupSentry(app, stack)
@@ -42,6 +42,7 @@ export function FilecoinStack({ stack, app }) {
           AGGREGATOR_URL,
           CONTENT_CLAIMS_DID,
           CONTENT_CLAIMS_URL,
+          CONTENT_CLAIMS_PROOF
         },
         timeout: 3 * 60,
         bind: [

@@ -145,6 +145,8 @@ export function getEnv() {
     AGGREGATOR_URL: mustGetEnv('AGGREGATOR_URL'),
     CONTENT_CLAIMS_DID: mustGetEnv('CONTENT_CLAIMS_DID'),
     CONTENT_CLAIMS_URL: mustGetEnv('CONTENT_CLAIMS_URL'),
+    // Not required
+    CONTENT_CLAIMS_PROOF: process.env.CONTENT_CLAIMS_PROOF ?? ''
   }
 }
 
