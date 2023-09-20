@@ -91,7 +91,7 @@ export function getKinesisEventSourceConfig (stack) {
  * @param {import('@serverless-stack/resources').Stack} stack
  */
 export function getKinesisStreamConfig (stack) {
-  if (stack.stage !== 'production') {
+  if (stack.stage !== 'production' && stack.stage !== 'staging') {
     return {
       retentionPeriod: Duration.hours(24)
     }
