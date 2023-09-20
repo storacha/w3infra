@@ -1,3 +1,5 @@
+// CARReaderStream used by content-claims client expects global TransformStream and fetch
+import './globals.js'
 import { read } from '@web3-storage/content-claims/client'
 import * as Raw from 'multiformats/codecs/raw'
 
