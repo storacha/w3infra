@@ -1,7 +1,7 @@
-// `CARReaderStream` expects global `TransformStream`
-// ucanto client expects global `fetch`
-// used by content-claims/client
+// NOTE: shim globals needed by content-claims client deps that would be present in nodejs v18.
+// TODO: migrate to sst v2 and nodejs v18+
 import './globals.js'
+
 import { read } from '@web3-storage/content-claims/client'
 import * as Raw from 'multiformats/codecs/raw'
 

@@ -22,6 +22,21 @@ test('findEquivalentCarCids', async t => {
   t.is(Array.from(carSet).at(0).toString(), carCid.toString())
 })
 
+test('findEquivalentCarCids from content-claims api', async t => {
+  const pieceCid = CID.parse('bafkzcibbai3tdo4zvruj6zxo6wlt4suu3imi6to4vzmaojh4n475mdp5jcbtg')
+  const carCid = CID.parse('bagbaieratdhefxxpkhkae2ovil2tcs7pfr2grvabvvoykful7k2maeepox3q')
+  const carSet = await findEquivalentCarCids(pieceCid)
+  let found
+  for (const cid of carSet) {
+    if (cid.toString() === carCid.toString()) {
+      found = cid
+      break
+    }
+  }
+  t.assert(found)
+  t.is(found.toString(), carCid.toString())
+})
+
 test('asCarCid', t => {
   const bytes = new Uint8Array(MIN_PAYLOAD_SIZE)
   const pieceCid = Piece.fromPayload(bytes).link
