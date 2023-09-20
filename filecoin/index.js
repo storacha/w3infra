@@ -113,7 +113,8 @@ export async function reportPieceCid ({
         content,
         equals: piece
       },
-      expiration: Infinity
+      expiration: Infinity,
+      proofs: claimsInvocationConfig.proofs
     })
     .execute(claimsServiceConnection)
   if (claimResult.out.error) {

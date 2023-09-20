@@ -73,6 +73,7 @@ async function pieceCidReport (event) {
       issuer: claimsIssuer,
       audience: claimsServiceConnection.id,
       with: claimsIssuer.did(),
+      proofs: claimsProofs
     })
   })
 
