@@ -1,4 +1,6 @@
-// CARReaderStream used by content-claims client expects global TransformStream and fetch
+// `CARReaderStream` expects global `TransformStream`
+// ucanto client expects global `fetch`
+// used by content-claims/client
 import './globals.js'
 import { read } from '@web3-storage/content-claims/client'
 import * as Raw from 'multiformats/codecs/raw'
