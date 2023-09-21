@@ -191,7 +191,7 @@ export function UcanInvocationStack({ stack, app }) {
 
   // TODO: keep for historical content that we might want to process
   // only needed for production
-  if (stack.stage === 'production') {
+  if (stack.stage === 'production' || stack.stage === 'staging') {
     new KinesisStream(stack, 'ucan-stream', {
       cdk: {
         stream: getKinesisStreamConfig(stack)
