@@ -250,9 +250,13 @@ test('w3infra integration flow', async t => {
   // Check roundabout can redirect from pieceCid to signed bucket url for car
   const roundaboutEndpoint = await getRoundaboutEndpoint()
   const roundaboutUrl = new URL(pieces?.[0].piece, roundaboutEndpoint)
+  console.log('checking roundabout', roundaboutUrl)
   await pWaitFor(async () => {
     try {
-      const res = await fetch(roundaboutUrl)
+      const res = await fetch(roundaboutUrl, {
+        method: 'HEAD',
+        redirect: 'manual'
+      })
       return res.status === 302 && res.headers.get('location')?.includes(shards[0].toString())
     } catch {}
     return false
