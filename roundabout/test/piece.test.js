@@ -2,8 +2,9 @@ import { test } from './helpers/context.js'
 import { CID } from 'multiformats/cid'
 import * as Raw from 'multiformats/codecs/raw'
 import { sha256 } from 'multiformats/hashes/sha2'
+import * as Digest from 'multiformats/hashes/digest'
 import { Piece, MIN_PAYLOAD_SIZE } from '@web3-storage/data-segment'
-import { findEquivalentCarCids, asCarCid, asPieceCid, CAR_CODE } from '../piece.js'
+import { findEquivalentCarCids, asCarCid, asPieceCidV1, asPieceCidV2, CAR_CODE } from '../piece.js'
 
 test('findEquivalentCarCids', async t => {
   const bytes = new Uint8Array(MIN_PAYLOAD_SIZE)
@@ -47,12 +48,28 @@ test('asCarCid', t => {
   t.is(asCarCid(rawCid), undefined)
 })
 
-test('asPieceCid', t => {
+test('asPieceCidv2', t => {
   const bytes = new Uint8Array(MIN_PAYLOAD_SIZE)
-  const pieceCid = Piece.fromPayload(bytes).link
+  const piece = Piece.fromPayload(bytes)
+  const pieceCidV2 = piece.link
+  const pieceCidV1 = CID.createV1(Piece.FilCommitmentUnsealed, Digest.create(Piece.Sha256Trunc254Padded, piece.root))
   const carCid = CID.createV1(CAR_CODE, sha256.digest(bytes)) 
   const rawCid = CID.createV1(Raw.code, sha256.digest(bytes))
-  t.is(asPieceCid(pieceCid), pieceCid)
-  t.is(asPieceCid(carCid), undefined)
-  t.is(asPieceCid(rawCid), undefined)
+  t.is(asPieceCidV2(pieceCidV1), undefined)
+  t.is(asPieceCidV2(pieceCidV2), pieceCidV2)
+  t.is(asPieceCidV2(carCid), undefined)
+  t.is(asPieceCidV2(rawCid), undefined)
+})
+
+test('asPieceCidv1', t => {
+  const bytes = new Uint8Array(MIN_PAYLOAD_SIZE)
+  const piece = Piece.fromPayload(bytes)
+  const pieceCidV2 = piece.link
+  const pieceCidV1 = CID.createV1(Piece.FilCommitmentUnsealed, Digest.create(Piece.Sha256Trunc254Padded, piece.root))
+  const carCid = CID.createV1(CAR_CODE, sha256.digest(bytes)) 
+  const rawCid = CID.createV1(Raw.code, sha256.digest(bytes))
+  t.is(asPieceCidV1(pieceCidV1), pieceCidV1)
+  t.is(asPieceCidV1(pieceCidV2),undefined)
+  t.is(asPieceCidV1(carCid), undefined)
+  t.is(asPieceCidV1(rawCid), undefined)
 })
