@@ -26,8 +26,8 @@ test('HEAD /{cid}', async t => {
 })
 
 test('HEAD /{pieceCid}', async t => {
-  const pieceCid = 'bafkzcibband7offrs5xxampc4etmefycbsoyu2qqav6sbjbmuzhoeetht5ncs'
-  const carCid = 'bagbaieraky3zsxcozokb33wunu5bmxixfpkz2t2pe25rs6tokqcgm3h3d5ya'
+  const pieceCid = 'bafkzcibbai3tdo4zvruj6zxo6wlt4suu3imi6to4vzmaojh4n475mdp5jcbtg'
+  const carCid = 'bagbaieratdhefxxpkhkae2ovil2tcs7pfr2grvabvvoykful7k2maeepox3q'
   const response = await fetch(
     `${t.context.roundaboutEndpoint}/${pieceCid}`,
     {
