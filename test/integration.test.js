@@ -251,11 +251,11 @@ test('w3infra integration flow', async t => {
   const roundaboutEndpoint = await getRoundaboutEndpoint()
   const roundaboutUrl = new URL(pieces?.[0].piece, roundaboutEndpoint)
   await pWaitFor(async () => {
-    let res
     try {
-      res = await fetch(roundaboutUrl)
+      const res = await fetch(roundaboutUrl)
+      return res.status === 302 && res.headers.get('location')?.includes(shards[0].toString())
     } catch {}
-    return res.headers.get('location')?.includes(shards[0].toString())
+    return false
   }, {
     interval: 100,
   })
