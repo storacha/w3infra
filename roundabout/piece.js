@@ -62,7 +62,7 @@ export function asCarCid(cid) {
  * @param {Link} piece
  * @param {(Link) => Promise<Claim[]>} [fetchClaims] - returns content claims for a cid
  */
-export async function findEquivalentCarCids (piece, fetchClaims = read) {
+export async function findEquivalentCarCids (piece, fetchClaims = createClaimsClientForEnv()) {
   /** @type {Set<CARLink>} */
   const cids = new Set()
   const claims = await fetchClaims(piece)
@@ -79,4 +79,12 @@ export async function findEquivalentCarCids (piece, fetchClaims = read) {
     }
   }
   return cids
+}
+
+/** @param {'prod' | *} env */
+export function createClaimsClientForEnv (env = process.env.SST_STAGE) {
+  if (env === 'prod') {
+    return read
+  }
+  return (cid, opts) => read(cid, { serviceURL: 'https://staging.claims.web3.storage', ...opts })
 }
