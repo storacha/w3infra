@@ -31,17 +31,40 @@ export async function redirectCarGet(request) {
     return { statusCode: 400, body: err.message }
   }
 
+  const locateCar = carLocationResolver({ s3Client, bucket: BUCKET_NAME, expiresIn })
+
+  const response = await resolveCar(cid, locateCar) ?? await resolvePiece(cid, locateCar)
+
+  return response ?? {
+    statusCode: 415, 
+    body: 'Unsupported CID type. Please provide a CAR CID or v2 Piece CID.' 
+  }
+}
+
+/**
+ * Return response for a car CID, or undefined for other CID types
+ * 
+ * @param {CID} cid
+ * @param {(cid: CID) => Promise<string | undefined> } locateCar
+ */
+async function resolveCar (cid, locateCar) {
   if (asCarCid(cid) !== undefined) {
-    const locateCar = carLocationResolver({ s3Client, bucket: BUCKET_NAME, expiresIn })
-    const url = locateCar(cid)
+    const url = await locateCar(cid)
     if (url) {
       return redirectTo(url)
     }
     return { statusCode: 404, body: 'CAR Not found'}
   }
+}
 
+/**
+ * Return response for a Piece CID, or undefined for other CID types
+ * 
+ * @param {CID} cid
+ * @param {(cid: CID) => Promise<string | undefined> } locateCar
+ */
+async function resolvePiece (cid, locateCar) {
   if (asPieceCidV2(cid) !== undefined) {
-    const locateCar = carLocationResolver({ s3Client, bucket: BUCKET_NAME, expiresIn })
     const cars = await findEquivalentCarCids(cid)
     if (cars.size === 0) {
       return { statusCode: 404, body: 'No equivalent CAR CID for Piece CID found' }
@@ -60,11 +83,6 @@ export async function redirectCarGet(request) {
       statusCode: 415,
       body: 'v1 Piece CIDs are not supported yet. Please provide a V2 Piece CID. https://github.com/filecoin-project/FIPs/blob/master/FRCs/frc-0069.md'
     }
-  }
-
-  return {
-    statusCode: 415,
-    body: 'Unsupported CID type. Please provide a CAR CID or v2 Piece CID.'
   }
 }
 
