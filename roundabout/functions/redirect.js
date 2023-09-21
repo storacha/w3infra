@@ -18,9 +18,6 @@ Sentry.AWSLambda.init({
  * @param {import('aws-lambda').APIGatewayProxyEventV2} request
  */
 export async function redirectCarGet(request) {
-  const { BUCKET_NAME } = getEnv()
-  const s3Client = getS3Client()
-
   let cid, expiresIn
   try {
     const parsedQueryParams = parseQueryStringParameters(request.queryStringParameters)
@@ -31,7 +28,11 @@ export async function redirectCarGet(request) {
     return { statusCode: 400, body: err.message }
   }
 
-  const locateCar = carLocationResolver({ s3Client, bucket: BUCKET_NAME, expiresIn })
+  const locateCar = carLocationResolver({ 
+    bucket: getEnv().BUCKET_NAME,
+    s3Client: getS3Client(),
+    expiresIn
+  })
 
   const response = await resolveCar(cid, locateCar) ?? await resolvePiece(cid, locateCar)
 
@@ -70,7 +71,7 @@ async function resolvePiece (cid, locateCar) {
       return { statusCode: 404, body: 'No equivalent CAR CID for Piece CID found' }
     }
     for (const cid of cars) {
-      const url = locateCar(cid)
+      const url = await locateCar(cid)
       if (url) {
         return redirectTo(url)
       }
