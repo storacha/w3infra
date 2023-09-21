@@ -14,6 +14,7 @@ import {
   getApiEndpoint,
   getAwsBucketClient,
   getCloudflareBucketClient,
+  getRoundaboutEndpoint,
   getSatnavBucketInfo,
   getCarparkBucketInfo,
   getDynamoDb
@@ -245,6 +246,20 @@ test('w3infra integration flow', async t => {
   t.truthy(pieces?.[0].piece)
 
   console.log('piece written', pieces?.[0].piece)
+
+  // Check roundabout can redirect from pieceCid to signed bucket url for car
+  const roundaboutEndpoint = await getRoundaboutEndpoint()
+  const roundaboutUrl = new URL(pieces?.[0].piece, roundaboutEndpoint)
+  await pWaitFor(async () => {
+    let res
+    try {
+      res = await fetch(roundaboutUrl)
+    } catch {}
+    return res.headers.get('location')?.includes(shards[0].toString())
+  }, {
+    interval: 100,
+  })
+  console.log('roundabout redirected from piece to car', roundaboutUrl)
 
   // Check metrics were updated
   if (beforeStoreAddSizeTotal && spaceBeforeUploadAddMetrics && spaceBeforeStoreAddSizeMetrics && beforeUploadAddTotal) {
