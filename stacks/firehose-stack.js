@@ -5,9 +5,9 @@ import {
   aws_iam as iam,
   aws_logs as logs,
   aws_kinesisfirehose as firehose,
-  aws_glue as glue
+  aws_glue as glue,
+  aws_athena as athena
 } from 'aws-cdk-lib'
-import { NamedQuery } from 'cdk-athena'
 
 import { UcanInvocationStack } from './ucan-invocation-stack.js'
 
@@ -215,9 +215,9 @@ export function UcanFirehoseStack ({ stack, app }) {
   glueTable.addDependsOn(glueDatabase)
 
   const inputOutputQueryName = getCdkNames('input-output-query', app.stage)
-  new NamedQuery(stack, inputOutputQueryName, {
+  const inputOutputQuery = new athena.CfnNamedQuery(stack, inputOutputQueryName, {
     name: "Inputs and Outputs, last 24 hours",
-    desc: "(w3up preloaded)",
+    description: "(w3up preloaded)",
     database: databaseName,
     queryString: `SELECT 
   value.att[1] as "in",
@@ -227,11 +227,12 @@ WHERE type = 'receipt'
   AND day > (CURRENT_DATE - INTERVAL '1' DAY)
 `
   })
+  inputOutputQuery.addDependsOn(glueTable)
 
   const dataStoredQueryName = getCdkNames('data-stored-query', app.stage)
-  new NamedQuery(stack, dataStoredQueryName, {
+  const dataStoredQuery = new athena.CfnNamedQuery(stack, dataStoredQueryName, {
     name: "Data stored by space, last week",
-    desc: "(w3up preloaded)",
+    description: "(w3up preloaded)",
     database: databaseName,
     queryString: `SELECT
   SUM(value.att[1].nb.size) AS size,
@@ -244,11 +245,12 @@ WHERE value.att[1].can='store/add'
 GROUP BY value.att[1]."with"
 `
   })
+  dataStoredQuery.addDependsOn(glueTable)
 
   const storesBySpaceQueryName = getCdkNames('stores-by-space-query', app.stage)
-  new NamedQuery(stack, storesBySpaceQueryName, {
+  const storesBySpaceQuery = new athena.CfnNamedQuery(stack, storesBySpaceQueryName, {
     name: "Stores by space, last week",
-    desc: "(w3up preloaded)",
+    description: "(w3up preloaded)",
     database: databaseName,
     queryString: `SELECT
   value.att[1].nb.size AS size,
@@ -261,11 +263,12 @@ WHERE value.att[1].can='store/add'
   AND type='receipt'
 `
   })
+  storesBySpaceQuery.addDependsOn(glueTable)
 
   const uploadsQueryName = getCdkNames('uploads-query', app.stage)
-  new NamedQuery(stack, uploadsQueryName, {
+  const uploadsQuery = new athena.CfnNamedQuery(stack, uploadsQueryName, {
     name: "Uploads, last week",
-    desc: "(w3up preloaded)",
+    description: "(w3up preloaded)",
     database: databaseName,
     queryString: `SELECT
   value.att[1].nb.root._cid_slash AS cid,
@@ -279,11 +282,12 @@ WHERE value.att[1].can='upload/add'
 ORDER BY ts
 `
   })
+  uploadsQuery.addDependsOn(glueTable)
 
   const spacesByAccountQueryName = getCdkNames('spaces-by-account-query', app.stage)
-  new NamedQuery(stack, spacesByAccountQueryName, {
+  const spacesByAccountQuery = new athena.CfnNamedQuery(stack, spacesByAccountQueryName, {
     name: "Spaces by account",
-    desc: "(w3up preloaded)",
+    description: "(w3up preloaded)",
     database: databaseName,
     queryString: `SELECT
   value.att[1].nb.consumer AS space,
@@ -294,11 +298,12 @@ WHERE value.att[1].can='provider/add'
   AND type='receipt'
 `
   })
+  spacesByAccountQuery.addDependsOn(glueTable)
 
   const uploadsByAccountQueryName = getCdkNames('uploads-by-account-query', app.stage)
-  new NamedQuery(stack, uploadsByAccountQueryName, {
+  const uploadsByAccountQuery = new athena.CfnNamedQuery(stack, uploadsByAccountQueryName, {
     name: "Uploads by account",
-    desc: "(w3up preloaded)",
+    description: "(w3up preloaded)",
     database: databaseName,
     queryString: `WITH 
 spaces AS (
@@ -329,4 +334,6 @@ uploads_by_account AS (
   ORDER BY timestamp
 `
   })
+  uploadsByAccountQuery.addDependsOn(glueTable)
+
 }
