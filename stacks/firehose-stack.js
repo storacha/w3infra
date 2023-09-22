@@ -190,7 +190,7 @@ export function UcanFirehoseStack({ stack, app }) {
           { name: 'type', type: 'string' },
           // STRUCT here refers to the Apache Hive STRUCT datatype
           { name: 'value', type: 'STRUCT<att:ARRAY<struct<can:STRING,with:STRING,nb:STRUCT<size:BIGINT,root:STRUCT<_cid_slash:STRING>,consumer:STRING>>>,iss:STRING,aud:STRING>' },
-          { name: "out", type: "STRUCT<error:STRUCT<name:STRING>,ok:STRUCT<name:STRING>>" },
+          { name: "out", type: "STRUCT<error:STRUCT<name:STRING>,ok:STRUCT<id:STRING,delegations:STRING>>" },
           { name: "ts", type: "timestamp" }
         ],
         inputFormat: 'org.apache.hadoop.mapred.TextInputFormat',
