@@ -7,6 +7,7 @@ import {
   aws_kinesisfirehose as firehose,
   aws_glue as glue
 } from 'aws-cdk-lib'
+import { NamedQuery } from 'cdk-athena'
 
 import { UcanInvocationStack } from './ucan-invocation-stack.js'
 
@@ -19,7 +20,7 @@ import {
 /**
  * @param {import('@serverless-stack/resources').StackContext} properties
  */
-export function UcanFirehoseStack({ stack, app }) {
+export function UcanFirehoseStack ({ stack, app }) {
   stack.setDefaultFunctionProps({
     srcPath: 'ucan-firehose'
   })
@@ -212,4 +213,120 @@ export function UcanFirehoseStack({ stack, app }) {
   })
 
   glueTable.addDependsOn(glueDatabase)
+
+  const inputOutputQueryName = getCdkNames('input-output-query', app.stage)
+  new NamedQuery(stack, inputOutputQueryName, {
+    name: "Inputs and Outputs, last 24 hours",
+    desc: "(w3up preloaded)",
+    database: databaseName,
+    queryString: `SELECT 
+  value.att[1] as "in",
+  out
+FROM "${tableName}"
+WHERE type = 'receipt'
+  AND day > (CURRENT_DATE - INTERVAL '1' DAY)
+`
+  })
+
+  const dataStoredQueryName = getCdkNames('data-stored-query', app.stage)
+  new NamedQuery(stack, dataStoredQueryName, {
+    name: "Data stored by space, last week",
+    desc: "(w3up preloaded)",
+    database: databaseName,
+    queryString: `SELECT
+  SUM(value.att[1].nb.size) AS size,
+  value.att[1]."with" AS space
+FROM "${tableName}"
+WHERE value.att[1].can='store/add'
+  AND out.ok IS NOT NULL
+  AND type='receipt'
+  AND day > (CURRENT_DATE - INTERVAL '7' DAY)
+GROUP BY value.att[1]."with"
+`
+  })
+
+  const storesBySpaceQueryName = getCdkNames('stores-by-space-query', app.stage)
+  new NamedQuery(stack, storesBySpaceQueryName, {
+    name: "Stores by space, last week",
+    desc: "(w3up preloaded)",
+    database: databaseName,
+    queryString: `SELECT
+  value.att[1].nb.size AS size,
+  value.att[1]."with" AS space,
+  ts
+FROM "${tableName}"
+WHERE value.att[1].can='store/add'
+  AND day > (CURRENT_DATE - INTERVAL '2' DAY)
+  AND out.ok IS NOT NULL
+  AND type='receipt'
+`
+  })
+
+  const uploadsQueryName = getCdkNames('uploads-query', app.stage)
+  new NamedQuery(stack, uploadsQueryName, {
+    name: "Uploads, last week",
+    desc: "(w3up preloaded)",
+    database: databaseName,
+    queryString: `SELECT
+  value.att[1].nb.root._cid_slash AS cid,
+  value.att[1]."with" AS space,
+  ts
+FROM "${tableName}"
+WHERE value.att[1].can='upload/add'
+  AND day > (CURRENT_DATE - INTERVAL '7' DAY)
+  AND out.ok IS NOT NULL
+  AND type='receipt'
+ORDER BY ts
+`
+  })
+
+  const spacesByAccountQueryName = getCdkNames('spaces-by-account-query', app.stage)
+  new NamedQuery(stack, spacesByAccountQueryName, {
+    name: "Spaces by account",
+    desc: "(w3up preloaded)",
+    database: databaseName,
+    queryString: `SELECT
+  value.att[1].nb.consumer AS space,
+  value.att[1]."with" AS account
+FROM "${tableName}" 
+WHERE value.att[1].can='provider/add' 
+  AND out.ok IS NOT NULL 
+  AND type='receipt'
+`
+  })
+
+  const uploadsByAccountQueryName = getCdkNames('uploads-by-account-query', app.stage)
+  new NamedQuery(stack, uploadsByAccountQueryName, {
+    name: "Uploads by account",
+    desc: "(w3up preloaded)",
+    database: databaseName,
+    queryString: `WITH 
+spaces AS (
+  SELECT value.att[1].nb.consumer AS did,
+         value.att[1]."with" AS account
+  FROM "${tableName}" 
+  WHERE value.att[1].can='provider/add' 
+    AND out.ok IS NOT NULL 
+    AND type='receipt'
+), 
+uploads AS (
+  SELECT value.att[1].nb.root._cid_slash AS cid, 
+         value.att[1]."with" AS space,
+         ts
+  FROM "${tableName}" 
+  WHERE value.att[1].can='upload/add' 
+    AND out.ok IS NOT NULL 
+    AND type='receipt'
+),
+uploads_by_account AS (
+  SELECT spaces.did AS space, 
+         spaces.account AS account,
+         uploads.cid AS cid,
+         uploads.ts AS "timestamp"
+  FROM uploads LEFT JOIN spaces on spaces.did = uploads.space
+) SELECT * 
+  FROM uploads_by_account 
+  ORDER BY timestamp
+`
+  })
 }
