@@ -114,7 +114,7 @@ export function UcanFirehoseStack({ stack, app }) {
       bufferingHints: {
         intervalInSeconds: 60
       },
-      // makes easier to run hight performance, cost efficient analytics with Athena
+      // makes easier to run high performance, cost efficient analytics with Athena
       dynamicPartitioningConfiguration: {
         enabled: true
       },
@@ -126,7 +126,7 @@ export function UcanFirehoseStack({ stack, app }) {
             parameters: [
               {
                 parameterName: 'MetadataExtractionQuery',
-                parameterValue: '{issuer: .value.iss}',
+                parameterValue: '{day: (.ts/1000) | strftime("%Y-%m-%d")}',
               },
               {
                 parameterName: 'JsonParsingEngine',
@@ -146,7 +146,7 @@ export function UcanFirehoseStack({ stack, app }) {
         ],
       },
       // See https://docs.aws.amazon.com/athena/latest/ug/partition-projection-kinesis-firehose-example.html
-      prefix: 'logs/issuer=!{partitionKeyFromQuery:issuer}/',
+      prefix: 'logs/!{partitionKeyFromQuery:day}/',
       errorOutputPrefix: 'error'
     }
   })
@@ -169,20 +169,32 @@ export function UcanFirehoseStack({ stack, app }) {
     databaseName,
     tableInput: {
       name: tableName,
-      partitionKeys: [],
+      partitionKeys: [
+        { name: 'day', type: 'date' },
+      ],
+      parameters: {
+        classification: "json",
+        typeOfData: "file",
+        "projection.enabled": "true",
+        "projection.day.type": "date",
+        "projection.day.format": "yyyy-MM-dd",
+        "projection.day.range": "2023-01-01,NOW",
+        "projection.day.interval": "1",
+        "projection.day.interval.unit": "DAYS",
+        "storage.location.template": `s3://${streamLogBucket.bucketName}/logs/\${day}/`
+      },
       storageDescriptor: {
         location: `s3://${streamLogBucket.bucketName}/logs`,
         columns: [
           { name: 'carcid', type: 'string' },
           { name: 'type', type: 'string' },
-          { name: 'value', type: 'STRUCT<att:ARRAY<struct<can:STRING>>,iss:STRING,aud:STRING>' }
+          // STRUCT here refers to the Apache Hive STRUCT datatype
+          { name: 'value', type: 'STRUCT<att:ARRAY<struct<can:STRING,with:STRING,nb:STRUCT<size:BIGINT,root:STRING,consumer:STRING>>>,iss:STRING,aud:STRING>' },
+          { name: "out", type: "STRUCT<error:STRUCT<name:STRING>,ok:STRUCT<name:STRING>>" },
+          { name: "ts", type: "timestamp" }
         ],
         inputFormat: 'org.apache.hadoop.mapred.TextInputFormat',
         outputFormat: 'org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat',
-        parameters: {
-          "classification": "json",
-          "typeOfData": "file"
-        },
         serdeInfo: {
           serializationLibrary: 'org.openx.data.jsonserde.JsonSerDe',
           parameters: {
