@@ -189,7 +189,7 @@ export function UcanFirehoseStack({ stack, app }) {
           { name: 'carcid', type: 'string' },
           { name: 'type', type: 'string' },
           // STRUCT here refers to the Apache Hive STRUCT datatype
-          { name: 'value', type: 'STRUCT<att:ARRAY<struct<can:STRING,with:STRING,nb:STRUCT<size:BIGINT,root:STRING,consumer:STRING>>>,iss:STRING,aud:STRING>' },
+          { name: 'value', type: 'STRUCT<att:ARRAY<struct<can:STRING,with:STRING,nb:STRUCT<size:BIGINT,root:STRUCT<_cid_slash:STRING>,consumer:STRING>>>,iss:STRING,aud:STRING>' },
           { name: "out", type: "STRUCT<error:STRUCT<name:STRING>,ok:STRUCT<name:STRING>>" },
           { name: "ts", type: "timestamp" }
         ],
@@ -198,7 +198,8 @@ export function UcanFirehoseStack({ stack, app }) {
         serdeInfo: {
           serializationLibrary: 'org.openx.data.jsonserde.JsonSerDe',
           parameters: {
-            paths: 'carCid,invocationCid,out,ts,type,value'
+            // see https://aws.amazon.com/blogs/big-data/create-tables-in-amazon-athena-from-nested-json-and-mappings-using-jsonserde/
+            'mapping._cid_slash': '/'
           }
         }
       }
