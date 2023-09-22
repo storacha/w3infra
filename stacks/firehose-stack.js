@@ -126,6 +126,7 @@ export function UcanFirehoseStack({ stack, app }) {
             parameters: [
               {
                 parameterName: 'MetadataExtractionQuery',
+                // extract yyyy-MM-dd formatted current date from millisecond epoch timestamp "ts" using jq syntax
                 parameterValue: '{day: (.ts/1000) | strftime("%Y-%m-%d")}',
               },
               {
@@ -145,7 +146,10 @@ export function UcanFirehoseStack({ stack, app }) {
           },
         ],
       },
-      // See https://docs.aws.amazon.com/athena/latest/ug/partition-projection-kinesis-firehose-example.html
+      // See https://docs.aws.amazon.com/athena/latest/ug/partition-projection-kinesis-firehose-example.html for general information on partitioning.
+      // Daily partitions seem right (https://www.upsolver.com/blog/partitioning-data-s3-improve-performance-athena-presto)
+      // "A rough rule of thumb is that each 100 partitions scanned adds about 1 second of latency to your query in Amazon Athena. This is why minutely or hourly
+      // partitions are rarely used – typically you would choose between daily, weekly, and monthly partitions, depending on the nature of your queries."
       prefix: 'logs/!{partitionKeyFromQuery:day}/',
       errorOutputPrefix: 'error'
     }
@@ -162,7 +166,6 @@ export function UcanFirehoseStack({ stack, app }) {
     }
   })
 
-  // TODO: See https://catalog.us-east-1.prod.workshops.aws/workshops/fad47f62-3d06-430b-ad32-8588b74fe16f/en-US/lab-5-athena/55-athena-best-practices
   const tableName = getCdkNames('ucan-stream-delivery-table', app.stage)
   const glueTable = new glue.CfnTable(stack, tableName, {
     catalogId: Aws.ACCOUNT_ID,
@@ -175,6 +178,8 @@ export function UcanFirehoseStack({ stack, app }) {
       parameters: {
         classification: "json",
         typeOfData: "file",
+        // See See https://docs.aws.amazon.com/athena/latest/ug/partition-projection-kinesis-firehose-example.html for more information on projection
+        // configuration - this should match the "day" parameter and S3 prefix configured in the delivery stream
         "projection.enabled": "true",
         "projection.day.type": "date",
         "projection.day.format": "yyyy-MM-dd",
@@ -188,7 +193,7 @@ export function UcanFirehoseStack({ stack, app }) {
         columns: [
           { name: 'carcid', type: 'string' },
           { name: 'type', type: 'string' },
-          // STRUCT here refers to the Apache Hive STRUCT datatype
+          // STRUCT here refers to the Apache Hive STRUCT datatype - see https://aws.amazon.com/blogs/big-data/create-tables-in-amazon-athena-from-nested-json-and-mappings-using-jsonserde/
           { name: 'value', type: 'STRUCT<att:ARRAY<struct<can:STRING,with:STRING,nb:STRUCT<size:BIGINT,root:STRUCT<_cid_slash:STRING>,consumer:STRING>>>,iss:STRING,aud:STRING>' },
           { name: "out", type: "STRUCT<error:STRUCT<name:STRING>,ok:STRUCT<id:STRING,delegations:STRING>>" },
           { name: "ts", type: "timestamp" }
