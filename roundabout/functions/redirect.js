@@ -3,6 +3,7 @@ import { S3Client } from '@aws-sdk/client-s3'
 import { CID } from 'multiformats/cid'
 
 import { getSigner } from '../index.js'
+import { findEquivalentCarCids, asPieceCidV1, asPieceCidV2, asCarCid } from '../piece.js'
 import { getEnv, parseQueryStringParameters } from '../utils.js'
 
 Sentry.AWSLambda.init({
@@ -12,35 +13,98 @@ Sentry.AWSLambda.init({
 })
 
 /**
- * AWS HTTP Gateway handler for GET /{cid} by car CID
+ * AWS HTTP Gateway handler for GET /{cid} by CAR CID or Piece CID
  *
  * @param {import('aws-lambda').APIGatewayProxyEventV2} request
  */
 export async function redirectCarGet(request) {
-  const { BUCKET_NAME } = getEnv()
-  const s3Client = getS3Client()
-
   let cid, expiresIn
   try {
     const parsedQueryParams = parseQueryStringParameters(request.queryStringParameters)
     expiresIn = parsedQueryParams.expiresIn
-
     const cidString = request.pathParameters?.cid
     cid = CID.parse(cidString || '')
   } catch (err) {
-    return {
-      body: err.message,
-      statusCode: 400
-    }
+    return { statusCode: 400, body: err.message }
   }
 
-  const signer = getSigner(s3Client, BUCKET_NAME)
-  const key = `${cid}/${cid}.car`
-  const signedUrl = await signer.getUrl(key, {
+  const locateCar = carLocationResolver({ 
+    bucket: getEnv().BUCKET_NAME,
+    s3Client: getS3Client(),
     expiresIn
   })
-  
-  return toLambdaResponse(signedUrl)
+
+  const response = await resolveCar(cid, locateCar) ?? await resolvePiece(cid, locateCar)
+
+  return response ?? {
+    statusCode: 415, 
+    body: 'Unsupported CID type. Please provide a CAR CID or v2 Piece CID.' 
+  }
+}
+
+/**
+ * Return response for a car CID, or undefined for other CID types
+ * 
+ * @param {CID} cid
+ * @param {(cid: CID) => Promise<string | undefined> } locateCar
+ */
+async function resolveCar (cid, locateCar) {
+  if (asCarCid(cid) !== undefined) {
+    const url = await locateCar(cid)
+    if (url) {
+      return redirectTo(url)
+    }
+    return { statusCode: 404, body: 'CAR Not found'}
+  }
+}
+
+/**
+ * Return response for a Piece CID, or undefined for other CID types
+ * 
+ * @param {CID} cid
+ * @param {(cid: CID) => Promise<string | undefined> } locateCar
+ */
+async function resolvePiece (cid, locateCar) {
+  if (asPieceCidV2(cid) !== undefined) {
+    const cars = await findEquivalentCarCids(cid)
+    if (cars.size === 0) {
+      return { statusCode: 404, body: 'No equivalent CAR CID for Piece CID found' }
+    }
+    for (const cid of cars) {
+      const url = await locateCar(cid)
+      if (url) {
+        return redirectTo(url)
+      }
+    }
+    return { statusCode: 404, body: 'No CARs found for Piece CID' }
+  }
+
+  if (asPieceCidV1(cid) !== undefined) {
+    return {
+      statusCode: 415,
+      body: 'v1 Piece CIDs are not supported yet. Please provide a V2 Piece CID. https://github.com/filecoin-project/FIPs/blob/master/FRCs/frc-0069.md'
+    }
+  }
+}
+
+/**
+ * Creates a helper function that returns signed bucket url for a car cid, 
+ * or undefined if the CAR does not exist in the bucket.
+ *
+ * @param {object} config
+ * @param {S3Client} config.s3Client
+ * @param {string} config.bucket
+ * @param {number} config.expiresIn
+ */
+function carLocationResolver ({ s3Client, bucket, expiresIn }) {
+  const signer = getSigner(s3Client, bucket)
+  /**
+   * @param {CID} cid
+   */
+  return async function locateCar (cid) {
+    const key = `${cid}/${cid}.car`
+    return signer.getUrl(key, { expiresIn })
+  }
 }
 
 /**
@@ -86,11 +150,17 @@ function toLambdaResponse(signedUrl) {
       statusCode: 404
     }
   }
+  return redirectTo(signedUrl)
+}
 
+/**
+ * @param {string} url
+ */
+function redirectTo (url) {
   return {
     statusCode: 302,
     headers: {
-      Location: signedUrl
+      Location: url
     }
   }
 }
