@@ -218,7 +218,7 @@ export function UcanFirehoseStack ({ stack, app }) {
   const inputOutputQueryName = getCdkNames('input-output-query', app.stage)
   const inputOutputQuery = new athena.CfnNamedQuery(stack, inputOutputQueryName, {
     name: "Inputs and Outputs, last 24 hours",
-    description: "(w3up preloaded)",
+    description: `${app.stage} w3up preload`,
     database: databaseName,
     queryString: `SELECT 
   value.att[1] as "in",
@@ -233,7 +233,7 @@ WHERE type = 'receipt'
   const dataStoredQueryName = getCdkNames('data-stored-query', app.stage)
   const dataStoredQuery = new athena.CfnNamedQuery(stack, dataStoredQueryName, {
     name: "Data stored by space, last week",
-    description: "(w3up preloaded)",
+    description: `${app.stage} w3up preload`,
     database: databaseName,
     queryString: `SELECT
   SUM(value.att[1].nb.size) AS size,
@@ -251,7 +251,7 @@ GROUP BY value.att[1]."with"
   const storesBySpaceQueryName = getCdkNames('stores-by-space-query', app.stage)
   const storesBySpaceQuery = new athena.CfnNamedQuery(stack, storesBySpaceQueryName, {
     name: "Stores by space, last week",
-    description: "(w3up preloaded)",
+    description: `${app.stage} w3up preload`,
     database: databaseName,
     queryString: `SELECT
   value.att[1].nb.size AS size,
@@ -269,7 +269,7 @@ WHERE value.att[1].can='store/add'
   const uploadsQueryName = getCdkNames('uploads-query', app.stage)
   const uploadsQuery = new athena.CfnNamedQuery(stack, uploadsQueryName, {
     name: "Uploads, last week",
-    description: "(w3up preloaded)",
+    description: `${app.stage} w3up preload`,
     database: databaseName,
     queryString: `SELECT
   value.att[1].nb.root._cid_slash AS cid,
@@ -328,7 +328,7 @@ ORDER BY ts
   const spacesByAccountQueryName = getCdkNames('spaces-by-account-query', app.stage)
   const spacesByAccountQuery = new athena.CfnNamedQuery(stack, spacesByAccountQueryName, {
     name: "Spaces by account",
-    description: "(w3up preloaded)",
+    description: `${app.stage} w3up preload`,
     database: databaseName,
     queryString: `SELECT 
   customer as account,
@@ -343,7 +343,7 @@ FROM "${dynamoDataCatalogDatabaseName}"."default"."${app.stage}-w3infra-subscrip
   const uploadsByAccountQueryName = getCdkNames('uploads-by-account-query', app.stage)
   const uploadsByAccountQuery = new athena.CfnNamedQuery(stack, uploadsByAccountQueryName, {
     name: "Uploads by account",
-    description: "(w3up preloaded)",
+    description: `${app.stage} w3up preload`,
     database: databaseName,
     queryString: `WITH 
 spaces AS (
