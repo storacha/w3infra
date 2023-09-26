@@ -179,7 +179,7 @@ export function UcanFirehoseStack ({ stack, app }) {
       parameters: {
         classification: "json",
         typeOfData: "file",
-        // See See https://docs.aws.amazon.com/athena/latest/ug/partition-projection-kinesis-firehose-example.html for more information on projection
+        // @see https://docs.aws.amazon.com/athena/latest/ug/partition-projection-kinesis-firehose-example.html for more information on projection
         // configuration - this should match the "day" parameter and S3 prefix configured in the delivery stream
         "projection.enabled": "true",
         "projection.day.type": "date",
