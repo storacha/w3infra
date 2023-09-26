@@ -315,6 +315,8 @@ ORDER BY ts
   
   const dynamoAthenaLambdaName = getCdkNames('dynamo-athena', app.stage)
   const athenaDynamoConnector = new aws_sam.CfnApplication(stack, getCdkNames('athena-dynamo-connector', app.stage), {
+    // I got this ARN and version from the AWS admin UI after configuring the Athena Dynamo connector manually using these instructions:
+    // https://docs.aws.amazon.com/athena/latest/ug/connect-data-source-serverless-app-repo.html
     location: {
       applicationId: 'arn:aws:serverlessrepo:us-east-1:292517598671:applications/AthenaDynamoDBConnector',
       semanticVersion: '2023.38.1'
