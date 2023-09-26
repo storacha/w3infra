@@ -215,9 +215,26 @@ export function UcanFirehoseStack ({ stack, app }) {
 
   glueTable.addDependsOn(glueDatabase)
 
+  const athenaResultsBucket = new Bucket(stack, 'athena-w3up-results', {
+    cors: true,
+    cdk: {
+      bucket: {
+        ...getBucketConfig('athena-w3up-results', app.stage),
+        lifecycleRules: [{
+          enabled: true,
+          expiration: Duration.days(7)
+        }]
+      }
+    }
+  })
   const workgroupName = getCdkNames('w3up', app.stage)
   const workgroup = new athena.CfnWorkGroup(stack, workgroupName, {
-    name: workgroupName
+    name: workgroupName,
+    workGroupConfiguration: {
+      resultConfiguration: {
+        outputLocation: `s3://${athenaResultsBucket.bucketName}`
+      }
+    }
   })
   workgroup.addDependsOn(glueTable)
 
@@ -312,7 +329,7 @@ ORDER BY ts
       }
     }
   })
-  
+
   const dynamoAthenaLambdaName = getCdkNames('dynamo-athena', app.stage)
   const athenaDynamoConnector = new aws_sam.CfnApplication(stack, getCdkNames('athena-dynamo-connector', app.stage), {
     // I got this ARN and version from the AWS admin UI after configuring the Athena Dynamo connector manually using these instructions:
