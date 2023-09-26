@@ -129,7 +129,7 @@ export function UcanFirehoseStack ({ stack, app }) {
               {
                 parameterName: 'MetadataExtractionQuery',
                 // extract yyyy-MM-dd formatted current date from millisecond epoch timestamp "ts" using jq syntax
-                parameterValue: '{day: (.ts/1000) | strftime("%Y-%m-%d")}',
+                parameterValue: '{day: (.ts/1000) | strftime("%Y-%m-%d"), type: .type, op: (.value.att[0].can | sub("\/"; "_"))}',
               },
               {
                 parameterName: 'JsonParsingEngine',
@@ -152,7 +152,11 @@ export function UcanFirehoseStack ({ stack, app }) {
       // Daily partitions seem right (https://www.upsolver.com/blog/partitioning-data-s3-improve-performance-athena-presto)
       // "A rough rule of thumb is that each 100 partitions scanned adds about 1 second of latency to your query in Amazon Athena. This is why minutely or hourly
       // partitions are rarely used – typically you would choose between daily, weekly, and monthly partitions, depending on the nature of your queries."
-      prefix: 'logs/!{partitionKeyFromQuery:day}/',
+      // We also partition by "type" (workflow or receipt) and "op" (the invoked UCAN ability name):
+      //  1) Receipts generally have all the information workflows have so we can safely ignore workflows. 
+      //  2) Partitioning by "op" lets us ignore large classes of operations that we don't care about and should
+      //     make queries significantly more efficient.
+      prefix: 'logs/!{partitionKeyFromQuery:type}/!{partitionKeyFromQuery:op}/!{partitionKeyFromQuery:day}/',
       errorOutputPrefix: 'error'
     }
   })
@@ -168,14 +172,15 @@ export function UcanFirehoseStack ({ stack, app }) {
     }
   })
 
-  const tableName = getCdkNames('ucan-stream-delivery-table', app.stage)
-  const glueTable = new glue.CfnTable(stack, tableName, {
+  const tableName = getCdkNames('ucan-receipt-table', app.stage)
+  const receiptTable = new glue.CfnTable(stack, tableName, {
     catalogId: Aws.ACCOUNT_ID,
     databaseName,
     tableInput: {
       name: tableName,
       partitionKeys: [
         { name: 'day', type: 'date' },
+        { name: 'op', type: 'string'}
       ],
       parameters: {
         classification: "json",
@@ -188,16 +193,17 @@ export function UcanFirehoseStack ({ stack, app }) {
         "projection.day.range": "2023-01-01,NOW",
         "projection.day.interval": "1",
         "projection.day.interval.unit": "DAYS",
-        "storage.location.template": `s3://${streamLogBucket.bucketName}/logs/\${day}/`
+        "projection.op.type": "enum",
+        "projection.op.values": 'store_add,upload_add,access_authorize,access_claim,access_delegate,provider_add',
+        "storage.location.template": `s3://${streamLogBucket.bucketName}/logs/receipt/\${op}/\${day}/`
       },
       storageDescriptor: {
-        location: `s3://${streamLogBucket.bucketName}/logs`,
+        location: `s3://${streamLogBucket.bucketName}/logs/receipt/`,
         columns: [
           { name: 'carcid', type: 'string' },
-          { name: 'type', type: 'string' },
           // STRUCT here refers to the Apache Hive STRUCT datatype - see https://aws.amazon.com/blogs/big-data/create-tables-in-amazon-athena-from-nested-json-and-mappings-using-jsonserde/
-          { name: 'value', type: 'STRUCT<att:ARRAY<struct<can:STRING,with:STRING,nb:STRUCT<size:BIGINT,root:STRUCT<_cid_slash:STRING>,consumer:STRING>>>,iss:STRING,aud:STRING>' },
-          { name: "out", type: "STRUCT<error:STRUCT<name:STRING>,ok:STRUCT<id:STRING,delegations:STRING>>" },
+          { name: 'value', type: 'STRUCT<att:ARRAY<struct<can:STRING,with:STRING,nb:STRING>>,iss:STRING,aud:STRING>' },
+          { name: "out", type: "STRUCT<error:STRUCT<name:STRING,message:STRING>,ok:STRING>" },
           { name: "ts", type: "timestamp" }
         ],
         inputFormat: 'org.apache.hadoop.mapred.TextInputFormat',
@@ -212,8 +218,142 @@ export function UcanFirehoseStack ({ stack, app }) {
       }
     }
   })
+  receiptTable.addDependsOn(glueDatabase)
 
-  glueTable.addDependsOn(glueDatabase)
+  const storeAddTableName = getCdkNames('store-add-table', app.stage)
+  const storeAddTable = new glue.CfnTable(stack, storeAddTableName, {
+    catalogId: Aws.ACCOUNT_ID,
+    databaseName,
+    tableInput: {
+      name: storeAddTableName,
+      partitionKeys: [
+        { name: 'day', type: 'date' }
+      ],
+      parameters: {
+        classification: "json",
+        typeOfData: "file",
+        // @see https://docs.aws.amazon.com/athena/latest/ug/partition-projection-kinesis-firehose-example.html for more information on projection
+        // configuration - this should match the "day" parameter and S3 prefix configured in the delivery stream
+        "projection.enabled": "true",
+        "projection.day.type": "date",
+        "projection.day.format": "yyyy-MM-dd",
+        "projection.day.range": "2023-01-01,NOW",
+        "projection.day.interval": "1",
+        "projection.day.interval.unit": "DAYS",
+        "storage.location.template": `s3://${streamLogBucket.bucketName}/logs/receipt/store_add/\${day}/`
+      },
+      storageDescriptor: {
+        location: `s3://${streamLogBucket.bucketName}/logs/receipt/store_add/`,
+        columns: [
+          { name: 'carcid', type: 'string' },
+          // STRUCT here refers to the Apache Hive STRUCT datatype - see https://aws.amazon.com/blogs/big-data/create-tables-in-amazon-athena-from-nested-json-and-mappings-using-jsonserde/
+          { name: 'value', type: 'STRUCT<att:ARRAY<struct<can:STRING,with:STRING,nb:STRUCT<size:BIGINT,link:STRUCT<_cid_slash:STRING>>>>,iss:STRING,aud:STRING>' },
+          { name: "out", type: "STRUCT<error:STRUCT<name:STRING>,ok:STRUCT<link:STRUCT<_cid_slash:STRING>>>" },
+          { name: "ts", type: "timestamp" }
+        ],
+        inputFormat: 'org.apache.hadoop.mapred.TextInputFormat',
+        outputFormat: 'org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat',
+        serdeInfo: {
+          serializationLibrary: 'org.openx.data.jsonserde.JsonSerDe',
+          parameters: {
+            // see https://aws.amazon.com/blogs/big-data/create-tables-in-amazon-athena-from-nested-json-and-mappings-using-jsonserde/
+            'mapping._cid_slash': '/'
+          }
+        }
+      }
+    }
+  })
+  storeAddTable.addDependsOn(glueDatabase)
+
+  const uploadAddTableName = getCdkNames('upload-add-table', app.stage)
+  const uploadAddTable = new glue.CfnTable(stack, uploadAddTableName, {
+    catalogId: Aws.ACCOUNT_ID,
+    databaseName,
+    tableInput: {
+      name: uploadAddTableName,
+      partitionKeys: [
+        { name: 'day', type: 'date' }
+      ],
+      parameters: {
+        classification: "json",
+        typeOfData: "file",
+        // @see https://docs.aws.amazon.com/athena/latest/ug/partition-projection-kinesis-firehose-example.html for more information on projection
+        // configuration - this should match the "day" parameter and S3 prefix configured in the delivery stream
+        "projection.enabled": "true",
+        "projection.day.type": "date",
+        "projection.day.format": "yyyy-MM-dd",
+        "projection.day.range": "2023-01-01,NOW",
+        "projection.day.interval": "1",
+        "projection.day.interval.unit": "DAYS",
+        "storage.location.template": `s3://${streamLogBucket.bucketName}/logs/receipt/upload_add/\${day}/`
+      },
+      storageDescriptor: {
+        location: `s3://${streamLogBucket.bucketName}/logs/receipt/upload_add/`,
+        columns: [
+          { name: 'carcid', type: 'string' },
+          // STRUCT here refers to the Apache Hive STRUCT datatype - see https://aws.amazon.com/blogs/big-data/create-tables-in-amazon-athena-from-nested-json-and-mappings-using-jsonserde/
+          { name: 'value', type: 'STRUCT<att:ARRAY<STRUCT<can:STRING,with:STRING,nb:STRUCT<root:STRUCT<_cid_slash:STRING>,shards:ARRAY<STRUCT<_cid_slash:STRING>>>>>,iss:STRING,aud:STRING>' },
+          { name: "out", type: "STRUCT<error:STRUCT<name:STRING>,ok:STRUCT<root:STRUCT<_cid_slash:STRING>>>" },
+          { name: "ts", type: "timestamp" }
+        ],
+        inputFormat: 'org.apache.hadoop.mapred.TextInputFormat',
+        outputFormat: 'org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat',
+        serdeInfo: {
+          serializationLibrary: 'org.openx.data.jsonserde.JsonSerDe',
+          parameters: {
+            // see https://aws.amazon.com/blogs/big-data/create-tables-in-amazon-athena-from-nested-json-and-mappings-using-jsonserde/
+            'mapping._cid_slash': '/'
+          }
+        }
+      }
+    }
+  })
+  uploadAddTable.addDependsOn(glueDatabase)
+
+  const providerAddTableName = getCdkNames('provider-add-table', app.stage)
+  const providerAddTable = new glue.CfnTable(stack, providerAddTableName, {
+    catalogId: Aws.ACCOUNT_ID,
+    databaseName,
+    tableInput: {
+      name: providerAddTableName,
+      partitionKeys: [
+        { name: 'day', type: 'date' }
+      ],
+      parameters: {
+        classification: "json",
+        typeOfData: "file",
+        // @see https://docs.aws.amazon.com/athena/latest/ug/partition-projection-kinesis-firehose-example.html for more information on projection
+        // configuration - this should match the "day" parameter and S3 prefix configured in the delivery stream
+        "projection.enabled": "true",
+        "projection.day.type": "date",
+        "projection.day.format": "yyyy-MM-dd",
+        "projection.day.range": "2023-01-01,NOW",
+        "projection.day.interval": "1",
+        "projection.day.interval.unit": "DAYS",
+        "storage.location.template": `s3://${streamLogBucket.bucketName}/logs/receipt/provider_add/\${day}/`
+      },
+      storageDescriptor: {
+        location: `s3://${streamLogBucket.bucketName}/logs/receipt/provider_add/`,
+        columns: [
+          { name: 'carcid', type: 'string' },
+          // STRUCT here refers to the Apache Hive STRUCT datatype - see https://aws.amazon.com/blogs/big-data/create-tables-in-amazon-athena-from-nested-json-and-mappings-using-jsonserde/
+          { name: 'value', type: 'STRUCT<att:ARRAY<struct<can:STRING,with:STRING,nb:STRUCT<provider:STRING,consumer:STRING>>>,iss:STRING,aud:STRING>' },
+          { name: "out", type: "STRUCT<error:STRUCT<name:STRING>,ok:STRUCT<root:STRUCT<_cid_slash:STRING>>>" },
+          { name: "ts", type: "timestamp" }
+        ],
+        inputFormat: 'org.apache.hadoop.mapred.TextInputFormat',
+        outputFormat: 'org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat',
+        serdeInfo: {
+          serializationLibrary: 'org.openx.data.jsonserde.JsonSerDe',
+          parameters: {
+            // see https://aws.amazon.com/blogs/big-data/create-tables-in-amazon-athena-from-nested-json-and-mappings-using-jsonserde/
+            'mapping._cid_slash': '/'
+          }
+        }
+      }
+    }
+  })
+  providerAddTable.addDependsOn(glueDatabase)
 
   const athenaResultsBucket = new Bucket(stack, 'athena-w3up-results', {
     cors: true,
@@ -236,7 +376,7 @@ export function UcanFirehoseStack ({ stack, app }) {
       }
     }
   })
-  workgroup.addDependsOn(glueTable)
+  workgroup.addDependsOn(receiptTable)
 
   const inputOutputQueryName = getCdkNames('input-output-query', app.stage)
   const inputOutputQuery = new athena.CfnNamedQuery(stack, inputOutputQueryName, {
@@ -408,7 +548,7 @@ uploads_by_account AS (
   ORDER BY timestamp
 `
   })
-  uploadsByAccountQuery.addDependsOn(glueTable)
+  uploadsByAccountQuery.addDependsOn(receiptTable)
   uploadsByAccountQuery.addDependsOn(dynamoDataCatalog)
   uploadsByAccountQuery.addDependsOn(workgroup)
 
