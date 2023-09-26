@@ -297,6 +297,9 @@ ORDER BY ts
 
   // configure the Athena Dynamo connector
 
+  // Considering Lambda functions limits response sizes, responses larger than the threshold 
+  // spill into an Amazon S3 location that you specify when you create your Lambda function. 
+  // Athena reads these responses from Amazon S3 directly.
   const athenaDynamoSpillBucket = new Bucket(stack, 'athena-dynamo-spill', {
     cors: true,
     cdk: {
