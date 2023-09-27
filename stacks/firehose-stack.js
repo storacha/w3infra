@@ -129,6 +129,9 @@ export function UcanFirehoseStack ({ stack, app }) {
               {
                 parameterName: 'MetadataExtractionQuery',
                 // extract yyyy-MM-dd formatted current date from millisecond epoch timestamp "ts" using jq syntax
+                // extract type ('workflow' or 'receipt')
+                // extract the UCAN ability of the invocation to a key named "op" - this matches the latest UCAN spec https://github.com/ucan-wg/invocation/pull/21/files#diff-b335630551682c19a781afebcf4d07bf978fb1f8ac04c6bf87428ed5106870f5R208
+                //   we replace / with _ here since it will be used in the S3 bucket path and we a) don't want it to collide with the path separator and b) want it to be easy to refer to in queries
                 parameterValue: '{day: (.ts/1000) | strftime("%Y-%m-%d"), type: .type, op: (.value.att[0].can | sub("\/"; "_"))}',
               },
               {
