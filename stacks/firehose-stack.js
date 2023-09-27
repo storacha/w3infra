@@ -172,15 +172,15 @@ export function UcanFirehoseStack ({ stack, app }) {
     }
   })
 
-  const tableName = getCdkNames('ucan-receipt-table', app.stage)
-  const receiptTable = new glue.CfnTable(stack, tableName, {
+  const receiptTableName = getCdkNames('ucan-receipt-table', app.stage)
+  const receiptTable = new glue.CfnTable(stack, receiptTableName, {
     catalogId: Aws.ACCOUNT_ID,
     databaseName,
     tableInput: {
-      name: tableName,
+      name: receiptTableName,
       partitionKeys: [
         { name: 'day', type: 'date' },
-        { name: 'op', type: 'string'}
+        { name: 'op', type: 'string' }
       ],
       parameters: {
         classification: "json",
@@ -376,7 +376,6 @@ export function UcanFirehoseStack ({ stack, app }) {
       }
     }
   })
-  workgroup.addDependsOn(receiptTable)
 
   const inputOutputQueryName = getCdkNames('input-output-query', app.stage)
   const inputOutputQuery = new athena.CfnNamedQuery(stack, inputOutputQueryName, {
@@ -387,70 +386,187 @@ export function UcanFirehoseStack ({ stack, app }) {
     queryString: `SELECT 
   value.att[1] as "in",
   out
-FROM "AwsDataCatalog"."${databaseName}"."${tableName}"
-WHERE type = 'receipt'
-  AND day > (CURRENT_DATE - INTERVAL '1' DAY)
+FROM "AwsDataCatalog"."${databaseName}"."${receiptTableName}"
+WHERE day >= (CURRENT_DATE - INTERVAL '1' DAY)
 `
   })
   inputOutputQuery.addDependsOn(workgroup)
+  inputOutputQuery.addDependsOn(receiptTable)
 
   const dataStoredQueryName = getCdkNames('data-stored-query', app.stage)
   const dataStoredQuery = new athena.CfnNamedQuery(stack, dataStoredQueryName, {
-    name: "Data stored by space, last week",
+    name: "Data stored by space, past 7 days",
     description: `${app.stage} w3up preload`,
     database: databaseName,
     workGroup: workgroupName,
     queryString: `SELECT
   SUM(value.att[1].nb.size) AS size,
   value.att[1]."with" AS space
-FROM "AwsDataCatalog"."${databaseName}"."${tableName}"
-WHERE value.att[1].can='store/add'
-  AND out.ok IS NOT NULL
-  AND type='receipt'
-  AND day > (CURRENT_DATE - INTERVAL '7' DAY)
+FROM "AwsDataCatalog"."${databaseName}"."${storeAddTableName}"
+WHERE out.ok IS NOT NULL
+  AND day >= (CURRENT_DATE - INTERVAL '7' DAY)
 GROUP BY value.att[1]."with"
 `
   })
   dataStoredQuery.addDependsOn(workgroup)
+  dataStoredQuery.addDependsOn(storeAddTable)
 
   const storesBySpaceQueryName = getCdkNames('stores-by-space-query', app.stage)
   const storesBySpaceQuery = new athena.CfnNamedQuery(stack, storesBySpaceQueryName, {
-    name: "Stores by space, last week",
-    description: `${app.stage} w3up preload`,
+    name: "Stores, past 7 days",
+    description: `${app.stage} w3up preload
+    
+Recent uploaded CARs by Customer email and CID`,
     database: databaseName,
     workGroup: workgroupName,
-    queryString: `SELECT
-  value.att[1].nb.size AS size,
-  value.att[1]."with" AS space,
-  ts
-FROM "AwsDataCatalog"."${databaseName}"."${tableName}"
-WHERE value.att[1].can='store/add'
-  AND day > (CURRENT_DATE - INTERVAL '2' DAY)
-  AND out.ok IS NOT NULL
-  AND type='receipt'
+    queryString: `WITH 
+spaces AS (
+  SELECT value.att[1].nb.consumer AS did,
+  value.att[1]."with" AS account
+  FROM "AwsDataCatalog"."${databaseName}"."${providerAddTableName}"  
+  WHERE out.ok IS NOT NULL 
+), 
+stores AS (
+  SELECT value.att[1].nb.link._cid_slash AS cid,
+         value.att[1]."with" AS space,
+         ts
+  FROM "AwsDataCatalog"."${databaseName}"."${storeAddTableName}" 
+  WHERE out.ok IS NOT NULL
+    -- query by both day and ts because day engages partitioning and ts filters out data on the first day in the range
+    AND day >= (CURRENT_DATE - INTERVAL '7' DAY)
+    AND ts >= (CURRENT_TIMESTAMP - INTERVAL '7' DAY)
+),
+stores_by_account AS (
+  SELECT stores.cid AS cid,
+         spaces.account AS account,
+         spaces.did AS space, 
+         stores.ts AS ts
+  FROM stores LEFT JOIN spaces on spaces.did = stores.space
+) SELECT * 
+  FROM stores_by_account 
+  ORDER BY ts
 `
   })
   storesBySpaceQuery.addDependsOn(workgroup)
+  storesBySpaceQuery.addDependsOn(providerAddTable)
+  storesBySpaceQuery.addDependsOn(storeAddTable)
 
   const uploadsQueryName = getCdkNames('uploads-query', app.stage)
   const uploadsQuery = new athena.CfnNamedQuery(stack, uploadsQueryName, {
-    name: "Uploads, last week",
-    description: `${app.stage} w3up preload`,
+    name: "Uploads, past 7 days",
+    description: `${app.stage} w3up preload
+    
+Recent uploaded content by Customer email and CID`,
     database: databaseName,
     workGroup: workgroupName,
-    queryString: `SELECT
-  value.att[1].nb.root._cid_slash AS cid,
-  value.att[1]."with" AS space,
-  ts
-FROM "AwsDataCatalog"."${databaseName}"."${tableName}"
-WHERE value.att[1].can='upload/add'
-  AND day > (CURRENT_DATE - INTERVAL '7' DAY)
-  AND out.ok IS NOT NULL
-  AND type='receipt'
-ORDER BY ts
-`
+    queryString: `WITH 
+spaces AS (
+  SELECT value.att[1].nb.consumer AS did,
+  value.att[1]."with" AS account
+  FROM "AwsDataCatalog"."${databaseName}"."${providerAddTableName}"  
+  WHERE out.ok IS NOT NULL 
+), 
+uploads AS (
+  SELECT value.att[1].nb.root._cid_slash AS cid,
+         value.att[1]."with" AS space,
+         ts
+  FROM "AwsDataCatalog"."${databaseName}"."${uploadAddTableName}" 
+  WHERE out.ok IS NOT NULL
+    -- query by both day and ts because day engages partitioning and ts filters out data on the first day in the range
+    AND day >= (CURRENT_DATE - INTERVAL '7' DAY)
+    AND ts >= (CURRENT_TIMESTAMP - INTERVAL '7' DAY)
+),
+uploads_by_account AS (
+  SELECT uploads.cid AS cid,
+         spaces.account AS account,
+         spaces.did AS space, 
+         uploads.ts AS ts
+  FROM uploads LEFT JOIN spaces on spaces.did = uploads.space
+) SELECT * 
+  FROM uploads_by_account 
+  ORDER BY ts
+  `
   })
   uploadsQuery.addDependsOn(workgroup)
+  uploadsQuery.addDependsOn(providerAddTable)
+  uploadsQuery.addDependsOn(uploadAddTable)
+
+  const uploadVolumeSizeQueryName = getCdkNames('upload-volume-size-query', app.stage)
+  const uploadVolumeSizeQuery = new athena.CfnNamedQuery(stack, uploadVolumeSizeQueryName, {
+    name: "Users with highest upload volume (by size), past day",
+    description: `${app.stage} w3up preload
+    
+Global view of users with most upload volume (by size) in the last 24 hours by their registered email`,
+    database: databaseName,
+    workGroup: workgroupName,
+    queryString: `WITH 
+spaces AS (
+  SELECT value.att[1].nb.consumer AS did,
+         value.att[1]."with" AS account
+  FROM "AwsDataCatalog"."${databaseName}"."${providerAddTableName}"  
+  WHERE out.ok IS NOT NULL 
+), 
+stores AS (
+  SELECT value.att[1].nb.size AS size,
+         value.att[1]."with" AS space
+  FROM "AwsDataCatalog"."${databaseName}"."${storeAddTableName}" 
+  WHERE out.ok IS NOT NULL
+    -- query by both day and ts because day engages partitioning and ts filters out data on the first day in the range
+    AND day >= (CURRENT_DATE - INTERVAL '1' DAY)
+    AND ts >= (CURRENT_TIMESTAMP - INTERVAL '1' DAY)
+),
+stores_by_account AS (
+  SELECT spaces.account AS account,
+         stores.size AS size         
+  FROM stores LEFT JOIN spaces on spaces.did = stores.space
+) SELECT account, SUM(size) as size
+  FROM stores_by_account 
+  GROUP BY account
+  ORDER BY size DESC
+`
+  })
+  uploadVolumeSizeQuery.addDependsOn(workgroup)
+  uploadVolumeSizeQuery.addDependsOn(providerAddTable)
+  uploadVolumeSizeQuery.addDependsOn(storeAddTable)
+
+  const uploadVolumeCountQueryName = getCdkNames('upload-volume-count-query', app.stage)
+  const uploadVolumeCountQuery = new athena.CfnNamedQuery(stack, uploadVolumeCountQueryName, {
+    name: "Users with highest upload volume (by count), past day",
+    description: `${app.stage} w3up preload
+    
+Global view of users with most upload volume (by count) in the last 24 hours by their registered email`,
+    database: databaseName,
+    workGroup: workgroupName,
+    queryString: `WITH 
+spaces AS (
+  SELECT value.att[1].nb.consumer AS did,
+         value.att[1]."with" AS account
+  FROM "AwsDataCatalog"."${databaseName}"."${providerAddTableName}"
+  WHERE out.ok IS NOT NULL 
+), 
+uploads AS (
+  SELECT value.att[1].nb.root._cid_slash AS cid,
+         value.att[1]."with" AS space,
+         1 AS count
+  FROM "AwsDataCatalog"."${databaseName}"."${uploadAddTableName}"
+  WHERE out.ok IS NOT NULL
+    -- query by both day and ts because day engages partitioning and ts filters out data on the first day in the range
+    AND day >= (CURRENT_DATE - INTERVAL '1' DAY)
+    AND ts >= (CURRENT_TIMESTAMP - INTERVAL '1' DAY)
+),
+uploads_by_account AS (
+  SELECT spaces.account AS account,
+         uploads.count AS count
+  FROM uploads LEFT JOIN spaces on spaces.did = uploads.space
+) SELECT account, SUM(count) as count
+  FROM uploads_by_account 
+  GROUP BY account
+  ORDER BY count DESC
+`
+  })
+  uploadVolumeCountQuery.addDependsOn(workgroup)
+  uploadVolumeCountQuery.addDependsOn(providerAddTable)
+  uploadVolumeCountQuery.addDependsOn(storeAddTable)
 
   // configure the Athena Dynamo connector
 
@@ -499,7 +615,7 @@ ORDER BY ts
 
   const spacesByAccountQueryName = getCdkNames('spaces-by-account-query', app.stage)
   const spacesByAccountQuery = new athena.CfnNamedQuery(stack, spacesByAccountQueryName, {
-    name: "Spaces by account",
+    name: "Dynamo: spaces by account",
     description: `${app.stage} w3up preload`,
     database: databaseName,
     workGroup: workgroupName,
@@ -516,7 +632,7 @@ FROM "${dynamoDataCatalogDatabaseName}"."default"."${app.stage}-w3infra-subscrip
 
   const uploadsByAccountQueryName = getCdkNames('uploads-by-account-query', app.stage)
   const uploadsByAccountQuery = new athena.CfnNamedQuery(stack, uploadsByAccountQueryName, {
-    name: "Uploads by account",
+    name: "Dynamo: uploads by account",
     description: `${app.stage} w3up preload`,
     database: databaseName,
     workGroup: workgroupName,
@@ -532,7 +648,7 @@ uploads AS (
   SELECT value.att[1].nb.root._cid_slash AS cid,
          value.att[1]."with" AS space,
          ts
-  FROM "AwsDataCatalog"."${databaseName}"."${tableName}" 
+  FROM "AwsDataCatalog"."${databaseName}"."${receiptTableName}" 
   WHERE value.att[1].can='upload/add' 
     AND out.ok IS NOT NULL 
     AND type='receipt'
