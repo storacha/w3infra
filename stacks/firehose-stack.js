@@ -571,6 +571,58 @@ uploads_by_account AS (
   uploadVolumeCountQuery.addDependsOn(providerAddTable)
   uploadVolumeCountQuery.addDependsOn(storeAddTable)
 
+  const uploadsBySpaceAndSizeQueryName = getCdkNames('uploads-by-space-and-size', app.stage)
+  const uploadsBySpaceAndSizeQuery = new athena.CfnNamedQuery(stack, uploadsBySpaceAndSizeQueryName, {
+    name: "Uploads by space and size, last 2 days",
+    description: `${app.stage} w3up preload
+    
+Uploads over the last 2 days, with size aggregated from corresponding "store" operations.`,
+    database: databaseName,
+    workGroup: workgroupName,
+    queryString: `WITH 
+uploads_by_shard AS (
+  SELECT 
+    carcid AS id,
+    ts,
+    uploads.value.att[1]."with" AS space,
+    uploads.value.att[1].nb.root._cid_slash AS root,
+    shards.cid._cid_slash AS shard
+  FROM "AwsDataCatalog"."${databaseName}"."${uploadAddTableName}" AS uploads
+  CROSS JOIN UNNEST(uploads.value.att[1].nb.shards) AS shards (cid)
+  WHERE uploads.day >= (CURRENT_DATE - INTERVAL '2' DAY)
+),
+stores_by_size AS (
+  SELECT
+    carcid AS id,
+    ts,
+    stores.value.att[1].nb.link._cid_slash AS cid,
+    stores.value.att[1].nb.size AS size
+  FROM "AwsDataCatalog"."${databaseName}"."${storeAddTableName}" AS stores
+  WHERE stores.day >= (CURRENT_DATE - INTERVAL '2' DAY)
+),
+upload_shards_by_size AS (
+  SELECT DISTINCT
+    uploads_by_shard.ts AS upload_ts,
+    uploads_by_shard.space AS space,
+    uploads_by_shard.root AS content_cid,
+    stores_by_size.cid AS car_cid,
+    stores_by_size.size AS size
+  FROM uploads_by_shard JOIN stores_by_size ON uploads_by_shard.shard = stores_by_size.cid
+) SELECT  
+  upload_ts,
+  space,
+  content_cid,
+  SUM(size) AS size
+FROM upload_shards_by_size
+WHERE upload_ts >= (CURRENT_TIMESTAMP - INTERVAL '2' DAY)
+GROUP BY upload_ts, space, content_cid
+ORDER BY upload_ts DESC
+`
+  })
+  uploadsBySpaceAndSizeQuery.addDependsOn(workgroup)
+  uploadsBySpaceAndSizeQuery.addDependsOn(uploadAddTable)
+  uploadsBySpaceAndSizeQuery.addDependsOn(storeAddTable)
+
   // configure the Athena Dynamo connector
 
   // Considering Lambda functions limits response sizes, responses larger than the threshold 
