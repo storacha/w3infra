@@ -41,12 +41,14 @@ export const delegationTableProps = {
     audience: 'string',   // `did:web:service`
     issuer: 'string',     // `did:key:agent`
     expiration: 'number', // `9256939505` (unix timestamp in seconds)
+    revoked: 'bool',    // true
     insertedAt: 'string', // `2022-12-24T...`
     updatedAt: 'string',  // `2022-12-24T...`
   },
   primaryIndex: { partitionKey: 'link' },
   globalIndexes: {
-    audience: { partitionKey: 'audience', projection: ['link'] }
+    audience: { partitionKey: 'audience', projection: ['link'] },
+    audienceWithRevoked: { partitionKey: 'audience', projection: ['link', 'revoked'] }
   }
 }
 
@@ -98,4 +100,14 @@ export const rateLimitTableProps = {
   globalIndexes: {
     subject: { partitionKey: 'subject', projection: ['rate', 'id'] },
   }
+}
+
+/** @type TableProps */
+export const revocationTableProps = {
+  fields: {
+    invocation: 'string', // `baf...x`(CID of the revoked invocation)
+    revocation: 'string', // `baf...x` (CID of the revocation)
+    insertedAt: 'string', // `2022-12-24T...`
+  },
+  primaryIndex: { partitionKey: 'invocation' }
 }

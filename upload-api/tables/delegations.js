@@ -4,6 +4,7 @@ import {
   QueryCommand,
   BatchWriteItemCommand,
   DescribeTableCommand,
+  UpdateItemCommand,
 } from '@aws-sdk/client-dynamodb'
 import { marshall, unmarshall } from '@aws-sdk/util-dynamodb'
 // eslint-disable-next-line no-unused-vars
@@ -21,6 +22,7 @@ import {
   NoDelegationFoundForGivenCidError,
   FailedToDecodeDelegationForGivenCidError
 } from '../errors.js'
+import { dynamo } from '../test/helpers/context.js'
 
 
 // Feature flag for looking up delegations in the invocations in which
@@ -64,9 +66,10 @@ export function createDelegationsTable (region, tableName, { bucket, invocationB
  * @param {import('../types').DelegationsBucket} deps.bucket
  * @param {import('../types').InvocationBucket} deps.invocationBucket
  * @param {import('../types').WorkflowBucket} deps.workflowBucket
+ * @param {import('../types').RevocationsTable} deps.revocationsTable
  * @returns {import('@web3-storage/upload-api').DelegationsStorage}
  */
-export function useDelegationsTable (dynamoDb, tableName, { bucket, invocationBucket, workflowBucket }) {
+export function useDelegationsTable (dynamoDb, tableName, { bucket, invocationBucket, workflowBucket, revocationsTable }) {
   return {
     putMany: async (delegations, options = {}) => {
       if (delegations.length === 0) {
@@ -112,15 +115,15 @@ export function useDelegationsTable (dynamoDb, tableName, { bucket, invocationBu
     find: async (query) => {
       const cmd = new QueryCommand({
         TableName: tableName,
-        IndexName: 'audience',
+        IndexName: 'audienceWithRevoked',
         Limit: DELEGATIONS_FIND_DEFAULT_LIMIT, // TODO this should probably be configurable using an `options` hash
-        KeyConditions: {
-          audience: {
-            ComparisonOperator: 'EQ',
-            AttributeValueList: [{ S: query.audience }]
-          }
-        },
-        AttributesToGet: ['link']
+        KeyConditionExpression: 'audience = :audience',
+        FilterExpression: 'revoked = :false or attribute_not_exists(revoked)',
+        ExpressionAttributeValues: marshall({
+          ':audience': query.audience,
+          ':false': false,
+        }),
+        ProjectionExpression: 'link'
       })
       const response = await dynamoDb.send(cmd)
 
@@ -159,6 +162,28 @@ export function useDelegationsTable (dynamoDb, tableName, { bucket, invocationBu
       }
       return {
         ok: delegations
+      }
+    },
+
+    revoke: async (revocation) => {
+      await revocationsTable.put(revocation.revoke, revocation.cid)
+      await dynamoDb.send(new UpdateItemCommand({
+        TableName: tableName,
+        Key: marshall({ link: revocation.revoke.toString() }),
+        UpdateExpression: 'SET revoked = :revoked',
+        ExpressionAttributeValues: marshall({
+          ':revoked': true
+        })
+      }))
+      return { ok: {} }
+    },
+
+    areAnyRevoked: async (delegationCids) => {
+      try {
+        const result = await revocationsTable.hasAny(delegationCids)
+        return { ok: result }
+      } catch (e) {
+        return { error: e }
       }
     }
   }

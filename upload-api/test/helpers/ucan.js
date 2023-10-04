@@ -9,7 +9,7 @@ import {
   createBucket,
   createTable
 } from '../helpers/resources.js';
-import { storeTableProps, uploadTableProps, consumerTableProps, delegationTableProps, subscriptionTableProps, rateLimitTableProps } from '../../tables/index.js';
+import { storeTableProps, uploadTableProps, consumerTableProps, delegationTableProps, subscriptionTableProps, rateLimitTableProps, revocationTableProps } from '../../tables/index.js';
 import { useCarStore } from '../../buckets/car-store.js';
 import { useDudewhereStore } from '../../buckets/dudewhere-store.js';
 import { useStoreTable } from '../../tables/store.js';
@@ -18,6 +18,7 @@ import { useProvisionStore } from '../../stores/provisions.js';
 import { useConsumerTable } from '../../tables/consumer.js';
 import { useSubscriptionTable } from '../../tables/subscription.js';
 import { useDelegationsTable } from '../../tables/delegations.js';
+import { useRevocationsTable } from '../../tables/revocations.js';
 import { useDelegationsStore } from '../../buckets/delegations-store.js';
 import { useInvocationStore } from '../../buckets/invocation-store.js';
 import { useWorkflowStore } from '../../buckets/workflow-store.js';
@@ -198,14 +199,18 @@ export async function executionContextToUcantoTestServerContext (t) {
   const invocationsBucketName = await createBucket(s3);
   const workflowBucketName = await createBucket(s3);
 
-
+  const revocationsTable = useRevocationsTable(
+    dynamo,
+    await createTable(dynamo, revocationTableProps)
+  )
   const delegationsStorage = useDelegationsTable(
     dynamo,
     await createTable(dynamo, delegationTableProps),
     {
       bucket: useDelegationsStore(s3, delegationsBucketName),
       invocationBucket: useInvocationStore(s3, invocationsBucketName),
-      workflowBucket: useWorkflowStore(s3, workflowBucketName)
+      workflowBucket: useWorkflowStore(s3, workflowBucketName),
+      revocationsTable
     }
   );
   const rateLimitsStorage = useRateLimitTable(

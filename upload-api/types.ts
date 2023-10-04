@@ -53,6 +53,11 @@ export interface DelegationsBucket {
   get: (cid: CID) => Promise<ByteView<Delegation>|undefined>
 }
 
+export interface RevocationsTable {
+  put: (invocationCID: CID, revocationCID: CID) => Promise<void>
+  hasAny: (invocationCIDs: CID[]) => Promise<boolean>
+}
+
 export interface MetricsTable {
   /**
    * Get all metrics from table.
