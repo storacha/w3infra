@@ -7,7 +7,7 @@ import {
   aws_kinesisfirehose as firehose,
   aws_glue as glue,
   aws_athena as athena,
-  aws_sam
+  aws_sam as sam
 } from 'aws-cdk-lib'
 
 import { UcanInvocationStack } from './ucan-invocation-stack.js'
@@ -132,6 +132,7 @@ export function UcanFirehoseStack ({ stack, app }) {
                 // extract type ('workflow' or 'receipt')
                 // extract the UCAN ability of the invocation to a key named "op" - this matches the latest UCAN spec https://github.com/ucan-wg/invocation/pull/21/files#diff-b335630551682c19a781afebcf4d07bf978fb1f8ac04c6bf87428ed5106870f5R208
                 //   we replace / with _ here since it will be used in the S3 bucket path and we a) don't want it to collide with the path separator and b) want it to be easy to refer to in queries
+                // eslint-disable-next-line no-useless-escape
                 parameterValue: '{day: (.ts/1000) | strftime("%Y-%m-%d"), type: .type, op: (.value.att[0].can | gsub("\/"; "_"))}',
               },
               {
@@ -684,7 +685,7 @@ ORDER BY upload_ts DESC
   })
 
   const dynamoAthenaLambdaName = getCdkNames('dynamo-athena', app.stage)
-  const athenaDynamoConnector = new aws_sam.CfnApplication(stack, getCdkNames('athena-dynamo-connector', app.stage), {
+  const athenaDynamoConnector = new sam.CfnApplication(stack, getCdkNames('athena-dynamo-connector', app.stage), {
     // I got this ARN and version from the AWS admin UI after configuring the Athena Dynamo connector manually using these instructions:
     // https://docs.aws.amazon.com/athena/latest/ug/connect-data-source-serverless-app-repo.html
     location: {
