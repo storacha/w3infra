@@ -22,8 +22,6 @@ import {
   NoDelegationFoundForGivenCidError,
   FailedToDecodeDelegationForGivenCidError
 } from '../errors.js'
-import { dynamo } from '../test/helpers/context.js'
-
 
 // Feature flag for looking up delegations in the invocations in which
 // they were originally embeded.
@@ -115,13 +113,11 @@ export function useDelegationsTable (dynamoDb, tableName, { bucket, invocationBu
     find: async (query) => {
       const cmd = new QueryCommand({
         TableName: tableName,
-        IndexName: 'audienceWithRevoked',
+        IndexName: 'audience',
         Limit: DELEGATIONS_FIND_DEFAULT_LIMIT, // TODO this should probably be configurable using an `options` hash
         KeyConditionExpression: 'audience = :audience',
-        FilterExpression: 'revoked = :false or attribute_not_exists(revoked)',
         ExpressionAttributeValues: marshall({
           ':audience': query.audience,
-          ':false': false,
         }),
         ProjectionExpression: 'link'
       })
@@ -165,22 +161,14 @@ export function useDelegationsTable (dynamoDb, tableName, { bucket, invocationBu
       }
     },
 
-    revoke: async (revocation) => {
-      await revocationsTable.put(revocation.revoke, revocation.cid)
-      await dynamoDb.send(new UpdateItemCommand({
-        TableName: tableName,
-        Key: marshall({ link: revocation.revoke.toString() }),
-        UpdateExpression: 'SET revoked = :revoked',
-        ExpressionAttributeValues: marshall({
-          ':revoked': true
-        })
-      }))
+    revoke: async (delegationCID, contextCID, causeCID) => {
+      await revocationsTable.put(delegationCID, contextCID, causeCID)
       return { ok: {} }
     },
 
-    areAnyRevoked: async (delegationCids) => {
+    getRevocations: async (delegationCIDs) => {
       try {
-        const result = await revocationsTable.hasAny(delegationCids)
+        const result = await revocationsTable.getRevocations(delegationCIDs)
         return { ok: result }
       } catch (e) {
         return { error: e }

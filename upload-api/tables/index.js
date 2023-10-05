@@ -41,14 +41,12 @@ export const delegationTableProps = {
     audience: 'string',   // `did:web:service`
     issuer: 'string',     // `did:key:agent`
     expiration: 'number', // `9256939505` (unix timestamp in seconds)
-    revoked: 'bool',    // true
     insertedAt: 'string', // `2022-12-24T...`
     updatedAt: 'string',  // `2022-12-24T...`
   },
   primaryIndex: { partitionKey: 'link' },
   globalIndexes: {
     audience: { partitionKey: 'audience', projection: ['link'] },
-    audienceWithRevoked: { partitionKey: 'audience', projection: ['link', 'revoked'] }
   }
 }
 
@@ -102,12 +100,23 @@ export const rateLimitTableProps = {
   }
 }
 
-/** @type TableProps */
+/**
+ * Track delegations.
+ * 
+ * This table is designed to be batch-GET-queried by delegation CIDs,
+ * (which means the primary key MUST be just the delegation CID) but needs to accomodate
+ * multiple possible "revocation context CIDs" each with its own "cause CID". Because
+ * BatchGetCommand only works on primary tables, not indices, we need to cram
+ * the context CID and the cause CIDs into a "set" field of :-separated contextCID:causeCID
+ * strings.
+ * 
+ * @type TableProps 
+*/
 export const revocationTableProps = {
   fields: {
-    invocation: 'string', // `baf...x`(CID of the revoked invocation)
-    revocation: 'string', // `baf...x` (CID of the revocation)
-    insertedAt: 'string', // `2022-12-24T...`
+    delegation: 'string',     // `baf...x`(CID of the revoked delegation)
+    // @ts-ignore SST seems to incorrectly limit the set of field types to the three types suitable for index keys - hopefully this is fixed in the next versoin
+    contextsAndCauses: 'set'  // a set of :-separated contextCID:causeCID pairs
   },
-  primaryIndex: { partitionKey: 'invocation' }
+  primaryIndex: { partitionKey: 'delegation'}
 }
