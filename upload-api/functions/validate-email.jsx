@@ -9,6 +9,7 @@ import { createInvocationStore } from '../buckets/invocation-store.js'
 import { createWorkflowStore } from '../buckets/workflow-store.js'
 import { createSubscriptionTable } from '../tables/subscription.js'
 import { createConsumerTable } from '../tables/consumer.js'
+import { createRevocationsTable } from '../stores/revocations.js'
 
 import { useProvisionStore } from '../stores/provisions.js'
 import {
@@ -67,6 +68,7 @@ function createAuthorizeContext () {
     ACCESS_SERVICE_URL = '',
     AWS_REGION = '',
     DELEGATION_TABLE_NAME = '',
+    REVOCATION_TABLE_NAME = '',
     RATE_LIMIT_TABLE_NAME = '',
     SPACE_METRICS_TABLE_NAME = '',
     R2_ENDPOINT = '',
@@ -103,6 +105,7 @@ function createAuthorizeContext () {
     email: new Email({ token: POSTMARK_TOKEN }),
     signer: getServiceSigner({ UPLOAD_API_DID, PRIVATE_KEY }),
     delegationsStorage: createDelegationsTable(AWS_REGION, DELEGATION_TABLE_NAME, { bucket: delegationBucket, invocationBucket, workflowBucket }),
+    revocationsStorage: createRevocationsTable(AWS_REGION, REVOCATION_TABLE_NAME),
     provisionsStorage: useProvisionStore(subscriptionTable, consumerTable, spaceMetricsTable, parseServiceDids(PROVIDERS)),
     rateLimitsStorage: createRateLimitTable(AWS_REGION, RATE_LIMIT_TABLE_NAME)
   }

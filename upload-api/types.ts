@@ -3,7 +3,7 @@ import { DID, Link, Delegation, Signature, Block, UCANLink, ByteView, DIDKey } f
 import { UnknownLink } from 'multiformats'
 import { CID } from 'multiformats/cid'
 import { Kinesis } from '@aws-sdk/client-kinesis'
-import { ProviderDID, Service, RevocationsToMeta } from '@web3-storage/upload-api'
+import { ProviderDID, Service } from '@web3-storage/upload-api'
 
 
 export interface UcanLogCtx extends WorkflowCtx, ReceiptBlockCtx {
@@ -51,11 +51,6 @@ export interface DelegationsBucket {
   put: (cid: CID, bytes: ByteView<Delegation>) => Promise<void>
   /** get a delegation from the delegations bucket */
   get: (cid: CID) => Promise<ByteView<Delegation>|undefined>
-}
-
-export interface RevocationsTable {
-  put: (delegationCID: CID, contextCID: CID, causeCID: CID) => Promise<void>
-  getRevocations: (invocationCIDs: CID[]) => Promise<RevocationsToMeta>
 }
 
 export interface MetricsTable {

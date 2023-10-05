@@ -18,7 +18,7 @@ import { useProvisionStore } from '../../stores/provisions.js';
 import { useConsumerTable } from '../../tables/consumer.js';
 import { useSubscriptionTable } from '../../tables/subscription.js';
 import { useDelegationsTable } from '../../tables/delegations.js';
-import { useRevocationsTable } from '../../tables/revocations.js';
+import { useRevocationsTable } from '../../stores/revocations.js';
 import { useDelegationsStore } from '../../buckets/delegations-store.js';
 import { useInvocationStore } from '../../buckets/invocation-store.js';
 import { useWorkflowStore } from '../../buckets/workflow-store.js';
@@ -199,7 +199,7 @@ export async function executionContextToUcantoTestServerContext (t) {
   const invocationsBucketName = await createBucket(s3);
   const workflowBucketName = await createBucket(s3);
 
-  const revocationsTable = useRevocationsTable(
+  const revocationsStorage = useRevocationsTable(
     dynamo,
     await createTable(dynamo, revocationTableProps)
   )
@@ -210,7 +210,6 @@ export async function executionContextToUcantoTestServerContext (t) {
       bucket: useDelegationsStore(s3, delegationsBucketName),
       invocationBucket: useInvocationStore(s3, invocationsBucketName),
       workflowBucket: useWorkflowStore(s3, workflowBucketName),
-      revocationsTable
     }
   );
   const rateLimitsStorage = useRateLimitTable(
@@ -246,6 +245,7 @@ export async function executionContextToUcantoTestServerContext (t) {
     provisionsStorage,
     delegationsStorage,
     rateLimitsStorage,
+    revocationsStorage,
     errorReporter: {
       catch (error) {
         t.fail(error.message);

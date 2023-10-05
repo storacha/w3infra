@@ -14,7 +14,7 @@ import { parseLink } from '@ucanto/core'
  * @param {object} [options]
  * @param {string} [options.endpoint]
  */
-export function createRevocationsTable(region, tableName, options = {}) {
+export function createRevocationsTable (region, tableName, options = {}) {
   const dynamoDb = new DynamoDBClient({
     region,
     endpoint: options.endpoint,
@@ -26,24 +26,27 @@ export function createRevocationsTable(region, tableName, options = {}) {
 /**
  * @param {DynamoDBClient} dynamoDb
  * @param {string} tableName
- * @returns {import('../types').RevocationsTable}
+ * @returns {import('@web3-storage/upload-api').RevocationsStorage}
  */
 export function useRevocationsTable(dynamoDb, tableName) {
   return {
-    async put (delegationCID, contextCID, causeCID) {
-      await dynamoDb.send(new UpdateItemCommand({
-        TableName: tableName,
-        Key: marshall({
-          delegation: delegationCID.toString(),
-        }),
-        UpdateExpression: 'ADD contextsAndCauses :candc',
-        ExpressionAttributeValues: marshall({
-          ':candc': new Set([`${contextCID.toString()}:${causeCID.toString()}`])
-        })
-      }))
+    async addAll(revocations) {
+      for (const revocation of revocations) {
+        await dynamoDb.send(new UpdateItemCommand({
+          TableName: tableName,
+          Key: marshall({
+            delegation: revocation.revoke.toString(),
+          }),
+          UpdateExpression: 'ADD contextsAndCauses :candc',
+          ExpressionAttributeValues: marshall({
+            ':candc': new Set([`${revocation.scope.toString()}:${revocation.cause.toString()}`])
+          })
+        }))
+      }
+      return { ok: {} }
     },
 
-    async getRevocations(delegationCIDs) {
+    async getAll(delegationCIDs) {
       // BatchGetItem only supports batches of 100 and return values under 16MB
       // https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_BatchGetItem.html
       // limiting to 100 should be fine for now, and since we don't return much data we should always
@@ -69,19 +72,24 @@ export function useRevocationsTable(dynamoDb, tableName) {
         throw new Error('Dynamo did not process all keys')
       }
 
-      return delegationCIDs.reduce((m, delegationCID, i) => {
-        const res = result.Responses?.[tableName][i]
-        if (res) {
-          m[/** @type {string} */(delegationCID.toString())] = Array.from(unmarshall(res).contextsAndCauses).map(candc => {
-            const [context, cause] = candc.split(":")
-            return {
-              context: parseLink(context),
-              cause: parseLink(cause)
+      const revocations = delegationCIDs.reduce(
+        (/** @type {import('@web3-storage/upload-api').Revocation[]} */m,
+          delegationCID,
+          i) => {
+          const res = result.Responses?.[tableName][i]
+          if (res) {
+            for (const scopeAndCause of unmarshall(res).contextsAndCauses) {
+              const [context, cause] = scopeAndCause.split(":")
+              m.push({
+                revoke: delegationCID,
+                scope: parseLink(context),
+                cause: parseLink(cause)
+              })
             }
-          })
-        }
-        return m
-      }, /** @type {import('@web3-storage/upload-api').RevocationsToMeta} */({}))
+          }
+          return m
+        }, [])
+      return { ok: revocations }
     }
   }
 }

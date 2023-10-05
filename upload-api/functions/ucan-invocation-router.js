@@ -24,6 +24,7 @@ import { createConsumerTable } from '../tables/consumer.js'
 import { createRateLimitTable } from '../tables/rate-limit.js'
 import { createSpaceMetricsTable } from '../tables/space-metrics.js'
 import { mustGetEnv } from './utils.js'
+import { createRevocationsTable } from '../stores/revocations.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -87,6 +88,7 @@ export async function ucanInvocationRouter(request) {
     consumerTableName,
     subscriptionTableName,
     delegationTableName,
+    revocationTableName,
     spaceMetricsTableName,
     rateLimitTableName,
     r2DelegationBucketEndpoint,
@@ -132,6 +134,7 @@ export async function ucanInvocationRouter(request) {
 
   const provisionsStorage = useProvisionStore(subscriptionTable, consumerTable, spaceMetricsTable, parseServiceDids(providers))
   const delegationsStorage = createDelegationsTable(AWS_REGION, delegationTableName, { bucket: delegationBucket, invocationBucket, workflowBucket })
+  const revocationsStorage = createRevocationsTable(AWS_REGION, revocationTableName)
 
   const server = createUcantoServer(serviceSigner, {
     codec,
@@ -155,6 +158,7 @@ export async function ucanInvocationRouter(request) {
     email: new Email({ token: postmarkToken }),
     provisionsStorage,
     delegationsStorage,
+    revocationsStorage,
     rateLimitsStorage
   })
 
@@ -242,6 +246,7 @@ function getLambdaEnv () {
     consumerTableName: mustGetEnv('CONSUMER_TABLE_NAME'),
     subscriptionTableName: mustGetEnv('SUBSCRIPTION_TABLE_NAME'),
     delegationTableName: mustGetEnv('DELEGATION_TABLE_NAME'),
+    revocationTableName: mustGetEnv('REVOCATION_TABLE_NAME'),
     spaceMetricsTableName: mustGetEnv('SPACE_METRICS_TABLE_NAME'),
     rateLimitTableName: mustGetEnv('RATE_LIMIT_TABLE_NAME'),
     r2DelegationBucketEndpoint: mustGetEnv('R2_ENDPOINT'),

@@ -44,17 +44,16 @@ const DELEGATIONS_FIND_DEFAULT_LIMIT = 1000
  * @param {import('../types').DelegationsBucket} deps.bucket
  * @param {import('../types').InvocationBucket} deps.invocationBucket
  * @param {import('../types').WorkflowBucket} deps.workflowBucket
- * @param {import('../types').RevocationsTable} deps.revocationsTable
  * @param {object} [options]
  * @param {string} [options.endpoint]
  */
-export function createDelegationsTable (region, tableName, { bucket, invocationBucket, workflowBucket, revocationsTable }, options = {}) {
+export function createDelegationsTable (region, tableName, { bucket, invocationBucket, workflowBucket }, options = {}) {
   const dynamoDb = new DynamoDBClient({
     region,
     endpoint: options.endpoint,
   })
 
-  return useDelegationsTable(dynamoDb, tableName, { bucket, invocationBucket, workflowBucket, revocationsTable })
+  return useDelegationsTable(dynamoDb, tableName, { bucket, invocationBucket, workflowBucket })
 }
 
 /**
@@ -64,10 +63,9 @@ export function createDelegationsTable (region, tableName, { bucket, invocationB
  * @param {import('../types').DelegationsBucket} deps.bucket
  * @param {import('../types').InvocationBucket} deps.invocationBucket
  * @param {import('../types').WorkflowBucket} deps.workflowBucket
- * @param {import('../types').RevocationsTable} deps.revocationsTable
  * @returns {import('@web3-storage/upload-api').DelegationsStorage}
  */
-export function useDelegationsTable (dynamoDb, tableName, { bucket, invocationBucket, workflowBucket, revocationsTable }) {
+export function useDelegationsTable (dynamoDb, tableName, { bucket, invocationBucket, workflowBucket }) {
   return {
     putMany: async (delegations, options = {}) => {
       if (delegations.length === 0) {
@@ -160,20 +158,6 @@ export function useDelegationsTable (dynamoDb, tableName, { bucket, invocationBu
         ok: delegations
       }
     },
-
-    revoke: async (delegationCID, contextCID, causeCID) => {
-      await revocationsTable.put(delegationCID, contextCID, causeCID)
-      return { ok: {} }
-    },
-
-    getRevocations: async (delegationCIDs) => {
-      try {
-        const result = await revocationsTable.getRevocations(delegationCIDs)
-        return { ok: result }
-      } catch (e) {
-        return { error: e }
-      }
-    }
   }
 }
 
