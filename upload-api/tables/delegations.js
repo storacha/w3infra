@@ -4,7 +4,6 @@ import {
   QueryCommand,
   BatchWriteItemCommand,
   DescribeTableCommand,
-  UpdateItemCommand,
 } from '@aws-sdk/client-dynamodb'
 import { marshall, unmarshall } from '@aws-sdk/util-dynamodb'
 // eslint-disable-next-line no-unused-vars
@@ -45,16 +44,17 @@ const DELEGATIONS_FIND_DEFAULT_LIMIT = 1000
  * @param {import('../types').DelegationsBucket} deps.bucket
  * @param {import('../types').InvocationBucket} deps.invocationBucket
  * @param {import('../types').WorkflowBucket} deps.workflowBucket
+ * @param {import('../types').RevocationsTable} deps.revocationsTable
  * @param {object} [options]
  * @param {string} [options.endpoint]
  */
-export function createDelegationsTable (region, tableName, { bucket, invocationBucket, workflowBucket }, options = {}) {
+export function createDelegationsTable (region, tableName, { bucket, invocationBucket, workflowBucket, revocationsTable }, options = {}) {
   const dynamoDb = new DynamoDBClient({
     region,
     endpoint: options.endpoint,
   })
 
-  return useDelegationsTable(dynamoDb, tableName, { bucket, invocationBucket, workflowBucket })
+  return useDelegationsTable(dynamoDb, tableName, { bucket, invocationBucket, workflowBucket, revocationsTable })
 }
 
 /**

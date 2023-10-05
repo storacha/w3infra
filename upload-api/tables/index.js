@@ -101,7 +101,7 @@ export const rateLimitTableProps = {
 }
 
 /**
- * Track delegations.
+ * Track revocations.
  * 
  * This table is designed to be batch-GET-queried by delegation CIDs,
  * (which means the primary key MUST be just the delegation CID) but needs to accomodate
