@@ -5,6 +5,9 @@ import {
 } from '@aws-sdk/client-dynamodb'
 import { marshall, unmarshall } from '@aws-sdk/util-dynamodb'
 import { parseLink } from '@ucanto/core'
+import { revocationTableProps } from '../tables/index.js'
+
+/** @typedef {import('@ucanto/interface').UCANLink} UCANLink */
 
 /**
  * Abstraction layer to handle operations on revocations table.
@@ -23,6 +26,8 @@ export function createRevocationsTable (region, tableName, options = {}) {
   return useRevocationsTable(dynamoDb, tableName)
 }
 
+const staticRevocationKeys = new Set(Object.keys(revocationTableProps?.fields || {}))
+
 /**
  * @param {DynamoDBClient} dynamoDb
  * @param {string} tableName
@@ -37,18 +42,16 @@ export function useRevocationsTable (dynamoDb, tableName) {
           Key: marshall({
             revoke: revocation.revoke.toString(),
           }),
-          // when we add or update this item, use the update expression to 
-          // add a string to the "details" set that contains revokeCID and
-          // causeCID in a :-separated string
-          // see https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html
-          // for more information about update expressions
-          UpdateExpression: 'SET details = if_not_exists(details, :emptyMap), details.#scope.cause = :cause',
+          // When we get a new revocation, this update expression will create a new "column"
+          // in the table row that is keyed by "revokeCID". The name of this new column will be
+          // the "scopeCID" and the value will be a map containing metadata - currently just the
+          // causeCID
+          UpdateExpression: 'SET #scope = :scopeMetadata',
           ExpressionAttributeNames: {
             '#scope': revocation.scope.toString()
           },
           ExpressionAttributeValues: marshall({
-            ':emptyMap': {},
-            ':cause': revocation.cause.toString(),
+            ':scopeMetadata': { cause: revocation.cause.toString() },
           })
         }))
       }
@@ -67,7 +70,6 @@ export function useRevocationsTable (dynamoDb, tableName) {
         RequestItems: {
           [tableName]: {
             Keys: delegationCIDs.map(cid => marshall({ revoke: cid.toString() })),
-            ProjectionExpression: 'details'
           }
         }
       }))
@@ -81,23 +83,24 @@ export function useRevocationsTable (dynamoDb, tableName) {
         throw new Error('Dynamo did not process all keys')
       }
 
-      const revocations = delegationCIDs.reduce(
-        (/** @type {import('@web3-storage/upload-api').Revocation[]} */m,
-          delegationCID,
-          i) => {
-          const res = result.Responses?.[tableName][i]
-          if (res) {
-            for (const scopeAndCause of unmarshall(res).details) {
-              const [context, cause] = scopeAndCause.split(":")
-              m.push({
-                revoke: delegationCID,
-                scope: parseLink(context),
-                cause: parseLink(cause)
-              })
-            }
+      const revocations = result.Responses?.[tableName].reduce((m, marshalledItem) => {
+        const item = unmarshall(marshalledItem)
+        const revokeCID = /** @type {UCANLink} */(parseLink(item.revoke))
+        for (const [key, value] of Object.entries(item)) {
+          // all values other than those explicitly listed in the schema are assumed
+          // to be map values keyed by scopeCID
+          if (!staticRevocationKeys.has(key)) {
+            const scopeCID = /** @type {UCANLink} */(parseLink(key))
+            const causeCID = /** @type {UCANLink} */(parseLink(value.cause))
+            m.push({
+              revoke: revokeCID,
+              scope: scopeCID,
+              cause: causeCID
+            })
           }
-          return m
-        }, [])
+        }
+        return m
+      }, /** @type {import('@web3-storage/upload-api').Revocation[]} */([]))
       return { ok: revocations }
     }
   }
