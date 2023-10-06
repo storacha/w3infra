@@ -111,7 +111,7 @@ export const rateLimitTableProps = {
  * strings.
  * 
  * @type TableProps 
-*/
+ */
 export const revocationTableProps = {
   fields: {
     revoke: 'string', // `baf...x`(CID of the revoked delegation)
