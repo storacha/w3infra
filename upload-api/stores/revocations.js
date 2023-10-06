@@ -37,6 +37,11 @@ export function useRevocationsTable(dynamoDb, tableName) {
           Key: marshall({
             revoke: revocation.revoke.toString(),
           }),
+          // when we add or update this item, use the update expression to 
+          // add a string to the "details" set that contains revokeCID and
+          // causeCID in a :-separated string
+          // see https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html
+          // for more information about update expressions
           UpdateExpression: 'ADD details :details',
           ExpressionAttributeValues: marshall({
             ':details': new Set([`${revocation.scope.toString()}:${revocation.cause.toString()}`])
