@@ -35,7 +35,7 @@ export function useRevocationsTable(dynamoDb, tableName) {
         await dynamoDb.send(new UpdateItemCommand({
           TableName: tableName,
           Key: marshall({
-            delegation: revocation.revoke.toString(),
+            revoke: revocation.revoke.toString(),
           }),
           UpdateExpression: 'ADD contextsAndCauses :candc',
           ExpressionAttributeValues: marshall({
@@ -57,8 +57,8 @@ export function useRevocationsTable(dynamoDb, tableName) {
       const result = await dynamoDb.send(new BatchGetItemCommand({
         RequestItems: {
           [tableName]: {
-            Keys: delegationCIDs.map(cid => marshall({ delegation: cid.toString() })),
-            ProjectionExpression: 'contextsAndCauses'
+            Keys: delegationCIDs.map(cid => marshall({ revoke: cid.toString() })),
+            ProjectionExpression: 'details'
           }
         }
       }))
@@ -78,7 +78,7 @@ export function useRevocationsTable(dynamoDb, tableName) {
           i) => {
           const res = result.Responses?.[tableName][i]
           if (res) {
-            for (const scopeAndCause of unmarshall(res).contextsAndCauses) {
+            for (const scopeAndCause of unmarshall(res).details) {
               const [context, cause] = scopeAndCause.split(":")
               m.push({
                 revoke: delegationCID,

@@ -114,9 +114,9 @@ export const rateLimitTableProps = {
 */
 export const revocationTableProps = {
   fields: {
-    delegation: 'string',     // `baf...x`(CID of the revoked delegation)
+    revoke: 'string', // `baf...x`(CID of the revoked delegation)
     // @ts-ignore SST seems to incorrectly limit the set of field types to the three types suitable for index keys - hopefully this is fixed in the next versoin
-    contextsAndCauses: 'set'  // a set of :-separated contextCID:causeCID pairs
+    details: 'set'      // a set of :-separated scopeCID:causeCID strings
   },
-  primaryIndex: { partitionKey: 'delegation'}
+  primaryIndex: { partitionKey: 'revoke'}
 }
