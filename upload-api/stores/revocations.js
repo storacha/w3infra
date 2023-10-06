@@ -37,9 +37,9 @@ export function useRevocationsTable(dynamoDb, tableName) {
           Key: marshall({
             revoke: revocation.revoke.toString(),
           }),
-          UpdateExpression: 'ADD contextsAndCauses :candc',
+          UpdateExpression: 'ADD details :details',
           ExpressionAttributeValues: marshall({
-            ':candc': new Set([`${revocation.scope.toString()}:${revocation.cause.toString()}`])
+            ':details': new Set([`${revocation.scope.toString()}:${revocation.cause.toString()}`])
           })
         }))
       }
