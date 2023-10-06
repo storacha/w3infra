@@ -28,9 +28,9 @@ export function createRevocationsTable (region, tableName, options = {}) {
  * @param {string} tableName
  * @returns {import('@web3-storage/upload-api').RevocationsStorage}
  */
-export function useRevocationsTable(dynamoDb, tableName) {
+export function useRevocationsTable (dynamoDb, tableName) {
   return {
-    async addAll(revocations) {
+    async addAll (revocations) {
       for (const revocation of revocations) {
         await dynamoDb.send(new UpdateItemCommand({
           TableName: tableName,
@@ -42,16 +42,20 @@ export function useRevocationsTable(dynamoDb, tableName) {
           // causeCID in a :-separated string
           // see https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html
           // for more information about update expressions
-          UpdateExpression: 'ADD details :details',
+          UpdateExpression: 'SET details = if_not_exists(details, :emptyMap), details.#scope.cause = :cause',
+          ExpressionAttributeNames: {
+            '#scope': revocation.scope.toString()
+          },
           ExpressionAttributeValues: marshall({
-            ':details': new Set([`${revocation.scope.toString()}:${revocation.cause.toString()}`])
+            ':emptyMap': {},
+            ':cause': revocation.cause.toString(),
           })
         }))
       }
       return { ok: {} }
     },
 
-    async getAll(delegationCIDs) {
+    async getAll (delegationCIDs) {
       // BatchGetItem only supports batches of 100 and return values under 16MB
       // https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_BatchGetItem.html
       // limiting to 100 should be fine for now, and since we don't return much data we should always
