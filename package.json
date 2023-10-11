@@ -16,7 +16,6 @@
     "test-integration": "ava --verbose --timeout=120s test/*.test.js",
     "fetch-metrics-for-space": "npm run fetch-metrics-for-space -w tools",
     "d1-dynamo-migration": "npm run d1-dynamo-migration -w tools"
-
   },
   "devDependencies": {
     "@ipld/car": "^5.1.0",

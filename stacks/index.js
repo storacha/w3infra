@@ -8,6 +8,7 @@ import { CarparkStack } from './carpark-stack.js'
 import { FilecoinStack } from './filecoin-stack.js'
 import { SatnavStack } from './satnav-stack.js'
 import { ReplicatorStack } from './replicator-stack.js'
+import { UcanFirehoseStack } from './firehose-stack.js'
 import { RoundaboutStack } from './roundabout-stack.js'
 import { isPrBuild } from './config.js'
 
@@ -37,6 +38,7 @@ export default function (app) {
   app.stack(SatnavStack)
   app.stack(UploadApiStack)
   app.stack(ReplicatorStack)
+  app.stack(UcanFirehoseStack)
   app.stack(RoundaboutStack)
 
   // tags let us discover all the aws resource costs incurred by this app

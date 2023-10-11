@@ -16,6 +16,18 @@ export function getBucketName (name, stage, version = 0) {
 }
 
 /**
+ * Get nicer CDK resources name
+ *
+ * @param {string} name
+ * @param {string} stage
+ * @param {number} version
+ */
+export function getCdkNames (name, stage, version = 0) {
+  // e.g `prod-w3infra-ucan-stream-delivery-0`
+  return `${stage}-w3infra-${name}-${version}`
+}
+
+/**
  * Is an ephemeral build?
  *
  * @param {string} stage
