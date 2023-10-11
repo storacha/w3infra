@@ -1,13 +1,15 @@
 import {
+  BatchGetItemCommand,
   DynamoDBClient,
-  UpdateItemCommand,
-  BatchGetItemCommand
+  PutItemCommand,
+  UpdateItemCommand
 } from '@aws-sdk/client-dynamodb'
 import { marshall, unmarshall } from '@aws-sdk/util-dynamodb'
 import { parseLink } from '@ucanto/core'
 import { revocationTableProps } from '../tables/index.js'
 
 /** @typedef {import('@ucanto/interface').UCANLink} UCANLink */
+/** @typedef {import('@ucanto/interface').DID} DID */
 
 /**
  * Abstraction layer to handle operations on revocations table.
@@ -35,30 +37,42 @@ const staticRevocationKeys = new Set(Object.keys(revocationTableProps?.fields ||
  */
 export function useRevocationsTable (dynamoDb, tableName) {
   return {
-    async addAll (revocations) {
-      for (const revocation of revocations) {
-        await dynamoDb.send(new UpdateItemCommand({
-          TableName: tableName,
-          Key: marshall({
-            revoke: revocation.revoke.toString(),
-          }),
-          // When we get a new revocation, this update expression will create a new "column"
-          // in the table row that is keyed by "revokeCID". The name of this new column will be
-          // the "scopeCID" and the value will be a map containing metadata - currently just the
-          // causeCID
-          UpdateExpression: 'SET #scope = :scopeMetadata',
-          ExpressionAttributeNames: {
-            '#scope': revocation.scope.toString()
-          },
-          ExpressionAttributeValues: marshall({
-            ':scopeMetadata': { cause: revocation.cause.toString() },
-          })
-        }))
-      }
+    async add (revocation) {
+      await dynamoDb.send(new UpdateItemCommand({
+        TableName: tableName,
+        Key: marshall({
+          revoke: revocation.revoke.toString(),
+        }),
+        // When we get a new revocation, this update expression will create a new "column"
+        // in the table row that is keyed by "revokeCID". The name of this new column will be
+        // the "scopeCID" and the value will be a map containing metadata - currently just the
+        // causeCID
+        UpdateExpression: 'SET #scope = :scopeMetadata',
+        ExpressionAttributeNames: {
+          '#scope': revocation.scope.toString()
+        },
+        ExpressionAttributeValues: marshall({
+          ':scopeMetadata': { cause: revocation.cause.toString() },
+        })
+      }))
       return { ok: {} }
     },
 
-    async getAll (delegationCIDs) {
+    async reset (revocation) {
+      await dynamoDb.send(new PutItemCommand({
+        TableName: tableName,
+        Item: marshall({
+          revoke: revocation.revoke.toString(),
+          [revocation.scope.toString()]: {
+            cause: revocation.cause.toString()
+          }
+        })
+      }))
+      return { ok: {} }
+    },
+
+    async query (query) {
+      const delegationCIDs = Object.keys(query)
       // BatchGetItem only supports batches of 100 and return values under 16MB
       // https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_BatchGetItem.html
       // limiting to 100 should be fine for now, and since we don't return much data we should always
@@ -88,19 +102,18 @@ export function useRevocationsTable (dynamoDb, tableName) {
         const revokeCID = /** @type {UCANLink} */(parseLink(item.revoke))
         for (const [key, value] of Object.entries(item)) {
           // all values other than those explicitly listed in the schema are assumed
-          // to be map values keyed by scopeCID
+          // to be map values keyed by scopeDID
           if (!staticRevocationKeys.has(key)) {
-            const scopeCID = /** @type {UCANLink} */(parseLink(key))
-            const causeCID = /** @type {UCANLink} */(parseLink(value.cause))
-            m.push({
-              revoke: revokeCID,
-              scope: scopeCID,
-              cause: causeCID
-            })
+            const revokeCIDStr = /** @type {string} */(revokeCID.toString())
+            const scopeDID = /** @type {DID} */(key)
+            m[revokeCIDStr] ||= {}
+            m[revokeCIDStr][scopeDID] = {
+              cause: parseLink(value.cause)
+            }
           }
         }
         return m
-      }, /** @type {import('@web3-storage/upload-api').Revocation[]} */([]))
+      }, /** @type {import('@web3-storage/upload-api').MatchingRevocations} */({}))
       return { ok: revocations }
     }
   }
