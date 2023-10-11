@@ -256,6 +256,7 @@ export async function executionContextToUcantoTestServerContext (t) {
     uploadTable,
     carStoreBucket,
     dudewhereBucket,
+    validateAuthorization: () => ({ ok: {} })
   };
   const connection = connect({
     id: serviceContext.id,

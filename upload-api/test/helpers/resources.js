@@ -222,6 +222,7 @@ export async function createAccessServer() {
     id: signer,
     service: mockAccessService(),
     codec: Legacy.inbound,
+    validateAuthorization: () => ({ ok: {} })
   })
 
   const httpServer = HTTP.createServer(async (request, response) => {
