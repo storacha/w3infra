@@ -52,6 +52,7 @@ export async function getClaimsServiceServer (serviceProvider, options = {}) {
     id: serviceProvider,
     service,
     codec: CAR.inbound,
+    validateAuthorization: () => ({ ok: {} })
   })
   const connection = Client.connect({
     id: serviceProvider,
@@ -155,6 +156,7 @@ export async function getAggregatorServiceServer (serviceProvider, options = {})
     id: serviceProvider,
     service,
     codec: CAR.inbound,
+    validateAuthorization: () => ({ ok: {} })
   })
   const connection = Client.connect({
     id: serviceProvider,
