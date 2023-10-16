@@ -6,6 +6,7 @@ import {
   consumerTableProps,
   subscriptionTableProps,
   delegationTableProps,
+  revocationTableProps,
   rateLimitTableProps
 } from '../upload-api/tables/index.js'
 import {
@@ -85,6 +86,11 @@ export function UploadDbStack({ stack, app }) {
   const delegationTable = new Table(stack, 'delegation', delegationTableProps)
 
   /**
+   * This table indexes revocations.
+   */
+  const revocationTable = new Table(stack, 'revocation', revocationTableProps)
+
+  /**
    * This table tracks w3 wider metrics.
    */
   const adminMetricsTable = new Table(stack, 'admin-metrics', adminMetricsTableProps)
@@ -103,6 +109,7 @@ export function UploadDbStack({ stack, app }) {
     rateLimitTable,
     delegationBucket,
     delegationTable,
+    revocationTable,
     adminMetricsTable,
     spaceMetricsTable,
     privateKey,

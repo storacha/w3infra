@@ -22,7 +22,6 @@ import {
   FailedToDecodeDelegationForGivenCidError
 } from '../errors.js'
 
-
 // Feature flag for looking up delegations in the invocations in which
 // they were originally embeded.
 // As of 6/6/2023 not all delegations have corresponding invocations
@@ -114,13 +113,11 @@ export function useDelegationsTable (dynamoDb, tableName, { bucket, invocationBu
         TableName: tableName,
         IndexName: 'audience',
         Limit: DELEGATIONS_FIND_DEFAULT_LIMIT, // TODO this should probably be configurable using an `options` hash
-        KeyConditions: {
-          audience: {
-            ComparisonOperator: 'EQ',
-            AttributeValueList: [{ S: query.audience }]
-          }
-        },
-        AttributesToGet: ['link']
+        KeyConditionExpression: 'audience = :audience',
+        ExpressionAttributeValues: marshall({
+          ':audience': query.audience,
+        }),
+        ProjectionExpression: 'link'
       })
       const response = await dynamoDb.send(cmd)
 
@@ -160,7 +157,7 @@ export function useDelegationsTable (dynamoDb, tableName, { bucket, invocationBu
       return {
         ok: delegations
       }
-    }
+    },
   }
 }
 

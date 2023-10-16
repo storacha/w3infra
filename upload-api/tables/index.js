@@ -46,7 +46,7 @@ export const delegationTableProps = {
   },
   primaryIndex: { partitionKey: 'link' },
   globalIndexes: {
-    audience: { partitionKey: 'audience', projection: ['link'] }
+    audience: { partitionKey: 'audience', projection: ['link'] },
   }
 }
 
@@ -98,4 +98,24 @@ export const rateLimitTableProps = {
   globalIndexes: {
     subject: { partitionKey: 'subject', projection: ['rate', 'id'] },
   }
+}
+
+/**
+ * Track revocations.
+ * 
+ * This table is designed to be batch-GET-queried by delegation CIDs,
+ * (which means the primary key MUST be just the delegation CID) but needs to accomodate
+ * multiple possible "revocation context CIDs" each with its own "cause CID". Because
+ * BatchGetCommand only works on primary tables, not indices, we need to cram
+ * the context CID and the cause CIDs into a "set" field of :-separated contextCID:causeCID
+ * strings.
+ * 
+ * @type TableProps 
+ */
+export const revocationTableProps = {
+  fields: {
+    // we'll store scope and cause in a map-type attribute keyed by scope CID
+    revoke: 'string', // `baf...x`(CID of the revoked delegation)
+  },
+  primaryIndex: { partitionKey: 'revoke'}
 }
