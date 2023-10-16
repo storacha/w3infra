@@ -44,7 +44,8 @@ export async function putSpaceSizeDiffs (messages, { spaceSizeDiffTable, subscri
   const records = []
 
   for (const m of messages) {
-    if (isInvokedCapabiltyReceipt(m, StoreCaps.add, isStoreAddResultOk)) {
+    if (!isReceipt(m)) continue
+    if (isReceiptForCapability(m, StoreCaps.add) && isStoreAddSuccess(m.out)) {
       const size = m.value.att[0].nb?.size
       if (!size) {
         throw new Error(`store/add invocation is missing size: ${m.carCid}`)
@@ -58,19 +59,21 @@ export async function putSpaceSizeDiffs (messages, { spaceSizeDiffTable, subscri
       records.push({
         customer: customer.did,
         space: m.out.ok.with,
-        cause: Link.parse(m.carCid),
+        cause: m.invocationCid,
         change: size
       })
-    } else if (isInvokedCapabiltyReceipt(m, StoreCaps.remove, isStoreRemoveResultOk)) {
-      const customer = await subscriptionsTable.getCustomer()
+    } else if (isReceiptForCapability(m, StoreCaps.remove) && isStoreRemoveSuccess(m.out)) {
+      const space = m.value.att[0].with
+      const customer = await subscriptionsTable.getCustomer(space)
       if (!customer) {
-        throw new Error(`customer not found for space: ${}`)
+        throw new Error(`customer not found for space: ${space}`)
       }
 
       records.push({
         customer: customer.did,
-        space: m.value.att[0].with,
-        cause: Link.parse(m.carCid),
+        // @ts-expect-error URI is not a DID
+        space,
+        cause: m.invocationCid,
         change: m.out.ok.size
       })
     }
@@ -81,42 +84,31 @@ export async function putSpaceSizeDiffs (messages, { spaceSizeDiffTable, subscri
 }
 
 /**
- * @template {import('@ucanto/interface').Ability} Can
- * @template {import('@ucanto/interface').Unit} Caveats
- * @template OkValue
- * @template {{ ok: OkValue }} R
- * @param {import('../types').UcanStreamMessage} m
- * @param {import('@ucanto/interface').TheCapabilityParser<import('@ucanto/interface').CapabilityMatch<Can, import('@ucanto/interface').Resource, Caveats>>} cap
- * @param {(out: unknown) => out is OkValue} isOkValue
- * @returns {m is import('../types').UcanReceiptMessage<[import('@ucanto/interface').Capability<Can, import('@ucanto/interface').Resource, Caveats>], R>}
- */
-const isInvokedCapabiltyReceipt = (m, cap, isOkValue) => isResultOk(m, isOkValue) && isReceiptForCapability(m, cap)
-
-/**
  * @param {import('../types').UcanStreamMessage} m
  * @returns {m is import('../types').UcanReceiptMessage}
  */
 const isReceipt = m => m.type === 'receipt'
 
 /**
- * @template OkValue
- * @param {import('../types').UcanStreamMessage} m
- * @param {(out: unknown) => out is OkValue} isOkValue
- * @returns {m is import('../types').UcanReceiptMessage}
+ * @param {import('@ucanto/interface').Result} r
+ * @returns {r is { ok: import('@web3-storage/capabilities/types').StoreAddSuccess }}
  */
-const isResultOk = (m, isOkValue) => isReceipt(m) && !m.out.error && isOkValue(m.out)
+const isStoreAddSuccess = r =>
+  !r.error &&
+  r.ok != null &&
+  typeof r.ok === 'object' &&
+  'status' in r.ok &&
+  (r.ok.status === 'done' || r.ok.status === 'upload')
 
 /**
- * @param {any} v
- * @returns {v is import('@web3-storage/capabilities/types').StoreAddSuccess}
+ * @param {import('@ucanto/interface').Result} r
+ * @returns {r is { ok: import('@web3-storage/capabilities/types').StoreRemoveSuccess }}
  */
-const isStoreAddResultOk = v => v?.status === 'done' || v?.status === 'upload'
-
-/**
- * @param {any} v
- * @returns {v is import('@web3-storage/capabilities/types').StoreRemoveSuccess}
- */
-const isStoreRemoveResultOk = v => 'size' in v
+const isStoreRemoveSuccess = r =>
+  !r.error &&
+  r.ok != null &&
+  typeof r.ok === 'object' &&
+  'size' in r.ok
 
 /**
  * @template {import('@ucanto/interface').Ability} Can
@@ -133,7 +125,14 @@ const isReceiptForCapability = (m, cap) => m.value.att.some(c => c.can === cap.c
  */
 const parseUcanStreamEvent = event => {
   const batch = event.Records.map(r => fromString(r.kinesis.data, 'base64'))
-  return batch.map(b => JSON.parse(toString(b, 'utf8')))
+  return batch.map(b => {
+    const json = JSON.parse(toString(b, 'utf8'))
+    return {
+      ...json,
+      carCid: Link.parse(json.carCid),
+      invocationCid: Link.parse(json.invocationCid)
+    }
+  })
 }
 
 export const handler = Sentry.AWSLambda.wrapHandler(_handler)

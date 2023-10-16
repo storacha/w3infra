@@ -96,8 +96,8 @@
       "screenBounds": {
         "x": 0,
         "y": 0,
-        "w": 1183,
-        "h": 533
+        "w": 1464,
+        "h": 830
       },
       "zoomBrush": null,
       "isGridMode": true,
@@ -119,9 +119,9 @@
       "typeName": "instance"
     },
     {
-      "x": -279.0598867595809,
-      "y": -88.79502395470408,
-      "z": 0.6822039406488514,
+      "x": 51.372481523611015,
+      "y": -85.88476214553664,
+      "z": 0.7280929899810078,
       "meta": {},
       "id": "camera:page:SqRFlwa4qqn_hzEPWcNI-",
       "typeName": "camera"
@@ -142,9 +142,9 @@
     {
       "id": "pointer:pointer",
       "typeName": "pointer",
-      "x": 1618.1709949878857,
-      "y": 594.1653457269439,
-      "lastActivityTimestamp": 1697446678087,
+      "x": 1044.480415674057,
+      "y": 996.6007649425097,
+      "lastActivityTimestamp": 1697472452578,
       "meta": {}
     },
     {
@@ -808,7 +808,7 @@
         "color": "grey",
         "size": "s",
         "w": 204.4609375,
-        "text": "space: DID string\nsize: bytes number\ninsertedAt: ISO string",
+        "text": "space: DID string\nprovider: DID string\nsize: bytes number\ninsertedAt: ISO string",
         "font": "draw",
         "align": "start",
         "autoSize": true,
@@ -831,7 +831,7 @@
         "color": "grey",
         "size": "s",
         "w": 237.3984375,
-        "text": "customer: DID string\nspace: DID string\ncause: CID string\nchange: +/- bytes number\ninsertedAt: ISO string",
+        "text": "customer: DID string\nspace: DID string\nprovider: DID string\ncause: CID string\nchange: +/- bytes number\ninsertedAt: ISO string",
         "font": "draw",
         "align": "start",
         "autoSize": true,
@@ -1249,7 +1249,6 @@
       "isLocked": false,
       "opacity": 1,
       "meta": {},
-      "id": "shape:XA3EJ3kl8waDrwI4kpa4c",
       "type": "geo",
       "props": {
         "w": 238.14801854788288,
@@ -1269,6 +1268,7 @@
       },
       "parentId": "page:SqRFlwa4qqn_hzEPWcNI-",
       "index": "aY",
+      "id": "shape:XA3EJ3kl8waDrwI4kpa4c",
       "typeName": "shape"
     },
     {
@@ -1278,7 +1278,6 @@
       "isLocked": false,
       "opacity": 1,
       "meta": {},
-      "id": "shape:or25KH37dQlSBwdC-GAHM",
       "type": "arrow",
       "parentId": "page:SqRFlwa4qqn_hzEPWcNI-",
       "index": "ac",
@@ -1312,6 +1311,7 @@
         "text": "",
         "font": "draw"
       },
+      "id": "shape:or25KH37dQlSBwdC-GAHM",
       "typeName": "shape"
     },
     {
@@ -1321,7 +1321,6 @@
       "isLocked": false,
       "opacity": 1,
       "meta": {},
-      "id": "shape:Zo6Zqy6PUlC_tsxsVYnJh",
       "type": "geo",
       "props": {
         "w": 46.188021535170094,
@@ -1341,6 +1340,7 @@
       },
       "parentId": "page:SqRFlwa4qqn_hzEPWcNI-",
       "index": "ab",
+      "id": "shape:Zo6Zqy6PUlC_tsxsVYnJh",
       "typeName": "shape"
     },
     {
@@ -1350,7 +1350,6 @@
       "isLocked": false,
       "opacity": 1,
       "meta": {},
-      "id": "shape:P8F7cYe6xB7SWBVakhWy1",
       "type": "arrow",
       "parentId": "page:SqRFlwa4qqn_hzEPWcNI-",
       "index": "ad",
@@ -1384,6 +1383,7 @@
         "text": "",
         "font": "draw"
       },
+      "id": "shape:P8F7cYe6xB7SWBVakhWy1",
       "typeName": "shape"
     },
     {
@@ -1393,7 +1393,6 @@
       "isLocked": false,
       "opacity": 1,
       "meta": {},
-      "id": "shape:Ix45vyC7dy6Gc832pTe4u",
       "type": "text",
       "props": {
         "color": "black",
@@ -1407,6 +1406,7 @@
       },
       "parentId": "page:SqRFlwa4qqn_hzEPWcNI-",
       "index": "ae",
+      "id": "shape:Ix45vyC7dy6Gc832pTe4u",
       "typeName": "shape"
     },
     {
@@ -1416,7 +1416,6 @@
       "isLocked": false,
       "opacity": 1,
       "meta": {},
-      "id": "shape:cxmtMJwFaT9jyyszJNUkQ",
       "type": "text",
       "props": {
         "color": "black",
@@ -1430,6 +1429,7 @@
       },
       "parentId": "page:SqRFlwa4qqn_hzEPWcNI-",
       "index": "af",
+      "id": "shape:cxmtMJwFaT9jyyszJNUkQ",
       "typeName": "shape"
     },
     {
