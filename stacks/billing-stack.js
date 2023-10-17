@@ -1,10 +1,7 @@
-import { use, Table, Cron, Queue, Function } from '@serverless-stack/resources'
-import {
-  customerTableProps,
-  spaceSizeSnapshotTableProps,
-  spaceSizeDiffTableProps
-} from '../billing/tables/index.js'
+import { use, Cron, Queue, Function } from '@serverless-stack/resources'
 import { UcanInvocationStack } from './ucan-invocation-stack.js'
+import { BillingDbStack } from './billing-db-stack.js'
+import { UploadDbStack } from './upload-db-stack.js'
 import { setupSentry, getKinesisEventSourceConfig } from './config.js'
 
 /** @param {import('@serverless-stack/resources').StackContext} props */
@@ -13,9 +10,11 @@ export function BillingStack ({ stack, app }) {
 
   setupSentry(app, stack)
 
-  const customerTable = new Table(stack, 'customer', customerTableProps)
-  const spaceSizeSnapshotTable = new Table(stack, 'space-size-snapshot', spaceSizeSnapshotTableProps)
-  const spaceSizeDiffTable = new Table(stack, 'space-size-diff', spaceSizeDiffTableProps)
+  const {
+    customerTable,
+    spaceSizeSnapshotTable,
+    spaceSizeDiffTable
+  } = use(BillingDbStack)
 
   // Lambda that does a billing run for a given account
   const billingQueueHandler = new Function(stack, 'billing-queue-handler', {
@@ -46,10 +45,11 @@ export function BillingStack ({ stack, app }) {
   })
 
   const { ucanStream } = use(UcanInvocationStack)
+  const { subscriptionTable, consumerTable } = use(UploadDbStack)
 
   // Lambda that receives UCAN stream events and writes diffs to spaceSizeDiffTable
   const ucanStreamHandler = new Function(stack, 'ucan-stream-handler', {
-    permissions: [spaceSizeDiffTable],
+    permissions: [spaceSizeDiffTable, subscriptionTable, consumerTable],
     handler: 'functions/ucan-stream.handler'
   })
 

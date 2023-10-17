@@ -33,6 +33,8 @@ export const spaceSizeSnapshotTableProps = {
   fields: {
     /** Space DID. */
     space: 'string',
+    /** Storage provider for the space. */
+    provider: 'string',
     /** Total allocated size in bytes. */
     size: 'number',
     /** ISO timestamp allocation was snapshotted. */
@@ -48,16 +50,22 @@ export const spaceSizeSnapshotTableProps = {
  */
 export const spaceSizeDiffTableProps = {
   fields: {
-    /** Account DID (did:mailto:...). */
-    account: 'string',
+    /** Customer DID (did:mailto:...). */
+    customer: 'string',
     /** Space DID (did:key:...). */
     space: 'string',
+    /** Storage provider for the space. */
+    provider: 'string',
+    /** Subscription in use when the size changed. */
+    subscription: 'string',
     /** Invocation CID that changed the space size (bafy...). */
     cause: 'string',
     /** Number of bytes added to or removed from the space. */
     change: 'number',
+    /** ISO timestamp the receipt was issued. */
+    receiptAt: 'string',
     /** ISO timestamp we recorded the change. */
     insertedAt: 'string'
   },
-  primaryIndex: { partitionKey: 'account', sortKey: 'insertedAt' }
+  primaryIndex: { partitionKey: 'customer', sortKey: 'receiptAt' }
 }

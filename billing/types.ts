@@ -15,13 +15,17 @@ export interface SpaceSizeDiffRecord {
   cause: Link
   /** Number of bytes that were added/removed from the space. */
   change: number
+  /** Time the receipt was issued by the service. */
+  receiptAt: Date
   /** Time the change was recorded. */
   insertedAt: Date
 }
 
+export type SpaceSizeDiffInput = Omit<SpaceSizeDiffRecord, 'insertedAt'>
+
 export interface SpaceSizeDiffStore {
-  /** Put a batch of records to the table. */
-  putBatch: (batch: Array<Omit<SpaceSizeDiffRecord, 'insertedAt'>>) => Promise<Result<Unit, Failure>>
+  /** Put a record to the table. */
+  put: (input: SpaceSizeDiffInput) => Promise<Result<Unit, Failure>>
 }
 
 // Upload API stores //////////////////////////////////////////////////////////
@@ -49,8 +53,9 @@ export interface SubscriptionRecord {
   updatedAt: Date
 }
 
-export interface SubscriptionTable {
-  get: (subscription: string) => Promise<Result<SubscriptionRecord, SubscriptionNotFound | Failure>>
+export interface SubscriptionStore {
+  /** Get a subscription record by ID. */
+  get: (provider: DID, subscription: string) => Promise<Result<SubscriptionRecord, SubscriptionNotFound | Failure>>
 }
 
 export interface SubscriptionNotFound extends Failure {
@@ -64,7 +69,7 @@ export interface UcanMessage<C extends Capabilities = Capabilities> {
   carCid: Link
   invocationCid: Link
   value: UcanMessageValue<C>
-  ts: number
+  ts: Date
 }
 
 export interface UcanMessageValue<C extends Capabilities = Capabilities> {

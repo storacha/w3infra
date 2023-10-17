@@ -2,7 +2,10 @@ import * as Sentry from '@sentry/serverless'
 import { toString, fromString } from 'uint8arrays'
 import * as StoreCaps from '@web3-storage/capabilities/store'
 import * as Link from 'multiformats/link'
-import { createSpaceSizeDiffTable } from '../tables/space-size-diff.js'
+import { createSpaceSizeDiffStore } from '../tables/space-size-diff.js'
+import { createSubscriptionStore } from '../tables/subscription.js'
+import { createConsumerStore } from '../tables/consumer.js'
+import { notNully } from './lib.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -10,77 +13,90 @@ Sentry.AWSLambda.init({
   tracesSampleRate: 1.0
 })
 
-const AWS_REGION = process.env.AWS_REGION || 'us-west-2'
-
 /**
- * @typedef {object} IncrementInput
- * @property {`did:${string}:${string}`} space
- * @property {number} count
+ * @typedef {{
+ *   spaceSizeDiffTable?: string
+ *   subscriptionTable?: string
+ *   consumerTable?: string
+ *   dbEndpoint?: URL
+ *   region?: 'us-west-2'|'us-east-2'
+ * }} CustomHandlerContext
  */
 
-/** @param {import('aws-lambda').KinesisStreamEvent} event */
-const _handler = async (event) => {
-  const {
-    TABLE_NAME: tableName = '',
-    // set for testing
-    DYNAMO_DB_ENDPOINT: dbEndpoint,
-  } = process.env
+/**
+ * @param {import('aws-lambda').KinesisStreamEvent} event
+ * @param {import('aws-lambda').Context} context
+ */
+export const _handler = async (event, context) => {
+  /** @type {CustomHandlerContext|undefined} */
+  const customContext = context?.clientContext?.Custom
+  const spaceSizeDiffTable = customContext?.spaceSizeDiffTable ?? notNully(process.env, 'SPACE_SIZE_DIFF_TABLE_NAME')
+  const subscriptionTable = customContext?.subscriptionTable ?? notNully(process.env, 'SUBSCRIPTION_TABLE_NAME')
+  const consumerTable = customContext?.consumerTable ?? notNully(process.env, 'CONSUMER_TABLE_NAME')
+  const dbEndpoint = new URL(customContext?.dbEndpoint ?? notNully(process.env, 'DYNAMO_DB_ENDPOINT'))
+  const region = customContext?.region ?? notNully(process.env, 'AWS_REGION')
 
   const messages = parseUcanStreamEvent(event)
-
-  await putSpaceSizeDiffs(messages, {
-    spaceSizeDiffTable: createSpaceSizeDiffTable(AWS_REGION, tableName, {
-      endpoint: dbEndpoint
-    })
-  })
+  const storeOptions = { endpoint: dbEndpoint }
+  const stores = {
+    spaceSizeDiffStore: createSpaceSizeDiffStore(region, spaceSizeDiffTable, storeOptions),
+    subscriptionStore: createSubscriptionStore(region, subscriptionTable, storeOptions),
+    consumerStore: createConsumerStore(region, consumerTable, storeOptions)
+  }
+  const results = await Promise.all(messages.map(m => putSpaceSizeDiff(m, stores)))
+  for (const r of results) if (r.error) throw r.error
 }
 
 /**
- * @param {import('../types').UcanStreamMessage[]} messages
- * @param {import('../types').SpaceMetricsTableCtx} ctx
+ * @param {import('../types').UcanStreamMessage} message
+ * @param {{
+ *   spaceSizeDiffStore: import('../types').SpaceSizeDiffStore
+ *   subscriptionStore: import('../types').SubscriptionStore
+ *   consumerStore: import('../types').ConsumerStore
+ * }} stores
+ * @returns {Promise<import('@ucanto/interface').Result>}
  */
-export async function putSpaceSizeDiffs (messages, { spaceSizeDiffTable, subscriptionsTable }) {
-  /** @type {import('../types').SpaceSizeDiffRecord[]} */
-  const records = []
+export const putSpaceSizeDiff = async (message, { spaceSizeDiffStore, subscriptionStore, consumerStore }) => {
+  if (!isReceipt(message)) return { ok: {} }
 
-  for (const m of messages) {
-    if (!isReceipt(m)) continue
-    if (isReceiptForCapability(m, StoreCaps.add) && isStoreAddSuccess(m.out)) {
-      const size = m.value.att[0].nb?.size
-      if (!size) {
-        throw new Error(`store/add invocation is missing size: ${m.carCid}`)
-      }
-
-      const customer = await subscriptionsTable.getCustomer(m.out.ok.with)
-      if (!customer) {
-        throw new Error(`customer not found for space: ${m.out.ok.with}`)
-      }
-
-      records.push({
-        customer: customer.did,
-        space: m.out.ok.with,
-        cause: m.invocationCid,
-        change: size
-      })
-    } else if (isReceiptForCapability(m, StoreCaps.remove) && isStoreRemoveSuccess(m.out)) {
-      const space = m.value.att[0].with
-      const customer = await subscriptionsTable.getCustomer(space)
-      if (!customer) {
-        throw new Error(`customer not found for space: ${space}`)
-      }
-
-      records.push({
-        customer: customer.did,
-        // @ts-expect-error URI is not a DID
-        space,
-        cause: m.invocationCid,
-        change: m.out.ok.size
-      })
-    }
+  /** @type {number|undefined} */
+  let size
+  if (isReceiptForCapability(message, StoreCaps.add) && isStoreAddSuccess(message.out)) {
+    size = message.value.att[0].nb?.size
+  } else if (isReceiptForCapability(message, StoreCaps.remove) && isStoreRemoveSuccess(message.out)) {
+    size = -message.out.ok.size
+  } else {
+    return { ok: {} }
   }
-  if (!records.length) return
 
-  await spaceSizeDiffTable.putAll(records)
+  if (size == null) {
+    return { error: new Error(`missing size: ${message.carCid}`) }
+  }
+
+  const space = /** @type {import('@ucanto/interface').DID} */ (message.value.att[0].with)
+  const { ok: consumers, error } = await consumerStore.getBatch(space)
+  if (error) return { error }
+
+  // There should only be one subscription per provider, but in theory you
+  // could have multiple providers for the same consumer (space).
+  for (const consumer of consumers) {
+    const { ok: subscription, error: err0 } = await subscriptionStore.get(consumer.provider, consumer.subscription)
+    if (err0) return { error: err0 }
+
+    const { error: err1 } = await spaceSizeDiffStore.put({
+      customer: subscription.customer,
+      provider: consumer.provider,
+      subscription: subscription.subscription,
+      space,
+      cause: message.invocationCid,
+      change: size,
+      // TODO: use receipt timestamp per https://github.com/web3-storage/w3up/issues/970
+      receiptAt: message.ts
+    })
+    if (err1) return { error: err1 }
+  }
+
+  return { ok: {} }
 }
 
 /**
@@ -130,7 +146,8 @@ const parseUcanStreamEvent = event => {
     return {
       ...json,
       carCid: Link.parse(json.carCid),
-      invocationCid: Link.parse(json.invocationCid)
+      invocationCid: Link.parse(json.invocationCid),
+      ts: new Date(json.ts)
     }
   })
 }

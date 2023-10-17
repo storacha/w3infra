@@ -96,11 +96,11 @@
       "screenBounds": {
         "x": 0,
         "y": 0,
-        "w": 1464,
-        "h": 830
+        "w": 1624,
+        "h": 941
       },
       "zoomBrush": null,
-      "isGridMode": true,
+      "isGridMode": false,
       "isPenMode": false,
       "chatMessage": "",
       "isChatting": false,
@@ -119,8 +119,8 @@
       "typeName": "instance"
     },
     {
-      "x": 51.372481523611015,
-      "y": -85.88476214553664,
+      "x": 122.7919302967086,
+      "y": 62.44793915243551,
       "z": 0.7280929899810078,
       "meta": {},
       "id": "camera:page:SqRFlwa4qqn_hzEPWcNI-",
@@ -142,9 +142,9 @@
     {
       "id": "pointer:pointer",
       "typeName": "pointer",
-      "x": 1044.480415674057,
-      "y": 996.6007649425097,
-      "lastActivityTimestamp": 1697472452578,
+      "x": 1768.718263388749,
+      "y": 720.8161086374985,
+      "lastActivityTimestamp": 1697548553934,
       "meta": {}
     },
     {
@@ -831,7 +831,7 @@
         "color": "grey",
         "size": "s",
         "w": 237.3984375,
-        "text": "customer: DID string\nspace: DID string\nprovider: DID string\ncause: CID string\nchange: +/- bytes number\ninsertedAt: ISO string",
+        "text": "customer: DID string\nspace: DID string\nprovider: DID string\nsubscription: string\ncause: CID string\nchange: +/- bytes number\nreceiptAt: ISO string\ninsertedAt: ISO string",
         "font": "draw",
         "align": "start",
         "autoSize": true,

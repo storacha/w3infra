@@ -1,5 +1,6 @@
 import { Tags, RemovalPolicy } from 'aws-cdk-lib'
-
+import { BillingStack } from './billing-stack.js'
+import { BillingDbStack } from './billing-db-stack.js'
 import { UploadApiStack } from './upload-api-stack.js'
 import { UploadDbStack } from './upload-db-stack.js'
 import { UcanInvocationStack } from './ucan-invocation-stack.js'
@@ -32,8 +33,10 @@ export default function (app) {
   })
   app.stack(BusStack)
   app.stack(UploadDbStack)
+  app.stack(BillingDbStack)
   app.stack(CarparkStack)
   app.stack(UcanInvocationStack)
+  app.stack(BillingStack)
   app.stack(FilecoinStack)
   app.stack(SatnavStack)
   app.stack(UploadApiStack)
