@@ -260,7 +260,7 @@ export function UcanFirehoseStack ({ stack, app }) {
           { name: 'carcid', type: 'string' },
           // STRUCT here refers to the Apache Hive STRUCT datatype - see https://aws.amazon.com/blogs/big-data/create-tables-in-amazon-athena-from-nested-json-and-mappings-using-jsonserde/
           { name: 'value', type: 'STRUCT<att:ARRAY<struct<can:STRING,with:STRING,nb:STRUCT<size:BIGINT,link:STRUCT<_cid_slash:STRING>>>>,iss:STRING,aud:STRING>' },
-          { name: "out", type: "STRUCT<error:STRUCT<name:STRING>,ok:STRUCT<link:STRUCT<_cid_slash:STRING>>>" },
+          { name: "out", type: "STRUCT<error:STRUCT<name:STRING>,ok:STRUCT<status:STRING,link:STRUCT<_cid_slash:STRING>>>" },
           { name: "ts", type: "timestamp" }
         ],
         inputFormat: 'org.apache.hadoop.mapred.TextInputFormat',
