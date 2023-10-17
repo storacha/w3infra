@@ -202,7 +202,7 @@ export function UcanFirehoseStack ({ stack, app }) {
         "projection.day.interval": "1",
         "projection.day.interval.unit": "DAYS",
         "projection.op.type": "enum",
-        "projection.op.values": 'store_add,upload_add,access_authorize,access_claim,access_delegate,provider_add',
+        "projection.op.values": 'access_authorize,access_claim,access_delegate,access_session,admin_store_inspect,admin_upload_inspect,aggregate_add,aggregate_queue,chain-tracker_info,consumer_get,consumer_has,customer_get,deal_queue,deal_add,filecoin_queue,filecoin_add,provider_add,rate-limit_add,rate-limit_list,rate-limit_remove,space_info,store_add,store_remove,subscription_get,ucan_revoke,upload_add,upload_list,upload_remove',
         "storage.location.template": `s3://${streamLogBucket.bucketName}/logs/receipt/\${op}/\${day}/`
       },
       storageDescriptor: {
