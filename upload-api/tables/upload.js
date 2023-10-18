@@ -8,7 +8,7 @@ import {
 import { marshall, unmarshall } from '@aws-sdk/util-dynamodb'
 import { CID } from 'multiformats/cid'
 
-/** @typedef {import('@web3-storage/upload-api').UploadAddOk} UploadAddResult */
+/** @typedef {import('@web3-storage/upload-api').UploadAddSuccess} UploadAddResult */
 /** @typedef {import('@web3-storage/upload-api').UploadListItem} UploadListItem */
 
 /**
@@ -161,9 +161,7 @@ export function useUploadTable(dynamoDb, tableName) {
       })
       const response = await dynamoDb.send(cmd)
 
-      /** @type {UploadListItem[]} */
-      const results =
-        response.Items?.map((i) => toUploadListItem(unmarshall(i))) || []
+      const results = (response.Items ?? []).map((i) => toUploadListItem(unmarshall(i)))
       const firstRootCID = results[0] ? results[0].root.toString() : undefined
 
       // Get cursor of the item where list operation stopped (inclusive).
@@ -221,7 +219,7 @@ export function useUploadTable(dynamoDb, tableName) {
 export function toUploadAddResult({ root, shards }) {
   return {
     root: CID.parse(root),
-    shards: (shards ? [...shards] : []).map((s) => CID.parse(s)),
+    shards: (shards ? [...shards] : []).map((s) => /** @type {import('@web3-storage/upload-api').CARLink} */ (CID.parse(s))),
   }
 }
 
@@ -229,7 +227,7 @@ export function toUploadAddResult({ root, shards }) {
  * Convert from the db representation to an UploadListItem
  *
  * @param {Record<string, any>} item
- * @returns {UploadListItem}
+ * @returns {UploadListItem & { insertedAt: string; updatedAt: string }}
  */
 export function toUploadListItem({ insertedAt, updatedAt, ...rest }) {
   return {
