@@ -2,7 +2,7 @@ import * as Sentry from '@sentry/serverless'
 import { toString, fromString } from 'uint8arrays'
 import * as StoreCaps from '@web3-storage/capabilities/store'
 import * as Link from 'multiformats/link'
-import { createSpaceSizeDiffStore } from '../tables/space-size-diff.js'
+import { createSpaceDiffStore } from '../tables/space-diff.js'
 import { createSubscriptionStore } from '../tables/subscription.js'
 import { createConsumerStore } from '../tables/consumer.js'
 import { notNully } from './lib.js'
@@ -15,7 +15,7 @@ Sentry.AWSLambda.init({
 
 /**
  * @typedef {{
- *   spaceSizeDiffTable?: string
+ *   spaceDiffTable?: string
  *   subscriptionTable?: string
  *   consumerTable?: string
  *   dbEndpoint?: URL
@@ -30,7 +30,7 @@ Sentry.AWSLambda.init({
 export const _handler = async (event, context) => {
   /** @type {CustomHandlerContext|undefined} */
   const customContext = context?.clientContext?.Custom
-  const spaceSizeDiffTable = customContext?.spaceSizeDiffTable ?? notNully(process.env, 'SPACE_SIZE_DIFF_TABLE_NAME')
+  const spaceDiffTable = customContext?.spaceDiffTable ?? notNully(process.env, 'SPACE_DIFF_TABLE_NAME')
   const subscriptionTable = customContext?.subscriptionTable ?? notNully(process.env, 'SUBSCRIPTION_TABLE_NAME')
   const consumerTable = customContext?.consumerTable ?? notNully(process.env, 'CONSUMER_TABLE_NAME')
   const dbEndpoint = new URL(customContext?.dbEndpoint ?? notNully(process.env, 'DYNAMO_DB_ENDPOINT'))
@@ -39,7 +39,7 @@ export const _handler = async (event, context) => {
   const messages = parseUcanStreamEvent(event)
   const storeOptions = { endpoint: dbEndpoint }
   const stores = {
-    spaceSizeDiffStore: createSpaceSizeDiffStore(region, spaceSizeDiffTable, storeOptions),
+    spaceDiffStore: createSpaceDiffStore(region, spaceDiffTable, storeOptions),
     subscriptionStore: createSubscriptionStore(region, subscriptionTable, storeOptions),
     consumerStore: createConsumerStore(region, consumerTable, storeOptions)
   }
@@ -50,13 +50,13 @@ export const _handler = async (event, context) => {
 /**
  * @param {import('../types').UcanStreamMessage} message
  * @param {{
- *   spaceSizeDiffStore: import('../types').SpaceSizeDiffStore
+ *   spaceDiffStore: import('../types').SpaceDiffStore
  *   subscriptionStore: import('../types').SubscriptionStore
  *   consumerStore: import('../types').ConsumerStore
  * }} stores
  * @returns {Promise<import('@ucanto/interface').Result>}
  */
-export const putSpaceSizeDiff = async (message, { spaceSizeDiffStore, subscriptionStore, consumerStore }) => {
+export const putSpaceSizeDiff = async (message, { spaceDiffStore, subscriptionStore, consumerStore }) => {
   if (!isReceipt(message)) return { ok: {} }
 
   /** @type {number|undefined} */
@@ -83,7 +83,7 @@ export const putSpaceSizeDiff = async (message, { spaceSizeDiffStore, subscripti
     const { ok: subscription, error: err0 } = await subscriptionStore.get(consumer.provider, consumer.subscription)
     if (err0) return { error: err0 }
 
-    const { error: err1 } = await spaceSizeDiffStore.put({
+    const { error: err1 } = await spaceDiffStore.put({
       customer: subscription.customer,
       provider: consumer.provider,
       subscription: subscription.subscription,

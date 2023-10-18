@@ -7,17 +7,17 @@ import { marshall } from '@aws-sdk/util-dynamodb'
  * @param {object} [options]
  * @param {URL} [options.endpoint]
  */
-export const createSpaceSizeDiffStore = (region, table, options) => {
+export const createSpaceDiffStore = (region, table, options) => {
   const dynamo = new DynamoDBClient({ region, endpoint: options?.endpoint?.toString() })
-  return useSpaceSizeDiffStore(dynamo, table)
+  return useSpaceDiffStore(dynamo, table)
 }
 
 /**
  * @param {DynamoDBClient} dynamo 
  * @param {string} table
- * @returns {import('../types').SpaceSizeDiffStore}
+ * @returns {import('../types').SpaceDiffStore}
  */
-export const useSpaceSizeDiffStore = (dynamo, table) => ({
+export const useSpaceDiffStore = (dynamo, table) => ({
   async put (input) {
     const cmd = new PutItemCommand({
       TableName: table,

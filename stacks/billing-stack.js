@@ -1,4 +1,5 @@
 import { use, Cron, Queue, Function } from '@serverless-stack/resources'
+import { StartingPosition } from 'aws-cdk-lib/aws-lambda'
 import { UcanInvocationStack } from './ucan-invocation-stack.js'
 import { BillingDbStack } from './billing-db-stack.js'
 import { UploadDbStack } from './upload-db-stack.js'
@@ -12,13 +13,14 @@ export function BillingStack ({ stack, app }) {
 
   const {
     customerTable,
-    spaceSizeSnapshotTable,
-    spaceSizeDiffTable
+    spaceSnapshotTable,
+    spaceDiffTable,
+    usageTable
   } = use(BillingDbStack)
 
   // Lambda that does a billing run for a given account
   const billingQueueHandler = new Function(stack, 'billing-queue-handler', {
-    permissions: [spaceSizeSnapshotTable, spaceSizeDiffTable],
+    permissions: [spaceSnapshotTable, spaceDiffTable],
     handler: 'functions/billing-queue.handler',
     timeout: '15 minutes'
   })
@@ -49,7 +51,7 @@ export function BillingStack ({ stack, app }) {
 
   // Lambda that receives UCAN stream events and writes diffs to spaceSizeDiffTable
   const ucanStreamHandler = new Function(stack, 'ucan-stream-handler', {
-    permissions: [spaceSizeDiffTable, subscriptionTable, consumerTable],
+    permissions: [spaceDiffTable, subscriptionTable, consumerTable],
     handler: 'functions/ucan-stream.handler'
   })
 
@@ -62,5 +64,24 @@ export function BillingStack ({ stack, app }) {
     }
   })
 
-  return { spaceSizeSnapshotTable, spaceSizeDiffTable, runnerCron }
+  // Lambda that sends usage table records to Stripe for invoicing.
+  const usageTableHandler = new Function(stack, 'usage-table-handler', {
+    permissions: [spaceSnapshotTable, spaceDiffTable],
+    handler: 'functions/usage-table.handler',
+    timeout: '15 minutes'
+  })
+
+  usageTable.addConsumers(stack, {
+    usageTableHandler: {
+      function: usageTableHandler,
+      cdk: {
+        eventSource: {
+          batchSize: 1,
+          startingPosition: StartingPosition.LATEST
+        }
+      }
+    }
+  })
+
+  return { runnerCron }
 }

@@ -1,8 +1,9 @@
 import { Table } from '@serverless-stack/resources'
 import {
   customerTableProps,
-  spaceSizeSnapshotTableProps,
-  spaceSizeDiffTableProps
+  spaceSnapshotTableProps,
+  spaceDiffTableProps,
+  usageTableProps
 } from '../billing/tables/index.js'
 
 /**
@@ -10,7 +11,8 @@ import {
  */
 export const BillingDbStack = ({ stack }) => {
   const customerTable = new Table(stack, 'customer', customerTableProps)
-  const spaceSizeSnapshotTable = new Table(stack, 'space-size-snapshot', spaceSizeSnapshotTableProps)
-  const spaceSizeDiffTable = new Table(stack, 'space-size-diff', spaceSizeDiffTableProps)
-  return { customerTable, spaceSizeSnapshotTable, spaceSizeDiffTable }
+  const spaceSnapshotTable = new Table(stack, 'space-snapshot', spaceSnapshotTableProps)
+  const spaceDiffTable = new Table(stack, 'space-diff', spaceDiffTableProps)
+  const usageTable = new Table(stack, 'usage', usageTableProps)
+  return { customerTable, spaceSnapshotTable, spaceDiffTable, usageTable }
 }
