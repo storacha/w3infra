@@ -3,7 +3,7 @@ import {
   DynamoDBClient, PutItemCommand, QueryCommand,
 } from '@aws-sdk/client-dynamodb'
 import { marshall, unmarshall } from '@aws-sdk/util-dynamodb'
-import { nanoid } from 'nanoid/async'
+import { nanoid } from 'nanoid'
 
 /**
  * Abstraction layer to handle operations on Store Table.
@@ -31,7 +31,7 @@ export function useRateLimitTable (dynamoDb, tableName) {
   return {
     add: async (subject, rate) => {
       const insertedAt = new Date().toISOString()
-      const id = await nanoid()
+      const id = nanoid()
       const row = {
         id,
         subject,
