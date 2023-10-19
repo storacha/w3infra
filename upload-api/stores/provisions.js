@@ -4,16 +4,14 @@ import { CBOR, Failure } from '@ucanto/server'
 
 /**
  * Create a subscription ID for a given provision. Currently 
- * uses the CID of `customer` which ensures each customer
- * will get at most one subscription. This can be relaxed (ie,
- * by deriving subscription ID from customer AND consumer) in the future
- * or by other providers for flexibility.
+ * uses a CID generated from `customer` and `consumer` which ensures each customer
+ * will get at most one subscription per space.
  * 
  * @param {import('@web3-storage/upload-api').Provision} item 
  * @returns string
  */
-export const createProvisionSubscriptionId = async ({ customer }) =>
-  (await CBOR.write({ customer })).cid.toString()
+export const createProvisionSubscriptionId = async ({ customer, consumer }) =>
+  (await CBOR.write({ customer, consumer })).cid.toString()
 
 /**
  * @param {import('../types').SubscriptionTable} subscriptionTable
