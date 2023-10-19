@@ -1,5 +1,4 @@
 import { DID, Link, LinkJSON, Result, Capabilities, Unit, Failure } from '@ucanto/interface'
-import { ListResponse } from '@web3-storage/capabilities/types'
 
 // Billing stores /////////////////////////////////////////////////////////////
 
@@ -19,7 +18,7 @@ export interface SpaceDiffRecord {
   change: number
   /** Time the receipt was issued by the service. */
   receiptAt: Date
-  /** Time the change was recorded. */
+  /** Time the change was added to the database. */
   insertedAt: Date
 }
 
@@ -72,9 +71,9 @@ export interface CustomerRecord {
   account: string,
   /** Unique identifier of the product a.k.a tier. */
   product: string,
-  /** ISO timestamp record was inserted. */
+  /** Time the record was added to the database. */
   insertedAt: Date,
-  /** ISO timestamp record was updated. */
+  /** Time the record was updated in the database. */
   updatedAt: Date
 }
 
@@ -83,6 +82,35 @@ export interface CustomerListOptions extends Pageable {}
 export interface CustomerStore {
   /** Paginated listing of customer records. */
   list: (options?: CustomerListOptions) => Promise<Result<ListResponse<CustomerRecord>, Failure>>
+}
+
+export interface UsageRecord {
+  /** Customer DID (did:mailto:...). */
+  customer: DID
+  /**
+   * Opaque identifier representing an account in the payment system.
+   * 
+   * e.g. Stripe customer ID (stripe:cus_9s6XKzkNRiz8i3)
+   */
+  account: string
+  /** Unique identifier of the product a.k.a tier. */
+  product: string
+  /** Space DID (did:key:...). */
+  space: string
+  /** Usage in GB/month */
+  usage: number
+  /** Time the usage period spans from (inlusive). */
+  from: Date
+  /** Time the usage period spans to (exclusive). */
+  to: Date
+  /** Time the record was added to the database. */
+  insertedAt: Date
+}
+
+export type UsageInput = Omit<UsageRecord, 'insertedAt'>
+
+export interface UsageStore {
+  put: (input: UsageInput) => Promise<Result<Unit, Failure>>
 }
 
 // Upload API stores //////////////////////////////////////////////////////////
@@ -154,7 +182,14 @@ export type UcanStreamMessage<C extends Capabilities = Capabilities> = UcanWorkf
 
 // Utility ////////////////////////////////////////////////////////////////////
 
-export type { ListResponse }
+export interface ListResponse<R> {
+  /**
+   * Opaque string specifying where to start retrival of the next page of
+   * results.
+   */
+  cursor?: string
+  results: R[]
+}
 
 export interface Pageable {
   /**
@@ -166,8 +201,4 @@ export interface Pageable {
    * Maximum number of items to return.
    */
   size?: number
-  /**
-   * If true, return page of results preceding cursor. Defaults to false.
-   */
-  pre?: boolean
 }

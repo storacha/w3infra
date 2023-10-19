@@ -26,7 +26,7 @@ export const useSpaceSizeSnapshotStore = (dynamo, table) => ({
         space: `${input.space},${input.provider}`,
         size: input.size,
         recordedAt: input.recordedAt.getTime(),
-        insertedAt: new Date().toUTCString()
+        insertedAt: new Date().toISOString()
       })
     })
     await dynamo.send(cmd)

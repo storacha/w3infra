@@ -29,7 +29,7 @@ export const useSpaceDiffStore = (dynamo, table) => ({
         cause: input.cause.toString(),
         change: input.change,
         receiptAt: input.receiptAt.getTime(),
-        insertedAt: new Date().toUTCString()
+        insertedAt: new Date().toISOString()
       })
     })
     await dynamo.send(cmd)
