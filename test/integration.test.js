@@ -19,7 +19,7 @@ import {
   getCarparkBucketInfo,
   getDynamoDb
 } from './helpers/deployment.js'
-import { createNewClient, setupNewClient } from './helpers/up-client.js'
+import { createMailSlurpInbox, createNewClient, setupNewClient } from './helpers/up-client.js'
 import { randomFile } from './helpers/random.js'
 import { getTableItem, getAllTableRows, pollQueryTable } from './helpers/table.js'
 
@@ -116,11 +116,17 @@ test('authorizations can be blocked by email or domain', async t => {
 
 // Integration test for all flow from uploading a file to Kinesis events consumers and replicator
 test('w3infra integration flow', async t => {
-  const client = await setupNewClient(t.context.apiEndpoint)
+  const inbox = await createMailSlurpInbox()
+  const client = await setupNewClient(t.context.apiEndpoint, { inbox })
   const spaceDid = client.currentSpace()?.did()
   if (!spaceDid) {
     throw new Error('Testing space DID must be set')
   }
+
+  // it should be possible to create more than one space
+  const space = await client.createSpace("2nd space")
+  await client.setCurrentSpace(space.did())
+  await client.registerSpace(inbox.email)
 
   // Get space metrics before upload
   const spaceBeforeUploadAddMetrics = await getSpaceMetrics(t, spaceDid, SPACE_METRICS_NAMES.UPLOAD_ADD_TOTAL)

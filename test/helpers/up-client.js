@@ -22,7 +22,7 @@ function getAuthLinkFromEmail (email, accessServiceUrl) {
   return link.replace(process.env.ACCESS_SERVICE_URL, accessServiceUrl)
 }
 
-async function createMailSlurpInbox() {
+export async function createMailSlurpInbox() {
   const apiKey = process.env.MAILSLURP_API_KEY
   const mailslurp = new MailSlurp({ apiKey })
   const inbox = await mailslurp.inboxController.createInbox({})
@@ -46,7 +46,7 @@ export async function createNewClient(uploadServiceUrl) {
 
 export async function setupNewClient (uploadServiceUrl, options = {}) {
   // create an inbox
-  const { mailslurp, id: inboxId, email } = await createMailSlurpInbox()
+  const { mailslurp, id: inboxId, email } = options.inbox || await createMailSlurpInbox()
   const client = await createNewClient(uploadServiceUrl)
 
   const timeoutMs = process.env.MAILSLURP_TIMEOUT ? parseInt(process.env.MAILSLURP_TIMEOUT) : 60_000
