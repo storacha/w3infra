@@ -9,7 +9,6 @@ import {
   aws_athena as athena,
   aws_sam as sam
 } from 'aws-cdk-lib'
-import { Access, Provider, Space, Store, Upload, Consumer, Customer, RateLimit, Subscription, Filecoin, Admin, UCAN } from '@web3-storage/capabilities'
 
 import { UcanInvocationStack } from './ucan-invocation-stack.js'
 
