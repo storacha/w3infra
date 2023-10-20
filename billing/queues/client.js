@@ -1,6 +1,11 @@
-import { SendMessageCommand } from '@aws-sdk/client-sqs'
-import { connectQueue } from './index.js'
+import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs'
 import { QueueOperationFailure } from './lib.js'
+
+/** @param {{ region: string } | SQSClient} target */
+export const connectQueue = target =>
+  target instanceof SQSClient
+    ? target
+    : new SQSClient(target)
 
 /**
  * @template T
@@ -27,11 +32,10 @@ export function createQueueClient (conf, context) {
         // MessageGroupId: options.messageGroupId
       })
 
-      let r
       try {
-        r = await client.send(cmd)
-        if (r.$metadata.httpStatusCode !== 200) {
-          throw new Error(`unexpected status sending message to queue: ${r.$metadata.httpStatusCode}`)
+        const res = await client.send(cmd)
+        if (res.$metadata.httpStatusCode !== 200) {
+          throw new Error(`unexpected status sending message to queue: ${res.$metadata.httpStatusCode}`)
         }
       } catch (/** @type {any} */ err) {
         return { error: new QueueOperationFailure(err.message) }

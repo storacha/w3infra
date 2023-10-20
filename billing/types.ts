@@ -22,7 +22,11 @@ export interface SpaceDiff {
   insertedAt: Date
 }
 
-export type SpaceDiffStore = WritableStore<SpaceDiff>
+export interface SpaceDiffKey { customer: DID<'mailto'> }
+
+export interface SpaceDiffStore extends StorePutter<SpaceDiff> {
+  listBetween: (key: SpaceDiffKey, from: Date, to: Date, options?: Pageable) => Promise<Result<ListSuccess<SpaceDiff>, EncodeFailure|DecodeFailure|StoreOperationFailure>>
+}
 
 /** Captures size of a space at a given point in time. */
 export interface SpaceSnapshot {
@@ -38,12 +42,9 @@ export interface SpaceSnapshot {
   insertedAt: Date
 }
 
-export interface SpaceSnapshotKey { provider: DID, space: DID }
+export interface SpaceSnapshotKey { provider: DID, space: DID, recordedAt: Date }
 
-export interface SpaceSnapshotStore extends WritableStore<SpaceSnapshot> {
-  /** Get the first snapshot recorded after the provided time. */
-  getAfter: (key: SpaceSnapshotKey, after: Date) => Promise<Result<SpaceSnapshot, EncodeFailure|DecodeFailure|RecordNotFound<SpaceSnapshotKey>>>
-}
+export interface SpaceSnapshotStore extends StorePutter<SpaceSnapshot>, StoreGetter<SpaceSnapshotKey, SpaceSnapshot> {}
 
 /**
  * Captures information about a customer of the service that may need to be
@@ -69,10 +70,7 @@ export interface Customer {
 
 export interface CustomerListOptions extends Pageable {}
 
-export interface CustomerStore {
-  /** Paginated listing of customer records. */
-  list: (options?: CustomerListOptions) => Promise<Result<ListSuccess<Customer>, Failure>>
-}
+export type CustomerStore = StoreLister<{}, Customer>
 
 /**
  * Captures storage usage by a given customer for a given space in the given
@@ -101,7 +99,7 @@ export interface Usage {
   insertedAt: Date
 }
 
-export type UsageStore = WritableStore<Usage>
+export type UsageStore = StorePutter<Usage>
 
 // Billing queues /////////////////////////////////////////////////////////////
 
@@ -109,9 +107,9 @@ export type UsageStore = WritableStore<Usage>
  * Captures details about a customer that should be billed for a given period
  * of usage.
  */
-export interface BillingInstruction {
+export interface CustomerBillingInstruction {
   /** Customer DID (did:mailto:...). */
-  customer: DID
+  customer: DID<'mailto'>
   /**
    * Opaque identifier representing an account in the payment system.
    * 
@@ -126,7 +124,20 @@ export interface BillingInstruction {
   to: Date
 }
 
-export type BillingQueue = Queue<BillingInstruction>
+export type CustomerQueue = Queue<CustomerBillingInstruction>
+
+/**
+ * Captures details about a space that should be billed for a given customer in
+ * the given period of usage.
+ */
+export interface SpaceBillingInstruction extends CustomerBillingInstruction {
+  /** Space DID (did:key:...). */
+  space: DID
+  /** Storage provider for the space. */
+  provider: DID
+}
+
+export type SpaceQueue = Queue<SpaceBillingInstruction>
 
 // Upload API stores //////////////////////////////////////////////////////////
 
@@ -141,7 +152,7 @@ export interface Consumer {
 
 export interface ConsumerKey { consumer: DID }
 
-export type ConsumerStore = PaginatedStore<ConsumerKey, Consumer>
+export type ConsumerStore = StoreLister<ConsumerKey, Consumer>
 
 export interface Subscription {
   customer: DID<'mailto'>
@@ -154,7 +165,9 @@ export interface Subscription {
 
 export interface SubscriptionKey { provider: DID, subscription: string }
 
-export type SubscriptionStore = ReadableStore<SubscriptionKey, Subscription>
+export interface SubscriptionListKey { customer: DID<'mailto'> }
+
+export interface SubscriptionStore extends StoreGetter<SubscriptionKey, Subscription>, StoreLister<SubscriptionListKey, Subscription> {}
 
 // UCAN invocation ////////////////////////////////////////////////////////////
 
@@ -246,17 +259,18 @@ export type InferStoreRecord<T> = {
   [Property in keyof T]: T[Property] extends Number ? T[Property] : string
 }
 
+/** A record that is of suitable type to be put in storage. */
 export type StoreRecord = Record<string, string|number>
 
-export interface WritableStore<T> {
+export interface StorePutter<T> {
   put: (rec: T) => Promise<Result<Unit, InvalidInput|EncodeFailure|StoreOperationFailure>>
 }
 
-export interface ReadableStore<K extends {}, V> {
+export interface StoreGetter<K extends {}, V> {
   get: (key: K) => Promise<Result<V, EncodeFailure|RecordNotFound<K>|DecodeFailure|StoreOperationFailure>>
 }
 
-export interface PaginatedStore<K extends {}, V> {
+export interface StoreLister<K extends {}, V> {
   list: (key: K, options?: Pageable) => Promise<Result<ListSuccess<V>, EncodeFailure|DecodeFailure|StoreOperationFailure>>
 }
 

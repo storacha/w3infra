@@ -76,12 +76,12 @@ export const putSpaceSizeDiff = async (message, { spaceDiffStore, subscriptionSt
   }
 
   const space = /** @type {import('@ucanto/interface').DID} */ (message.value.att[0].with)
-  const { ok: consumers, error } = await consumerStore.getBatch(space)
+  const { ok: listing, error } = await consumerStore.list({ consumer: space })
   if (error) return { error }
 
   // There should only be one subscription per provider, but in theory you
   // could have multiple providers for the same consumer (space).
-  for (const consumer of consumers) {
+  for (const consumer of listing.results) {
     const { ok: subscription, error: err0 } = await subscriptionStore.get({ provider: consumer.provider, subscription: consumer.subscription })
     if (err0) return { error: err0 }
 

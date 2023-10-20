@@ -1,7 +1,5 @@
-import { DID } from '@ucanto/server'
-import * as DIDMailto from '@web3-storage/did-mailto'
 import * as Link from 'multiformats/link'
-import { DecodeFailure } from './lib.js'
+import { DecodeFailure, isDIDMailto, isDID } from './lib.js'
 
 /**
  * @type {import('../types').Encoder<import('../types').SubscriptionKey, import('../types').InferStoreRecord<import('../types').SubscriptionKey>>}
@@ -14,14 +12,31 @@ export const encodeKey = input => ({
 })
 
 /**
+ * @type {import('../types').Encoder<import('../types').SubscriptionListKey, import('../types').InferStoreRecord<import('../types').SubscriptionListKey>>}
+ */
+export const encodeListKey = input => ({ ok: { customer: input.customer } })
+
+/**
  * @type {import('../types').Decoder<import('../types').StoreRecord, import('../types').Subscription>}
  */
 export const decode = input => {
+  if (!isDIDMailto(input.customer)) {
+    return { error: new DecodeFailure(`"customer" is not a mailto DID`) }
+  }
+  if (!isDID(input.provider)) {
+    return { error: new DecodeFailure(`"provider" is not a DID`) }
+  }
+  if (typeof input.subscription !== 'string') {
+    return { error: new DecodeFailure(`"subscription" is not a string`) }
+  }
+  if (typeof input.cause !== 'string') {
+    return { error: new DecodeFailure(`"cause" is not a string`) }
+  }
   try {
     return {
       ok: {
-        customer: DIDMailto.fromString(input.customer),
-        provider: DID.parse(input.provider).did(),
+        customer: input.customer,
+        provider: input.provider,
         subscription: input.subscription,
         cause: Link.parse(input.cause),
         insertedAt: new Date(input.insertedAt),

@@ -1,4 +1,4 @@
-import { createWritableStoreClient } from './client.js'
+import { createStorePutterClient } from './client.js'
 import { validate, encode } from '../data/usage.js'
 
 /**
@@ -39,6 +39,7 @@ export const usageTableProps = {
  * @param {string} tableName
  * @param {object} [options]
  * @param {URL} [options.endpoint]
+ * @returns {import('../types').UsageStore}
  */
 export const createUsageStore = (region, tableName, options) =>
-  createWritableStoreClient({ region }, { tableName, validate, encode })
+  createStorePutterClient({ region }, { tableName, validate, encode })

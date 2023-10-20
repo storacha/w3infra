@@ -1,4 +1,4 @@
-import { createPaginatedStoreClient } from './client.js'
+import { createStoreListerClient } from './client.js'
 import { encodeKey, decode } from '../data/consumer.js'
 
 /**
@@ -6,6 +6,7 @@ import { encodeKey, decode } from '../data/consumer.js'
  * @param {string} tableName
  * @param {object} [options]
  * @param {URL} [options.endpoint]
+ * @returns {import('../types').ConsumerStore}
  */
 export const createConsumerStore = (region, tableName, options) =>
-  createPaginatedStoreClient({ region }, { tableName, encodeKey, decode })
+  createStoreListerClient({ region }, { tableName, encodeKey, decode })

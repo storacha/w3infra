@@ -31,7 +31,7 @@ export const encode = input => {
         space: `${input.space},${input.provider}`,
         size: input.size,
         recordedAt: input.recordedAt.toISOString(),
-        insertedAt: new Date().toISOString()
+        insertedAt: input.insertedAt.toISOString()
       }
     }
   } catch (/** @type {any} */ err) {
@@ -40,6 +40,16 @@ export const encode = input => {
     }
   }
 }
+
+/**
+ * @type {import('../types').Encoder<import('../types').SpaceSnapshotKey, Omit<import('../types').InferStoreRecord<import('../types').SpaceSnapshotKey>, 'provider'>>}
+ */
+export const encodeKey = input => ({
+  ok: {
+    space: `${input.space},${input.provider}`,
+    recordedAt: input.recordedAt.toISOString()
+  }
+})
 
 /**
  * @type {import('../types').Decoder<import('../types').StoreRecord, import('../types').SpaceSnapshot>}

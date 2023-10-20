@@ -15,9 +15,9 @@ export const connectTable = target =>
  * @param {string} context.tableName
  * @param {import('../types').Validator<T>} context.validate
  * @param {import('../types').Encoder<T, import('../types').StoreRecord>} context.encode
- * @returns {import('../types').WritableStore<T>}
+ * @returns {import('../types').StorePutter<T>}
  */
-export const createWritableStoreClient = (conf, context) => {
+export const createStorePutterClient = (conf, context) => {
   const client = connectTable(conf)
   return {
     put: async (record) => {
@@ -55,9 +55,9 @@ export const createWritableStoreClient = (conf, context) => {
  * @param {string} context.tableName
  * @param {import('../types').Encoder<K, import('../types').StoreRecord>} context.encodeKey
  * @param {import('../types').Decoder<import('../types').StoreRecord, V>} context.decode
- * @returns {import('../types').ReadableStore<K, V>}
+ * @returns {import('../types').StoreGetter<K, V>}
  */
-export const createReadableStoreClient = (conf, context) => {
+export const createStoreGetterClient = (conf, context) => {
   const client = connectTable(conf)
   return {
     get: async (key) => {
@@ -98,9 +98,10 @@ export const createReadableStoreClient = (conf, context) => {
  * @param {string} context.tableName
  * @param {import('../types').Encoder<K, import('../types').StoreRecord>} context.encodeKey
  * @param {import('../types').Decoder<import('../types').StoreRecord, V>} context.decode
- * @returns {import('../types').PaginatedStore<K, V>}
+ * @param {string} [context.indexName]
+ * @returns {import('../types').StoreLister<K, V>}
  */
-export const createPaginatedStoreClient = (conf, context) => {
+export const createStoreListerClient = (conf, context) => {
   const client = connectTable(conf)
   return {
     list: async (key, options) => {
@@ -118,6 +119,7 @@ export const createPaginatedStoreClient = (conf, context) => {
 
       const cmd = new QueryCommand({
         TableName: context.tableName,
+        IndexName: context.indexName,
         Limit: options?.size ?? 100,
         KeyConditions: conditions,
         ExclusiveStartKey: options?.cursor

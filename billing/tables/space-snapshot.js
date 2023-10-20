@@ -1,8 +1,5 @@
-import { QueryCommand } from '@aws-sdk/client-dynamodb'
-import { unmarshall } from '@aws-sdk/util-dynamodb'
-import { connectTable, createWritableStoreClient } from './client.js'
-import { validate, encode, decode } from '../data/space-snapshot.js'
-import { RecordNotFound } from './lib.js'
+import { createStoreGetterClient, createStorePutterClient } from './client.js'
+import { validate, encode, decode, encodeKey } from '../data/space-snapshot.js'
 
 /**
  * Stores snapshots of total space size at a given time.
@@ -32,40 +29,9 @@ export const spaceSnapshotTableProps = {
  * @param {string} tableName
  * @param {object} [options]
  * @param {URL} [options.endpoint]
- * @returns {import('../types.js').SpaceSnapshotStore}
+ * @returns {import('../types').SpaceSnapshotStore}
  */
-export const createSpaceSnapshotStore = (region, tableName, options) => {
-  const client = connectTable({ region })
-  return {
-    ...createWritableStoreClient({ region }, { tableName, validate, encode }),
-    async getAfter ({ provider, space }, after) {
-      const cmd = new QueryCommand({
-        TableName: tableName,
-        Limit: 1,
-        KeyConditions: {
-          space: {
-            ComparisonOperator: 'EQ',
-            AttributeValueList: [{ S: `${space},${provider}` }]
-          },
-          recordedAt: {
-            ComparisonOperator: 'GT',
-            AttributeValueList: [{ S: after.toISOString() }]
-          }
-        }
-      })
-      const res = await client.send(cmd)
-      if (!res.Items || !res.Items.length) {
-        return { error: new RecordNotFound({ provider, space, after: after.toISOString() }) }
-      }
-  
-      const results = []
-      for (const item of res.Items ?? []) {
-        const decoding = decode(unmarshall(item))
-        if (decoding.error) return decoding
-        results.push(decoding.ok)
-      }
-  
-      return { ok: results[0] }
-    }
-  }
-}
+export const createSpaceSnapshotStore = (region, tableName, options) => ({
+  ...createStorePutterClient({ region }, { tableName, validate, encode }),
+  ...createStoreGetterClient({ region }, { tableName, encodeKey, decode })
+})

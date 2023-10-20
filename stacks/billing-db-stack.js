@@ -1,10 +1,8 @@
 import { Table } from '@serverless-stack/resources'
-import {
-  customerTableProps,
-  spaceSnapshotTableProps,
-  spaceDiffTableProps,
-  usageTableProps
-} from '../billing/tables/index.js'
+import { customerTableProps } from '../billing/tables/customer.js'
+import { spaceDiffTableProps } from '../billing/tables/space-diff.js'
+import { spaceSnapshotTableProps } from '../billing/tables/space-snapshot.js'
+import { usageTableProps } from '../billing/tables/usage.js'
 
 /**
  * @param {import('@serverless-stack/resources').StackContext} properties

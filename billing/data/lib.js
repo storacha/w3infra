@@ -71,3 +71,15 @@ export const isDID = input => {
  * @returns {input is import('@ucanto/interface').DID<'mailto'>}
  */
 export const isDIDMailto = input => isDID(input) && input.startsWith('did:mailto')
+
+/** @param {any} input */
+export const asDID = input => {
+  if (!isDID(input)) throw new Error('not a DID')
+  return input
+}
+
+/** @param {any} input */
+export const asDIDMailto = input => {
+  if (!isDIDMailto(input)) throw new Error('not a mailto DID')
+  return input
+}

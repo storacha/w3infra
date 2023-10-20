@@ -17,25 +17,41 @@ export function BillingStack ({ stack, app }) {
     spaceDiffTable,
     usageTable
   } = use(BillingDbStack)
+  const { subscriptionTable, consumerTable } = use(UploadDbStack)
 
-  // Lambda that does a billing run for a given account
-  const billingQueueHandler = new Function(stack, 'billing-queue-handler', {
-    permissions: [spaceSnapshotTable, spaceDiffTable],
-    handler: 'functions/billing-queue.handler',
+  // Lambda that does a billing run for a given space and customer
+  const spaceQueueHandler = new Function(stack, 'space-queue-handler', {
+    permissions: [spaceSnapshotTable, spaceDiffTable, usageTable],
+    handler: 'functions/space-queue.handler',
+    timeout: '15 minutes'
+  })
+
+  // Queue of spaces and customers that need billing
+  const spaceQueue = new Queue(stack, 'space-queue', {
+    consumer: {
+      function: spaceQueueHandler,
+      cdk: { eventSource: { batchSize: 1 } }
+    }
+  })
+
+  // Lambda that does a billing run for a given customer
+  const customerQueueHandler = new Function(stack, 'customer-queue-handler', {
+    permissions: [subscriptionTable, consumerTable, spaceQueue],
+    handler: 'functions/customer-queue.handler',
     timeout: '15 minutes'
   })
 
   // Queue of accounts that need billing
-  const billingQueue = new Queue(stack, 'billing-queue', {
+  const customerQueue = new Queue(stack, 'customer-queue', {
     consumer: {
-      function: billingQueueHandler,
+      function: customerQueueHandler,
       cdk: { eventSource: { batchSize: 1 } }
     }
   })
 
   // Lambda that queues account DIDs to be billed
   const runnerHandler = new Function(stack, 'runner-handler', {
-    permissions: [customerTable, billingQueue],
+    permissions: [customerTable, customerQueue],
     handler: 'functions/runner.handler',
     timeout: '15 minutes'
   })
@@ -47,7 +63,6 @@ export function BillingStack ({ stack, app }) {
   })
 
   const { ucanStream } = use(UcanInvocationStack)
-  const { subscriptionTable, consumerTable } = use(UploadDbStack)
 
   // Lambda that receives UCAN stream events and writes diffs to spaceSizeDiffTable
   const ucanStreamHandler = new Function(stack, 'ucan-stream-handler', {

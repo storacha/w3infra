@@ -1,19 +1,19 @@
-import { DID } from '@ucanto/server'
 import * as Link from 'multiformats/link'
-import { EncodeFailure, DecodeFailure, InvalidInput, isDIDMailto, isDID } from './lib.js'
+import { EncodeFailure, DecodeFailure, InvalidInput, isDIDMailto, isDID, asDIDMailto, asDID } from './lib.js'
 
 /** @type {import('../types').Validator<import('../types').SpaceDiff>} */
 export const validate = input => {
   if (input == null || typeof input !== 'object') {
     return { error: new InvalidInput('not an object') }
   }
-  for (const field of ['customer', 'space', 'provider']) {
-    try {
-      // @ts-expect-error
-      DID.parse(input[field])
-    } catch (/** @type {any} */ err) {
-      return { error: new InvalidInput(err.message, field) }
-    }
+  if (!isDIDMailto(input.customer)) {
+    return { error: new InvalidInput('not a mailto DID', 'customer') }
+  }
+  if (!isDID(input.space)) {
+    return { error: new InvalidInput('not a DID', 'space') }
+  }
+  if (!isDID(input.provider)) {
+    return { error: new InvalidInput('not a DID', 'provider') }
   }
   if (typeof input.subscription !== 'string') {
     return { error: new InvalidInput('not a string', 'subscription') }
@@ -55,39 +55,23 @@ export const encode = input => {
 }
 
 /**
+ * @type {import('../types').Encoder<import('../types').SpaceDiffKey, import('../types').InferStoreRecord<import('../types').SpaceDiffKey>>}
+ */
+export const encodeKey = input => ({ ok: { customer: input.customer } })
+
+/**
  * @type {import('../types').Decoder<import('../types').StoreRecord, import('../types').SpaceDiff>}
  */
 export const decode = input => {
-  if (!isDIDMailto(input.customer)) {
-    return { error: new DecodeFailure(`"customer" is not a mailto DID`) }
-  }
-  if (!isDID(input.space)) {
-    return { error: new DecodeFailure(`"space" is not a DID`) }
-  }
-  if (!isDID(input.provider)) {
-    return { error: new DecodeFailure(`"provider" is not a DID`) }
-  }
-  if (typeof input.subscription !== 'string') {
-    return { error: new DecodeFailure(`"subscription" is not a string`) }
-  }
-  if (typeof input.product !== 'string') {
-    return { error: new DecodeFailure(`"product" is not a string`) }
-  }
-  if (typeof input.cause !== 'string') {
-    return { error: new DecodeFailure(`"cause" is not a string`) }
-  }
-  if (typeof input.change !== 'number') {
-    return { error: new DecodeFailure(`"change" is not a number`) }
-  }
   try {
     return {
       ok: {
-        customer: input.customer,
-        space: input.space,
-        provider: input.provider,
-        subscription: input.subscription,
-        cause: Link.parse(input.cause),
-        change: input.change,
+        customer: asDIDMailto(input.customer),
+        space: asDID(input.space),
+        provider: asDID(input.provider),
+        subscription: String(input.subscription),
+        cause: Link.parse(String(input.cause)),
+        change: Number(input.change),
         receiptAt: new Date(input.receiptAt),
         insertedAt: new Date(input.insertedAt)
       }
