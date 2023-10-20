@@ -96,8 +96,8 @@
       "screenBounds": {
         "x": 0,
         "y": 0,
-        "w": 1624,
-        "h": 644
+        "w": 1671,
+        "h": 941
       },
       "zoomBrush": null,
       "isGridMode": false,
@@ -119,9 +119,9 @@
       "typeName": "instance"
     },
     {
-      "x": 1973.4002954238467,
-      "y": 391.5726120705872,
-      "z": 0.27143221791014516,
+      "x": 158.6070248298117,
+      "y": -67.64868846864702,
+      "z": 0.6274891930147042,
       "meta": {},
       "id": "camera:page:SqRFlwa4qqn_hzEPWcNI-",
       "typeName": "camera"
@@ -142,9 +142,9 @@
     {
       "id": "pointer:pointer",
       "typeName": "pointer",
-      "x": 1542.008891616273,
-      "y": 1321.8213102896418,
-      "lastActivityTimestamp": 1697647355233,
+      "x": 1401.6414597637036,
+      "y": 1361.6575280455424,
+      "lastActivityTimestamp": 1697720409378,
       "meta": {}
     },
     {

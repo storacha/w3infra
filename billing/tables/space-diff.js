@@ -1,38 +1,39 @@
-import { DynamoDBClient, PutItemCommand } from '@aws-sdk/client-dynamodb'
-import { marshall } from '@aws-sdk/util-dynamodb'
+import { createWritableStoreClient } from './client.js'
+import { validate, encode } from '../data/space-diff.js'
 
 /**
- * @param {string} region 
- * @param {string} table
- * @param {object} [options]
- * @param {URL} [options.endpoint]
+ * Stores changes to total space size.
+ *
+ * @type {import('@serverless-stack/resources').TableProps}
  */
-export const createSpaceDiffStore = (region, table, options) => {
-  const dynamo = new DynamoDBClient({ region, endpoint: options?.endpoint?.toString() })
-  return useSpaceDiffStore(dynamo, table)
+export const spaceDiffTableProps = {
+  fields: {
+    /** Customer DID (did:mailto:...). */
+    customer: 'string',
+    /** Space DID (did:key:...). */
+    space: 'string',
+    /** Storage provider for the space. */
+    provider: 'string',
+    /** Subscription in use when the size changed. */
+    subscription: 'string',
+    /** Invocation CID that changed the space size (bafy...). */
+    cause: 'string',
+    /** Number of bytes added to or removed from the space. */
+    change: 'number',
+    /** ISO timestamp the receipt was issued. */
+    receiptAt: 'string',
+    /** ISO timestamp we recorded the change. */
+    insertedAt: 'string'
+  },
+  primaryIndex: { partitionKey: 'customer', sortKey: 'receiptAt' }
 }
 
 /**
- * @param {DynamoDBClient} dynamo 
- * @param {string} table
- * @returns {import('../types').SpaceDiffStore}
+ * @param {string} region 
+ * @param {string} tableName
+ * @param {object} [options]
+ * @param {URL} [options.endpoint]
+ * @returns {import('../types.js').SpaceDiffStore}
  */
-export const useSpaceDiffStore = (dynamo, table) => ({
-  async put (input) {
-    const cmd = new PutItemCommand({
-      TableName: table,
-      Item: marshall({
-        customer: input.customer,
-        space: input.space,
-        provider: input.provider,
-        subscription: input.subscription,
-        cause: input.cause.toString(),
-        change: input.change,
-        receiptAt: input.receiptAt.getTime(),
-        insertedAt: new Date().toISOString()
-      })
-    })
-    await dynamo.send(cmd)
-    return { ok: {} }
-  }
-})
+export const createSpaceDiffStore = (region, tableName, options) => 
+  createWritableStoreClient({ region }, { tableName, validate, encode })

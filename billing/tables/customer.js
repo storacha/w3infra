@@ -1,48 +1,45 @@
-import { DynamoDBClient, QueryCommand } from '@aws-sdk/client-dynamodb'
-import { marshall, unmarshall } from '@aws-sdk/util-dynamodb'
-import * as Link from 'multiformats/link'
+import { createPaginatedStoreClient } from './client.js'
+import { decode } from '../data/customer.js'
 
 /**
- * @param {string} region 
- * @param {string} table
- * @param {object} [options]
- * @param {URL} [options.endpoint]
+ * Stores customer details.
+ *
+ * @type {import('@serverless-stack/resources').TableProps}
  */
-export const createCustomerStore = (region, table, options) => {
-  const dynamo = new DynamoDBClient({ region, endpoint: options?.endpoint?.toString() })
-  return useCustomerStore(dynamo, table)
+export const customerTableProps = {
+  fields: {
+    /** CID of the UCAN invocation that set it to the current value. */
+    cause: 'string',
+    /** DID of the user account e.g. `did:mailto:agent`. */
+    customer: 'string',
+    /**
+     * Opaque identifier representing an account in the payment system.
+     *
+     * e.g. Stripe customer ID (stripe:cus_9s6XKzkNRiz8i3)
+     */
+    account: 'string',
+    /** Unique identifier of the product a.k.a tier. */
+    product: 'string',
+    /** ISO timestamp record was inserted. */
+    insertedAt: 'string',
+    /** ISO timestamp record was updated. */
+    updatedAt: 'string'
+  },
+  primaryIndex: { partitionKey: 'customer' },
+  globalIndexes: {
+    account: { partitionKey: 'account', projection: ['customer'] }
+  }
 }
 
 /**
- * @param {DynamoDBClient} dynamo 
- * @param {string} table
- * @returns {import('../types').CustomerStore}
+ * @param {string} region 
+ * @param {string} tableName
+ * @param {object} [options]
+ * @param {URL} [options.endpoint]
  */
-export const useCustomerStore = (dynamo, table) => ({
-  async list (options) {
-    const cmd = new QueryCommand({
-      TableName: table,
-      Limit: options?.size ?? 100,
-      ExclusiveStartKey: options?.cursor
-        ? marshall(options.cursor)
-        : undefined
-    })
-    const res = await dynamo.send(cmd)
-
-    const results = (res.Items ?? []).map(item => {
-      const raw = unmarshall(item)
-      return /** @type {import('../types').CustomerRecord} */ ({
-        cause: Link.parse(raw.cause),
-        customer: raw.customer,
-        account: raw.account,
-        product: raw.product,
-        insertedAt: new Date(raw.insertedAt),
-        updatedAt: new Date(raw.updatedAt)
-      })
-    })
-    const lastKey = res.LastEvaluatedKey && unmarshall(res.LastEvaluatedKey)
-    const cursor = lastKey && lastKey.customer
-
-    return { ok: { cursor, results } }
-  }
-})
+export const createCustomerStore = (region, tableName, options) =>
+  createPaginatedStoreClient({ region }, {
+    tableName,
+    encodeKey: () => ({ ok: {} }),
+    decode
+  })

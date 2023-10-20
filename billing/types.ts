@@ -3,7 +3,7 @@ import { DID, Link, LinkJSON, Result, Capabilities, Unit, Failure } from '@ucant
 // Billing stores /////////////////////////////////////////////////////////////
 
 /** Captures a size change that occurred in a space. */
-export interface SpaceDiffRecord {
+export interface SpaceDiff {
   /** Storage provider for the space. */
   provider: DID
   /** Space that changed size. */
@@ -22,15 +22,10 @@ export interface SpaceDiffRecord {
   insertedAt: Date
 }
 
-export type SpaceDiffInput = Omit<SpaceDiffRecord, 'insertedAt'>
-
-export interface SpaceDiffStore {
-  /** Put a record to the table. */
-  put: (input: SpaceDiffInput) => Promise<Result<Unit, Failure>>
-}
+export type SpaceDiffStore = WritableStore<SpaceDiff>
 
 /** Captures size of a space at a given point in time. */
-export interface SpaceSnapshotRecord {
+export interface SpaceSnapshot {
   /** Storage provider this snapshot refers to. */
   provider: DID
   /** Space this snapshot refers to. */
@@ -43,23 +38,18 @@ export interface SpaceSnapshotRecord {
   insertedAt: Date
 }
 
-export type SpaceSizeSnapshotInput = Omit<SpaceSnapshotRecord, 'insertedAt'>
+export interface SpaceSnapshotKey { provider: DID, space: DID }
 
-export interface SpaceSnapshotStore {
-  /** Put a record to the table. */
-  put: (input: SpaceSizeSnapshotInput) => Promise<Result<Unit, Failure>>
+export interface SpaceSnapshotStore extends WritableStore<SpaceSnapshot> {
   /** Get the first snapshot recorded after the provided time. */
-  getAfter: (provider: DID, space: DID, after: Date) => Promise<Result<SpaceSnapshotRecord, SpaceSnapshotNotFound | Failure>>
+  getAfter: (key: SpaceSnapshotKey, after: Date) => Promise<Result<SpaceSnapshot, EncodeFailure|DecodeFailure|RecordNotFound<SpaceSnapshotKey>>>
 }
 
-export interface SpaceSnapshotNotFound extends Failure {
-  name: 'SpaceSnapshotNotFound'
-  provider: DID
-  space: DID
-  after: Date
-}
-
-export interface CustomerRecord {
+/**
+ * Captures information about a customer of the service that may need to be
+ * billed for storage usage.
+ */
+export interface Customer {
   /** CID of the UCAN invocation that set it to the current value. */
   cause: Link,
   /** DID of the user account e.g. `did:mailto:agent`. */
@@ -81,10 +71,14 @@ export interface CustomerListOptions extends Pageable {}
 
 export interface CustomerStore {
   /** Paginated listing of customer records. */
-  list: (options?: CustomerListOptions) => Promise<Result<ListResponse<CustomerRecord>, Failure>>
+  list: (options?: CustomerListOptions) => Promise<Result<ListSuccess<Customer>, Failure>>
 }
 
-export interface UsageRecord {
+/**
+ * Captures storage usage by a given customer for a given space in the given
+ * time period.
+ */
+export interface Usage {
   /** Customer DID (did:mailto:...). */
   customer: DID
   /**
@@ -96,10 +90,10 @@ export interface UsageRecord {
   /** Unique identifier of the product a.k.a tier. */
   product: string
   /** Space DID (did:key:...). */
-  space: string
+  space: DID
   /** Usage in GB/month */
   usage: number
-  /** Time the usage period spans from (inlusive). */
+  /** Time the usage period spans from (inclusive). */
   from: Date
   /** Time the usage period spans to (exclusive). */
   to: Date
@@ -107,15 +101,36 @@ export interface UsageRecord {
   insertedAt: Date
 }
 
-export type UsageInput = Omit<UsageRecord, 'insertedAt'>
+export type UsageStore = WritableStore<Usage>
 
-export interface UsageStore {
-  put: (input: UsageInput) => Promise<Result<Unit, Failure>>
+// Billing queues /////////////////////////////////////////////////////////////
+
+/**
+ * Captures details about a customer that should be billed for a given period
+ * of usage.
+ */
+export interface BillingInstruction {
+  /** Customer DID (did:mailto:...). */
+  customer: DID
+  /**
+   * Opaque identifier representing an account in the payment system.
+   * 
+   * e.g. Stripe customer ID (stripe:cus_9s6XKzkNRiz8i3)
+   */
+  account: string
+  /** Unique identifier of the product a.k.a tier. */
+  product: string
+  /** Time the billing period spans from (inlusive). */
+  from: Date
+  /** Time the billing period spans to (exclusive). */
+  to: Date
 }
+
+export type BillingQueue = Queue<BillingInstruction>
 
 // Upload API stores //////////////////////////////////////////////////////////
 
-export interface ConsumerRecord {
+export interface Consumer {
   consumer: DID
   provider: DID
   subscription: string
@@ -124,12 +139,11 @@ export interface ConsumerRecord {
   updatedAt: Date
 }
 
-export interface ConsumerStore {
-  /** Get a batch of records for the passed consumer (space) DID. */
-  getBatch: (consumer: DID) => Promise<Result<ConsumerRecord[], Failure>>
-}
+export interface ConsumerKey { consumer: DID }
 
-export interface SubscriptionRecord {
+export type ConsumerStore = PaginatedStore<ConsumerKey, Consumer>
+
+export interface Subscription {
   customer: DID<'mailto'>
   provider: DID
   subscription: string
@@ -138,16 +152,9 @@ export interface SubscriptionRecord {
   updatedAt: Date
 }
 
-export interface SubscriptionStore {
-  /** Get a subscription record by ID. */
-  get: (provider: DID, subscription: string) => Promise<Result<SubscriptionRecord, SubscriptionNotFound | Failure>>
-}
+export interface SubscriptionKey { provider: DID, subscription: string }
 
-export interface SubscriptionNotFound extends Failure {
-  name: 'SubscriptionNotFound'
-  provider: DID
-  subscription: string
-}
+export type SubscriptionStore = ReadableStore<SubscriptionKey, Subscription>
 
 // UCAN invocation ////////////////////////////////////////////////////////////
 
@@ -182,7 +189,7 @@ export type UcanStreamMessage<C extends Capabilities = Capabilities> = UcanWorkf
 
 // Utility ////////////////////////////////////////////////////////////////////
 
-export interface ListResponse<R> {
+export interface ListSuccess<R> {
   /**
    * Opaque string specifying where to start retrival of the next page of
    * results.
@@ -201,4 +208,58 @@ export interface Pageable {
    * Maximum number of items to return.
    */
   size?: number
+}
+
+export type Encoder<I, O> = (input: I) => Result<O, EncodeFailure>
+
+export type Decoder<I, O> = (input: I) => Result<O, DecodeFailure>
+
+export type Validator<T> = (input: T) => Result<Unit, InvalidInput>
+
+export interface InvalidInput extends Failure {
+  name: 'InvalidInput'
+  field?: string
+}
+
+export interface EncodeFailure extends Failure {
+  name: 'EncodeFailure'
+}
+
+export interface DecodeFailure extends Failure {
+  name: 'DecodeFailure'
+}
+
+export interface QueueOperationFailure extends Failure {
+  name: 'QueueOperationFailure'
+}
+
+export interface StoreOperationFailure extends Failure {
+  name: 'StoreOperationFailure'
+}
+
+export interface RecordNotFound<K> extends Failure {
+  name: 'RecordNotFound'
+  key: K
+}
+
+export type InferStoreRecord<T> = {
+  [Property in keyof T]: T[Property] extends Number ? T[Property] : string
+}
+
+export type StoreRecord = Record<string, string|number>
+
+export interface WritableStore<T> {
+  put: (rec: T) => Promise<Result<Unit, InvalidInput|EncodeFailure|StoreOperationFailure>>
+}
+
+export interface ReadableStore<K extends {}, V> {
+  get: (key: K) => Promise<Result<V, EncodeFailure|RecordNotFound<K>|DecodeFailure|StoreOperationFailure>>
+}
+
+export interface PaginatedStore<K extends {}, V> {
+  list: (key: K, options?: Pageable) => Promise<Result<ListSuccess<V>, EncodeFailure|DecodeFailure|StoreOperationFailure>>
+}
+
+export interface Queue<T> {
+  add: (message: T) => Promise<Result<Unit, InvalidInput|EncodeFailure|QueueOperationFailure>>
 }

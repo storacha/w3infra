@@ -4,14 +4,17 @@
   "type": "module",
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.430.0",
+    "@aws-sdk/client-sqs": "^3.431.0",
     "@aws-sdk/util-dynamodb": "^3.430.0",
     "@sentry/serverless": "^7.74.1",
     "@ucanto/interface": "^9.0.0",
     "@ucanto/server": "^9.0.1",
     "@web3-storage/capabilities": "^10.0.0",
-    "aws-cdk-lib": "^2.101.1",
     "multiformats": "^12.1.2",
     "uint8arrays": "^4.0.6"
+  },
+  "devDependencies": {
+    "aws-lambda": "^1.0.7"
   },
   "engines": {
     "node": ">=16.15"

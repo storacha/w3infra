@@ -47,6 +47,8 @@ export const _handler = async (event, context) => {
   for (const r of results) if (r.error) throw r.error
 }
 
+export const handler = Sentry.AWSLambda.wrapHandler(_handler)
+
 /**
  * @param {import('../types').UcanStreamMessage} message
  * @param {{
@@ -80,7 +82,7 @@ export const putSpaceSizeDiff = async (message, { spaceDiffStore, subscriptionSt
   // There should only be one subscription per provider, but in theory you
   // could have multiple providers for the same consumer (space).
   for (const consumer of consumers) {
-    const { ok: subscription, error: err0 } = await subscriptionStore.get(consumer.provider, consumer.subscription)
+    const { ok: subscription, error: err0 } = await subscriptionStore.get({ provider: consumer.provider, subscription: consumer.subscription })
     if (err0) return { error: err0 }
 
     const { error: err1 } = await spaceDiffStore.put({
@@ -91,7 +93,8 @@ export const putSpaceSizeDiff = async (message, { spaceDiffStore, subscriptionSt
       cause: message.invocationCid,
       change: size,
       // TODO: use receipt timestamp per https://github.com/web3-storage/w3up/issues/970
-      receiptAt: message.ts
+      receiptAt: message.ts,
+      insertedAt: new Date()
     })
     if (err1) return { error: err1 }
   }
@@ -151,5 +154,3 @@ const parseUcanStreamEvent = event => {
     }
   })
 }
-
-export const handler = Sentry.AWSLambda.wrapHandler(_handler)
