@@ -36,6 +36,22 @@ export function createUploadTable(region, tableName, options = {}) {
 export function useUploadTable(dynamoDb, tableName) {
   return {
     /**
+     * Fetch a single upload
+     */
+    get: async (space, root) => {
+      console.log('root', root)
+      const cmd = new GetItemCommand({
+        TableName: tableName,
+        Key: marshall({
+          space,
+          root: root.toString(),
+        }),
+        AttributesToGet: ['space', 'root', 'shards', 'insertedAt', 'updatedAt'],
+      })
+      const res = await dynamoDb.send(cmd)
+      return res.Item ? toUploadListItem(unmarshall(res.Item)) : undefined
+    },
+    /**
      * Check if the given data CID is bound to a space DID
      *
      * @param {import('@ucanto/interface').DID} space
