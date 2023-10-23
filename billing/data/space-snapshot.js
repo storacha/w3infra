@@ -23,7 +23,7 @@ export const validate = input => {
   return { ok: {} }
 }
 
-/** @type {import('../lib/api').Encoder<import('../lib/api').SpaceSnapshot, Omit<import('../lib/api').InferStoreRecord<import('../lib/api').SpaceSnapshot>, 'provider'>>} */
+/** @type {import('../lib/api').Encoder<import('../lib/api').SpaceSnapshot, Omit<import('../types').InferStoreRecord<import('../lib/api').SpaceSnapshot>, 'provider'>>} */
 export const encode = input => {
   try {
     return {
@@ -42,7 +42,7 @@ export const encode = input => {
 }
 
 /**
- * @type {import('../lib/api').Encoder<import('../lib/api').SpaceSnapshotKey, Omit<import('../lib/api').InferStoreRecord<import('../lib/api').SpaceSnapshotKey>, 'provider'>>}
+ * @type {import('../lib/api').Encoder<import('../lib/api').SpaceSnapshotKey, Omit<import('../types').InferStoreRecord<import('../lib/api').SpaceSnapshotKey>, 'provider'>>}
  */
 export const encodeKey = input => ({
   ok: {
@@ -52,7 +52,7 @@ export const encodeKey = input => ({
 })
 
 /**
- * @type {import('../lib/api').Decoder<import('../lib/api').StoreRecord, import('../lib/api').SpaceSnapshot>}
+ * @type {import('../lib/api').Decoder<import('../types').StoreRecord, import('../lib/api').SpaceSnapshot>}
  */
 export const decode = input => {
   if (typeof input.space !== 'string') {

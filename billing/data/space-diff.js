@@ -31,7 +31,7 @@ export const validate = input => {
 }
 
 /**
- * @type {import('../lib/api').Encoder<import('../lib/api').SpaceDiff, import('../lib/api').InferStoreRecord<import('../lib/api').SpaceDiff>>}
+ * @type {import('../lib/api').Encoder<import('../lib/api').SpaceDiff, import('../types').InferStoreRecord<import('../lib/api').SpaceDiff>>}
  */
 export const encode = input => {
   try {
@@ -55,12 +55,12 @@ export const encode = input => {
 }
 
 /**
- * @type {import('../lib/api').Encoder<import('../lib/api').SpaceDiffKey, import('../lib/api').InferStoreRecord<import('../lib/api').SpaceDiffKey>>}
+ * @type {import('../lib/api').Encoder<import('../lib/api').SpaceDiffKey, import('../types').InferStoreRecord<import('../lib/api').SpaceDiffKey>>}
  */
 export const encodeKey = input => ({ ok: { customer: input.customer } })
 
 /**
- * @type {import('../lib/api').Decoder<import('../lib/api').StoreRecord, import('../lib/api').SpaceDiff>}
+ * @type {import('../lib/api').Decoder<import('../types').StoreRecord, import('../lib/api').SpaceDiff>}
  */
 export const decode = input => {
   try {

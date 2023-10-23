@@ -2,21 +2,21 @@
  * @param {{
  *   customerStore: import('./api').CustomerStore
  *   customerBillingQueue: import('./api').CustomerBillingQueue
- * }} stores
+ * }} ctx
  * @returns {Promise<import('@ucanto/interface').Result>}
  */
-export const handleCronTick = async ({ customerStore, customerBillingQueue }) => {
+export const handleCronTick = async ctx => {
   const from = startOfMonth()
   const to = startOfNextMonth()
 
   let cursor
   while (true) {
-    const customerList = await customerStore.list({}, { cursor, size: 1000 })
+    const customerList = await ctx.customerStore.list({}, { cursor, size: 1000 })
     if (customerList.error) return customerList
 
     for (const c of customerList.ok.results) {
       console.log(`adding customer billing instruction for: ${c.customer}`)
-      const queueAdd = await customerBillingQueue.add({
+      const queueAdd = await ctx.customerBillingQueue.add({
         customer: c.customer,
         account: c.account,
         product: c.product,

@@ -6,10 +6,10 @@ import * as StoreCaps from '@web3-storage/capabilities/store'
  *   spaceDiffStore: import('./api').SpaceDiffStore
  *   subscriptionStore: import('./api').SubscriptionStore
  *   consumerStore: import('./api').ConsumerStore
- * }} stores
+ * }} ctx
  * @returns {Promise<import('@ucanto/interface').Result>}
  */
-export const handleUcanStreamMessage = async (message, { spaceDiffStore, subscriptionStore, consumerStore }) => {
+export const handleUcanStreamMessage = async (message, ctx) => {
   if (!isReceipt(message)) return { ok: {} }
 
   /** @type {number|undefined} */
@@ -27,16 +27,16 @@ export const handleUcanStreamMessage = async (message, { spaceDiffStore, subscri
   }
 
   const space = /** @type {import('@ucanto/interface').DID} */ (message.value.att[0].with)
-  const consumerList = await consumerStore.list({ consumer: space })
+  const consumerList = await ctx.consumerStore.list({ consumer: space })
   if (consumerList.error) return consumerList
 
   // There should only be one subscription per provider, but in theory you
   // could have multiple providers for the same consumer (space).
   for (const consumer of consumerList.ok.results) {
-    const subGet = await subscriptionStore.get({ provider: consumer.provider, subscription: consumer.subscription })
+    const subGet = await ctx.subscriptionStore.get({ provider: consumer.provider, subscription: consumer.subscription })
     if (subGet.error) return subGet
 
-    const spaceDiffPut = await spaceDiffStore.put({
+    const spaceDiffPut = await ctx.spaceDiffStore.put({
       customer: subGet.ok.customer,
       provider: consumer.provider,
       subscription: subGet.ok.subscription,

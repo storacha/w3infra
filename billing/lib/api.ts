@@ -261,13 +261,6 @@ export interface RecordNotFound<K> extends Failure {
   key: K
 }
 
-export type InferStoreRecord<T> = {
-  [Property in keyof T]: T[Property] extends Number ? T[Property] : string
-}
-
-/** A record that is of suitable type to be put in storage. */
-export type StoreRecord = Record<string, string|number>
-
 export interface StorePutter<T> {
   put: (rec: T) => Promise<Result<Unit, InvalidInput|EncodeFailure|StoreOperationFailure>>
 }

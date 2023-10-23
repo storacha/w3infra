@@ -35,7 +35,7 @@ export const validate = input => {
   return { ok: {} }
 }
 
-/** @type {import('../lib/api').Encoder<import('../lib/api').Usage, import('../lib/api').InferStoreRecord<import('../lib/api').Usage>>} */
+/** @type {import('../lib/api').Encoder<import('../lib/api').Usage, import('../types').InferStoreRecord<import('../lib/api').Usage>>} */
 export const encode = input => {
   try {
     return {

@@ -2,7 +2,7 @@ import * as Link from 'multiformats/link'
 import { DecodeFailure, asDID } from './lib.js'
 
 /**
- * @type {import('../lib/api').Decoder<import('../lib/api').StoreRecord, import('../lib/api').Consumer>}
+ * @type {import('../lib/api').Decoder<import('../types').StoreRecord, import('../lib/api').Consumer>}
  */
 export const decode = input => {
   try { 
@@ -24,7 +24,7 @@ export const decode = input => {
 }
 
 /**
- * @type {import('../lib/api').Encoder<import('../lib/api').ConsumerKey, import('../lib/api').InferStoreRecord<import('../lib/api').ConsumerKey>>}
+ * @type {import('../lib/api').Encoder<import('../lib/api').ConsumerKey, import('../types').InferStoreRecord<import('../lib/api').ConsumerKey>>}
  */
 export const encodeKey = input => ({
   ok: {
@@ -36,11 +36,11 @@ export const encodeKey = input => ({
 /** Encoders/decoders for listings. */
 export const lister = {
   /**
-   * @type {import('../lib/api').Encoder<import('../lib/api').ConsumerListKey, import('../lib/api').InferStoreRecord<import('../lib/api').ConsumerListKey>>}
+   * @type {import('../lib/api').Encoder<import('../lib/api').ConsumerListKey, import('../types').InferStoreRecord<import('../lib/api').ConsumerListKey>>}
    */
   encodeKey: input => ({ ok: { consumer: input.consumer } }),
   /**
-   * @type {import('../lib/api').Decoder<import('../lib/api').StoreRecord, Pick<import('../lib/api').Consumer, 'consumer'|'provider'|'subscription'>>}
+   * @type {import('../lib/api').Decoder<import('../types').StoreRecord, Pick<import('../lib/api').Consumer, 'consumer'|'provider'|'subscription'>>}
    */
   decode: input => {
     try { 
