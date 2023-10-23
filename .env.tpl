@@ -8,7 +8,6 @@
 # the value should match a hosted zone configured in route53 that your aws account has access to.
 # ROUNDABOUT_HOSTED_ZONE=roundabout.web3.storage
 
-# uncomment to set SENTRY_DSN
 # SENTRY_DSN = ''
 
 EIPFS_INDEXER_SQS_ARN = 'arn:aws:sqs:us-west-2:505595374361:staging-ep-indexer-topic'
@@ -19,6 +18,8 @@ UPLOAD_API_DID = ''
 ACCESS_SERVICE_URL = ''
 AGGREGATOR_DID = ''
 AGGREGATOR_URL = ''
+CONTENT_CLAIMS_DID = 'did:web:staging.web3.storage'
+CONTENT_CLAIMS_URL = 'https://staging.contentclaims.web3.storage'
 
 POSTMARK_TOKEN = ''
 R2_ACCESS_KEY_ID = ''
