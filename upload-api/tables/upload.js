@@ -37,6 +37,9 @@ export function useUploadTable(dynamoDb, tableName) {
   return {
     /**
      * Fetch a single upload
+     *
+     * @param {import('@ucanto/interface').DID} space
+     * @param {import('@web3-storage/upload-api').UnknownLink} root
      */
     get: async (space, root) => {
       console.log('root', root)
@@ -120,7 +123,7 @@ export function useUploadTable(dynamoDb, tableName) {
       )
 
       if (!res.Attributes) {
-        throw new Error('Missing `Attributes` property on DyanmoDB response')
+        throw new Error('Missing `Attributes` property on DynamoDB response')
       }
 
       return toUploadAddResult(unmarshall(res.Attributes))
