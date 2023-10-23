@@ -42,7 +42,6 @@ export function useUploadTable(dynamoDb, tableName) {
      * @param {import('@web3-storage/upload-api').UnknownLink} root
      */
     get: async (space, root) => {
-      console.log('root', root)
       const cmd = new GetItemCommand({
         TableName: tableName,
         Key: marshall({
