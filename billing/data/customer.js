@@ -2,7 +2,7 @@ import * as Link from 'multiformats/link'
 import { DecodeFailure, asDIDMailto } from './lib.js'
 
 /**
- * @type {import('../types').Decoder<import('../types').StoreRecord, import('../types').Customer>}
+ * @type {import('../lib/api').Decoder<import('../lib/api').StoreRecord, import('../lib/api').Customer>}
  */
 export const decode = input => {
   try { 

@@ -35,7 +35,7 @@ export const spaceDiffTableProps = {
  * @param {string} tableName
  * @param {object} [options]
  * @param {URL} [options.endpoint]
- * @returns {import('../types').SpaceDiffStore}
+ * @returns {import('../lib/api').SpaceDiffStore}
  */
 export const createSpaceDiffStore = (region, tableName, options) => {
   const client = connectTable({ region })

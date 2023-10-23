@@ -1,7 +1,7 @@
 import * as Link from 'multiformats/link'
 import { EncodeFailure, DecodeFailure, InvalidInput, isDIDMailto, isDID, asDIDMailto, asDID } from './lib.js'
 
-/** @type {import('../types').Validator<import('../types').SpaceDiff>} */
+/** @type {import('../lib/api').Validator<import('../lib/api').SpaceDiff>} */
 export const validate = input => {
   if (input == null || typeof input !== 'object') {
     return { error: new InvalidInput('not an object') }
@@ -31,7 +31,7 @@ export const validate = input => {
 }
 
 /**
- * @type {import('../types').Encoder<import('../types').SpaceDiff, import('../types').InferStoreRecord<import('../types').SpaceDiff>>}
+ * @type {import('../lib/api').Encoder<import('../lib/api').SpaceDiff, import('../lib/api').InferStoreRecord<import('../lib/api').SpaceDiff>>}
  */
 export const encode = input => {
   try {
@@ -55,12 +55,12 @@ export const encode = input => {
 }
 
 /**
- * @type {import('../types').Encoder<import('../types').SpaceDiffKey, import('../types').InferStoreRecord<import('../types').SpaceDiffKey>>}
+ * @type {import('../lib/api').Encoder<import('../lib/api').SpaceDiffKey, import('../lib/api').InferStoreRecord<import('../lib/api').SpaceDiffKey>>}
  */
 export const encodeKey = input => ({ ok: { customer: input.customer } })
 
 /**
- * @type {import('../types').Decoder<import('../types').StoreRecord, import('../types').SpaceDiff>}
+ * @type {import('../lib/api').Decoder<import('../lib/api').StoreRecord, import('../lib/api').SpaceDiff>}
  */
 export const decode = input => {
   try {

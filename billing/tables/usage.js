@@ -39,7 +39,7 @@ export const usageTableProps = {
  * @param {string} tableName
  * @param {object} [options]
  * @param {URL} [options.endpoint]
- * @returns {import('../types').UsageStore}
+ * @returns {import('../lib/api').UsageStore}
  */
 export const createUsageStore = (region, tableName, options) =>
   createStorePutterClient({ region }, { tableName, validate, encode })

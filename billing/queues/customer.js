@@ -6,7 +6,7 @@ import { encode, validate } from '../data/customer-billing-instruction.js'
  * @param {object} [options]
  * @param {URL} [options.endpoint]
  */
-export const createCustomerQueue = (region, options) => {
+export const createCustomerBillingQueue = (region, options) => {
   return createQueueClient({ region }, {
     endpoint: options?.endpoint,
     encode,

@@ -4,6 +4,7 @@ import * as SpaceBillingInstruction from '../data/space-billing-instruction.js'
 import { createSpaceDiffStore } from '../tables/space-diff.js'
 import { createSpaceSnapshotStore } from '../tables/space-snapshot.js'
 import { createUsageStore } from '../tables/usage.js'
+import { handleSpaceBillingInstruction } from '../lib/space-queue.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -44,7 +45,7 @@ export const _handler = async (event, context) => {
     usageStore: createUsageStore(region, usageTable, storeOptions)
   }
   for (const instruction of instructions) {
-    const { error } = await processSpaceBillingInstruction(instruction, stores)
+    const { error } = await handleSpaceBillingInstruction(instruction, stores)
     if (error) throw error
   }
 }
@@ -53,7 +54,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(_handler)
 
 /**
  * @param {import('aws-lambda').SQSEvent} event
- * @returns {import('@ucanto/interface').Result<import('../types.js').SpaceBillingInstruction[], import('../types.js').DecodeFailure>}
+ * @returns {import('@ucanto/interface').Result<import('../lib/api').SpaceBillingInstruction[], import('../lib/api').DecodeFailure>}
  */
 const parseSpaceBillingInstructionEvent = (event) => {
   const instructions = []
@@ -63,55 +64,4 @@ const parseSpaceBillingInstructionEvent = (event) => {
     instructions.push(res.ok)
   }
   return { ok: instructions }
-}
-
-/**
- * @param {import('../types.js').SpaceBillingInstruction} instruction 
- * @param {{
- *   spaceDiffStore: import('../types.js').SpaceDiffStore
- *   spaceSnapshotStore: import('../types.js').SpaceSnapshotStore
- *   usageStore: import('../types.js').UsageStore
- * }} stores
- * @returns {Promise<import('@ucanto/interface').Result>}
- */
-const processSpaceBillingInstruction = async (instruction, {
-  spaceDiffStore,
-  spaceSnapshotStore,
-  usageStore
-}) => {
-  console.log(`processing space billing instruction for: ${instruction.customer}`)
-  console.log(`period: ${instruction.from.toISOString()} - ${instruction.to.toISOString()}`)
-
-  const { ok: snap, error } = await spaceSnapshotStore.get({
-    space: instruction.space,
-    provider: instruction.provider,
-    recordedAt: instruction.from
-  })
-  if (error) return { error }
-
-  console.log(`space ${snap.space} is ${snap.size} bytes @ ${snap.recordedAt.toISOString()}`)
-
-  /** @type {import('../types.js').SpaceDiff[]} */
-  const diffs = []
-
-  let cursor
-  while (true) {
-    const { ok: listing, error: listErr } = await spaceDiffStore.listBetween(
-      { customer: instruction.customer },
-      instruction.from,
-      instruction.to,
-      { cursor, size: 1000 }
-    )
-    if (listErr) return { error: listErr }
-    for (const diff of listing.results) {
-      if (diff.provider !== snap.provider) continue
-      diffs.push(diff)
-    }
-    if (!listing.cursor) break
-    cursor = listing.cursor
-  }
-
-  console.log(`${diffs.length} space updates`)
-
-  return { ok: {} }
 }

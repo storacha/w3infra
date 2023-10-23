@@ -1,7 +1,7 @@
 import { DID } from '@ucanto/server'
 import { EncodeFailure, InvalidInput } from './lib.js'
 
-/** @type {import('../types').Validator<import('../types').Usage>} */
+/** @type {import('../lib/api').Validator<import('../lib/api').Usage>} */
 export const validate = input => {
   if (input == null || typeof input !== 'object') {
     return { error: new InvalidInput('not an object') }
@@ -35,7 +35,7 @@ export const validate = input => {
   return { ok: {} }
 }
 
-/** @type {import('../types').Encoder<import('../types').Usage, import('../types').InferStoreRecord<import('../types').Usage>>} */
+/** @type {import('../lib/api').Encoder<import('../lib/api').Usage, import('../lib/api').InferStoreRecord<import('../lib/api').Usage>>} */
 export const encode = input => {
   try {
     return {

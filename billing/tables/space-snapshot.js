@@ -29,7 +29,7 @@ export const spaceSnapshotTableProps = {
  * @param {string} tableName
  * @param {object} [options]
  * @param {URL} [options.endpoint]
- * @returns {import('../types').SpaceSnapshotStore}
+ * @returns {import('../lib/api').SpaceSnapshotStore}
  */
 export const createSpaceSnapshotStore = (region, tableName, options) => ({
   ...createStorePutterClient({ region }, { tableName, validate, encode }),

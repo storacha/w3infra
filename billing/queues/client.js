@@ -1,4 +1,5 @@
 import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs'
+import retry from 'p-retry'
 import { QueueOperationFailure } from './lib.js'
 
 /** @param {{ region: string } | SQSClient} target */
@@ -12,14 +13,14 @@ export const connectQueue = target =>
  * @param {{ region: string } | import('@aws-sdk/client-sqs').SQSClient} conf
  * @param {object} context
  * @param {URL} [context.endpoint]
- * @param {import('../types').Validator<T>} context.validate
- * @param {import('../types').Encoder<T, string>} context.encode
- * @returns {import('../types').Queue<T>}
+ * @param {import('../lib/api').Validator<T>} context.validate
+ * @param {import('../lib/api').Encoder<T, string>} context.encode
+ * @returns {import('../lib/api').Queue<T>}
  */
 export function createQueueClient (conf, context) {
   const client = connectQueue(conf)
   return {
-    async add (message, options = {}) {
+    async add (message) {
       const validation = context.validate(message)
       if (validation.error) return validation
 
@@ -29,15 +30,22 @@ export function createQueueClient (conf, context) {
       const cmd = new SendMessageCommand({
         QueueUrl: context.endpoint?.toString(),
         MessageBody: encoding.ok
-        // MessageGroupId: options.messageGroupId
       })
 
       try {
-        const res = await client.send(cmd)
-        if (res.$metadata.httpStatusCode !== 200) {
-          throw new Error(`unexpected status sending message to queue: ${res.$metadata.httpStatusCode}`)
-        }
+        await retry(async () => {
+          const res = await client.send(cmd)
+          if (res.$metadata.httpStatusCode !== 200) {
+            throw new Error(`unexpected status sending message to queue: ${res.$metadata.httpStatusCode}`)
+          }
+          return res
+        }, {
+          retries: 3,
+          minTimeout: 100,
+          onFailedAttempt: console.warn
+        })
       } catch (/** @type {any} */ err) {
+        console.error(err)
         return { error: new QueueOperationFailure(err.message) }
       }
 

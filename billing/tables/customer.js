@@ -36,7 +36,7 @@ export const customerTableProps = {
  * @param {string} tableName
  * @param {object} [options]
  * @param {URL} [options.endpoint]
- * @returns {import('../types').CustomerStore}
+ * @returns {import('../lib/api').CustomerStore}
  */
 export const createCustomerStore = (region, tableName, options) =>
   createStoreListerClient({ region }, {
