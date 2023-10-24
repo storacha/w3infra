@@ -32,14 +32,12 @@ export const customerTableProps = {
 }
 
 /**
- * @param {string} region 
- * @param {string} tableName
- * @param {object} [options]
- * @param {URL} [options.endpoint]
+ * @param {{ region: string } | import('@aws-sdk/client-dynamodb').DynamoDBClient} conf
+ * @param {{ tableName: string }} context
  * @returns {import('../lib/api').CustomerStore}
  */
-export const createCustomerStore = (region, tableName, options) =>
-  createStoreListerClient({ region }, {
+export const createCustomerStore = (conf, { tableName }) =>
+  createStoreListerClient(conf, {
     tableName,
     encodeKey: () => ({ ok: {} }),
     decode

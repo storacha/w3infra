@@ -22,35 +22,33 @@ Sentry.AWSLambda.init({
  * }} CustomHandlerContext
  */
 
-/**
- * @param {import('aws-lambda').SQSEvent} event
- * @param {import('aws-lambda').Context} context
- */
-export const _handler = async (event, context) => {
-  /** @type {CustomHandlerContext|undefined} */
-  const customContext = context?.clientContext?.Custom
-  const spaceDiffTable = customContext?.spaceDiffTable ?? notNully(process.env, 'SPACE_DIFF_TABLE_NAME')
-  const spaceSnapshotTable = customContext?.spaceSnapshotTable ?? notNully(process.env, 'SPACE_SNAPSHOT_TABLE_NAME')
-  const usageTable = customContext?.usageTable ?? notNully(process.env, 'USAGE_TABLE_NAME')
-  const dbEndpoint = new URL(customContext?.dbEndpoint ?? notNully(process.env, 'DYNAMO_DB_ENDPOINT'))
-  const region = customContext?.region ?? notNully(process.env, 'AWS_REGION')
+export const handler = Sentry.AWSLambda.wrapHandler(
+  /**
+   * @param {import('aws-lambda').SQSEvent} event
+   * @param {import('aws-lambda').Context} context
+   */
+  async (event, context) => {
+    /** @type {CustomHandlerContext|undefined} */
+    const customContext = context?.clientContext?.Custom
+    const spaceDiffTable = customContext?.spaceDiffTable ?? notNully(process.env, 'SPACE_DIFF_TABLE_NAME')
+    const spaceSnapshotTable = customContext?.spaceSnapshotTable ?? notNully(process.env, 'SPACE_SNAPSHOT_TABLE_NAME')
+    const usageTable = customContext?.usageTable ?? notNully(process.env, 'USAGE_TABLE_NAME')
+    const region = customContext?.region ?? notNully(process.env, 'AWS_REGION')
 
-  const { ok: instructions, error } = parseSpaceBillingInstructionEvent(event)
-  if (error) throw error
-
-  const storeOptions = { endpoint: dbEndpoint }
-  const stores = {
-    spaceDiffStore: createSpaceDiffStore(region, spaceDiffTable, storeOptions),
-    spaceSnapshotStore: createSpaceSnapshotStore(region, spaceSnapshotTable, storeOptions),
-    usageStore: createUsageStore(region, usageTable, storeOptions)
-  }
-  for (const instruction of instructions) {
-    const { error } = await handleSpaceBillingInstruction(instruction, stores)
+    const { ok: instructions, error } = parseSpaceBillingInstructionEvent(event)
     if (error) throw error
-  }
-}
 
-export const handler = Sentry.AWSLambda.wrapHandler(_handler)
+    const ctx = {
+      spaceDiffStore: createSpaceDiffStore({ region }, { tableName: spaceDiffTable }),
+      spaceSnapshotStore: createSpaceSnapshotStore({ region }, { tableName: spaceSnapshotTable }),
+      usageStore: createUsageStore({ region }, { tableName: usageTable })
+    }
+    for (const instruction of instructions) {
+      const { error } = await handleSpaceBillingInstruction(instruction, ctx)
+      if (error) throw error
+    }
+  }
+)
 
 /**
  * @param {import('aws-lambda').SQSEvent} event

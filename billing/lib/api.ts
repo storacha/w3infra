@@ -126,7 +126,7 @@ export interface CustomerBillingInstruction {
   to: Date
 }
 
-export type CustomerBillingQueue = Queue<CustomerBillingInstruction>
+export type CustomerBillingQueue = QueueAdder<CustomerBillingInstruction>
 
 /**
  * Captures details about a space that should be billed for a given customer in
@@ -139,7 +139,7 @@ export interface SpaceBillingInstruction extends CustomerBillingInstruction {
   provider: DID
 }
 
-export type SpaceBillingQueue = Queue<SpaceBillingInstruction>
+export type SpaceBillingQueue = QueueAdder<SpaceBillingInstruction>
 
 // Upload API stores //////////////////////////////////////////////////////////
 
@@ -261,18 +261,26 @@ export interface RecordNotFound<K> extends Failure {
   key: K
 }
 
+/** StorePutter allows a single item to be put in the store by it's key. */
 export interface StorePutter<T> {
+  /** Puts a single item into the store by it's key */
   put: (rec: T) => Promise<Result<Unit, InvalidInput|EncodeFailure|StoreOperationFailure>>
 }
 
+/** StoreGetter allows a single item to be retrieved by it's key. */
 export interface StoreGetter<K extends {}, V> {
+  /** Gets a single item by it's key. */
   get: (key: K) => Promise<Result<V, EncodeFailure|RecordNotFound<K>|DecodeFailure|StoreOperationFailure>>
 }
 
+/** StoreLister allows items in the store to be listed page by page. */
 export interface StoreLister<K extends {}, V> {
+  /** Lists items in the store. */
   list: (key: K, options?: Pageable) => Promise<Result<ListSuccess<V>, EncodeFailure|DecodeFailure|StoreOperationFailure>>
 }
 
-export interface Queue<T> {
+/** QueueAdder allows messages to be added to the end of the queue. */
+export interface QueueAdder<T> {
+  /** Adds a message to the end of the queue. */
   add: (message: T) => Promise<Result<Unit, InvalidInput|EncodeFailure|QueueOperationFailure>>
 }

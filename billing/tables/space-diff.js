@@ -31,16 +31,14 @@ export const spaceDiffTableProps = {
 }
 
 /**
- * @param {string} region 
- * @param {string} tableName
- * @param {object} [options]
- * @param {URL} [options.endpoint]
+ * @param {{ region: string } | import('@aws-sdk/client-dynamodb').DynamoDBClient} conf
+ * @param {{ tableName: string }} context
  * @returns {import('../lib/api').SpaceDiffStore}
  */
-export const createSpaceDiffStore = (region, tableName, options) => {
-  const client = connectTable({ region })
+export const createSpaceDiffStore = (conf, { tableName }) => {
+  const client = connectTable(conf)
   return {
-    ...createStorePutterClient({ region }, { tableName, validate, encode }),
+    ...createStorePutterClient(conf, { tableName, validate, encode }),
     async listBetween (key, from, to, options) {
       const encoding = encodeKey(key)
       if (encoding.error) return encoding

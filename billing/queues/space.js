@@ -1,15 +1,9 @@
-import { createQueueClient } from './client.js'
+import { createQueueAdderClient } from './client.js'
 import { encode, validate } from '../data/space-billing-instruction.js'
 
 /**
- * @param {string} region
- * @param {object} [options]
- * @param {URL} [options.endpoint]
+ * @param {{ region: string } | import('@aws-sdk/client-sqs').SQSClient} conf
+ * @param {{ url: URL }} context
  */
-export const createSpaceBillingQueue = (region, options) => {
-  return createQueueClient({ region }, {
-    endpoint: options?.endpoint,
-    encode,
-    validate
-  })
-}
+export const createSpaceBillingQueue = (conf, { url }) =>
+  createQueueAdderClient(conf, { url, encode, validate })

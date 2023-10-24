@@ -12,12 +12,12 @@ export const connectQueue = target =>
  * @template T
  * @param {{ region: string } | import('@aws-sdk/client-sqs').SQSClient} conf
  * @param {object} context
- * @param {URL} [context.endpoint]
+ * @param {URL} context.url
  * @param {import('../lib/api').Validator<T>} context.validate
  * @param {import('../lib/api').Encoder<T, string>} context.encode
- * @returns {import('../lib/api').Queue<T>}
+ * @returns {import('../lib/api').QueueAdder<T>}
  */
-export function createQueueClient (conf, context) {
+export function createQueueAdderClient (conf, context) {
   const client = connectQueue(conf)
   return {
     async add (message) {
@@ -28,7 +28,7 @@ export function createQueueClient (conf, context) {
       if (encoding.error) return encoding
 
       const cmd = new SendMessageCommand({
-        QueueUrl: context.endpoint?.toString(),
+        QueueUrl: context.url.toString(),
         MessageBody: encoding.ok
       })
 

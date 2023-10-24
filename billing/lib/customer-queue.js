@@ -8,8 +8,8 @@
  * @returns {Promise<import('@ucanto/interface').Result>}
  */
 export const handleCustomerBillingInstruction = async (instruction, ctx) => {
-  console.log(`processing customer billing instruction for: ${instruction.customer}`)
-  console.log(`period: ${instruction.from.toISOString()} - ${instruction.to.toISOString()}`)
+  console.log(`Processing customer billing instruction for: ${instruction.customer}`)
+  console.log(`Period: ${instruction.from.toISOString()} - ${instruction.to.toISOString()}`)
 
   let cursor
   while (true) {
@@ -25,7 +25,7 @@ export const handleCustomerBillingInstruction = async (instruction, ctx) => {
       })
       if (consumerGet.error) return consumerGet
 
-      console.log(`adding space billing instruction for: ${consumerGet.ok.consumer}`)
+      console.log(`Adding space billing instruction for: ${consumerGet.ok.consumer}`)
       const queueAdd = await ctx.spaceBillingQueue.add({
         ...instruction,
         provider: s.provider,
@@ -33,7 +33,7 @@ export const handleCustomerBillingInstruction = async (instruction, ctx) => {
       })
       if (queueAdd.error) return queueAdd
     }
-    
+
     if (!subsList.ok.cursor) break
     cursor = subsList.ok.cursor
   }

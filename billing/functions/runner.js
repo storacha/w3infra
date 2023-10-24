@@ -13,8 +13,7 @@ Sentry.AWSLambda.init({
 /**
  * @typedef {{
  *   customerTable?: string
- *   dbEndpoint?: URL
- *   qEndpoint?: URL
+ *   customerBillingQueueURL?: URL
  *   region?: 'us-west-2'|'us-east-2'
  * }} CustomHandlerContext
  */
@@ -28,16 +27,12 @@ export const handler = Sentry.AWSLambda.wrapHandler(
     /** @type {CustomHandlerContext|undefined} */
     const customContext = context?.clientContext?.Custom
     const customerTable = customContext?.customerTable ?? notNully(process.env, 'CUSTOMER_TABLE_NAME')
-    const dbEndpoint = new URL(customContext?.dbEndpoint ?? notNully(process.env, 'DB_ENDPOINT'))
-    const qEndpoint = new URL(customContext?.qEndpoint ?? notNully(process.env, 'Q_ENDPOINT'))
+    const customerBillingQueueURL = new URL(customContext?.customerBillingQueueURL ?? notNully(process.env, 'CUSTOMER_BILLING_QUEUE_URL'))
     const region = customContext?.region ?? notNully(process.env, 'AWS_REGION')
 
-    const storeOptions = { endpoint: dbEndpoint }
-    const queueOptions = { endpoint: qEndpoint }
-
     const { error } = await handleCronTick({
-      customerStore: createCustomerStore(region, customerTable, storeOptions),
-      customerBillingQueue: createCustomerBillingQueue(region, queueOptions)
+      customerStore: createCustomerStore({ region }, { tableName: customerTable }),
+      customerBillingQueue: createCustomerBillingQueue({ region }, { url: customerBillingQueueURL })
     })
     if (error) throw error
   }

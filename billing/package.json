@@ -2,6 +2,9 @@
   "name": "@web3-storage/w3infra-billing",
   "version": "0.0.0",
   "type": "module",
+  "scripts": {
+    "test": "entail '**/*.spec.js'"
+  },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.430.0",
     "@aws-sdk/client-sqs": "^3.431.0",
@@ -15,7 +18,9 @@
     "uint8arrays": "^4.0.6"
   },
   "devDependencies": {
-    "aws-lambda": "^1.0.7"
+    "aws-lambda": "^1.0.7",
+    "entail": "^2.1.1",
+    "testcontainers": "^10.2.1"
   },
   "engines": {
     "node": ">=16.15"

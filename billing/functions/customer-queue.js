@@ -17,8 +17,7 @@ Sentry.AWSLambda.init({
  *   spaceDiffTable?: string
  *   consumerTable?: string
  *   usageTable?: string
- *   dbEndpoint?: URL
- *   qEndpoint?: URL
+ *   spaceBillingQueueURL?: URL
  *   region?: 'us-west-2'|'us-east-2'
  * }} CustomHandlerContext
  */
@@ -33,19 +32,16 @@ export const handler = Sentry.AWSLambda.wrapHandler(
     const customContext = context?.clientContext?.Custom
     const subscriptionTable = customContext?.spaceDiffTable ?? notNully(process.env, 'SUBSCRIPTION_TABLE_NAME')
     const consumerTable = customContext?.consumerTable ?? notNully(process.env, 'CONSUMER_TABLE_NAME')
-    const dbEndpoint = new URL(customContext?.dbEndpoint ?? notNully(process.env, 'DB_ENDPOINT'))
-    const qEndpoint = new URL(customContext?.qEndpoint ?? notNully(process.env, 'Q_ENDPOINT'))
+    const spaceBillingQueueURL = new URL(customContext?.spaceBillingQueueURL ?? notNully(process.env, 'SPACE_BILLING_QUEUE_URL'))
     const region = customContext?.region ?? notNully(process.env, 'AWS_REGION')
 
     const { ok: instructions, error } = parseCustomerBillingInstructionEvent(event)
     if (error) throw error
 
-    const storeOptions = { endpoint: dbEndpoint }
-    const queueOptions = { endpoint: qEndpoint }
     const ctx = {
-      subscriptionStore: createSubscriptionStore(region, subscriptionTable, storeOptions),
-      consumerStore: createConsumerStore(region, consumerTable, storeOptions),
-      spaceBillingQueue: createSpaceBillingQueue(region, queueOptions)
+      subscriptionStore: createSubscriptionStore({ region }, { tableName: subscriptionTable }),
+      consumerStore: createConsumerStore({ region }, { tableName: consumerTable }),
+      spaceBillingQueue: createSpaceBillingQueue({ region }, { url: spaceBillingQueueURL })
     }
     for (const instruction of instructions) {
       const { error } = await handleCustomerBillingInstruction(instruction, ctx)

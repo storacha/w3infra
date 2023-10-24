@@ -1,4 +1,4 @@
-import { DynamoDBClient, GetItemCommand, PutItemCommand, QueryCommand } from '@aws-sdk/client-dynamodb'
+import { DynamoDBClient, GetItemCommand, PutItemCommand, QueryCommand, ScanCommand } from '@aws-sdk/client-dynamodb'
 import { marshall, unmarshall, convertToAttr } from '@aws-sdk/util-dynamodb'
 import retry from 'p-retry'
 import { RecordNotFound, StoreOperationFailure } from './lib.js'
@@ -15,7 +15,7 @@ export const connectTable = target =>
  * @param {object} context
  * @param {string} context.tableName
  * @param {import('../lib/api').Validator<T>} context.validate
- * @param {import('../lib/api').Encoder<T, import('../lib/api').StoreRecord>} context.encode
+ * @param {import('../lib/api').Encoder<T, import('../types').StoreRecord>} context.encode
  * @returns {import('../lib/api').StorePutter<T>}
  */
 export const createStorePutterClient = (conf, context) => {
@@ -59,8 +59,8 @@ export const createStorePutterClient = (conf, context) => {
  * @param {{ region: string } | import('@aws-sdk/client-dynamodb').DynamoDBClient} conf
  * @param {object} context
  * @param {string} context.tableName
- * @param {import('../lib/api').Encoder<K, import('../lib/api').StoreRecord>} context.encodeKey
- * @param {import('../lib/api').Decoder<import('../lib/api').StoreRecord, V>} context.decode
+ * @param {import('../lib/api').Encoder<K, import('../types').StoreRecord>} context.encodeKey
+ * @param {import('../lib/api').Decoder<import('../types').StoreRecord, V>} context.decode
  * @returns {import('../lib/api').StoreGetter<K, V>}
  */
 export const createStoreGetterClient = (conf, context) => {
@@ -108,8 +108,8 @@ export const createStoreGetterClient = (conf, context) => {
  * @param {{ region: string } | import('@aws-sdk/client-dynamodb').DynamoDBClient} conf
  * @param {object} context
  * @param {string} context.tableName
- * @param {import('../lib/api').Encoder<K, import('../lib/api').StoreRecord>} context.encodeKey
- * @param {import('../lib/api').Decoder<import('../lib/api').StoreRecord, V>} context.decode
+ * @param {import('../lib/api').Encoder<K, import('../types').StoreRecord>} context.encodeKey
+ * @param {import('../lib/api').Decoder<import('../types').StoreRecord, V>} context.decode
  * @param {string} [context.indexName]
  * @returns {import('../lib/api').StoreLister<K, V>}
  */
@@ -120,24 +120,33 @@ export const createStoreListerClient = (conf, context) => {
       const encoding = context.encodeKey(key)
       if (encoding.error) return encoding
 
-      /** @type {Record<string, import('@aws-sdk/client-dynamodb').Condition>} */
-      const conditions = {}
+      /** @type {Record<string, import('@aws-sdk/client-dynamodb').Condition>|undefined} */
+      let conditions
       for (const [k, v] of Object.entries(key)) {
+        conditions = conditions ?? {}
         conditions[k] = {
           ComparisonOperator: 'EQ',
           AttributeValueList: [convertToAttr(v)]
         }
       }
 
-      const cmd = new QueryCommand({
-        TableName: context.tableName,
-        IndexName: context.indexName,
-        Limit: options?.size ?? 100,
-        KeyConditions: conditions,
-        ExclusiveStartKey: options?.cursor
-          ? marshall(JSON.parse(options.cursor))
-          : undefined
-      })
+      const cmd = conditions
+        ? new QueryCommand({
+          TableName: context.tableName,
+          IndexName: context.indexName,
+          Limit: options?.size ?? 100,
+          KeyConditions: conditions,
+          ExclusiveStartKey: options?.cursor
+            ? marshall(JSON.parse(options.cursor))
+            : undefined
+        })
+        : new ScanCommand({
+          TableName: context.tableName,
+          Limit: options?.size ?? 100,
+          ExclusiveStartKey: options?.cursor
+            ? marshall(JSON.parse(options.cursor))
+            : undefined
+        })
 
       let res
       try {

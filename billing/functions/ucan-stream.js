@@ -34,17 +34,15 @@ export const handler = Sentry.AWSLambda.wrapHandler(
     const spaceDiffTable = customContext?.spaceDiffTable ?? notNully(process.env, 'SPACE_DIFF_TABLE_NAME')
     const subscriptionTable = customContext?.subscriptionTable ?? notNully(process.env, 'SUBSCRIPTION_TABLE_NAME')
     const consumerTable = customContext?.consumerTable ?? notNully(process.env, 'CONSUMER_TABLE_NAME')
-    const dbEndpoint = new URL(customContext?.dbEndpoint ?? notNully(process.env, 'DB_ENDPOINT'))
     const region = customContext?.region ?? notNully(process.env, 'AWS_REGION')
   
     const messages = parseUcanStreamEvent(event)
-    const storeOptions = { endpoint: dbEndpoint }
-    const stores = {
-      spaceDiffStore: createSpaceDiffStore(region, spaceDiffTable, storeOptions),
-      subscriptionStore: createSubscriptionStore(region, subscriptionTable, storeOptions),
-      consumerStore: createConsumerStore(region, consumerTable, storeOptions)
+    const ctx = {
+      spaceDiffStore: createSpaceDiffStore({ region }, { tableName: spaceDiffTable }),
+      subscriptionStore: createSubscriptionStore({ region }, { tableName: subscriptionTable }),
+      consumerStore: createConsumerStore({ region }, { tableName: consumerTable })
     }
-    const results = await Promise.all(messages.map(m => handleUcanStreamMessage(m, stores)))
+    const results = await Promise.all(messages.map(m => handleUcanStreamMessage(m, ctx)))
     for (const r of results) if (r.error) throw r.error
   }
 )

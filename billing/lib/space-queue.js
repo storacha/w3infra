@@ -1,5 +1,5 @@
 /**
- * @param {import('./api').SpaceBillingInstruction} instruction 
+ * @param {import('./api').SpaceBillingInstruction} instruction
  * @param {{
  *   spaceDiffStore: import('./api').SpaceDiffStore
  *   spaceSnapshotStore: import('./api').SpaceSnapshotStore
@@ -8,8 +8,8 @@
  * @returns {Promise<import('@ucanto/interface').Result>}
  */
 export const handleSpaceBillingInstruction = async (instruction, ctx) => {
-  console.log(`processing space billing instruction for: ${instruction.customer}`)
-  console.log(`period: ${instruction.from.toISOString()} - ${instruction.to.toISOString()}`)
+  console.log(`Processing space billing instruction for: ${instruction.customer}`)
+  console.log(`Period: ${instruction.from.toISOString()} - ${instruction.to.toISOString()}`)
 
   const { ok: snap, error } = await ctx.spaceSnapshotStore.get({
     space: instruction.space,
@@ -18,7 +18,7 @@ export const handleSpaceBillingInstruction = async (instruction, ctx) => {
   })
   if (error) return { error }
 
-  console.log(`space ${snap.space} is ${snap.size} bytes @ ${snap.recordedAt.toISOString()}`)
+  console.log(`Space ${snap.space} is ${snap.size} bytes @ ${snap.recordedAt.toISOString()}`)
 
   let size = snap.size
   let usage = size * (instruction.to.getTime() - instruction.from.getTime())
@@ -42,7 +42,7 @@ export const handleSpaceBillingInstruction = async (instruction, ctx) => {
     cursor = spaceDiffList.ok.cursor
   }
 
-  console.log(`space ${snap.space} is ${size} bytes @ ${instruction.to.toISOString()}`)
+  console.log(`Space ${snap.space} is ${size} bytes @ ${instruction.to.toISOString()}`)
   const snapPut = await ctx.spaceSnapshotStore.put({
     provider: instruction.provider,
     space: instruction.space,
