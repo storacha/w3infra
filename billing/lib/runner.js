@@ -35,11 +35,16 @@ export const handleCronTick = async ctx => {
 
 const startOfMonth = () => {
   const d = new Date()
-  return new Date(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01T00:00:00.000Z`)
+  d.setUTCDate(1)
+  d.setUTCHours(0)
+  d.setUTCMinutes(0)
+  d.setUTCSeconds(0)
+  d.setUTCMilliseconds(0)
+  return d
 }
 
 const startOfNextMonth = () => {
   const d = startOfMonth()
-  d.setMonth(d.getMonth() + 1)
+  d.setUTCMonth(d.getUTCMonth() + 1)
   return d
 }

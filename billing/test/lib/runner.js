@@ -13,6 +13,7 @@ export const test = {
       customers.push(customer)
     }
 
+    const now = new Date()
     const handled = await handleCronTick(ctx)
     assert.ok(handled.ok)
 
@@ -21,7 +22,18 @@ export const test = {
     assert.equal(collected.ok.length, customers.length)
 
     for (const instruction of collected.ok) {
-      // TODO: check to/from date
+      assert.equal(instruction.from.getUTCFullYear(), now.getUTCFullYear())
+      assert.equal(instruction.from.getUTCMonth(), now.getUTCMonth())
+      assert.equal(instruction.from.getUTCDate(), 1)
+      assert.equal(instruction.from.getUTCHours(), 0)
+      assert.equal(instruction.from.getUTCMinutes(), 0)
+      assert.equal(instruction.from.getUTCSeconds(), 0)
+      assert.equal(instruction.from.getUTCMilliseconds(), 0)
+
+      // the expected "to" date is the "from" date + 1 month
+      const to = new Date(instruction.from.toISOString())
+      to.setUTCMonth(instruction.from.getUTCMonth() + 1)
+      assert.equal(instruction.to.toISOString(), to.toISOString())
     }
 
     // ensure we got a billing instruction for each customer
