@@ -11,6 +11,7 @@ export const handleCronTick = async ctx => {
   const from = startOfLastMonth()
   const to = startOfMonth()
 
+  /** @type {string|undefined} */
   let cursor
   while (true) {
     const customerList = await ctx.customerStore.list({}, { cursor, size: 1000 })

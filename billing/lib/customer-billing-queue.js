@@ -11,6 +11,7 @@ export const handleCustomerBillingInstruction = async (instruction, ctx) => {
   console.log(`Processing customer billing instruction for: ${instruction.customer}`)
   console.log(`Period: ${instruction.from.toISOString()} - ${instruction.to.toISOString()}`)
 
+  /** @type {string|undefined} */
   let cursor
   while (true) {
     const subsList = await ctx.subscriptionStore.list({ customer: instruction.customer }, { cursor })

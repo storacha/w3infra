@@ -11,6 +11,9 @@ export const BillingDbStack = ({ stack }) => {
   const customerTable = new Table(stack, 'customer', customerTableProps)
   const spaceSnapshotTable = new Table(stack, 'space-snapshot', spaceSnapshotTableProps)
   const spaceDiffTable = new Table(stack, 'space-diff', spaceDiffTableProps)
-  const usageTable = new Table(stack, 'usage', usageTableProps)
+  const usageTable = new Table(stack, 'usage', {
+    ...usageTableProps,
+    stream: 'new_image'
+  })
   return { customerTable, spaceSnapshotTable, spaceDiffTable, usageTable }
 }

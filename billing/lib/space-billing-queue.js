@@ -27,6 +27,7 @@ export const handleSpaceBillingInstruction = async (instruction, ctx) => {
   let size = snap.size
   let usage = size * BigInt(instruction.to.getTime() - instruction.from.getTime())
 
+  /** @type {string|undefined} */
   let cursor
   while (true) {
     const spaceDiffList = await ctx.spaceDiffStore.listBetween(

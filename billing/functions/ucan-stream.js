@@ -18,7 +18,6 @@ Sentry.AWSLambda.init({
  *   spaceDiffTable?: string
  *   subscriptionTable?: string
  *   consumerTable?: string
- *   dbEndpoint?: URL
  *   region?: 'us-west-2'|'us-east-2'
  * }} CustomHandlerContext
  */

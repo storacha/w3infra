@@ -94,7 +94,8 @@ export function BillingStack ({ stack, app }) {
           batchSize: 1,
           startingPosition: StartingPosition.LATEST
         }
-      }
+      },
+      filters: [{ eventName: ['INSERT'] }]
     }
   })
 
