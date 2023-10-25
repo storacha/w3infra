@@ -35,7 +35,7 @@ export interface SpaceSnapshot {
   /** Space this snapshot refers to. */
   space: DID
   /** Total allocated size in bytes. */
-  size: number
+  size: bigint
   /** Time the total allocated size was recorded at. */
   recordedAt: Date
   /** Time the snapshot was added to the database. */
@@ -80,7 +80,7 @@ export type CustomerStore = StoreLister<{}, Customer>
  */
 export interface Usage {
   /** Customer DID (did:mailto:...). */
-  customer: DID
+  customer: DID<'mailto'>
   /**
    * Opaque identifier representing an account in the payment system.
    * 
@@ -91,8 +91,8 @@ export interface Usage {
   product: string
   /** Space DID (did:key:...). */
   space: DID
-  /** Usage in GB/month */
-  usage: number
+  /** Usage in byte/ms */
+  usage: bigint
   /** Time the usage period spans from (inclusive). */
   from: Date
   /** Time the usage period spans to (exclusive). */
@@ -100,6 +100,8 @@ export interface Usage {
   /** Time the record was added to the database. */
   insertedAt: Date
 }
+
+export interface UsageKey { customer: DID<'mailto'>, from: Date }
 
 export type UsageStore = StorePutter<Usage>
 
@@ -145,7 +147,7 @@ export type SpaceBillingQueue = QueueAdder<SpaceBillingInstruction>
 
 export interface Consumer {
   consumer: DID
-  provider: DID
+  provider: DID<'web'>
   subscription: string
   cause: Link
   insertedAt: Date
@@ -161,7 +163,7 @@ export type ConsumerStore =
 
 export interface Subscription {
   customer: DID<'mailto'>
-  provider: DID
+  provider: DID<'web'>
   subscription: string
   cause: Link
   insertedAt: Date

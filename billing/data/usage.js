@@ -1,18 +1,15 @@
-import { DID } from '@ucanto/server'
-import { EncodeFailure, InvalidInput } from './lib.js'
+import { DecodeFailure, EncodeFailure, InvalidInput, isDID, isDIDMailto } from './lib.js'
 
 /** @type {import('../lib/api').Validator<import('../lib/api').Usage>} */
 export const validate = input => {
   if (input == null || typeof input !== 'object') {
     return { error: new InvalidInput('not an object') }
   }
-  for (const field of ['customer', 'space']) {
-    try {
-      // @ts-expect-error
-      DID.parse(input[field])
-    } catch (/** @type {any} */ err) {
-      return { error: new InvalidInput(err.message, field) }
-    }
+  if (!isDIDMailto(input.customer)) {
+    return { error: new InvalidInput('not a mailto DID', 'customer') }
+  }
+  if (!isDID(input.space)) {
+    return { error: new InvalidInput('not a DID', 'space') }
   }
   if (typeof input.account !== 'string') {
     return { error: new InvalidInput('not a string', 'account') }
@@ -20,8 +17,8 @@ export const validate = input => {
   if (typeof input.product !== 'string') {
     return { error: new InvalidInput('not a string', 'product') }
   }
-  if (Number.isSafeInteger(input.usage)) {
-    return { error: new InvalidInput('not a number', 'usage') }
+  if (typeof input.usage !== 'bigint') {
+    return { error: new InvalidInput('not a bigint', 'usage') }
   }
   if (!(input.from instanceof Date)) {
     return { error: new InvalidInput('not a Date instance', 'from') }
@@ -41,6 +38,7 @@ export const encode = input => {
     return {
       ok: {
         ...input,
+        usage: input.usage.toString(),
         from: input.from.toISOString(),
         to: input.to.toISOString(),
         insertedAt: input.insertedAt.toISOString()
@@ -49,6 +47,46 @@ export const encode = input => {
   } catch (/** @type {any} */ err) {
     return {
       error: new EncodeFailure(`encoding usage record: ${err.message}`)
+    }
+  }
+}
+
+/**
+ * @type {import('../lib/api').Encoder<import('../lib/api').UsageKey, import('../types').InferStoreRecord<import('../lib/api').UsageKey>>}
+ */
+export const encodeKey = input => ({
+  ok: {
+    customer: input.customer,
+    from: input.from.toISOString()
+  }
+})
+
+/**
+ * @type {import('../lib/api').Decoder<import('../types').StoreRecord, import('../lib/api').Usage>}
+ */
+export const decode = input => {
+  if (!isDIDMailto(input.customer)) {
+    return { error: new DecodeFailure(`"customer" is not a mailto DID`) }
+  }
+  if (!isDID(input.space)) {
+    return { error: new DecodeFailure(`"space" is not a DID`) }
+  }
+  try {
+    return {
+      ok: {
+        customer: input.customer,
+        account: String(input.account),
+        product: String(input.product),
+        space: input.space,
+        usage: BigInt(input.usage),
+        from: new Date(input.from),
+        to: new Date(input.to),
+        insertedAt: new Date(input.insertedAt)
+      }
+    }
+  } catch (/** @type {any} */ err) {
+    return {
+      error: new DecodeFailure(`decoding usage record: ${err.message}`)
     }
   }
 }

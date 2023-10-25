@@ -14,11 +14,13 @@
     "@ucanto/interface": "^9.0.0",
     "@ucanto/server": "^9.0.1",
     "@web3-storage/capabilities": "^10.0.0",
+    "big.js": "^6.2.1",
     "multiformats": "^12.1.2",
     "p-retry": "^6.1.0",
     "uint8arrays": "^4.0.6"
   },
   "devDependencies": {
+    "@types/big.js": "^6.2.1",
     "aws-lambda": "^1.0.7",
     "c8": "^8.0.1",
     "entail": "^2.1.1",

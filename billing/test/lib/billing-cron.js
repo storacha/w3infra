@@ -1,8 +1,8 @@
-import { handleCronTick } from '../../lib/runner.js'
+import { handleCronTick } from '../../lib/billing-cron.js'
 import { randomCustomer } from '../helpers/customer.js'
 import { collectQueueMessages } from '../helpers/queue.js'
 
-/** @type {import('./api').TestSuite} */
+/** @type {import('./api').TestSuite<import('./api').BillingCronTestContext>} */
 export const test = {
   'should queue all the customers': async (/** @type {import('entail').assert} */ assert, ctx) => {
     const customers = []
@@ -22,18 +22,18 @@ export const test = {
     assert.equal(collected.ok.length, customers.length)
 
     for (const instruction of collected.ok) {
-      assert.equal(instruction.from.getUTCFullYear(), now.getUTCFullYear())
-      assert.equal(instruction.from.getUTCMonth(), now.getUTCMonth())
-      assert.equal(instruction.from.getUTCDate(), 1)
-      assert.equal(instruction.from.getUTCHours(), 0)
-      assert.equal(instruction.from.getUTCMinutes(), 0)
-      assert.equal(instruction.from.getUTCSeconds(), 0)
-      assert.equal(instruction.from.getUTCMilliseconds(), 0)
+      assert.equal(instruction.to.getUTCFullYear(), now.getUTCFullYear())
+      assert.equal(instruction.to.getUTCMonth(), now.getUTCMonth())
+      assert.equal(instruction.to.getUTCDate(), 1)
+      assert.equal(instruction.to.getUTCHours(), 0)
+      assert.equal(instruction.to.getUTCMinutes(), 0)
+      assert.equal(instruction.to.getUTCSeconds(), 0)
+      assert.equal(instruction.to.getUTCMilliseconds(), 0)
 
-      // the expected "to" date is the "from" date + 1 month
-      const to = new Date(instruction.from.toISOString())
-      to.setUTCMonth(instruction.from.getUTCMonth() + 1)
-      assert.equal(instruction.to.toISOString(), to.toISOString())
+      // the expected "from" date is the "to" date - 1 month
+      const from = new Date(instruction.to.toISOString())
+      from.setUTCMonth(instruction.to.getUTCMonth() - 1)
+      assert.equal(instruction.from.toISOString(), from.toISOString())
     }
 
     // ensure we got a billing instruction for each customer

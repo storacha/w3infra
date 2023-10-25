@@ -1,5 +1,27 @@
 import * as Link from 'multiformats/link'
-import { DecodeFailure, asDID } from './lib.js'
+import { DecodeFailure, EncodeFailure, asDID, asDIDWeb } from './lib.js'
+
+/**
+ * @type {import('../lib/api').Encoder<import('../lib/api').Consumer, import('../types').InferStoreRecord<import('../lib/api').Consumer>>}
+ */
+export const encode = input => {
+  try {
+    return {
+      ok: {
+        consumer: input.consumer,
+        provider: input.provider,
+        subscription: input.subscription,
+        cause: input.cause.toString(),
+        insertedAt: input.insertedAt.toISOString(),
+        updatedAt: input.updatedAt.toISOString()
+      }
+    }
+  } catch (/** @type {any} */ err) {
+    return {
+      error: new EncodeFailure(`encoding consumer record: ${err.message}`)
+    }
+  }
+}
 
 /**
  * @type {import('../lib/api').Decoder<import('../types').StoreRecord, import('../lib/api').Consumer>}
@@ -9,7 +31,7 @@ export const decode = input => {
     return {
       ok: {
         consumer: asDID(input.consumer),
-        provider: asDID(input.provider),
+        provider: asDIDWeb(input.provider),
         subscription: String(input.subscription),
         cause: Link.parse(String(input.cause)),
         insertedAt: new Date(input.insertedAt),
@@ -47,7 +69,7 @@ export const lister = {
       return {
         ok: {
           consumer: asDID(input.consumer),
-          provider: asDID(input.provider),
+          provider: asDIDWeb(input.provider),
           subscription: String(input.subscription)
         }
       }

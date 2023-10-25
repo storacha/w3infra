@@ -96,8 +96,8 @@
       "screenBounds": {
         "x": 0,
         "y": 0,
-        "w": 1208,
-        "h": 562
+        "w": 808,
+        "h": 688
       },
       "zoomBrush": null,
       "isGridMode": false,
@@ -198,9 +198,9 @@
     {
       "id": "pointer:pointer",
       "typeName": "pointer",
-      "x": 1554.442207266402,
-      "y": 1183.9720113666547,
-      "lastActivityTimestamp": 1698075297250,
+      "x": 1454.1225047513221,
+      "y": 1077.2081639830976,
+      "lastActivityTimestamp": 1698246237058,
       "meta": {}
     },
     {
@@ -211,9 +211,9 @@
       "typeName": "page"
     },
     {
-      "x": -716.2203406842682,
-      "y": -842.6432788371222,
-      "z": 1.0337358574683464,
+      "x": -669.82350551231,
+      "y": -548.0375573598818,
+      "z": 0.9756423420690987,
       "meta": {},
       "id": "camera:page:Rrzf2lpl3e1GzXW65i7-e",
       "typeName": "camera"
@@ -2385,8 +2385,8 @@
       "typeName": "shape"
     },
     {
-      "x": 336.9889371286745,
-      "y": -116.6653378309586,
+      "x": 302.1926483780871,
+      "y": -116.3960361828158,
       "rotation": 0,
       "isLocked": false,
       "opacity": 1,
@@ -2395,8 +2395,8 @@
       "props": {
         "color": "black",
         "size": "s",
-        "w": 137.015625,
-        "text": "runnerHandler",
+        "w": 172.703125,
+        "text": "billingCronHandler",
         "font": "draw",
         "align": "middle",
         "autoSize": true,
@@ -2483,8 +2483,8 @@
       "typeName": "shape"
     },
     {
-      "x": 290.4140625,
-      "y": 520,
+      "x": 232.13757191912407,
+      "y": 540.4669252588504,
       "rotation": 0,
       "isLocked": false,
       "opacity": 1,
@@ -2493,8 +2493,8 @@
       "props": {
         "color": "black",
         "size": "s",
-        "w": 182.171875,
-        "text": "spaceQueueHandler",
+        "w": 238.078125,
+        "text": "spaceBillingQueueHandler",
         "font": "draw",
         "align": "middle",
         "autoSize": true,
@@ -2727,7 +2727,7 @@
         "color": "grey",
         "size": "s",
         "w": 250.5234375,
-        "text": "space: DID string (pk)\nprovider: DID string (pk)\nsize: bytes number\nrecordedAt: ISO string (sk)\ninsertedAt: ISO string",
+        "text": "space: DID string (pk)\nprovider: DID string (pk)\nsize: bytes bigint\nrecordedAt: ISO string (sk)\ninsertedAt: ISO string",
         "font": "draw",
         "align": "start",
         "autoSize": true,
@@ -3177,8 +3177,8 @@
       "typeName": "shape"
     },
     {
-      "x": 840,
-      "y": 340,
+      "x": 835.43533706398,
+      "y": 361.7954800563549,
       "rotation": 0,
       "isLocked": false,
       "opacity": 1,
@@ -3306,7 +3306,7 @@
         "color": "grey",
         "size": "s",
         "w": 234.484375,
-        "text": "customer: DID string (pk)\naccount: Stripe ID\nproduct: plan string\nspace: DID string\nprovider: DID string\nusage: GB/month\nfrom: ISO string (sk)\nto: ISO string\ninsertedAt: ISO string",
+        "text": "customer: DID string (pk)\naccount: Stripe ID\nproduct: plan string\nspace: DID string\nprovider: DID string\nusage: bytes/ms bigint\nfrom: ISO string (sk)\nto: ISO string\ninsertedAt: ISO string",
         "font": "draw",
         "align": "start",
         "autoSize": true,
@@ -3433,8 +3433,8 @@
       "typeName": "shape"
     },
     {
-      "x": 799.2344899200625,
-      "y": 1195.9659089538538,
+      "x": 793.7990849883809,
+      "y": 1215.4813017226002,
       "rotation": 0,
       "isLocked": false,
       "opacity": 1,
@@ -3817,8 +3817,8 @@
       "typeName": "shape"
     },
     {
-      "x": 530.0466804498311,
-      "y": 177.17431696846168,
+      "x": 531.9256983112716,
+      "y": 175.8547388925621,
       "rotation": 0,
       "isLocked": false,
       "opacity": 1,
@@ -3827,8 +3827,8 @@
       "props": {
         "color": "black",
         "size": "s",
-        "w": 214.75,
-        "text": "customerQueueHandler",
+        "w": 270.75,
+        "text": "customerBillingQueueHandler",
         "font": "draw",
         "align": "middle",
         "autoSize": true,

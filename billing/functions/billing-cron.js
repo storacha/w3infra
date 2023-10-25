@@ -2,7 +2,7 @@ import * as Sentry from '@sentry/serverless'
 import { notNully } from './lib.js'
 import { createCustomerStore } from '../tables/customer.js'
 import { createCustomerBillingQueue } from '../queues/customer.js'
-import { handleCronTick } from '../lib/runner.js'
+import { handleCronTick } from '../lib/billing-cron.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,

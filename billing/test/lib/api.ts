@@ -2,17 +2,46 @@ import { Result, Failure } from '@ucanto/interface'
 import {
   CustomerStore,
   StorePutter,
+  StoreGetter,
   CustomerBillingQueue,
   Customer,
   CustomerBillingInstruction,
   DecodeFailure,
-  QueueOperationFailure
+  QueueOperationFailure,
+  SpaceBillingQueue,
+  SpaceBillingInstruction,
+  SubscriptionStore,
+  ConsumerStore,
+  Subscription,
+  Consumer,
+  SpaceDiffStore,
+  SpaceSnapshotStore,
+  UsageStore,
+  UsageKey,
+  Usage
 } from '../../lib/api.js'
 
-export interface TestContext {
+export interface BillingCronTestContext {
   customerStore: CustomerStore & StorePutter<Customer>
   customerBillingQueue: CustomerBillingQueue & QueueRemover<CustomerBillingInstruction>
 }
+
+export interface CustomerBillingQueueTestContext {
+  subscriptionStore: SubscriptionStore & StorePutter<Subscription>
+  consumerStore: ConsumerStore & StorePutter<Consumer>
+  spaceBillingQueue: SpaceBillingQueue & QueueRemover<SpaceBillingInstruction>
+}
+
+export interface SpaceBillingQueueTestContext {
+  spaceDiffStore: SpaceDiffStore
+  spaceSnapshotStore: SpaceSnapshotStore
+  usageStore: UsageStore & StoreGetter<UsageKey, Usage>
+}
+
+export type TestContext =
+  & BillingCronTestContext
+  & CustomerBillingQueueTestContext
+  & SpaceBillingQueueTestContext
 
 /** QueueRemover can remove items from the head of the queue. */
 export interface QueueRemover<T> {
@@ -25,5 +54,5 @@ export interface EndOfQueue extends Failure {
   name: 'EndOfQueue'
 }
 
-export type TestSuite =
-  Record<string, (assert: typeof import('entail').assert, ctx: TestContext) => unknown>
+export type TestSuite<C> =
+  Record<string, (assert: typeof import('entail').assert, ctx: C) => unknown>

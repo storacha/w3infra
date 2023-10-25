@@ -1,13 +1,15 @@
+import { startOfLastMonth, startOfMonth, } from './util.js'
+
 /**
  * @param {{
- *   customerStore: import('./api').CustomerStore
- *   customerBillingQueue: import('./api').CustomerBillingQueue
+ *   customerStore: import('./api.js').CustomerStore
+ *   customerBillingQueue: import('./api.js').CustomerBillingQueue
  * }} ctx
  * @returns {Promise<import('@ucanto/interface').Result>}
  */
 export const handleCronTick = async ctx => {
-  const from = startOfMonth()
-  const to = startOfNextMonth()
+  const from = startOfLastMonth()
+  const to = startOfMonth()
 
   let cursor
   while (true) {
@@ -31,20 +33,4 @@ export const handleCronTick = async ctx => {
   }
 
   return { ok: {} }
-}
-
-const startOfMonth = () => {
-  const d = new Date()
-  d.setUTCDate(1)
-  d.setUTCHours(0)
-  d.setUTCMinutes(0)
-  d.setUTCSeconds(0)
-  d.setUTCMilliseconds(0)
-  return d
-}
-
-const startOfNextMonth = () => {
-  const d = startOfMonth()
-  d.setUTCMonth(d.getUTCMonth() + 1)
-  return d
 }

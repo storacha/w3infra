@@ -11,8 +11,8 @@ export const validate = input => {
   if (!isDID(input.space)) {
     return { error: new InvalidInput('not a DID', 'space') }
   }
-  if (typeof input.size !== 'number') {
-    return { error: new InvalidInput('not a number', 'size') }
+  if (typeof input.size !== 'bigint') {
+    return { error: new InvalidInput('not a bigint', 'size') }
   }
   if (!(input.recordedAt instanceof Date)) {
     return { error: new InvalidInput('not a Date instance', 'recordedAt') }
@@ -29,7 +29,7 @@ export const encode = input => {
     return {
       ok: {
         space: `${input.space},${input.provider}`,
-        size: input.size,
+        size: input.size.toString(),
         recordedAt: input.recordedAt.toISOString(),
         insertedAt: input.insertedAt.toISOString()
       }
@@ -65,15 +65,12 @@ export const decode = input => {
   if (!isDID(provider)) {
     return { error: new DecodeFailure(`"provider" is not a DID`) }
   }
-  if (typeof input.size !== 'number') {
-    return { error: new DecodeFailure(`"size" is not a number`) }
-  }
   try {
     return {
       ok: {
         space,
         provider,
-        size: input.size,
+        size: BigInt(input.size),
         recordedAt: new Date(input.recordedAt),
         insertedAt: new Date(input.insertedAt)
       }

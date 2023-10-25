@@ -4,7 +4,7 @@ import * as BillingInstruction from '../data/customer-billing-instruction.js'
 import { createSubscriptionStore } from '../tables/subscription.js'
 import { createConsumerStore } from '../tables/consumer.js'
 import { createSpaceBillingQueue } from '../queues/space.js'
-import { handleCustomerBillingInstruction } from '../lib/customer-queue.js'
+import { handleCustomerBillingInstruction } from '../lib/customer-billing-queue.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -52,7 +52,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(
 
 /**
  * @param {import('aws-lambda').SQSEvent} event
- * @returns {import('@ucanto/interface').Result<import('../lib/api').CustomerBillingInstruction[], import('../lib/api').DecodeFailure>}
+ * @returns {import('@ucanto/interface').Result<import('../lib/api.js').CustomerBillingInstruction[], import('../lib/api.js').DecodeFailure>}
  */
 const parseCustomerBillingInstructionEvent = (event) => {
   const instructions = []

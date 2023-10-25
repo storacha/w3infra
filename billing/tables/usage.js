@@ -22,16 +22,14 @@ export const usageTableProps = {
     space: 'string',
     /** Usage in GB/month */
     usage: 'number',
-    /**
-     * Dual ISO timestamp the invoice covers - inclusive from, exclusive to.
-     * 
-     * e.g. 2023-10-01T00:00:00.000Z - 2023-11-01T00:00:00.000Z
-     */
-    period: 'string',
+    /** ISO timestamp the usage period spans from (inclusive). */
+    from: 'string',
+    /** ISO timestamp the usage period spans to (exclusive). */
+    to: 'string',
     /** ISO timestamp we created the invoice. */
     insertedAt: 'string'
   },
-  primaryIndex: { partitionKey: 'customer', sortKey: 'period' }
+  primaryIndex: { partitionKey: 'customer', sortKey: 'from' }
 }
 
 /**

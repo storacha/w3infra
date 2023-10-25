@@ -1,5 +1,27 @@
 import * as Link from 'multiformats/link'
-import { DecodeFailure, isDIDMailto, isDID } from './lib.js'
+import { DecodeFailure, EncodeFailure, isDIDMailto, isDIDWeb } from './lib.js'
+
+/**
+ * @type {import('../lib/api').Encoder<import('../lib/api').Subscription, import('../types').InferStoreRecord<import('../lib/api').Subscription>>}
+ */
+export const encode = input => {
+  try {
+    return {
+      ok: {
+        customer: input.customer,
+        provider: input.provider,
+        subscription: input.subscription,
+        cause: input.cause.toString(),
+        insertedAt: input.insertedAt.toISOString(),
+        updatedAt: input.updatedAt.toISOString()
+      }
+    }
+  } catch (/** @type {any} */ err) {
+    return {
+      error: new EncodeFailure(`encoding subscription record: ${err.message}`)
+    }
+  }
+}
 
 /**
  * @type {import('../lib/api').Encoder<import('../lib/api').SubscriptionKey, import('../types').InferStoreRecord<import('../lib/api').SubscriptionKey>>}
@@ -18,22 +40,16 @@ export const decode = input => {
   if (!isDIDMailto(input.customer)) {
     return { error: new DecodeFailure(`"customer" is not a mailto DID`) }
   }
-  if (!isDID(input.provider)) {
-    return { error: new DecodeFailure(`"provider" is not a DID`) }
-  }
-  if (typeof input.subscription !== 'string') {
-    return { error: new DecodeFailure(`"subscription" is not a string`) }
-  }
-  if (typeof input.cause !== 'string') {
-    return { error: new DecodeFailure(`"cause" is not a string`) }
+  if (!isDIDWeb(input.provider)) {
+    return { error: new DecodeFailure(`"provider" is not a web DID`) }
   }
   try {
     return {
       ok: {
         customer: input.customer,
         provider: input.provider,
-        subscription: input.subscription,
-        cause: Link.parse(input.cause),
+        subscription: String(input.subscription),
+        cause: Link.parse(String(input.cause)),
         insertedAt: new Date(input.insertedAt),
         updatedAt: new Date(input.updatedAt)
       }
@@ -59,7 +75,7 @@ export const lister = {
     if (!isDIDMailto(input.customer)) {
       return { error: new DecodeFailure(`"customer" is not a mailto DID`) }
     }
-    if (!isDID(input.provider)) {
+    if (!isDIDWeb(input.provider)) {
       return { error: new DecodeFailure(`"provider" is not a DID`) }
     }
     if (typeof input.subscription !== 'string') {

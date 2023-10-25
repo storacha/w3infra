@@ -75,9 +75,10 @@ const toKeySchema = ({ partitionKey, sortKey }) => {
 /**
  * @param {import('@aws-sdk/client-dynamodb').DynamoDBClient} dynamo
  * @param {import("@serverless-stack/resources").TableProps} tableProps
+ * @param {string} [pfx]
  */
-export async function createTable (dynamo, tableProps) {
-  const name = randomAlphaNumerics(10)
+export async function createTable (dynamo, tableProps, pfx = '') {
+  const name = pfx + randomAlphaNumerics(10)
   console.log(`Creating DynamoDB table "${name}"...`)
 
   await dynamo.send(new CreateTableCommand({
@@ -104,9 +105,12 @@ export const createSQS = async (opts = {}) => {
   return { client: new SQSClient({ region, endpoint }), endpoint }
 }
 
-/** @param {import('@aws-sdk/client-sqs').SQSClient} sqs */
-export async function createQueue (sqs) {
-  const name = randomAlphaNumerics(10)
+/**
+ * @param {import('@aws-sdk/client-sqs').SQSClient} sqs
+ * @param {string} [pfx]
+ */
+export async function createQueue (sqs, pfx = '') {
+  const name = pfx + randomAlphaNumerics(10)
   console.log(`Creating SQS queue "${name}"...`)
   const res = await sqs.send(new CreateQueueCommand({ QueueName: name }))
   if (!res.QueueUrl) throw new Error('missing queue URL')

@@ -68,6 +68,12 @@ export const isDID = input => {
 
 /**
  * @param {any} input
+ * @returns {input is import('@ucanto/interface').DID<'web'>}
+ */
+export const isDIDWeb = input => isDID(input) && input.startsWith('did:web')
+
+/**
+ * @param {any} input
  * @returns {input is import('@ucanto/interface').DID<'mailto'>}
  */
 export const isDIDMailto = input => isDID(input) && input.startsWith('did:mailto')
@@ -75,6 +81,12 @@ export const isDIDMailto = input => isDID(input) && input.startsWith('did:mailto
 /** @param {any} input */
 export const asDID = input => {
   if (!isDID(input)) throw new Error('not a DID')
+  return input
+}
+
+/** @param {any} input */
+export const asDIDWeb = input => {
+  if (!isDIDWeb(input)) throw new Error('not a web DID')
   return input
 }
 

@@ -20,45 +20,45 @@ export function BillingStack ({ stack, app }) {
   const { subscriptionTable, consumerTable } = use(UploadDbStack)
 
   // Lambda that does a billing run for a given space and customer
-  const spaceQueueHandler = new Function(stack, 'space-queue-handler', {
+  const spaceBillingQueueHandler = new Function(stack, 'space-billing-queue-handler', {
     permissions: [spaceSnapshotTable, spaceDiffTable, usageTable],
-    handler: 'functions/space-queue.handler',
+    handler: 'functions/space-billing-queue.handler',
     timeout: '15 minutes'
   })
 
   // Queue of spaces and customers that need billing
-  const spaceQueue = new Queue(stack, 'space-queue', {
+  const spaceBillingQueue = new Queue(stack, 'space-billing-queue', {
     consumer: {
-      function: spaceQueueHandler,
+      function: spaceBillingQueueHandler,
       cdk: { eventSource: { batchSize: 1 } }
     }
   })
 
   // Lambda that does a billing run for a given customer
-  const customerQueueHandler = new Function(stack, 'customer-queue-handler', {
-    permissions: [subscriptionTable, consumerTable, spaceQueue],
-    handler: 'functions/customer-queue.handler',
+  const customerBillingQueueHandler = new Function(stack, 'customer-billing-queue-handler', {
+    permissions: [subscriptionTable, consumerTable, spaceBillingQueue],
+    handler: 'functions/customer-billing-queue.handler',
     timeout: '15 minutes'
   })
 
   // Queue of accounts that need billing
-  const customerQueue = new Queue(stack, 'customer-queue', {
+  const customerBillingQueue = new Queue(stack, 'customer-billing-queue', {
     consumer: {
-      function: customerQueueHandler,
+      function: customerBillingQueueHandler,
       cdk: { eventSource: { batchSize: 1 } }
     }
   })
 
   // Lambda that queues account DIDs to be billed
-  const runnerHandler = new Function(stack, 'runner-handler', {
-    permissions: [customerTable, customerQueue],
-    handler: 'functions/runner.handler',
+  const billingCronHandler = new Function(stack, 'billing-cron-handler', {
+    permissions: [customerTable, customerBillingQueue],
+    handler: 'functions/billing-cron.handler',
     timeout: '15 minutes'
   })
 
   // Cron job to kick off a billing run
-  const runnerCron = new Cron(stack, 'runner', {
-    job: runnerHandler,
+  const billingCron = new Cron(stack, 'billing-cron', {
+    job: billingCronHandler,
     schedule: 'cron(0 0 1 * *)' // https://crontab.guru/#0_0_1_*_*
   })
 
@@ -98,5 +98,5 @@ export function BillingStack ({ stack, app }) {
     }
   })
 
-  return { runnerCron }
+  return { runnerCron: billingCron }
 }

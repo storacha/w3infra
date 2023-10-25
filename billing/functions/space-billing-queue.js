@@ -4,7 +4,7 @@ import * as SpaceBillingInstruction from '../data/space-billing-instruction.js'
 import { createSpaceDiffStore } from '../tables/space-diff.js'
 import { createSpaceSnapshotStore } from '../tables/space-snapshot.js'
 import { createUsageStore } from '../tables/usage.js'
-import { handleSpaceBillingInstruction } from '../lib/space-queue.js'
+import { handleSpaceBillingInstruction } from '../lib/space-billing-queue.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -52,7 +52,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(
 
 /**
  * @param {import('aws-lambda').SQSEvent} event
- * @returns {import('@ucanto/interface').Result<import('../lib/api').SpaceBillingInstruction[], import('../lib/api').DecodeFailure>}
+ * @returns {import('@ucanto/interface').Result<import('../lib/api.js').SpaceBillingInstruction[], import('../lib/api.js').DecodeFailure>}
  */
 const parseSpaceBillingInstructionEvent = (event) => {
   const instructions = []
