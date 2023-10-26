@@ -14,9 +14,8 @@ Sentry.AWSLambda.init({
 
 /**
  * @typedef {{
- *   spaceDiffTable?: string
+ *   subscriptionTable?: string
  *   consumerTable?: string
- *   usageTable?: string
  *   spaceBillingQueueURL?: URL
  *   region?: 'us-west-2'|'us-east-2'
  * }} CustomHandlerContext
@@ -30,7 +29,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(
   async (event, context) => {
     /** @type {CustomHandlerContext|undefined} */
     const customContext = context?.clientContext?.Custom
-    const subscriptionTable = customContext?.spaceDiffTable ?? notNully(process.env, 'SUBSCRIPTION_TABLE_NAME')
+    const subscriptionTable = customContext?.subscriptionTable ?? notNully(process.env, 'SUBSCRIPTION_TABLE_NAME')
     const consumerTable = customContext?.consumerTable ?? notNully(process.env, 'CONSUMER_TABLE_NAME')
     const spaceBillingQueueURL = new URL(customContext?.spaceBillingQueueURL ?? notNully(process.env, 'SPACE_BILLING_QUEUE_URL'))
     const region = customContext?.region ?? notNully(process.env, 'AWS_REGION')
