@@ -1,5 +1,5 @@
 import * as Sentry from '@sentry/serverless'
-import { notNully } from './lib.js'
+import { mustGetEnv } from './lib.js'
 import { createCustomerStore } from '../tables/customer.js'
 import { createCustomerBillingQueue } from '../queues/customer.js'
 import { handleCronTick } from '../lib/billing-cron.js'
@@ -26,9 +26,9 @@ export const handler = Sentry.AWSLambda.wrapHandler(
   async (event, context) => {
     /** @type {CustomHandlerContext|undefined} */
     const customContext = context?.clientContext?.Custom
-    const customerTable = customContext?.customerTable ?? notNully(process.env, 'CUSTOMER_TABLE_NAME')
-    const customerBillingQueueURL = new URL(customContext?.customerBillingQueueURL ?? notNully(process.env, 'CUSTOMER_BILLING_QUEUE_URL'))
-    const region = customContext?.region ?? notNully(process.env, 'AWS_REGION')
+    const customerTable = customContext?.customerTable ?? mustGetEnv('CUSTOMER_TABLE_NAME')
+    const customerBillingQueueURL = new URL(customContext?.customerBillingQueueURL ?? mustGetEnv('CUSTOMER_BILLING_QUEUE_URL'))
+    const region = customContext?.region ?? mustGetEnv('AWS_REGION')
 
     const { error } = await handleCronTick({
       customerStore: createCustomerStore({ region }, { tableName: customerTable }),

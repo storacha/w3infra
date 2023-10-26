@@ -1,5 +1,5 @@
 import * as Sentry from '@sentry/serverless'
-import { notNully } from './lib.js'
+import { mustGetEnv } from './lib.js'
 import * as SpaceBillingInstruction from '../data/space-billing-instruction.js'
 import { createSpaceDiffStore } from '../tables/space-diff.js'
 import { createSpaceSnapshotStore } from '../tables/space-snapshot.js'
@@ -29,10 +29,10 @@ export const handler = Sentry.AWSLambda.wrapHandler(
   async (event, context) => {
     /** @type {CustomHandlerContext|undefined} */
     const customContext = context?.clientContext?.Custom
-    const spaceDiffTable = customContext?.spaceDiffTable ?? notNully(process.env, 'SPACE_DIFF_TABLE_NAME')
-    const spaceSnapshotTable = customContext?.spaceSnapshotTable ?? notNully(process.env, 'SPACE_SNAPSHOT_TABLE_NAME')
-    const usageTable = customContext?.usageTable ?? notNully(process.env, 'USAGE_TABLE_NAME')
-    const region = customContext?.region ?? notNully(process.env, 'AWS_REGION')
+    const spaceDiffTable = customContext?.spaceDiffTable ?? mustGetEnv('SPACE_DIFF_TABLE_NAME')
+    const spaceSnapshotTable = customContext?.spaceSnapshotTable ?? mustGetEnv('SPACE_SNAPSHOT_TABLE_NAME')
+    const usageTable = customContext?.usageTable ?? mustGetEnv('USAGE_TABLE_NAME')
+    const region = customContext?.region ?? mustGetEnv('AWS_REGION')
 
     const { ok: instructions, error } = parseSpaceBillingInstructionEvent(event)
     if (error) throw error

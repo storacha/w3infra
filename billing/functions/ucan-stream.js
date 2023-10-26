@@ -4,7 +4,7 @@ import * as Link from 'multiformats/link'
 import { createSpaceDiffStore } from '../tables/space-diff.js'
 import { createSubscriptionStore } from '../tables/subscription.js'
 import { createConsumerStore } from '../tables/consumer.js'
-import { notNully } from './lib.js'
+import { mustGetEnv } from './lib.js'
 import { handleUcanStreamMessage } from '../lib/ucan-stream.js'
 
 Sentry.AWSLambda.init({
@@ -30,10 +30,10 @@ export const handler = Sentry.AWSLambda.wrapHandler(
   async (event, context) => {
     /** @type {CustomHandlerContext|undefined} */
     const customContext = context?.clientContext?.Custom
-    const spaceDiffTable = customContext?.spaceDiffTable ?? notNully(process.env, 'SPACE_DIFF_TABLE_NAME')
-    const subscriptionTable = customContext?.subscriptionTable ?? notNully(process.env, 'SUBSCRIPTION_TABLE_NAME')
-    const consumerTable = customContext?.consumerTable ?? notNully(process.env, 'CONSUMER_TABLE_NAME')
-    const region = customContext?.region ?? notNully(process.env, 'AWS_REGION')
+    const spaceDiffTable = customContext?.spaceDiffTable ?? mustGetEnv('SPACE_DIFF_TABLE_NAME')
+    const subscriptionTable = customContext?.subscriptionTable ?? mustGetEnv('SUBSCRIPTION_TABLE_NAME')
+    const consumerTable = customContext?.consumerTable ?? mustGetEnv('CONSUMER_TABLE_NAME')
+    const region = customContext?.region ?? mustGetEnv('AWS_REGION')
   
     const messages = parseUcanStreamEvent(event)
     const ctx = {

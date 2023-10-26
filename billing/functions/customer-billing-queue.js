@@ -1,5 +1,5 @@
 import * as Sentry from '@sentry/serverless'
-import { notNully } from './lib.js'
+import { mustGetEnv } from './lib.js'
 import * as BillingInstruction from '../data/customer-billing-instruction.js'
 import { createSubscriptionStore } from '../tables/subscription.js'
 import { createConsumerStore } from '../tables/consumer.js'
@@ -29,10 +29,10 @@ export const handler = Sentry.AWSLambda.wrapHandler(
   async (event, context) => {
     /** @type {CustomHandlerContext|undefined} */
     const customContext = context?.clientContext?.Custom
-    const subscriptionTable = customContext?.subscriptionTable ?? notNully(process.env, 'SUBSCRIPTION_TABLE_NAME')
-    const consumerTable = customContext?.consumerTable ?? notNully(process.env, 'CONSUMER_TABLE_NAME')
-    const spaceBillingQueueURL = new URL(customContext?.spaceBillingQueueURL ?? notNully(process.env, 'SPACE_BILLING_QUEUE_URL'))
-    const region = customContext?.region ?? notNully(process.env, 'AWS_REGION')
+    const subscriptionTable = customContext?.subscriptionTable ?? mustGetEnv('SUBSCRIPTION_TABLE_NAME')
+    const consumerTable = customContext?.consumerTable ?? mustGetEnv('CONSUMER_TABLE_NAME')
+    const spaceBillingQueueURL = new URL(customContext?.spaceBillingQueueURL ?? mustGetEnv('SPACE_BILLING_QUEUE_URL'))
+    const region = customContext?.region ?? mustGetEnv('AWS_REGION')
 
     const { ok: instructions, error } = parseCustomerBillingInstructionEvent(event)
     if (error) throw error

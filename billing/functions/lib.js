@@ -1,9 +1,9 @@
 /**
- * @param {Record<string, string|undefined>} obj
- * @param {string} key
+ * @param {string} name 
+ * @returns {string}
  */
-export const notNully = (obj, key) => {
-  const value = obj[key]
-  if (value == null) throw new Error(`${key} is null or undefined`)
+export function mustGetEnv (name) {
+  const value = process.env[name]
+  if (!value) throw new Error(`Missing env var: ${name}`)
   return value
 }
