@@ -1,6 +1,14 @@
 import { DecodeFailure, EncodeFailure, InvalidInput, isDID, isDIDMailto, isDIDWeb } from './lib.js'
 
-/** @type {import('../lib/api').Validator<import('../lib/api').Usage>} */
+/**
+ * @typedef {import('../lib/api').Usage} Usage
+ * @typedef {import('../types').InferStoreRecord<Usage>} UsageStoreRecord
+ * @typedef {import('../lib/api').UsageKey} UsageKey
+ * @typedef {import('../types').InferStoreRecord<UsageKey>} UsageKeyStoreRecord
+ * @typedef {import('../types').StoreRecord} StoreRecord
+ */
+
+/** @type {import('../lib/api').Validator<Usage>} */
 export const validate = input => {
   if (input == null || typeof input !== 'object') {
     return { error: new InvalidInput('not an object') }
@@ -35,7 +43,7 @@ export const validate = input => {
   return { ok: {} }
 }
 
-/** @type {import('../lib/api').Encoder<import('../lib/api').Usage, import('../types').InferStoreRecord<import('../lib/api').Usage>>} */
+/** @type {import('../lib/api').Encoder<Usage, UsageStoreRecord>} */
 export const encode = input => {
   try {
     return {
@@ -54,9 +62,7 @@ export const encode = input => {
   }
 }
 
-/**
- * @type {import('../lib/api').Encoder<import('../lib/api').UsageKey, import('../types').InferStoreRecord<import('../lib/api').UsageKey>>}
- */
+/** @type {import('../lib/api').Encoder<UsageKey, UsageKeyStoreRecord>} */
 export const encodeKey = input => ({
   ok: {
     customer: input.customer,
@@ -64,9 +70,7 @@ export const encodeKey = input => ({
   }
 })
 
-/**
- * @type {import('../lib/api').Decoder<import('../types').StoreRecord, import('../lib/api').Usage>}
- */
+/** @type {import('../lib/api').Decoder<StoreRecord, Usage>} */
 export const decode = input => {
   if (!isDIDMailto(input.customer)) {
     return { error: new DecodeFailure(`"customer" is not a mailto DID`) }

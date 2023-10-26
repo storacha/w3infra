@@ -2,8 +2,12 @@ import * as Link from 'multiformats/link'
 import { EncodeFailure, DecodeFailure, asDIDMailto } from './lib.js'
 
 /**
- * @type {import('../lib/api').Encoder<import('../lib/api').Customer, import('../types').InferStoreRecord<import('../lib/api').Customer>>}
+ * @typedef {import('../lib/api').Customer} Customer
+ * @typedef {import('../types').InferStoreRecord<Customer>} CustomerStoreRecord
+ * @typedef {import('../types').StoreRecord} StoreRecord
  */
+
+/** @type {import('../lib/api').Encoder<Customer, CustomerStoreRecord>} */
 export const encode = input => {
   try {
     return {
@@ -23,9 +27,7 @@ export const encode = input => {
   }
 }
 
-/**
- * @type {import('../lib/api').Decoder<import('../types').StoreRecord, import('../lib/api').Customer>}
- */
+/** @type {import('../lib/api').Decoder<StoreRecord, Customer>} */
 export const decode = input => {
   try { 
     return {

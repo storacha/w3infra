@@ -1,7 +1,11 @@
 import * as dagJSON from '@ipld/dag-json'
 import { EncodeFailure, DecodeFailure, InvalidInput, isDIDMailto, isDID, isDIDWeb } from './lib.js'
 
-/** @type {import('../lib/api').Validator<import('../lib/api').SpaceBillingInstruction>} */
+/**
+ * @typedef {import('../lib/api').SpaceBillingInstruction} SpaceBillingInstruction
+ */
+
+/** @type {import('../lib/api').Validator<SpaceBillingInstruction>} */
 export const validate = input => {
   if (input == null || typeof input !== 'object') {
     return { error: new InvalidInput('not an object') }
@@ -30,7 +34,7 @@ export const validate = input => {
   return { ok: {} }
 }
 
-/** @type {import('../lib/api').Encoder<import('../lib/api').SpaceBillingInstruction, string>} */
+/** @type {import('../lib/api').Encoder<SpaceBillingInstruction, string>} */
 export const encode = message => {
   try {
     const data = {
@@ -48,7 +52,7 @@ export const encode = message => {
   }
 }
 
-/** @type {import('../lib/api').Decoder<string, import('../lib/api').SpaceBillingInstruction>} */
+/** @type {import('../lib/api').Decoder<string, SpaceBillingInstruction>} */
 export const decode = str => {
   try {
     const data = dagJSON.parse(str)

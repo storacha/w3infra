@@ -1,6 +1,14 @@
 import { DecodeFailure, EncodeFailure, InvalidInput, isDID, isDIDWeb } from './lib.js'
 
-/** @type {import('../lib/api').Validator<import('../lib/api').SpaceSnapshot>} */
+/**
+ * @typedef {import('../lib/api').SpaceSnapshot} SpaceSnapshot
+ * @typedef {Omit<import('../types').InferStoreRecord<SpaceSnapshot>, 'provider'>} SpaceSnapshotStoreRecord
+ * @typedef {import('../lib/api').SpaceSnapshotKey} SpaceSnapshotKey
+ * @typedef {Omit<import('../types').InferStoreRecord<SpaceSnapshotKey>, 'provider'>} SpaceSnapshotKeyStoreRecord
+ * @typedef {import('../types').StoreRecord} StoreRecord
+ */
+
+/** @type {import('../lib/api').Validator<SpaceSnapshot>} */
 export const validate = input => {
   if (input == null || typeof input !== 'object') {
     return { error: new InvalidInput('not an object') }
@@ -23,7 +31,7 @@ export const validate = input => {
   return { ok: {} }
 }
 
-/** @type {import('../lib/api').Encoder<import('../lib/api').SpaceSnapshot, Omit<import('../types').InferStoreRecord<import('../lib/api').SpaceSnapshot>, 'provider'>>} */
+/** @type {import('../lib/api').Encoder<SpaceSnapshot, SpaceSnapshotStoreRecord>} */
 export const encode = input => {
   try {
     return {
@@ -41,9 +49,7 @@ export const encode = input => {
   }
 }
 
-/**
- * @type {import('../lib/api').Encoder<import('../lib/api').SpaceSnapshotKey, Omit<import('../types').InferStoreRecord<import('../lib/api').SpaceSnapshotKey>, 'provider'>>}
- */
+/** @type {import('../lib/api').Encoder<SpaceSnapshotKey, SpaceSnapshotKeyStoreRecord>} */
 export const encodeKey = input => ({
   ok: {
     space: `${input.space},${input.provider}`,
@@ -51,9 +57,7 @@ export const encodeKey = input => ({
   }
 })
 
-/**
- * @type {import('../lib/api').Decoder<import('../types').StoreRecord, import('../lib/api').SpaceSnapshot>}
- */
+/** @type {import('../lib/api').Decoder<StoreRecord, SpaceSnapshot>} */
 export const decode = input => {
   if (typeof input.space !== 'string') {
     return { error: new DecodeFailure(`"space" is not a string`) }

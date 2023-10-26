@@ -2,8 +2,17 @@ import * as Link from 'multiformats/link'
 import { DecodeFailure, EncodeFailure, isDIDMailto, isDIDWeb } from './lib.js'
 
 /**
- * @type {import('../lib/api').Encoder<import('../lib/api').Subscription, import('../types').InferStoreRecord<import('../lib/api').Subscription>>}
+ * @typedef {import('../lib/api').Subscription} Subscription
+ * @typedef {import('../types').InferStoreRecord<Subscription>} SubscriptionStoreRecord
+ * @typedef {import('../lib/api').SubscriptionKey} SubscriptionKey
+ * @typedef {import('../types').InferStoreRecord<SubscriptionKey>} SubscriptionKeyStoreRecord
+ * @typedef {import('../types').StoreRecord} StoreRecord
+ * @typedef {import('../lib/api').SubscriptionListKey} SubscriptionListKey
+ * @typedef {import('../types').InferStoreRecord<SubscriptionListKey>} SubscriptionListKeyStoreRecord
+ * @typedef {Pick<Subscription, 'customer'|'provider'|'subscription'|'cause'>} SubscriptionList
  */
+
+/** @type {import('../lib/api').Encoder<Subscription, SubscriptionStoreRecord>} */
 export const encode = input => {
   try {
     return {
@@ -23,9 +32,7 @@ export const encode = input => {
   }
 }
 
-/**
- * @type {import('../lib/api').Encoder<import('../lib/api').SubscriptionKey, import('../types').InferStoreRecord<import('../lib/api').SubscriptionKey>>}
- */
+/** @type {import('../lib/api').Encoder<SubscriptionKey, SubscriptionKeyStoreRecord>} */
 export const encodeKey = input => ({
   ok: {
     provider: input.provider,
@@ -33,9 +40,7 @@ export const encodeKey = input => ({
   }
 })
 
-/**
- * @type {import('../lib/api').Decoder<import('../types').StoreRecord, import('../lib/api').Subscription>}
- */
+/** @type {import('../lib/api').Decoder<StoreRecord, Subscription>} */
 export const decode = input => {
   if (!isDIDMailto(input.customer)) {
     return { error: new DecodeFailure(`"customer" is not a mailto DID`) }
@@ -63,14 +68,9 @@ export const decode = input => {
 
 /** Encoders/decoders for listings. */
 export const lister = {
-  /**
-   * @type {import('../lib/api').Encoder<import('../lib/api').SubscriptionListKey, import('../types').InferStoreRecord<import('../lib/api').SubscriptionListKey>>}
-   */
+  /** @type {import('../lib/api').Encoder<SubscriptionListKey, SubscriptionListKeyStoreRecord>} */
   encodeKey: input => ({ ok: { customer: input.customer } }),
-
-  /**
-   * @type {import('../lib/api').Decoder<import('../types').StoreRecord, Pick<import('../lib/api').Subscription, 'customer'|'provider'|'subscription'|'cause'>>}
-   */
+  /** @type {import('../lib/api').Decoder<StoreRecord, SubscriptionList>} */
   decode: input => {
     if (!isDIDMailto(input.customer)) {
       return { error: new DecodeFailure(`"customer" is not a mailto DID`) }

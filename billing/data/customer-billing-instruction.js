@@ -1,7 +1,11 @@
 import * as dagJSON from '@ipld/dag-json'
 import { EncodeFailure, DecodeFailure, InvalidInput, isDIDMailto } from './lib.js'
 
-/** @type {import('../lib/api').Validator<import('../lib/api').CustomerBillingInstruction>} */
+/**
+ * @typedef {import('../lib/api').CustomerBillingInstruction} CustomerBillingInstruction
+ */
+
+/** @type {import('../lib/api').Validator<CustomerBillingInstruction>} */
 export const validate = input => {
   if (input == null || typeof input !== 'object') {
     return { error: new InvalidInput('not an object') }
@@ -24,7 +28,7 @@ export const validate = input => {
   return { ok: {} }
 }
 
-/** @type {import('../lib/api').Encoder<import('../lib/api').CustomerBillingInstruction, string>} */
+/** @type {import('../lib/api').Encoder<CustomerBillingInstruction, string>} */
 export const encode = message => {
   try {
     const data = {
@@ -40,7 +44,7 @@ export const encode = message => {
   }
 }
 
-/** @type {import('../lib/api').Decoder<string, import('../lib/api').CustomerBillingInstruction>} */
+/** @type {import('../lib/api').Decoder<string, CustomerBillingInstruction>} */
 export const decode = str => {
   try {
     const data = dagJSON.parse(str)
