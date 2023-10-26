@@ -1,10 +1,10 @@
 import { use, Cron, Queue, Function, Config } from '@serverless-stack/resources'
 import { StartingPosition } from 'aws-cdk-lib/aws-lambda'
+import { Duration } from 'aws-cdk-lib'
 import { UcanInvocationStack } from './ucan-invocation-stack.js'
 import { BillingDbStack } from './billing-db-stack.js'
 import { UploadDbStack } from './upload-db-stack.js'
 import { setupSentry, getKinesisEventSourceConfig } from './config.js'
-import { Duration } from 'aws-cdk-lib'
 
 /** @param {import('@serverless-stack/resources').StackContext} props */
 export function BillingStack ({ stack, app }) {
@@ -42,7 +42,8 @@ export function BillingStack ({ stack, app }) {
     consumer: {
       function: spaceBillingQueueHandler,
       cdk: { eventSource: { batchSize: 1 } }
-    }
+    },
+    cdk: { queue: { visibilityTimeout: Duration.minutes(15) } }
   })
 
   // Lambda that does a billing run for a given customer
@@ -67,7 +68,8 @@ export function BillingStack ({ stack, app }) {
     consumer: {
       function: customerBillingQueueHandler,
       cdk: { eventSource: { batchSize: 1 } }
-    }
+    },
+    cdk: { queue: { visibilityTimeout: Duration.minutes(15) } }
   })
 
   // Lambda that queues account DIDs to be billed
