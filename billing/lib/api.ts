@@ -5,7 +5,7 @@ import { DID, Link, LinkJSON, Result, Capabilities, Unit, Failure } from '@ucant
 /** Captures a size change that occurred in a space. */
 export interface SpaceDiff {
   /** Storage provider for the space. */
-  provider: DID
+  provider: DID<'web'>
   /** Space that changed size. */
   space: DID
   /** Customer responsible for paying for the space at the time the size changed. */
@@ -31,7 +31,7 @@ export interface SpaceDiffStore extends StorePutter<SpaceDiff> {
 /** Captures size of a space at a given point in time. */
 export interface SpaceSnapshot {
   /** Storage provider this snapshot refers to. */
-  provider: DID
+  provider: DID<'web'>
   /** Space this snapshot refers to. */
   space: DID
   /** Total allocated size in bytes. */
@@ -42,7 +42,7 @@ export interface SpaceSnapshot {
   insertedAt: Date
 }
 
-export interface SpaceSnapshotKey { provider: DID, space: DID, recordedAt: Date }
+export interface SpaceSnapshotKey { provider: DID<'web'>, space: DID, recordedAt: Date }
 
 export type SpaceSnapshotStore =
   & StorePutter<SpaceSnapshot>
@@ -89,6 +89,8 @@ export interface Usage {
   account: string
   /** Unique identifier of the product a.k.a tier. */
   product: string
+  /** Storage provider for the space. */
+  provider: DID<'web'>
   /** Space DID (did:key:...). */
   space: DID
   /** Usage in byte/ms */
@@ -138,7 +140,7 @@ export interface SpaceBillingInstruction extends CustomerBillingInstruction {
   /** Space DID (did:key:...). */
   space: DID
   /** Storage provider for the space. */
-  provider: DID
+  provider: DID<'web'>
 }
 
 export type SpaceBillingQueue = QueueAdder<SpaceBillingInstruction>
@@ -154,7 +156,7 @@ export interface Consumer {
   updatedAt: Date
 }
 
-export interface ConsumerKey { subscription: string, provider: DID }
+export interface ConsumerKey { subscription: string, provider: DID<'web'> }
 export interface ConsumerListKey { consumer: DID }
 
 export type ConsumerStore =
@@ -170,7 +172,7 @@ export interface Subscription {
   updatedAt: Date
 }
 
-export interface SubscriptionKey { provider: DID, subscription: string }
+export interface SubscriptionKey { provider: DID<'web'>, subscription: string }
 export interface SubscriptionListKey { customer: DID<'mailto'> }
 
 export type SubscriptionStore =

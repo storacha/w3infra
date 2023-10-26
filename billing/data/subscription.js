@@ -76,7 +76,7 @@ export const lister = {
       return { error: new DecodeFailure(`"customer" is not a mailto DID`) }
     }
     if (!isDIDWeb(input.provider)) {
-      return { error: new DecodeFailure(`"provider" is not a DID`) }
+      return { error: new DecodeFailure(`"provider" is not a web DID`) }
     }
     if (typeof input.subscription !== 'string') {
       return { error: new DecodeFailure(`"subscription" is not a string`) }

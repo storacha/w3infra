@@ -1,11 +1,11 @@
-import { DecodeFailure, EncodeFailure, InvalidInput, isDID } from './lib.js'
+import { DecodeFailure, EncodeFailure, InvalidInput, isDID, isDIDWeb } from './lib.js'
 
 /** @type {import('../lib/api').Validator<import('../lib/api').SpaceSnapshot>} */
 export const validate = input => {
   if (input == null || typeof input !== 'object') {
     return { error: new InvalidInput('not an object') }
   }
-  if (!isDID(input.provider)) {
+  if (!isDIDWeb(input.provider)) {
     return { error: new InvalidInput('not a DID', 'provider') }
   }
   if (!isDID(input.space)) {
@@ -62,8 +62,8 @@ export const decode = input => {
   if (!isDID(space)) {
     return { error: new DecodeFailure(`"space" is not a DID`) }
   }
-  if (!isDID(provider)) {
-    return { error: new DecodeFailure(`"provider" is not a DID`) }
+  if (!isDIDWeb(provider)) {
+    return { error: new DecodeFailure(`"provider" is not a web DID`) }
   }
   try {
     return {

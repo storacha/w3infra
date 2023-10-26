@@ -1,5 +1,5 @@
 import * as Link from 'multiformats/link'
-import { EncodeFailure, DecodeFailure, InvalidInput, isDIDMailto, isDID, asDIDMailto, asDID } from './lib.js'
+import { EncodeFailure, DecodeFailure, InvalidInput, isDIDMailto, isDID, asDIDMailto, asDID, asDIDWeb, isDIDWeb } from './lib.js'
 
 /** @type {import('../lib/api').Validator<import('../lib/api').SpaceDiff>} */
 export const validate = input => {
@@ -12,8 +12,8 @@ export const validate = input => {
   if (!isDID(input.space)) {
     return { error: new InvalidInput('not a DID', 'space') }
   }
-  if (!isDID(input.provider)) {
-    return { error: new InvalidInput('not a DID', 'provider') }
+  if (!isDIDWeb(input.provider)) {
+    return { error: new InvalidInput('not a web DID', 'provider') }
   }
   if (typeof input.subscription !== 'string') {
     return { error: new InvalidInput('not a string', 'subscription') }
@@ -68,7 +68,7 @@ export const decode = input => {
       ok: {
         customer: asDIDMailto(input.customer),
         space: asDID(input.space),
-        provider: asDID(input.provider),
+        provider: asDIDWeb(input.provider),
         subscription: String(input.subscription),
         cause: Link.parse(String(input.cause)),
         change: Number(input.change),

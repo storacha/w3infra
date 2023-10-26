@@ -1,4 +1,4 @@
-import { DecodeFailure, EncodeFailure, InvalidInput, isDID, isDIDMailto } from './lib.js'
+import { DecodeFailure, EncodeFailure, InvalidInput, isDID, isDIDMailto, isDIDWeb } from './lib.js'
 
 /** @type {import('../lib/api').Validator<import('../lib/api').Usage>} */
 export const validate = input => {
@@ -10,6 +10,9 @@ export const validate = input => {
   }
   if (!isDID(input.space)) {
     return { error: new InvalidInput('not a DID', 'space') }
+  }
+  if (!isDIDWeb(input.provider)) {
+    return { error: new InvalidInput('not a web DID', 'provider') }
   }
   if (typeof input.account !== 'string') {
     return { error: new InvalidInput('not a string', 'account') }
@@ -71,12 +74,16 @@ export const decode = input => {
   if (!isDID(input.space)) {
     return { error: new DecodeFailure(`"space" is not a DID`) }
   }
+  if (!isDIDWeb(input.provider)) {
+    return { error: new DecodeFailure(`"provider" is not a web DID`) }
+  }
   try {
     return {
       ok: {
         customer: input.customer,
         account: String(input.account),
         product: String(input.product),
+        provider: input.provider,
         space: input.space,
         usage: BigInt(input.usage),
         from: new Date(input.from),

@@ -1,5 +1,5 @@
 import * as dagJSON from '@ipld/dag-json'
-import { EncodeFailure, DecodeFailure, InvalidInput, isDIDMailto, isDID } from './lib.js'
+import { EncodeFailure, DecodeFailure, InvalidInput, isDIDMailto, isDID, isDIDWeb } from './lib.js'
 
 /** @type {import('../lib/api').Validator<import('../lib/api').SpaceBillingInstruction>} */
 export const validate = input => {
@@ -12,8 +12,8 @@ export const validate = input => {
   if (!isDID(input.space)) {
     return { error: new InvalidInput('not a DID', 'space') }
   }
-  if (!isDID(input.provider)) {
-    return { error: new InvalidInput('not a DID', 'provider') }
+  if (!isDIDWeb(input.provider)) {
+    return { error: new InvalidInput('not a web DID', 'provider') }
   }
   if (typeof input.account !== 'string') {
     return { error: new InvalidInput('not a string', 'account') }

@@ -1,4 +1,4 @@
-import { use, Cron, Queue, Function } from '@serverless-stack/resources'
+import { use, Cron, Queue, Function, Config } from '@serverless-stack/resources'
 import { StartingPosition } from 'aws-cdk-lib/aws-lambda'
 import { UcanInvocationStack } from './ucan-invocation-stack.js'
 import { BillingDbStack } from './billing-db-stack.js'
@@ -79,11 +79,16 @@ export function BillingStack ({ stack, app }) {
     }
   })
 
+  const stripeSecretKey = new Config.Secret(stack, 'STRIPE_SECRET_KEY')
+
   // Lambda that sends usage table records to Stripe for invoicing.
   const usageTableHandler = new Function(stack, 'usage-table-handler', {
     permissions: [spaceSnapshotTable, spaceDiffTable],
     handler: 'functions/usage-table.handler',
-    timeout: '15 minutes'
+    timeout: '15 minutes',
+    bind: [
+      stripeSecretKey
+    ]
   })
 
   usageTable.addConsumers(stack, {
