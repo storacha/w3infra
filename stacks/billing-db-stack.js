@@ -15,5 +15,13 @@ export const BillingDbStack = ({ stack }) => {
     ...usageTableProps,
     stream: 'new_image'
   })
+
+  stack.addOutputs({
+    customerTableName: customerTable.tableName,
+    spaceSnapshotTableName: spaceSnapshotTable.tableName,
+    spaceDiffTableName: spaceDiffTable.tableName,
+    usageTable: usageTable.tableName
+  })
+
   return { customerTable, spaceSnapshotTable, spaceDiffTable, usageTable }
 }
