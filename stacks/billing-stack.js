@@ -22,7 +22,7 @@ export function BillingStack ({ stack, app }) {
 
   // Lambda that does a billing run for a given space and customer
   const spaceBillingQueueHandlerDLQ = new Queue(stack, 'space-billing-queue-handler-dlq', {
-    cdk: { queue: { retentionPeriod: Duration.days(90) } }
+    cdk: { queue: { retentionPeriod: Duration.days(14) } }
   })
   const spaceBillingQueueHandler = new Function(stack, 'space-billing-queue-handler', {
     permissions: [spaceSnapshotTable, spaceDiffTable, usageTable],
@@ -47,7 +47,7 @@ export function BillingStack ({ stack, app }) {
 
   // Lambda that does a billing run for a given customer
   const customerBillingQueueHandlerDLQ = new Queue(stack, 'customer-billing-queue-handler-dlq', {
-    cdk: { queue: { retentionPeriod: Duration.days(90) } }
+    cdk: { queue: { retentionPeriod: Duration.days(14) } }
   })
   const customerBillingQueueHandler = new Function(stack, 'customer-billing-queue-handler', {
     permissions: [subscriptionTable, consumerTable, spaceBillingQueue],
@@ -113,7 +113,7 @@ export function BillingStack ({ stack, app }) {
 
   // Lambda that sends usage table records to Stripe for invoicing.
   const usageTableHandlerDLQ = new Queue(stack, 'usage-table-handler-dlq', {
-    cdk: { queue: { retentionPeriod: Duration.days(90) } }
+    cdk: { queue: { retentionPeriod: Duration.days(14) } }
   })
   const usageTableHandler = new Function(stack, 'usage-table-handler', {
     permissions: [spaceSnapshotTable, spaceDiffTable],
