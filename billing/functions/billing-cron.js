@@ -44,7 +44,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(
         if (!isValidDate(to)) {
           throw new Error('invalid from date')
         }
-        if (from.getTime() <= to.getTime()) {
+        if (from.getTime() >= to.getTime()) {
           throw new Error('from date must be less than to date')
         }
         options = { period: { from, to } }
