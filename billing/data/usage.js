@@ -2,9 +2,9 @@ import { DecodeFailure, EncodeFailure, InvalidInput, isDID, isDIDMailto, isDIDWe
 
 /**
  * @typedef {import('../lib/api').Usage} Usage
- * @typedef {import('../types').InferStoreRecord<Usage>} UsageStoreRecord
- * @typedef {import('../lib/api').UsageKey} UsageKey
- * @typedef {import('../types').InferStoreRecord<UsageKey>} UsageKeyStoreRecord
+ * @typedef {import('../types').InferStoreRecord<Usage> & { SK: string }} UsageStoreRecord
+ * @typedef {import('../lib/api').UsageListKey} UsageListKey
+ * @typedef {Omit<import('../types').InferStoreRecord<UsageListKey>, 'from'> & { SK: string }} UsageListKeyStoreRecord
  * @typedef {import('../types').StoreRecord} StoreRecord
  */
 
@@ -48,7 +48,12 @@ export const encode = input => {
   try {
     return {
       ok: {
-        ...input,
+        SK: `${input.from.toISOString()}#${input.provider}#${input.space}`,
+        customer: input.customer,
+        account: input.account,
+        product: input.product,
+        provider: input.provider,
+        space: input.space,
         usage: input.usage.toString(),
         from: input.from.toISOString(),
         to: input.to.toISOString(),
@@ -62,13 +67,17 @@ export const encode = input => {
   }
 }
 
-/** @type {import('../lib/api').Encoder<UsageKey, UsageKeyStoreRecord>} */
-export const encodeKey = input => ({
-  ok: {
-    customer: input.customer,
-    from: input.from.toISOString()
-  }
-})
+export const lister = {
+  /** @type {import('../lib/api').Encoder<UsageListKey, UsageListKeyStoreRecord>} */
+  encodeKey: input => ({
+    ok: {
+      customer: input.customer,
+      SK: input.from.toISOString()
+    }
+  })
+}
+
+
 
 /** @type {import('../lib/api').Decoder<StoreRecord, Usage>} */
 export const decode = input => {

@@ -8,6 +8,8 @@ import { validate, encode } from '../data/usage.js'
  */
 export const usageTableProps = {
   fields: {
+    /** from#provider#space */
+    SK: 'string',
     /** Customer DID (did:mailto:...). */
     customer: 'string',
     /**
@@ -18,6 +20,8 @@ export const usageTableProps = {
     account: 'string',
     /** Unique identifier of the product a.k.a tier. */
     product: 'string',
+    /** Storage provider DID (did:web:...). */
+    provider: 'string',
     /** Space DID (did:key:...). */
     space: 'string',
     /** Usage in GB/month */
@@ -29,7 +33,7 @@ export const usageTableProps = {
     /** ISO timestamp we created the invoice. */
     insertedAt: 'string'
   },
-  primaryIndex: { partitionKey: 'customer', sortKey: 'from' }
+  primaryIndex: { partitionKey: 'customer', sortKey: 'SK' }
 }
 
 /**

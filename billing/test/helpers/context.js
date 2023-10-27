@@ -5,11 +5,11 @@ import { decode as decodeCustomerBillingInstruction } from '../../data/customer-
 import { decode as decodeSpaceBillingInstruction } from '../../data/space-billing-instruction.js'
 import { encode as encodeSubscription } from '../../data/subscription.js'
 import { encode as encodeConsumer } from '../../data/consumer.js'
-import { decode as decodeUsage, encodeKey as encodeUsageKey } from '../../data/usage.js'
+import { decode as decodeUsage, lister as usageLister } from '../../data/usage.js'
 import { createCustomerBillingQueue } from '../../queues/customer.js'
 import { createSpaceBillingQueue } from '../../queues/space.js'
 import { consumerTableProps, subscriptionTableProps } from '../../../upload-api/tables/index.js'
-import { createStoreGetterClient, createStorePutterClient } from '../../tables/client.js'
+import { createStoreListerClient, createStorePutterClient } from '../../tables/client.js'
 import { createSubscriptionStore } from '../../tables/subscription.js'
 import { createConsumerStore } from '../../tables/consumer.js'
 import { createSpaceDiffStore, spaceDiffTableProps } from '../../tables/space-diff.js'
@@ -100,9 +100,9 @@ export const createSpaceBillingQueueTestContext = async () => {
   const usageTableName = await createTable(awsServices.dynamo.client, usageTableProps, 'usage-')
   const usageStore = {
     ...createUsageStore(awsServices.dynamo.client, { tableName: usageTableName }),
-    ...createStoreGetterClient(awsServices.dynamo.client, {
+    ...createStoreListerClient(awsServices.dynamo.client, {
       tableName: usageTableName,
-      encodeKey: encodeUsageKey,
+      encodeKey: usageLister.encodeKey,
       decode: decodeUsage
     })
   }

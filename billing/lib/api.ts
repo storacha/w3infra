@@ -103,7 +103,7 @@ export interface Usage {
   insertedAt: Date
 }
 
-export interface UsageKey { customer: DID<'mailto'>, from: Date }
+export interface UsageListKey { customer: DID<'mailto'>, from: Date }
 
 export type UsageStore = StorePutter<Usage>
 
