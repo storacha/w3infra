@@ -7,6 +7,7 @@
   },
   "scripts": {},
   "dependencies": {
+    "big.js": "^6.2.1",
     "dotenv": "^16.3.1",
     "sade": "^1.8.1"
   }
