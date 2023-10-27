@@ -8,12 +8,16 @@ import { validate, encode, decode, encodeKey } from '../data/space-snapshot.js'
  */
 export const spaceSnapshotTableProps = {
   fields: {
+    /** space#provider */
+    PK: 'string',
     /**
      * CSV Space DID and Provider DID.
      *
      * e.g. did:key:z6Mksjp3Mbe7TnQbYK43NECF7TRuDGZu9xdzeLg379Dw66mF,did:web:web3.storage
      */
     space: 'string',
+    /** Space storage provider DID. */
+    provider: 'string',
     /** Total allocated size in bytes. */
     size: 'number',
     /** ISO timestamp allocation was snapshotted. */
@@ -21,7 +25,7 @@ export const spaceSnapshotTableProps = {
     /** ISO timestamp record was inserted. */
     insertedAt: 'string'
   },
-  primaryIndex: { partitionKey: 'space', sortKey: 'recordedAt' }
+  primaryIndex: { partitionKey: 'PK', sortKey: 'recordedAt' }
 }
 
 /**

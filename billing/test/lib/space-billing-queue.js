@@ -46,11 +46,12 @@ export const test = {
     const handled = await handleSpaceBillingInstruction(instruction, ctx)
     assert.ok(handled.ok)
 
-    const { ok: usage } = await ctx.usageStore.get({ customer: customer.customer, from })
-    assert.ok(usage)
+    const { ok: listing } = await ctx.usageStore.list({ customer: customer.customer, from })
+    assert.ok(listing)
 
+    assert.equal(listing.results.length, 1)
     assert.equal(
-      usage.usage,
+      listing.results[0].usage,
       // 1GiB for the whole period
       BigInt(change) * BigInt(to.getTime() - from.getTime())
     )
@@ -117,11 +118,12 @@ export const test = {
     const handled = await handleSpaceBillingInstruction(instruction, ctx)
     assert.ok(handled.ok)
 
-    const { ok: usage } = await ctx.usageStore.get({ customer: customer.customer, from })
-    assert.ok(usage)
+    const { ok: listing } = await ctx.usageStore.list({ customer: customer.customer, from })
+    assert.ok(listing)
 
+    assert.equal(listing.results.length, 1)
     assert.equal(
-      usage.usage,
+      listing.results[0].usage,
       // 1GiB for half the period
       BigInt(change) * BigInt(to.getTime() - from.getTime()) / 2n
     )
@@ -183,11 +185,12 @@ export const test = {
     const handled = await handleSpaceBillingInstruction(instruction, ctx)
     assert.ok(handled.ok)
 
-    const { ok: usage } = await ctx.usageStore.get({ customer: customer.customer, from })
-    assert.ok(usage)
+    const { ok: listing } = await ctx.usageStore.list({ customer: customer.customer, from })
+    assert.ok(listing)
 
+    assert.equal(listing.results.length, 1)
     assert.equal(
-      usage.usage,
+      listing.results[0].usage,
       // existing size for the period
       size * BigInt(to.getTime() - from.getTime())
       // + 1GiB for 1 day

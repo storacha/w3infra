@@ -2,7 +2,7 @@ import { Result, Failure } from '@ucanto/interface'
 import {
   CustomerStore,
   StorePutter,
-  StoreGetter,
+  StoreLister,
   CustomerBillingQueue,
   Customer,
   CustomerBillingInstruction,
@@ -17,7 +17,7 @@ import {
   SpaceDiffStore,
   SpaceSnapshotStore,
   UsageStore,
-  UsageKey,
+  UsageListKey,
   Usage
 } from '../../lib/api.js'
 
@@ -35,7 +35,7 @@ export interface CustomerBillingQueueTestContext {
 export interface SpaceBillingQueueTestContext {
   spaceDiffStore: SpaceDiffStore
   spaceSnapshotStore: SpaceSnapshotStore
-  usageStore: UsageStore & StoreGetter<UsageKey, Usage>
+  usageStore: UsageStore & StoreLister<UsageListKey, Usage>
 }
 
 export type TestContext =
