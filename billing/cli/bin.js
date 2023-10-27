@@ -2,6 +2,7 @@
 import fs from 'node:fs'
 import sade from 'sade'
 import dotenv from 'dotenv'
+import { spaceAdd } from './src/space.js'
 import { usage } from './src/usage.js'
 
 const pkg = JSON.parse(fs.readFileSync(new URL('package.json', import.meta.url)).toString())
@@ -22,8 +23,7 @@ cli
 cli
   .command('space add <customer>')
   .describe('Add a space for the customer to the billing system.')
-  .action(async (/** @type {Record<string, string|undefined>} */ options) => {
-  })
+  .action(spaceAdd)
 
 cli
   .command('diff add <space> <bytes> <datetime>')
