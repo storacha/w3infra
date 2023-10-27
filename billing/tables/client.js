@@ -122,10 +122,12 @@ export const createStoreListerClient = (conf, context) => {
 
       /** @type {Record<string, import('@aws-sdk/client-dynamodb').Condition>|undefined} */
       let conditions
-      for (const [k, v] of Object.entries(key)) {
+      for (const [k, v] of Object.entries(encoding.ok)) {
         conditions = conditions ?? {}
         conditions[k] = {
-          ComparisonOperator: 'EQ',
+          // Multiple conditions imply a sort key so must be GE in order to
+          // list more than one item. Otherwise this would be a StoreGetter.
+          ComparisonOperator: Object.keys(conditions).length ? 'GE' : 'EQ',
           AttributeValueList: [convertToAttr(v)]
         }
       }

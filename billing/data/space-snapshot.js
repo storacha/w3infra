@@ -2,9 +2,9 @@ import { DecodeFailure, EncodeFailure, InvalidInput, isDID, isDIDWeb } from './l
 
 /**
  * @typedef {import('../lib/api').SpaceSnapshot} SpaceSnapshot
- * @typedef {Omit<import('../types').InferStoreRecord<SpaceSnapshot>, 'provider'>} SpaceSnapshotStoreRecord
+ * @typedef {import('../types').InferStoreRecord<SpaceSnapshot> & { PK: string }} SpaceSnapshotStoreRecord
  * @typedef {import('../lib/api').SpaceSnapshotKey} SpaceSnapshotKey
- * @typedef {Omit<import('../types').InferStoreRecord<SpaceSnapshotKey>, 'provider'>} SpaceSnapshotKeyStoreRecord
+ * @typedef {Omit<import('../types').InferStoreRecord<SpaceSnapshotKey>, 'provider'|'space'> & { PK: string }} SpaceSnapshotKeyStoreRecord
  * @typedef {import('../types').StoreRecord} StoreRecord
  */
 
@@ -36,7 +36,9 @@ export const encode = input => {
   try {
     return {
       ok: {
-        space: `${input.space},${input.provider}`,
+        PK: `${input.space}#${input.provider}`,
+        space: input.space,
+        provider: input.provider,
         size: input.size.toString(),
         recordedAt: input.recordedAt.toISOString(),
         insertedAt: input.insertedAt.toISOString()
@@ -52,7 +54,7 @@ export const encode = input => {
 /** @type {import('../lib/api').Encoder<SpaceSnapshotKey, SpaceSnapshotKeyStoreRecord>} */
 export const encodeKey = input => ({
   ok: {
-    space: `${input.space},${input.provider}`,
+    PK: `${input.space}#${input.provider}`,
     recordedAt: input.recordedAt.toISOString()
   }
 })
@@ -62,18 +64,17 @@ export const decode = input => {
   if (typeof input.space !== 'string') {
     return { error: new DecodeFailure(`"space" is not a string`) }
   }
-  const [space, provider] = input.space.split(',')
-  if (!isDID(space)) {
+  if (!isDID(input.space)) {
     return { error: new DecodeFailure(`"space" is not a DID`) }
   }
-  if (!isDIDWeb(provider)) {
+  if (!isDIDWeb(input.provider)) {
     return { error: new DecodeFailure(`"provider" is not a web DID`) }
   }
   try {
     return {
       ok: {
-        space,
-        provider,
+        space: input.space,
+        provider: input.provider,
         size: BigInt(input.size),
         recordedAt: new Date(input.recordedAt),
         insertedAt: new Date(input.insertedAt)
