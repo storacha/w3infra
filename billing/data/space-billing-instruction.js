@@ -60,7 +60,7 @@ export const decode = str => {
       ok: {
         ...data,
         from: new Date(data.from),
-        to: new Date(data.from)
+        to: new Date(data.to)
       }
     }
   } catch (/** @type {any} */ err) {
