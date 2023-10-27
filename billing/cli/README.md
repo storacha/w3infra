@@ -20,7 +20,7 @@ billing diff remove did:key:space0 3MB 2023-09-27T09:00:00.000Z
 billing run 2023-09-01T00:00:00.000Z 2023-10-01T00:00:00.000Z
 
 # get usage for customer for period
-billing usage did:mailto:protocol.ai:test0 2023-09-01T00:00:00.000Z
+billing usage did:mailto:protocol.ai:test0 2023-09-01T00:00:00.000Z 2023-10-01T00:00:00.000Z
 # Customer: did:mailto:protocol.ai:test0
 # Usage:
 #   did:key:space0 12345 $500
