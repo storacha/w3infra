@@ -5,11 +5,12 @@ import { startOfLastMonth, startOfMonth, } from './util.js'
  *   customerStore: import('./api.js').CustomerStore
  *   customerBillingQueue: import('./api.js').CustomerBillingQueue
  * }} ctx
+ * @param {{ period?: { from: Date, to: Date } }} [options]
  * @returns {Promise<import('@ucanto/interface').Result>}
  */
-export const handleCronTick = async ctx => {
-  const from = startOfLastMonth()
-  const to = startOfMonth()
+export const handleCronTick = async (ctx, options) => {
+  const from = options?.period?.from ?? startOfLastMonth()
+  const to = options?.period?.to ?? startOfMonth()
 
   /** @type {string|undefined} */
   let cursor

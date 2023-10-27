@@ -20,7 +20,7 @@ Sentry.AWSLambda.init({
 
 export const handler = Sentry.AWSLambda.wrapHandler(
   /**
-   * @param {import('aws-lambda').ScheduledEvent} event
+   * @param {import('aws-lambda').ScheduledEvent|import('aws-lambda').APIGatewayProxyEventV2} event
    * @param {import('aws-lambda').Context} context
    */
   async (event, context) => {
@@ -30,10 +30,34 @@ export const handler = Sentry.AWSLambda.wrapHandler(
     const customerBillingQueueURL = new URL(customContext?.customerBillingQueueURL ?? mustGetEnv('CUSTOMER_BILLING_QUEUE_URL'))
     const region = customContext?.region ?? mustGetEnv('AWS_REGION')
 
+    let options
+    if ('rawQueryString' in event) {
+      const { searchParams } = new URL(`http://localhost/?${event.rawQueryString}`)
+      const fromParam = searchParams.get('from')
+      const toParam = searchParams.get('to')
+      if (fromParam && toParam) {
+        const from = new Date(fromParam)
+        if (!isValidDate(from)) {
+          throw new Error('invalid from date')
+        }
+        const to = new Date(toParam)
+        if (!isValidDate(to)) {
+          throw new Error('invalid from date')
+        }
+        if (from.getTime() <= to.getTime()) {
+          throw new Error('from date must be less than to date')
+        }
+        options = { period: { from, to } }
+      }
+    }
+
     const { error } = await handleCronTick({
       customerStore: createCustomerStore({ region }, { tableName: customerTable }),
       customerBillingQueue: createCustomerBillingQueue({ region }, { url: customerBillingQueueURL })
-    })
+    }, options)
     if (error) throw error
   }
 )
+
+/** @param {Date} d */
+const isValidDate = d => !isNaN(d.getTime())

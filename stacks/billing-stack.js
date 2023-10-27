@@ -80,8 +80,10 @@ export function BillingStack ({ stack, app }) {
     environment: {
       CUSTOMER_TABLE_NAME: customerTable.tableName,
       CUSTOMER_BILLING_QUEUE_URL: customerBillingQueue.queueUrl
-    }
+    },
+    url: true
   })
+  const billingCronHandlerURL = billingCronHandler.url ?? ''
 
   // Cron job to kick off a billing run
   const billingCron = new Cron(stack, 'billing-cron', {
@@ -139,5 +141,7 @@ export function BillingStack ({ stack, app }) {
     }
   })
 
-  return { runnerCron: billingCron }
+  stack.addOutputs({ billingCronHandlerURL })
+
+  return { billingCron }
 }
