@@ -2,6 +2,7 @@
 import fs from 'node:fs'
 import sade from 'sade'
 import dotenv from 'dotenv'
+import { usage } from './src/usage.js'
 
 const pkg = JSON.parse(fs.readFileSync(new URL('package.json', import.meta.url)).toString())
 
@@ -43,10 +44,8 @@ cli
   })
 
 cli
-  .command('usage <customer> <datetime>')
-  .describe('.')
-  .option('-e, --endpoint', 'Bucket endpoint.')
-  .action(async (/** @type {Record<string, string|undefined>} */ options) => {
-  })
+  .command('usage <customer> <from> <to>')
+  .describe('Get usage for customer for period.')
+  .action(usage)
 
 cli.parse(process.argv)

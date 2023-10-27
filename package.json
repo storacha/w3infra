@@ -79,6 +79,7 @@
       "unicorn/prefer-type-error": "off",
       "unicorn/no-zero-fractions": "off",
       "unicorn/expiring-todo-comments": "off",
+      "unicorn/no-process-exit": "off",
       "eqeqeq": "off",
       "no-new": "off",
       "no-void": "off",
