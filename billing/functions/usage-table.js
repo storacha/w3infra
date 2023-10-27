@@ -67,8 +67,12 @@ const handleUsage = async (usage, ctx) => {
   console.log(`Customer: ${usage.customer}`)
   console.log(`Period: ${usage.from.toISOString()} - ${usage.to.toISOString()}`)
 
+  if (!usage.account.startsWith('stripe:')) {
+    return { error: new Error('unknown payment system') }
+  }
+
   const { data: subs } = await ctx.stripe.subscriptions.list({
-    customer: usage.account,
+    customer: usage.account.replace('stripe:', ''),
     status: 'all',
     limit: 1
   })
