@@ -1,0 +1,13 @@
+{
+  "name": "@web3-storage/w3infra-billing-cli",
+  "version": "0.0.0",
+  "type": "module",
+  "bin": {
+    "billing": "bin.js"
+  },
+  "scripts": {},
+  "dependencies": {
+    "dotenv": "^16.3.1",
+    "sade": "^1.8.1"
+  }
+}
