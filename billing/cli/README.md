@@ -7,9 +7,9 @@ billing customer add did:mailto:protocol.ai:test0 stripe:cus_9s6XKzkNRiz8i3 --pr
 
 # add a space
 # adds subcription, consumer, snapshot
-billing space create did:mailto:protocol.ai:test0
+billing space add did:mailto:protocol.ai:test0
 # Space: did:key:space0
-billing space create did:mailto:protocol.ai:test0
+billing space add did:mailto:protocol.ai:test0
 # Space: did:key:space1
 
 # simulate adding diffs
