@@ -50,7 +50,7 @@ export const spaceAdd = async (customerParam) => {
   await dynamo.send(new PutItemCommand({
     TableName: spaceSnapshotTableName,
     Item: marshall({
-      PK: `${space}#${provider}`,
+      pk: `${space}#${provider}`,
       space,
       provider,
       size: 0,
