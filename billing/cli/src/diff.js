@@ -95,11 +95,12 @@ export async function getConsumerBySpace (dynamo, space) {
   if (!res.Items || res.Items.length === 0) {
     throw new Error(`Failed to get consumer for ${space}`)
   }
-  const decoded = Consumer.decode(unmarshall(res.Items[0]))
-  if (decoded.error) {
-    throw new Error(decoded.error.message)
-  }
-  return decoded.ok
+  // const decoded = Consumer.decode(unmarshall(res.Items[0]))
+  // if (decoded.error) {
+  //   throw new Error(decoded.error.message)
+  // }
+  // return decoded.ok
+  return unmarshall(res.Items[0])
 }
 
 /**
