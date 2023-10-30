@@ -42,13 +42,12 @@ export const usage = async (customerParam, fromParam) => {
   if (listing.results.length) {
     for (const usage of listing.results) {
       const duration = usage.to.getTime() - usage.from.getTime()
-      const cost = new Big(usage.toString()).div(duration).div(GB).mul(perGBMonth).toNumber()
+      const cost = new Big(usage.usage.toString()).div(duration).div(GB).mul(perGBMonth).toNumber()
       total += cost
-      console.log(`  ${usage.provider} ${usage.space} ${usage.usage} $${total}`)
+      console.log(`  ${usage.provider} ${usage.space} ${usage.usage} $${cost.toFixed(2)}`)
     }
   } else {
     console.log('  No usage in period')
   }
-  console.log('Total: $0')
-
+  console.log(`Total: $${total.toFixed(2)}`)
 }
