@@ -1,28 +1,5 @@
-import { DID, Failure } from '@ucanto/server'
-
-export class InvalidInput extends Failure {
-  /**
-   * @param {string} [message] Additional context for the message.
-   * @param {string} [field] Field that was invalid.
-   */
-  constructor (message, field) {
-    super()
-    this.detail = message
-    this.field = field
-    this.name = /** @type {const} */ ('InvalidInput')
-  }
-
-  describe () {
-    const detail = this.detail ? `: ${this.detail}` : ''
-    return this.field
-      ? `invalid input${detail}`
-      : `invalid value for "${this.field}"${detail}`
-  }
-
-  toJSON () {
-    return { ...super.toJSON(), field: this.field }
-  }
-}
+import { Failure } from '@ucanto/server'
+import * as Validator from '@ucanto/validator'
 
 export class DecodeFailure extends Failure {
   /** @param {string} [message] Context for the message. */
@@ -53,45 +30,73 @@ export class EncodeFailure extends Failure {
 }
 
 /**
- * @param {any} input
- * @returns {input is import('@ucanto/interface').DID}
+ * @template [I=unknown]
+ * @extends {Validator.Schema.API<bigint, I>}
  */
-export const isDID = input => {
-  if (typeof input !== 'string') return false
-  try {
-    DID.parse(input)
-    return true
-  } catch {
-    return false
+class BigIntSchema extends Validator.Schema.API {
+  /**
+   * @param {I} input
+   */
+  readWith (input) {
+    return typeof input === 'bigint'
+      ? { ok: input }
+      : Validator.typeError({ expect: 'bigint', actual: input })
+  }
+
+  toString () {
+    return 'bigint'
+  }
+
+  /**
+   * @param {bigint} n
+   */
+  greaterThanEqualTo (n) {
+    return this.refine(new GreaterThanEqualTo(n))
   }
 }
 
 /**
- * @param {any} input
- * @returns {input is import('@ucanto/interface').DID<'web'>}
+ * @template {bigint} T
+ * @extends {Validator.Schema.API<T, T, bigint>}
  */
-export const isDIDWeb = input => isDID(input) && input.startsWith('did:web')
+class GreaterThanEqualTo extends Validator.Schema.API {
+  /**
+   * @param {T} input
+   * @param {bigint} number
+   * @returns {Validator.Schema.ReadResult<T>}
+   */
+  readWith (input, number) {
+    return input >= number
+      ? { ok: input }
+      : Validator.Schema.error(`Expected ${input} >= ${number}`)
+  }
+
+  toString() {
+    return `greaterThan(${this.settings})`
+  }
+}
 
 /**
- * @param {any} input
- * @returns {input is import('@ucanto/interface').DID<'mailto'>}
+ * @template [I=unknown]
+ * @extends {Validator.Schema.API<Date, I>}
  */
-export const isDIDMailto = input => isDID(input) && input.startsWith('did:mailto')
+class DateSchema extends Validator.Schema.API {
+  /**
+   * @param {I} input
+   */
+  readWith (input) {
+    return input instanceof Date
+      ? { ok: input }
+      : Validator.typeError({ expect: 'Date', actual: input })
+  }
 
-/** @param {any} input */
-export const asDID = input => {
-  if (!isDID(input)) throw new Error('not a DID')
-  return input
+  toString () {
+    return 'Date'
+  }
 }
 
-/** @param {any} input */
-export const asDIDWeb = input => {
-  if (!isDIDWeb(input)) throw new Error('not a web DID')
-  return input
-}
-
-/** @param {any} input */
-export const asDIDMailto = input => {
-  if (!isDIDMailto(input)) throw new Error('not a mailto DID')
-  return input
+export const Schema = {
+  ...Validator.Schema,
+  bigint: () => new BigIntSchema(),
+  date: () => new DateSchema()
 }

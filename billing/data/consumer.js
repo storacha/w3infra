@@ -1,5 +1,5 @@
 import * as Link from 'multiformats/link'
-import { DecodeFailure, EncodeFailure, asDID, asDIDWeb } from './lib.js'
+import { DecodeFailure, EncodeFailure, Schema } from './lib.js'
 
 /**
  * @typedef {import('../lib/api').Consumer} Consumer
@@ -11,6 +11,18 @@ import { DecodeFailure, EncodeFailure, asDID, asDIDWeb } from './lib.js'
  * @typedef {import('../types').InferStoreRecord<ConsumerListKey>} ConsumerListKeyStoreRecord
  * @typedef {Pick<Consumer, 'consumer'|'provider'|'subscription'>} ConsumerList
  */
+
+const schema = Schema.struct({
+  consumer: Schema.did(),
+  provider: Schema.did({ method: 'web' }),
+  subscription: Schema.text(),
+  cause: Schema.link({ version: 1 }),
+  insertedAt: Schema.date(),
+  updatedAt: Schema.date()
+})
+
+/** @type {import('../lib/api').Validator<Consumer>} */
+export const validate = input => schema.read(input)
 
 /** @type {import('../lib/api').Encoder<Consumer, ConsumerStoreRecord>} */
 export const encode = input => {
@@ -37,8 +49,8 @@ export const decode = input => {
   try { 
     return {
       ok: {
-        consumer: asDID(input.consumer),
-        provider: asDIDWeb(input.provider),
+        consumer: Schema.did().from(input.consumer),
+        provider: Schema.did({ method: 'web' }).from(input.provider),
         subscription: String(input.subscription),
         cause: Link.parse(String(input.cause)),
         insertedAt: new Date(input.insertedAt),
@@ -69,8 +81,8 @@ export const lister = {
     try { 
       return {
         ok: {
-          consumer: asDID(input.consumer),
-          provider: asDIDWeb(input.provider),
+          consumer: Schema.did().from(input.consumer),
+          provider: Schema.did({ method: 'web' }).from(input.provider),
           subscription: String(input.subscription)
         }
       }

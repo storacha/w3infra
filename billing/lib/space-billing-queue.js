@@ -20,12 +20,13 @@ export const handleSpaceBillingInstruction = async (instruction, ctx) => {
     provider: instruction.provider,
     recordedAt: instruction.from
   })
-  if (error) return { error }
+  if (error && error.name !== 'RecordNotFound') return { error }
+  if (!snap) console.warn(`!!! Snapshot not found, assuming empty space !!!`)
 
-  console.log(`Total size is ${snap.size} bytes @ ${snap.recordedAt.toISOString()}`)
-
-  let size = snap.size
+  let size = snap?.size ?? 0n
   let usage = size * BigInt(instruction.to.getTime() - instruction.from.getTime())
+
+  console.log(`Total size is ${size} bytes @ ${instruction.from.toISOString()}`)
 
   /** @type {string|undefined} */
   let cursor
@@ -38,7 +39,7 @@ export const handleSpaceBillingInstruction = async (instruction, ctx) => {
     )
     if (spaceDiffList.error) return spaceDiffList
     for (const diff of spaceDiffList.ok.results) {
-      if (diff.provider !== snap.provider) continue
+      if (diff.provider !== instruction.provider) continue
       console.log(`${diff.change > 0 ? '+' : ''}${diff.change} bytes @ ${diff.receiptAt.toISOString()}`)
       size += BigInt(diff.change)
       usage += BigInt(diff.change) * BigInt(instruction.to.getTime() - diff.receiptAt.getTime())
@@ -58,7 +59,7 @@ export const handleSpaceBillingInstruction = async (instruction, ctx) => {
   if (snapPut.error) return snapPut
 
   const duration = instruction.to.getTime() - instruction.from.getTime()
-  console.log(`Space consumed ${usage} byte/ms (${new Big(usage.toString()).div(duration).div(1024 * 1024 * 1024)} GiB/month)`)
+  console.log(`Space consumed ${usage} byte/ms (${new Big(usage.toString()).div(duration).div(1024 * 1024 * 1024).toFixed(2)} GiB/month)`)
   return await ctx.usageStore.put({
     ...instruction,
     usage,

@@ -1,4 +1,4 @@
-import { asDIDWeb } from '../../data/lib.js'
+import { Schema } from '../../data/lib.js'
 import { randomLink } from './dag.js'
 import { randomDIDMailto } from './did.js'
 import { randomInteger } from './math.js'
@@ -9,7 +9,7 @@ import { randomInteger } from './math.js'
  */
 export const randomSubscription = async (base = {}) => ({
   customer: randomDIDMailto(),
-  provider: asDIDWeb(['did:web:web3.storage', 'did:web:nft.storage'][randomInteger(0, 2)]),
+  provider: Schema.did({ method: 'web' }).from(['did:web:web3.storage', 'did:web:nft.storage'][randomInteger(0, 2)]),
   subscription: randomLink().toString(),
   cause: randomLink(),
   insertedAt: new Date(),

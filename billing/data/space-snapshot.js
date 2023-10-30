@@ -1,4 +1,4 @@
-import { DecodeFailure, EncodeFailure, InvalidInput, isDID, isDIDWeb } from './lib.js'
+import { DecodeFailure, EncodeFailure, Schema } from './lib.js'
 
 /**
  * @typedef {import('../lib/api').SpaceSnapshot} SpaceSnapshot
@@ -8,28 +8,16 @@ import { DecodeFailure, EncodeFailure, InvalidInput, isDID, isDIDWeb } from './l
  * @typedef {import('../types').StoreRecord} StoreRecord
  */
 
+export const schema = Schema.struct({
+  provider: Schema.did({ method: 'web' }),
+  space: Schema.did(),
+  size: Schema.bigint().greaterThanEqualTo(0n),
+  recordedAt: Schema.date(),
+  insertedAt: Schema.date()
+})
+
 /** @type {import('../lib/api').Validator<SpaceSnapshot>} */
-export const validate = input => {
-  if (input == null || typeof input !== 'object') {
-    return { error: new InvalidInput('not an object') }
-  }
-  if (!isDIDWeb(input.provider)) {
-    return { error: new InvalidInput('not a DID', 'provider') }
-  }
-  if (!isDID(input.space)) {
-    return { error: new InvalidInput('not a DID', 'space') }
-  }
-  if (typeof input.size !== 'bigint') {
-    return { error: new InvalidInput('not a bigint', 'size') }
-  }
-  if (!(input.recordedAt instanceof Date)) {
-    return { error: new InvalidInput('not a Date instance', 'recordedAt') }
-  }
-  if (!(input.insertedAt instanceof Date)) {
-    return { error: new InvalidInput('not a Date instance', 'insertedAt') }
-  }
-  return { ok: {} }
-}
+export const validate = input => schema.read(input)
 
 /** @type {import('../lib/api').Encoder<SpaceSnapshot, SpaceSnapshotStoreRecord>} */
 export const encode = input => {
@@ -61,20 +49,11 @@ export const encodeKey = input => ({
 
 /** @type {import('../lib/api').Decoder<StoreRecord, SpaceSnapshot>} */
 export const decode = input => {
-  if (typeof input.space !== 'string') {
-    return { error: new DecodeFailure(`"space" is not a string`) }
-  }
-  if (!isDID(input.space)) {
-    return { error: new DecodeFailure(`"space" is not a DID`) }
-  }
-  if (!isDIDWeb(input.provider)) {
-    return { error: new DecodeFailure(`"provider" is not a web DID`) }
-  }
   try {
     return {
       ok: {
-        space: input.space,
-        provider: input.provider,
+        space: Schema.did().from(input.space),
+        provider: Schema.did({ method: 'web' }).from(input.provider),
         size: BigInt(input.size),
         recordedAt: new Date(input.recordedAt),
         insertedAt: new Date(input.insertedAt)

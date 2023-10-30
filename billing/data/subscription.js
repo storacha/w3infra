@@ -1,5 +1,5 @@
 import * as Link from 'multiformats/link'
-import { DecodeFailure, EncodeFailure, isDIDMailto, isDIDWeb } from './lib.js'
+import { DecodeFailure, EncodeFailure, Schema } from './lib.js'
 
 /**
  * @typedef {import('../lib/api').Subscription} Subscription
@@ -11,6 +11,18 @@ import { DecodeFailure, EncodeFailure, isDIDMailto, isDIDWeb } from './lib.js'
  * @typedef {import('../types').InferStoreRecord<SubscriptionListKey>} SubscriptionListKeyStoreRecord
  * @typedef {Pick<Subscription, 'customer'|'provider'|'subscription'|'cause'>} SubscriptionList
  */
+
+const schema = Schema.struct({
+  customer: Schema.did({ method: 'mailto' }),
+  provider: Schema.did({ method: 'web' }),
+  subscription: Schema.text(),
+  cause: Schema.link({ version: 1 }),
+  insertedAt: Schema.date(),
+  updatedAt: Schema.date()
+})
+
+/** @type {import('../lib/api').Validator<Subscription>} */
+export const validate = input => schema.read(input)
 
 /** @type {import('../lib/api').Encoder<Subscription, SubscriptionStoreRecord>} */
 export const encode = input => {
@@ -42,17 +54,11 @@ export const encodeKey = input => ({
 
 /** @type {import('../lib/api').Decoder<StoreRecord, Subscription>} */
 export const decode = input => {
-  if (!isDIDMailto(input.customer)) {
-    return { error: new DecodeFailure(`"customer" is not a mailto DID`) }
-  }
-  if (!isDIDWeb(input.provider)) {
-    return { error: new DecodeFailure(`"provider" is not a web DID`) }
-  }
   try {
     return {
       ok: {
-        customer: input.customer,
-        provider: input.provider,
+        customer: Schema.did({ method: 'mailto' }).from(input.customer),
+        provider: Schema.did({ method: 'web' }).from(input.provider),
         subscription: String(input.subscription),
         cause: Link.parse(String(input.cause)),
         insertedAt: new Date(input.insertedAt),
@@ -72,25 +78,13 @@ export const lister = {
   encodeKey: input => ({ ok: { customer: input.customer } }),
   /** @type {import('../lib/api').Decoder<StoreRecord, SubscriptionList>} */
   decode: input => {
-    if (!isDIDMailto(input.customer)) {
-      return { error: new DecodeFailure(`"customer" is not a mailto DID`) }
-    }
-    if (!isDIDWeb(input.provider)) {
-      return { error: new DecodeFailure(`"provider" is not a web DID`) }
-    }
-    if (typeof input.subscription !== 'string') {
-      return { error: new DecodeFailure(`"subscription" is not a string`) }
-    }
-    if (typeof input.cause !== 'string') {
-      return { error: new DecodeFailure(`"cause" is not a string`) }
-    }
     try {
       return {
         ok: {
-          customer: input.customer,
-          provider: input.provider,
-          subscription: input.subscription,
-          cause: Link.parse(input.cause)
+          customer: Schema.did({ method: 'mailto' }).from(input.customer),
+          provider: Schema.did({ method: 'web' }).from(input.provider),
+          subscription: String(input.subscription),
+          cause: Link.parse(String(input.cause))
         }
       }
     } catch (/** @type {any} */ err) {

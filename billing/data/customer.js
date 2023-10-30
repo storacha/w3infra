@@ -1,11 +1,23 @@
 import * as Link from 'multiformats/link'
-import { EncodeFailure, DecodeFailure, asDIDMailto } from './lib.js'
+import { EncodeFailure, DecodeFailure, Schema } from './lib.js'
 
 /**
  * @typedef {import('../lib/api').Customer} Customer
  * @typedef {import('../types').InferStoreRecord<Customer>} CustomerStoreRecord
  * @typedef {import('../types').StoreRecord} StoreRecord
  */
+
+const schema = Schema.struct({
+  customer: Schema.did({ method: 'mailto' }),
+  account: Schema.text(),
+  product: Schema.text(),
+  cause: Schema.link({ version: 1 }),
+  insertedAt: Schema.date(),
+  updatedAt: Schema.date()
+})
+
+/** @type {import('../lib/api').Validator<Customer>} */
+export const validate = input => schema.read(input)
 
 /** @type {import('../lib/api').Encoder<Customer, CustomerStoreRecord>} */
 export const encode = input => {
@@ -33,7 +45,7 @@ export const decode = input => {
     return {
       ok: {
         cause: Link.parse(String(input.cause)),
-        customer: asDIDMailto(input.customer),
+        customer: Schema.did({ method: 'mailto' }).from(input.customer),
         account: String(input.account),
         product: String(input.product),
         insertedAt: new Date(input.insertedAt),

@@ -1,10 +1,10 @@
 import { createDynamoDB, createSQS, createQueue, createTable } from './aws.js'
 import { createCustomerStore, customerTableProps } from '../../tables/customer.js'
-import { encode as encodeCustomer } from '../../data/customer.js'
+import { encode as encodeCustomer, validate as validateCustomer } from '../../data/customer.js'
 import { decode as decodeCustomerBillingInstruction } from '../../data/customer-billing-instruction.js'
 import { decode as decodeSpaceBillingInstruction } from '../../data/space-billing-instruction.js'
-import { encode as encodeSubscription } from '../../data/subscription.js'
-import { encode as encodeConsumer } from '../../data/consumer.js'
+import { encode as encodeSubscription, validate as validateSubscription } from '../../data/subscription.js'
+import { encode as encodeConsumer, validate as validateConsumer } from '../../data/consumer.js'
 import { decode as decodeUsage, lister as usageLister } from '../../data/usage.js'
 import { createCustomerBillingQueue } from '../../queues/customer.js'
 import { createSpaceBillingQueue } from '../../queues/space.js'
@@ -41,7 +41,7 @@ export const createBillingCronTestContext = async () => {
     ...createCustomerStore(awsServices.dynamo.client, { tableName: customerTableName }),
     ...createStorePutterClient(awsServices.dynamo.client, {
       tableName: customerTableName,
-      validate: () => ({ ok: {} }), // assume test data is valid
+      validate: validateCustomer, // assume test data is valid
       encode: encodeCustomer
     })
   }
@@ -65,7 +65,7 @@ export const createCustomerBillingQueueTestContext = async () => {
     ...createSubscriptionStore(awsServices.dynamo.client, { tableName: subscriptionTableName }),
     ...createStorePutterClient(awsServices.dynamo.client, {
       tableName: subscriptionTableName,
-      validate: () => ({ ok: {} }), // assume test data is valid
+      validate: validateSubscription, // assume test data is valid
       encode: encodeSubscription
     })
   }
@@ -74,7 +74,7 @@ export const createCustomerBillingQueueTestContext = async () => {
     ...createConsumerStore(awsServices.dynamo.client, { tableName: consumerTableName }),
     ...createStorePutterClient(awsServices.dynamo.client, {
       tableName: consumerTableName,
-      validate: () => ({ ok: {} }), // assume test data is valid
+      validate: validateConsumer, // assume test data is valid
       encode: encodeConsumer
     })
   }

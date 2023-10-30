@@ -237,12 +237,7 @@ export type Encoder<I, O> = (input: I) => Result<O, EncodeFailure>
 
 export type Decoder<I, O> = (input: I) => Result<O, DecodeFailure>
 
-export type Validator<T> = (input: T) => Result<Unit, InvalidInput>
-
-export interface InvalidInput extends Failure {
-  name: 'InvalidInput'
-  field?: string
-}
+export type Validator<T> = (input: unknown) => Result<T, Failure>
 
 export interface EncodeFailure extends Failure {
   name: 'EncodeFailure'
@@ -268,7 +263,7 @@ export interface RecordNotFound<K> extends Failure {
 /** StorePutter allows a single item to be put in the store by it's key. */
 export interface StorePutter<T> {
   /** Puts a single item into the store by it's key */
-  put: (rec: T) => Promise<Result<Unit, InvalidInput|EncodeFailure|StoreOperationFailure>>
+  put: (rec: T) => Promise<Result<Unit, EncodeFailure|StoreOperationFailure|Failure>>
 }
 
 /** StoreGetter allows a single item to be retrieved by it's key. */
@@ -286,5 +281,5 @@ export interface StoreLister<K extends {}, V> {
 /** QueueAdder allows messages to be added to the end of the queue. */
 export interface QueueAdder<T> {
   /** Adds a message to the end of the queue. */
-  add: (message: T) => Promise<Result<Unit, InvalidInput|EncodeFailure|QueueOperationFailure>>
+  add: (message: T) => Promise<Result<Unit, EncodeFailure|QueueOperationFailure>>
 }

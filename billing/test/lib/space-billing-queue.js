@@ -13,14 +13,6 @@ export const test = {
     const to = startOfMonth()
     const change = 1024 * 1024 * 1024 // 1GiB
 
-    await ctx.spaceSnapshotStore.put({
-      space: consumer.consumer,
-      size: 0n,
-      recordedAt: from,
-      provider: consumer.provider,
-      insertedAt: new Date()
-    })
-
     await ctx.spaceDiffStore.put({
       provider: consumer.provider,
       space: consumer.consumer,
@@ -44,6 +36,7 @@ export const test = {
     }
 
     const handled = await handleSpaceBillingInstruction(instruction, ctx)
+    console.log(handled.error)
     assert.ok(handled.ok)
 
     const { ok: listing } = await ctx.usageStore.list({ customer: customer.customer, from })

@@ -1,5 +1,5 @@
 import * as Link from 'multiformats/link'
-import { EncodeFailure, DecodeFailure, InvalidInput, isDIDMailto, isDID, asDIDMailto, asDID, asDIDWeb, isDIDWeb } from './lib.js'
+import { EncodeFailure, DecodeFailure, Schema } from './lib.js'
 
 /**
  * @typedef {import('../lib/api').SpaceDiff} SpaceDiff
@@ -9,34 +9,19 @@ import { EncodeFailure, DecodeFailure, InvalidInput, isDIDMailto, isDID, asDIDMa
  * @typedef {import('../types').StoreRecord} StoreRecord
  */
 
+export const schema = Schema.struct({
+  customer: Schema.did({ method: 'mailto' }),
+  space: Schema.did(),
+  provider: Schema.did({ method: 'web' }),
+  subscription: Schema.text(),
+  cause: Schema.link({ version: 1 }),
+  change: Schema.integer(),
+  receiptAt: Schema.date(),
+  insertedAt: Schema.date()
+})
+
 /** @type {import('../lib/api').Validator<SpaceDiff>} */
-export const validate = input => {
-  if (input == null || typeof input !== 'object') {
-    return { error: new InvalidInput('not an object') }
-  }
-  if (!isDIDMailto(input.customer)) {
-    return { error: new InvalidInput('not a mailto DID', 'customer') }
-  }
-  if (!isDID(input.space)) {
-    return { error: new InvalidInput('not a DID', 'space') }
-  }
-  if (!isDIDWeb(input.provider)) {
-    return { error: new InvalidInput('not a web DID', 'provider') }
-  }
-  if (typeof input.subscription !== 'string') {
-    return { error: new InvalidInput('not a string', 'subscription') }
-  }
-  if (!Link.isLink(input.cause)) {
-    return { error: new InvalidInput('not a CID instance', 'cause') }
-  }
-  if (!(input.receiptAt instanceof Date)) {
-    return { error: new InvalidInput('not a Date instance', 'receiptAt') }
-  }
-  if (!(input.insertedAt instanceof Date)) {
-    return { error: new InvalidInput('not a Date instance', 'insertedAt') }
-  }
-  return { ok: {} }
-}
+export const validate = input => schema.read(input)
 
 /** @type {import('../lib/api').Encoder<SpaceDiff, SpaceDiffStoreRecord>} */
 export const encode = input => {
@@ -68,9 +53,9 @@ export const decode = input => {
   try {
     return {
       ok: {
-        customer: asDIDMailto(input.customer),
-        space: asDID(input.space),
-        provider: asDIDWeb(input.provider),
+        customer: Schema.did({ method: 'mailto' }).from(input.customer),
+        space: Schema.did().from(input.space),
+        provider: Schema.did({ method: 'web' }).from(input.provider),
         subscription: String(input.subscription),
         cause: Link.parse(String(input.cause)),
         change: Number(input.change),
