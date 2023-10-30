@@ -16,7 +16,7 @@ export const spaceAdd = async (customerParam) => {
   const signer = await Signer.generate()
   const space = signer.did()
   const provider = 'did:web:web3.storage'
-  const subscription = randomLink()
+  const subscription = randomLink().toString()
 
   const consumerTableName = mustGetEnv('CONSUMER_TABLE_NAME')
   const subscriptionTableName = mustGetEnv('SUBSCRIPTION_TABLE_NAME')
@@ -29,7 +29,7 @@ export const spaceAdd = async (customerParam) => {
       consumer: space,
       provider,
       subscription,
-      cause: randomLink(),
+      cause: randomLink().toString(),
       insertedAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     })
@@ -41,7 +41,7 @@ export const spaceAdd = async (customerParam) => {
       customer,
       provider,
       subscription,
-      cause: randomLink(),
+      cause: randomLink().toString(),
       insertedAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     })
@@ -50,6 +50,7 @@ export const spaceAdd = async (customerParam) => {
   await dynamo.send(new PutItemCommand({
     TableName: spaceSnapshotTableName,
     Item: marshall({
+      PK: `${space}#${provider}`,
       space,
       provider,
       size: 0,
