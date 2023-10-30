@@ -2,9 +2,9 @@ import { DecodeFailure, EncodeFailure, InvalidInput, isDID, isDIDWeb } from './l
 
 /**
  * @typedef {import('../lib/api').SpaceSnapshot} SpaceSnapshot
- * @typedef {import('../types').InferStoreRecord<SpaceSnapshot> & { PK: string }} SpaceSnapshotStoreRecord
+ * @typedef {import('../types').InferStoreRecord<SpaceSnapshot> & { pk: string }} SpaceSnapshotStoreRecord
  * @typedef {import('../lib/api').SpaceSnapshotKey} SpaceSnapshotKey
- * @typedef {Omit<import('../types').InferStoreRecord<SpaceSnapshotKey>, 'provider'|'space'> & { PK: string }} SpaceSnapshotKeyStoreRecord
+ * @typedef {Omit<import('../types').InferStoreRecord<SpaceSnapshotKey>, 'provider'|'space'> & { pk: string }} SpaceSnapshotKeyStoreRecord
  * @typedef {import('../types').StoreRecord} StoreRecord
  */
 
@@ -36,7 +36,7 @@ export const encode = input => {
   try {
     return {
       ok: {
-        PK: `${input.space}#${input.provider}`,
+        pk: `${input.space}#${input.provider}`,
         space: input.space,
         provider: input.provider,
         size: input.size.toString(),
@@ -54,7 +54,7 @@ export const encode = input => {
 /** @type {import('../lib/api').Encoder<SpaceSnapshotKey, SpaceSnapshotKeyStoreRecord>} */
 export const encodeKey = input => ({
   ok: {
-    PK: `${input.space}#${input.provider}`,
+    pk: `${input.space}#${input.provider}`,
     recordedAt: input.recordedAt.toISOString()
   }
 })

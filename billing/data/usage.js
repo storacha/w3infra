@@ -2,9 +2,9 @@ import { DecodeFailure, EncodeFailure, InvalidInput, isDID, isDIDMailto, isDIDWe
 
 /**
  * @typedef {import('../lib/api').Usage} Usage
- * @typedef {import('../types').InferStoreRecord<Usage> & { SK: string }} UsageStoreRecord
+ * @typedef {import('../types').InferStoreRecord<Usage> & { sk: string }} UsageStoreRecord
  * @typedef {import('../lib/api').UsageListKey} UsageListKey
- * @typedef {Omit<import('../types').InferStoreRecord<UsageListKey>, 'from'> & { SK: string }} UsageListKeyStoreRecord
+ * @typedef {Omit<import('../types').InferStoreRecord<UsageListKey>, 'from'> & { sk: string }} UsageListKeyStoreRecord
  * @typedef {import('../types').StoreRecord} StoreRecord
  */
 
@@ -48,7 +48,7 @@ export const encode = input => {
   try {
     return {
       ok: {
-        SK: `${input.from.toISOString()}#${input.provider}#${input.space}`,
+        sk: `${input.from.toISOString()}#${input.provider}#${input.space}`,
         customer: input.customer,
         account: input.account,
         product: input.product,
@@ -72,7 +72,7 @@ export const lister = {
   encodeKey: input => ({
     ok: {
       customer: input.customer,
-      SK: input.from.toISOString()
+      sk: input.from.toISOString()
     }
   })
 }

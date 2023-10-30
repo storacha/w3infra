@@ -97,7 +97,7 @@
         "x": 0,
         "y": 0,
         "w": 1616,
-        "h": 941
+        "h": 695
       },
       "zoomBrush": null,
       "isGridMode": false,
@@ -107,7 +107,7 @@
       "highlightedUserIds": [],
       "canMoveCamera": true,
       "isFocused": true,
-      "devicePixelRatio": 2,
+      "devicePixelRatio": 2.880000114440918,
       "isCoarsePointer": false,
       "isHoveringCanvas": true,
       "openMenus": [],
@@ -198,9 +198,9 @@
     {
       "id": "pointer:pointer",
       "typeName": "pointer",
-      "x": 2352.10531485054,
-      "y": 499.2981205649811,
-      "lastActivityTimestamp": 1698251531131,
+      "x": 1237.4642556986955,
+      "y": 1093.276586857819,
+      "lastActivityTimestamp": 1698670681814,
       "meta": {}
     },
     {
@@ -211,9 +211,9 @@
       "typeName": "page"
     },
     {
-      "x": 988.3361104831408,
-      "y": 526.2127452943588,
-      "z": 0.3846025192229394,
+      "x": -378.1390802969578,
+      "y": -427.9918027271429,
+      "z": 0.6483830463124974,
       "meta": {},
       "id": "camera:page:Rrzf2lpl3e1GzXW65i7-e",
       "typeName": "camera"
@@ -2716,8 +2716,8 @@
       "typeName": "shape"
     },
     {
-      "x": 1177.1682730696086,
-      "y": 815.2543786722676,
+      "x": 1177.4155489669372,
+      "y": 803.125495908295,
       "rotation": 0,
       "isLocked": false,
       "opacity": 1,
@@ -2727,7 +2727,7 @@
         "color": "grey",
         "size": "s",
         "w": 250.5234375,
-        "text": "space: DID string (pk)\nprovider: DID string (pk)\nsize: bytes bigint\nrecordedAt: ISO string (sk)\ninsertedAt: ISO string",
+        "text": "pk: space#provider\nspace: DID string\nprovider: DID string\nsize: bytes bigint\nrecordedAt: ISO string (sk)\ninsertedAt: ISO string",
         "font": "draw",
         "align": "start",
         "autoSize": true,
@@ -2895,8 +2895,8 @@
       "typeName": "shape"
     },
     {
-      "x": 1166.9889371286745,
-      "y": -216.6653378309586,
+      "x": 1166.1575420095921,
+      "y": -211.8998774020152,
       "rotation": 0,
       "isLocked": false,
       "opacity": 1,
@@ -3305,8 +3305,8 @@
       "props": {
         "color": "grey",
         "size": "s",
-        "w": 234.484375,
-        "text": "customer: DID string (pk)\naccount: Stripe ID\nproduct: plan string\nspace: DID string\nprovider: DID string\nusage: bytes/ms bigint\nfrom: ISO string (sk)\nto: ISO string\ninsertedAt: ISO string",
+        "w": 239.953125,
+        "text": "sk: from#provider#space\ncustomer: DID string (pk)\naccount: Stripe ID\nproduct: plan string\nspace: DID string\nprovider: DID string\nusage: bytes/ms bigint\nfrom: ISO string\nto: ISO string\ninsertedAt: ISO string",
         "font": "draw",
         "align": "start",
         "autoSize": true,
@@ -4450,7 +4450,6 @@
       "isLocked": false,
       "opacity": 1,
       "meta": {},
-      "id": "shape:JBYrblWvEihvMxkkjrzfN",
       "type": "geo",
       "props": {
         "w": 616.7995382071097,
@@ -4470,6 +4469,7 @@
       },
       "parentId": "page:Rrzf2lpl3e1GzXW65i7-e",
       "index": "a0",
+      "id": "shape:JBYrblWvEihvMxkkjrzfN",
       "typeName": "shape"
     },
     {
