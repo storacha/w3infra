@@ -12,7 +12,7 @@ export const schema = Schema.struct({
   customer: Schema.did({ method: 'mailto' }),
   space: Schema.did(),
   provider: Schema.did({ method: 'web' }),
-  account: Schema.text(),
+  account: Schema.uri({ protocol: 'stripe:' }),
   product: Schema.text(),
   usage: Schema.bigint().greaterThanEqualTo(0n),
   from: Schema.date(),
@@ -65,7 +65,7 @@ export const decode = input => {
     return {
       ok: {
         customer: Schema.did({ method: 'mailto' }).from(input.customer),
-        account: /** @type {string} */ (input.account),
+        account: Schema.uri({ protocol: 'stripe:' }).from(input.account),
         product: /** @type {string} */ (input.product),
         provider: Schema.did({ method: 'web' }).from(input.provider),
         space: Schema.did().from(input.space),

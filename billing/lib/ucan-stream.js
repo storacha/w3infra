@@ -1,33 +1,62 @@
 import * as StoreCaps from '@web3-storage/capabilities/store'
 
 /**
- * @param {import('./api').UcanStreamMessage} message
+ * Filters UCAN stream messages that are receipts for invocations that alter
+ * the store size for a resource and extracts the relevant information about
+ * the delta.
+ *
+ * @param {import('./api.js').UcanStreamMessage[]} messages
+ * @returns {import('./api.js').UsageDelta[]}
+ */
+export const findSpaceUsageDeltas = messages => {
+  const deltas = []
+  for (const message of messages) {
+    if (!isReceipt(message)) continue
+
+    /** @type {number|undefined} */
+    let size
+    if (isReceiptForCapability(message, StoreCaps.add) && isStoreAddSuccess(message.out)) {
+      size = message.value.att[0].nb?.size
+    } else if (isReceiptForCapability(message, StoreCaps.remove) && isStoreRemoveSuccess(message.out)) {
+      size = -message.out.ok.size
+    }
+
+    // message is not a valid store/add or store/remove receipt
+    if (size == null) {
+      continue
+    }
+
+    /** @type {import('./api.js').UsageDelta} */
+    const delta = {
+      resource: /** @type {import('@ucanto/interface').DID} */ (message.value.att[0].with),
+      cause: message.invocationCid,
+      delta: size,
+      // TODO: use receipt timestamp per https://github.com/web3-storage/w3up/issues/970
+      receiptAt: message.ts
+    }
+    deltas.push(delta)
+  }
+  return deltas
+}
+
+/**
+ * Attributes a raw usage delta to a customer and stores the collected
+ * information in the space diff store.
+ *
+ * Space diffs are keyed by `customer`, `provider`, `space` and `cause` so
+ * multiple calls to this function with the same data must not add _another_
+ * record to the store.
+ *
+ * @param {import('./api.js').UsageDelta} delta
  * @param {{
  *   spaceDiffStore: import('./api').SpaceDiffStore
  *   subscriptionStore: import('./api').SubscriptionStore
  *   consumerStore: import('./api').ConsumerStore
  * }} ctx
- * @returns {Promise<import('@ucanto/interface').Result>}
+ * @returns {Promise<import('@ucanto/interface').Result<import('@ucanto/interface').Unit>>}
  */
-export const handleUcanStreamMessage = async (message, ctx) => {
-  if (!isReceipt(message)) return { ok: {} }
-
-  /** @type {number|undefined} */
-  let size
-  if (isReceiptForCapability(message, StoreCaps.add) && isStoreAddSuccess(message.out)) {
-    size = message.value.att[0].nb?.size
-  } else if (isReceiptForCapability(message, StoreCaps.remove) && isStoreRemoveSuccess(message.out)) {
-    size = -message.out.ok.size
-  } else {
-    return { ok: {} }
-  }
-
-  if (size == null) {
-    return { error: new Error(`missing size: ${message.carCid}`) }
-  }
-
-  const space = /** @type {import('@ucanto/interface').DID} */ (message.value.att[0].with)
-  const consumerList = await ctx.consumerStore.list({ consumer: space })
+export const storeSpaceUsageDelta = async (delta, ctx) => {
+  const consumerList = await ctx.consumerStore.list({ consumer: delta.resource })
   if (consumerList.error) return consumerList
 
   // There should only be one subscription per provider, but in theory you
@@ -39,12 +68,11 @@ export const handleUcanStreamMessage = async (message, ctx) => {
     const spaceDiffPut = await ctx.spaceDiffStore.put({
       customer: subGet.ok.customer,
       provider: consumer.provider,
-      subscription: subGet.ok.subscription,
-      space,
-      cause: message.invocationCid,
-      change: size,
-      // TODO: use receipt timestamp per https://github.com/web3-storage/w3up/issues/970
-      receiptAt: message.ts,
+      subscription: consumer.subscription,
+      space: delta.resource,
+      cause: delta.cause,
+      delta: delta.delta,
+      receiptAt: delta.receiptAt,
       insertedAt: new Date()
     })
     if (spaceDiffPut.error) return spaceDiffPut

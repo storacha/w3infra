@@ -1,5 +1,6 @@
-export const startOfMonth = () => {
-  const d = new Date()
+/** @param {string|number|Date} now */
+export const startOfMonth = (now) => {
+  const d = new Date(now)
   d.setUTCDate(1)
   d.setUTCHours(0)
   d.setUTCMinutes(0)
@@ -8,8 +9,9 @@ export const startOfMonth = () => {
   return d
 }
 
-export const startOfLastMonth = () => {
-  const d = startOfMonth()
+/** @param {string|number|Date} now */
+export const startOfLastMonth = (now) => {
+  const d = startOfMonth(now)
   d.setUTCMonth(d.getUTCMonth() - 1)
   return d
 }

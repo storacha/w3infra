@@ -24,7 +24,7 @@ export const encode = input => {
   try {
     return {
       ok: {
-        pk: `${input.space}#${input.provider}`,
+        pk: `${input.provider}#${input.space}`,
         space: input.space,
         provider: input.provider,
         size: input.size.toString(),
@@ -42,7 +42,7 @@ export const encode = input => {
 /** @type {import('../lib/api').Encoder<SpaceSnapshotKey, SpaceSnapshotKeyStoreRecord>} */
 export const encodeKey = input => ({
   ok: {
-    pk: `${input.space}#${input.provider}`,
+    pk: `${input.provider}#${input.space}`,
     recordedAt: input.recordedAt.toISOString()
   }
 })

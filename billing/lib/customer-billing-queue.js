@@ -1,13 +1,16 @@
 /**
+ * Discovers spaces that should be billed for a given customer and enqueues
+ * a space billing instruction for each.
+ * 
  * @param {import('./api').CustomerBillingInstruction} instruction 
  * @param {{
  *   subscriptionStore: import('./api').SubscriptionStore
  *   consumerStore: import('./api').ConsumerStore
  *   spaceBillingQueue: import('./api').SpaceBillingQueue
  * }} ctx
- * @returns {Promise<import('@ucanto/interface').Result>}
+ * @returns {Promise<import('@ucanto/interface').Result<import('@ucanto/interface').Unit>>}
  */
-export const handleCustomerBillingInstruction = async (instruction, ctx) => {
+export const enqueueSpaceBillingInstructions = async (instruction, ctx) => {
   console.log(`Processing customer billing instruction for: ${instruction.customer}`)
   console.log(`Period: ${instruction.from.toISOString()} - ${instruction.to.toISOString()}`)
 

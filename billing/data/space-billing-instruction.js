@@ -9,7 +9,7 @@ export const schema = Schema.struct({
   customer: Schema.did({ method: 'mailto' }),
   space: Schema.did(),
   provider: Schema.did({ method: 'web' }),
-  account: Schema.text(),
+  account: Schema.uri({ protocol: 'stripe:' }),
   product: Schema.text(),
   from: Schema.date(),
   to: Schema.date()

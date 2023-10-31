@@ -4,8 +4,8 @@ import * as Link from 'multiformats/link'
 import { createSpaceDiffStore } from '../tables/space-diff.js'
 import { createSubscriptionStore } from '../tables/subscription.js'
 import { createConsumerStore } from '../tables/consumer.js'
-import { mustGetEnv } from './lib.js'
-import { handleUcanStreamMessage } from '../lib/ucan-stream.js'
+import { expect, mustGetEnv } from './lib.js'
+import { findSpaceUsageDeltas, storeSpaceUsageDelta } from '../lib/ucan-stream.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -36,13 +36,22 @@ export const handler = Sentry.AWSLambda.wrapHandler(
     const region = customContext?.region ?? mustGetEnv('AWS_REGION')
   
     const messages = parseUcanStreamEvent(event)
+    if (!messages || messages.length > 1) {
+      throw new Error(`invalid batch size, expected: 1, actual: ${messages.length}`)
+    }
+
+    const deltas = findSpaceUsageDeltas(messages)
+    if (!deltas.length) return
+
     const ctx = {
       spaceDiffStore: createSpaceDiffStore({ region }, { tableName: spaceDiffTable }),
       subscriptionStore: createSubscriptionStore({ region }, { tableName: subscriptionTable }),
       consumerStore: createConsumerStore({ region }, { tableName: consumerTable })
     }
-    const results = await Promise.all(messages.map(m => handleUcanStreamMessage(m, ctx)))
-    for (const r of results) if (r.error) throw r.error
+    expect(
+      await storeSpaceUsageDelta(deltas[0], ctx),
+      `storing space usage delta for: ${deltas[0].resource}, cause: ${deltas[0].cause}`
+    )
   }
 )
 

@@ -1,10 +1,10 @@
 import * as Sentry from '@sentry/serverless'
-import { mustGetEnv } from './lib.js'
+import { expect, mustGetEnv } from './lib.js'
 import * as BillingInstruction from '../data/customer-billing-instruction.js'
 import { createSubscriptionStore } from '../tables/subscription.js'
 import { createConsumerStore } from '../tables/consumer.js'
 import { createSpaceBillingQueue } from '../queues/space.js'
-import { handleCustomerBillingInstruction } from '../lib/customer-billing-queue.js'
+import { enqueueSpaceBillingInstructions } from '../lib/customer-billing-queue.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -34,8 +34,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(
     const spaceBillingQueueURL = new URL(customContext?.spaceBillingQueueURL ?? mustGetEnv('SPACE_BILLING_QUEUE_URL'))
     const region = customContext?.region ?? mustGetEnv('AWS_REGION')
 
-    const { ok: instructions, error } = parseCustomerBillingInstructionEvent(event)
-    if (error) throw error
+    const instructions = parseCustomerBillingInstructionEvent(event)
 
     const ctx = {
       subscriptionStore: createSubscriptionStore({ region }, { tableName: subscriptionTable }),
@@ -43,22 +42,26 @@ export const handler = Sentry.AWSLambda.wrapHandler(
       spaceBillingQueue: createSpaceBillingQueue({ region }, { url: spaceBillingQueueURL })
     }
     for (const instruction of instructions) {
-      const { error } = await handleCustomerBillingInstruction(instruction, ctx)
-      if (error) throw error
+      expect(
+        await enqueueSpaceBillingInstructions(instruction, ctx),
+        `adding space billing instructions for: ${instruction.customer} in period: ${instruction.from} - ${instruction.to}`
+      )
     }
   }
 )
 
 /**
  * @param {import('aws-lambda').SQSEvent} event
- * @returns {import('@ucanto/interface').Result<import('../lib/api.js').CustomerBillingInstruction[], import('../lib/api.js').DecodeFailure>}
+ * @returns {import('../lib/api.js').CustomerBillingInstruction[]}
  */
 const parseCustomerBillingInstructionEvent = (event) => {
   const instructions = []
   for (const record of event.Records) {
-    const res = BillingInstruction.decode(record.body)
-    if (res.error) return res
-    instructions.push(res.ok)
+    const instruction = expect(
+      BillingInstruction.decode(record.body),
+      'decoding customer billing instruction'
+    )
+    instructions.push(instruction)
   }
-  return { ok: instructions }
+  return instructions
 }

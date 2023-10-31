@@ -1,4 +1,4 @@
-import { handleSpaceBillingInstruction } from '../../lib/space-billing-queue.js'
+import { calculatePeriodUsage, storeSpaceUsage } from '../../lib/space-billing-queue.js'
 import { startOfMonth, startOfLastMonth, } from '../../lib/util.js'
 import { randomConsumer } from '../helpers/consumer.js'
 import { randomCustomer } from '../helpers/customer.js'
@@ -9,9 +9,10 @@ export const test = {
   'should do basic usage calculation for new space with single item added at snapshot time': async (/** @type {import('entail').assert} */ assert, ctx) => {
     const customer = randomCustomer()
     const consumer = await randomConsumer()
-    const from = startOfLastMonth()
-    const to = startOfMonth()
-    const change = 1024 * 1024 * 1024 // 1GiB
+    const now = new Date()
+    const from = startOfLastMonth(now)
+    const to = startOfMonth(now)
+    const delta = 1024 * 1024 * 1024 // 1GiB
 
     await ctx.spaceDiffStore.put({
       provider: consumer.provider,
@@ -19,7 +20,7 @@ export const test = {
       customer: customer.customer,
       subscription: consumer.subscription,
       cause: randomLink(),
-      change,
+      delta,
       receiptAt: from,
       insertedAt: new Date()
     })
@@ -35,8 +36,10 @@ export const test = {
       provider: consumer.provider
     }
 
-    const handled = await handleSpaceBillingInstruction(instruction, ctx)
-    console.log(handled.error)
+    const calculation = await calculatePeriodUsage(instruction, ctx)
+    assert.ok(calculation.ok)
+
+    const handled = await storeSpaceUsage(instruction, calculation.ok, ctx)
     assert.ok(handled.ok)
 
     const { ok: listing } = await ctx.usageStore.list({ customer: customer.customer, from })
@@ -46,7 +49,7 @@ export const test = {
     assert.equal(
       listing.results[0].usage,
       // 1GiB for the whole period
-      BigInt(change) * BigInt(to.getTime() - from.getTime())
+      BigInt(delta) * BigInt(to.getTime() - from.getTime())
     )
 
     const { ok: snap } = await ctx.spaceSnapshotStore.get({
@@ -55,14 +58,15 @@ export const test = {
       recordedAt: to
     })
     assert.ok(snap)
-    assert.equal(snap.size, BigInt(change))
+    assert.equal(snap.size, BigInt(delta))
   },
   'should consider removals': async (/** @type {import('entail').assert} */ assert, ctx) => {
     const customer = randomCustomer()
     const consumer = await randomConsumer()
-    const from = startOfLastMonth()
-    const to = startOfMonth()
-    const change = 1024 * 1024 * 1024 // 1GiB
+    const now = new Date()
+    const from = startOfLastMonth(now)
+    const to = startOfMonth(now)
+    const delta = 1024 * 1024 * 1024 // 1GiB
 
     await ctx.spaceSnapshotStore.put({
       space: consumer.consumer,
@@ -79,7 +83,7 @@ export const test = {
       customer: customer.customer,
       subscription: consumer.subscription,
       cause: randomLink(),
-      change,
+      delta,
       receiptAt: from,
       insertedAt: new Date()
     })
@@ -91,7 +95,7 @@ export const test = {
       customer: customer.customer,
       subscription: consumer.subscription,
       cause: randomLink(),
-      change: -change,
+      delta: -delta,
       // removed exactly half way through the month
       receiptAt: new Date(from.getTime() + ((to.getTime() - from.getTime()) / 2)),
       insertedAt: new Date()
@@ -108,7 +112,10 @@ export const test = {
       provider: consumer.provider
     }
 
-    const handled = await handleSpaceBillingInstruction(instruction, ctx)
+    const calculation = await calculatePeriodUsage(instruction, ctx)
+    assert.ok(calculation.ok)
+
+    const handled = await storeSpaceUsage(instruction, calculation.ok, ctx)
     assert.ok(handled.ok)
 
     const { ok: listing } = await ctx.usageStore.list({ customer: customer.customer, from })
@@ -118,7 +125,7 @@ export const test = {
     assert.equal(
       listing.results[0].usage,
       // 1GiB for half the period
-      BigInt(change) * BigInt(to.getTime() - from.getTime()) / 2n
+      BigInt(delta) * BigInt(to.getTime() - from.getTime()) / 2n
     )
 
     const { ok: snap } = await ctx.spaceSnapshotStore.get({
@@ -133,14 +140,15 @@ export const test = {
     const customer = randomCustomer()
     const consumer = await randomConsumer()
     const size = BigInt(1024 * 1024 * 1024 * 1024) // 1TiB
-    const from = startOfLastMonth()
-    const to = startOfMonth()
-    const change = 1024 * 1024 * 1024 // 1GiB
+    const now = new Date()
+    const from = startOfLastMonth(now)
+    const to = startOfMonth(now)
+    const delta = 1024 * 1024 * 1024 // 1GiB
 
     await ctx.spaceSnapshotStore.put({
       space: consumer.consumer,
       size,
-      recordedAt: startOfLastMonth(),
+      recordedAt: from,
       provider: consumer.provider,
       insertedAt: new Date()
     })
@@ -158,7 +166,7 @@ export const test = {
       customer: customer.customer,
       subscription: consumer.subscription,
       cause: randomLink(),
-      change,
+      delta,
       // store/add 24h prior to end of billing
       receiptAt: yesterday(to),
       insertedAt: new Date()
@@ -175,7 +183,10 @@ export const test = {
       provider: consumer.provider
     }
 
-    const handled = await handleSpaceBillingInstruction(instruction, ctx)
+    const calculation = await calculatePeriodUsage(instruction, ctx)
+    assert.ok(calculation.ok)
+
+    const handled = await storeSpaceUsage(instruction, calculation.ok, ctx)
     assert.ok(handled.ok)
 
     const { ok: listing } = await ctx.usageStore.list({ customer: customer.customer, from })
@@ -187,7 +198,7 @@ export const test = {
       // existing size for the period
       size * BigInt(to.getTime() - from.getTime())
       // + 1GiB for 1 day
-      + BigInt(change) * BigInt(to.getTime() - yesterday(to).getTime())
+      + BigInt(delta) * BigInt(to.getTime() - yesterday(to).getTime())
     )
 
     const { ok: snap } = await ctx.spaceSnapshotStore.get({
@@ -196,6 +207,6 @@ export const test = {
       recordedAt: to
     })
     assert.ok(snap)
-    assert.equal(snap.size, size + BigInt(change))
+    assert.equal(snap.size, size + BigInt(delta))
   }
 }

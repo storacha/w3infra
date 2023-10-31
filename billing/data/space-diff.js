@@ -3,9 +3,9 @@ import { EncodeFailure, DecodeFailure, Schema } from './lib.js'
 
 /**
  * @typedef {import('../lib/api').SpaceDiff} SpaceDiff
- * @typedef {import('../types').InferStoreRecord<SpaceDiff>} SpaceDiffStoreRecord
- * @typedef {import('../lib/api').SpaceDiffKey} SpaceDiffKey
- * @typedef {import('../types').InferStoreRecord<SpaceDiffKey>} SpaceDiffKeyStoreRecord
+ * @typedef {import('../types').InferStoreRecord<SpaceDiff> & { pk: string, sk: string }} SpaceDiffStoreRecord
+ * @typedef {import('../lib/api').SpaceDiffListKey} SpaceDiffListKey
+ * @typedef {{ pk: string, sk: string }} SpaceDiffListStoreRecord
  * @typedef {import('../types').StoreRecord} StoreRecord
  */
 
@@ -15,7 +15,7 @@ export const schema = Schema.struct({
   provider: Schema.did({ method: 'web' }),
   subscription: Schema.text(),
   cause: Schema.link({ version: 1 }),
-  change: Schema.integer(),
+  delta: Schema.integer(),
   receiptAt: Schema.date(),
   insertedAt: Schema.date()
 })
@@ -28,12 +28,14 @@ export const encode = input => {
   try {
     return {
       ok: {
+        pk: `${input.customer}#${input.provider}#${input.space}`,
+        sk: `${input.receiptAt}#${input.cause}`,
         customer: input.customer,
         space: input.space,
         provider: input.provider,
         subscription: input.subscription,
         cause: input.cause.toString(),
-        change: input.change,
+        delta: input.delta,
         receiptAt: input.receiptAt.toISOString(),
         insertedAt: new Date().toISOString()
       }
@@ -45,8 +47,7 @@ export const encode = input => {
   }
 }
 
-/** @type {import('../lib/api').Encoder<SpaceDiffKey, SpaceDiffKeyStoreRecord>} */
-export const encodeKey = input => ({ ok: { customer: input.customer } })
+
 
 /** @type {import('../lib/api').Decoder<StoreRecord, SpaceDiff>} */
 export const decode = input => {
@@ -58,7 +59,7 @@ export const decode = input => {
         provider: Schema.did({ method: 'web' }).from(input.provider),
         subscription: /** @type {string} */ (input.subscription),
         cause: Link.parse(/** @type {string} */ (input.cause)),
-        change: /** @type {number} */ (input.change),
+        delta: /** @type {number} */ (input.delta),
         receiptAt: new Date(input.receiptAt),
         insertedAt: new Date(input.insertedAt)
       }
@@ -68,4 +69,14 @@ export const decode = input => {
       error: new DecodeFailure(`decoding space diff record: ${err.message}`)
     }
   }
+}
+
+export const lister = {
+  /** @type {import('../lib/api').Encoder<SpaceDiffListKey, SpaceDiffListStoreRecord>} */
+  encodeKey: input => ({
+    ok: {
+      pk: `${input.customer}#${input.provider}#${input.space}`,
+      sk: input.from.toISOString()
+    }
+  })
 }

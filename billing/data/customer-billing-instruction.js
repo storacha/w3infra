@@ -7,7 +7,7 @@ import { EncodeFailure, DecodeFailure, Schema } from './lib.js'
 
 export const schema = Schema.struct({
   customer: Schema.did({ method: 'mailto' }),
-  account: Schema.text(),
+  account: Schema.uri({ protocol: 'stripe:' }),
   product: Schema.text(),
   from: Schema.date(),
   to: Schema.date()
