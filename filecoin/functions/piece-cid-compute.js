@@ -70,7 +70,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(computeHandler)
 function getEnv () {
   return {
     pieceTableName: mustGetEnv('PIECE_TABLE_NAME'),
-    disablePieceCidCompute: process.env.DISABLE_PIECE_CID_COMPUTE
+    disablePieceCidCompute: process.env.DISABLE_PIECE_CID_COMPUTE === 'true'
   }
 }
 
