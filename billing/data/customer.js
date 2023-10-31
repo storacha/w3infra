@@ -5,6 +5,8 @@ import { EncodeFailure, DecodeFailure, Schema } from './lib.js'
  * @typedef {import('../lib/api').Customer} Customer
  * @typedef {import('../types').InferStoreRecord<Customer>} CustomerStoreRecord
  * @typedef {import('../types').StoreRecord} StoreRecord
+ * @typedef {import('../lib/api').CustomerKey} CustomerKey
+ * @typedef {import('../types').InferStoreRecord<CustomerKey>} CustomerKeyStoreRecord
  */
 
 const schema = Schema.struct({
@@ -38,6 +40,9 @@ export const encode = input => {
     }
   }
 }
+
+/** @type {import('../lib/api').Encoder<CustomerKey, CustomerKeyStoreRecord>} */
+export const encodeKey = input => ({ ok: { customer: input.customer } })
 
 /** @type {import('../lib/api').Decoder<StoreRecord, Customer>} */
 export const decode = input => {
