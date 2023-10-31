@@ -15,7 +15,7 @@ import {
 } from '../ucan-invocation/tables/index.js'
 import {
   pieceTableProps
-} from '../filecoin/tables/index.js'
+} from '../filecoin/store/index.js'
 import { setupSentry, getBucketConfig } from './config.js'
 
 /**
@@ -49,7 +49,7 @@ export function UploadDbStack({ stack, app }) {
    * This table takes a stored CAR and makes an entry in the piece table
    * Used by the filecoin/* service capabilities. // TODO
    */
-  const pieceTable = new Table(stack, 'piece', {
+  const pieceTable = new Table(stack, 'piece-1', {
     ...pieceTableProps,
     // information that will be written to the stream
     stream: 'new_image',

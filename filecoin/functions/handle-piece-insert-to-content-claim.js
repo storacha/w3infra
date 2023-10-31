@@ -21,8 +21,8 @@ Sentry.AWSLambda.init({
  * @param {import('aws-lambda').DynamoDBStreamEvent} event
  */
 async function pieceCidReport (event) {
-  const { aggregatorDid, aggregatorUrl, contentClaimsDid, contentClaimsUrl, contentClaimsProof } = getEnv()
-  const { PRIVATE_KEY: privateKey, CONTENT_CLAIMS_PRIVATE_KEY: contentClaimsPrivateKey } = Config
+  const { serviceDid, serviceUrl, serviceProof } = getEnv()
+  const { CONTENT_CLAIMS_PRIVATE_KEY: contentClaimsPrivateKey } = Config
 
   const records = parseDynamoDbEvent(event)
   if (records.length > 1) {
@@ -34,42 +34,28 @@ async function pieceCidReport (event) {
   const piece = Piece.fromString(pieceRecord.piece).link
   const content = CID.parse(pieceRecord.link)
 
-  const aggregateServiceConnection = getServiceConnection({
-    did: aggregatorDid,
-    url: aggregatorUrl
-  })
   const claimsServiceConnection = getServiceConnection({
-    did: contentClaimsDid,
-    url: contentClaimsUrl
-  })
-  const storefrontIssuer = getServiceSigner({
-    privateKey
+    did: serviceDid,
+    url: serviceUrl
   })
   let claimsIssuer = getServiceSigner({
     privateKey: contentClaimsPrivateKey
   })
   const claimsProofs = []
-  if (contentClaimsProof) {
-    const proof = await Delegation.extract(fromString(contentClaimsProof, 'base64pad'))
+  if (serviceProof) {
+    const proof = await Delegation.extract(fromString(serviceProof, 'base64pad'))
       if (!proof.ok) throw new Error('failed to extract proof', { cause: proof.error })
       claimsProofs.push(proof.ok)
   } else {
     // if no proofs, we must be using the service private key to sign
-    claimsIssuer = claimsIssuer.withDID(DID.parse(contentClaimsDid).did())
+    claimsIssuer = claimsIssuer.withDID(DID.parse(serviceDid).did())
   }
 
   const { ok, error } = await reportPieceCid({
     piece,
     content,
-    group: storefrontIssuer.did(),
-    aggregateServiceConnection,
-    aggregateInvocationConfig: /** @type {import('@web3-storage/filecoin-client/types').InvocationConfig} */ ({
-      issuer: storefrontIssuer,
-      audience: aggregateServiceConnection.id,
-      with: storefrontIssuer.did(),
-    }),
     claimsServiceConnection,
-    claimsInvocationConfig: /** @type {import('../types').ClaimsInvocationConfig} */ ({
+    claimsInvocationConfig: /** @type {import('../types.js').ClaimsInvocationConfig} */ ({
       issuer: claimsIssuer,
       audience: claimsServiceConnection.id,
       with: claimsIssuer.did(),
@@ -92,18 +78,16 @@ async function pieceCidReport (event) {
   }
 }
 
-export const handler = Sentry.AWSLambda.wrapHandler(pieceCidReport)
+export const main = Sentry.AWSLambda.wrapHandler(pieceCidReport)
 
 /**
  * Get Env validating it is set.
  */
 function getEnv() {
   return {
-    aggregatorDid: mustGetEnv('AGGREGATOR_DID'),
-    aggregatorUrl: mustGetEnv('AGGREGATOR_URL'),
-    contentClaimsDid: mustGetEnv('CONTENT_CLAIMS_DID'),
-    contentClaimsUrl: mustGetEnv('CONTENT_CLAIMS_URL'),
-    contentClaimsProof: process.env.CONTENT_CLAIMS_PROOF,
+    serviceDid: mustGetEnv('SERVICE_DID'),
+    serviceUrl: mustGetEnv('SERVICE_URL'),
+    serviceProof: process.env.PROOF,
   }
 }
 

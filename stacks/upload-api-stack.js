@@ -5,9 +5,10 @@ import {
 } from '@serverless-stack/resources'
 import { UploadDbStack } from './upload-db-stack.js'
 import { CarparkStack } from './carpark-stack.js'
+import { FilecoinStack } from './filecoin-stack.js'
 import { UcanInvocationStack } from './ucan-invocation-stack.js'
 
-import { getCustomDomain, getApiPackageJson, getGitInfo, setupSentry } from './config.js'
+import { getCustomDomain, getApiPackageJson, getGitInfo, setupSentry, getEnv } from './config.js'
 
 /**
  * @param {import('@serverless-stack/resources').StackContext} properties
@@ -17,13 +18,16 @@ export function UploadApiStack({ stack, app }) {
     srcPath: 'upload-api'
   })
 
+  const { AGGREGATOR_DID } = getEnv()
+
   // Setup app monitoring with Sentry
   setupSentry(app, stack)
 
   // Get references to constructs created in other stacks
   const { carparkBucket } = use(CarparkStack)
-  const { storeTable, uploadTable, delegationBucket, delegationTable, revocationTable, adminMetricsTable, spaceMetricsTable, consumerTable, subscriptionTable, rateLimitTable, privateKey } = use(UploadDbStack)
+  const { storeTable, uploadTable, delegationBucket, delegationTable, revocationTable, adminMetricsTable, spaceMetricsTable, consumerTable, subscriptionTable, rateLimitTable, pieceTable, privateKey } = use(UploadDbStack)
   const { invocationBucket, taskBucket, workflowBucket, ucanStream } = use(UcanInvocationStack)
+  const { pieceOfferQueue, filecoinSubmitQueue } = use(FilecoinStack)
 
   // Setup API
   const customDomain = getCustomDomain(stack.stage, process.env.HOSTED_ZONE)
@@ -46,13 +50,17 @@ export function UploadApiStack({ stack, app }) {
           rateLimitTable,
           adminMetricsTable,
           spaceMetricsTable,
+          pieceTable,
           carparkBucket,
           invocationBucket,
           taskBucket,
           workflowBucket,
-          ucanStream
+          ucanStream,
+          pieceOfferQueue,
+          filecoinSubmitQueue
         ],
         environment: {
+          AGGREGATOR_DID,
           STORE_TABLE_NAME: storeTable.tableName,
           STORE_BUCKET_NAME: carparkBucket.bucketName,
           UPLOAD_TABLE_NAME: uploadTable.tableName,
@@ -68,6 +76,9 @@ export function UploadApiStack({ stack, app }) {
           WORKFLOW_BUCKET_NAME: workflowBucket.bucketName,
           UCAN_LOG_STREAM_NAME: ucanStream.streamName,
           ADMIN_METRICS_TABLE_NAME: adminMetricsTable.tableName,
+          PIECE_TABLE_NAME: adminMetricsTable.tableName,
+          PIECE_OFFER_QUEUE_URL: pieceOfferQueue.queueUrl,
+          FILECOIN_SUBMIT_QUEUE_URL: filecoinSubmitQueue.queueUrl,
           NAME: pkg.name,
           VERSION: pkg.version,
           COMMIT: git.commmit,
