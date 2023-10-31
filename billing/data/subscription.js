@@ -59,8 +59,8 @@ export const decode = input => {
       ok: {
         customer: Schema.did({ method: 'mailto' }).from(input.customer),
         provider: Schema.did({ method: 'web' }).from(input.provider),
-        subscription: String(input.subscription),
-        cause: Link.parse(String(input.cause)),
+        subscription: /** @type {string} */ (input.subscription),
+        cause: Link.parse(/** @type {string} */ (input.cause)),
         insertedAt: new Date(input.insertedAt),
         updatedAt: new Date(input.updatedAt)
       }

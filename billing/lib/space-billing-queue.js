@@ -59,7 +59,7 @@ export const handleSpaceBillingInstruction = async (instruction, ctx) => {
   if (snapPut.error) return snapPut
 
   const duration = instruction.to.getTime() - instruction.from.getTime()
-  console.log(`Space consumed ${usage} byte/ms (${new Big(usage.toString()).div(duration).div(1024 * 1024 * 1024).toFixed(2)} GiB/month)`)
+  console.log(`Space consumed ${usage} byte/ms (~${new Big(usage.toString()).div(duration).div(1024 * 1024 * 1024).toFixed(2)} GiB/month)`)
   return await ctx.usageStore.put({
     ...instruction,
     usage,

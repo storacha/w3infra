@@ -65,8 +65,8 @@ export const decode = input => {
     return {
       ok: {
         customer: Schema.did({ method: 'mailto' }).from(input.customer),
-        account: String(input.account),
-        product: String(input.product),
+        account: /** @type {string} */ (input.account),
+        product: /** @type {string} */ (input.product),
         provider: Schema.did({ method: 'web' }).from(input.provider),
         space: Schema.did().from(input.space),
         usage: BigInt(input.usage),
