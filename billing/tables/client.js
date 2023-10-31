@@ -1,4 +1,4 @@
-import { DynamoDBClient, GetItemCommand, PutItemCommand, QueryCommand, ScanCommand } from '@aws-sdk/client-dynamodb'
+import { DynamoDBClient, GetItemCommand, PutItemCommand, QueryCommand, ScanCommand, UpdateItemCommand } from '@aws-sdk/client-dynamodb'
 import { marshall, unmarshall, convertToAttr } from '@aws-sdk/util-dynamodb'
 import retry from 'p-retry'
 import { RecordNotFound, StoreOperationFailure } from './lib.js'
