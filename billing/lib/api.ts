@@ -305,5 +305,5 @@ export interface StoreLister<K extends {}, V> {
 /** QueueAdder allows messages to be added to the end of the queue. */
 export interface QueueAdder<T> {
   /** Adds a message to the end of the queue. */
-  add: (message: T) => Promise<Result<Unit, EncodeFailure|QueueOperationFailure>>
+  add: (message: T) => Promise<Result<Unit, EncodeFailure|QueueOperationFailure|Failure>>
 }
