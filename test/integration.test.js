@@ -246,30 +246,32 @@ test('w3infra integration flow', async t => {
   })
 
   // Check filecoin piece computed after leaving queue
-  const pieces = await getPieces(t, shards[0].toString())
-  t.assert(pieces)
-  t.is(pieces?.length, 1)
-  t.truthy(pieces?.[0].piece)
+  if (process.env.DISABLE_PIECE_CID_COMPUTE !== 'true') {
+    const pieces = await getPieces(t, shards[0].toString())
+    t.assert(pieces)
+    t.is(pieces?.length, 1)
+    t.truthy(pieces?.[0].piece)
 
-  console.log('piece written', pieces?.[0].piece)
+    console.log('piece written', pieces?.[0].piece)
 
-  // Check roundabout can redirect from pieceCid to signed bucket url for car
-  const roundaboutEndpoint = await getRoundaboutEndpoint()
-  const roundaboutUrl = new URL(pieces?.[0].piece, roundaboutEndpoint)
-  console.log('checking roundabout', roundaboutUrl)
-  await pWaitFor(async () => {
-    try {
-      const res = await fetch(roundaboutUrl, {
-        method: 'HEAD',
-        redirect: 'manual'
-      })
-      return res.status === 302 && res.headers.get('location')?.includes(shards[0].toString())
-    } catch {}
-    return false
-  }, {
-    interval: 100,
-  })
-  console.log('roundabout redirected from piece to car', roundaboutUrl)
+    // Check roundabout can redirect from pieceCid to signed bucket url for car
+    const roundaboutEndpoint = await getRoundaboutEndpoint()
+    const roundaboutUrl = new URL(pieces?.[0].piece, roundaboutEndpoint)
+    console.log('checking roundabout', roundaboutUrl)
+    await pWaitFor(async () => {
+      try {
+        const res = await fetch(roundaboutUrl, {
+          method: 'HEAD',
+          redirect: 'manual'
+        })
+        return res.status === 302 && res.headers.get('location')?.includes(shards[0].toString())
+      } catch {}
+      return false
+    }, {
+      interval: 100,
+    })
+    console.log('roundabout redirected from piece to car', roundaboutUrl) 
+  }
 
   // Check metrics were updated
   if (beforeStoreAddSizeTotal && spaceBeforeUploadAddMetrics && spaceBeforeStoreAddSizeMetrics && beforeUploadAddTotal) {
