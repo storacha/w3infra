@@ -8,7 +8,11 @@
   "scripts": {},
   "dependencies": {
     "big.js": "^6.2.1",
+    "bytes": "^3.1.2",
     "dotenv": "^16.3.1",
     "sade": "^1.8.1"
+  },
+  "devDependencies": {
+    "@types/bytes": "^3.1.3"
   }
 }

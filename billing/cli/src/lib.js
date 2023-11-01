@@ -10,3 +10,8 @@ export const getDynamo = () => {
   }
   return new DynamoDB({ region: process.env.AWS_REGION, credentials })
 }
+
+/** @param {Date} d */
+export const isValidDate = (d) => {
+  return !isNaN(d.getTime())
+}
