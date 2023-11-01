@@ -1,4 +1,7 @@
-import { DynamoDB } from '@aws-sdk/client-dynamodb'
+import { DynamoDB, QueryCommand } from '@aws-sdk/client-dynamodb'
+import { marshall, unmarshall } from '@aws-sdk/util-dynamodb'
+import { mustGetEnv } from '../../functions/lib.js'
+import * as Consumer from '../../data/consumer.js'
 
 export const getDynamo = () => {
   let credentials
@@ -14,4 +17,27 @@ export const getDynamo = () => {
 /** @param {Date} d */
 export const isValidDate = (d) => {
   return !isNaN(d.getTime())
+}
+
+/**
+ * @param {import('@aws-sdk/client-dynamodb').DynamoDBClient} dynamo
+ * @param {string} space
+ */
+export async function getConsumerBySpace (dynamo, space) {
+  const res = await dynamo.send(new QueryCommand({
+    TableName: mustGetEnv('CONSUMER_TABLE_NAME'),
+    IndexName: 'consumer',
+    KeyConditionExpression: "consumer = :consumer",
+    ExpressionAttributeValues: marshall({
+      ":consumer": space
+    })
+  }))
+  if (!res.Items || res.Items.length === 0) {
+    throw new Error(`Failed to get consumer for ${space}`)
+  }
+  const decoded = Consumer.lister.decode(unmarshall(res.Items[0]))
+  if (decoded.error) {
+    throw new Error(decoded.error.message)
+  }
+  return decoded.ok
 }

@@ -17,7 +17,7 @@ export async function billingRun (rawFrom, rawTo) {
   }
   const to = new Date(rawTo)
   if (!isValidDate(to)) {
-    throw new Error('invalid from date')
+    throw new Error('invalid to date')
   }
   if (from.getTime() >= to.getTime()) {
     throw new Error('from date must be less than to date')

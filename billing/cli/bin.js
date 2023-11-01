@@ -7,6 +7,7 @@ import { billingRun } from './src/run.js'
 import { diffAdd, diffRemove } from './src/diff.js'
 import { spaceAdd } from './src/space.js'
 import { usageGet } from './src/usage.js'
+import { snapshotCreate } from './src/snapshot.js'
 
 const pkg = JSON.parse(fs.readFileSync(new URL('package.json', import.meta.url)).toString())
 
@@ -22,6 +23,11 @@ sade('billing')
   .command('space add <customer>')
   .describe('Add a space for the customer to the billing system.')
   .action(spaceAdd)
+
+  .command('snapshot create <space> <datetime>')
+  .describe('Create a snapshot of the space size at the given timestamp.')
+  .option('-w, --write', 'Write snapshot to the store.', false)
+  .action(snapshotCreate)
 
   .command('diff add <space> <bytes> <datetime>')
   .describe('Add some bytes to the space at the passed ISO timestamp.')
