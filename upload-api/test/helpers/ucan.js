@@ -269,7 +269,6 @@ export async function executionContextToUcantoTestServerContext (t) {
     mail: email,
     service: id,
     connection,
-    testStoreTable: storeTable,
     fetch
   };
 }

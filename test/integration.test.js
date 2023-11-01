@@ -19,7 +19,7 @@ import {
   getCarparkBucketInfo,
   getDynamoDb
 } from './helpers/deployment.js'
-import { createNewClient, setupNewClient } from './helpers/up-client.js'
+import { createMailSlurpInbox, createNewClient, setupNewClient } from './helpers/up-client.js'
 import { randomFile } from './helpers/random.js'
 import { getTableItem, getAllTableRows, pollQueryTable } from './helpers/table.js'
 
@@ -116,11 +116,17 @@ test('authorizations can be blocked by email or domain', async t => {
 
 // Integration test for all flow from uploading a file to Kinesis events consumers and replicator
 test('w3infra integration flow', async t => {
-  const client = await setupNewClient(t.context.apiEndpoint)
+  const inbox = await createMailSlurpInbox()
+  const client = await setupNewClient(t.context.apiEndpoint, { inbox })
   const spaceDid = client.currentSpace()?.did()
   if (!spaceDid) {
     throw new Error('Testing space DID must be set')
   }
+
+  // it should be possible to create more than one space
+  const space = await client.createSpace("2nd space")
+  await client.setCurrentSpace(space.did())
+  await client.registerSpace(inbox.email)
 
   // Get space metrics before upload
   const spaceBeforeUploadAddMetrics = await getSpaceMetrics(t, spaceDid, SPACE_METRICS_NAMES.UPLOAD_ADD_TOTAL)
@@ -240,30 +246,32 @@ test('w3infra integration flow', async t => {
   })
 
   // Check filecoin piece computed after leaving queue
-  const pieces = await getPieces(t, shards[0].toString())
-  t.assert(pieces)
-  t.is(pieces?.length, 1)
-  t.truthy(pieces?.[0].piece)
+  if (process.env.DISABLE_PIECE_CID_COMPUTE !== 'true') {
+    const pieces = await getPieces(t, shards[0].toString())
+    t.assert(pieces)
+    t.is(pieces?.length, 1)
+    t.truthy(pieces?.[0].piece)
 
-  console.log('piece written', pieces?.[0].piece)
+    console.log('piece written', pieces?.[0].piece)
 
-  // Check roundabout can redirect from pieceCid to signed bucket url for car
-  const roundaboutEndpoint = await getRoundaboutEndpoint()
-  const roundaboutUrl = new URL(pieces?.[0].piece, roundaboutEndpoint)
-  console.log('checking roundabout', roundaboutUrl)
-  await pWaitFor(async () => {
-    try {
-      const res = await fetch(roundaboutUrl, {
-        method: 'HEAD',
-        redirect: 'manual'
-      })
-      return res.status === 302 && res.headers.get('location')?.includes(shards[0].toString())
-    } catch {}
-    return false
-  }, {
-    interval: 100,
-  })
-  console.log('roundabout redirected from piece to car', roundaboutUrl)
+    // Check roundabout can redirect from pieceCid to signed bucket url for car
+    const roundaboutEndpoint = await getRoundaboutEndpoint()
+    const roundaboutUrl = new URL(pieces?.[0].piece, roundaboutEndpoint)
+    console.log('checking roundabout', roundaboutUrl)
+    await pWaitFor(async () => {
+      try {
+        const res = await fetch(roundaboutUrl, {
+          method: 'HEAD',
+          redirect: 'manual'
+        })
+        return res.status === 302 && res.headers.get('location')?.includes(shards[0].toString())
+      } catch {}
+      return false
+    }, {
+      interval: 100,
+    })
+    console.log('roundabout redirected from piece to car', roundaboutUrl) 
+  }
 
   // Check metrics were updated
   if (beforeStoreAddSizeTotal && spaceBeforeUploadAddMetrics && spaceBeforeStoreAddSizeMetrics && beforeUploadAddTotal) {

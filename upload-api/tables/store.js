@@ -33,7 +33,7 @@ export function createStoreTable(region, tableName, options = {}) {
 /**
  * @param {DynamoDBClient} dynamoDb
  * @param {string} tableName
- * @returns {import('@web3-storage/upload-api').StoreTable & import('@web3-storage/upload-api').TestStoreTable}
+ * @returns {import('@web3-storage/upload-api').StoreTable}
  */
 export function useStoreTable(dynamoDb, tableName) {
   return {

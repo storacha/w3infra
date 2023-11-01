@@ -21,7 +21,17 @@ const AWS_REGION = process.env.AWS_REGION || 'us-west-2'
 async function computeHandler (event) {
   const {
     pieceTableName,
+    disablePieceCidCompute
   } = getEnv()
+
+  if (disablePieceCidCompute) {
+    const body = 'piece cid computation is disabled'
+    console.log(body)
+    return {
+      statusCode: 200,
+      body
+    }
+  }
 
   const record = parseEvent(event)
   if (!record) {
@@ -60,6 +70,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(computeHandler)
 function getEnv () {
   return {
     pieceTableName: mustGetEnv('PIECE_TABLE_NAME'),
+    disablePieceCidCompute: process.env.DISABLE_PIECE_CID_COMPUTE === 'true'
   }
 }
 
