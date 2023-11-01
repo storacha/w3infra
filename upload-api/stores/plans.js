@@ -1,17 +1,17 @@
 /**
  * 
- * @param {import("../types").CustomerTable} customerTable 
+ * @param {import("@web3-storage/w3infra-billing/lib/api").CustomerStore} customerStore
  * @returns {import("@web3-storage/upload-api").PlansStorage}
  */
-export function usePlansStore(customerTable) {
+export function usePlansStore(customerStore) {
   return {
     get: async (customer) => {
-      const result = await customerTable.get(customer)
-      if (result.ok){
+      const result = await customerStore.get({ customer })
+      if (result.ok) {
         return {
           ok: {
             product: /** @type {import("@ucanto/interface").DID} */(result.ok.product),
-            updatedAt: result.ok.updatedAt
+            updatedAt: result.ok.updatedAt.toISOString()
           }
         }
       } else {
@@ -25,11 +25,22 @@ export function usePlansStore(customerTable) {
     },
 
     set: async (customer, plan) => {
-      return {
-        error: {
-          name: 'Unimplemented',
-          message: 'PlansStorage#set is not implemented'
+      const result = await customerStore.get({ customer })
+      if (result.ok) {
+        customerStore.put({
+          ...result.ok,
+          product: plan
+        })
+        return { ok: {} }
+      } else if (result.error.name === 'RecordNotFound') {
+        return {
+          error: {
+            name: 'PlanNotFound',
+            message: 'Plan cannot be set until customer is created by Stripe webhook'
+          }
         }
+      } else {
+        return result
       }
     }
   }

@@ -21,12 +21,12 @@ import { createDelegationsTable } from '../tables/delegations.js'
 import { createDelegationsStore } from '../buckets/delegations-store.js'
 import { createSubscriptionTable } from '../tables/subscription.js'
 import { createConsumerTable } from '../tables/consumer.js'
-import { createCustomerTable } from '../tables/customer.js'
 import { createRateLimitTable } from '../tables/rate-limit.js'
 import { createSpaceMetricsTable } from '../tables/space-metrics.js'
 import { mustGetEnv } from './utils.js'
 import { createRevocationsTable } from '../stores/revocations.js'
 import { usePlansStore } from '../stores/plans.js'
+import { createCustomerStore } from '@web3-storage/w3infra-billing/tables/customer.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -132,8 +132,8 @@ export async function ucanInvocationRouter(request) {
   const consumerTable = createConsumerTable(AWS_REGION, consumerTableName, {
     endpoint: dbEndpoint
   });
-  const customerTable = createCustomerTable(AWS_REGION, customerTableName, { endpoint: dbEndpoint })
-  const plansStorage = usePlansStore(customerTable)
+  const customerStore = createCustomerStore({ region: AWS_REGION }, { tableName: customerTableName })
+  const plansStorage = usePlansStore(customerStore)
   const rateLimitsStorage = createRateLimitTable(AWS_REGION, rateLimitTableName)
   const spaceMetricsTable = createSpaceMetricsTable(AWS_REGION, spaceMetricsTableName)
 

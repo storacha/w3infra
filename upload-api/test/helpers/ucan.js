@@ -25,6 +25,8 @@ import { useWorkflowStore } from '../../buckets/workflow-store.js';
 import { useRateLimitTable } from '../../tables/rate-limit.js';
 import { useSpaceMetricsTable } from '../../tables/space-metrics.js';
 import { spaceMetricsTableProps } from '@web3-storage/w3infra-ucan-invocation/tables/index.js';
+import { createCustomerStore, customerTableProps } from '@web3-storage/w3infra-billing/tables/customer.js';
+import { usePlansStore } from '../../stores/plans.js';
 
 export { API }
 
@@ -172,7 +174,7 @@ export const encodeAgentMessage = async (source) => {
  * @returns {Promise<import('@web3-storage/upload-api').UcantoServerTestContext>}
  */
 
-export async function executionContextToUcantoTestServerContext (t) {
+export async function executionContextToUcantoTestServerContext(t) {
   const service = Signer.Signer.parse('MgCYWjE6vp0cn3amPan2xPO+f6EZ3I+KwuN1w2vx57vpJ9O0Bn4ci4jn8itwc121ujm7lDHkCW24LuKfZwIdmsifVysY=').withDID(
     'did:web:test.web3.storage'
   );
@@ -234,6 +236,8 @@ export async function executionContextToUcantoTestServerContext (t) {
     spaceMetricsTable,
     [service.did()]
   );
+  const customersStore = createCustomerStore(dynamo, { tableName: await createTable(dynamo, customerTableProps) })
+  const plansStorage = usePlansStore(customersStore)
   const email = new DebugEmail();
 
   /** @type {import('@web3-storage/upload-api').UcantoServerContext} */
@@ -246,8 +250,9 @@ export async function executionContextToUcantoTestServerContext (t) {
     delegationsStorage,
     rateLimitsStorage,
     revocationsStorage,
+    plansStorage,
     errorReporter: {
-      catch (error) {
+      catch(error) {
         t.fail(error.message);
       },
     },
