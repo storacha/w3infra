@@ -1,0 +1,33 @@
+{
+  "name": "@web3-storage/w3infra-billing",
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "test": "entail '**/*.spec.js'",
+    "coverage": "c8 -r text -r html npm test"
+  },
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.430.0",
+    "@aws-sdk/client-sqs": "^3.431.0",
+    "@aws-sdk/util-dynamodb": "^3.430.0",
+    "@sentry/serverless": "^7.74.1",
+    "@ucanto/interface": "^9.0.0",
+    "@ucanto/server": "^9.0.1",
+    "@web3-storage/capabilities": "^10.0.0",
+    "big.js": "^6.2.1",
+    "multiformats": "^12.1.2",
+    "p-retry": "^6.1.0",
+    "stripe": "^14.1.0",
+    "uint8arrays": "^4.0.6"
+  },
+  "devDependencies": {
+    "@types/big.js": "^6.2.1",
+    "aws-lambda": "^1.0.7",
+    "c8": "^8.0.1",
+    "entail": "^2.1.1",
+    "testcontainers": "^10.2.1"
+  },
+  "engines": {
+    "node": ">=16.15"
+  }
+}

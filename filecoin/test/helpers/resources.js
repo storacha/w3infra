@@ -30,7 +30,6 @@ export async function createDynamodDb(opts = {}) {
  * 
  * @typedef {import('@aws-sdk/client-dynamodb').CreateTableCommandInput} CreateTableCommandInput
  * @typedef {import('@serverless-stack/resources').TableProps} TableProps
- *
  * @param {TableProps} props
  * @returns {Pick<CreateTableCommandInput, 'AttributeDefinitions' | 'KeySchema' | 'GlobalSecondaryIndexes'>}
  */
@@ -47,11 +46,11 @@ export function dynamoDBTableConfig ({ fields, primaryIndex, globalIndexes = {} 
     .filter(([k]) => attributes.includes(k)) // 'The number of attributes in key schema must match the number of attributes defined in attribute definitions'
     .map(([k, v]) => ({
       AttributeName: k,
-      AttributeType: v[0].toUpperCase()
+      AttributeType: /** @type {import('@aws-sdk/client-dynamodb').ScalarAttributeType} */ (v[0].toUpperCase())
     }))
   const KeySchema = toKeySchema(primaryIndex)
   const GlobalSecondaryIndexes = Object.entries(globalIndexes)
-    .map(([IndexName, val]) => ({
+    .map(([IndexName, val]) => /** @type {import('@aws-sdk/client-dynamodb').GlobalSecondaryIndex} */ ({
       IndexName,
       KeySchema: toKeySchema(val),
       Projection: { ProjectionType: 'ALL' },
@@ -74,9 +73,8 @@ export function dynamoDBTableConfig ({ fields, primaryIndex, globalIndexes = {} 
  * @param {string} [index.sortKey]
  */
 function toKeySchema ({partitionKey, sortKey}) {
-  const KeySchema = [
-    { AttributeName: partitionKey, KeyType: 'HASH' }
-  ]
+  /** @type {import('@aws-sdk/client-dynamodb').KeySchemaElement[]} */
+  const KeySchema = [{ AttributeName: partitionKey, KeyType: 'HASH' }]
   if (sortKey) {
     KeySchema.push(
       { AttributeName: sortKey, KeyType: 'RANGE' }

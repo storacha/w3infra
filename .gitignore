@@ -14,3 +14,6 @@ cdk.context.json
 # local env files
 .env*.local
 .test-env.json
+
+# testing
+coverage

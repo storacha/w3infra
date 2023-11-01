@@ -14,6 +14,7 @@ The server-side implementation of the `store/*` and `upload/*` capabilities defi
 The repo contains the infra deployment code and the api implementation.
 
 ```
+├── billing         - usage accounting and reporting to the payment system
 ├── carpark         - lambda for announce new CARs in the carpark bucket
 ├── replicator      - lambda to replicate buckets to R2
 ├── satnav          - lambda to listen for new CARs and write CAR indexes in satnav
@@ -229,6 +230,10 @@ _Example:_ `MgCZG7EvaA...1pX9as=`
 The HTTP Basic auth token for the UCAN Invocation entrypoint, where UCAN invocations can be stored and proxied to the UCAN Stream.
 
 _Example:_ `MgCZG7EvaA...1pX9as=`
+
+#### `STRIPE_SECRET_KEY`
+
+Stripe API key for reporting per customer usage.
 
 ## HTTP API
 

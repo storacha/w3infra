@@ -41,8 +41,9 @@ export function dynamoDBTableConfig ({ fields, primaryIndex }) {
     .filter(([k]) => attributes.includes(k)) // 'The number of attributes in key schema must match the number of attributes defined in attribute definitions'
     .map(([k, v]) => ({
       AttributeName: k,
-      AttributeType: v[0].toUpperCase()
+      AttributeType: /** @type {import('@aws-sdk/client-dynamodb').ScalarAttributeType} */ (v[0].toUpperCase())
     }))
+  /** @type {import('@aws-sdk/client-dynamodb').KeySchemaElement[]} */
   const KeySchema = [
     { AttributeName: primaryIndex.partitionKey, KeyType: 'HASH' }
   ]
