@@ -89,9 +89,16 @@ export interface Customer {
   updatedAt: Date
 }
 
+export interface CustomerKey {
+  customer: CustomerDID
+}
+
 export interface CustomerListOptions extends Pageable {}
 
-export type CustomerStore = StoreLister<{}, Customer>
+export type CustomerStore =
+  & StoreGetter<CustomerKey, Customer>
+  & StorePutter<Customer>
+  & StoreLister<{}, Customer>
 
 /**
  * Captures storage usage by a given customer for a given space in the given

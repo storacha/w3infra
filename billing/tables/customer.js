@@ -1,5 +1,5 @@
-import { createStoreListerClient } from './client.js'
-import { decode } from '../data/customer.js'
+import { createStoreGetterClient, createStoreListerClient, createStorePutterClient } from './client.js'
+import { validate, encode, encodeKey, decode } from '../data/customer.js'
 
 /**
  * Stores customer details.
@@ -36,9 +36,12 @@ export const customerTableProps = {
  * @param {{ tableName: string }} context
  * @returns {import('../lib/api').CustomerStore}
  */
-export const createCustomerStore = (conf, { tableName }) =>
-  createStoreListerClient(conf, {
+export const createCustomerStore = (conf, { tableName }) => ({
+  ...createStoreGetterClient(conf, { tableName, encodeKey, decode }),
+  ...createStorePutterClient(conf, { tableName, validate, encode }),
+  ...createStoreListerClient(conf, {
     tableName,
     encodeKey: () => ({ ok: {} }),
     decode
   })
+})
