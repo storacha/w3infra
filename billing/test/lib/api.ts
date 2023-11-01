@@ -38,10 +38,17 @@ export interface SpaceBillingQueueTestContext {
   usageStore: UsageStore & StoreLister<UsageListKey, Usage>
 }
 
+export interface UCANStreamTestContext {
+  spaceDiffStore: SpaceDiffStore
+  subscriptionStore: SubscriptionStore & StorePutter<Subscription>
+  consumerStore: ConsumerStore & StorePutter<Consumer>
+}
+
 export type TestContext =
   & BillingCronTestContext
   & CustomerBillingQueueTestContext
   & SpaceBillingQueueTestContext
+  & UCANStreamTestContext
 
 /** QueueRemover can remove items from the head of the queue. */
 export interface QueueRemover<T> {
