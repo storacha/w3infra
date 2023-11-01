@@ -1,5 +1,5 @@
 import Big from 'big.js'
-import { asDIDMailto } from '../../data/lib.js'
+import { Schema } from '../../data/lib.js'
 import { mustGetEnv } from '../../functions/lib.js'
 import { createStoreListerClient } from '../../tables/client.js'
 import { getDynamo } from './lib.js'
@@ -12,8 +12,8 @@ const perGBMonth = 10
  * @param {string} customerParam
  * @param {string} fromParam
  */
-export const usage = async (customerParam, fromParam) => {
-  const customer = asDIDMailto(customerParam)
+export const usageGet = async (customerParam, fromParam) => {
+  const customer = Schema.did({ method: 'mailto' }).from(customerParam)
   const from = new Date(fromParam)
   if (isNaN(from.getTime())) {
     console.error('invalid ISO date')

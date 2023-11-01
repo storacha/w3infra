@@ -1,41 +1,36 @@
-import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
-import { createStorePutterClient } from '../../tables/client.js'
-import { encode } from '../../data/customer.js'
 import { randomLink } from '../../test/helpers/dag.js'
-import { asDIDMailto } from '../../data/lib.js'
+import { Schema } from '../../data/lib.js'
+import { createCustomerStore } from '../../tables/customer.js'
+import { mustGetEnv } from '../../functions/lib.js'
+import { getDynamo } from './lib.js'
 
 /**
  * Add a customer to the billing system. 
  * `customer` is a did:mailto: address and `account` is a Stripe customer ID.
  *
- *  $ billing customer add did:mailto:protocol.ai:test0 stripe:cus_9s6XKzkNRiz8i3 --product lite
- *  Added did:mailto:protocol.ai:test0
+ * $ billing customer add did:mailto:protocol.ai:test0 stripe:cus_9s6XKzkNRiz8i3 --product lite
+ * Added did:mailto:protocol.ai:test0
+ *
  * @param {string} rawCustomer
- * @param {string} account
+ * @param {string} rawAccount
  * @param {object} options
  * @param {string} options.product
  */
-export async function addCustomer (rawCustomer, account, options) {
-  console.log({rawCustomer, account, options})
-  const customer = asDIDMailto(rawCustomer)
+export async function customerAdd (rawCustomer, rawAccount, options) {
+  const customer = Schema.did({ method: 'mailto' }).from(rawCustomer)
+  const account = Schema.uri({ protocol: 'stripe:' }).from(rawAccount)
   const product = options.product ?? 'lite'
   const now = new Date()
-  const tableName = process.env.CUSTOMER_TABLE_NAME
-  if (!tableName) {
-    throw new Error('CUSTOMER_TABLE_NAME must be set in ENV')
-  }
-  const region = process.env.AWS_REGION
-  const dynamo = new DynamoDBClient({ region })
-  const validate = () => { return {ok: ''} }
-  const store = createStorePutterClient(dynamo, { tableName, encode, validate })
-  const record = {
+  const tableName = mustGetEnv('CUSTOMER_TABLE_NAME')
+  const dynamo = getDynamo()
+  const customerStore = createCustomerStore(dynamo, { tableName })
+  const res = await customerStore.put({
     cause: randomLink(),
     account,
     customer,
     product,
     insertedAt: now,
     updatedAt: now,
-  }
-  const res = await store.put(record)
+  })
   console.log(res)
 }
