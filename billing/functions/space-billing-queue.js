@@ -1,10 +1,10 @@
 import * as Sentry from '@sentry/serverless'
-import { mustGetEnv } from './lib.js'
+import { expect, mustGetEnv } from './lib.js'
 import * as SpaceBillingInstruction from '../data/space-billing-instruction.js'
 import { createSpaceDiffStore } from '../tables/space-diff.js'
 import { createSpaceSnapshotStore } from '../tables/space-snapshot.js'
 import { createUsageStore } from '../tables/usage.js'
-import { handleSpaceBillingInstruction } from '../lib/space-billing-queue.js'
+import { calculatePeriodUsage, storeSpaceUsage } from '../lib/space-billing-queue.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -34,8 +34,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(
     const usageTable = customContext?.usageTable ?? mustGetEnv('USAGE_TABLE_NAME')
     const region = customContext?.region ?? mustGetEnv('AWS_REGION')
 
-    const { ok: instructions, error } = parseSpaceBillingInstructionEvent(event)
-    if (error) throw error
+    const instructions = parseSpaceBillingInstructionEvent(event)
 
     const ctx = {
       spaceDiffStore: createSpaceDiffStore({ region }, { tableName: spaceDiffTable }),
@@ -43,22 +42,30 @@ export const handler = Sentry.AWSLambda.wrapHandler(
       usageStore: createUsageStore({ region }, { tableName: usageTable })
     }
     for (const instruction of instructions) {
-      const { error } = await handleSpaceBillingInstruction(instruction, ctx)
-      if (error) throw error
+      const calculation = expect(
+        await calculatePeriodUsage(instruction, ctx),
+        `calculating period usage: ${instruction.space} customer: ${instruction.customer} in period: ${instruction.from} - ${instruction.to}`
+      )
+      expect(
+        await storeSpaceUsage(instruction, calculation, ctx),
+        `storing calculated usage for: ${instruction.space} customer: ${instruction.customer} in period: ${instruction.from} - ${instruction.to}`
+      )
     }
   }
 )
 
 /**
  * @param {import('aws-lambda').SQSEvent} event
- * @returns {import('@ucanto/interface').Result<import('../lib/api.js').SpaceBillingInstruction[], import('../lib/api.js').DecodeFailure>}
+ * @returns {import('../lib/api.js').SpaceBillingInstruction[]}
  */
 const parseSpaceBillingInstructionEvent = (event) => {
   const instructions = []
   for (const record of event.Records) {
-    const res = SpaceBillingInstruction.decode(record.body)
-    if (res.error) return res
-    instructions.push(res.ok)
+    const instruction = expect(
+      SpaceBillingInstruction.decode(record.body),
+      'decoding space billing instruction'
+    )
+    instructions.push(instruction)
   }
-  return { ok: instructions }
+  return instructions
 }

@@ -9,7 +9,7 @@ import { validate, encode } from '../data/usage.js'
 export const usageTableProps = {
   fields: {
     /** from#provider#space */
-    SK: 'string',
+    sk: 'string',
     /** Customer DID (did:mailto:...). */
     customer: 'string',
     /**
@@ -33,7 +33,7 @@ export const usageTableProps = {
     /** ISO timestamp we created the invoice. */
     insertedAt: 'string'
   },
-  primaryIndex: { partitionKey: 'customer', sortKey: 'SK' }
+  primaryIndex: { partitionKey: 'customer', sortKey: 'sk' }
 }
 
 /**

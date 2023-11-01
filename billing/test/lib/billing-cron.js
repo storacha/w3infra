@@ -1,4 +1,5 @@
-import { handleCronTick } from '../../lib/billing-cron.js'
+import { startOfLastMonth, startOfMonth, } from '../../lib/util.js'
+import { enqueueCustomerBillingInstructions } from '../../lib/billing-cron.js'
 import { randomCustomer } from '../helpers/customer.js'
 import { collectQueueMessages } from '../helpers/queue.js'
 
@@ -14,7 +15,8 @@ export const test = {
     }
 
     const now = new Date()
-    const handled = await handleCronTick(ctx)
+    const period = { from: startOfLastMonth(now), to: startOfMonth(now) }
+    const handled = await enqueueCustomerBillingInstructions(period, ctx)
     assert.ok(handled.ok)
 
     const collected = await collectQueueMessages(ctx.customerBillingQueue)
@@ -22,18 +24,8 @@ export const test = {
     assert.equal(collected.ok.length, customers.length)
 
     for (const instruction of collected.ok) {
-      assert.equal(instruction.to.getUTCFullYear(), now.getUTCFullYear())
-      assert.equal(instruction.to.getUTCMonth(), now.getUTCMonth())
-      assert.equal(instruction.to.getUTCDate(), 1)
-      assert.equal(instruction.to.getUTCHours(), 0)
-      assert.equal(instruction.to.getUTCMinutes(), 0)
-      assert.equal(instruction.to.getUTCSeconds(), 0)
-      assert.equal(instruction.to.getUTCMilliseconds(), 0)
-
-      // the expected "from" date is the "to" date - 1 month
-      const from = new Date(instruction.to.toISOString())
-      from.setUTCMonth(instruction.to.getUTCMonth() - 1)
-      assert.equal(instruction.from.toISOString(), from.toISOString())
+      assert.equal(instruction.from.getTime(), period.from.getTime())
+      assert.equal(instruction.to.getTime(), period.to.getTime())
     }
 
     // ensure we got a billing instruction for each customer

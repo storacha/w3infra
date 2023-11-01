@@ -1,17 +1,21 @@
-import { startOfLastMonth, startOfMonth, } from './util.js'
-
 /**
+ * Add a billing instruction for the given time period to the queue for every
+ * customer in the store.
+ *
+ * A failure to enqueue data for all customers will require this function to be
+ * called again with the same data, since there is no way to resume (customers
+ * are always being added to the table). It must be possible to do this safely
+ * so that failures do not cause some customers to be billed multiple times in
+ * the same period when a failure occurs.
+ *
+ * @param {{ from: Date, to: Date }} period
  * @param {{
  *   customerStore: import('./api.js').CustomerStore
  *   customerBillingQueue: import('./api.js').CustomerBillingQueue
  * }} ctx
- * @param {{ period?: { from: Date, to: Date } }} [options]
- * @returns {Promise<import('@ucanto/interface').Result>}
+ * @returns {Promise<import('@ucanto/interface').Result<import('@ucanto/interface').Unit>>}
  */
-export const handleCronTick = async (ctx, options) => {
-  const from = options?.period?.from ?? startOfLastMonth()
-  const to = options?.period?.to ?? startOfMonth()
-
+export const enqueueCustomerBillingInstructions = async (period, ctx) => {
   /** @type {string|undefined} */
   let cursor
   while (true) {
@@ -24,12 +28,12 @@ export const handleCronTick = async (ctx, options) => {
         customer: c.customer,
         account: c.account,
         product: c.product,
-        from,
-        to
+        from: period.from,
+        to: period.to
       })
       if (queueAdd.error) return queueAdd
     }
-    
+
     if (!customerList.ok.cursor) break
     cursor = customerList.ok.cursor
   }

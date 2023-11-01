@@ -1,8 +1,9 @@
 import * as Sentry from '@sentry/serverless'
-import { mustGetEnv } from './lib.js'
+import { expect, mustGetEnv } from './lib.js'
 import { createCustomerStore } from '../tables/customer.js'
 import { createCustomerBillingQueue } from '../queues/customer.js'
-import { handleCronTick } from '../lib/billing-cron.js'
+import { startOfLastMonth, startOfMonth } from '../lib/util.js'
+import { enqueueCustomerBillingInstructions } from '../lib/billing-cron.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -30,7 +31,9 @@ export const handler = Sentry.AWSLambda.wrapHandler(
     const customerBillingQueueURL = new URL(customContext?.customerBillingQueueURL ?? mustGetEnv('CUSTOMER_BILLING_QUEUE_URL'))
     const region = customContext?.region ?? mustGetEnv('AWS_REGION')
 
-    let options
+    const now = new Date()
+    let period = { from: startOfLastMonth(now), to: startOfMonth(now) }
+
     if ('rawQueryString' in event) {
       const { searchParams } = new URL(`http://localhost/?${event.rawQueryString}`)
       const fromParam = searchParams.get('from')
@@ -47,15 +50,17 @@ export const handler = Sentry.AWSLambda.wrapHandler(
         if (from.getTime() >= to.getTime()) {
           throw new Error('from date must be less than to date')
         }
-        options = { period: { from, to } }
+        period = { from, to }
       }
     }
 
-    const { error } = await handleCronTick({
-      customerStore: createCustomerStore({ region }, { tableName: customerTable }),
-      customerBillingQueue: createCustomerBillingQueue({ region }, { url: customerBillingQueueURL })
-    }, options)
-    if (error) throw error
+    expect(
+      await enqueueCustomerBillingInstructions(period, {
+        customerStore: createCustomerStore({ region }, { tableName: customerTable }),
+        customerBillingQueue: createCustomerBillingQueue({ region }, { url: customerBillingQueueURL })
+      }),
+      `adding customer billing instructions for period: ${period.from} - ${period.to}`
+    )
   }
 )
 

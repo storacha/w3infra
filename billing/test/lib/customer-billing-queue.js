@@ -1,4 +1,4 @@
-import { handleCustomerBillingInstruction } from '../../lib/customer-billing-queue.js'
+import { enqueueSpaceBillingInstructions } from '../../lib/customer-billing-queue.js'
 import { startOfLastMonth, startOfMonth, } from '../../lib/util.js'
 import { randomConsumer } from '../helpers/consumer.js'
 import { randomCustomer } from '../helpers/customer.js'
@@ -33,16 +33,17 @@ export const test = {
       await ctx.subscriptionStore.put(s)
     }
 
+    const now = new Date()
     /** @type {import('../../lib/api.js').CustomerBillingInstruction} */
     const instruction = {
       customer: customer.customer,
       account: customer.account,
       product: customer.product,
-      from: startOfLastMonth(),
-      to: startOfMonth()
+      from: startOfLastMonth(now),
+      to: startOfMonth(now)
     }
 
-    const handled = await handleCustomerBillingInstruction(instruction, ctx)
+    const handled = await enqueueSpaceBillingInstructions(instruction, ctx)
     assert.ok(handled.ok)
 
     const collected = await collectQueueMessages(ctx.spaceBillingQueue)

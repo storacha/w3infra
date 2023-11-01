@@ -1,38 +1,22 @@
 import * as dagJSON from '@ipld/dag-json'
-import { EncodeFailure, DecodeFailure, InvalidInput, isDIDMailto, isDID, isDIDWeb } from './lib.js'
+import { EncodeFailure, DecodeFailure, Schema } from './lib.js'
 
 /**
  * @typedef {import('../lib/api').SpaceBillingInstruction} SpaceBillingInstruction
  */
 
+export const schema = Schema.struct({
+  customer: Schema.did({ method: 'mailto' }),
+  space: Schema.did(),
+  provider: Schema.did({ method: 'web' }),
+  account: Schema.uri({ protocol: 'stripe:' }),
+  product: Schema.text(),
+  from: Schema.date(),
+  to: Schema.date()
+})
+
 /** @type {import('../lib/api').Validator<SpaceBillingInstruction>} */
-export const validate = input => {
-  if (input == null || typeof input !== 'object') {
-    return { error: new InvalidInput('not an object') }
-  }
-  if (!isDIDMailto(input.customer)) {
-    return { error: new InvalidInput('not a DID', 'customer') }
-  }
-  if (!isDID(input.space)) {
-    return { error: new InvalidInput('not a DID', 'space') }
-  }
-  if (!isDIDWeb(input.provider)) {
-    return { error: new InvalidInput('not a web DID', 'provider') }
-  }
-  if (typeof input.account !== 'string') {
-    return { error: new InvalidInput('not a string', 'account') }
-  }
-  if (typeof input.product !== 'string') {
-    return { error: new InvalidInput('not a string', 'product') }
-  }
-  if (!(input.from instanceof Date)) {
-    return { error: new InvalidInput('not a Date instance', 'from') }
-  }
-  if (!(input.to instanceof Date)) {
-    return { error: new InvalidInput('not a Date instance', 'to') }
-  }
-  return { ok: {} }
-}
+export const validate = input => schema.read(input)
 
 /** @type {import('../lib/api').Encoder<SpaceBillingInstruction, string>} */
 export const encode = message => {
@@ -60,7 +44,7 @@ export const decode = str => {
       ok: {
         ...data,
         from: new Date(data.from),
-        to: new Date(data.from)
+        to: new Date(data.to)
       }
     }
   } catch (/** @type {any} */ err) {

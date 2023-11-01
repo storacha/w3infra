@@ -1,39 +1,58 @@
-import { DID, Link, LinkJSON, Result, Capabilities, Unit, Failure } from '@ucanto/interface'
+import { DID, Link, URI, LinkJSON, Result, Capabilities, Unit, Failure } from '@ucanto/interface'
 
 // Billing stores /////////////////////////////////////////////////////////////
 
-/** Captures a size change that occurred in a space. */
+/**
+ * Captures a size change that occurred for a given resource due to a
+ * service invocation sucha s store/add or store/remove.
+ */
+export interface UsageDelta {
+  /** Resource that changed size. */
+  resource: DID
+  /** UCAN invocation that caused the size change. */
+  cause: Link
+  /** Number of bytes that were added/removed from the resource. */
+  delta: number
+  /** Time the receipt was issued by the service. */
+  receiptAt: Date
+}
+
+/** Captures a size change that occurred in a space for a given customer. */
 export interface SpaceDiff {
   /** Storage provider for the space. */
-  provider: DID<'web'>
+  provider: ProviderDID
   /** Space that changed size. */
-  space: DID
+  space: ConsumerDID
   /** Customer responsible for paying for the space at the time the size changed. */
-  customer: DID<'mailto'>
+  customer: CustomerDID
   /** Subscription in use when the size changed. */
   subscription: string
   /** UCAN invocation that caused the size change. */
   cause: Link
   /** Number of bytes that were added/removed from the space. */
-  change: number
+  delta: number
   /** Time the receipt was issued by the service. */
   receiptAt: Date
   /** Time the change was added to the database. */
   insertedAt: Date
 }
 
-export interface SpaceDiffKey { customer: DID<'mailto'> }
-
-export interface SpaceDiffStore extends StorePutter<SpaceDiff> {
-  listBetween: (key: SpaceDiffKey, from: Date, to: Date, options?: Pageable) => Promise<Result<ListSuccess<SpaceDiff>, EncodeFailure|DecodeFailure|StoreOperationFailure>>
+export interface SpaceDiffListKey {
+  customer: CustomerDID
+  provider: ProviderDID
+  space: ConsumerDID
+  /** Receipt time the diffs should be listed from (inclusive). */
+  from: Date
 }
+
+export interface SpaceDiffStore extends StorePutter<SpaceDiff>, StoreLister<SpaceDiffListKey, SpaceDiff>{}
 
 /** Captures size of a space at a given point in time. */
 export interface SpaceSnapshot {
   /** Storage provider this snapshot refers to. */
-  provider: DID<'web'>
+  provider: ProviderDID
   /** Space this snapshot refers to. */
-  space: DID
+  space: ConsumerDID
   /** Total allocated size in bytes. */
   size: bigint
   /** Time the total allocated size was recorded at. */
@@ -42,7 +61,7 @@ export interface SpaceSnapshot {
   insertedAt: Date
 }
 
-export interface SpaceSnapshotKey { provider: DID<'web'>, space: DID, recordedAt: Date }
+export interface SpaceSnapshotKey { provider: ProviderDID, space: ConsumerDID, recordedAt: Date }
 
 export type SpaceSnapshotStore =
   & StorePutter<SpaceSnapshot>
@@ -54,18 +73,18 @@ export type SpaceSnapshotStore =
  */
 export interface Customer {
   /** CID of the UCAN invocation that set it to the current value. */
-  cause: Link,
+  cause: Link
   /** DID of the user account e.g. `did:mailto:agent`. */
-  customer: DID<'mailto'>,
+  customer: CustomerDID
   /**
    * Opaque identifier representing an account in the payment system
    * e.g. Stripe customer ID (stripe:cus_9s6XKzkNRiz8i3)
    */
-  account: string,
+  account: AccountID
   /** Unique identifier of the product a.k.a tier. */
-  product: string,
+  product: string
   /** Time the record was added to the database. */
-  insertedAt: Date,
+  insertedAt: Date
   /** Time the record was updated in the database. */
   updatedAt: Date
 }
@@ -80,19 +99,19 @@ export type CustomerStore = StoreLister<{}, Customer>
  */
 export interface Usage {
   /** Customer DID (did:mailto:...). */
-  customer: DID<'mailto'>
+  customer: CustomerDID
   /**
    * Opaque identifier representing an account in the payment system.
    * 
    * e.g. Stripe customer ID (stripe:cus_9s6XKzkNRiz8i3)
    */
-  account: string
+  account: AccountID
   /** Unique identifier of the product a.k.a tier. */
   product: string
   /** Storage provider for the space. */
-  provider: DID<'web'>
+  provider: ProviderDID
   /** Space DID (did:key:...). */
-  space: DID
+  space: ConsumerDID
   /** Usage in byte/ms */
   usage: bigint
   /** Time the usage period spans from (inclusive). */
@@ -103,7 +122,7 @@ export interface Usage {
   insertedAt: Date
 }
 
-export interface UsageListKey { customer: DID<'mailto'>, from: Date }
+export interface UsageListKey { customer: CustomerDID, from: Date }
 
 export type UsageStore = StorePutter<Usage>
 
@@ -115,13 +134,13 @@ export type UsageStore = StorePutter<Usage>
  */
 export interface CustomerBillingInstruction {
   /** Customer DID (did:mailto:...). */
-  customer: DID<'mailto'>
+  customer: CustomerDID
   /**
    * Opaque identifier representing an account in the payment system.
    * 
    * e.g. Stripe customer ID (stripe:cus_9s6XKzkNRiz8i3)
    */
-  account: string
+  account: AccountID
   /** Unique identifier of the product a.k.a tier. */
   product: string
   /** Time the billing period spans from (inlusive). */
@@ -138,9 +157,9 @@ export type CustomerBillingQueue = QueueAdder<CustomerBillingInstruction>
  */
 export interface SpaceBillingInstruction extends CustomerBillingInstruction {
   /** Space DID (did:key:...). */
-  space: DID
+  space: ConsumerDID
   /** Storage provider for the space. */
-  provider: DID<'web'>
+  provider: ProviderDID
 }
 
 export type SpaceBillingQueue = QueueAdder<SpaceBillingInstruction>
@@ -148,32 +167,32 @@ export type SpaceBillingQueue = QueueAdder<SpaceBillingInstruction>
 // Upload API stores //////////////////////////////////////////////////////////
 
 export interface Consumer {
-  consumer: DID
-  provider: DID<'web'>
+  consumer: ConsumerDID
+  provider: ProviderDID
   subscription: string
   cause: Link
   insertedAt: Date
   updatedAt: Date
 }
 
-export interface ConsumerKey { subscription: string, provider: DID<'web'> }
-export interface ConsumerListKey { consumer: DID }
+export interface ConsumerKey { subscription: string, provider: ProviderDID }
+export interface ConsumerListKey { consumer: ConsumerDID }
 
 export type ConsumerStore =
   & StoreGetter<ConsumerKey, Consumer>
   & StoreLister<ConsumerListKey, Pick<Consumer, 'consumer'|'provider'|'subscription'>>
 
 export interface Subscription {
-  customer: DID<'mailto'>
-  provider: DID<'web'>
+  customer: CustomerDID
+  provider: ProviderDID
   subscription: string
   cause: Link
   insertedAt: Date
   updatedAt: Date
 }
 
-export interface SubscriptionKey { provider: DID<'web'>, subscription: string }
-export interface SubscriptionListKey { customer: DID<'mailto'> }
+export interface SubscriptionKey { provider: ProviderDID, subscription: string }
+export interface SubscriptionListKey { customer: CustomerDID }
 
 export type SubscriptionStore =
   & StoreGetter<SubscriptionKey, Subscription>
@@ -212,6 +231,11 @@ export type UcanStreamMessage<C extends Capabilities = Capabilities> = UcanWorkf
 
 // Utility ////////////////////////////////////////////////////////////////////
 
+export type ConsumerDID = DID
+export type CustomerDID = DID<'mailto'>
+export type ProviderDID = DID<'web'>
+export type AccountID = URI<'stripe:'>
+
 export interface ListSuccess<R> {
   /**
    * Opaque string specifying where to start retrival of the next page of
@@ -237,12 +261,7 @@ export type Encoder<I, O> = (input: I) => Result<O, EncodeFailure>
 
 export type Decoder<I, O> = (input: I) => Result<O, DecodeFailure>
 
-export type Validator<T> = (input: T) => Result<Unit, InvalidInput>
-
-export interface InvalidInput extends Failure {
-  name: 'InvalidInput'
-  field?: string
-}
+export type Validator<T> = (input: unknown) => Result<T, Failure>
 
 export interface EncodeFailure extends Failure {
   name: 'EncodeFailure'
@@ -268,7 +287,7 @@ export interface RecordNotFound<K> extends Failure {
 /** StorePutter allows a single item to be put in the store by it's key. */
 export interface StorePutter<T> {
   /** Puts a single item into the store by it's key */
-  put: (rec: T) => Promise<Result<Unit, InvalidInput|EncodeFailure|StoreOperationFailure>>
+  put: (rec: T) => Promise<Result<Unit, EncodeFailure|StoreOperationFailure|Failure>>
 }
 
 /** StoreGetter allows a single item to be retrieved by it's key. */
@@ -286,5 +305,5 @@ export interface StoreLister<K extends {}, V> {
 /** QueueAdder allows messages to be added to the end of the queue. */
 export interface QueueAdder<T> {
   /** Adds a message to the end of the queue. */
-  add: (message: T) => Promise<Result<Unit, InvalidInput|EncodeFailure|QueueOperationFailure>>
+  add: (message: T) => Promise<Result<Unit, EncodeFailure|QueueOperationFailure|Failure>>
 }

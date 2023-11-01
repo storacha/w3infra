@@ -97,17 +97,17 @@
         "x": 0,
         "y": 0,
         "w": 1616,
-        "h": 941
+        "h": 695
       },
       "zoomBrush": null,
-      "isGridMode": false,
+      "isGridMode": true,
       "isPenMode": false,
       "chatMessage": "",
       "isChatting": false,
       "highlightedUserIds": [],
       "canMoveCamera": true,
       "isFocused": true,
-      "devicePixelRatio": 2,
+      "devicePixelRatio": 2.880000114440918,
       "isCoarsePointer": false,
       "isHoveringCanvas": true,
       "openMenus": [],
@@ -198,9 +198,9 @@
     {
       "id": "pointer:pointer",
       "typeName": "pointer",
-      "x": 2352.10531485054,
-      "y": 499.2981205649811,
-      "lastActivityTimestamp": 1698251531131,
+      "x": 1517.5359828032294,
+      "y": 860.6868269627587,
+      "lastActivityTimestamp": 1698759619789,
       "meta": {}
     },
     {
@@ -211,9 +211,9 @@
       "typeName": "page"
     },
     {
-      "x": 988.3361104831408,
-      "y": 526.2127452943588,
-      "z": 0.3846025192229394,
+      "x": -334.089915234556,
+      "y": -513.5289193767669,
+      "z": 0.9940316206524016,
       "meta": {},
       "id": "camera:page:Rrzf2lpl3e1GzXW65i7-e",
       "typeName": "camera"
@@ -2227,49 +2227,6 @@
       "typeName": "shape"
     },
     {
-      "x": 491.3873746286745,
-      "y": -84.4075253309586,
-      "rotation": 0,
-      "isLocked": false,
-      "opacity": 1,
-      "meta": {},
-      "type": "arrow",
-      "parentId": "page:Rrzf2lpl3e1GzXW65i7-e",
-      "index": "a4",
-      "props": {
-        "dash": "draw",
-        "size": "m",
-        "fill": "none",
-        "color": "black",
-        "labelColor": "black",
-        "bend": 63.088295294110814,
-        "start": {
-          "type": "binding",
-          "boundShapeId": "shape:o1J2jZEUCBCZuQzt4hE5r",
-          "normalizedAnchor": {
-            "x": 0.5,
-            "y": 0.5
-          },
-          "isExact": false
-        },
-        "end": {
-          "type": "binding",
-          "boundShapeId": "shape:isT8vZhDfzbWWknw4hUg0",
-          "normalizedAnchor": {
-            "x": 0.24738139248305607,
-            "y": 0.4431764146457442
-          },
-          "isExact": false
-        },
-        "arrowheadStart": "none",
-        "arrowheadEnd": "arrow",
-        "text": "",
-        "font": "draw"
-      },
-      "id": "shape:7Ilt_4XiLYEd4V1zcD6N9",
-      "typeName": "shape"
-    },
-    {
       "x": 491.1920621286745,
       "y": -209.0403378309586,
       "rotation": 0,
@@ -2621,8 +2578,8 @@
       "typeName": "shape"
     },
     {
-      "x": 336.9889371286745,
-      "y": -26.665337830958606,
+      "x": 325.73571250314603,
+      "y": -14.268313986259955,
       "rotation": 0,
       "isLocked": false,
       "opacity": 1,
@@ -2716,8 +2673,8 @@
       "typeName": "shape"
     },
     {
-      "x": 1177.1682730696086,
-      "y": 815.2543786722676,
+      "x": 1180,
+      "y": 800,
       "rotation": 0,
       "isLocked": false,
       "opacity": 1,
@@ -2727,7 +2684,7 @@
         "color": "grey",
         "size": "s",
         "w": 250.5234375,
-        "text": "space: DID string (pk)\nprovider: DID string (pk)\nsize: bytes bigint\nrecordedAt: ISO string (sk)\ninsertedAt: ISO string",
+        "text": "pk: provider#space\nspace: DID string\nprovider: DID string\nsize: bytes bigint\nrecordedAt: ISO string (sk)\ninsertedAt: ISO string",
         "font": "draw",
         "align": "start",
         "autoSize": true,
@@ -2739,8 +2696,8 @@
       "typeName": "shape"
     },
     {
-      "x": 1171.0965685151855,
-      "y": 535.6470287622534,
+      "x": 1180,
+      "y": 520,
       "rotation": 0,
       "isLocked": false,
       "opacity": 1,
@@ -2749,8 +2706,8 @@
       "props": {
         "color": "grey",
         "size": "s",
-        "w": 237.3984375,
-        "text": "customer: DID string (pk)\nspace: DID string\nprovider: DID string\nsubscription: string\ncause: CID string\nchange: +/- bytes number\nreceiptAt: ISO string (sk)\ninsertedAt: ISO string",
+        "w": 282.6640625,
+        "text": "pk: customer#provider#space\nsk: receiptAt#cause\ncustomer: DID string\nspace: DID string\nprovider: DID string\nsubscription: string\ncause: CID string\ndelta: +/- bytes number\nreceiptAt: ISO string\ninsertedAt: ISO string",
         "font": "draw",
         "align": "start",
         "autoSize": true,
@@ -2785,8 +2742,8 @@
       "typeName": "shape"
     },
     {
-      "x": 592.3135183142415,
-      "y": 15.446654759247565,
+      "x": 608.2387228273035,
+      "y": 15.402662481587129,
       "rotation": 0,
       "isLocked": false,
       "opacity": 1,
@@ -2895,8 +2852,8 @@
       "typeName": "shape"
     },
     {
-      "x": 1166.9889371286745,
-      "y": -216.6653378309586,
+      "x": 1166.1575420095921,
+      "y": -211.8998774020152,
       "rotation": 0,
       "isLocked": false,
       "opacity": 1,
@@ -3154,8 +3111,8 @@
       "typeName": "shape"
     },
     {
-      "x": 1010,
-      "y": 480,
+      "x": 1012.2613037556714,
+      "y": 466.77479924713475,
       "rotation": 0,
       "isLocked": false,
       "opacity": 1,
@@ -3305,8 +3262,8 @@
       "props": {
         "color": "grey",
         "size": "s",
-        "w": 234.484375,
-        "text": "customer: DID string (pk)\naccount: Stripe ID\nproduct: plan string\nspace: DID string\nprovider: DID string\nusage: bytes/ms bigint\nfrom: ISO string (sk)\nto: ISO string\ninsertedAt: ISO string",
+        "w": 239.953125,
+        "text": "sk: from#provider#space\ncustomer: DID string (pk)\naccount: Stripe ID\nproduct: plan string\nspace: DID string\nprovider: DID string\nusage: bytes/ms bigint\nfrom: ISO string\nto: ISO string\ninsertedAt: ISO string",
         "font": "draw",
         "align": "start",
         "autoSize": true,
@@ -4166,8 +4123,8 @@
       "typeName": "shape"
     },
     {
-      "x": 594.6091426934137,
-      "y": 356.6797094952088,
+      "x": 610,
+      "y": 350,
       "rotation": 0,
       "isLocked": false,
       "opacity": 1,
@@ -4243,13 +4200,13 @@
         "fill": "none",
         "color": "black",
         "labelColor": "black",
-        "bend": 59.29817340080134,
+        "bend": 72.2305996408804,
         "start": {
           "type": "binding",
           "boundShapeId": "shape:jH_iohlQG86dkcjXfjV4E",
           "normalizedAnchor": {
-            "x": 0.24231590669034775,
-            "y": 0.7445996868219646
+            "x": 0.3584555197137842,
+            "y": 0.8296807518171636
           },
           "isExact": false
         },
@@ -4271,8 +4228,8 @@
       "typeName": "shape"
     },
     {
-      "x": 418.03878648327975,
-      "y": 300.0660897292591,
+      "x": 405.81773174922273,
+      "y": 306.33059006809896,
       "rotation": 0,
       "isLocked": false,
       "opacity": 1,
@@ -4450,7 +4407,6 @@
       "isLocked": false,
       "opacity": 1,
       "meta": {},
-      "id": "shape:JBYrblWvEihvMxkkjrzfN",
       "type": "geo",
       "props": {
         "w": 616.7995382071097,
@@ -4470,6 +4426,46 @@
       },
       "parentId": "page:Rrzf2lpl3e1GzXW65i7-e",
       "index": "a0",
+      "id": "shape:JBYrblWvEihvMxkkjrzfN",
+      "typeName": "shape"
+    },
+    {
+      "x": 471.3972836597922,
+      "y": -74.81280957322707,
+      "rotation": 0,
+      "isLocked": false,
+      "opacity": 1,
+      "meta": {},
+      "type": "arrow",
+      "parentId": "page:Rrzf2lpl3e1GzXW65i7-e",
+      "index": "a2V",
+      "props": {
+        "dash": "draw",
+        "size": "m",
+        "fill": "none",
+        "color": "black",
+        "labelColor": "black",
+        "bend": 63.088295294110814,
+        "start": {
+          "type": "point",
+          "x": 5.6015625,
+          "y": 2.7421875
+        },
+        "end": {
+          "type": "binding",
+          "boundShapeId": "shape:isT8vZhDfzbWWknw4hUg0",
+          "normalizedAnchor": {
+            "x": 0.15301077393566562,
+            "y": 0.583929389751405
+          },
+          "isExact": false
+        },
+        "arrowheadStart": "none",
+        "arrowheadEnd": "arrow",
+        "text": "",
+        "font": "draw"
+      },
+      "id": "shape:7Ilt_4XiLYEd4V1zcD6N9",
       "typeName": "shape"
     },
     {

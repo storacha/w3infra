@@ -8,8 +8,8 @@ import { validate, encode, decode, encodeKey } from '../data/space-snapshot.js'
  */
 export const spaceSnapshotTableProps = {
   fields: {
-    /** space#provider */
-    PK: 'string',
+    /** provider#space */
+    pk: 'string',
     /**
      * CSV Space DID and Provider DID.
      *
@@ -25,7 +25,7 @@ export const spaceSnapshotTableProps = {
     /** ISO timestamp record was inserted. */
     insertedAt: 'string'
   },
-  primaryIndex: { partitionKey: 'PK', sortKey: 'recordedAt' }
+  primaryIndex: { partitionKey: 'pk', sortKey: 'recordedAt' }
 }
 
 /**

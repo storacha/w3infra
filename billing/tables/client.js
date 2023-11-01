@@ -25,7 +25,7 @@ export const createStorePutterClient = (conf, context) => {
       const validation = context.validate(record)
       if (validation.error) return validation
 
-      const encoding = context.encode(record)
+      const encoding = context.encode(validation.ok)
       if (encoding.error) return encoding
 
       const cmd = new PutItemCommand({
