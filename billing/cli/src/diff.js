@@ -1,12 +1,9 @@
-import { QueryCommand } from '@aws-sdk/client-dynamodb'
-import * as Consumer from '../../data/consumer.js'
 import { randomLink } from '../../test/helpers/dag.js'
 import { expect, mustGetEnv } from '../../functions/lib.js'
-import { marshall, unmarshall } from '@aws-sdk/util-dynamodb'
 import Bytes from 'bytes'
 import { createSubscriptionStore } from '../../tables/subscription.js'
 import { createSpaceDiffStore } from '../../tables/space-diff.js'
-import { getDynamo, isValidDate } from './lib.js'
+import { getConsumerBySpace, getDynamo, isValidDate } from './lib.js'
 
 /**
  * Remove some bytes from the space at the passed ISO timestamp.
@@ -71,27 +68,4 @@ async function insertDiff (space, delta, datetime) {
     receiptAt
   })
   console.log(res)
-}
-
-/**
- * @param {import('@aws-sdk/client-dynamodb').DynamoDBClient} dynamo
- * @param {string} space
- */
-async function getConsumerBySpace (dynamo, space) {
-  const res = await dynamo.send(new QueryCommand({
-    TableName: mustGetEnv('CONSUMER_TABLE_NAME'),
-    IndexName: 'consumer',
-    KeyConditionExpression: "consumer = :consumer",
-    ExpressionAttributeValues: marshall({
-      ":consumer": space
-    })
-  }))
-  if (!res.Items || res.Items.length === 0) {
-    throw new Error(`Failed to get consumer for ${space}`)
-  }
-  const decoded = Consumer.lister.decode(unmarshall(res.Items[0]))
-  if (decoded.error) {
-    throw new Error(decoded.error.message)
-  }
-  return decoded.ok
 }
