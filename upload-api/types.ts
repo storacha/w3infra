@@ -1,5 +1,5 @@
 import * as UCAN from '@ipld/dag-ucan'
-import { DID, Link, Delegation, Signature, Block, UCANLink, ByteView, DIDKey } from '@ucanto/interface'
+import { DID, Link, Delegation, Signature, Block, UCANLink, ByteView, DIDKey, Result, Failure } from '@ucanto/interface'
 import { UnknownLink } from 'multiformats'
 import { CID } from 'multiformats/cid'
 import { Kinesis } from '@aws-sdk/client-kinesis'
@@ -32,8 +32,8 @@ export interface InvocationBucket {
   putReceipt: (cid: string, bytes: Uint8Array) => Promise<void>
   putInLink: (cid: string, workflowCid: string) => Promise<void>
   putOutLink: (cid: string, workflowCid: string) => Promise<void>
-  getInLink: (cid: string) => Promise<string|undefined>
-  getWorkflowLink: (cid: string) => Promise<string|undefined>
+  getInLink: (cid: string) => Promise<string | undefined>
+  getWorkflowLink: (cid: string) => Promise<string | undefined>
 }
 
 export interface TaskBucket {
@@ -43,14 +43,14 @@ export interface TaskBucket {
 
 export interface WorkflowBucket {
   put: (Cid: string, bytes: Uint8Array) => Promise<void>
-  get: (Cid: string) => Promise<Uint8Array|undefined>
+  get: (Cid: string) => Promise<Uint8Array | undefined>
 }
 
 export interface DelegationsBucket {
   /** put a delegation into the delegations bucket */
   put: (cid: CID, bytes: ByteView<Delegation>) => Promise<void>
   /** get a delegation from the delegations bucket */
-  get: (cid: CID) => Promise<ByteView<Delegation>|undefined>
+  get: (cid: CID) => Promise<ByteView<Delegation> | undefined>
 }
 
 export interface MetricsTable {
@@ -125,6 +125,24 @@ export interface ConsumerTable {
   hasStorageProvider: (consumer: DID) => Promise<boolean>
   /** return a list of storage providers the given consumer has registered with */
   getStorageProviders: (consumer: DID) => Promise<ProviderDID[]>
+}
+
+// TODO: unify this with RecordNotFound in ../billing/tables/lib.js
+export interface RecordNotFound<K> extends Failure {
+  name: 'RecordNotFound'
+  key: K
+}
+
+// TODO unify this with Customer in ../billing/lib/api.ts
+export interface Customer {
+  product: string
+  updatedAt: string
+}
+
+// TODO unify this with CustomerStore in ../billing/lib/api.ts
+export interface CustomerTable {
+  /** get a customer record */
+  get: (customer: DID<'mailto'>) => Promise<Result<Customer, RecordNotFound<DID<'mailto'>>>>
 }
 
 export type SpaceService = Pick<Service, "space">

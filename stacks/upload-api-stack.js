@@ -4,6 +4,7 @@ import {
   use
 } from '@serverless-stack/resources'
 import { UploadDbStack } from './upload-db-stack.js'
+import { BillingDbStack } from './billing-db-stack.js'
 import { CarparkStack } from './carpark-stack.js'
 import { UcanInvocationStack } from './ucan-invocation-stack.js'
 
@@ -24,6 +25,7 @@ export function UploadApiStack({ stack, app }) {
   const { carparkBucket } = use(CarparkStack)
   const { storeTable, uploadTable, delegationBucket, delegationTable, revocationTable, adminMetricsTable, spaceMetricsTable, consumerTable, subscriptionTable, rateLimitTable, privateKey } = use(UploadDbStack)
   const { invocationBucket, taskBucket, workflowBucket, ucanStream } = use(UcanInvocationStack)
+  const { customerTable } = use(BillingDbStack)
 
   // Setup API
   const customDomain = getCustomDomain(stack.stage, process.env.HOSTED_ZONE)
@@ -38,6 +40,7 @@ export function UploadApiStack({ stack, app }) {
         permissions: [
           storeTable,
           uploadTable,
+          customerTable,
           delegationTable,
           revocationTable,
           delegationBucket,
@@ -57,6 +60,7 @@ export function UploadApiStack({ stack, app }) {
           STORE_BUCKET_NAME: carparkBucket.bucketName,
           UPLOAD_TABLE_NAME: uploadTable.tableName,
           CONSUMER_TABLE_NAME: consumerTable.tableName,
+          CUSTOMER_TABLE_NAME: customerTable.tableName,
           SUBSCRIPTION_TABLE_NAME: subscriptionTable.tableName,
           SPACE_METRICS_TABLE_NAME: spaceMetricsTable.tableName,
           RATE_LIMIT_TABLE_NAME: rateLimitTable.tableName,

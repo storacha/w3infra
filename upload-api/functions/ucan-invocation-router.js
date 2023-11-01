@@ -21,10 +21,12 @@ import { createDelegationsTable } from '../tables/delegations.js'
 import { createDelegationsStore } from '../buckets/delegations-store.js'
 import { createSubscriptionTable } from '../tables/subscription.js'
 import { createConsumerTable } from '../tables/consumer.js'
+import { createCustomerTable } from '../tables/customer.js'
 import { createRateLimitTable } from '../tables/rate-limit.js'
 import { createSpaceMetricsTable } from '../tables/space-metrics.js'
 import { mustGetEnv } from './utils.js'
 import { createRevocationsTable } from '../stores/revocations.js'
+import { usePlansStore } from '../stores/plans.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -86,6 +88,7 @@ export async function ucanInvocationRouter(request) {
     storeBucketName,
     uploadTableName,
     consumerTableName,
+    customerTableName,
     subscriptionTableName,
     delegationTableName,
     revocationTableName,
@@ -129,6 +132,8 @@ export async function ucanInvocationRouter(request) {
   const consumerTable = createConsumerTable(AWS_REGION, consumerTableName, {
     endpoint: dbEndpoint
   });
+  const customerTable = createCustomerTable(AWS_REGION, customerTableName, { endpoint: dbEndpoint })
+  const plansStorage = usePlansStore(customerTable)
   const rateLimitsStorage = createRateLimitTable(AWS_REGION, rateLimitTableName)
   const spaceMetricsTable = createSpaceMetricsTable(AWS_REGION, spaceMetricsTableName)
 
@@ -136,6 +141,7 @@ export async function ucanInvocationRouter(request) {
   const delegationsStorage = createDelegationsTable(AWS_REGION, delegationTableName, { bucket: delegationBucket, invocationBucket, workflowBucket })
   const revocationsStorage = createRevocationsTable(AWS_REGION, revocationTableName)
 
+  // @ts-expect-error TODO: remove this once filecoin stuff is integrated!
   const server = createUcantoServer(serviceSigner, {
     codec,
     storeTable: createStoreTable(AWS_REGION, storeTableName, {
@@ -159,6 +165,7 @@ export async function ucanInvocationRouter(request) {
     provisionsStorage,
     delegationsStorage,
     revocationsStorage,
+    plansStorage,
     rateLimitsStorage
   })
 
@@ -238,12 +245,13 @@ export const fromLambdaRequest = (request) => ({
   body: Buffer.from(request.body || '', 'base64'),
 })
 
-function getLambdaEnv () {
+function getLambdaEnv() {
   return {
     storeTableName: mustGetEnv('STORE_TABLE_NAME'),
     storeBucketName: mustGetEnv('STORE_BUCKET_NAME'),
     uploadTableName: mustGetEnv('UPLOAD_TABLE_NAME'),
     consumerTableName: mustGetEnv('CONSUMER_TABLE_NAME'),
+    customerTableName: mustGetEnv('CUSTOMER_TABLE_NAME'),
     subscriptionTableName: mustGetEnv('SUBSCRIPTION_TABLE_NAME'),
     delegationTableName: mustGetEnv('DELEGATION_TABLE_NAME'),
     revocationTableName: mustGetEnv('REVOCATION_TABLE_NAME'),
