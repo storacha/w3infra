@@ -44,13 +44,7 @@ export const webhook = Sentry.AWSLambda.wrapHandler(
     const stripeSecretKey = customContext?.stripeSecretKey ?? Config.STRIPE_SECRET_KEY
     if (!stripeSecretKey) throw new Error('missing secret: STRIPE_SECRET_KEY')
     const stripeEndpointSecret = customContext?.stripeEndpointSecret ?? Config.STRIPE_ENDPOINT_SECRET
-    if (!stripeSecretKey) throw new Error('missing secret: STRIPE_ENDPOINT_SECRET')
-    if (!(stripeEndpointSecret && stripeSecretKey)) {
-      return {
-        statusCode: 500,
-        body: 'Stripe configuration incomplete'
-      }
-    }
+    if (!stripeEndpointSecret) throw new Error('missing secret: STRIPE_ENDPOINT_SECRET')
     const stripe = new Stripe(stripeSecretKey, { apiVersion: '2023-10-16' })
     const customerStore = createCustomerStore({ region }, { tableName: customerTable })
 
