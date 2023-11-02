@@ -24,7 +24,7 @@ async function handleFilecoinSubmitMessage (sqsEvent) {
   if (sqsEvent.Records.length !== 1) {
     return {
       statusCode: 400,
-      body: `Expected 1 sqsEvent per invocation but received ${sqsEvent.Records.length}`
+      body: `Expected 1 SQS message per invocation but received ${sqsEvent.Records.length}`
     }
   }
 

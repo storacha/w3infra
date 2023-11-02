@@ -215,7 +215,7 @@ export function usePieceTable(dynamoDb, tableName) {
       try {
         res = await dynamoDb.send(getCmd)
       } catch (/** @type {any} */ error) {
-        console.log('errr', error)
+        console.error(error)
         if (error?.$metadata?.httpStatusCode === 404) {
           return {
             ok: false

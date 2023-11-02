@@ -49,7 +49,7 @@ export function UploadDbStack({ stack, app }) {
    * This table takes a stored CAR and makes an entry in the piece table
    * Used by the filecoin/* service capabilities. // TODO
    */
-  const pieceTable = new Table(stack, 'piece-1', {
+  const pieceTable = new Table(stack, 'piece-v1', {
     ...pieceTableProps,
     // information that will be written to the stream
     stream: 'new_image',
