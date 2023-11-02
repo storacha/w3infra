@@ -4,7 +4,7 @@ import { Duration } from 'aws-cdk-lib'
 import { UcanInvocationStack } from './ucan-invocation-stack.js'
 import { BillingDbStack } from './billing-db-stack.js'
 import { UploadDbStack } from './upload-db-stack.js'
-import { setupSentry, getKinesisEventSourceConfig } from './config.js'
+import { setupSentry } from './config.js'
 
 /** @param {import('@serverless-stack/resources').StackContext} props */
 export function BillingStack ({ stack, app }) {
