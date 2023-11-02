@@ -86,7 +86,8 @@ export const createCustomerStore = (conf, { tableName }) => ({
       TableName: tableName,
       IndexName: 'account',
       KeyConditionExpression: 'account = :account',
-      ExpressionAttributeValues: marshall({ account })
+      ExpressionAttributeValues: marshall({ account }),
+      ProjectionExpression: 'customer'
     }))
     if (res.Items) {
       const item = unmarshall(res.Items[0])
