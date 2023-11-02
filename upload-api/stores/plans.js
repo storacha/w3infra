@@ -25,23 +25,7 @@ export function usePlansStore(customerStore) {
     },
 
     set: async (customer, plan) => {
-      const result = await customerStore.get({ customer })
-      if (result.ok) {
-        customerStore.put({
-          ...result.ok,
-          product: plan
-        })
-        return { ok: {} }
-      } else if (result.error.name === 'RecordNotFound') {
-        return {
-          error: {
-            name: 'PlanNotFound',
-            message: 'Plan cannot be set until customer is created by Stripe webhook'
-          }
-        }
-      } else {
-        return result
-      }
+      return await customerStore.updateProductForCustomer(customer, plan)
     }
   }
 }

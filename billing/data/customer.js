@@ -1,4 +1,3 @@
-import * as Link from 'multiformats/link'
 import { EncodeFailure, DecodeFailure, Schema } from './lib.js'
 
 /**
@@ -13,7 +12,6 @@ const schema = Schema.struct({
   customer: Schema.did({ method: 'mailto' }),
   account: Schema.uri({ protocol: 'stripe:' }),
   product: Schema.text(),
-  cause: Schema.link({ version: 1 }),
   insertedAt: Schema.date(),
   updatedAt: Schema.date()
 })
@@ -26,7 +24,6 @@ export const encode = input => {
   try {
     return {
       ok: {
-        cause: input.cause.toString(),
         customer: input.customer,
         account: input.account,
         product: input.product,
@@ -49,7 +46,6 @@ export const decode = input => {
   try { 
     return {
       ok: {
-        cause: Link.parse(String(input.cause)),
         customer: Schema.did({ method: 'mailto' }).from(input.customer),
         account: Schema.uri({ protocol: 'stripe:' }).from(input.account),
         product: /** @type {string} */ (input.product),
