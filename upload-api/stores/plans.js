@@ -7,21 +7,18 @@ export function usePlansStore(customerStore) {
   return {
     get: async (customer) => {
       const result = await customerStore.get({ customer })
-      if (result.ok) {
-        return {
+      return result.ok ?
+        {
           ok: {
             product: /** @type {import("@ucanto/interface").DID} */(result.ok.product),
             updatedAt: result.ok.updatedAt.toISOString()
           }
-        }
-      } else {
-        return {
+        } : {
           error: {
             name: 'PlanNotFound',
             message: result.error.message
           }
         }
-      }
     },
 
     set: async (customer, plan) => {
