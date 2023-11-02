@@ -80,7 +80,7 @@ export interface Customer {
    */
   account: AccountID
   /** Unique identifier of the product a.k.a tier. */
-  product?: string
+  product: string
   /** Time the record was added to the database. */
   insertedAt: Date
   /** Time the record was updated in the database. */
@@ -98,8 +98,7 @@ export type CustomerStore =
   & StorePutter<Customer>
   & StoreLister<{}, Customer>
   & {
-    updateProductForCustomer: (customer: CustomerDID, product: string) => Promise<Result<Unit, Failure>>
-    updateProductForAccount: (account: AccountID, product: string) => Promise<Result<Unit, Failure>>
+    updateProduct: (customer: CustomerDID, product: string) => Promise<Result<Unit, Failure>>
   }
 
 /**

@@ -25,7 +25,7 @@ export function usePlansStore(customerStore) {
     },
 
     set: async (customer, plan) => {
-      return await customerStore.updateProductForCustomer(customer, plan)
+      return await customerStore.updateProduct(customer, plan)
     }
   }
 }

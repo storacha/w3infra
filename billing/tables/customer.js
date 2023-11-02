@@ -1,8 +1,8 @@
 import { connectTable, createStoreGetterClient, createStoreListerClient, createStorePutterClient } from './client.js'
 import { validate, encode, encodeKey, decode } from '../data/customer.js'
-import { DynamoDBClient, QueryCommand, UpdateItemCommand } from '@aws-sdk/client-dynamodb'
-import { marshall, unmarshall } from '@aws-sdk/util-dynamodb'
-import { RecordNotFound, StoreOperationFailure } from './lib.js'
+import { UpdateItemCommand } from '@aws-sdk/client-dynamodb'
+import { marshall } from '@aws-sdk/util-dynamodb'
+import { StoreOperationFailure } from './lib.js'
 
 /**
  * Stores customer details.
@@ -35,35 +35,6 @@ export const customerTableProps = {
 }
 
 /**
- * 
- * @param {DynamoDBClient} client 
- * @param {string} tableName
- * @param {string} customer 
- * @param {string} product 
- * @returns 
- */
-async function setProductForCustomer(client, tableName, customer, product) {
-  try {
-    const res = await client.send(new UpdateItemCommand({
-      TableName: tableName,
-      Key: marshall({ customer }),
-      UpdateExpression: 'SET product = :product, updatedAt = :updatedAt',
-      ExpressionAttributeValues: marshall({
-        product,
-        updatedAt: new Date().toISOString()
-      })
-    }))
-    if (res.$metadata.httpStatusCode !== 200) {
-      throw new Error(`unexpected status putting item to table: ${res.$metadata.httpStatusCode}`)
-    }
-    return { ok: {} }
-  } catch (/** @type {any} */ err) {
-    console.error(err)
-    return { error: new StoreOperationFailure(err.message) }
-  }
-}
-
-/**
  * @param {{ region: string } | import('@aws-sdk/client-dynamodb').DynamoDBClient} conf
  * @param {{ tableName: string }} context
  * @returns {import('../lib/api').CustomerStore}
@@ -76,24 +47,26 @@ export const createCustomerStore = (conf, { tableName }) => ({
     encodeKey: () => ({ ok: {} }),
     decode
   }),
-  async updateProductForCustomer(customer, product) {
+
+  async updateProduct(customer, product) {
     const client = connectTable(conf)
-    return setProductForCustomer(client, tableName, customer, product)
-  },
-  async updateProductForAccount(account, product) {
-    const client = connectTable(conf)
-    const res = await client.send(new QueryCommand({
-      TableName: tableName,
-      IndexName: 'account',
-      KeyConditionExpression: 'account = :account',
-      ExpressionAttributeValues: marshall({ account }),
-      ProjectionExpression: 'customer'
-    }))
-    if (res.Items) {
-      const item = unmarshall(res.Items[0])
-      return setProductForCustomer(client, tableName, item.customer, product)
-    } else {
-      return { error: new RecordNotFound(account) }
+    try {
+      const res = await client.send(new UpdateItemCommand({
+        TableName: tableName,
+        Key: marshall({ customer }),
+        UpdateExpression: 'SET product = :product, updatedAt = :updatedAt',
+        ExpressionAttributeValues: marshall({
+          product,
+          updatedAt: new Date().toISOString()
+        })
+      }))
+      if (res.$metadata.httpStatusCode !== 200) {
+        throw new Error(`unexpected status putting item to table: ${res.$metadata.httpStatusCode}`)
+      }
+      return { ok: {} }
+    } catch (/** @type {any} */ err) {
+      console.error(err)
+      return { error: new StoreOperationFailure(err.message) }
     }
   }
 })

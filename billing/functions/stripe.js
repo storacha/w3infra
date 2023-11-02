@@ -37,16 +37,17 @@ export const webhook = Sentry.AWSLambda.wrapHandler(
       }
     }
 
-    // try to set up the stripe client from secrets
     const customContext = context?.clientContext?.Custom
     const region = customContext?.region ?? mustGetEnv('AWS_REGION')
     const customerTable = customContext?.customerTable ?? mustGetEnv('CUSTOMER_TABLE_NAME')
+    const customerStore = createCustomerStore({ region }, { tableName: customerTable })
+
+    // try to set up the stripe client from secrets
     const stripeSecretKey = customContext?.stripeSecretKey ?? Config.STRIPE_SECRET_KEY
     if (!stripeSecretKey) throw new Error('missing secret: STRIPE_SECRET_KEY')
     const stripeEndpointSecret = customContext?.stripeEndpointSecret ?? Config.STRIPE_ENDPOINT_SECRET
     if (!stripeEndpointSecret) throw new Error('missing secret: STRIPE_ENDPOINT_SECRET')
     const stripe = new Stripe(stripeSecretKey, { apiVersion: '2023-10-16' })
-    const customerStore = createCustomerStore({ region }, { tableName: customerTable })
 
     let event;
     try {
@@ -55,28 +56,31 @@ export const webhook = Sentry.AWSLambda.wrapHandler(
         request.body, request.headers['stripe-signature'], stripeEndpointSecret
       )
 
-      if (event.type === 'customer.created') {
-        if (event.data.object.email) {
+      if (event.type === 'customer.subscription.created') {
+        // TODO: move this out to a separate lambda per best practices here: https://stripe.com/docs/webhooks#acknowledge-events-immediately
+
+        // per https://stripe.com/docs/expand#with-webhooks these attributes will always be a string in a webhook, so this is safe
+        const customerId = String(event.data.object.customer)
+        const product = String(event.data.object.items.data[0].price.product)
+        const account = /** @type {AccountID} */(`stripe:${customerId}`)
+        const stripeCustomer = await stripe.customers.retrieve(customerId)
+        if (stripeCustomer.deleted) {
+          return {
+            statusCode: 400,
+            body: `Could not update subscription information - user appears to have been deleted`
+          }
+        } else {
+          const customer = DidMailto.fromEmail(/** @type {`${string}@${string}`} */(
+            stripeCustomer.email
+          ))
           customerStore.put({
-            customer: DidMailto.fromEmail(/** @type {`${string}@${string}`} */(event.data.object.email)),
-            account: /** @type {AccountID} */(`stripe:${event.data.object.id}`),
+            customer,
+            account,
+            product,
             insertedAt: new Date(),
             updatedAt: new Date()
           })
-        } else {
-          console.error(`received customer.created from Stripe for customer ${event.data.object.id} with email`)
-          return {
-            statusCode: 400,
-            body: `customer.created but no email for ${event.data.object.id}`
-          }
         }
-      } else if (event.type === 'customer.subscription.created') {
-        const account = /** @type {AccountID} */(`stripe:${event.data.object.customer}`)
-        customerStore.updateProductForAccount(
-          account,
-          // this can technically be a Product object, but not in the context of webhooks, so this cast is safe
-          /** @type {string} */(event.data.object.items.data[0].price.product)
-        )
       }
     } catch (/** @type {any} */ err) {
       return {
@@ -85,10 +89,6 @@ export const webhook = Sentry.AWSLambda.wrapHandler(
       }
     }
 
-    return {
-      statusCode: 200
-    }
+    return { statusCode: 200 }
   }
 )
-
-
