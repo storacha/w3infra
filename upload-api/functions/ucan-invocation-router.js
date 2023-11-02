@@ -2,6 +2,7 @@ import { API } from '@ucanto/core'
 import * as Server from '@ucanto/server'
 import { Kinesis } from '@aws-sdk/client-kinesis'
 import * as Sentry from '@sentry/serverless'
+import * as DID from '@ipld/dag-ucan/did'
 
 import { processAgentMessageArchive } from '../ucan-invocation.js'
 import { createCarStore } from '../buckets/car-store.js'
@@ -11,6 +12,11 @@ import { createTaskStore } from '../buckets/task-store.js'
 import { createWorkflowStore } from '../buckets/workflow-store.js'
 import { createStoreTable } from '../tables/store.js'
 import { createUploadTable } from '../tables/upload.js'
+import { createPieceTable } from '../../filecoin/store/piece.js'
+import { createTaskStore as createFilecoinTaskStore } from '../../filecoin/store/task.js'
+import { createReceiptStore as createFilecoinReceiptStore } from '../../filecoin/store/receipt.js'
+import { createClient as createFilecoinSubmitQueueClient } from '../../filecoin/queue/filecoin-submit-queue.js'
+import { createClient as createPieceOfferQueueClient } from '../../filecoin/queue/piece-offer-queue.js'
 import { getServiceSigner, parseServiceDids } from '../config.js'
 import { createUcantoServer } from '../service.js'
 import { Config } from '@serverless-stack/node/config/index.js'
@@ -91,6 +97,7 @@ export async function ucanInvocationRouter(request) {
     revocationTableName,
     spaceMetricsTableName,
     rateLimitTableName,
+    pieceTableName,
     r2DelegationBucketEndpoint,
     r2DelegationBucketAccessKeyId,
     r2DelegationBucketSecretAccessKey,
@@ -101,6 +108,9 @@ export async function ucanInvocationRouter(request) {
     streamName,
     postmarkToken,
     providers,
+    aggregatorDid,
+    pieceOfferQueueUrl,
+    filecoinSubmitQueueUrl,
     // set for testing
     dbEndpoint,
     accessServiceURL,
@@ -159,7 +169,21 @@ export async function ucanInvocationRouter(request) {
     provisionsStorage,
     delegationsStorage,
     revocationsStorage,
-    rateLimitsStorage
+    rateLimitsStorage,
+    // filecoin/*
+    aggregatorId: DID.parse(aggregatorDid),
+    pieceStore: createPieceTable(AWS_REGION, pieceTableName),
+    taskStore: createFilecoinTaskStore(AWS_REGION, invocationBucketName, workflowBucketName),
+    receiptStore: createFilecoinReceiptStore(AWS_REGION, invocationBucketName, workflowBucketName),
+    pieceOfferQueue: createPieceOfferQueueClient({ region: AWS_REGION }, { queueUrl: pieceOfferQueueUrl }),
+    filecoinSubmitQueue: createFilecoinSubmitQueueClient({ region: AWS_REGION }, { queueUrl: filecoinSubmitQueueUrl }),
+    options: {
+      // TODO: we compute and put all pieces into the queue on bucket event
+      // We may change this to validate user provided piece
+      skipFilecoinSubmitQueue: true
+    },
+    // @ts-expect-error still not implemented
+    plansStorage: {}
   })
 
   const processingCtx = {
@@ -249,6 +273,9 @@ function getLambdaEnv () {
     revocationTableName: mustGetEnv('REVOCATION_TABLE_NAME'),
     spaceMetricsTableName: mustGetEnv('SPACE_METRICS_TABLE_NAME'),
     rateLimitTableName: mustGetEnv('RATE_LIMIT_TABLE_NAME'),
+    pieceTableName: mustGetEnv('PIECE_TABLE_NAME'),
+    pieceOfferQueueUrl: mustGetEnv('PIECE_OFFER_QUEUE_URL'),
+    filecoinSubmitQueueUrl: mustGetEnv('FILECOIN_SUBMIT_QUEUE_URL'),
     r2DelegationBucketEndpoint: mustGetEnv('R2_ENDPOINT'),
     r2DelegationBucketAccessKeyId: mustGetEnv('R2_ACCESS_KEY_ID'),
     r2DelegationBucketSecretAccessKey: mustGetEnv('R2_SECRET_ACCESS_KEY'),
@@ -260,6 +287,7 @@ function getLambdaEnv () {
     postmarkToken: mustGetEnv('POSTMARK_TOKEN'),
     providers: mustGetEnv('PROVIDERS'),
     accessServiceURL: mustGetEnv('ACCESS_SERVICE_URL'),
+    aggregatorDid: mustGetEnv('AGGREGATOR_DID'),
     // set for testing
     dbEndpoint: process.env.DYNAMO_DB_ENDPOINT,
   }

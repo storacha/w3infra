@@ -25,6 +25,10 @@ import { useWorkflowStore } from '../../buckets/workflow-store.js';
 import { useRateLimitTable } from '../../tables/rate-limit.js';
 import { useSpaceMetricsTable } from '../../tables/space-metrics.js';
 import { spaceMetricsTableProps } from '@web3-storage/w3infra-ucan-invocation/tables/index.js';
+import { pieceTableProps } from '../../../filecoin/store/index.js';
+import { usePieceTable } from '../../../filecoin/store/piece.js'
+import { createTaskStore as createFilecoinTaskStore } from '../../../filecoin/store/task.js'
+import { createReceiptStore as createFilecoinReceiptStore } from '../../../filecoin/store/receipt.js'
 
 export { API }
 
@@ -194,6 +198,7 @@ export async function executionContextToUcantoTestServerContext (t) {
 
   const signer = await Signer.Signer.generate();
   const id = signer.withDID('did:web:test.web3.storage');
+  const aggregatorSigner = await Signer.Signer.generate();
 
   const delegationsBucketName = await createBucket(s3);
   const invocationsBucketName = await createBucket(s3);
@@ -228,6 +233,10 @@ export async function executionContextToUcantoTestServerContext (t) {
     dynamo,
     await createTable(dynamo, spaceMetricsTableProps)
   )
+  const pieceStore = usePieceTable(
+    dynamo,
+    await createTable(dynamo, pieceTableProps)
+  )
   const provisionsStorage = useProvisionStore(
     subscriptionTable,
     consumerTable,
@@ -256,7 +265,23 @@ export async function executionContextToUcantoTestServerContext (t) {
     uploadTable,
     carStoreBucket,
     dudewhereBucket,
-    validateAuthorization: () => ({ ok: {} })
+    validateAuthorization: () => ({ ok: {} }),
+    // filecoin/*
+    aggregatorId: aggregatorSigner,
+    pieceStore,
+    taskStore: createFilecoinTaskStore(s3, invocationsBucketName, workflowBucketName),
+    receiptStore: createFilecoinReceiptStore(s3, invocationsBucketName, workflowBucketName),
+    // @ts-expect-error not tested here
+    pieceOfferQueue: {},
+    // @ts-expect-error not tested here
+    filecoinSubmitQueue: {},
+    options: {
+      // TODO: we compute and put all pieces into the queue on bucket event
+      // We may change this to validate user provided piece
+      skipFilecoinSubmitQueue: true
+    },
+    // @ts-expect-error still not implemented
+    plansStorage: {}
   };
   const connection = connect({
     id: serviceContext.id,

@@ -21,8 +21,8 @@ Sentry.AWSLambda.init({
  * @param {import('aws-lambda').DynamoDBStreamEvent} event
  */
 async function pieceCidReport (event) {
-  const { aggregatorDid, aggregatorUrl, contentClaimsDid, contentClaimsUrl, contentClaimsProof } = getEnv()
-  const { PRIVATE_KEY: privateKey, CONTENT_CLAIMS_PRIVATE_KEY: contentClaimsPrivateKey } = Config
+  const { contentClaimsDid, contentClaimsUrl, contentClaimsProof } = getEnv()
+  const { CONTENT_CLAIMS_PRIVATE_KEY: contentClaimsPrivateKey } = Config
 
   const records = parseDynamoDbEvent(event)
   if (records.length > 1) {
@@ -34,16 +34,9 @@ async function pieceCidReport (event) {
   const piece = Piece.fromString(pieceRecord.piece).link
   const content = CID.parse(pieceRecord.link)
 
-  const aggregateServiceConnection = getServiceConnection({
-    did: aggregatorDid,
-    url: aggregatorUrl
-  })
   const claimsServiceConnection = getServiceConnection({
     did: contentClaimsDid,
     url: contentClaimsUrl
-  })
-  const storefrontIssuer = getServiceSigner({
-    privateKey
   })
   let claimsIssuer = getServiceSigner({
     privateKey: contentClaimsPrivateKey
@@ -61,15 +54,8 @@ async function pieceCidReport (event) {
   const { ok, error } = await reportPieceCid({
     piece,
     content,
-    group: storefrontIssuer.did(),
-    aggregateServiceConnection,
-    aggregateInvocationConfig: /** @type {import('@web3-storage/filecoin-client/types').InvocationConfig} */ ({
-      issuer: storefrontIssuer,
-      audience: aggregateServiceConnection.id,
-      with: storefrontIssuer.did(),
-    }),
     claimsServiceConnection,
-    claimsInvocationConfig: /** @type {import('../types').ClaimsInvocationConfig} */ ({
+    claimsInvocationConfig: /** @type {import('../types.js').ClaimsInvocationConfig} */ ({
       issuer: claimsIssuer,
       audience: claimsServiceConnection.id,
       with: claimsIssuer.did(),
@@ -92,15 +78,13 @@ async function pieceCidReport (event) {
   }
 }
 
-export const handler = Sentry.AWSLambda.wrapHandler(pieceCidReport)
+export const main = Sentry.AWSLambda.wrapHandler(pieceCidReport)
 
 /**
  * Get Env validating it is set.
  */
 function getEnv() {
   return {
-    aggregatorDid: mustGetEnv('AGGREGATOR_DID'),
-    aggregatorUrl: mustGetEnv('AGGREGATOR_URL'),
     contentClaimsDid: mustGetEnv('CONTENT_CLAIMS_DID'),
     contentClaimsUrl: mustGetEnv('CONTENT_CLAIMS_URL'),
     contentClaimsProof: process.env.CONTENT_CLAIMS_PROOF,
