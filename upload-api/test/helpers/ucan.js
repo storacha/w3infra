@@ -261,7 +261,7 @@ export async function executionContextToUcantoTestServerContext(t) {
     revocationsStorage,
     plansStorage,
     errorReporter: {
-      catch(error) {
+      catch (error) {
         t.fail(error.message);
       },
     },

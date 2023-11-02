@@ -45,7 +45,9 @@ export interface SpaceDiffListKey {
   from: Date
 }
 
-export interface SpaceDiffStore extends StorePutter<SpaceDiff>, StoreLister<SpaceDiffListKey, SpaceDiff> {}
+export type SpaceDiffStore =
+  & StorePutter<SpaceDiff>
+  & StoreLister<SpaceDiffListKey, SpaceDiff>
 
 /** Captures size of a space at a given point in time. */
 export interface SpaceSnapshot {
@@ -188,7 +190,7 @@ export interface ConsumerListKey { consumer: ConsumerDID }
 
 export type ConsumerStore =
   & StoreGetter<ConsumerKey, Consumer>
-  & StoreLister<ConsumerListKey, Pick<Consumer, 'consumer' | 'provider' | 'subscription'>>
+  & StoreLister<ConsumerListKey, Pick<Consumer, 'consumer'|'provider'|'subscription'>>
 
 export interface Subscription {
   customer: CustomerDID
@@ -204,7 +206,7 @@ export interface SubscriptionListKey { customer: CustomerDID }
 
 export type SubscriptionStore =
   & StoreGetter<SubscriptionKey, Subscription>
-  & StoreLister<SubscriptionListKey, Pick<Subscription, 'customer' | 'provider' | 'subscription' | 'cause'>>
+  & StoreLister<SubscriptionListKey, Pick<Subscription, 'customer'|'provider'|'subscription'|'cause'>>
 
 // UCAN invocation ////////////////////////////////////////////////////////////
 
@@ -296,23 +298,23 @@ export interface RecordNotFound<K> extends Failure {
 /** StorePutter allows a single item to be put in the store by it's key. */
 export interface StorePutter<T> {
   /** Puts a single item into the store by it's key */
-  put: (rec: T) => Promise<Result<Unit, EncodeFailure | StoreOperationFailure | Failure>>
+  put: (rec: T) => Promise<Result<Unit, EncodeFailure|StoreOperationFailure|Failure>>
 }
 
 /** StoreGetter allows a single item to be retrieved by it's key. */
 export interface StoreGetter<K extends {}, V> {
   /** Gets a single item by it's key. */
-  get: (key: K) => Promise<Result<V, EncodeFailure | RecordNotFound<K> | DecodeFailure | StoreOperationFailure>>
+  get: (key: K) => Promise<Result<V, EncodeFailure|RecordNotFound<K>|DecodeFailure|StoreOperationFailure>>
 }
 
 /** StoreLister allows items in the store to be listed page by page. */
 export interface StoreLister<K extends {}, V> {
   /** Lists items in the store. */
-  list: (key: K, options?: Pageable) => Promise<Result<ListSuccess<V>, EncodeFailure | DecodeFailure | StoreOperationFailure>>
+  list: (key: K, options?: Pageable) => Promise<Result<ListSuccess<V>, EncodeFailure|DecodeFailure|StoreOperationFailure>>
 }
 
 /** QueueAdder allows messages to be added to the end of the queue. */
 export interface QueueAdder<T> {
   /** Adds a message to the end of the queue. */
-  add: (message: T) => Promise<Result<Unit, EncodeFailure | QueueOperationFailure | Failure>>
+  add: (message: T) => Promise<Result<Unit, EncodeFailure|QueueOperationFailure|Failure>>
 }
