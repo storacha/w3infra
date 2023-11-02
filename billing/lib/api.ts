@@ -210,7 +210,6 @@ export type SubscriptionStore =
 // TODO: replace `UcanInvocation` type in `ucan-invocation/types.ts` with this?
 export interface UcanMessage<C extends Capabilities = Capabilities> {
   carCid: Link
-  invocationCid: Link
   value: UcanMessageValue<C>
   ts: Date
 }
@@ -220,6 +219,7 @@ export interface UcanMessageValue<C extends Capabilities = Capabilities> {
   aud: DID,
   iss?: DID,
   prf?: Array<LinkJSON<Link>>
+  cid: Link
 }
 
 export interface UcanReceiptMessage<
@@ -227,6 +227,7 @@ export interface UcanReceiptMessage<
   R extends Result = Result
 > extends UcanMessage<C> {
   type: 'receipt'
+  invocationCid: Link
   out: R
 }
 
