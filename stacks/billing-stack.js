@@ -164,7 +164,7 @@ export function BillingStack ({ stack, app }) {
 
   stack.addOutputs({
     ApiEndpoint: api.url,
-    CustomDomain: customDomain ? `https://${customDomain.domainName}` : 'Set HOSTED_ZONE in env to deploy to a custom domain'
+    CustomDomain: customDomain ? `https://${customDomain.domainName}` : 'Set BILLING_HOSTED_ZONE in env to deploy to a custom domain'
   })
 
   return { billingCron }
