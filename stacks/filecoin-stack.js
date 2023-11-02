@@ -169,8 +169,8 @@ export function FilecoinStack({ stack, app }) {
         handler: 'functions/handle-piece-status-update.main',
         environment: {
           DID: UPLOAD_API_DID,
-          SERVICE_DID: UPLOAD_API_DID,
-          SERVICE_URL: storefrontCustomDomain?.domainName ? `https://${storefrontCustomDomain?.domainName}` : '',
+          STOREFRONT_DID: UPLOAD_API_DID,
+          STOREFRONT_URL: storefrontCustomDomain?.domainName ? `https://${storefrontCustomDomain?.domainName}` : '',
         },
         timeout: 3 * 60,
         bind: [

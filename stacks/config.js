@@ -4,7 +4,7 @@ import { StartingPosition } from 'aws-cdk-lib/aws-lambda'
 import git from 'git-rev-sync'
 
 /**
- * Get nicer burcket names
+ * Get nicer bucket names
  *
  * @param {string} name
  * @param {string} stage
