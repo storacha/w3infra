@@ -266,7 +266,7 @@ export const fromLambdaRequest = (request) => ({
   body: Buffer.from(request.body || '', 'base64'),
 })
 
-function getLambdaEnv() {
+function getLambdaEnv () {
   return {
     storeTableName: mustGetEnv('STORE_TABLE_NAME'),
     storeBucketName: mustGetEnv('STORE_BUCKET_NAME'),
