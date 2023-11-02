@@ -105,9 +105,12 @@ export function BillingStack ({ stack, app }) {
   ucanStream.addConsumers(stack, {
     ucanStreamHandler: {
       function: ucanStreamHandler,
-      // TODO: Set kinesis filters when supported by SST
-      // https://github.com/serverless-stack/sst/issues/1407
-      cdk: { eventSource: getKinesisEventSourceConfig(stack) }
+      cdk: {
+        eventSource: {
+          batchSize: 1,
+          startingPosition: StartingPosition.LATEST
+        }
+      }
     }
   })
 
