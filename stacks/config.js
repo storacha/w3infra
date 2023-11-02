@@ -158,7 +158,7 @@ export function getEnv() {
     CONTENT_CLAIMS_DID: mustGetEnv('CONTENT_CLAIMS_DID'),
     CONTENT_CLAIMS_URL: mustGetEnv('CONTENT_CLAIMS_URL'),
     // Not required
-    AGGREGATOR_PROOF: process.env.AGGREGATOR_PROOF ?? '',
+    STOREFRONT_PROOF: process.env.STOREFRONT_PROOF ?? '',
     CONTENT_CLAIMS_PROOF: process.env.CONTENT_CLAIMS_PROOF ?? '',
     DISABLE_PIECE_CID_COMPUTE: process.env.DISABLE_PIECE_CID_COMPUTE ?? ''
   }

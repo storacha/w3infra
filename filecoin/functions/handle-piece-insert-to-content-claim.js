@@ -21,7 +21,7 @@ Sentry.AWSLambda.init({
  * @param {import('aws-lambda').DynamoDBStreamEvent} event
  */
 async function pieceCidReport (event) {
-  const { serviceDid, serviceUrl, serviceProof } = getEnv()
+  const { contentClaimsDid, contentClaimsUrl, contentClaimsProof } = getEnv()
   const { CONTENT_CLAIMS_PRIVATE_KEY: contentClaimsPrivateKey } = Config
 
   const records = parseDynamoDbEvent(event)
@@ -35,20 +35,20 @@ async function pieceCidReport (event) {
   const content = CID.parse(pieceRecord.link)
 
   const claimsServiceConnection = getServiceConnection({
-    did: serviceDid,
-    url: serviceUrl
+    did: contentClaimsDid,
+    url: contentClaimsUrl
   })
   let claimsIssuer = getServiceSigner({
     privateKey: contentClaimsPrivateKey
   })
   const claimsProofs = []
-  if (serviceProof) {
-    const proof = await Delegation.extract(fromString(serviceProof, 'base64pad'))
+  if (contentClaimsProof) {
+    const proof = await Delegation.extract(fromString(contentClaimsProof, 'base64pad'))
       if (!proof.ok) throw new Error('failed to extract proof', { cause: proof.error })
       claimsProofs.push(proof.ok)
   } else {
     // if no proofs, we must be using the service private key to sign
-    claimsIssuer = claimsIssuer.withDID(DID.parse(serviceDid).did())
+    claimsIssuer = claimsIssuer.withDID(DID.parse(contentClaimsDid).did())
   }
 
   const { ok, error } = await reportPieceCid({
@@ -85,9 +85,9 @@ export const main = Sentry.AWSLambda.wrapHandler(pieceCidReport)
  */
 function getEnv() {
   return {
-    serviceDid: mustGetEnv('SERVICE_DID'),
-    serviceUrl: mustGetEnv('SERVICE_URL'),
-    serviceProof: process.env.PROOF,
+    contentClaimsDid: mustGetEnv('CONTENT_CLAIMS_DID'),
+    contentClaimsUrl: mustGetEnv('CONTENT_CLAIMS_URL'),
+    contentClaimsProof: process.env.CONTENT_CLAIMS_PROOF,
   }
 }
 

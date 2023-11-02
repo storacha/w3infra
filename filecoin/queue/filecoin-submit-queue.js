@@ -1,6 +1,4 @@
-import { encode as JSONencode, decode as JSONdecode } from '@ipld/dag-json'
-import { toString } from 'uint8arrays/to-string'
-import { fromString } from 'uint8arrays/from-string'
+import * as dagJSON from '@ipld/dag-json'
 
 import { createQueueClient } from './client.js'
 
@@ -14,9 +12,8 @@ import { createQueueClient } from './client.js'
  * @returns {ClientEncodedMessage}
  */
 const encodeMessage = (pieceMessage) => {
-  const encodedBytes = JSONencode(pieceMessage)
   return {
-    MessageBody: toString(encodedBytes),
+    MessageBody: dagJSON.stringify(pieceMessage),
   }
 }
 
@@ -25,8 +22,7 @@ const encodeMessage = (pieceMessage) => {
  * @returns {FilecoinSubmitMessage}
  */
 export const decodeMessage = (message) => {
-  const decodedBytes = fromString(message.MessageBody)
-  return JSONdecode(decodedBytes)
+  return dagJSON.parse(message.MessageBody)
 }
 
 /**

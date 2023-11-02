@@ -76,7 +76,7 @@ export function UploadApiStack({ stack, app }) {
           WORKFLOW_BUCKET_NAME: workflowBucket.bucketName,
           UCAN_LOG_STREAM_NAME: ucanStream.streamName,
           ADMIN_METRICS_TABLE_NAME: adminMetricsTable.tableName,
-          PIECE_TABLE_NAME: adminMetricsTable.tableName,
+          PIECE_TABLE_NAME: pieceTable.tableName,
           PIECE_OFFER_QUEUE_URL: pieceOfferQueue.queueUrl,
           FILECOIN_SUBMIT_QUEUE_URL: filecoinSubmitQueue.queueUrl,
           NAME: pkg.name,

@@ -37,17 +37,17 @@ async function handlePieceOfferMessage (sqsEvent) {
 
   // Create context
   const { PRIVATE_KEY: privateKey } = Config
-  const { serviceDid, serviceUrl, did, delegatedProof } = getEnv()
+  const { aggregatorDid, aggregatorUrl, did, storefrontProof } = getEnv()
   let storefrontSigner = getServiceSigner({
     privateKey
   })
   const connection = getServiceConnection({
-    did: serviceDid,
-    url: serviceUrl
+    did: aggregatorDid,
+    url: aggregatorUrl
   })
   const aggregatorServiceProofs = []
-  if (delegatedProof) {
-    const proof = await Delegation.extract(fromString(delegatedProof, 'base64pad'))
+  if (storefrontProof) {
+    const proof = await Delegation.extract(fromString(storefrontProof, 'base64pad'))
     if (!proof.ok) throw new Error('failed to extract proof', { cause: proof.error })
     aggregatorServiceProofs.push(proof.ok)
   } else {
@@ -87,9 +87,9 @@ async function handlePieceOfferMessage (sqsEvent) {
 function getEnv () {
   return {
     did: mustGetEnv('DID'),
-    serviceDid: mustGetEnv('SERVICE_DID'),
-    serviceUrl: mustGetEnv('SERVICE_URL'),
-    delegatedProof: mustGetEnv('PROOF'),
+    aggregatorDid: mustGetEnv('AGGREGATOR_DID'),
+    aggregatorUrl: mustGetEnv('AGGREGATOR_URL'),
+    storefrontProof: mustGetEnv('PROOF'),
   }
 }
 

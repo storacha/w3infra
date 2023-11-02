@@ -46,19 +46,19 @@ async function handlePieceInsertToFilecoinSubmit (event) {
 
   // Create context
   const { PRIVATE_KEY: privateKey } = Config
-  const { serviceDid, serviceUrl, did, delegatedProof } = getEnv()
+  const { storefrontDid, storefrontUrl, did, storefrontProof } = getEnv()
   let storefrontSigner = getServiceSigner({
     privateKey
   })
   const connection = getServiceConnection({
-    did: serviceDid,
-    url: serviceUrl
+    did: storefrontDid,
+    url: storefrontUrl
   })
-  const aggregatorServiceProofs = []
-  if (delegatedProof) {
-    const proof = await Delegation.extract(fromString(delegatedProof, 'base64pad'))
+  const storefrontServiceProofs = []
+  if (storefrontProof) {
+    const proof = await Delegation.extract(fromString(storefrontProof, 'base64pad'))
     if (!proof.ok) throw new Error('failed to extract proof', { cause: proof.error })
-    aggregatorServiceProofs.push(proof.ok)
+    storefrontServiceProofs.push(proof.ok)
   } else {
     // if no proofs, we must be using the service private key to sign
     storefrontSigner = storefrontSigner.withDID(DID.parse(did).did())
@@ -70,6 +70,7 @@ async function handlePieceInsertToFilecoinSubmit (event) {
         issuer: storefrontSigner,
         with: storefrontSigner.did(),
         audience: storefrontSigner,
+        proofs: storefrontServiceProofs
       },
     },
   }
@@ -94,9 +95,9 @@ async function handlePieceInsertToFilecoinSubmit (event) {
 function getEnv () {
   return {
     did: mustGetEnv('DID'),
-    serviceDid: mustGetEnv('SERVICE_DID'),
-    serviceUrl: mustGetEnv('SERVICE_URL'),
-    delegatedProof: mustGetEnv('PROOF'),
+    storefrontDid: mustGetEnv('STOREFRONT_DID'),
+    storefrontUrl: mustGetEnv('STOREFRONT_URL'),
+    storefrontProof: mustGetEnv('PROOF'),
   }
 }
 
