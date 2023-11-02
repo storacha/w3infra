@@ -47,8 +47,11 @@ async function setProductForCustomer(client, tableName, customer, product) {
     const res = await client.send(new UpdateItemCommand({
       TableName: tableName,
       Key: marshall({ customer }),
-      UpdateExpression: 'SET product = :product',
-      ExpressionAttributeValues: marshall({ product })
+      UpdateExpression: 'SET product = :product, updatedAt = :updatedAt',
+      ExpressionAttributeValues: marshall({
+        product,
+        updatedAt: new Date().toISOString()
+      })
     }))
     if (res.$metadata.httpStatusCode !== 200) {
       throw new Error(`unexpected status putting item to table: ${res.$metadata.httpStatusCode}`)
