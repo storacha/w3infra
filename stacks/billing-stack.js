@@ -4,7 +4,7 @@ import { Duration } from 'aws-cdk-lib'
 import { UcanInvocationStack } from './ucan-invocation-stack.js'
 import { BillingDbStack } from './billing-db-stack.js'
 import { UploadDbStack } from './upload-db-stack.js'
-import { setupSentry, getKinesisEventSourceConfig, getCustomDomain } from './config.js'
+import { setupSentry, getCustomDomain } from './config.js'
 
 /** @param {import('@serverless-stack/resources').StackContext} props */
 export function BillingStack ({ stack, app }) {
@@ -105,9 +105,12 @@ export function BillingStack ({ stack, app }) {
   ucanStream.addConsumers(stack, {
     ucanStreamHandler: {
       function: ucanStreamHandler,
-      // TODO: Set kinesis filters when supported by SST
-      // https://github.com/serverless-stack/sst/issues/1407
-      cdk: { eventSource: getKinesisEventSourceConfig(stack) }
+      cdk: {
+        eventSource: {
+          batchSize: 1,
+          startingPosition: StartingPosition.LATEST
+        }
+      }
     }
   })
 

@@ -7,8 +7,8 @@ import { createDynamoTable, getItemsFromTable } from './helpers/tables.js'
 import { createCar } from './helpers/car.js'
 
 import { computePieceCid } from '../index.js'
-import { pieceTableProps } from '../tables/index.js'
-import { createPieceTable } from '../tables/piece.js'
+import { pieceTableProps } from '../store/index.js'
+import { createPieceTable } from '../store/piece.js'
 
 const AWS_REGION = 'us-west-2'
 
@@ -43,6 +43,7 @@ test('computes piece CID from a CAR file in the bucket', async t => {
       ChecksumSHA256: checksum,
     })
   )
+  const group = 'this-group'
   const record = {
     bucketName,
     bucketRegion: 'us-west-2',
@@ -52,23 +53,25 @@ test('computes piece CID from a CAR file in the bucket', async t => {
   const { ok, error } = await computePieceCid({
     record,
     s3Client: t.context.s3Client,
-    pieceTable
+    pieceTable,
+    group
   })
   t.truthy(ok)
   t.falsy(error)
 
   const storedItems = await getItemsFromTable(t.context.dynamoClient, tableName, {
-    link: {
+    content: {
       ComparisonOperator: 'EQ',
       AttributeValueList: [{ S: link.toString() }]
     }
   }, {
-    indexName: 'link'
+    indexName: 'content'
   })
 
   t.truthy(storedItems)
   t.is(storedItems?.length, 1)
   t.is(storedItems?.[0].piece, piece.toString())
+  t.is(storedItems?.[0].group, group)
 })
 
 /**

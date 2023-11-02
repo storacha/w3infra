@@ -13,20 +13,20 @@ export const test = {
     const invocations = [{
       type: 'workflow',
       carCid: randomLink(),
-      invocationCid: randomLink(),
       value: {
         att: [{
           with: await randomDID(),
           can: 'store/list'
         }],
-        aud: await randomDID()
+        aud: await randomDID(),
+        cid: randomLink()
       },
       ts: new Date()
     }]
 
     const shard = randomLink()
 
-    /** @type {import('../../lib/api.js').UcanStreamMessage[]} */
+    /** @type {import('../../lib/api.js').UcanReceiptMessage[]} */
     const receipts = [{
       type: 'receipt',
       carCid: randomLink(),
@@ -40,7 +40,8 @@ export const test = {
             size: 138
           }
         }],
-        aud: await randomDID()
+        aud: await randomDID(),
+        cid: randomLink()
       },
       out: { ok: { status: 'upload' } },
       ts: new Date()
@@ -54,7 +55,8 @@ export const test = {
           can: 'store/remove',
           nb: { link: shard }
         }],
-        aud: await randomDID()
+        aud: await randomDID(),
+        cid: randomLink()
       },
       out: { ok: { size: 138 } },
       ts: new Date()
@@ -99,7 +101,8 @@ export const test = {
             size: 138
           }
         }],
-        aud: consumer.provider
+        aud: consumer.provider,
+        cid: randomLink()
       },
       out: { ok: { status: 'upload' } },
       ts: new Date(from.getTime() + 1)
@@ -116,7 +119,8 @@ export const test = {
             size: 1138
           }
         }],
-        aud: consumer.provider
+        aud: consumer.provider,
+        cid: randomLink()
       },
       out: { ok: { status: 'upload' } },
       ts: new Date(from.getTime() + 2)

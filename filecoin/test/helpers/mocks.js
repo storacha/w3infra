@@ -6,16 +6,11 @@ const notImplemented = () => {
 
 /**
  * @param {Partial<
- * import('@web3-storage/filecoin-client/types').AggregatorService &
  * { assert: Partial<import('@web3-storage/content-claims/server/service/api').AssertService> }
  * >} impl
  */
 export function mockService(impl) {
  return {
-    aggregate: {
-      add: withCallCount(impl.aggregate?.add ?? notImplemented),
-      queue: withCallCount(impl.aggregate?.queue ?? notImplemented),
-    },
     assert: {
       equals: withCallCount(impl.assert?.equals ?? notImplemented)
     }

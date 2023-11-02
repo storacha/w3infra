@@ -63,11 +63,24 @@ const parseUcanStreamEvent = event => {
   const batch = event.Records.map(r => fromString(r.kinesis.data, 'base64'))
   return batch.map(b => {
     const json = JSON.parse(toString(b, 'utf8'))
-    return {
-      ...json,
-      carCid: Link.parse(json.carCid),
-      invocationCid: Link.parse(json.invocationCid),
-      ts: new Date(json.ts)
+    if (json.type === 'receipt') {
+      return {
+        type: 'receipt',
+        value: { ...json.value, cid: Link.parse(json.value.cid) },
+        carCid: Link.parse(json.carCid),
+        invocationCid: Link.parse(json.invocationCid),
+        out: json.out,
+        ts: new Date(json.ts)
+      }
+    } else if (json.type === 'workflow') {
+      return {
+        type: 'workflow',
+        value: { ...json.value, cid: Link.parse(json.value.cid) },
+        carCid: Link.parse(json.carCid),
+        ts: new Date(json.ts)
+      }
+    } else {
+      throw new Error(`unknown message type: ${json.type}`)
     }
   })
 }

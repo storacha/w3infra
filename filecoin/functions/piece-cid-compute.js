@@ -3,7 +3,7 @@ import * as Sentry from '@sentry/serverless'
 
 import { computePieceCid } from '../index.js'
 import { mustGetEnv } from './utils.js'
-import { createPieceTable } from '../tables/piece.js'
+import { createPieceTable } from '../store/piece.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -21,7 +21,8 @@ const AWS_REGION = process.env.AWS_REGION || 'us-west-2'
 async function computeHandler (event) {
   const {
     pieceTableName,
-    disablePieceCidCompute
+    disablePieceCidCompute,
+    did
   } = getEnv()
 
   if (disablePieceCidCompute) {
@@ -45,6 +46,7 @@ async function computeHandler (event) {
     record,
     s3Client,
     pieceTable,
+    group: did
   })
 
   if (error) {
@@ -70,6 +72,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(computeHandler)
 function getEnv () {
   return {
     pieceTableName: mustGetEnv('PIECE_TABLE_NAME'),
+    did: mustGetEnv('DID'),
     disablePieceCidCompute: process.env.DISABLE_PIECE_CID_COMPUTE === 'true'
   }
 }

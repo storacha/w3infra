@@ -4,29 +4,7 @@ import {
   Principal,
   Proof,
 } from '@ucanto/interface'
-import { UnknownLink } from 'multiformats'
-import { PieceLink } from '@web3-storage/data-segment'
-
-export interface PieceTable {
-  insert: (item: PieceInsertInput) => Promise<Result<{}, PieceInsertError>>
-}
-
-export interface PieceInsertInput {
-  link: UnknownLink
-  piece: PieceLink
-}
-
-export type PieceInsertError = DatabaseOperationError | GetCarError | ComputePieceError
-
-export interface DatabaseOperationError extends Error {
-  name: 'DatabaseOperationFailed'
-}
-export interface GetCarError extends Error {
-  name: 'GetCarFailed'
-}
-export interface ComputePieceError extends Error {
-  name: 'ComputePieceFailed'
-}
+import { PieceRecord, PieceRecordKey } from '@web3-storage/filecoin-api/storefront/api'
 
 export interface ClaimsInvocationConfig {
   /**
@@ -46,6 +24,24 @@ export interface ClaimsInvocationConfig {
    */
   proofs?: Proof[]
 }
+
+// Store records
+export type InferStoreRecord<T> = {
+  [Property in keyof T]: T[Property] extends Number ? T[Property] : string
+}
+
+export interface PieceStoreRecord extends Omit<InferStoreRecord<PieceRecord>, 'status'> {
+  stat: number
+}
+
+export interface PieceStoreRecordKey extends InferStoreRecord<PieceRecordKey> {}
+
+export enum PieceStoreRecordStatus {
+  Submitted = 0,
+  Accepted = 1,
+  Invalid = 2
+}
+
 
 export class Failure extends Error {
   describe() {

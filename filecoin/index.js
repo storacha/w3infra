@@ -5,7 +5,6 @@ import * as Digest from 'multiformats/hashes/digest'
 import { Piece } from '@web3-storage/data-segment'
 import { CID } from 'multiformats/cid'
 import { Assert } from '@web3-storage/content-claims/capability'
-import { Aggregator } from '@web3-storage/filecoin-client'
 
 import { GetCarFailed, ComputePieceFailed } from './errors.js'
 
@@ -28,12 +27,14 @@ import { GetCarFailed, ComputePieceFailed } from './errors.js'
  * @param {object} props
  * @param {EventRecord} props.record
  * @param {S3Client} props.s3Client
- * @param {import('./types').PieceTable} props.pieceTable
+ * @param {string} props.group
+ * @param {import('@web3-storage/filecoin-api/storefront/api').PieceStore} props.pieceTable
  */
 export async function computePieceCid({
   record,
   s3Client,
-  pieceTable
+  pieceTable,
+  group
 }) {
   const key = record.key
   // CIDs in carpark are in format `${carCid}/${carCid}.car`
@@ -56,16 +57,19 @@ export async function computePieceCid({
   let piece
   try {
     const hasher = Hasher.create()
-    const digestBytes = new Uint8Array(36)
+    const digest = new Uint8Array(hasher.multihashByteLength())
 
     // @ts-expect-error aws Readable stream types are not good
     for await (const chunk of res.Body) {
       hasher.write(chunk)
     }
-    hasher.digestInto(digestBytes, 0, true)
-    const digest = Digest.decode(digestBytes)
+    hasher.digestInto(digest, 0, true)
+    // There's no GC (yet) in WASM so you should free up
+    // memory manually once you're done.
+    hasher.free()
+    const multihashDigest = Digest.decode(digest)
     // @ts-expect-error some properties from PieceDigest are not present in MultihashDigest
-    piece = Piece.fromDigest(digest)
+    piece = Piece.fromDigest(multihashDigest)
   } catch (/** @type {any} */ error) {
     return {
       error: new ComputePieceFailed(`failed to compute piece CID for CAR: ${cidString}`, { cause: error })
@@ -73,9 +77,14 @@ export async function computePieceCid({
   }
 
   // Write to table
-  const { ok, error } = await pieceTable.insert({
-    link: CID.parse(cidString),
+  const insertedAt = (new Date()).toISOString()
+  const { ok, error } = await pieceTable.put({
+    content: CID.parse(cidString),
     piece: piece.link,
+    status: 'submitted',
+    insertedAt,
+    updatedAt: insertedAt,
+    group
   })
 
   return {
@@ -88,18 +97,12 @@ export async function computePieceCid({
  * @param {object} props
  * @param {import('@web3-storage/data-segment').PieceLink} props.piece
  * @param {import('multiformats').CID} props.content
- * @param {string} props.group
- * @param {import('@ucanto/principal/ed25519').ConnectionView<any>} props.aggregateServiceConnection
- * @param {import('@web3-storage/filecoin-client/types').InvocationConfig} props.aggregateInvocationConfig
  * @param {import('@ucanto/principal/ed25519').ConnectionView<any>} props.claimsServiceConnection
  * @param {import('./types.js').ClaimsInvocationConfig} props.claimsInvocationConfig
  */
 export async function reportPieceCid ({
   piece,
   content,
-  group,
-  aggregateServiceConnection,
-  aggregateInvocationConfig,
   claimsServiceConnection,
   claimsInvocationConfig
 }) {
@@ -120,20 +123,6 @@ export async function reportPieceCid ({
   if (claimResult.out.error) {
     return {
       error: claimResult.out.error
-    }
-  }
-
-  // Add piece for aggregation
-  const aggregateQueue = await Aggregator.aggregateQueue(
-    aggregateInvocationConfig,
-    piece,
-    group,
-    { connection: aggregateServiceConnection }
-  )
-
-  if (aggregateQueue.out.error) {
-    return {
-      error: aggregateQueue.out.error
     }
   }
 
