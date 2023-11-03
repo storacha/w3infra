@@ -27,7 +27,7 @@ export const encode = message => {
     return { ok: dagJSON.stringify(data) }
   } catch (/** @type {any} */ err) {
     return {
-      error: new EncodeFailure(`encoding billing instruction message: ${err.message}`)
+      error: new EncodeFailure(`encoding billing instruction message: ${err.message}`, { cause: err })
     }
   }
 }
@@ -45,7 +45,7 @@ export const decode = str => {
     }
   } catch (/** @type {any} */ err) {
     return {
-      error: new DecodeFailure(`decoding billing instruction message: ${err.message}`)
+      error: new DecodeFailure(`decoding billing instruction message: ${err.message}`, { cause: err })
     }
   }
 }

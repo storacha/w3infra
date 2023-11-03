@@ -67,7 +67,7 @@ export const decode = input => {
     }
   } catch (/** @type {any} */ err) {
     return {
-      error: new DecodeFailure(`decoding subscription record: ${err.message}`)
+      error: new DecodeFailure(`decoding subscription record: ${err.message}`, { cause: err })
     }
   }
 }
@@ -89,7 +89,7 @@ export const lister = {
       }
     } catch (/** @type {any} */ err) {
       return {
-        error: new DecodeFailure(`decoding subscription record: ${err.message}`)
+        error: new DecodeFailure(`decoding subscription record: ${err.message}`, { cause: err })
       }
     }
   }

@@ -34,7 +34,7 @@ export const encode = input => {
     }
   } catch (/** @type {any} */ err) {
     return {
-      error: new EncodeFailure(`encoding space snapshot record: ${err.message}`)
+      error: new EncodeFailure(`encoding space snapshot record: ${err.message}`, { cause: err })
     }
   }
 }
@@ -61,7 +61,7 @@ export const decode = input => {
     }
   } catch (/** @type {any} */ err) {
     return {
-      error: new DecodeFailure(`decoding space snapshot record: ${err.message}`)
+      error: new DecodeFailure(`decoding space snapshot record: ${err.message}`, { cause: err })
     }
   }
 }
