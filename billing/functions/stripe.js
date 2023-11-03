@@ -3,7 +3,7 @@ import { Config } from '@serverless-stack/node/config/index.js'
 import Stripe from 'stripe'
 import { expect, mustGetEnv } from './lib.js'
 import { createCustomerStore } from '../tables/customer.js'
-import { handleCustomerSubscriptionCreated } from '../lib/stripe.js'
+import { handleCustomerSubscriptionCreated } from '../utils/stripe.js'
 
 /**
  * @typedef {import('../lib/api.js').AccountID} AccountID
