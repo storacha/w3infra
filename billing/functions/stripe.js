@@ -57,7 +57,7 @@ export const webhook = Sentry.AWSLambda.wrapHandler(
       // TODO: move this out to a separate lambda per best practices here: https://stripe.com/docs/webhooks#acknowledge-events-immediately
       expect(
         await handleCustomerSubscriptionCreated(stripe, event, customerStore),
-        'putting customer to store'
+        'handling customer subscription created Stripe event'
       )
     }
   }
