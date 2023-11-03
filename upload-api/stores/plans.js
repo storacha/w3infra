@@ -11,7 +11,7 @@ export function usePlansStore(customerStore) {
         {
           ok: {
             product: /** @type {import("@ucanto/interface").DID} */(result.ok.product),
-            updatedAt: result.ok.updatedAt.toISOString()
+            updatedAt: (result.ok.updatedAt || result.ok.insertedAt).toISOString()
           }
         } : {
           error: {
