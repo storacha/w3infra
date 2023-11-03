@@ -16,9 +16,9 @@ const schema = Schema.struct({
   consumer: Schema.did(),
   provider: Schema.did({ method: 'web' }),
   subscription: Schema.text(),
-  cause: Schema.link({ version: 1 }),
+  cause: Schema.link({ version: 1 }).optional(),
   insertedAt: Schema.date(),
-  updatedAt: Schema.date()
+  updatedAt: Schema.date().optional()
 })
 
 /** @type {import('../lib/api').Validator<Consumer>} */
@@ -32,9 +32,9 @@ export const encode = input => {
         consumer: input.consumer,
         provider: input.provider,
         subscription: input.subscription,
-        cause: input.cause.toString(),
+        cause: input.cause ? input.cause.toString() : undefined,
         insertedAt: input.insertedAt.toISOString(),
-        updatedAt: input.updatedAt.toISOString()
+        updatedAt: input.updatedAt ? input.updatedAt.toISOString() : undefined
       }
     }
   } catch (/** @type {any} */ err) {
@@ -54,7 +54,7 @@ export const decode = input => {
         subscription: /** @type {string} */ (input.subscription),
         cause: Link.parse(/** @type {string} */ (input.cause)),
         insertedAt: new Date(input.insertedAt),
-        updatedAt: new Date(input.updatedAt)
+        updatedAt: input.updatedAt ? new Date(input.updatedAt) : undefined
       }
     }
   } catch (/** @type {any} */ err) {

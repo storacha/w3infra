@@ -86,7 +86,7 @@ export interface Customer {
   /** Time the record was added to the database. */
   insertedAt: Date
   /** Time the record was updated in the database. */
-  updatedAt: Date
+  updatedAt?: Date
 }
 
 export interface CustomerKey {
@@ -177,9 +177,10 @@ export interface Consumer {
   consumer: ConsumerDID
   provider: ProviderDID
   subscription: string
-  cause: Link
+  /** This became a required field after 2023-07-10T23:12:38.000Z. */
+  cause?: Link
   insertedAt: Date
-  updatedAt: Date
+  updatedAt?: Date
 }
 
 export interface ConsumerKey { subscription: string, provider: ProviderDID }
@@ -193,9 +194,10 @@ export interface Subscription {
   customer: CustomerDID
   provider: ProviderDID
   subscription: string
-  cause: Link
+  /** This became a required field after 2023-07-18T10:24:38.000Z. */
+  cause?: Link
   insertedAt: Date
-  updatedAt: Date
+  updatedAt?: Date
 }
 
 export interface SubscriptionKey { provider: ProviderDID, subscription: string }
