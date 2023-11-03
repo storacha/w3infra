@@ -1,17 +1,17 @@
-import * as Ucanto from '@ucanto/interface'
 import * as DidMailto from '@web3-storage/did-mailto'
-import Stripe from 'stripe'
 
 /**
  * @typedef {import('../lib/api.js').AccountID} AccountID
+ * @typedef {import('stripe').Stripe} Stripe
+ * @typedef {import('stripe').Stripe.CustomerSubscriptionCreatedEvent} CustomerSubscriptionCreatedEvent
  */
 
 /**
  *
  * @param {Stripe} stripe
- * @param {Stripe.CustomerSubscriptionCreatedEvent} event
+ * @param {CustomerSubscriptionCreatedEvent} event
  * @param {import('./api.js').CustomerStore} customerStore
- * @returns {Promise<Ucanto.Result<Ucanto.Unit, Ucanto.Failure>>}
+ * @returns {Promise<import('@ucanto/interface').Result<import('@ucanto/interface').Unit, import('@ucanto/interface').Failure>>}
  */
 export async function handleCustomerSubscriptionCreated(stripe, event, customerStore) {
   // per https://stripe.com/docs/expand#with-webhooks these attributes will always be a string in a webhook, so these typecasts are safe
