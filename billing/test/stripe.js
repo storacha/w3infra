@@ -1,8 +1,8 @@
-import { handleCustomerSubscriptionCreated } from '../../lib/stripe.js'
+import { handleCustomerSubscriptionCreated } from '../functions/stripe.js'
 import * as DidMailto from '@web3-storage/did-mailto'
 
 
-/** @type {import('./api').TestSuite<import('./api').StripeTestContext>} */
+/** @type {import('./lib/api.js').TestSuite<import('./lib/api.js').StripeTestContext>} */
 export const test = {
   'should create a customer record': async (/** @type {import('entail').assert} */ assert, ctx) => {
     const stripeCustomerId = 'stripe-customer-id'
