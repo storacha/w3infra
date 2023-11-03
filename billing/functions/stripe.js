@@ -89,8 +89,7 @@ export async function handleCustomerSubscriptionCreated(stripe, event, customerS
       customer,
       account,
       product,
-      insertedAt: new Date(),
-      updatedAt: new Date()
+      insertedAt: new Date()
     })
   }
 }
