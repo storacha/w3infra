@@ -16,9 +16,9 @@ const schema = Schema.struct({
   customer: Schema.did({ method: 'mailto' }),
   provider: Schema.did({ method: 'web' }),
   subscription: Schema.text(),
-  cause: Schema.link({ version: 1 }),
+  cause: Schema.link({ version: 1 }).optional(),
   insertedAt: Schema.date(),
-  updatedAt: Schema.date()
+  updatedAt: Schema.date().optional()
 })
 
 /** @type {import('../lib/api').Validator<Subscription>} */
@@ -32,9 +32,9 @@ export const encode = input => {
         customer: input.customer,
         provider: input.provider,
         subscription: input.subscription,
-        cause: input.cause.toString(),
+        cause: input.cause ? input.cause.toString() : undefined,
         insertedAt: input.insertedAt.toISOString(),
-        updatedAt: input.updatedAt.toISOString()
+        updatedAt: input.updatedAt ? input.updatedAt.toISOString() : undefined
       }
     }
   } catch (/** @type {any} */ err) {
@@ -60,9 +60,9 @@ export const decode = input => {
         customer: Schema.did({ method: 'mailto' }).from(input.customer),
         provider: Schema.did({ method: 'web' }).from(input.provider),
         subscription: /** @type {string} */ (input.subscription),
-        cause: Link.parse(/** @type {string} */ (input.cause)),
+        cause: input.cause ? Link.parse(/** @type {string} */ (input.cause)) : undefined,
         insertedAt: new Date(input.insertedAt),
-        updatedAt: new Date(input.updatedAt)
+        updatedAt: input.updatedAt ? new Date(input.updatedAt) : undefined
       }
     }
   } catch (/** @type {any} */ err) {
@@ -84,7 +84,7 @@ export const lister = {
           customer: Schema.did({ method: 'mailto' }).from(input.customer),
           provider: Schema.did({ method: 'web' }).from(input.provider),
           subscription: String(input.subscription),
-          cause: Link.parse(String(input.cause))
+          cause: input.cause ? Link.parse(String(input.cause)) : undefined
         }
       }
     } catch (/** @type {any} */ err) {

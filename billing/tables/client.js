@@ -30,7 +30,7 @@ export const createStorePutterClient = (conf, context) => {
 
       const cmd = new PutItemCommand({
         TableName: context.tableName,
-        Item: marshall(encoding.ok)
+        Item: marshall(encoding.ok, { removeUndefinedValues: true })
       })
 
       try {
