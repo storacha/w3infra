@@ -32,8 +32,8 @@ export interface InvocationBucket {
   putReceipt: (cid: string, bytes: Uint8Array) => Promise<void>
   putInLink: (cid: string, workflowCid: string) => Promise<void>
   putOutLink: (cid: string, workflowCid: string) => Promise<void>
-  getInLink: (cid: string) => Promise<string | undefined>
-  getWorkflowLink: (cid: string) => Promise<string | undefined>
+  getInLink: (cid: string) => Promise<string|undefined>
+  getWorkflowLink: (cid: string) => Promise<string|undefined>
 }
 
 export interface TaskBucket {
@@ -43,14 +43,14 @@ export interface TaskBucket {
 
 export interface WorkflowBucket {
   put: (Cid: string, bytes: Uint8Array) => Promise<void>
-  get: (Cid: string) => Promise<Uint8Array | undefined>
+  get: (Cid: string) => Promise<Uint8Array|undefined>
 }
 
 export interface DelegationsBucket {
   /** put a delegation into the delegations bucket */
   put: (cid: CID, bytes: ByteView<Delegation>) => Promise<void>
   /** get a delegation from the delegations bucket */
-  get: (cid: CID) => Promise<ByteView<Delegation> | undefined>
+  get: (cid: CID) => Promise<ByteView<Delegation>|undefined>
 }
 
 export interface MetricsTable {

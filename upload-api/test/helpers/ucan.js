@@ -178,7 +178,7 @@ export const encodeAgentMessage = async (source) => {
  * @returns {Promise<import('@web3-storage/upload-api').UcantoServerTestContext>}
  */
 
-export async function executionContextToUcantoTestServerContext(t) {
+export async function executionContextToUcantoTestServerContext (t) {
   const service = Signer.Signer.parse('MgCYWjE6vp0cn3amPan2xPO+f6EZ3I+KwuN1w2vx57vpJ9O0Bn4ci4jn8itwc121ujm7lDHkCW24LuKfZwIdmsifVysY=').withDID(
     'did:web:test.web3.storage'
   );
