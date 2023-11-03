@@ -10,7 +10,7 @@ import * as DidMailto from '@web3-storage/did-mailto'
  *
  * @param {Stripe} stripe
  * @param {CustomerSubscriptionCreatedEvent} event
- * @param {import('./api.js').CustomerStore} customerStore
+ * @param {import('../lib/api.js').CustomerStore} customerStore
  * @returns {Promise<import('@ucanto/interface').Result<import('@ucanto/interface').Unit, import('@ucanto/interface').Failure>>}
  */
 export async function handleCustomerSubscriptionCreated(stripe, event, customerStore) {
