@@ -46,7 +46,7 @@ export function createQueueAdderClient (conf, context) {
         })
       } catch (/** @type {any} */ err) {
         console.error(err)
-        return { error: new QueueOperationFailure(err.message) }
+        return { error: new QueueOperationFailure(err.message, { cause: err }) }
       }
 
       return { ok: {} }
