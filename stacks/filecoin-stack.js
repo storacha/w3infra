@@ -102,7 +102,7 @@ export function FilecoinStack({ stack, app }) {
           AGGREGATOR_DID,
         },
         bind: [privateKey],
-        permissions: [pieceTable],
+        permissions: [pieceTable, workflowBucket, invocationBucket],
       }
     }
   })
