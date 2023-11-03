@@ -151,7 +151,11 @@ export function BillingStack ({ stack, app }) {
     customDomain,
     defaults: {
       function: {
-        bind: [stripeSecretKey, stripeEndpointSecret]
+        permissions: [customerTable],
+        bind: [stripeSecretKey, stripeEndpointSecret],
+        environment: {
+          CUSTOMER_TABLE_NAME: customerTable.tableName
+        }
       },
     },
     routes: {
