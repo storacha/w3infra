@@ -13,7 +13,7 @@ const schema = Schema.struct({
   account: Schema.uri({ protocol: 'stripe:' }),
   product: Schema.text(),
   insertedAt: Schema.date(),
-  updatedAt: Schema.date()
+  updatedAt: Schema.date().optional()
 })
 
 /** @type {import('../lib/api').Validator<Customer>} */
@@ -28,12 +28,12 @@ export const encode = input => {
         account: input.account,
         product: input.product,
         insertedAt: input.insertedAt.toISOString(),
-        updatedAt: input.updatedAt.toISOString()
+        updatedAt: input.updatedAt ? input.updatedAt.toISOString() : undefined
       }
     }
   } catch (/** @type {any} */ err) {
     return {
-      error: new EncodeFailure(`encoding customer record: ${err.message}`)
+      error: new EncodeFailure(`encoding customer record: ${err.message}`, { cause: err })
     }
   }
 }
@@ -50,12 +50,12 @@ export const decode = input => {
         account: Schema.uri({ protocol: 'stripe:' }).from(input.account),
         product: /** @type {string} */ (input.product),
         insertedAt: new Date(input.insertedAt),
-        updatedAt: new Date(input.updatedAt)
+        updatedAt: input.updatedAt ? new Date(input.updatedAt) : undefined
       }
     }
   } catch (/** @type {any} */ err) {
     return {
-      error: new DecodeFailure(`decoding customer record: ${err.message}`)
+      error: new DecodeFailure(`decoding customer record: ${err.message}`, { cause: err })
     }
   }
 }

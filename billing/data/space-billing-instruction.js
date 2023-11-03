@@ -31,7 +31,7 @@ export const encode = message => {
     return { ok: dagJSON.stringify(data) }
   } catch (/** @type {any} */ err) {
     return {
-      error: new EncodeFailure(`encoding space billing instruction message: ${err.message}`)
+      error: new EncodeFailure(`encoding space billing instruction message: ${err.message}`, { cause: err })
     }
   }
 }
@@ -49,7 +49,7 @@ export const decode = str => {
     }
   } catch (/** @type {any} */ err) {
     return {
-      error: new DecodeFailure(`decoding space billing instruction message: ${err.message}`)
+      error: new DecodeFailure(`decoding space billing instruction message: ${err.message}`, { cause: err })
     }
   }
 }

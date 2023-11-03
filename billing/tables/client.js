@@ -30,7 +30,7 @@ export const createStorePutterClient = (conf, context) => {
 
       const cmd = new PutItemCommand({
         TableName: context.tableName,
-        Item: marshall(encoding.ok)
+        Item: marshall(encoding.ok, { removeUndefinedValues: true })
       })
 
       try {
@@ -47,7 +47,7 @@ export const createStorePutterClient = (conf, context) => {
         return { ok: {} }
       } catch (/** @type {any} */ err) {
         console.error(err)
-        return { error: new StoreOperationFailure(err.message) }
+        return { error: new StoreOperationFailure(err.message, { cause: err }) }
       }
     }
   }
@@ -90,7 +90,7 @@ export const createStoreGetterClient = (conf, context) => {
         })
       } catch (/** @type {any} */ err) {
         console.error(err)
-        return { error: new StoreOperationFailure(err.message) }
+        return { error: new StoreOperationFailure(err.message, { cause: err }) }
       }
 
       if (!res.Item) {
@@ -165,7 +165,7 @@ export const createStoreListerClient = (conf, context) => {
         })
       } catch (/** @type {any} */ err) {
         console.error(err)
-        return { error: new StoreOperationFailure(err.message) }
+        return { error: new StoreOperationFailure(err.message, { cause: err }) }
       }
   
       const results = []

@@ -42,7 +42,7 @@ export const encode = input => {
     }
   } catch (/** @type {any} */ err) {
     return {
-      error: new EncodeFailure(`encoding usage record: ${err.message}`)
+      error: new EncodeFailure(`encoding usage record: ${err.message}`, { cause: err })
     }
   }
 }
@@ -77,7 +77,7 @@ export const decode = input => {
     }
   } catch (/** @type {any} */ err) {
     return {
-      error: new DecodeFailure(`decoding usage record: ${err.message}`)
+      error: new DecodeFailure(`decoding usage record: ${err.message}`, { cause: err })
     }
   }
 }

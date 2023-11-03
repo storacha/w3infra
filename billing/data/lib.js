@@ -2,9 +2,12 @@ import { Failure } from '@ucanto/server'
 import * as Validator from '@ucanto/validator'
 
 export class DecodeFailure extends Failure {
-  /** @param {string} [message] Context for the message. */
-  constructor (message) {
-    super()
+  /**
+   * @param {string} [message] Context for the message.
+   * @param {ErrorOptions} [options]
+   */
+  constructor (message, options) {
+    super(undefined, options)
     this.name = /** @type {const} */ ('DecodeFailure')
     this.detail = message
   }
@@ -16,9 +19,12 @@ export class DecodeFailure extends Failure {
 }
 
 export class EncodeFailure extends Failure {
-  /** @param {string} [message] Context for the message. */
-  constructor (message) {
-    super()
+  /**
+   * @param {string} [message] Context for the message.
+   * @param {ErrorOptions} [options]
+   */
+  constructor (message, options) {
+    super(undefined, options)
     this.name = /** @type {const} */ ('EncodeFailure')
     this.detail = message
   }
