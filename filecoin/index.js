@@ -39,7 +39,6 @@ export async function computePieceCid({
   const key = record.key
   // CIDs in carpark are in format `${carCid}/${carCid}.car`
   const cidString = key.split('/')[0]
-
   const getCmd = new GetObjectCommand({
     Bucket: record.bucketName,
     Key: key,

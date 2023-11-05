@@ -17,23 +17,23 @@ Sentry.AWSLambda.init({
 
 const AWS_REGION = process.env.AWS_REGION || 'us-west-2'
 
-async function handleCronTick () {
+export async function handleCronTick () {
   const { pieceTableName, workflowBucketName, invocationBucketName, aggregatorDid } = getEnv()
   const { PRIVATE_KEY: privateKey } = Config
 
   // create context
-  const storefrontSigner = getServiceSigner({
+  const id = getServiceSigner({
     privateKey
   })
   const context = {
+    id,
     pieceStore: createPieceTable(AWS_REGION, pieceTableName),
     taskStore: createTaskStore(AWS_REGION, invocationBucketName, workflowBucketName),
     receiptStore: createReceiptStore(AWS_REGION, invocationBucketName, workflowBucketName),
-    id: storefrontSigner,
     aggregatorId: DID.parse(aggregatorDid),
   }
 
-  const { ok, error } = await storefrontEvents.handleCronTick(context)
+  const { error } = await storefrontEvents.handleCronTick(context)
   if (error) {
     return {
       statusCode: 500,
@@ -43,7 +43,6 @@ async function handleCronTick () {
 
   return {
     statusCode: 200,
-    body: ok
   }
 }
 

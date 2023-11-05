@@ -1,4 +1,4 @@
-import { GetItemCommand, QueryCommand, ScanCommand } from '@aws-sdk/client-dynamodb'
+import { GetItemCommand, QueryCommand, ScanCommand, PutItemCommand } from '@aws-sdk/client-dynamodb'
 import { marshall, unmarshall } from '@aws-sdk/util-dynamodb'
 import pRetry from 'p-retry'
 
@@ -15,6 +15,22 @@ export async function getTableItem (dynamo, tableName, key) {
 
   const response = await dynamo.send(cmd)
   return response.Item && unmarshall(response.Item)
+}
+
+/**
+ * @param {import('@aws-sdk/client-dynamodb').DynamoDBClient} dynamo
+ * @param {string} tableName
+ * @param {any} record
+ */
+export async function putTableItem (dynamo, tableName, record) {
+  const putCmd = new PutItemCommand({
+    TableName: tableName,
+    Item: marshall(record, {
+      removeUndefinedValues: true
+    }),
+  })
+
+  await dynamo.send(putCmd)
 }
 
 /**

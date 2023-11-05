@@ -109,11 +109,11 @@ The domain to deploy the roundabout API to. e.g `roundabout.web3.storage`. The v
 
 URL of the w3access service.
 
-#### `AGGREGATOR_SERVICE_DID`
+#### `AGGREGATOR_DID`
 
 DID of the filecoin aggregator service.
 
-#### `AGGREGATOR_SERVICE_URL`
+#### `AGGREGATOR_URL`
 
 URL of the filecoin aggregator service.
 
