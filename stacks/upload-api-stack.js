@@ -60,6 +60,7 @@ export function UploadApiStack({ stack, app }) {
           filecoinSubmitQueue
         ],
         environment: {
+          DID: process.env.UPLOAD_API_DID ?? '',
           AGGREGATOR_DID,
           STORE_TABLE_NAME: storeTable.tableName,
           STORE_BUCKET_NAME: carparkBucket.bucketName,

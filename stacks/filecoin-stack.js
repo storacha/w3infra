@@ -106,10 +106,12 @@ export function FilecoinStack({ stack, app }) {
       function: {
         handler: 'functions/handle-cron-tick.main',
         environment : {
+          DID: UPLOAD_API_DID,
           PIECE_TABLE_NAME: pieceTable.tableName,
           WORKFLOW_BUCKET_NAME: workflowBucket.bucketName,
           INVOCATION_BUCKET_NAME: invocationBucket.bucketName,
           AGGREGATOR_DID,
+          PROOF: STOREFRONT_PROOF,
         },
         bind: [privateKey],
         permissions: [pieceTable, workflowBucket, invocationBucket],
