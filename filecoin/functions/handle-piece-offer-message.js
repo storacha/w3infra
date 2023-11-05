@@ -89,7 +89,7 @@ function getEnv () {
     did: mustGetEnv('DID'),
     aggregatorDid: mustGetEnv('AGGREGATOR_DID'),
     aggregatorUrl: mustGetEnv('AGGREGATOR_URL'),
-    storefrontProof: mustGetEnv('PROOF'),
+    storefrontProof: process.env.PROOF,
   }
 }
 

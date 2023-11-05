@@ -18,6 +18,10 @@ Sentry.AWSLambda.init({
 })
 
 /**
+ * @typedef {import('../types').PieceStoreRecord} PieceStoreRecord
+ */
+
+/**
  * @param {import('aws-lambda').DynamoDBStreamEvent} event
  */
 async function pieceCidReport (event) {
@@ -29,10 +33,11 @@ async function pieceCidReport (event) {
     throw new Error('Should only receive one ferry to update')
   }
 
+  /** @type {PieceStoreRecord} */
   // @ts-expect-error can't figure out type of new
   const pieceRecord = unmarshall(records[0].new)
   const piece = Piece.fromString(pieceRecord.piece).link
-  const content = CID.parse(pieceRecord.link)
+  const content = CID.parse(pieceRecord.content)
 
   const claimsServiceConnection = getServiceConnection({
     did: contentClaimsDid,

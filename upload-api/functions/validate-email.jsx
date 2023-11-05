@@ -103,7 +103,7 @@ function createAuthorizeContext () {
     // TODO: we should set URL from a different env var, doing this for now to avoid that refactor
     url: new URL(ACCESS_SERVICE_URL),
     email: new Email({ token: POSTMARK_TOKEN }),
-    signer: getServiceSigner({ UPLOAD_API_DID, PRIVATE_KEY }),
+    signer: getServiceSigner({ did: UPLOAD_API_DID, privateKey: PRIVATE_KEY }),
     delegationsStorage: createDelegationsTable(AWS_REGION, DELEGATION_TABLE_NAME, { bucket: delegationBucket, invocationBucket, workflowBucket }),
     revocationsStorage: createRevocationsTable(AWS_REGION, REVOCATION_TABLE_NAME),
     provisionsStorage: useProvisionStore(subscriptionTable, consumerTable, spaceMetricsTable, parseServiceDids(PROVIDERS)),

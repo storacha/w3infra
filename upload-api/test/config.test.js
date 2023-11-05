@@ -18,9 +18,9 @@ const testKeypair = {
   },
 }
 
-test('getServiceSigner creates a signer using config.PRIVATE_KEY', async (t) => {
+test('getServiceSigner creates a signer using config.privateKey', async (t) => {
   const config = {
-    PRIVATE_KEY: testKeypair.private.multiformats,
+    privateKey: testKeypair.private.multiformats,
   }
   const signer = configModule.getServiceSigner(config)
   t.assert(signer)
@@ -30,30 +30,30 @@ test('getServiceSigner creates a signer using config.PRIVATE_KEY', async (t) => 
   t.deepEqual(didKeys, [testKeypair.public.did])
 })
 
-test('getServiceSigner infers DID from config.PRIVATE_KEY when config.UPLOAD_API_DID is omitted', async (t) => {
+test('getServiceSigner infers DID from config.privateKey when config.did is omitted', async (t) => {
   const config = {
-    PRIVATE_KEY: testKeypair.private.multiformats,
+    privateKey: testKeypair.private.multiformats,
   }
   const signer = configModule.getServiceSigner(config)
   t.assert(signer)
   t.is(signer.did().toString(), testKeypair.public.did)
 })
 
-test('getServiceSigner creates a signer using config.{UPLOAD_API_KEY,PRIVATE_KEY}', async (t) => {
+test('getServiceSigner creates a signer using config.{did,privateKey}', async (t) => {
   const config = {
-    PRIVATE_KEY: testKeypair.private.multiformats,
-    UPLOAD_API_DID: 'did:web:exampe.com',
+    privateKey: testKeypair.private.multiformats,
+    did: 'did:web:exampe.com',
   }
   const principal = configModule.getServiceSigner(config)
   t.assert(principal)
-  t.is(principal.did().toString(), config.UPLOAD_API_DID)
+  t.is(principal.did().toString(), config.did)
 })
 
-test('getServiceSigner errors if config.UPLOAD_API_DID is provided but not a DID', (t) => {
+test('getServiceSigner errors if config.did is provided but not a DID', (t) => {
   t.throws(() => {
     configModule.getServiceSigner({
-      UPLOAD_API_DID: 'not a did',
-      PRIVATE_KEY: testKeypair.private.multiformats,
+      did: 'not a did',
+      privateKey: testKeypair.private.multiformats,
     })
   }, { message: /^Invalid DID/ })
 })

@@ -109,6 +109,7 @@ export function UploadApiStack({ stack, app }) {
       'GET /error':   'functions/get.error',
       'GET /version': 'functions/get.version',
       'GET /metrics': 'functions/metrics.handler',
+      'GET /storefront-cron': 'functions/storefront-cron.handler',
       // AWS API Gateway does not know trailing slash... and Grafana Agent puts trailing slash
       'GET /metrics/{proxy+}': 'functions/metrics.handler',
     },
