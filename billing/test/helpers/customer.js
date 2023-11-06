@@ -1,6 +1,5 @@
 import { Schema } from '../../data/lib.js'
 import { randomAlphaNumerics } from './ascii.js'
-import { randomLink } from './dag.js'
 import { randomDIDMailto } from './did.js'
 import { randomInteger } from './math.js'
 
@@ -9,7 +8,6 @@ import { randomInteger } from './math.js'
  * @returns {import('../../lib/api').Customer}
  */
 export const randomCustomer = (base = {}) => ({
-  cause: randomLink(),
   customer: randomDIDMailto(),
   account: Schema.uri({ protocol: 'stripe:' }).from(`stripe:cus_${randomAlphaNumerics(14)}`),
   product: ['starter', 'lite', 'business'][randomInteger(0, 3)],

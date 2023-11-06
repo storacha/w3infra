@@ -25,6 +25,8 @@ import { useWorkflowStore } from '../../buckets/workflow-store.js';
 import { useRateLimitTable } from '../../tables/rate-limit.js';
 import { useSpaceMetricsTable } from '../../tables/space-metrics.js';
 import { spaceMetricsTableProps } from '@web3-storage/w3infra-ucan-invocation/tables/index.js';
+import { createCustomerStore, customerTableProps } from '@web3-storage/w3infra-billing/tables/customer.js';
+import { usePlansStore } from '../../stores/plans.js';
 import { pieceTableProps } from '../../../filecoin/store/index.js';
 import { usePieceTable } from '../../../filecoin/store/piece.js'
 import { createTaskStore as createFilecoinTaskStore } from '../../../filecoin/store/task.js'
@@ -243,6 +245,8 @@ export async function executionContextToUcantoTestServerContext (t) {
     spaceMetricsTable,
     [service.did()]
   );
+  const customersStore = createCustomerStore(dynamo, { tableName: await createTable(dynamo, customerTableProps) })
+  const plansStorage = usePlansStore(customersStore)
   const email = new DebugEmail();
 
   /** @type {import('@web3-storage/upload-api').UcantoServerContext} */
@@ -255,6 +259,7 @@ export async function executionContextToUcantoTestServerContext (t) {
     delegationsStorage,
     rateLimitsStorage,
     revocationsStorage,
+    plansStorage,
     errorReporter: {
       catch (error) {
         t.fail(error.message);
@@ -280,8 +285,6 @@ export async function executionContextToUcantoTestServerContext (t) {
       // We may change this to validate user provided piece
       skipFilecoinSubmitQueue: true
     },
-    // @ts-expect-error still not implemented
-    plansStorage: {}
   };
   const connection = connect({
     id: serviceContext.id,

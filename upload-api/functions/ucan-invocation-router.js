@@ -31,6 +31,8 @@ import { createRateLimitTable } from '../tables/rate-limit.js'
 import { createSpaceMetricsTable } from '../tables/space-metrics.js'
 import { mustGetEnv } from './utils.js'
 import { createRevocationsTable } from '../stores/revocations.js'
+import { usePlansStore } from '../stores/plans.js'
+import { createCustomerStore } from '@web3-storage/w3infra-billing/tables/customer.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -92,6 +94,7 @@ export async function ucanInvocationRouter(request) {
     storeBucketName,
     uploadTableName,
     consumerTableName,
+    customerTableName,
     subscriptionTableName,
     delegationTableName,
     revocationTableName,
@@ -139,6 +142,8 @@ export async function ucanInvocationRouter(request) {
   const consumerTable = createConsumerTable(AWS_REGION, consumerTableName, {
     endpoint: dbEndpoint
   });
+  const customerStore = createCustomerStore({ region: AWS_REGION }, { tableName: customerTableName })
+  const plansStorage = usePlansStore(customerStore)
   const rateLimitsStorage = createRateLimitTable(AWS_REGION, rateLimitTableName)
   const spaceMetricsTable = createSpaceMetricsTable(AWS_REGION, spaceMetricsTableName)
 
@@ -182,8 +187,7 @@ export async function ucanInvocationRouter(request) {
       // We may change this to validate user provided piece
       skipFilecoinSubmitQueue: true
     },
-    // @ts-expect-error still not implemented
-    plansStorage: {}
+    plansStorage
   })
 
   const processingCtx = {
@@ -268,6 +272,7 @@ function getLambdaEnv () {
     storeBucketName: mustGetEnv('STORE_BUCKET_NAME'),
     uploadTableName: mustGetEnv('UPLOAD_TABLE_NAME'),
     consumerTableName: mustGetEnv('CONSUMER_TABLE_NAME'),
+    customerTableName: mustGetEnv('CUSTOMER_TABLE_NAME'),
     subscriptionTableName: mustGetEnv('SUBSCRIPTION_TABLE_NAME'),
     delegationTableName: mustGetEnv('DELEGATION_TABLE_NAME'),
     revocationTableName: mustGetEnv('REVOCATION_TABLE_NAME'),

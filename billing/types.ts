@@ -11,5 +11,8 @@ declare module '@serverless-stack/node/config' {
     STRIPE_SECRET_KEY: {
       value: string
     }
+    STRIPE_ENDPOINT_SECRET: {
+      value: string
+    }
   }
 }

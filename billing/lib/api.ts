@@ -45,7 +45,9 @@ export interface SpaceDiffListKey {
   from: Date
 }
 
-export interface SpaceDiffStore extends StorePutter<SpaceDiff>, StoreLister<SpaceDiffListKey, SpaceDiff>{}
+export type SpaceDiffStore =
+  & StorePutter<SpaceDiff>
+  & StoreLister<SpaceDiffListKey, SpaceDiff>
 
 /** Captures size of a space at a given point in time. */
 export interface SpaceSnapshot {
@@ -72,8 +74,6 @@ export type SpaceSnapshotStore =
  * billed for storage usage.
  */
 export interface Customer {
-  /** CID of the UCAN invocation that set it to the current value. */
-  cause: Link
   /** DID of the user account e.g. `did:mailto:agent`. */
   customer: CustomerDID
   /**
@@ -99,6 +99,9 @@ export type CustomerStore =
   & StoreGetter<CustomerKey, Customer>
   & StorePutter<Customer>
   & StoreLister<{}, Customer>
+  & {
+    updateProduct: (customer: CustomerDID, product: string) => Promise<Result<Unit, Failure>>
+  }
 
 /**
  * Captures storage usage by a given customer for a given space in the given

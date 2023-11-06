@@ -1,10 +1,10 @@
-import { use, Cron, Queue, Function, Config } from '@serverless-stack/resources'
+import { use, Cron, Queue, Function, Config, Api } from '@serverless-stack/resources'
 import { StartingPosition } from 'aws-cdk-lib/aws-lambda'
 import { Duration } from 'aws-cdk-lib'
 import { UcanInvocationStack } from './ucan-invocation-stack.js'
 import { BillingDbStack } from './billing-db-stack.js'
 import { UploadDbStack } from './upload-db-stack.js'
-import { setupSentry } from './config.js'
+import { setupSentry, getCustomDomain } from './config.js'
 
 /** @param {import('@serverless-stack/resources').StackContext} props */
 export function BillingStack ({ stack, app }) {
@@ -142,6 +142,34 @@ export function BillingStack ({ stack, app }) {
   })
 
   stack.addOutputs({ billingCronHandlerURL })
+
+  // Setup API
+  const customDomain = getCustomDomain(stack.stage, process.env.BILLING_HOSTED_ZONE)
+  const stripeEndpointSecret = new Config.Secret(stack, 'STRIPE_ENDPOINT_SECRET')
+
+  const api = new Api(stack, 'billing-http-gateway', {
+    customDomain,
+    defaults: {
+      function: {
+        permissions: [customerTable],
+        bind: [stripeSecretKey, stripeEndpointSecret],
+        environment: {
+          CUSTOMER_TABLE_NAME: customerTable.tableName
+        }
+      },
+    },
+    routes: {
+      'POST /stripe': 'functions/stripe.webhook',
+    },
+    accessLog: {
+      format: '{"requestTime":"$context.requestTime","requestId":"$context.requestId","httpMethod":"$context.httpMethod","path":"$context.path","routeKey":"$context.routeKey","status":$context.status,"responseLatency":$context.responseLatency,"integrationRequestId":"$context.integration.requestId","integrationStatus":"$context.integration.status","integrationLatency":"$context.integration.latency","integrationServiceStatus":"$context.integration.integrationStatus","ip":"$context.identity.sourceIp","userAgent":"$context.identity.userAgent"}'
+    },
+  })
+
+  stack.addOutputs({
+    ApiEndpoint: api.url,
+    CustomDomain: customDomain ? `https://${customDomain.domainName}` : 'Set BILLING_HOSTED_ZONE in env to deploy to a custom domain'
+  })
 
   return { billingCron }
 }

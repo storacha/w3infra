@@ -110,6 +110,15 @@ export const createSpaceBillingQueueTestContext = async () => {
   return { spaceDiffStore, spaceSnapshotStore, usageStore }
 }
 
+export const createStripeTestContext = async () => {
+  await createAWSServices()
+
+  const customerTableName = await createTable(awsServices.dynamo.client, customerTableProps, 'customer-')
+  const customerStore = createCustomerStore(awsServices.dynamo.client, { tableName: customerTableName })
+
+  return { customerStore }
+}
+
 export const createUCANStreamTestContext = async () => {
   await createAWSServices()
 

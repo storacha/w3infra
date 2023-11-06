@@ -1,5 +1,5 @@
 import * as UCAN from '@ipld/dag-ucan'
-import { DID, Link, Delegation, Signature, Block, UCANLink, ByteView, DIDKey } from '@ucanto/interface'
+import { DID, Link, Delegation, Signature, Block, UCANLink, ByteView, DIDKey, Result, Failure } from '@ucanto/interface'
 import { UnknownLink } from 'multiformats'
 import { CID } from 'multiformats/cid'
 import { Kinesis } from '@aws-sdk/client-kinesis'
@@ -125,6 +125,24 @@ export interface ConsumerTable {
   hasStorageProvider: (consumer: DID) => Promise<boolean>
   /** return a list of storage providers the given consumer has registered with */
   getStorageProviders: (consumer: DID) => Promise<ProviderDID[]>
+}
+
+// TODO: unify this with RecordNotFound in ../billing/tables/lib.js
+export interface RecordNotFound<K> extends Failure {
+  name: 'RecordNotFound'
+  key: K
+}
+
+// TODO unify this with Customer in ../billing/lib/api.ts
+export interface Customer {
+  product: string
+  updatedAt: string
+}
+
+// TODO unify this with CustomerStore in ../billing/lib/api.ts
+export interface CustomerTable {
+  /** get a customer record */
+  get: (customer: DID<'mailto'>) => Promise<Result<Customer, RecordNotFound<DID<'mailto'>>>>
 }
 
 export type SpaceService = Pick<Service, "space">

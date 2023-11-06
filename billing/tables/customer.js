@@ -1,5 +1,8 @@
-import { createStoreGetterClient, createStoreListerClient, createStorePutterClient } from './client.js'
+import { connectTable, createStoreGetterClient, createStoreListerClient, createStorePutterClient } from './client.js'
 import { validate, encode, encodeKey, decode } from '../data/customer.js'
+import { UpdateItemCommand } from '@aws-sdk/client-dynamodb'
+import { marshall } from '@aws-sdk/util-dynamodb'
+import { StoreOperationFailure } from './lib.js'
 
 /**
  * Stores customer details.
@@ -43,5 +46,27 @@ export const createCustomerStore = (conf, { tableName }) => ({
     tableName,
     encodeKey: () => ({ ok: {} }),
     decode
-  })
+  }),
+
+  async updateProduct(customer, product) {
+    const client = connectTable(conf)
+    try {
+      const res = await client.send(new UpdateItemCommand({
+        TableName: tableName,
+        Key: marshall({ customer }),
+        UpdateExpression: 'SET product = :product, updatedAt = :updatedAt',
+        ExpressionAttributeValues: marshall({
+          product,
+          updatedAt: new Date().toISOString()
+        })
+      }))
+      if (res.$metadata.httpStatusCode !== 200) {
+        throw new Error(`unexpected status putting item to table: ${res.$metadata.httpStatusCode}`)
+      }
+      return { ok: {} }
+    } catch (/** @type {any} */ err) {
+      console.error(err)
+      return { error: new StoreOperationFailure(err.message) }
+    }
+  }
 })
