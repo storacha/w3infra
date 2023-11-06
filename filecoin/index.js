@@ -39,7 +39,6 @@ export async function computePieceCid({
   const key = record.key
   // CIDs in carpark are in format `${carCid}/${carCid}.car`
   const cidString = key.split('/')[0]
-
   const getCmd = new GetObjectCommand({
     Bucket: record.bucketName,
     Key: key,
@@ -57,13 +56,18 @@ export async function computePieceCid({
   let piece
   try {
     const hasher = Hasher.create()
-    const digest = new Uint8Array(hasher.multihashByteLength())
 
     // @ts-expect-error aws Readable stream types are not good
     for await (const chunk of res.Body) {
       hasher.write(chunk)
     }
+
+    // ⚠️ Because digest size will dependen on the payload (padding)
+    // we have to determine number of bytes needed after we're done
+    // writing payload
+    const digest = new Uint8Array(hasher.multihashByteLength())
     hasher.digestInto(digest, 0, true)
+
     // There's no GC (yet) in WASM so you should free up
     // memory manually once you're done.
     hasher.free()

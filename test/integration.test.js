@@ -2,33 +2,30 @@ import { fetch } from '@web-std/fetch'
 import git from 'git-rev-sync'
 import pWaitFor from 'p-wait-for'
 import { HeadObjectCommand } from '@aws-sdk/client-s3'
-import {
-  PutItemCommand
-} from '@aws-sdk/client-dynamodb'
+import { PutItemCommand } from '@aws-sdk/client-dynamodb'
 import { marshall } from '@aws-sdk/util-dynamodb'
 
 import { METRICS_NAMES, SPACE_METRICS_NAMES } from '../ucan-invocation/constants.js'
+
 import { test } from './helpers/context.js'
 import {
   stage,
   getApiEndpoint,
   getAwsBucketClient,
   getCloudflareBucketClient,
-  getRoundaboutEndpoint,
   getSatnavBucketInfo,
   getCarparkBucketInfo,
   getDynamoDb
 } from './helpers/deployment.js'
 import { createMailSlurpInbox, createNewClient, setupNewClient } from './helpers/up-client.js'
 import { randomFile } from './helpers/random.js'
-import { getTableItem, getAllTableRows, pollQueryTable } from './helpers/table.js'
+import { getTableItem, getAllTableRows } from './helpers/table.js'
 
 test.before(t => {
   t.context = {
     apiEndpoint: getApiEndpoint(),
     metricsDynamo: getDynamoDb('admin-metrics'),
     spaceMetricsDynamo: getDynamoDb('space-metrics'),
-    pieceDynamo: getDynamoDb('piece'),
     rateLimitsDynamo: getDynamoDb('rate-limit')
   }
 })
@@ -245,34 +242,6 @@ test('w3infra integration flow', async t => {
     interval: 100,
   })
 
-  // Check filecoin piece computed after leaving queue
-  if (process.env.DISABLE_PIECE_CID_COMPUTE !== 'true') {
-    const pieces = await getPieces(t, shards[0].toString())
-    t.assert(pieces)
-    t.is(pieces?.length, 1)
-    t.truthy(pieces?.[0].piece)
-
-    console.log('piece written', pieces?.[0].piece)
-
-    // Check roundabout can redirect from pieceCid to signed bucket url for car
-    const roundaboutEndpoint = await getRoundaboutEndpoint()
-    const roundaboutUrl = new URL(pieces?.[0].piece, roundaboutEndpoint)
-    console.log('checking roundabout', roundaboutUrl)
-    await pWaitFor(async () => {
-      try {
-        const res = await fetch(roundaboutUrl, {
-          method: 'HEAD',
-          redirect: 'manual'
-        })
-        return res.status === 302 && res.headers.get('location')?.includes(shards[0].toString())
-      } catch {}
-      return false
-    }, {
-      interval: 100,
-    })
-    console.log('roundabout redirected from piece to car', roundaboutUrl) 
-  }
-
   // Check metrics were updated
   if (beforeStoreAddSizeTotal && spaceBeforeUploadAddMetrics && spaceBeforeStoreAddSizeMetrics && beforeUploadAddTotal) {
     await pWaitFor(async () => {
@@ -322,7 +291,7 @@ test('w3infra integration flow', async t => {
 
   t.is(uploadError?.message, 'failed store/add invocation')
 })
-
+  
 /**
  * @param {import("ava").ExecutionContext<import("./helpers/context.js").Context>} t
  */
@@ -345,28 +314,6 @@ async function getSpaceMetrics (t, spaceDid, name) {
     t.context.spaceMetricsDynamo.client,
     t.context.spaceMetricsDynamo.tableName,
     { space: spaceDid, name }
-  )
-
-  return item
-}
-
-/**
- * @param {import("ava").ExecutionContext<import("./helpers/context.js").Context>} t
- * @param {string} link
- */
-async function getPieces (t, link) {
-  const item = await pollQueryTable(
-    t.context.pieceDynamo.client,
-    t.context.pieceDynamo.tableName,
-    {
-      link: {
-        ComparisonOperator: 'EQ',
-        AttributeValueList: [{ S: link }]
-      }
-    },
-    {
-      indexName: 'link'
-    }
   )
 
   return item

@@ -23,7 +23,16 @@ export function FilecoinStack({ stack, app }) {
     srcPath: 'filecoin'
   })
 
-  const { AGGREGATOR_DID, AGGREGATOR_URL, CONTENT_CLAIMS_DID, CONTENT_CLAIMS_URL, CONTENT_CLAIMS_PROOF, DISABLE_PIECE_CID_COMPUTE, UPLOAD_API_DID, STOREFRONT_PROOF } = getEnv()
+  const {
+    AGGREGATOR_DID,
+    AGGREGATOR_URL,
+    CONTENT_CLAIMS_DID,
+    CONTENT_CLAIMS_URL,
+    CONTENT_CLAIMS_PROOF,
+    DISABLE_PIECE_CID_COMPUTE,
+    UPLOAD_API_DID,
+    STOREFRONT_PROOF
+  } = getEnv()
   const storefrontCustomDomain = getCustomDomain(stack.stage, process.env.HOSTED_ZONE)
 
   // Setup app monitoring with Sentry
@@ -70,6 +79,7 @@ export function FilecoinStack({ stack, app }) {
     function: {
       handler: 'functions/handle-piece-offer-message.main',
       environment: {
+        DID: UPLOAD_API_DID,
         AGGREGATOR_DID,
         AGGREGATOR_URL,
         PROOF: STOREFRONT_PROOF,
@@ -96,10 +106,12 @@ export function FilecoinStack({ stack, app }) {
       function: {
         handler: 'functions/handle-cron-tick.main',
         environment : {
+          DID: UPLOAD_API_DID,
           PIECE_TABLE_NAME: pieceTable.tableName,
           WORKFLOW_BUCKET_NAME: workflowBucket.bucketName,
           INVOCATION_BUCKET_NAME: invocationBucket.bucketName,
           AGGREGATOR_DID,
+          PROOF: STOREFRONT_PROOF,
         },
         bind: [privateKey],
         permissions: [pieceTable, workflowBucket, invocationBucket],
@@ -187,7 +199,6 @@ export function FilecoinStack({ stack, app }) {
       },
       filters: [
         {
-          eventName: ['UPDATE'],
           dynamodb: {
             NewImage: {
               stat: {

@@ -25,7 +25,7 @@ export async function versionGet(request) {
     UPLOAD_API_DID,
   } = process.env
   const { PRIVATE_KEY } = Config
-  const serviceSigner = getServiceSigner({ UPLOAD_API_DID, PRIVATE_KEY })
+  const serviceSigner = getServiceSigner({ did: UPLOAD_API_DID, privateKey: PRIVATE_KEY })
   const did = serviceSigner.did()
   const publicKey = serviceSigner.toDIDKey()
   return {
@@ -47,7 +47,7 @@ export const version = Sentry.AWSLambda.wrapHandler(versionGet)
 export async function homeGet(request) {
   const { VERSION: version, STAGE: stage, UPLOAD_API_DID } = process.env
   const { PRIVATE_KEY } = Config
-  const serviceSigner = getServiceSigner({ UPLOAD_API_DID, PRIVATE_KEY })
+  const serviceSigner = getServiceSigner({ did: UPLOAD_API_DID, privateKey: PRIVATE_KEY })
   const did = serviceSigner.did()
   const publicKey = serviceSigner.toDIDKey()
   const env = stage === 'prod' ? '' : `(${stage})`

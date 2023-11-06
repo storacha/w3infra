@@ -97,7 +97,7 @@ function getEnv () {
     did: mustGetEnv('DID'),
     storefrontDid: mustGetEnv('STOREFRONT_DID'),
     storefrontUrl: mustGetEnv('STOREFRONT_URL'),
-    storefrontProof: mustGetEnv('PROOF'),
+    storefrontProof: process.env.PROOF,
   }
 }
 

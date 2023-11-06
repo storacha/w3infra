@@ -2,6 +2,8 @@ import * as Sentry from '@sentry/serverless'
 import { Config } from '@serverless-stack/node/config/index.js'
 import * as storefrontEvents from '@web3-storage/filecoin-api/storefront/events'
 import * as DID from '@ipld/dag-ucan/did'
+import * as Delegation from '@ucanto/core/delegation'
+import { fromString } from 'uint8arrays/from-string'
 
 import { createPieceTable } from '../store/piece.js'
 import { createTaskStore } from '../store/task.js'
@@ -17,23 +19,33 @@ Sentry.AWSLambda.init({
 
 const AWS_REGION = process.env.AWS_REGION || 'us-west-2'
 
-async function handleCronTick () {
-  const { pieceTableName, workflowBucketName, invocationBucketName, aggregatorDid } = getEnv()
+export async function handleCronTick () {
+  const { did, pieceTableName, workflowBucketName, invocationBucketName, aggregatorDid, storefrontProof } = getEnv()
   const { PRIVATE_KEY: privateKey } = Config
 
   // create context
-  const storefrontSigner = getServiceSigner({
+  let id = getServiceSigner({
     privateKey
   })
+  const storefrontServiceProofs = []
+  if (storefrontProof) {
+    const proof = await Delegation.extract(fromString(storefrontProof, 'base64pad'))
+    if (!proof.ok) throw new Error('failed to extract proof', { cause: proof.error })
+    storefrontServiceProofs.push(proof.ok)
+  } else {
+    // if no proofs, we must be using the service private key to sign
+    id = id.withDID(DID.parse(did).did())
+  }
+
   const context = {
+    id,
     pieceStore: createPieceTable(AWS_REGION, pieceTableName),
     taskStore: createTaskStore(AWS_REGION, invocationBucketName, workflowBucketName),
     receiptStore: createReceiptStore(AWS_REGION, invocationBucketName, workflowBucketName),
-    id: storefrontSigner,
     aggregatorId: DID.parse(aggregatorDid),
   }
 
-  const { ok, error } = await storefrontEvents.handleCronTick(context)
+  const { error } = await storefrontEvents.handleCronTick(context)
   if (error) {
     return {
       statusCode: 500,
@@ -43,7 +55,6 @@ async function handleCronTick () {
 
   return {
     statusCode: 200,
-    body: ok
   }
 }
 
@@ -52,10 +63,12 @@ async function handleCronTick () {
  */
 function getEnv () {
   return {
+    did: mustGetEnv('DID'),
     pieceTableName: mustGetEnv('PIECE_TABLE_NAME'),
     workflowBucketName: mustGetEnv('WORKFLOW_BUCKET_NAME'),
     invocationBucketName: mustGetEnv('INVOCATION_BUCKET_NAME'),
-    aggregatorDid: mustGetEnv('AGGREGATOR_DID')
+    aggregatorDid: mustGetEnv('AGGREGATOR_DID'),
+    storefrontProof: process.env.PROOF,
   }
 }
 

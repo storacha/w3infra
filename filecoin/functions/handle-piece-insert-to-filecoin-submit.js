@@ -41,8 +41,8 @@ async function handlePieceInsertToFilecoinSubmit (event) {
 
   /** @type {PieceStoreRecord} */
   // @ts-expect-error can't figure out type of new
-  const storeReecord = unmarshall(eventRawRecords[0].new)
-  const record = decodeRecord(storeReecord)
+  const storeRecord = unmarshall(eventRawRecords[0].new)
+  const record = decodeRecord(storeRecord)
 
   // Create context
   const { PRIVATE_KEY: privateKey } = Config
@@ -97,7 +97,7 @@ function getEnv () {
     did: mustGetEnv('DID'),
     storefrontDid: mustGetEnv('STOREFRONT_DID'),
     storefrontUrl: mustGetEnv('STOREFRONT_URL'),
-    storefrontProof: mustGetEnv('PROOF'),
+    storefrontProof: process.env.PROOF,
   }
 }
 

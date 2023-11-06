@@ -24,8 +24,8 @@ export const getCloudflareBucketClient = () => new S3Client({
   },
 })
 
-export const getAwsBucketClient = () => new S3Client({
-  region: getAwsRegion()
+export const getAwsBucketClient = (region = getAwsRegion()) => new S3Client({
+  region
 })
 
 export const getApiEndpoint = () => {

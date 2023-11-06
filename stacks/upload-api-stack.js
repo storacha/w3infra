@@ -63,6 +63,7 @@ export function UploadApiStack({ stack, app }) {
           filecoinSubmitQueue
         ],
         environment: {
+          DID: process.env.UPLOAD_API_DID ?? '',
           AGGREGATOR_DID,
           STORE_TABLE_NAME: storeTable.tableName,
           STORE_BUCKET_NAME: carparkBucket.bucketName,
@@ -113,6 +114,7 @@ export function UploadApiStack({ stack, app }) {
       'GET /error':   'functions/get.error',
       'GET /version': 'functions/get.version',
       'GET /metrics': 'functions/metrics.handler',
+      'GET /storefront-cron': 'functions/storefront-cron.handler',
       // AWS API Gateway does not know trailing slash... and Grafana Agent puts trailing slash
       'GET /metrics/{proxy+}': 'functions/metrics.handler',
     },
