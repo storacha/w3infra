@@ -115,6 +115,9 @@ test('w3filecoin integration flow', async t => {
   console.log('filecoin/offer effects')
   console.log('filecoin/offer fork (filecoin/submit)', filecoinSubmitReceiptCid)
   console.log('filecoin/offer join (filecoin/accept)', filecoinAcceptReceiptCid)
+  if (!filecoinAcceptReceiptCid) {
+    throw new Error('filecoin/offer receipt has no effect for filecoin/accept')
+  }
 
   // Verify receipt chain
   console.log(`wait for receipt chain...`)
@@ -190,10 +193,10 @@ test('w3filecoin integration flow', async t => {
     const callStorefrontCronRes = await fetch(`${endpoint}/storefront-cron`)
     t.true(callStorefrontCronRes.ok)
 
-    // Await for `piece/accept` receipt
-    console.log(`wait for piece/accept receipt ${pieceAcceptReceiptCid.toString()} ...`)
+    // Await for `filecoin/accept` receipt
+    console.log(`wait for filecoin/accept receipt ${filecoinAcceptReceiptCid.toString()} ...`)
     await waitForStoreOperationOkResult(
-      () => receiptStore.get(pieceAcceptReceiptCid),
+      () => receiptStore.get(filecoinAcceptReceiptCid),
       (res) => Boolean(res.ok)
     )
   }
