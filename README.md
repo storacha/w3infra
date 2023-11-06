@@ -247,6 +247,10 @@ The POST body must contain a [CAR encoded UCAN](https://github.com/web3-storage/
 
 `Content-Type: application/car` header must be present in the the request headers.
 
+### `POST /stripe`
+
+An endpoint for receiving signed Stripe webhooks.
+
 ### `GET /version`
 
 Returns version info for this api in JSON
