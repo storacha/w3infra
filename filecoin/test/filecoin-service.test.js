@@ -17,7 +17,8 @@ import { getQueues, getStores } from './helpers/service-context.js'
 const queueNames = ['pieceOfferQueue', 'filecoinSubmitQueue']
 
 test.before(async (t) => {
-  await delay(1000)
+  // wait for previous resources to be down
+  await delay(5000)
   /** @type {Record<string, QueueContext>} */
   const queues = {}
   // /** @type {import('@aws-sdk/client-sqs').Message[]} */
