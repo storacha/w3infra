@@ -2,7 +2,6 @@ import anyTest from 'ava'
 
 /**
  * @typedef {object} QueueContext
- * @property {import('@aws-sdk/client-sqs').SQSClient} sqsClient
  * @property {string} queueName
  * @property {string} queueUrl
  * @property {import('sqs-consumer').Consumer} queueConsumer
@@ -16,11 +15,15 @@ import anyTest from 'ava'
  * @property {import('@aws-sdk/client-dynamodb').DynamoDBClient} dynamoClient
  * 
  * @typedef {object} MultipleQueueContext
+ * @property {import('@aws-sdk/client-sqs').SQSClient} sqsClient
  * @property {Record<string, QueueContext>} queues
  * @property {Map<string, unknown[]>} queuedMessages
+ * 
+ * @typedef {object} Stoppable
+ * @property {() => Promise<any>} stop
  *
  * @typedef {import('ava').TestFn<Awaited<S3Context & DynamoContext>>} TestAnyFn
- * @typedef {import('ava').TestFn<Awaited<S3Context & DynamoContext & MultipleQueueContext>>} TestServiceFn
+ * @typedef {import('ava').TestFn<Awaited<S3Context & DynamoContext & MultipleQueueContext & Stoppable>>} TestServiceFn
  */
 
 // eslint-disable-next-line unicorn/prefer-export-from
