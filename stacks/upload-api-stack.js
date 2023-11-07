@@ -98,6 +98,8 @@ export function UploadApiStack({ stack, app }) {
           R2_DELEGATION_BUCKET_NAME: process.env.R2_DELEGATION_BUCKET_NAME ?? '',
           R2_ENDPOINT: process.env.R2_ENDPOINT ?? '',
           UPLOAD_API_DID: process.env.UPLOAD_API_DID ?? '',
+          STRIPE_PRICING_TABLE_ID: process.env.STRIPE_PRICING_TABLE_ID ?? '',
+          STRIPE_PUBLISHABLE_KEY: process.env.STRIPE_PUBLISHABLE_KEY ?? '',
         },
         bind: [
           privateKey,
