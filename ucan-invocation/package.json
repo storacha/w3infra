@@ -9,7 +9,7 @@
     "@aws-sdk/client-dynamodb": "^3.226.0",
     "@aws-sdk/client-eventbridge": "^3.218.0",
     "@sentry/serverless": "^7.22.0",
-    "@web3-storage/capabilities": "^10.2.0",
+    "@web3-storage/capabilities": "^11.2.0",
     "uint8arrays": "^4.0.2"
   },
   "devDependencies": {

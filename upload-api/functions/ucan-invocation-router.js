@@ -114,6 +114,7 @@ export async function ucanInvocationRouter(request) {
     aggregatorDid,
     pieceOfferQueueUrl,
     filecoinSubmitQueueUrl,
+    requirePaymentPlan,
     // set for testing
     dbEndpoint,
     accessServiceURL,
@@ -187,7 +188,10 @@ export async function ucanInvocationRouter(request) {
       // We may change this to validate user provided piece
       skipFilecoinSubmitQueue: true
     },
-    plansStorage
+    plansStorage,
+    requirePaymentPlan,
+    // @ts-expect-error - not yet implemented
+    usageStorage: {},
   })
 
   const processingCtx = {
@@ -293,6 +297,7 @@ function getLambdaEnv () {
     providers: mustGetEnv('PROVIDERS'),
     accessServiceURL: mustGetEnv('ACCESS_SERVICE_URL'),
     aggregatorDid: mustGetEnv('AGGREGATOR_DID'),
+    requirePaymentPlan: (process.env.REQUIRE_PAYMENT_PLAN === 'true'),
     // set for testing
     dbEndpoint: process.env.DYNAMO_DB_ENDPOINT,
   }
