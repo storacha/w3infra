@@ -4,7 +4,7 @@ import { DID, Link, URI, LinkJSON, Result, Capabilities, Unit, Failure } from '@
 
 /**
  * Captures a size change that occurred for a given resource due to a
- * service invocation sucha s store/add or store/remove.
+ * service invocation such as store/add or store/remove.
  */
 export interface UsageDelta {
   /** Resource that changed size. */
@@ -23,8 +23,6 @@ export interface SpaceDiff {
   provider: ProviderDID
   /** Space that changed size. */
   space: ConsumerDID
-  /** Customer responsible for paying for the space at the time the size changed. */
-  customer: CustomerDID
   /** Subscription in use when the size changed. */
   subscription: string
   /** UCAN invocation that caused the size change. */
@@ -38,7 +36,6 @@ export interface SpaceDiff {
 }
 
 export interface SpaceDiffListKey {
-  customer: CustomerDID
   provider: ProviderDID
   space: ConsumerDID
   /** Receipt time the diffs should be listed from (inclusive). */

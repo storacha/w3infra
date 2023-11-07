@@ -8,7 +8,7 @@ import { validate, encode } from '../data/usage.js'
  */
 export const usageTableProps = {
   fields: {
-    /** from#provider#space */
+    /** Composite key with format: "from#provider#space" */
     sk: 'string',
     /** Customer DID (did:mailto:...). */
     customer: 'string',

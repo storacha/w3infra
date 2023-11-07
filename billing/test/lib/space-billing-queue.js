@@ -17,7 +17,6 @@ export const test = {
     await ctx.spaceDiffStore.put({
       provider: consumer.provider,
       space: consumer.consumer,
-      customer: customer.customer,
       subscription: consumer.subscription,
       cause: randomLink(),
       delta,
@@ -80,7 +79,6 @@ export const test = {
     await ctx.spaceDiffStore.put({
       provider: consumer.provider,
       space: consumer.consumer,
-      customer: customer.customer,
       subscription: consumer.subscription,
       cause: randomLink(),
       delta,
@@ -92,7 +90,6 @@ export const test = {
     await ctx.spaceDiffStore.put({
       provider: consumer.provider,
       space: consumer.consumer,
-      customer: customer.customer,
       subscription: consumer.subscription,
       cause: randomLink(),
       delta: -delta,
@@ -163,7 +160,6 @@ export const test = {
     await ctx.spaceDiffStore.put({
       provider: consumer.provider,
       space: consumer.consumer,
-      customer: customer.customer,
       subscription: consumer.subscription,
       cause: randomLink(),
       delta,

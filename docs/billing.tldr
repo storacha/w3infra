@@ -20,7 +20,7 @@
         "version": 2
       },
       "instance": {
-        "version": 21
+        "version": 22
       },
       "instance_page_state": {
         "version": 5
@@ -77,7 +77,6 @@
         "tldraw:horizontalAlign": "middle"
       },
       "brush": null,
-      "scribble": null,
       "cursor": {
         "type": "default",
         "rotation": 0
@@ -89,8 +88,8 @@
       "screenBounds": {
         "x": 0,
         "y": 0,
-        "w": 1616,
-        "h": 557
+        "w": 1246,
+        "h": 562
       },
       "zoomBrush": null,
       "isGridMode": true,
@@ -107,8 +106,9 @@
       "isChangingStyle": false,
       "isReadonly": false,
       "meta": {},
-      "id": "instance:instance",
       "currentPageId": "page:Rrzf2lpl3e1GzXW65i7-e",
+      "scribbles": [],
+      "id": "instance:instance",
       "typeName": "instance"
     },
     {
@@ -122,9 +122,9 @@
     {
       "id": "pointer:pointer",
       "typeName": "pointer",
-      "x": -237.73088222762954,
-      "y": 750.2645005862756,
-      "lastActivityTimestamp": 1698841502706,
+      "x": 1464.175242853933,
+      "y": 632.0152461466541,
+      "lastActivityTimestamp": 1699361549206,
       "meta": {}
     },
     {
@@ -135,9 +135,9 @@
       "typeName": "page"
     },
     {
-      "x": 2429.1435961944767,
-      "y": 534.384849684416,
-      "z": 0.22046993791754974,
+      "x": -382.9709103147887,
+      "y": -303.8980925854103,
+      "z": 0.9539275731330452,
       "meta": {},
       "id": "camera:page:Rrzf2lpl3e1GzXW65i7-e",
       "typeName": "camera"
@@ -2621,7 +2621,7 @@
     },
     {
       "x": 1180,
-      "y": 520,
+      "y": 530,
       "rotation": 0,
       "isLocked": false,
       "opacity": 1,
@@ -2630,8 +2630,8 @@
       "props": {
         "color": "grey",
         "size": "s",
-        "w": 282.6640625,
-        "text": "pk: customer#provider#space\nsk: receiptAt#cause\ncustomer: DID string\nspace: DID string\nprovider: DID string\nsubscription: string\ncause: CID string\ndelta: +/- bytes number\nreceiptAt: ISO string\ninsertedAt: ISO string",
+        "w": 219.2890625,
+        "text": "pk: provider#space\nsk: receiptAt#cause\nspace: DID string\nprovider: DID string\nsubscription: string\ncause: CID string\ndelta: +/- bytes number\nreceiptAt: ISO string\ninsertedAt: ISO string",
         "font": "draw",
         "align": "start",
         "autoSize": true,

@@ -1,10 +1,8 @@
 import { Schema } from '@ucanto/core'
 import { findSpaceUsageDeltas, storeSpaceUsageDelta } from '../../lib/ucan-stream.js'
 import { randomConsumer } from '../helpers/consumer.js'
-import { randomCustomer } from '../helpers/customer.js'
 import { randomLink } from '../helpers/dag.js'
 import { randomDID } from '../helpers/did.js'
-import { randomSubscription } from '../helpers/subscription.js'
 
 /** @type {import('./api').TestSuite<import('./api').UCANStreamTestContext>} */
 export const test = {
@@ -74,16 +72,9 @@ export const test = {
     }
   },
   'should store space diffs': async (/** @type {import('entail').assert} */ assert, ctx) => {
-    const customer = randomCustomer()
     const consumer = await randomConsumer()
-    const subscription = await randomSubscription({
-      customer: customer.customer,
-      subscription: consumer.subscription,
-      provider: consumer.provider
-    })
 
     await ctx.consumerStore.put(consumer)
-    await ctx.subscriptionStore.put(subscription)
 
     const from = new Date()
 
@@ -134,7 +125,6 @@ export const test = {
     }
 
     const res = await ctx.spaceDiffStore.list({
-      customer: customer.customer,
       provider: consumer.provider,
       space: consumer.consumer,
       from
@@ -146,10 +136,9 @@ export const test = {
     for (const r of receipts) {
       assert.ok(res.ok.results.some(d => (
         d.cause.toString() === r.invocationCid.toString() &&
-        d.customer === customer.customer &&
         d.provider === consumer.provider &&
         d.space === r.value.att[0].with &&
-        d.subscription === subscription.subscription &&
+        d.subscription === consumer.subscription &&
         d.delta === r.value.att[0].nb?.size
       )))
     }
