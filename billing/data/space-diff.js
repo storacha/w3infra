@@ -10,7 +10,6 @@ import { EncodeFailure, DecodeFailure, Schema } from './lib.js'
  */
 
 export const schema = Schema.struct({
-  customer: Schema.did({ method: 'mailto' }),
   space: Schema.did(),
   provider: Schema.did({ method: 'web' }),
   subscription: Schema.text(),
@@ -28,9 +27,8 @@ export const encode = input => {
   try {
     return {
       ok: {
-        pk: `${input.customer}#${input.provider}#${input.space}`,
+        pk: `${input.provider}#${input.space}`,
         sk: `${input.receiptAt}#${input.cause}`,
-        customer: input.customer,
         space: input.space,
         provider: input.provider,
         subscription: input.subscription,
@@ -54,7 +52,6 @@ export const decode = input => {
   try {
     return {
       ok: {
-        customer: Schema.did({ method: 'mailto' }).from(input.customer),
         space: Schema.did().from(input.space),
         provider: Schema.did({ method: 'web' }).from(input.provider),
         subscription: /** @type {string} */ (input.subscription),
@@ -75,7 +72,7 @@ export const lister = {
   /** @type {import('../lib/api').Encoder<SpaceDiffListKey, SpaceDiffListStoreRecord>} */
   encodeKey: input => ({
     ok: {
-      pk: `${input.customer}#${input.provider}#${input.space}`,
+      pk: `${input.provider}#${input.space}`,
       sk: input.from.toISOString()
     }
   })

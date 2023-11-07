@@ -44,7 +44,6 @@ export interface StripeTestContext {
 
 export interface UCANStreamTestContext {
   spaceDiffStore: SpaceDiffStore
-  subscriptionStore: SubscriptionStore & StorePutter<Subscription>
   consumerStore: ConsumerStore & StorePutter<Consumer>
 }
 
