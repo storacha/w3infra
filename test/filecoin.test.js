@@ -189,6 +189,7 @@ test('w3filecoin integration flow', async t => {
 
   // Only if staging we can check matching buckets for both systems
   // disabled to avoid flacky tests on keepin pieces long without acceptance
+  // eslint-disable-next-line no-constant-condition
   if (stage === 'staging' && false) {
     // Kick storefront CRON
     const callStorefrontCronRes = await fetch(`${endpoint}/storefront-cron`)
