@@ -1,8 +1,9 @@
 /**
- * @param {import('../types.js').ConsumerTable} consumerTable
+ * @param {object} conf
+ * @param {import('../types.js').ConsumerTable} conf.consumerTable
  * @returns {import('@web3-storage/upload-api').SubscriptionsStorage}
  */
-export function useSubscriptionsStore(consumerTable) {
+export function useSubscriptionsStore({ consumerTable }) {
   return {
     list: async (customer) => {
       const { results: consumers } = await consumerTable.listByCustomer(customer)
