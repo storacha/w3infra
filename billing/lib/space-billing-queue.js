@@ -7,7 +7,7 @@ const GB = 1024 * 1024 * 1024
  * @param {{ spaceDiffStore: import('./api').SpaceDiffStore }} ctx
  * @returns {AsyncIterable<import('@ucanto/interface').Result<import('./api').SpaceDiff[], import('@ucanto/interface').Failure>>}
  */
-const iterateSpaceDiffs = async function * ({ provider, space, from, to }, ctx) {
+export const iterateSpaceDiffs = async function * ({ provider, space, from, to }, ctx) {
   /** @type {string|undefined} */
   let cursor
   let done = false
