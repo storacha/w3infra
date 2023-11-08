@@ -3,6 +3,7 @@ import * as CAR from '@ucanto/transport/car'
 import * as Signer from '@ucanto/principal/ed25519'
 import * as UcantoClient from '@ucanto/client'
 
+import { stringToDelegation } from '@web3-storage/access/encoding';
 import { connect, createServer } from '@web3-storage/upload-api';
 import { DebugEmail } from '@web3-storage/upload-api/test';
 import {
@@ -296,8 +297,44 @@ export async function executionContextToUcantoTestServerContext (t) {
     ...serviceContext,
     grantAccess: async () => {},
     mail: email,
+    grantAccess: (mail) => confirmConfirmationUrl(connection, mail),
     service: id,
     connection,
-    fetch
-  };
+    fetch,
+  }
+}
+
+/**
+ * @param {URL} confirmationUrl
+ * @returns {Promise<API.Invocation<import('@web3-storage/capabilities/types').AccessConfirm>>}
+ */
+export async function extractConfirmInvocation(confirmationUrl) {
+  const delegation = stringToDelegation(
+    confirmationUrl.searchParams.get('ucan') ?? ''
+  )
+  if (
+    delegation.capabilities.length !== 1 ||
+    delegation.capabilities[0].can !== 'access/confirm'
+  ) {
+    throw new Error(`parsed unexpected delegation from confirmationUrl`)
+  }
+  const confirm =
+    /** @type {API.Invocation<import('@web3-storage/capabilities/types').AccessConfirm>} */ (
+      delegation
+    )
+  return confirm
+}
+
+/**
+ * @param {API.ConnectionView<import('@web3-storage/access').Service>} connection
+ * @param {{ url: string|URL }} confirmation
+ */
+export async function confirmConfirmationUrl(connection, confirmation) {
+  // extract confirmation invocation from email that was sent by service while handling access/authorize
+  const confirm = await extractConfirmInvocation(new URL(confirmation.url))
+  // invoke the access/confirm invocation as if the user had clicked the email
+  const [confirmResult] = await connection.execute(confirm)
+  if (confirmResult.out.error) {
+    throw confirmResult.out.error
+  }
 }
