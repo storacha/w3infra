@@ -187,7 +187,9 @@ export async function ucanInvocationRouter(request) {
       // We may change this to validate user provided piece
       skipFilecoinSubmitQueue: true
     },
-    plansStorage
+    plansStorage,
+    // @ts-expect-error - not yet implemented
+    usageStorage: {},
   })
 
   const processingCtx = {
