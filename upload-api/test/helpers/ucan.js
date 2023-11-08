@@ -294,6 +294,7 @@ export async function executionContextToUcantoTestServerContext (t) {
 
   return {
     ...serviceContext,
+    grantAccess: async () => {},
     mail: email,
     service: id,
     connection,
