@@ -59,6 +59,7 @@ export function useProvisionStore (subscriptionTable, consumerTable, spaceMetric
           cause: cause.cid,
           provider,
           consumer,
+          customer,
           subscription
         })
         return { ok: { id: subscription } }

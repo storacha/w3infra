@@ -97,6 +97,8 @@ export interface SubscriptionTable {
 export interface ConsumerInput {
   /** the DID of the consumer (eg, a space) for whom services are being provisioned */
   consumer: DID,
+  /** DID of the customer who maintains the subscription for this consumer */
+  customer: DID,
   /** the DID of the provider who will provide services for the consumer */
   provider: DID,
   /** the ID of the subscription representing the relationship between the consumer and provider */
