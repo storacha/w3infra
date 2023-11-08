@@ -17,7 +17,7 @@ import { createTaskStore as createFilecoinTaskStore } from '../../filecoin/store
 import { createReceiptStore as createFilecoinReceiptStore } from '../../filecoin/store/receipt.js'
 import { createClient as createFilecoinSubmitQueueClient } from '../../filecoin/queue/filecoin-submit-queue.js'
 import { createClient as createPieceOfferQueueClient } from '../../filecoin/queue/piece-offer-queue.js'
-import { getServiceSigner, parseServiceDids } from '../config.js'
+import { getServiceSigner, parseServiceDids, getServiceConnection } from '../config.js'
 import { createUcantoServer } from '../service.js'
 import { Config } from '@serverless-stack/node/config/index.js'
 import { CAR, Legacy, Codec } from '@ucanto/transport'
@@ -117,6 +117,8 @@ export async function ucanInvocationRouter(request) {
     postmarkToken,
     providers,
     aggregatorDid,
+    dealTrackerDid,
+    dealTrackerUrl,
     pieceOfferQueueUrl,
     filecoinSubmitQueueUrl,
     requirePaymentPlan,
@@ -160,6 +162,11 @@ export async function ucanInvocationRouter(request) {
   const spaceSnapshotStore = createSpaceSnapshotStore({ region: AWS_REGION }, { tableName: spaceSnapshotTableName })
   const usageStorage = useUsageStore({ spaceDiffStore, spaceSnapshotStore })
 
+  const connection = getServiceConnection({
+    did: dealTrackerDid,
+    url: dealTrackerUrl
+  })
+
   const server = createUcantoServer(serviceSigner, {
     codec,
     storeTable: createStoreTable(AWS_REGION, storeTableName, {
@@ -190,6 +197,14 @@ export async function ucanInvocationRouter(request) {
     receiptStore: createFilecoinReceiptStore(AWS_REGION, invocationBucketName, workflowBucketName),
     pieceOfferQueue: createPieceOfferQueueClient({ region: AWS_REGION }, { queueUrl: pieceOfferQueueUrl }),
     filecoinSubmitQueue: createFilecoinSubmitQueueClient({ region: AWS_REGION }, { queueUrl: filecoinSubmitQueueUrl }),
+    dealTrackerService: {
+      connection,
+      invocationConfig: {
+        issuer: serviceSigner,
+        audience: connection.id,
+        with: serviceSigner.did()
+      }
+    },
     options: {
       // TODO: we compute and put all pieces into the queue on bucket event
       // We may change this to validate user provided piece
@@ -306,6 +321,8 @@ function getLambdaEnv () {
     accessServiceURL: mustGetEnv('ACCESS_SERVICE_URL'),
     aggregatorDid: mustGetEnv('AGGREGATOR_DID'),
     requirePaymentPlan: (process.env.REQUIRE_PAYMENT_PLAN === 'true'),
+    dealTrackerDid: mustGetEnv('DEAL_TRACKER_DID'),
+    dealTrackerUrl: mustGetEnv('DEAL_TRACKER_URL'),
     // set for testing
     dbEndpoint: process.env.DYNAMO_DB_ENDPOINT,
   }

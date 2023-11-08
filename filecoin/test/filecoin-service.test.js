@@ -1,5 +1,6 @@
 import { testService as test } from './helpers/context.js'
 import { test as filecoinApiTest } from '@web3-storage/filecoin-api/test'
+import { getMockService, getConnection } from '@web3-storage/filecoin-api/test/context/service'
 import * as Signer from '@ucanto/principal/ed25519'
 import { Consumer } from 'sqs-consumer'
 import pWaitFor from 'p-wait-for'
@@ -104,6 +105,13 @@ for (const [title, unit] of Object.entries(filecoinApiTest.service.storefront)) 
     // context
     const storefrontSigner = await Signer.generate()
     const aggregatorSigner = await Signer.generate()
+    const dealTrackerSigner = await Signer.generate()
+
+    const service = getMockService()
+    const dealTrackerConnection = getConnection(
+      dealTrackerSigner,
+      service
+    ).connection
 
     await unit(
       {
@@ -116,6 +124,14 @@ for (const [title, unit] of Object.entries(filecoinApiTest.service.storefront)) 
       {
         id: storefrontSigner,
         aggregatorId: aggregatorSigner,
+        dealTrackerService: {
+          connection: dealTrackerConnection,
+          invocationConfig: {
+            issuer: storefrontSigner,
+            with: storefrontSigner.did(),
+            audience: dealTrackerSigner,
+          },
+        },
         ...stores,
         ...queues,
         errorReporter: {

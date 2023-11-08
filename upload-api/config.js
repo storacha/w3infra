@@ -1,5 +1,7 @@
 import * as ed25519 from '@ucanto/principal/ed25519'
 import * as DID from '@ipld/dag-ucan/did'
+import { CAR, HTTP } from '@ucanto/transport'
+import { connect } from '@ucanto/client'
 
 /**
  * Given a config, return a ucanto Signer object representing the service
@@ -34,4 +36,25 @@ export function parseServiceDids(serviceDids) {
       return did
     })
   )
+}
+
+/**
+ * 
+ * @param {{ did: string, url: string }} config 
+ * @returns 
+ */
+export function getServiceConnection (config) {
+  const servicePrincipal = DID.parse(config.did) // 'did:web:web3.storage'
+  const serviceURL = new URL(config.url) // 'https://tracker.web3.storage'
+
+  const serviceConnection = connect({
+    id: servicePrincipal,
+    codec: CAR.outbound,
+    channel: HTTP.open({
+      url: serviceURL,
+      method: 'POST',
+    }),
+  })
+
+  return serviceConnection
 }

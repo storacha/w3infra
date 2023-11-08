@@ -103,6 +103,8 @@ export function UploadApiStack({ stack, app }) {
           R2_ENDPOINT: process.env.R2_ENDPOINT ?? '',
           REQUIRE_PAYMENT_PLAN: process.env.REQUIRE_PAYMENT_PLAN ?? '',
           UPLOAD_API_DID: process.env.UPLOAD_API_DID ?? '',
+          DEAL_TRACKER_DID: process.env.DEAL_TRACKER_DID ?? '',
+          DEAL_TRACKER_URL: process.env.DEAL_TRACKER_URL ?? '',
         },
         bind: [
           privateKey,
