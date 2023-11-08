@@ -33,6 +33,9 @@ import { mustGetEnv } from './utils.js'
 import { createRevocationsTable } from '../stores/revocations.js'
 import { usePlansStore } from '../stores/plans.js'
 import { createCustomerStore } from '@web3-storage/w3infra-billing/tables/customer.js'
+import { createSpaceDiffStore } from '@web3-storage/w3infra-billing/tables/space-diff.js'
+import { createSpaceSnapshotStore } from '@web3-storage/w3infra-billing/tables/space-snapshot.js'
+import { useUsageStore } from '../stores/usage.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -101,6 +104,8 @@ export async function ucanInvocationRouter(request) {
     spaceMetricsTableName,
     rateLimitTableName,
     pieceTableName,
+    spaceDiffTableName,
+    spaceSnapshotTableName,
     r2DelegationBucketEndpoint,
     r2DelegationBucketAccessKeyId,
     r2DelegationBucketSecretAccessKey,
@@ -150,6 +155,9 @@ export async function ucanInvocationRouter(request) {
   const provisionsStorage = useProvisionStore(subscriptionTable, consumerTable, spaceMetricsTable, parseServiceDids(providers))
   const delegationsStorage = createDelegationsTable(AWS_REGION, delegationTableName, { bucket: delegationBucket, invocationBucket, workflowBucket })
   const revocationsStorage = createRevocationsTable(AWS_REGION, revocationTableName)
+  const spaceDiffStore = createSpaceDiffStore({ region: AWS_REGION }, { tableName: spaceDiffTableName })
+  const spaceSnapshotStore = createSpaceSnapshotStore({ region: AWS_REGION }, { tableName: spaceSnapshotTableName })
+  const usageStorage = useUsageStore({ spaceDiffStore, spaceSnapshotStore })
 
   const server = createUcantoServer(serviceSigner, {
     codec,
@@ -175,7 +183,6 @@ export async function ucanInvocationRouter(request) {
     delegationsStorage,
     revocationsStorage,
     rateLimitsStorage,
-    // filecoin/*
     aggregatorId: DID.parse(aggregatorDid),
     pieceStore: createPieceTable(AWS_REGION, pieceTableName),
     taskStore: createFilecoinTaskStore(AWS_REGION, invocationBucketName, workflowBucketName),
@@ -187,7 +194,8 @@ export async function ucanInvocationRouter(request) {
       // We may change this to validate user provided piece
       skipFilecoinSubmitQueue: true
     },
-    plansStorage
+    plansStorage,
+    usageStorage,
   })
 
   const processingCtx = {
@@ -279,6 +287,8 @@ function getLambdaEnv () {
     spaceMetricsTableName: mustGetEnv('SPACE_METRICS_TABLE_NAME'),
     rateLimitTableName: mustGetEnv('RATE_LIMIT_TABLE_NAME'),
     pieceTableName: mustGetEnv('PIECE_TABLE_NAME'),
+    spaceDiffTableName: mustGetEnv('SPACE_DIFF_TABLE_NAME'),
+    spaceSnapshotTableName: mustGetEnv('SPACE_SNAPSHOT_TABLE_NAME'),
     pieceOfferQueueUrl: mustGetEnv('PIECE_OFFER_QUEUE_URL'),
     filecoinSubmitQueueUrl: mustGetEnv('FILECOIN_SUBMIT_QUEUE_URL'),
     r2DelegationBucketEndpoint: mustGetEnv('R2_ENDPOINT'),
