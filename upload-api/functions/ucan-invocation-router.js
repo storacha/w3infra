@@ -183,8 +183,6 @@ export async function ucanInvocationRouter(request) {
     delegationsStorage,
     revocationsStorage,
     rateLimitsStorage,
-    usageStorage,
-    // filecoin/*
     aggregatorId: DID.parse(aggregatorDid),
     pieceStore: createPieceTable(AWS_REGION, pieceTableName),
     taskStore: createFilecoinTaskStore(AWS_REGION, invocationBucketName, workflowBucketName),
@@ -197,8 +195,7 @@ export async function ucanInvocationRouter(request) {
       skipFilecoinSubmitQueue: true
     },
     plansStorage,
-    // @ts-expect-error - not yet implemented
-    usageStorage: {},
+    usageStorage,
   })
 
   const processingCtx = {
