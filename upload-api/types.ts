@@ -3,7 +3,7 @@ import { DID, Link, Delegation, Signature, Block, UCANLink, ByteView, DIDKey, Re
 import { UnknownLink } from 'multiformats'
 import { CID } from 'multiformats/cid'
 import { Kinesis } from '@aws-sdk/client-kinesis'
-import { ProviderDID, Service } from '@web3-storage/upload-api'
+import { AccountDID, ProviderDID, Service, SpaceDID } from '@web3-storage/upload-api'
 
 
 export interface UcanLogCtx extends WorkflowCtx, ReceiptBlockCtx {
@@ -57,7 +57,7 @@ export interface MetricsTable {
   /**
    * Get all metrics from table.
    */
-  get: () => Promise<Record<string, any>[]>
+  get: () => Promise<Array<Record<string, any>>>
 }
 
 
@@ -91,7 +91,7 @@ export interface SubscriptionTable {
   count: () => Promise<bigint>
   /** return a list of the subscriptions a customer has with a provider */
   findProviderSubscriptionsForCustomer: (customer: DID, provider: DID) =>
-    Promise<{ subscription: string }[]>
+    Promise<Array<{ subscription: string }>>
 }
 
 export interface ConsumerInput {
@@ -114,6 +114,20 @@ export interface ConsumerRecord {
   cause: UCANLink
 }
 
+export interface ConsumerListRecord {
+  /** DID of the consumer (e.g. a space) for whom services have been provisioned. */
+  consumer: SpaceDID
+  /** DID of the provider who provides services for the consumer. */
+  provider: ProviderDID
+  /** ID of the subscription representing the relationship between the consumer and provider. */
+  subscription: string
+  /**
+   * CID of the UCAN invocation that created this record.
+   * Note: This became a required field after 2023-07-10T23:12:38.000Z.
+   */
+  cause?: UCANLink
+}
+
 export interface ConsumerTable {
   /** get a consumer record for a given provider */
   get: (provider: ProviderDID, consumer: DIDKey) => Promise<{ subscription: string } | null>
@@ -127,6 +141,8 @@ export interface ConsumerTable {
   hasStorageProvider: (consumer: DID) => Promise<boolean>
   /** return a list of storage providers the given consumer has registered with */
   getStorageProviders: (consumer: DID) => Promise<ProviderDID[]>
+  /** List consumers by customer account DID. */
+  listByCustomer: (customer: AccountDID) => Promise<{ results: ConsumerListRecord[] }>
 }
 
 // TODO: unify this with RecordNotFound in ../billing/tables/lib.js
