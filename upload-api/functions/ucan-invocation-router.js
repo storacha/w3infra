@@ -23,6 +23,7 @@ import { Config } from '@serverless-stack/node/config/index.js'
 import { CAR, Legacy, Codec } from '@ucanto/transport'
 import { Email } from '../email.js'
 import { useProvisionStore } from '../stores/provisions.js'
+import { useSubscriptionsStore } from '../stores/subscriptions.js'
 import { createDelegationsTable } from '../tables/delegations.js'
 import { createDelegationsStore } from '../buckets/delegations-store.js'
 import { createSubscriptionTable } from '../tables/subscription.js'
@@ -156,6 +157,7 @@ export async function ucanInvocationRouter(request) {
   const spaceMetricsTable = createSpaceMetricsTable(AWS_REGION, spaceMetricsTableName)
 
   const provisionsStorage = useProvisionStore(subscriptionTable, consumerTable, spaceMetricsTable, parseServiceDids(providers))
+  const subscriptionsStorage = useSubscriptionsStore({ consumerTable })
   const delegationsStorage = createDelegationsTable(AWS_REGION, delegationTableName, { bucket: delegationBucket, invocationBucket, workflowBucket })
   const revocationsStorage = createRevocationsTable(AWS_REGION, revocationTableName)
   const spaceDiffStore = createSpaceDiffStore({ region: AWS_REGION }, { tableName: spaceDiffTableName })
@@ -188,6 +190,7 @@ export async function ucanInvocationRouter(request) {
     url: new URL(accessServiceURL),
     email: new Email({ token: postmarkToken }),
     provisionsStorage,
+    subscriptionsStorage,
     delegationsStorage,
     revocationsStorage,
     rateLimitsStorage,
