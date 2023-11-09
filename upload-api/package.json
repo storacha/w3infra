@@ -24,7 +24,7 @@
     "@web-std/fetch": "^4.1.0",
     "@web3-storage/access": "^16.4.0",
     "@web3-storage/capabilities": "^11.3.1",
-    "@web3-storage/upload-api": "^7.3.0",
+    "@web3-storage/upload-api": "^7.3.1",
     "@web3-storage/w3infra-ucan-invocation": "*",
     "multiformats": "^12.1.2",
     "nanoid": "^5.0.2",
