@@ -27,7 +27,7 @@ import { waitForStoreOperationOkResult } from './helpers/store.js'
 test.before(t => {
   t.context = {
     apiEndpoint: getApiEndpoint(),
-    pieceDynamo: getDynamoDb('piece-v1'),
+    pieceDynamo: getDynamoDb('piece-v2'),
   }
 })
 
