@@ -8,7 +8,7 @@ import { fromString } from 'uint8arrays/from-string'
 import { decode as JSONdecode } from '@ipld/dag-json'
 import { getMockService, getConnection } from '@web3-storage/filecoin-api/test/context/service'
 
-import { createDynamodDb, createS3, createQueue } from './helpers/resources.js'
+import { createDynamodDb, createS3, createSQS, createQueue } from './helpers/resources.js'
 import { getQueues, getStores } from './helpers/service-context.js'
 
 /**
@@ -19,6 +19,25 @@ const queueNames = ['pieceOfferQueue', 'filecoinSubmitQueue']
 
 test.before(async (t) => {
   await delay(1000)
+
+  const { client: sqsClient } = await createSQS()
+  const { client: s3Client, stop: s3Stop } = await createS3({ port: 9000 })
+  const { client: dynamoClient, stop: dynamoStop} = await createDynamodDb()
+
+  Object.assign(t.context, {
+    s3Client,
+    dynamoClient,
+    sqsClient,
+    stop: async () => {
+      await s3Stop()
+      await dynamoStop()
+    }
+  })
+})
+
+test.beforeEach(async t => {
+  await delay(1000)
+
   /** @type {Record<string, QueueContext>} */
   const queues = {}
   // /** @type {import('@aws-sdk/client-sqs').Message[]} */
@@ -26,11 +45,12 @@ test.before(async (t) => {
   const queuedMessages = new Map()
 
   for (const name of queueNames) {
-    const sqs = await createQueue()
+    const { queueUrl, queueName } = await createQueue(t.context.sqsClient)
     queuedMessages.set(name, [])
+
     const queueConsumer = Consumer.create({
-      queueUrl: sqs.queueUrl,
-      sqs: sqs.client,
+      queueUrl: queueUrl,
+      sqs: t.context.sqsClient,
       handleMessage: (message) => {
         // @ts-expect-error may not have body
         const decodedBytes = fromString(message.Body)
@@ -42,33 +62,20 @@ test.before(async (t) => {
     })
 
     queues[name] = {
-      sqsClient: sqs.client,
-      queueName: sqs.queueName,
-      queueUrl: sqs.queueUrl,
+      queueName: queueName,
+      queueUrl: queueUrl,
       queueConsumer,
     }
   }
 
-  const { client } = await createS3({ port: 9000 })
-  const dynamo = await createDynamodDb()
-
-  Object.assign(t.context, {
-    s3Client: client,
-    dynamoClient: dynamo.client,
-    queues,
-    queuedMessages
-  })
-})
-
-test.beforeEach(async t => {
-  await delay(1000)
-  for (const name of queueNames) {
-    t.context.queuedMessages.set(name, [])
-  }
-  for (const [, q] of Object.entries(t.context.queues)) {
+  for (const [, q] of Object.entries(queues)) {
     q.queueConsumer.start()
     await pWaitFor(() => q.queueConsumer.isRunning)
   }
+
+  Object.assign(t.context, {
+    queues
+  })
 })
 
 test.afterEach(async t => {
@@ -79,7 +86,7 @@ test.afterEach(async t => {
 })
 
 test.after(async t => {
-  await delay(1000)
+  await t.context.stop()
 })
 
 for (const [title, unit] of Object.entries(filecoinApiTest.events.storefront)) {

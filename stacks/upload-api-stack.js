@@ -28,7 +28,7 @@ export function UploadApiStack({ stack, app }) {
   const { carparkBucket } = use(CarparkStack)
   const { storeTable, uploadTable, delegationBucket, delegationTable, revocationTable, adminMetricsTable, spaceMetricsTable, consumerTable, subscriptionTable, rateLimitTable, pieceTable, privateKey } = use(UploadDbStack)
   const { invocationBucket, taskBucket, workflowBucket, ucanStream } = use(UcanInvocationStack)
-  const { customerTable } = use(BillingDbStack)
+  const { customerTable, spaceDiffTable, spaceSnapshotTable } = use(BillingDbStack)
   const { pieceOfferQueue, filecoinSubmitQueue } = use(FilecoinStack)
 
   // Setup API
@@ -54,6 +54,8 @@ export function UploadApiStack({ stack, app }) {
           adminMetricsTable,
           spaceMetricsTable,
           pieceTable,
+          spaceDiffTable,
+          spaceSnapshotTable,
           carparkBucket,
           invocationBucket,
           taskBucket,
@@ -75,6 +77,8 @@ export function UploadApiStack({ stack, app }) {
           RATE_LIMIT_TABLE_NAME: rateLimitTable.tableName,
           DELEGATION_TABLE_NAME: delegationTable.tableName,
           REVOCATION_TABLE_NAME: revocationTable.tableName,
+          SPACE_DIFF_TABLE_NAME: spaceDiffTable.tableName,
+          SPACE_SNAPSHOT_TABLE_NAME: spaceSnapshotTable.tableName,
           DELEGATION_BUCKET_NAME: delegationBucket.bucketName,
           INVOCATION_BUCKET_NAME: invocationBucket.bucketName,
           TASK_BUCKET_NAME: taskBucket.bucketName,
@@ -97,9 +101,12 @@ export function UploadApiStack({ stack, app }) {
           R2_DUDEWHERE_BUCKET_NAME: process.env.R2_DUDEWHERE_BUCKET_NAME ?? '',
           R2_DELEGATION_BUCKET_NAME: process.env.R2_DELEGATION_BUCKET_NAME ?? '',
           R2_ENDPOINT: process.env.R2_ENDPOINT ?? '',
+          REQUIRE_PAYMENT_PLAN: process.env.REQUIRE_PAYMENT_PLAN ?? '',
           UPLOAD_API_DID: process.env.UPLOAD_API_DID ?? '',
           STRIPE_PRICING_TABLE_ID: process.env.STRIPE_PRICING_TABLE_ID ?? '',
           STRIPE_PUBLISHABLE_KEY: process.env.STRIPE_PUBLISHABLE_KEY ?? '',
+          DEAL_TRACKER_DID: process.env.DEAL_TRACKER_DID ?? '',
+          DEAL_TRACKER_URL: process.env.DEAL_TRACKER_URL ?? '',
         },
         bind: [
           privateKey,

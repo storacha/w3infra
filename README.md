@@ -142,6 +142,14 @@ DID of the [content claims service](https://github.com/web3-storage/content-clai
 
 URL of the [content claims service](https://github.com/web3-storage/content-claims).
 
+#### `DEAL_TRACKER_DID`
+
+DID of the filecoin deal tracker service.
+
+#### `DEAL_TRACKER_URL`
+
+URL of the filecoin deal tracker service.
+
 #### `UPLOAD_API_DID`
 
 [DID](https://www.w3.org/TR/did-core/) of the upload-api ucanto server. e.g. `did:web:up.web3.storage`. Optional: if omitted, a `did:key` will be derrived from `PRIVATE_KEY`

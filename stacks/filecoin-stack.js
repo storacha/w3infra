@@ -53,6 +53,9 @@ export function FilecoinStack({ stack, app }) {
    */
   // TODO: This will ONLY run when we validate pieces provided by user
   const filecoinSubmitQueueName = getCdkNames('filecoin-submit-queue', stack.stage)
+  const filecoinSubmitQueueDLQ = new Queue(stack, `${filecoinSubmitQueueName}-dlq`, {
+    cdk: { queue: { retentionPeriod: Duration.days(14) } }
+   })
   const filecoinSubmitQueue = new Queue(stack, filecoinSubmitQueueName)
   filecoinSubmitQueue.addConsumer(stack, {
     function: {
@@ -62,6 +65,7 @@ export function FilecoinStack({ stack, app }) {
       },
       permissions: [pieceTable],
     },
+    deadLetterQueue: filecoinSubmitQueueDLQ.cdk.queue,
     cdk: {
       eventSource: {
         batchSize: 1
@@ -74,6 +78,9 @@ export function FilecoinStack({ stack, app }) {
    * On piece offer queue message, offer piece for aggregation.
    */
   const pieceOfferQueueName = getCdkNames('piece-offer-queue', stack.stage)
+  const pieceOfferQueueDLQ = new Queue(stack, `${pieceOfferQueueName}-dlq`, {
+    cdk: { queue: { retentionPeriod: Duration.days(14) } }
+   })
   const pieceOfferQueue = new Queue(stack, pieceOfferQueueName)
   pieceOfferQueue.addConsumer(stack, {
     function: {
@@ -88,6 +95,7 @@ export function FilecoinStack({ stack, app }) {
         privateKey
       ]
     },
+    deadLetterQueue: pieceOfferQueueDLQ.cdk.queue,
     cdk: {
       eventSource: {
         batchSize: 1
@@ -119,6 +127,15 @@ export function FilecoinStack({ stack, app }) {
     }
   })
 
+  const pieceTableHandleInserToClaimtDLQ = new Queue(stack, `piece-table-handle-insert-to-claim-dlq`, {
+    cdk: { queue: { retentionPeriod: Duration.days(14) } }
+  })
+  const pieceTableHandleInserToFilecoinSubmitDLQ = new Queue(stack, `piece-table-handle-insert-to-filecoin-submit-dlq`, {
+    cdk: { queue: { retentionPeriod: Duration.days(14) } }
+  })
+  const pieceTableHandleStatusUpdateDLQ = new Queue(stack, `piece-table-handle-status-update-dlq`, {
+    cdk: { queue: { retentionPeriod: Duration.days(14) } }
+  })
   // piece-cid reporting
   pieceTable.addConsumers(stack, {
     handlePieceInsertToContentClaim: {
@@ -135,6 +152,7 @@ export function FilecoinStack({ stack, app }) {
           contentClaimsPrivateKey
         ]
       },
+      deadLetterQueue: pieceTableHandleInserToClaimtDLQ.cdk.queue,
       cdk: {
         // https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_lambda_event_sources.DynamoEventSourceProps.html#filters
         eventSource: {
@@ -162,6 +180,7 @@ export function FilecoinStack({ stack, app }) {
           privateKey,
         ]
       },
+      deadLetterQueue: pieceTableHandleInserToFilecoinSubmitDLQ.cdk.queue,
       cdk: {
         // https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_lambda_event_sources.DynamoEventSourceProps.html#filters
         eventSource: {
@@ -189,6 +208,7 @@ export function FilecoinStack({ stack, app }) {
           privateKey,
         ]
       },
+      deadLetterQueue: pieceTableHandleStatusUpdateDLQ.cdk.queue,
       cdk: {
         // https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_lambda_event_sources.DynamoEventSourceProps.html#filters
         eventSource: {
@@ -228,9 +248,13 @@ export function FilecoinStack({ stack, app }) {
     },
   )
 
+  const pieceCidComputeQueueDLQ = new Queue(stack, `piece-cid-compute-queue-dlq`, {
+    cdk: { queue: { retentionPeriod: Duration.days(14) } }
+   })
   const pieceCidComputeQueue = new Queue(stack, 'piece-cid-compute-queue', {
     consumer: {
       function: pieceCidComputeHandler,
+      deadLetterQueue: pieceCidComputeQueueDLQ.cdk.queue,
       cdk: {
         eventSource: {
           batchSize: 1,
