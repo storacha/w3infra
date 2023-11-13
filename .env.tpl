@@ -40,5 +40,10 @@ SATNAV_BUCKET_NAME = ''
 MAILSLURP_API_KEY = ''
 MAILSLURP_TIMEOUT = '120000'
 
+# Stripe
+# these values are from the Stripe test environment
+STRIPE_PRICING_TABLE_ID = 'prctbl_1NzhdvF6A5ufQX5vKNZuRhie'
+STRIPE_PUBLISHABLE_KEY = 'pk_test_51LO87hF6A5ufQX5viNsPTbuErzfavdrEFoBuaJJPfoIhzQXdOUdefwL70YewaXA32ZrSRbK4U4fqebC7SVtyeNcz00qmgNgueC'
+
 # Feature flags
 REQUIRE_PAYMENT_PLAN = 'true'

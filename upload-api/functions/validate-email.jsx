@@ -1,6 +1,7 @@
 import * as Sentry from '@sentry/serverless'
 import { authorize } from '@web3-storage/upload-api/validate'
 import { Config } from '@serverless-stack/node/config/index.js'
+import * as DidMailto from '@web3-storage/did-mailto'
 import { getServiceSigner, parseServiceDids } from '../config.js'
 import { Email } from '../email.js'
 import { createDelegationsTable } from '../tables/delegations.js'
@@ -20,6 +21,7 @@ import {
 } from '../html.jsx'
 import { createRateLimitTable } from '../tables/rate-limit.js'
 import { createSpaceMetricsTable } from '../tables/space-metrics.js'
+import { createCustomerStore } from '@web3-storage/w3infra-billing/tables/customer'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -80,8 +82,11 @@ function createAuthorizeContext () {
     POSTMARK_TOKEN = '',
     SUBSCRIPTION_TABLE_NAME = '',
     CONSUMER_TABLE_NAME = '',
+    CUSTOMER_TABLE_NAME = '',
     UPLOAD_API_DID = '',
     PROVIDERS = '',
+    STRIPE_PRICING_TABLE_ID = '',
+    STRIPE_PUBLISHABLE_KEY = '',
     // set for testing
     DYNAMO_DB_ENDPOINT: dbEndpoint,
   } = process.env
@@ -98,6 +103,7 @@ function createAuthorizeContext () {
   const consumerTable = createConsumerTable(AWS_REGION, CONSUMER_TABLE_NAME, {
     endpoint: dbEndpoint
   });
+  const customerStore = createCustomerStore({ region: AWS_REGION }, { tableName: CUSTOMER_TABLE_NAME })
   const spaceMetricsTable = createSpaceMetricsTable(AWS_REGION, SPACE_METRICS_TABLE_NAME)
   return {
     // TODO: we should set URL from a different env var, doing this for now to avoid that refactor
@@ -107,7 +113,10 @@ function createAuthorizeContext () {
     delegationsStorage: createDelegationsTable(AWS_REGION, DELEGATION_TABLE_NAME, { bucket: delegationBucket, invocationBucket, workflowBucket }),
     revocationsStorage: createRevocationsTable(AWS_REGION, REVOCATION_TABLE_NAME),
     provisionsStorage: useProvisionStore(subscriptionTable, consumerTable, spaceMetricsTable, parseServiceDids(PROVIDERS)),
-    rateLimitsStorage: createRateLimitTable(AWS_REGION, RATE_LIMIT_TABLE_NAME)
+    rateLimitsStorage: createRateLimitTable(AWS_REGION, RATE_LIMIT_TABLE_NAME),
+    customerStore: customerStore,
+    stripePricingTableId: STRIPE_PRICING_TABLE_ID,
+    stripePublishableKey: STRIPE_PUBLISHABLE_KEY,
   }
 }
 
@@ -123,7 +132,8 @@ export async function validateEmailPost (request) {
       <ValidateEmailError msg={'Missing delegation in the URL.'} />
     ))
   }
-  const authorizeResult = await authorize(encodedUcan, createAuthorizeContext())
+  const context = createAuthorizeContext()
+  const authorizeResult = await authorize(encodedUcan, context)
   if (authorizeResult.error) {
     console.error(authorizeResult.error)
     return toLambdaResponse(new HtmlResponse(
@@ -134,11 +144,21 @@ export async function validateEmailPost (request) {
 
   const { email, audience, ucan } = authorizeResult.ok
 
+  const planCheckResult = await context.customerStore.get({ customer: DidMailto.fromEmail(email) })
+  let stripePricingTableId
+  let stripePublishableKey
+  if (!planCheckResult.ok?.product){
+    stripePricingTableId = context.stripePricingTableId
+    stripePublishableKey = context.stripePublishableKey
+  }
+
   return toLambdaResponse(new HtmlResponse(
     <ValidateEmail
       email={email}
       audience={audience}
       ucan={ucan}
+      stripePricingTableId={stripePricingTableId}
+      stripePublishableKey={stripePublishableKey}
     />
   ))
 }
