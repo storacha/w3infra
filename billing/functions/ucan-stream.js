@@ -2,7 +2,6 @@ import * as Sentry from '@sentry/serverless'
 import { toString, fromString } from 'uint8arrays'
 import * as Link from 'multiformats/link'
 import { createSpaceDiffStore } from '../tables/space-diff.js'
-import { createSubscriptionStore } from '../tables/subscription.js'
 import { createConsumerStore } from '../tables/consumer.js'
 import { expect, mustGetEnv } from './lib.js'
 import { findSpaceUsageDeltas, storeSpaceUsageDelta } from '../lib/ucan-stream.js'
@@ -16,7 +15,6 @@ Sentry.AWSLambda.init({
 /**
  * @typedef {{
  *   spaceDiffTable?: string
- *   subscriptionTable?: string
  *   consumerTable?: string
  *   region?: 'us-west-2'|'us-east-2'
  * }} CustomHandlerContext
@@ -31,7 +29,6 @@ export const handler = Sentry.AWSLambda.wrapHandler(
     /** @type {CustomHandlerContext|undefined} */
     const customContext = context?.clientContext?.Custom
     const spaceDiffTable = customContext?.spaceDiffTable ?? mustGetEnv('SPACE_DIFF_TABLE_NAME')
-    const subscriptionTable = customContext?.subscriptionTable ?? mustGetEnv('SUBSCRIPTION_TABLE_NAME')
     const consumerTable = customContext?.consumerTable ?? mustGetEnv('CONSUMER_TABLE_NAME')
     const region = customContext?.region ?? mustGetEnv('AWS_REGION')
   
@@ -45,7 +42,6 @@ export const handler = Sentry.AWSLambda.wrapHandler(
 
     const ctx = {
       spaceDiffStore: createSpaceDiffStore({ region }, { tableName: spaceDiffTable }),
-      subscriptionStore: createSubscriptionStore({ region }, { tableName: subscriptionTable }),
       consumerStore: createConsumerStore({ region }, { tableName: consumerTable })
     }
     expect(

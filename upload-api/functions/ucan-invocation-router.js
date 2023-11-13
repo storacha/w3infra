@@ -17,12 +17,13 @@ import { createTaskStore as createFilecoinTaskStore } from '../../filecoin/store
 import { createReceiptStore as createFilecoinReceiptStore } from '../../filecoin/store/receipt.js'
 import { createClient as createFilecoinSubmitQueueClient } from '../../filecoin/queue/filecoin-submit-queue.js'
 import { createClient as createPieceOfferQueueClient } from '../../filecoin/queue/piece-offer-queue.js'
-import { getServiceSigner, parseServiceDids } from '../config.js'
+import { getServiceSigner, parseServiceDids, getServiceConnection } from '../config.js'
 import { createUcantoServer } from '../service.js'
 import { Config } from '@serverless-stack/node/config/index.js'
 import { CAR, Legacy, Codec } from '@ucanto/transport'
 import { Email } from '../email.js'
 import { useProvisionStore } from '../stores/provisions.js'
+import { useSubscriptionsStore } from '../stores/subscriptions.js'
 import { createDelegationsTable } from '../tables/delegations.js'
 import { createDelegationsStore } from '../buckets/delegations-store.js'
 import { createSubscriptionTable } from '../tables/subscription.js'
@@ -33,6 +34,9 @@ import { mustGetEnv } from './utils.js'
 import { createRevocationsTable } from '../stores/revocations.js'
 import { usePlansStore } from '../stores/plans.js'
 import { createCustomerStore } from '@web3-storage/w3infra-billing/tables/customer.js'
+import { createSpaceDiffStore } from '@web3-storage/w3infra-billing/tables/space-diff.js'
+import { createSpaceSnapshotStore } from '@web3-storage/w3infra-billing/tables/space-snapshot.js'
+import { useUsageStore } from '../stores/usage.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -101,6 +105,8 @@ export async function ucanInvocationRouter(request) {
     spaceMetricsTableName,
     rateLimitTableName,
     pieceTableName,
+    spaceDiffTableName,
+    spaceSnapshotTableName,
     r2DelegationBucketEndpoint,
     r2DelegationBucketAccessKeyId,
     r2DelegationBucketSecretAccessKey,
@@ -112,8 +118,11 @@ export async function ucanInvocationRouter(request) {
     postmarkToken,
     providers,
     aggregatorDid,
+    dealTrackerDid,
+    dealTrackerUrl,
     pieceOfferQueueUrl,
     filecoinSubmitQueueUrl,
+    requirePaymentPlan,
     // set for testing
     dbEndpoint,
     accessServiceURL,
@@ -148,8 +157,17 @@ export async function ucanInvocationRouter(request) {
   const spaceMetricsTable = createSpaceMetricsTable(AWS_REGION, spaceMetricsTableName)
 
   const provisionsStorage = useProvisionStore(subscriptionTable, consumerTable, spaceMetricsTable, parseServiceDids(providers))
+  const subscriptionsStorage = useSubscriptionsStore({ consumerTable })
   const delegationsStorage = createDelegationsTable(AWS_REGION, delegationTableName, { bucket: delegationBucket, invocationBucket, workflowBucket })
   const revocationsStorage = createRevocationsTable(AWS_REGION, revocationTableName)
+  const spaceDiffStore = createSpaceDiffStore({ region: AWS_REGION }, { tableName: spaceDiffTableName })
+  const spaceSnapshotStore = createSpaceSnapshotStore({ region: AWS_REGION }, { tableName: spaceSnapshotTableName })
+  const usageStorage = useUsageStore({ spaceDiffStore, spaceSnapshotStore })
+
+  const connection = getServiceConnection({
+    did: dealTrackerDid,
+    url: dealTrackerUrl
+  })
 
   const server = createUcantoServer(serviceSigner, {
     codec,
@@ -172,22 +190,32 @@ export async function ucanInvocationRouter(request) {
     url: new URL(accessServiceURL),
     email: new Email({ token: postmarkToken }),
     provisionsStorage,
+    subscriptionsStorage,
     delegationsStorage,
     revocationsStorage,
     rateLimitsStorage,
-    // filecoin/*
     aggregatorId: DID.parse(aggregatorDid),
     pieceStore: createPieceTable(AWS_REGION, pieceTableName),
     taskStore: createFilecoinTaskStore(AWS_REGION, invocationBucketName, workflowBucketName),
     receiptStore: createFilecoinReceiptStore(AWS_REGION, invocationBucketName, workflowBucketName),
     pieceOfferQueue: createPieceOfferQueueClient({ region: AWS_REGION }, { queueUrl: pieceOfferQueueUrl }),
     filecoinSubmitQueue: createFilecoinSubmitQueueClient({ region: AWS_REGION }, { queueUrl: filecoinSubmitQueueUrl }),
+    dealTrackerService: {
+      connection,
+      invocationConfig: {
+        issuer: serviceSigner,
+        audience: connection.id,
+        with: serviceSigner.did()
+      }
+    },
     options: {
       // TODO: we compute and put all pieces into the queue on bucket event
       // We may change this to validate user provided piece
       skipFilecoinSubmitQueue: true
     },
-    plansStorage
+    plansStorage,
+    requirePaymentPlan,
+    usageStorage,
   })
 
   const processingCtx = {
@@ -279,6 +307,8 @@ function getLambdaEnv () {
     spaceMetricsTableName: mustGetEnv('SPACE_METRICS_TABLE_NAME'),
     rateLimitTableName: mustGetEnv('RATE_LIMIT_TABLE_NAME'),
     pieceTableName: mustGetEnv('PIECE_TABLE_NAME'),
+    spaceDiffTableName: mustGetEnv('SPACE_DIFF_TABLE_NAME'),
+    spaceSnapshotTableName: mustGetEnv('SPACE_SNAPSHOT_TABLE_NAME'),
     pieceOfferQueueUrl: mustGetEnv('PIECE_OFFER_QUEUE_URL'),
     filecoinSubmitQueueUrl: mustGetEnv('FILECOIN_SUBMIT_QUEUE_URL'),
     r2DelegationBucketEndpoint: mustGetEnv('R2_ENDPOINT'),
@@ -293,6 +323,9 @@ function getLambdaEnv () {
     providers: mustGetEnv('PROVIDERS'),
     accessServiceURL: mustGetEnv('ACCESS_SERVICE_URL'),
     aggregatorDid: mustGetEnv('AGGREGATOR_DID'),
+    requirePaymentPlan: (process.env.REQUIRE_PAYMENT_PLAN === 'true'),
+    dealTrackerDid: mustGetEnv('DEAL_TRACKER_DID'),
+    dealTrackerUrl: mustGetEnv('DEAL_TRACKER_URL'),
     // set for testing
     dbEndpoint: process.env.DYNAMO_DB_ENDPOINT,
   }

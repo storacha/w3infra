@@ -124,15 +124,6 @@ export const createUCANStreamTestContext = async () => {
 
   const spaceDiffTableName = await createTable(awsServices.dynamo.client, spaceDiffTableProps, 'space-diff-')
   const spaceDiffStore = createSpaceDiffStore(awsServices.dynamo.client, { tableName: spaceDiffTableName })
-  const subscriptionTableName = await createTable(awsServices.dynamo.client, subscriptionTableProps, 'subscription-')
-  const subscriptionStore = {
-    ...createSubscriptionStore(awsServices.dynamo.client, { tableName: subscriptionTableName }),
-    ...createStorePutterClient(awsServices.dynamo.client, {
-      tableName: subscriptionTableName,
-      validate: validateSubscription, // assume test data is valid
-      encode: encodeSubscription
-    })
-  }
   const consumerTableName = await createTable(awsServices.dynamo.client, consumerTableProps, 'consumer-')
   const consumerStore = {
     ...createConsumerStore(awsServices.dynamo.client, { tableName: consumerTableName }),
@@ -143,7 +134,7 @@ export const createUCANStreamTestContext = async () => {
     })
   }
 
-  return { consumerStore, subscriptionStore, spaceDiffStore }
+  return { consumerStore, spaceDiffStore }
 }
 
 /**

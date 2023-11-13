@@ -72,6 +72,7 @@ export const consumerTableProps = {
   fields: {
     cause: 'string',        // `baf...x` (CID of invocation that created this consumer record)
     consumer: 'string',     // `did:key:space` (DID of the actor that is consuming the provider, e.g. a space DID)
+    customer: 'string',     // `did:mailto:agent` (DID of the user account)
     provider: 'string',     // `did:web:service` (DID of the provider, e.g. a storage provider)
     subscription: 'string', // string (arbitrary string associated with this subscription)
     insertedAt: 'string',   // `2022-12-24T...`
@@ -80,7 +81,8 @@ export const consumerTableProps = {
   primaryIndex: { partitionKey: 'subscription', sortKey: 'provider' },
   globalIndexes: {
     consumer: { partitionKey: 'consumer', projection: ['provider', 'subscription'] },
-    provider: { partitionKey: 'provider', projection: ['consumer'] }
+    provider: { partitionKey: 'provider', projection: ['consumer'] },
+    customer: { partitionKey: 'customer', projection: ['consumer', 'provider', 'subscription', 'cause'] },
   }
 }
 

@@ -50,7 +50,6 @@ export const findSpaceUsageDeltas = messages => {
  * @param {import('./api.js').UsageDelta} delta
  * @param {{
  *   spaceDiffStore: import('./api').SpaceDiffStore
- *   subscriptionStore: import('./api').SubscriptionStore
  *   consumerStore: import('./api').ConsumerStore
  * }} ctx
  * @returns {Promise<import('@ucanto/interface').Result<import('@ucanto/interface').Unit>>}
@@ -62,11 +61,7 @@ export const storeSpaceUsageDelta = async (delta, ctx) => {
   // There should only be one subscription per provider, but in theory you
   // could have multiple providers for the same consumer (space).
   for (const consumer of consumerList.ok.results) {
-    const subGet = await ctx.subscriptionStore.get({ provider: consumer.provider, subscription: consumer.subscription })
-    if (subGet.error) return subGet
-
     const spaceDiffPut = await ctx.spaceDiffStore.put({
-      customer: subGet.ok.customer,
       provider: consumer.provider,
       subscription: consumer.subscription,
       space: delta.resource,

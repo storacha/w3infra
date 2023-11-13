@@ -8,7 +8,7 @@ import { validate, encode, decode, encodeKey } from '../data/space-snapshot.js'
  */
 export const spaceSnapshotTableProps = {
   fields: {
-    /** provider#space */
+    /** Composite key with format: "provider#space" */
     pk: 'string',
     /**
      * CSV Space DID and Provider DID.

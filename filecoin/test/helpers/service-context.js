@@ -43,10 +43,10 @@ export async function getStores (ctx) {
  */
 export function getQueues (ctx) {
   return {
-    filecoinSubmitQueue: createFilecoinSubmitQueueClient(ctx.queues.filecoinSubmitQueue.sqsClient,
+    filecoinSubmitQueue: createFilecoinSubmitQueueClient(ctx.sqsClient,
       { queueUrl: ctx.queues.filecoinSubmitQueue.queueUrl }
     ),
-    pieceOfferQueue: createPieceOfferQueueClient(ctx.queues.pieceOfferQueue.sqsClient,
+    pieceOfferQueue: createPieceOfferQueueClient(ctx.sqsClient,
       { queueUrl: ctx.queues.pieceOfferQueue.queueUrl }
     ),
   }

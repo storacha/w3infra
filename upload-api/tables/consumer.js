@@ -5,7 +5,9 @@ import {
   QueryCommand,
   GetItemCommand,
 } from '@aws-sdk/client-dynamodb'
+import { parseLink } from '@ucanto/core'
 import { Failure } from '@ucanto/server'
+import { Schema } from '@ucanto/validator'
 import { marshall, unmarshall } from '@aws-sdk/util-dynamodb'
 
 /**
@@ -175,6 +177,49 @@ export function useConsumerTable (dynamoDb, tableName) {
       }))
 
       return BigInt(result.Table?.ItemCount ?? -1)
-    }
+    },
+
+    listByCustomer: async customer => {
+      const results = []
+      /** @type {Record<string, import('@aws-sdk/client-dynamodb').AttributeValue>|undefined} */
+      let exclusiveStartKey
+
+      while (true) {
+        const res = await dynamoDb.send(new QueryCommand({
+          TableName: tableName,
+          Limit: 1000,
+          KeyConditions: {
+            customer: {
+              ComparisonOperator: 'EQ',
+              AttributeValueList: [{ S: customer }],
+            },
+          },
+          IndexName: 'customer',
+          ExclusiveStartKey: exclusiveStartKey,
+        }))
+
+        results.push(...(res.Items ?? []).map(item => {
+          return toConsumerListRecord(unmarshall(item))
+        }))
+
+        if (!res.LastEvaluatedKey) break
+        exclusiveStartKey = res.LastEvaluatedKey
+      }
+
+      return { results }
+    },
+  }
+}
+
+/**
+ * @param {Record<string, any>} raw
+ * @returns {import('../types.js').ConsumerListRecord}
+ */
+function toConsumerListRecord ({ consumer, provider, subscription, cause }) {
+  return {
+    consumer: Schema.did({ method: 'key' }).from(consumer),
+    provider: Schema.did({ method: 'web' }).from(provider),
+    subscription,
+    cause: cause ? parseLink(cause) : undefined
   }
 }

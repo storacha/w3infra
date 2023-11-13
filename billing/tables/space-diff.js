@@ -8,9 +8,9 @@ import { validate, encode, lister, decode } from '../data/space-diff.js'
  */
 export const spaceDiffTableProps = {
   fields: {
-    /** customer#provider#space */
+    /** Composite key with format: "provider#space" */
     pk: 'string',
-    /** receiptAt#cause */
+    /** Composite key with format: "receiptAt#cause" */
     sk: 'string',
     /** Customer DID (did:mailto:...). */
     customer: 'string',
