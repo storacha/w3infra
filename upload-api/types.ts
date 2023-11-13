@@ -5,6 +5,9 @@ import { CID } from 'multiformats/cid'
 import { Kinesis } from '@aws-sdk/client-kinesis'
 import { AccountDID, ProviderDID, Service, SpaceDID } from '@web3-storage/upload-api'
 
+export interface StoreOperationError extends Error {
+  name: 'StoreOperationFailed'
+}
 
 export interface UcanLogCtx extends WorkflowCtx, ReceiptBlockCtx {
   basicAuth: string

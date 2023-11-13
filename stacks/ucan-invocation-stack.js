@@ -5,6 +5,7 @@ import {
   Queue,
   use
 } from '@serverless-stack/resources'
+import { PolicyStatement, StarPrincipal, Effect } from 'aws-cdk-lib/aws-iam'
 
 import { CarparkStack } from './carpark-stack.js'
 import { UploadDbStack } from './upload-db-stack.js'
@@ -33,9 +34,27 @@ export function UcanInvocationStack({ stack, app }) {
   const workflowBucket = new Bucket(stack, 'workflow-store', {
     cors: true,
     cdk: {
-      bucket: getBucketConfig('workflow-store', app.stage)
+      bucket: {
+        ...getBucketConfig('workflow-store', app.stage),
+        blockPublicAccess: {
+          blockPublicAcls: true,
+          ignorePublicAcls: true,
+          restrictPublicBuckets: false,
+          blockPublicPolicy: false,
+        }
+      },
     }
   })
+  // Make bucket public
+  workflowBucket.cdk.bucket.addToResourcePolicy(
+    new PolicyStatement({
+      actions: ['s3:GetObject'],
+      effect: Effect.ALLOW,
+      principals: [new StarPrincipal()],
+      resources: [workflowBucket.cdk.bucket.arnForObjects('*')],
+    })
+  )
+
   const invocationBucket = new Bucket(stack, 'invocation-store', {
     cors: true,
     cdk: {
