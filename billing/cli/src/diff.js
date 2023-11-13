@@ -59,7 +59,6 @@ async function insertDiff (space, delta, datetime) {
   })
   const res = await spaceDiffStore.put({
     cause: randomLink(),
-    customer: subscription.customer,
     space: consumer.consumer,
     subscription: subscription.subscription,
     insertedAt: new Date(),

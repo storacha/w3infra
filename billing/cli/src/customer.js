@@ -1,4 +1,3 @@
-import { randomLink } from '../../test/helpers/dag.js'
 import { Schema } from '../../data/lib.js'
 import { createCustomerStore } from '../../tables/customer.js'
 import { mustGetEnv } from '../../functions/lib.js'
@@ -25,7 +24,6 @@ export async function customerAdd (rawCustomer, rawAccount, options) {
   const dynamo = getDynamo()
   const customerStore = createCustomerStore(dynamo, { tableName })
   const res = await customerStore.put({
-    cause: randomLink(),
     account,
     customer,
     product,
