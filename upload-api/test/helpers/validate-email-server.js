@@ -11,19 +11,19 @@ import http from 'node:http'
 import { render } from 'preact-render-to-string'
 import dotenv from 'dotenv'
 import { fileURLToPath } from 'node:url'
+// @ts-ignore exists only after your run `npm run build:html`
 import { ValidateEmail, buildDocument } from '../../dist/html.js'
 
 dotenv.config({ path: fileURLToPath(new URL('../../../.env', import.meta.url)) })
 
 http.createServer((req, res) => {
-  const vnode = ValidateEmail({
+  const vnode = /** @type {any} */ (ValidateEmail({
     ucan: 'test',
     email: 'test@example.org',
     audience: 'did:key:z6MkgcDgNxFxtgCfsnzZ8b4Wf5SLCskwwK18EVovcFvJugbK',
     stripePricingTableId: process.env.STRIPE_PRICING_TABLE_ID,
     stripePublishableKey: process.env.STRIPE_PUBLISHABLE_KEY
-  })
-  // @ts-expect-error
+  }))
   res.write(buildDocument(render(vnode)))
   res.end()
 }).listen(9000)
