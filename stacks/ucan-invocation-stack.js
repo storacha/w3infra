@@ -36,6 +36,7 @@ export function UcanInvocationStack({ stack, app }) {
     cdk: {
       bucket: {
         ...getBucketConfig('workflow-store', app.stage),
+        // change the defaults accordingly to allow access via new Policy
         blockPublicAccess: {
           blockPublicAcls: true,
           ignorePublicAcls: true,
@@ -45,7 +46,7 @@ export function UcanInvocationStack({ stack, app }) {
       },
     }
   })
-  // Make bucket public
+  // Make bucket public for `s3:GetObject` command
   workflowBucket.cdk.bucket.addToResourcePolicy(
     new PolicyStatement({
       actions: ['s3:GetObject'],

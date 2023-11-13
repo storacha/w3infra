@@ -128,7 +128,6 @@ test('w3filecoin integration flow', async t => {
       redirect: 'manual'
     }
   )
-  console.log('rrr', workflowWithReceiptResponse.headers.get('location'))
   t.is(workflowWithReceiptResponse.status, 302)
   const workflowLocation = workflowWithReceiptResponse.headers.get('location')
   if (!workflowLocation) {
