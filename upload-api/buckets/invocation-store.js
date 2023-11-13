@@ -116,12 +116,12 @@ export const useInvocationStore = (s3client, bucketName) => {
       })
       const listObject = await s3client.send(listObjectCmd)
       const carEntry = listObject.Contents?.find(
-        content => content.Key?.endsWith('.workflow')
+        content => content.Key?.endsWith('.out')
       )
       if (!carEntry) {
         return
       }
-      return carEntry.Key?.replace(prefix, '').replace('.workflow', '')
+      return carEntry.Key?.replace(prefix, '').replace('.out', '')
     }
   }
 }
