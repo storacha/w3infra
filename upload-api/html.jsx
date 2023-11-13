@@ -1,5 +1,7 @@
+/** @jsx preact.h */
+/** @jsxFrag preact.Fragment */
 import { render } from 'preact-render-to-string'
-import { createElement } from 'preact'
+import * as preact from 'preact'
 import { Response } from '@web-std/fetch'
 
 /**
@@ -10,8 +12,7 @@ import { Response } from '@web-std/fetch'
 export function buildDocument(body) {
   return `
 <!doctype html>
-<html class="no-js" lang="">
-
+<html>
 <head>
   <meta charset="utf-8">
   <title>w3up Email Validation</title>
@@ -22,9 +23,9 @@ export function buildDocument(body) {
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/dark.min.css">
   <style>
     :root {
-      --background-body: hsl(212deg 27% 17%);
-      --background: hsl(212deg 27% 12%);
-      --background-alt: hsl(212deg 27% 14%);
+      --background-body: #000;
+      --background: hsla(240,5%,84%,.1);
+      --background-alt: rgb(29, 32, 39);
       --button-base: hsl(212deg 27% 10%);
       --button-hover: hsl(212deg 27% 6%);
       --scrollbar-thumb: hsl(212deg 27% 10%);
@@ -51,11 +52,11 @@ export function buildDocument(body) {
     .mcenter {
       margin: 0 auto;
     }
-    .box {
+    .box, .box[open] {
       max-width: 640px;
       background-color: var(--background-alt);
       padding: 20px;
-      margin: 1em 0;
+      margin: 1em auto;
       border-radius: 6px;
       overflow: hidden;
     }
@@ -64,6 +65,15 @@ export function buildDocument(body) {
     }
     .box > p:last-child {
       margin-bottom: 0;
+    }
+    .box.wide {
+      margin: 1em auto;
+      max-width: 72rem;
+    }
+    summary {
+      background-color: transparent;
+      margin: 0;
+      padding: 0;
     }
   </style>
 </head>
@@ -150,47 +160,33 @@ export const PendingValidateEmail = ({ autoApprove }) => (
 export const ValidateEmail = ({ ucan, qrcode, email, audience, stripePricingTableId, stripePublishableKey }) => {
   const showPricingTable = stripePricingTableId && stripePublishableKey
   return (
-    <div style={{ maxWidth: '640px', paddingTop: '50px', margin: '0 auto' }}>
-      <header style={{ textAlign: 'center' }}>
-        <img
-          src="https://bafybeib7zsc7ppyfuby72dz4cpjonql7zt3vetf3cu7rios7hovlgaoug4.ipfs.w3s.link/w3up-logo.png"
-          style={{ height: '80px', display: 'inline-block' }}
-        />
-        <h1 style={{ paddingTop: '20px' }}>Email Validated</h1>
+    <div style={{ paddingTop: '50px', margin: '0 auto', width: '100%', maxWidth: '72rem' }}>
+      <header style={{ textAlign: 'center', color: 'white' }}>
+        <div style={{ display: 'inline-block', transform: 'scale(1.25)' }}>
+          <svg width="50" viewBox="0 0 27.2 27.18" xmlns="http://www.w3.org/2000/svg"><path d="M13.6 27.18A13.59 13.59 0 1127.2 13.6a13.61 13.61 0 01-13.6 13.58zM13.6 2a11.59 11.59 0 1011.6 11.6A11.62 11.62 0 0013.6 2z" fill="currentColor" /><path d="M12.82 9.9v2.53h1.6V9.9l2.09 1.21.77-1.21-2.16-1.32 2.16-1.32-.77-1.21-2.09 1.21V4.73h-1.6v2.53l-2-1.21L10 7.26l2.2 1.32L10 9.9l.78 1.21zM18 17.79v2.52h1.56v-2.52L21.63 19l.78-1.2-2.16-1.33 2.16-1.28-.78-1.19-2.08 1.2v-2.58H18v2.56L15.9 14l-.77 1.2 2.16 1.32-2.16 1.33.77 1.15zM8.13 17.79v2.52h1.56v-2.52L11.82 19l.77-1.2-2.16-1.33 2.12-1.28-.73-1.24-2.13 1.23v-2.56H8.13v2.56L6.05 14l-.78 1.2 2.16 1.3-2.16 1.33.78 1.17z" fill="currentColor" /></svg>
+        </div>
+        <h1>Email Validated</h1>
         <p style={{ paddingBottom: '30px', color: 'white' }}>
-          {email} was confirmed. You may close this window.
+          {email} was confirmed. {showPricingTable ? '' : 'You may close this window.'}
         </p>
       </header>
-      <div class="box" style={{ fontSize: '14px' }}>
-        <p>
-          If you have an existing non-w3up beta account with NFT.Storage or
-          web3.storage and register for the w3up beta version of the same product
-          (NFT.Storage or web3.storage) using the same email, then at the end of
-          the beta period, these accounts will be combined. Until the beta period
-          is over and this migration occurs, uploads to w3up will not appear in
-          your NFT.Storage or web3.storage account (and vice versa), even if you
-          register with the same email.
-        </p>
-        <p>
-          By registering with either the web3.storage or the NFT.Storage w3up
-          beta, you agree to the respective Terms of Service (
-          <a href="https://console.web3.storage/terms">web3.storage ToS</a>,{' '}
-          <a href="https://console.nft.storage/terms">NFT.Storage ToS</a>).
-        </p>
-      </div>
       {showPricingTable && (
-        <div class="box" style={{ fontSize: '14px' }}>
-          <p>In order to upload data using web3.storage's instance of w3up, you will need to sign up for a billing plan:</p>
+        <div class="box wide">
+          <p style={{ textAlign: 'center', color: 'white', fontSize: '20px', fontWeight: 'bold' }}>In order to <span style={{ textDecoration: 'underline' }}>upload data</span> you need to sign up for a billing plan:</p>
           { // @ts-expect-error preact's types aren't happy with a string here, but it works fine
-            createElement('stripe-pricing-table', {
+            preact.createElement('stripe-pricing-table', {
               'pricing-table-id': stripePricingTableId,
               'publishable-key': stripePublishableKey,
               'customer-email': email,
             }, '')}
         </div>
       )}
+      <div class="box" style={{ fontSize: '14px' }}>
+        <p style={{ fontSize: '14px' }}>By registering with web3.storage you agree to the web3.storage <a href="https://console.web3.storage/terms">Terms of Service</a>.</p>
+      </div>
       <details
-        style={{ maxWidth: '640px', overflow: 'overlay', textDecoration: 'none' }}
+        class="box"
+        style={{ overflow: 'overlay', textDecoration: 'none' }}
       >
         {' '}
         <summary style={{ fontSize: '14px' }}>Auth details</summary>
