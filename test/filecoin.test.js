@@ -1,6 +1,7 @@
 import { testFilecoin as test } from './helpers/context.js'
 import { fetch } from '@web-std/fetch'
 import pWaitFor from 'p-wait-for'
+import * as CAR from '@ucanto/transport/car'
 import { Storefront } from '@web3-storage/filecoin-client'
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
 
@@ -118,6 +119,36 @@ test('w3filecoin integration flow', async t => {
   if (!filecoinAcceptReceiptCid) {
     throw new Error('filecoin/offer receipt has no effect for filecoin/accept')
   }
+
+  // Get receipt from endpoint
+  const filecoinOfferInvCid = filecoinOfferRes.ran.link()
+  const workflowWithReceiptResponse = await fetch(
+    `${t.context.apiEndpoint}/receipt/${filecoinOfferInvCid.toString()}`,
+    {
+      redirect: 'manual'
+    }
+  )
+  console.log('rrr', workflowWithReceiptResponse.headers.get('location'))
+  t.is(workflowWithReceiptResponse.status, 302)
+  const workflowLocation = workflowWithReceiptResponse.headers.get('location')
+  if (!workflowLocation) {
+    throw new Error(`no workflow with receipt for task cid ${filecoinOfferInvCid.toString()}`)
+  }
+
+  const workflowWithReceiptResponseAfterRedirect = await fetch(workflowLocation)
+  // Get receipt from Message Archive
+  const agentMessageBytes = new Uint8Array((await workflowWithReceiptResponseAfterRedirect.arrayBuffer()))
+  const agentMessage = await CAR.request.decode({
+    body: agentMessageBytes,
+    headers: {},
+  })
+  // @ts-expect-error unknown link does not mach expectations
+  const receipt = agentMessage.receipts.get(filecoinOfferInvCid.toString())
+  t.assert(receipt)
+  // Receipt matches what we received when invoked
+  t.truthy(receipt?.ran.link().equals(filecoinOfferInvCid))
+  t.truthy(receipt?.fx.join?.equals(filecoinAcceptReceiptCid))
+  t.truthy(receipt?.fx.fork[0].equals(filecoinSubmitReceiptCid))
 
   // Verify receipt chain
   console.log(`wait for receipt chain...`)

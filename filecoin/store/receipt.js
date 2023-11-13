@@ -110,7 +110,6 @@ export const useReceiptStore = (s3client, invocationBucketName, workflowBucketNa
         headers: {},
       })
 
-
       // @ts-expect-error unknown link does not mach expectations
       const receipt = agentMessage.receipts.get(invocationCid.toString())
       if (!receipt) {
