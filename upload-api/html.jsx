@@ -1,8 +1,14 @@
+/* eslint-disable jsdoc/check-tag-names */
 /** @jsx preact.h */
 /** @jsxFrag preact.Fragment */
 import { render } from 'preact-render-to-string'
 import * as preact from 'preact'
 import { Response } from '@web-std/fetch'
+
+/**
+ * Dev changes quickly without deploying to AWS!
+ * Use test/helpers/validate-email-server.js
+ */
 
 /**
  * Build HTML document
