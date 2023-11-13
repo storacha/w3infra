@@ -127,11 +127,12 @@ export function useConsumerTable (dynamoDb, tableName) {
      * @param {ConsumerInput} item
      * @returns {Promise<{}>}
      */
-    add: async ({ consumer, provider, subscription, cause }) => {
+    add: async ({ consumer, customer, provider, subscription, cause }) => {
       const insertedAt = new Date().toISOString()
 
       const row = {
         consumer,
+        customer,
         provider,
         subscription,
         cause: cause.toString(),
