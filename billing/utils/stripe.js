@@ -17,6 +17,10 @@ export async function handleCustomerSubscriptionCreated(stripe, event, customerS
   // per https://stripe.com/docs/expand#with-webhooks these attributes will always be a string in a webhook, so these typecasts are safe
   const customerId = String(event.data.object.customer)
   const product = String(event.data.object.items.data[0].price.lookup_key)
+  if (!product.startsWith('did:web:')) {
+    return { error: new Error(`Invalid product: ${product}`) }
+  }
+
   const account = /** @type {AccountID} */ (`stripe:${customerId}`)
   const stripeCustomer = await stripe.customers.retrieve(customerId)
   if (stripeCustomer.deleted) {
