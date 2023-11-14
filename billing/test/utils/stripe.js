@@ -6,7 +6,7 @@ import * as DidMailto from '@web3-storage/did-mailto'
 export const test = {
   'should create a customer record': async (/** @type {import('entail').assert} */ assert, ctx) => {
     const stripeCustomerId = 'stripe-customer-id'
-    const product = 'test-product'
+    const product = 'did:web:test-product'
     const email = 'travis@example.com'
     const customer = DidMailto.fromEmail(/** @type {`${string}@${string}`} */(email))
 
