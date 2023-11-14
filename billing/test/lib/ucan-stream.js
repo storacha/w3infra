@@ -22,7 +22,14 @@ export const test = {
       ts: new Date()
     }]
 
-    const shard = randomLink()
+    const shard0 = randomLink()
+    const space0 = await randomDID()
+
+    const shard1 = randomLink()
+    const space1 = await randomDID()
+
+    const shard2 = randomLink()
+    const space2 = await randomDID()
 
     /** @type {import('../../lib/api.js').UcanReceiptMessage[]} */
     const receipts = [{
@@ -31,10 +38,10 @@ export const test = {
       invocationCid: randomLink(),
       value: {
         att: [{
-          with: await randomDID(),
+          with: space0,
           can: 'store/add',
           nb: {
-            link: shard,
+            link: shard0,
             size: 138
           }
         }],
@@ -49,9 +56,27 @@ export const test = {
       invocationCid: randomLink(),
       value: {
         att: [{
+          with: space2,
+          can: 'store/add',
+          nb: {
+            link: shard2,
+            size: 1337
+          }
+        }],
+        aud: await randomDID(),
+        cid: randomLink()
+      },
+      out: { ok: { status: 'done', with: space2 } },
+      ts: new Date()
+    }, {
+      type: 'receipt',
+      carCid: randomLink(),
+      invocationCid: randomLink(),
+      value: {
+        att: [{
           with: await randomDID(),
           can: 'store/remove',
-          nb: { link: shard }
+          nb: { link: shard0 }
         }],
         aud: await randomDID(),
         cid: randomLink()
@@ -60,10 +85,40 @@ export const test = {
       ts: new Date()
     }]
 
-    const deltas = findSpaceUsageDeltas([...invocations, ...receipts])
+    // "done" receipts that will exist in the space they are being stored in.
+    // they _should_ be filtered out.
+    /** @type {import('../../lib/api.js').UcanReceiptMessage[]} */
+    const filteredReceipts = [{
+      type: 'receipt',
+      carCid: randomLink(),
+      invocationCid: randomLink(),
+      value: {
+        att: [{
+          with: space1,
+          can: 'store/add',
+          nb: {
+            link: shard1,
+            size: 1138
+          }
+        }],
+        aud: await randomDID(),
+        cid: randomLink()
+      },
+      out: { ok: { status: 'done', with: space1, link: shard1 } },
+      ts: new Date()
+    }]
+
+    const deltas = await findSpaceUsageDeltas([...invocations, ...receipts, ...filteredReceipts], {
+      storeTable: {
+        exists: async (s, l) => filteredReceipts.some(r => {
+          const out = /** @type {any} */ (r.out.ok)
+          return s.toString() === out.with?.toString() && out.link?.toString() === l.toString()
+        })
+      }
+    })
     assert.equal(deltas.length, receipts.length)
 
-    // ensure we have a delta for every receipt
+    // ensure we have a delta for every receipt, except
     for (const r of receipts) {
       assert.ok(deltas.some(d => (
         d.resource === r.value.att[0].with &&
@@ -117,7 +172,9 @@ export const test = {
       ts: new Date(from.getTime() + 2)
     }]
 
-    const deltas = findSpaceUsageDeltas(receipts)
+    const deltas = await findSpaceUsageDeltas(receipts, {
+      storeTable: { exists: async () => false }
+    })
 
     for (const d of deltas) {
       const res = await storeSpaceUsageDelta(d, ctx)

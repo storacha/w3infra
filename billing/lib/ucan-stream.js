@@ -6,9 +6,10 @@ import * as StoreCaps from '@web3-storage/capabilities/store'
  * the delta.
  *
  * @param {import('./api.js').UcanStreamMessage[]} messages
- * @returns {import('./api.js').UsageDelta[]}
+ * @param {{ storeTable: Pick<import('@web3-storage/upload-api').StoreTable, 'exists'> }} ctx
+ * @returns {Promise<import('./api.js').UsageDelta[]>}
  */
-export const findSpaceUsageDeltas = messages => {
+export const findSpaceUsageDeltas = async (messages, ctx) => {
   const deltas = []
   for (const message of messages) {
     if (!isReceipt(message)) continue
@@ -16,6 +17,12 @@ export const findSpaceUsageDeltas = messages => {
     /** @type {number|undefined} */
     let size
     if (isReceiptForCapability(message, StoreCaps.add) && isStoreAddSuccess(message.out)) {
+      // If status is done, we need to check if the item is stored in _this_
+      // space or not. If it is, then there is no delta.
+      if (message.out.ok.status === 'done') {
+        const { with: space, link } = message.out.ok
+        if (await ctx.storeTable.exists(space, link)) continue
+      }
       size = message.value.att[0].nb?.size
     } else if (isReceiptForCapability(message, StoreCaps.remove) && isStoreRemoveSuccess(message.out)) {
       size = -message.out.ok.size

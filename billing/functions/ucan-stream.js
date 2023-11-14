@@ -5,6 +5,7 @@ import { createSpaceDiffStore } from '../tables/space-diff.js'
 import { createConsumerStore } from '../tables/consumer.js'
 import { expect, mustGetEnv } from './lib.js'
 import { findSpaceUsageDeltas, storeSpaceUsageDelta } from '../lib/ucan-stream.js'
+import { createStoreTable } from '../../upload-api/tables/store.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -16,6 +17,7 @@ Sentry.AWSLambda.init({
  * @typedef {{
  *   spaceDiffTable?: string
  *   consumerTable?: string
+ *   storeTable?: string
  *   region?: 'us-west-2'|'us-east-2'
  * }} CustomHandlerContext
  */
@@ -30,6 +32,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(
     const customContext = context?.clientContext?.Custom
     const spaceDiffTable = customContext?.spaceDiffTable ?? mustGetEnv('SPACE_DIFF_TABLE_NAME')
     const consumerTable = customContext?.consumerTable ?? mustGetEnv('CONSUMER_TABLE_NAME')
+    const storeTable = customContext?.storeTable ?? mustGetEnv('STORE_TABLE_NAME')
     const region = customContext?.region ?? mustGetEnv('AWS_REGION')
   
     const messages = parseUcanStreamEvent(event)
@@ -37,7 +40,9 @@ export const handler = Sentry.AWSLambda.wrapHandler(
       throw new Error(`invalid batch size, expected: 1, actual: ${messages.length}`)
     }
 
-    const deltas = findSpaceUsageDeltas(messages)
+    const deltas = await findSpaceUsageDeltas(messages, {
+      storeTable: createStoreTable(region, storeTable)
+    })
     if (!deltas.length) return
 
     const ctx = {

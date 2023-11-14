@@ -18,7 +18,7 @@ export function BillingStack ({ stack, app }) {
     spaceDiffTable,
     usageTable
   } = use(BillingDbStack)
-  const { subscriptionTable, consumerTable } = use(UploadDbStack)
+  const { subscriptionTable, consumerTable, storeTable } = use(UploadDbStack)
 
   // Lambda that does a billing run for a given space and customer
   const spaceBillingQueueHandler = new Function(stack, 'space-billing-queue-handler', {
@@ -93,11 +93,12 @@ export function BillingStack ({ stack, app }) {
 
   // Lambda that receives UCAN stream events and writes diffs to spaceSizeDiffTable
   const ucanStreamHandler = new Function(stack, 'ucan-stream-handler', {
-    permissions: [spaceDiffTable, consumerTable],
+    permissions: [spaceDiffTable, consumerTable, storeTable],
     handler: 'functions/ucan-stream.handler',
     environment: {
       SPACE_DIFF_TABLE_NAME: spaceDiffTable.tableName,
-      CONSUMER_TABLE_NAME: consumerTable.tableName
+      CONSUMER_TABLE_NAME: consumerTable.tableName,
+      STORE_TABLE_NAME: storeTable.tableName
     }
   })
 
