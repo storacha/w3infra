@@ -31,7 +31,7 @@ export const test = {
               data: [
                 {
                   price: {
-                    product
+                    lookup_key: product
                   }
                 }
               ]
