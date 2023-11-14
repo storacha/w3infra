@@ -16,7 +16,7 @@ import * as DidMailto from '@web3-storage/did-mailto'
 export async function handleCustomerSubscriptionCreated(stripe, event, customerStore) {
   // per https://stripe.com/docs/expand#with-webhooks these attributes will always be a string in a webhook, so these typecasts are safe
   const customerId = String(event.data.object.customer)
-  const product = String(event.data.object.items.data[0].price.product)
+  const product = String(event.data.object.items.data[0].price.lookup_key)
   const account = /** @type {AccountID} */ (`stripe:${customerId}`)
   const stripeCustomer = await stripe.customers.retrieve(customerId)
   if (stripeCustomer.deleted) {
