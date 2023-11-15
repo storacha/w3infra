@@ -121,6 +121,7 @@ export function FilecoinStack({ stack, app }) {
           AGGREGATOR_DID,
           PROOF: STOREFRONT_PROOF,
         },
+        timeout: '4 minutes',
         bind: [privateKey],
         permissions: [pieceTable, workflowBucket, invocationBucket],
       }
