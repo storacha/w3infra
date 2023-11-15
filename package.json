@@ -25,7 +25,7 @@
     "@tsconfig/node16": "^1.0.3",
     "@types/git-rev-sync": "^2.0.0",
     "@ucanto/client": "^9.0.0",
-    "@ucanto/core": "^9.0.0",
+    "@ucanto/core": "^9.0.1",
     "@ucanto/interface": "^9.0.0",
     "@ucanto/principal": "^9.0.0",
     "@ucanto/transport": "^9.0.0",
