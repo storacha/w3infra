@@ -263,7 +263,7 @@ async function getPiecesByContent (t, content) {
 async function putDealToDealTracker (piece, dealId) {
   const region = 'us-east-2'
   const endpoint = `https://dynamodb.${region}.amazonaws.com`
-  const tableName = 'staging-w3filecoin-deal-tracker-deal-store'
+  const tableName = 'staging-w3filecoin-deal-tracker-deal-store-v1'
   const client = new DynamoDBClient({
     region,
     endpoint
