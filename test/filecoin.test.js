@@ -202,10 +202,6 @@ test('w3filecoin integration flow', async t => {
   console.log(`put deal on deal tracker for aggregate ${aggregate}`)
   await putDealToDealTracker(aggregate.toString(), dealId)
 
-  // Trigger cron to update and issue receipts based on deals
-  const callDealerCronRes = await fetch(`https://staging.dealer.web3.storage/cron`)
-  t.true(callDealerCronRes.ok)
-
   // Await for `aggregate/accept` receipt
   const aggregateAcceptReceiptCid = receiptAggregateOfferRes.ok?.fx.join?.link()
   if (!aggregateAcceptReceiptCid) {
@@ -213,7 +209,13 @@ test('w3filecoin integration flow', async t => {
   }
   console.log(`wait for aggregate/accept receipt ${aggregateAcceptReceiptCid.toString()} ...`)
   await waitForStoreOperationOkResult(
-    () => receiptStoreFilecoin.get(aggregateAcceptReceiptCid),
+    async () => {
+      // Trigger cron to update and issue receipts based on deals
+      const callDealerCronRes = await fetch(`https://staging.dealer.web3.storage/cron`)
+      t.true(callDealerCronRes.ok)
+
+      return receiptStoreFilecoin.get(aggregateAcceptReceiptCid)
+    },
     (res) => Boolean(res.ok)
   )
 
