@@ -77,6 +77,7 @@ async function handlePieceInsertToFilecoinSubmit (event) {
 
   const { ok, error } = await storefrontEvents.handlePieceInsert(context, record)
   if (error) {
+    console.error(error)
     return {
       statusCode: 500,
       body: error.message || 'failed to handle piece insert event to filecoin submit'
