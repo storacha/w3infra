@@ -109,7 +109,7 @@ export function FilecoinStack({ stack, app }) {
    */
   const dealTrackCronName = getCdkNames('deal-track-cron', stack.stage)
   new Cron(stack, dealTrackCronName, {
-    schedule: 'rate(5 minutes)',
+    schedule: 'rate(10 minutes)',
     job: {
       function: {
         handler: 'functions/handle-cron-tick.main',
@@ -121,7 +121,7 @@ export function FilecoinStack({ stack, app }) {
           AGGREGATOR_DID,
           PROOF: STOREFRONT_PROOF,
         },
-        timeout: '4 minutes',
+        timeout: '9 minutes',
         bind: [privateKey],
         permissions: [pieceTable, workflowBucket, invocationBucket],
       }
