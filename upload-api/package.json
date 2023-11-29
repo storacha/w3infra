@@ -23,7 +23,7 @@
     "@ucanto/transport": "^9.0.0",
     "@ucanto/validator": "^9.0.1",
     "@web-std/fetch": "^4.1.0",
-    "@web3-storage/access": "^18.0.4",
+    "@web3-storage/access": "^18.0.5",
     "@web3-storage/capabilities": "^12.1.0",
     "@web3-storage/upload-api": "^7.3.5",
     "@web3-storage/w3infra-ucan-invocation": "*",
