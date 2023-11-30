@@ -1,0 +1,48 @@
+import {
+  S3Client,
+  GetObjectCommand,
+} from '@aws-sdk/client-s3'
+
+/**
+ * Abstraction layer with Factory to perform operations on bucket storing
+ * requested workflows to handle.
+ *
+ * @param {string} region
+ * @param {string} bucketName
+ * @param {import('@aws-sdk/client-s3').ServiceInputTypes} [options]
+ */
+export function createWorkflowStore(region, bucketName, options = {}) {
+  const s3client = new S3Client({
+    region,
+    ...options,
+  })
+  return useWorkflowStore(s3client, bucketName)
+}
+
+/**
+ * @param {S3Client} s3client
+ * @param {string} bucketName
+ * @returns {import('../types').WorkflowBucket}
+ */
+export const useWorkflowStore = (s3client, bucketName) => {
+  return {
+    /**
+     * Get CAR bytes for a given invocation.
+     *
+     * @param {string} cid 
+     */
+    get: async (cid) => {
+      const getObjectCmd = new GetObjectCommand({
+        Bucket: bucketName,
+        Key: `${cid}/${cid}`,
+      })
+      const s3Object = await s3client.send(getObjectCmd)
+      const bytes = await s3Object.Body?.transformToByteArray()
+      if (!bytes) {
+        return
+      }
+
+      return bytes
+    }
+  }
+}

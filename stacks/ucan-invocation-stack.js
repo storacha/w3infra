@@ -143,6 +143,30 @@ export function UcanInvocationStack({ stack, app }) {
     handler: 'functions/metrics-upload-remove-total.consumer',
     deadLetterQueue: metricsUploadRemoveTotalDLQ.cdk.queue,
   })
+
+  // aggregate/offer total
+  const metricsAggregateOfferTotalDLQ = new Queue(stack, 'metrics-aggregate-offer-total-dlq')
+  const metricsAggregateOfferTotalConsumer = new Function(stack, 'metrics-aggregate-offer-total-consumer', {
+    environment: {
+      METRICS_TABLE_NAME: adminMetricsTable.tableName,
+      WORKFLOW_BUCKET_NAME: workflowBucket.bucketName,
+    },
+    permissions: [adminMetricsTable, workflowBucket],
+    handler: 'functions/metrics-aggregate-offer-total.consumer',
+    deadLetterQueue: metricsAggregateOfferTotalDLQ.cdk.queue,
+  })
+
+  // aggregate/accept total
+  const metricsAggregateAcceptTotalDLQ = new Queue(stack, 'metrics-aggregate-accept-total-dlq')
+  const metricsAggregateAcceptTotalConsumer = new Function(stack, 'metrics-aggregate-accept-total-consumer', {
+    environment: {
+      METRICS_TABLE_NAME: adminMetricsTable.tableName,
+      WORKFLOW_BUCKET_NAME: workflowBucket.bucketName,
+    },
+    permissions: [adminMetricsTable, workflowBucket],
+    handler: 'functions/metrics-aggregate-accept-total.consumer',
+    deadLetterQueue: metricsAggregateAcceptTotalDLQ.cdk.queue,
+  })
   
   // metrics per space
   const spaceMetricsDLQ = new Queue(stack, 'space-metrics-dlq')
@@ -271,6 +295,23 @@ export function UcanInvocationStack({ stack, app }) {
       },
       metricsUploadRemoveTotalConsumer: {
         function: metricsUploadRemoveTotalConsumer,
+        cdk: {
+          eventSource: {
+            ...(getKinesisEventSourceConfig(stack))
+          }
+        }
+      },
+      // Filecoin metrics
+      metricsAggregateOfferTotalConsumer: {
+        function: metricsAggregateOfferTotalConsumer,
+        cdk: {
+          eventSource: {
+            ...(getKinesisEventSourceConfig(stack))
+          }
+        }
+      },
+      metricsAggregateAcceptTotalConsumer: {
+        function: metricsAggregateAcceptTotalConsumer,
         cdk: {
           eventSource: {
             ...(getKinesisEventSourceConfig(stack))
