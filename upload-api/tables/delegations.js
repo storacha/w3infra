@@ -123,7 +123,7 @@ export function useDelegationsTable(dynamoDb, tableName, { bucket, invocationBuc
 
       const items = response.Items ?? []
       /**
-       * @type {import('@ucanto/interface').Result[]}
+       * @type {import('@ucanto/interface').Result<Delegation, Failure>[]}
        */
       const delegationResults = await Promise.all(items.map(async item => {
         const { cause, link } = unmarshall(item)
@@ -138,25 +138,24 @@ export function useDelegationsTable(dynamoDb, tableName, { bucket, invocationBuc
               invocationCid, delegationCid
             }
           )
-          if (result.ok) {
-            return result
-          } else {
-            return { error: new Failure(`could not find delegation ${delegationCid} from invocation ${invocationCid}`) }
-          }
+          return result.ok ? result : (
+            { error: new Failure(`could not find delegation ${delegationCid} from invocation ${invocationCid}`) }
+          )
         } else {
           // otherwise, we'll try to find the delegation in the R2 bucket we used to stash them in
           const result = await cidToDelegation(bucket, delegationCid)
-          if (result.ok) {
-            return result
-          } else {
-            return {
+          return result.ok ? result : (
+            {
               error: new Failure(`failed to get delegation ${delegationCid} from legacy delegations bucket`, {
                 cause: result.error
               })
             }
-          }
+          )
         }
       }))
+      /**
+       * @type {Delegation[]}
+       */
       const delegations = []
       for (const result of delegationResults) {
         if (result.ok) {
