@@ -69,8 +69,23 @@ export const useDelegationsStore = (s3client, bucketName) => {
         Bucket: bucketName,
         Key: createDelegationsBucketKey(cid),
       })
-      const s3Object = await pRetry(() => s3client.send(getObjectCmd))
-      const bytes = await s3Object.Body?.transformToByteArray()
+      const s3Object = await pRetry(
+        async () => {
+          let res
+          try {
+            res = await s3client.send(getObjectCmd)
+          } catch (/** @type {any} */err) {
+            // it's kind of hard to find, but this is apparently what S3 returns in on 404: https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/client/s3/command/GetObjectCommand/
+            if (err.name === 'NoSuchKey') {
+              return undefined
+            }
+            throw new Error(`failed to fetch ${cid}`)
+          }
+          return res
+        },
+        { retries: 3 }
+      )
+      const bytes = await s3Object?.Body?.transformToByteArray()
       if (!bytes) {
         return
       }
