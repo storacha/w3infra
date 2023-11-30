@@ -77,7 +77,7 @@ export const useDelegationsStore = (s3client, bucketName) => {
           } catch (/** @type {any} */err) {
             // it's kind of hard to find, but this is apparently what S3 returns in on 404: https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/client/s3/command/GetObjectCommand/
             if (err.name === 'NoSuchKey') {
-              return undefined
+              return null
             }
             throw new Error(`failed to fetch ${cid}`)
           }
