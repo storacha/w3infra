@@ -47,7 +47,7 @@ const DELEGATIONS_FIND_DEFAULT_LIMIT = 1000
  * @param {object} [options]
  * @param {string} [options.endpoint]
  */
-export function createDelegationsTable (region, tableName, { bucket, invocationBucket, workflowBucket }, options = {}) {
+export function createDelegationsTable(region, tableName, { bucket, invocationBucket, workflowBucket }, options = {}) {
   const dynamoDb = new DynamoDBClient({
     region,
     endpoint: options.endpoint,
@@ -65,7 +65,7 @@ export function createDelegationsTable (region, tableName, { bucket, invocationB
  * @param {import('../types').WorkflowBucket} deps.workflowBucket
  * @returns {import('@web3-storage/upload-api').DelegationsStorage}
  */
-export function useDelegationsTable (dynamoDb, tableName, { bucket, invocationBucket, workflowBucket }) {
+export function useDelegationsTable(dynamoDb, tableName, { bucket, invocationBucket, workflowBucket }) {
   return {
     putMany: async (delegations, options = {}) => {
       if (delegations.length === 0) {
@@ -121,36 +121,48 @@ export function useDelegationsTable (dynamoDb, tableName, { bucket, invocationBu
       })
       const response = await dynamoDb.send(cmd)
 
-      const delegationPromises = []
-      for (const result of response.Items ?? []) {
-        const { cause, link } = unmarshall(result)
+      const items = response.Items ?? []
+      /**
+       * @type {import('@ucanto/interface').Result[]}
+       */
+      const delegationResults = await Promise.all(items.map(async item => {
+        const { cause, link } = unmarshall(item)
         const delegationCid = /** @type {Ucanto.Link} */ (parseLink(link))
         if (FIND_DELEGATIONS_IN_INVOCATIONS && cause) {
           // if this row has a cause, it is the CID of the invocation that contained these delegations
           // and we can pull them from there
           const invocationCid = /** @type {Ucanto.Link} */ (parseLink(cause))
-          delegationPromises.push(findDelegationInInvocation(
+          const result = await findDelegationInInvocation(
             {
               invocationBucket, workflowBucket,
               invocationCid, delegationCid
             }
-          ))
+          )
+          if (result.ok) {
+            return result
+          } else {
+            return { error: new Failure(`could not find delegation ${delegationCid} from invocation ${invocationCid}`) }
+          }
         } else {
           // otherwise, we'll try to find the delegation in the R2 bucket we used to stash them in
-          delegationPromises.push(cidToDelegation(bucket, delegationCid))
+          const result = await cidToDelegation(bucket, delegationCid)
+          if (result.ok) {
+            return result
+          } else {
+            return {
+              error: new Failure(`failed to get delegation ${delegationCid} from legacy delegations bucket`, {
+                cause: result.error
+              })
+            }
+          }
         }
-      }
-      const delegationResults = await Promise.all(delegationPromises)
+      }))
       const delegations = []
       for (const result of delegationResults) {
         if (result.ok) {
           delegations.push(result.ok)
         } else {
-          return {
-            error: new Failure(`could not find delegation: ${result.error.message}`, {
-              cause: result.error
-            })
-          }
+          return result
         }
       }
       return {
@@ -165,7 +177,7 @@ export function useDelegationsTable (dynamoDb, tableName, { bucket, invocationBu
  * @param {import('../types').DelegationsBucket} bucket
  * @param {Ucanto.Delegation<Ucanto.Tuple<Ucanto.Capability>>[]} delegations
  */
-async function writeDelegations (bucket, delegations) {
+async function writeDelegations(bucket, delegations) {
   return writeEntries(
     bucket,
     [...delegations].map((delegation) => {
@@ -181,7 +193,7 @@ async function writeDelegations (bucket, delegations) {
  * @param {import('../types').DelegationsBucket} bucket
  * @param {Iterable<readonly [key: CID, value: Uint8Array ]>} entries
  */
-async function writeEntries (bucket, entries) {
+async function writeEntries(bucket, entries) {
   await Promise.all([...entries].map(([key, value]) => bucket.put(key, value)))
 }
 
@@ -190,7 +202,7 @@ async function writeEntries (bucket, entries) {
  * @param {Ucanto.Link | undefined} cause
  * @returns {{cause?: string, link: string, audience: string, issuer: string, expiration: number | null}}}
  */
-function createDelegationItem (d, cause) {
+function createDelegationItem(d, cause) {
   return {
     cause: cause?.toString(),
     link: d.cid.toString(),
@@ -205,7 +217,7 @@ function createDelegationItem (d, cause) {
  * @param {Ucanto.Link} cid
  * @returns {Promise<Ucanto.Result<Ucanto.Delegation, Ucanto.Failure>>}
  */
-async function cidToDelegation (bucket, cid) {
+async function cidToDelegation(bucket, cid) {
   const delegationCarBytes = await bucket.get(/** @type {import('multiformats/cid').CID} */(cid))
   if (!delegationCarBytes) {
     return { error: new Failure(`failed to read car bytes for cid ${cid.toString(base32)}`) }
@@ -227,7 +239,7 @@ async function cidToDelegation (bucket, cid) {
  * @param {Ucanto.Link} opts.delegationCid
  * @returns {Promise<Ucanto.Result<Ucanto.Delegation, FindDelegationError>>}
  */
-async function findDelegationInInvocation ({ invocationBucket, workflowBucket, invocationCid, delegationCid }) {
+async function findDelegationInInvocation({ invocationBucket, workflowBucket, invocationCid, delegationCid }) {
   const agentMessageWithInvocationCid = await invocationBucket.getInLink(
     invocationCid.toString()
   )

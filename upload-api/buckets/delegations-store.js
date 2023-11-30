@@ -69,7 +69,7 @@ export const useDelegationsStore = (s3client, bucketName) => {
         Bucket: bucketName,
         Key: createDelegationsBucketKey(cid),
       })
-      const s3Object = await s3client.send(getObjectCmd)
+      const s3Object = await pRetry(() => s3client.send(getObjectCmd))
       const bytes = await s3Object.Body?.transformToByteArray()
       if (!bytes) {
         return
