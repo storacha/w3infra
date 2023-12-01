@@ -121,36 +121,47 @@ export function useDelegationsTable (dynamoDb, tableName, { bucket, invocationBu
       })
       const response = await dynamoDb.send(cmd)
 
-      const delegationPromises = []
-      for (const result of response.Items ?? []) {
-        const { cause, link } = unmarshall(result)
+      const items = response.Items ?? []
+      /**
+       * @type {import('@ucanto/interface').Result<Delegation, Failure>[]}
+       */
+      const delegationResults = await Promise.all(items.map(async item => {
+        const { cause, link } = unmarshall(item)
         const delegationCid = /** @type {Ucanto.Link} */ (parseLink(link))
         if (FIND_DELEGATIONS_IN_INVOCATIONS && cause) {
           // if this row has a cause, it is the CID of the invocation that contained these delegations
           // and we can pull them from there
           const invocationCid = /** @type {Ucanto.Link} */ (parseLink(cause))
-          delegationPromises.push(findDelegationInInvocation(
+          const result = await findDelegationInInvocation(
             {
               invocationBucket, workflowBucket,
               invocationCid, delegationCid
             }
-          ))
+          )
+          return result.ok ? result : (
+            { error: new Failure(`could not find delegation ${delegationCid} from invocation ${invocationCid}`) }
+          )
         } else {
           // otherwise, we'll try to find the delegation in the R2 bucket we used to stash them in
-          delegationPromises.push(cidToDelegation(bucket, delegationCid))
+          const result = await cidToDelegation(bucket, delegationCid)
+          return result.ok ? result : (
+            {
+              error: new Failure(`failed to get delegation ${delegationCid} from legacy delegations bucket`, {
+                cause: result.error
+              })
+            }
+          )
         }
-      }
-      const delegationResults = await Promise.all(delegationPromises)
+      }))
+      /**
+       * @type {Delegation[]}
+       */
       const delegations = []
       for (const result of delegationResults) {
         if (result.ok) {
           delegations.push(result.ok)
         } else {
-          return {
-            error: new Failure(`could not find delegation: ${result.error.message}`, {
-              cause: result.error
-            })
-          }
+          return result
         }
       }
       return {
