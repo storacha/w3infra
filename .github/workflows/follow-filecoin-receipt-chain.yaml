@@ -1,0 +1,39 @@
+name: Follow filecoin receipt chain for a given piece
+
+on:
+  workflow_dispatch:
+    inputs:
+      piece_cid:
+        required: true
+        description: PieceCID to follow receipt chain
+        type: string
+      env:
+        required: true
+        description: The env to fetch metrics against. Default is production.
+        options: 
+          - staging
+          - production
+        default: production
+
+jobs:
+  follow-filecoin-receipt-chain:
+    name: Follow filecoin receipt chain for a given piece
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          registry-url: 'https://registry.npmjs.org'
+          node-version: 18
+          cache: 'npm'
+      - run: npm ci
+      - name: Run job
+        env:
+          DEBUG: '*'
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          ENV: ${{ github.event.inputs.env }}
+          PIECE_CID:  ${{ github.event.inputs.piece_cid }}
+          PRIVATE_KEY: ${{ github.event.inputs.env == 'production' && secrets.SERVICE_PRIVATE_KEY_PRODUCTION || secrets.SERVICE_PRIVATE_KEY_STAGING }}
+        run: npm run follow-filecoin-receipt-chain
