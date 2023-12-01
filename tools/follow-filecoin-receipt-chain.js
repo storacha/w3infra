@@ -31,7 +31,10 @@ export async function followFilecoinReceiptChain () {
   
   // Get piece in store
   const getPiece = await pieceStore.get({ piece: pieceInfo.link })
-  if (getPiece.error) throw new Error('could not find piece')
+  if (getPiece.error){
+    console.error(getPiece.error)
+    throw new Error('could not find piece')
+  }
   // Check if `filecoin/submit` receipt exists to get to know aggregate where it is included on a deal
   const filecoinSubmitInvocation = await StorefrontCaps.filecoinSubmit
     .invoke({
