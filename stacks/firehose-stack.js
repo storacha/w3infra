@@ -473,6 +473,104 @@ export function UcanFirehoseStack ({ stack, app }) {
   })
   providerAddTable.addDependsOn(glueDatabase)
 
+  // creates a table that can be seen in the AWS Glue table browser at 
+  // https://console.aws.amazon.com/glue/home#/v2/data-catalog/tables
+  // and in the data browser in the Athena Query editor at
+  // https://console.aws.amazon.com/athena/home#/query-editor
+  const aggregateOfferTableName = getCdkNames('aggregate-offer-table', app.stage)
+  const aggregateOfferTable = new glue.CfnTable(stack, aggregateOfferTableName, {
+    catalogId: Aws.ACCOUNT_ID,
+    databaseName,
+    tableInput: {
+      name: aggregateOfferTableName,
+      partitionKeys: [
+        { name: 'day', type: 'date' }
+      ],
+      parameters: {
+        classification: "json",
+        typeOfData: "file",
+        // @see https://docs.aws.amazon.com/athena/latest/ug/partition-projection-kinesis-firehose-example.html for more information on projection
+        // configuration - this should match the "day" parameter and S3 prefix configured in the delivery stream
+        "projection.enabled": "true",
+        "projection.day.type": "date",
+        "projection.day.format": "yyyy-MM-dd",
+        "projection.day.range": "2023-01-01,NOW",
+        "projection.day.interval": "1",
+        "projection.day.interval.unit": "DAYS",
+        "storage.location.template": `s3://${streamLogBucket.bucketName}/logs/receipt/aggregate_offer/\${day}/`
+      },
+      storageDescriptor: {
+        location: `s3://${streamLogBucket.bucketName}/logs/receipt/aggregate_offer/`,
+        columns: [
+          { name: 'carcid', type: 'string' },
+          // STRUCT here refers to the Apache Hive STRUCT datatype - see https://aws.amazon.com/blogs/big-data/create-tables-in-amazon-athena-from-nested-json-and-mappings-using-jsonserde/
+          { name: 'value', type: 'STRUCT<att:ARRAY<struct<can:STRING,with:STRING,nb:STRUCT<aggregate:STRUCT<_cid_slash:STRING>>>>,iss:STRING,aud:STRING>' },
+          { name: 'out', type: 'STRUCT<error:STRUCT<name:STRING>,ok:STRUCT<aggregate:STRUCT<_cid_slash:STRING>>>' },
+          { name: 'ts', type: 'timestamp' }
+        ],
+        inputFormat: 'org.apache.hadoop.mapred.TextInputFormat',
+        outputFormat: 'org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat',
+        serdeInfo: {
+          serializationLibrary: 'org.openx.data.jsonserde.JsonSerDe',
+          parameters: {
+            // see https://aws.amazon.com/blogs/big-data/create-tables-in-amazon-athena-from-nested-json-and-mappings-using-jsonserde/
+            'mapping._cid_slash': '/'
+          }
+        }
+      }
+    }
+  })
+  aggregateOfferTable.addDependsOn(glueDatabase)
+
+  // creates a table that can be seen in the AWS Glue table browser at 
+  // https://console.aws.amazon.com/glue/home#/v2/data-catalog/tables
+  // and in the data browser in the Athena Query editor at
+  // https://console.aws.amazon.com/athena/home#/query-editor
+  const aggregateAcceptTableName = getCdkNames('aggregate-accept-table', app.stage)
+  const aggregateAcceptTable = new glue.CfnTable(stack, aggregateAcceptTableName, {
+    catalogId: Aws.ACCOUNT_ID,
+    databaseName,
+    tableInput: {
+      name: aggregateAcceptTableName,
+      partitionKeys: [
+        { name: 'day', type: 'date' }
+      ],
+      parameters: {
+        classification: "json",
+        typeOfData: "file",
+        // @see https://docs.aws.amazon.com/athena/latest/ug/partition-projection-kinesis-firehose-example.html for more information on projection
+        // configuration - this should match the "day" parameter and S3 prefix configured in the delivery stream
+        "projection.enabled": "true",
+        "projection.day.type": "date",
+        "projection.day.format": "yyyy-MM-dd",
+        "projection.day.range": "2023-01-01,NOW",
+        "projection.day.interval": "1",
+        "projection.day.interval.unit": "DAYS",
+        "storage.location.template": `s3://${streamLogBucket.bucketName}/logs/receipt/aggregate_accept/\${day}/`
+      },
+      storageDescriptor: {
+        location: `s3://${streamLogBucket.bucketName}/logs/receipt/aggregate_accept/`,
+        columns: [
+          { name: 'carcid', type: 'string' },
+          // STRUCT here refers to the Apache Hive STRUCT datatype - see https://aws.amazon.com/blogs/big-data/create-tables-in-amazon-athena-from-nested-json-and-mappings-using-jsonserde/
+          { name: 'value', type: 'STRUCT<att:ARRAY<struct<can:STRING,with:STRING,nb:STRUCT<aggregate:STRUCT<_cid_slash:STRING>>>>,iss:STRING,aud:STRING>' },
+          { name: 'out', type: 'STRUCT<error:STRUCT<name:STRING>,ok:STRUCT<aggregate:STRUCT<_cid_slash:STRING>>>' },
+          { name: 'ts', type: 'timestamp' }
+        ],
+        inputFormat: 'org.apache.hadoop.mapred.TextInputFormat',
+        outputFormat: 'org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat',
+        serdeInfo: {
+          serializationLibrary: 'org.openx.data.jsonserde.JsonSerDe',
+          parameters: {
+            // see https://aws.amazon.com/blogs/big-data/create-tables-in-amazon-athena-from-nested-json-and-mappings-using-jsonserde/
+            'mapping._cid_slash': '/'
+          }
+        }
+      }
+    }
+  })
+  aggregateAcceptTable.addDependsOn(glueDatabase)
+
   const athenaResultsBucket = new Bucket(stack, 'athena-w3up-results', {
     cors: true,
     cdk: {
