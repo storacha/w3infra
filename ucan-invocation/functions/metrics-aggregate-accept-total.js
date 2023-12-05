@@ -34,7 +34,6 @@ function getLambdaEnv () {
   return {
     metricsTableName: mustGetEnv('METRICS_TABLE_NAME'),
     workflowBucketName: mustGetEnv('WORKFLOW_BUCKET_NAME'),
-    invocationBucketName: mustGetEnv('INVOCATION_BUCKET_NAME'),
   }
 }
 
