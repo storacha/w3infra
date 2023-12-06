@@ -865,12 +865,12 @@ ORDER BY upload_ts DESC
   // create a query that can be executed by going to 
   // https://console.aws.amazon.com/athena/home#/query-editor/saved-queries
   // and selecting the appropriate Workgroup from the dropdown in the upper right
-  const aggregateHoursToDealQueryName = getCdkNames('aggregate-hours-to-deal-query', app.stage)
-  const aggregateHoursToDealQuery = new athena.CfnNamedQuery(stack, aggregateHoursToDealQueryName, {
-    name: "Hours to deal per aggregate in the last 7 days",
+  const aggregateHoursToDataCommitedQueryName = getCdkNames('aggregate-hours-to-data-commited-query', app.stage)
+  const aggregateHoursToDataCommitedQuery = new athena.CfnNamedQuery(stack, aggregateHoursToDataCommitedQueryName, {
+    name: "Hours to data commited per aggregate in the last 7 days",
     description: `${app.stage} w3up preload
     
-Hours to deal per aggregate in the last 7 days`,
+Hours to data commited per aggregate in the last 7 days`,
     database: databaseName,
     workGroup: workgroupName,
     queryString: `WITH 
@@ -883,14 +883,14 @@ accepted_aggregates AS (
 SELECT cid,
        ts as offer_ts,
        accept_ts,
-       CAST((to_unixtime(accept_ts) - to_unixtime(ts))/3600 as integer) as hrs_deal
+       CAST((to_unixtime(accept_ts) - to_unixtime(ts))/3600 as integer) as hrs_to_data_commited
 FROM "AwsDataCatalog"."${databaseName}."${aggregateOfferTableName}"
 INNER JOIN accepted_aggregates ON accepted_aggregates.cid = value.att[1].nb.aggregate._cid_slash
 `
   })
-  aggregateHoursToDealQuery.addDependsOn(workgroup)
-  aggregateHoursToDealQuery.addDependsOn(aggregateAcceptTable)
-  aggregateHoursToDealQuery.addDependsOn(aggregateOfferTable)
+  aggregateHoursToDataCommitedQuery.addDependsOn(workgroup)
+  aggregateHoursToDataCommitedQuery.addDependsOn(aggregateAcceptTable)
+  aggregateHoursToDataCommitedQuery.addDependsOn(aggregateOfferTable)
 
   // configure the Athena Dynamo connector
 
