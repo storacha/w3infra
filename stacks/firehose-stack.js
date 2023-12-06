@@ -862,6 +862,36 @@ ORDER BY upload_ts DESC
   uploadsBySpaceAndSizeQuery.addDependsOn(uploadAddTable)
   uploadsBySpaceAndSizeQuery.addDependsOn(storeAddTable)
 
+  // create a query that can be executed by going to 
+  // https://console.aws.amazon.com/athena/home#/query-editor/saved-queries
+  // and selecting the appropriate Workgroup from the dropdown in the upper right
+  const aggregateHoursToDealQueryName = getCdkNames('aggregate-hours-to-deal-query', app.stage)
+  const aggregateHoursToDealQuery = new athena.CfnNamedQuery(stack, aggregateHoursToDealQueryName, {
+    name: "Hours to deal per aggregate in the last 7 days",
+    description: `${app.stage} w3up preload
+    
+Hours to deal per aggregate in the last 7 days`,
+    database: databaseName,
+    workGroup: workgroupName,
+    queryString: `WITH 
+accepted_aggregates AS (
+  SELECT value.att[1].nb.aggregate._cid_slash as cid,
+         ts as accept_ts
+  FROM "AwsDataCatalog"."${databaseName}"."${aggregateAcceptTableName}"
+  WHERE ts >= (CURRENT_TIMESTAMP - INTERVAL '7' DAY)
+)
+SELECT cid,
+       ts as offer_ts,
+       accept_ts,
+       CAST((to_unixtime(accept_ts) - to_unixtime(ts))/3600 as integer) as hrs_deal
+FROM "AwsDataCatalog"."${databaseName}."${aggregateOfferTableName}"
+INNER JOIN accepted_aggregates ON accepted_aggregates.cid = value.att[1].nb.aggregate._cid_slash
+`
+  })
+  aggregateHoursToDealQuery.addDependsOn(workgroup)
+  aggregateHoursToDealQuery.addDependsOn(aggregateAcceptTable)
+  aggregateHoursToDealQuery.addDependsOn(aggregateOfferTable)
+
   // configure the Athena Dynamo connector
 
   // Considering Lambda functions limits response sizes, responses larger than the threshold 
