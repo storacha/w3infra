@@ -157,16 +157,16 @@ export function UcanInvocationStack({ stack, app }) {
   })
 
   // aggregate/accept total
-  const metricsAggregateAcceptTotalDLQ = new Queue(stack, 'metrics-aggregate-accept-total-dlq')
-  const metricsAggregateAcceptTotalConsumer = new Function(stack, 'metrics-aggregate-accept-total-consumer', {
-    environment: {
-      METRICS_TABLE_NAME: adminMetricsTable.tableName,
-      WORKFLOW_BUCKET_NAME: workflowBucket.bucketName,
-    },
-    permissions: [adminMetricsTable, workflowBucket],
-    handler: 'functions/metrics-aggregate-accept-total.consumer',
-    deadLetterQueue: metricsAggregateAcceptTotalDLQ.cdk.queue,
-  })
+  // const metricsAggregateAcceptTotalDLQ = new Queue(stack, 'metrics-aggregate-accept-total-dlq')
+  // const metricsAggregateAcceptTotalConsumer = new Function(stack, 'metrics-aggregate-accept-total-consumer', {
+  //   environment: {
+  //     METRICS_TABLE_NAME: adminMetricsTable.tableName,
+  //     WORKFLOW_BUCKET_NAME: workflowBucket.bucketName,
+  //   },
+  //   permissions: [adminMetricsTable, workflowBucket],
+  //   handler: 'functions/metrics-aggregate-accept-total.consumer',
+  //   deadLetterQueue: metricsAggregateAcceptTotalDLQ.cdk.queue,
+  // })
   
   // metrics per space
   const spaceMetricsDLQ = new Queue(stack, 'space-metrics-dlq')
@@ -301,6 +301,23 @@ export function UcanInvocationStack({ stack, app }) {
           }
         }
       },
+      // Filecoin metrics
+      metricsAggregateOfferTotalConsumer: {
+        function: metricsAggregateOfferTotalConsumer,
+        cdk: {
+          eventSource: {
+            ...(getKinesisEventSourceConfig(stack))
+          }
+        },
+      },
+      // metricsAggregateAcceptTotalConsumer: {
+      //   function: metricsAggregateAcceptTotalConsumer,
+      //   cdk: {
+      //     eventSource: {
+      //       ...(getKinesisEventSourceConfig(stack))
+      //     }
+      //   }
+      // },
       spaceMetricsUploadAddTotalConsumer: {
         function: spaceMetricsUploadAddTotalConsumer,
         cdk: {
@@ -362,28 +379,6 @@ export function UcanInvocationStack({ stack, app }) {
     },
   })
 
-  // Filecoin metrics
-  ucanStream.addConsumers(stack, {
-    metricsAggregateOfferTotalConsumer: {
-      function: metricsAggregateOfferTotalConsumer,
-      cdk: {
-        eventSource: {
-          ...(getKinesisEventSourceConfig(stack))
-        }
-      }
-    },
-    metricsAggregateAcceptTotalConsumer: {
-      function: metricsAggregateAcceptTotalConsumer,
-      cdk: {
-        eventSource: {
-          ...(getKinesisEventSourceConfig(stack))
-        }
-      }
-    },
-  })
-
-
-  
   return {
     invocationBucket,
     taskBucket,
