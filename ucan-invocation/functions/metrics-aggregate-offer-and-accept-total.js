@@ -1,10 +1,12 @@
 import * as Sentry from '@sentry/serverless'
+import { toString } from 'uint8arrays/to-string'
+import { fromString } from 'uint8arrays/from-string'
+import * as DAGJson from '@ipld/dag-json'
 
 import { updateAggregateOfferTotal, updateAggregateAcceptTotal } from '../filecoin.js'
 import { createWorkflowStore } from '../buckets/workflow-store.js'
 import { createInvocationStore } from '../buckets/invocation-store.js'
 import { createFilecoinMetricsTable } from '../stores/filecoin-metrics.js'
-import { parseKinesisEvent } from '../utils/parse-kinesis-event.js'
 import { mustGetEnv } from './utils.js'
 
 Sentry.AWSLambda.init({
@@ -47,3 +49,11 @@ function getLambdaEnv () {
 }
 
 export const consumer = Sentry.AWSLambda.wrapHandler(handler)
+
+/**
+ * @param {import('aws-lambda').KinesisStreamEvent} event
+ */
+function parseKinesisEvent (event) {
+  const batch = event.Records.map(r => fromString(r.kinesis.data, 'base64'))
+  return batch.map(b => DAGJson.parse(toString(b, 'utf8')))
+}

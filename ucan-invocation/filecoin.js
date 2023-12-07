@@ -57,7 +57,6 @@ export async function updateAggregateOfferTotal (ucanInvocations, ctx) {
   /** @type {AggregateOfferGet[]} */
   const aggregateOfferGets = (await Promise.all(
     Array.from(workflowsWithAggregateOffers.entries()).map(async ([carCid, aggregateOfferInvocation]) => {
-      // const agentMessage = await getAgentMessage(carCid, ctx)
       const agentMessage = await getAgentMessage(aggregateOfferInvocation.invocationCid, ctx)
       if (agentMessage.error) {
         return [{

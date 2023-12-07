@@ -145,17 +145,17 @@ export function UcanInvocationStack({ stack, app }) {
   })
 
   // `aggregate/offer` and `aggregate-accept` total
-  // const metricsAggregateOfferAcceptTotalDLQ = new Queue(stack, 'metrics-aggregate-offer-accept-total-dlq')
-  // const metricsAggregateOfferAcceptTotalConsumer = new Function(stack, 'metrics-aggregate-offer-accept-total-consumer', {
-  //   environment: {
-  //     METRICS_TABLE_NAME: adminMetricsTable.tableName,
-  //     WORKFLOW_BUCKET_NAME: workflowBucket.bucketName,
-  //     INVOCATION_BUCKET_NAME: invocationBucket.bucketName,
-  //   },
-  //   permissions: [adminMetricsTable, workflowBucket, invocationBucket],
-  //   handler: 'functions/metrics-aggregate-offer-and-accept-total.consumer',
-  //   deadLetterQueue: metricsAggregateOfferAcceptTotalDLQ.cdk.queue,
-  // })
+  const metricsAggregateOfferAcceptTotalDLQ = new Queue(stack, 'metrics-aggregate-offer-accept-total-dlq')
+  const metricsAggregateOfferAcceptTotalConsumer = new Function(stack, 'metrics-aggregate-offer-accept-total-consumer', {
+    environment: {
+      METRICS_TABLE_NAME: adminMetricsTable.tableName,
+      WORKFLOW_BUCKET_NAME: workflowBucket.bucketName,
+      INVOCATION_BUCKET_NAME: invocationBucket.bucketName,
+    },
+    permissions: [adminMetricsTable, workflowBucket, invocationBucket],
+    handler: 'functions/metrics-aggregate-offer-and-accept-total.consumer',
+    deadLetterQueue: metricsAggregateOfferAcceptTotalDLQ.cdk.queue,
+  })
   
   // metrics per space
   const spaceMetricsDLQ = new Queue(stack, 'space-metrics-dlq')
@@ -291,14 +291,14 @@ export function UcanInvocationStack({ stack, app }) {
         }
       },
       // Filecoin metrics
-      // metricsAggregateOfferAcceptTotalConsumer: {
-      //   function: metricsAggregateOfferAcceptTotalConsumer,
-      //   cdk: {
-      //     eventSource: {
-      //       ...(getKinesisEventSourceConfig(stack))
-      //     }
-      //   },
-      // },
+      metricsAggregateOfferAcceptTotalConsumer: {
+        function: metricsAggregateOfferAcceptTotalConsumer,
+        cdk: {
+          eventSource: {
+            ...(getKinesisEventSourceConfig(stack))
+          }
+        },
+      },
       spaceMetricsUploadAddTotalConsumer: {
         function: spaceMetricsUploadAddTotalConsumer,
         cdk: {
