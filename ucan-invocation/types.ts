@@ -12,6 +12,10 @@ export interface FilecoinMetricsCtx {
   workflowStore: WorkflowBucket
 }
 
+export interface FilecoinAggregateOfferMetricsCtx extends FilecoinMetricsCtx {
+  invocationStore: InvocationBucket
+}
+
 export interface MetricsTable {
   incrementStoreAddTotal: (incrementSizeTotal: Capability<Ability, `${string}:${string}`, unknown>[]) => Promise<void>
   incrementStoreAddSizeTotal: (incrementSizeTotal: Capability<Ability, `${string}:${string}`, unknown>[]) => Promise<void>
@@ -27,6 +31,10 @@ export interface CarStoreBucket {
 
 export interface WorkflowBucket {
   get: (Cid: string) => Promise<Uint8Array|undefined>
+}
+
+export interface InvocationBucket {
+  getInLink: (cid: string) => Promise<string|undefined>
 }
 
 export interface TotalSizeCtx {

@@ -39,14 +39,14 @@ export async function updateAggregateAcceptTotal (ucanInvocations, ctx) {
 }
 
 /**
- * Update total metrics for `aggregate/accept` receipts.
+ * Update total metrics for `aggregate/offer` receipts.
  * Metrics:
  * - AGGREGATE_OFFER_TOTAL: increment number of `aggregate/offer` success receipts
  * - AGGREGATE_OFFER_PIECES_TOTAL: increment number of pieces included in `aggregate/offer` success receipts
  * - AGGREGATE_OFFER_PIECES_SIZE_TOTAL: increment size of pieces included of `aggregate/offer` success receipts
  *
  * @param {import('./types').UcanInvocation[]} ucanInvocations
- * @param {import('./types').FilecoinMetricsCtx} ctx
+ * @param {import('./types').FilecoinAggregateOfferMetricsCtx} ctx
  */
 export async function updateAggregateOfferTotal (ucanInvocations, ctx) {
   // Get a Map of workflows that include aggregate offer receipts
@@ -57,7 +57,8 @@ export async function updateAggregateOfferTotal (ucanInvocations, ctx) {
   /** @type {AggregateOfferGet[]} */
   const aggregateOfferGets = (await Promise.all(
     Array.from(workflowsWithAggregateOffers.entries()).map(async ([carCid, aggregateOfferInvocation]) => {
-      const agentMessage = await getAgentMessage(carCid, ctx)
+      // const agentMessage = await getAgentMessage(carCid, ctx)
+      const agentMessage = await getAgentMessage(aggregateOfferInvocation.invocationCid, ctx)
       if (agentMessage.error) {
         return [{
           error: agentMessage.error,
@@ -65,6 +66,7 @@ export async function updateAggregateOfferTotal (ucanInvocations, ctx) {
         }]
       }
 
+      console.log('update aggregate/offer total for worflow', carCid, aggregateOfferInvocation.invocationCid, 'with pieces', aggregateOfferInvocation.capabilities.map(aggregateOfferCap => aggregateOfferCap.nb.pieces.toString()))
       return Promise.all(aggregateOfferInvocation.capabilities.map(aggregateOfferCap => getOfferInfoBlock(aggregateOfferCap, agentMessage.ok)))
     })
   // @ts-expect-error error types
@@ -124,14 +126,24 @@ function getWorkflowsWithReceiptForCapability (ucanInvocations, capability) {
 }
 
 /**
- * @param {string} carCid
- * @param {import('./types').FilecoinMetricsCtx} ctx
+ * @param {string} taskCid
+ * @param {import('./types').FilecoinAggregateOfferMetricsCtx} ctx
  */
-async function getAgentMessage (carCid, ctx) {
-  const agentMessageBytes = await ctx.workflowStore.get(carCid)
+async function getAgentMessage (taskCid, ctx) {
+  // TODO: When we distinct between TaskCid and InvocationCid, we also need to see this mapping.
+  const invocationCid = taskCid
+
+  const workflowCid = await ctx.invocationStore.getInLink(invocationCid)
+  if (!workflowCid) {
+    return {
+      error: new NotFoundWorkflowError(`not invocation cid ${workflowCid} for workflow`)
+    }
+  }
+
+  const agentMessageBytes = await ctx.workflowStore.get(workflowCid)
   if (!agentMessageBytes) {
     return {
-      error: new NotFoundWorkflowError(`not found receipt for CAR cid ${carCid}`)
+      error: new NotFoundWorkflowError(`not found workflow with CID ${workflowCid}`)
     }
   }
 
@@ -184,7 +196,7 @@ const findCBORBlock = async (cid, blocks) => {
   }
   if (!bytes) {
     return {
-      error: new DecodeBlockOperationError(`missing block: ${cid}`),
+      error: new DecodeBlockOperationError(`missing block: ${cid.toString()}`),
     }
   }
   return {

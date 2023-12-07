@@ -13,6 +13,7 @@ import { updateAggregateOfferTotal } from '../../filecoin.js'
 import { adminMetricsTableProps } from '../../tables/index.js'
 import { createFilecoinMetricsTable } from '../../stores/filecoin-metrics.js'
 import { createWorkflowStore } from '../../buckets/workflow-store.js'
+import { createInvocationStore } from '../../buckets/invocation-store.js'
 import { METRICS_NAMES, STREAM_TYPE } from '../../constants.js'
 
 import {
@@ -47,13 +48,14 @@ test.before(async t => {
 })
 
 test('handles a batch of single invocation with aggregate/offer', async t => {
-  const { tableName, bucketName } = await prepareResources(t.context.dynamoClient, t.context.s3)
+  const { tableName, workflowBucketName, invocationBucketName } = await prepareResources(t.context.dynamoClient, t.context.s3)
 
   // Context
   const filecoinMetricsStore = createFilecoinMetricsTable(REGION, tableName, {
     endpoint: t.context.dbEndpoint
   })
-  const workflowStore = createWorkflowStore(REGION, bucketName, t.context.s3Opts)
+  const workflowStore = createWorkflowStore(REGION, workflowBucketName, t.context.s3Opts)
+  const invocationStore = createInvocationStore(REGION, invocationBucketName, t.context.s3Opts)
 
   // Generate aggregate for test
   const { pieces, aggregate } = await randomAggregate(100, 128)
@@ -62,13 +64,15 @@ test('handles a batch of single invocation with aggregate/offer', async t => {
 
   // Get UCAN Stream Invocations
   const ucanStreamInvocations = await prepareUcanStream(workflows, {
-    bucketName,
+    workflowBucketName,
+    invocationBucketName,
     s3: t.context.s3
   })
 
   // @ts-expect-error not expecting type with just `aggregate/offer`
   await updateAggregateOfferTotal(ucanStreamInvocations, {
     workflowStore,
+    invocationStore,
     filecoinMetricsStore
   })
 
@@ -100,13 +104,14 @@ test('handles a batch of single invocation with aggregate/offer', async t => {
 })
 
 test('handles a batch of single invocation with multiple aggregate/offer attributes', async t => {
-  const { tableName, bucketName } = await prepareResources(t.context.dynamoClient, t.context.s3)
+  const { tableName, workflowBucketName, invocationBucketName } = await prepareResources(t.context.dynamoClient, t.context.s3)
 
   // Context
   const filecoinMetricsStore = createFilecoinMetricsTable(REGION, tableName, {
     endpoint: t.context.dbEndpoint
   })
-  const workflowStore = createWorkflowStore(REGION, bucketName, t.context.s3Opts)
+  const workflowStore = createWorkflowStore(REGION, workflowBucketName, t.context.s3Opts)
+  const invocationStore = createInvocationStore(REGION, invocationBucketName, t.context.s3Opts)
 
   // Generate aggregate for test
   const aggregateOffers = await Promise.all([
@@ -117,13 +122,15 @@ test('handles a batch of single invocation with multiple aggregate/offer attribu
 
   // Get UCAN Stream Invocations
   const ucanStreamInvocations = await prepareUcanStream(workflows, {
-    bucketName,
+    workflowBucketName,
+    invocationBucketName,
     s3: t.context.s3
   })
 
   // @ts-expect-error not expecting type with just `aggregate/offer`
   await updateAggregateOfferTotal(ucanStreamInvocations, {
     workflowStore,
+    invocationStore,
     filecoinMetricsStore
   })
 
@@ -159,13 +166,14 @@ test('handles a batch of single invocation with multiple aggregate/offer attribu
 })
 
 test('handles a batch of multiple invocations with single aggregate/offer attribute', async t => {
-  const { tableName, bucketName } = await prepareResources(t.context.dynamoClient, t.context.s3)
+  const { tableName, workflowBucketName, invocationBucketName } = await prepareResources(t.context.dynamoClient, t.context.s3)
 
   // Context
   const filecoinMetricsStore = createFilecoinMetricsTable(REGION, tableName, {
     endpoint: t.context.dbEndpoint
   })
-  const workflowStore = createWorkflowStore(REGION, bucketName, t.context.s3Opts)
+  const workflowStore = createWorkflowStore(REGION, workflowBucketName, t.context.s3Opts)
+  const invocationStore = createInvocationStore(REGION, invocationBucketName, t.context.s3Opts)
 
   // Generate aggregate for test
   const aggregateOffers = await Promise.all([
@@ -176,13 +184,15 @@ test('handles a batch of multiple invocations with single aggregate/offer attrib
 
   // Get UCAN Stream Invocations
   const ucanStreamInvocations = await prepareUcanStream(workflows, {
-    bucketName,
+    workflowBucketName,
+    invocationBucketName,
     s3: t.context.s3
   })
 
   // @ts-expect-error not expecting type with just `aggregate/offer`
   await updateAggregateOfferTotal(ucanStreamInvocations, {
     workflowStore,
+    invocationStore,
     filecoinMetricsStore
   })
 
@@ -218,13 +228,14 @@ test('handles a batch of multiple invocations with single aggregate/offer attrib
 })
 
 test('handles a batch of single invocation without aggregate/offer', async t => {
-  const { tableName, bucketName } = await prepareResources(t.context.dynamoClient, t.context.s3)
+  const { tableName, workflowBucketName, invocationBucketName } = await prepareResources(t.context.dynamoClient, t.context.s3)
 
   // Context
   const filecoinMetricsStore = createFilecoinMetricsTable(REGION, tableName, {
     endpoint: t.context.dbEndpoint
   })
-  const workflowStore = createWorkflowStore(REGION, bucketName, t.context.s3Opts)
+  const workflowStore = createWorkflowStore(REGION, workflowBucketName, t.context.s3Opts)
+  const invocationStore = createInvocationStore(REGION, invocationBucketName, t.context.s3Opts)
 
   // Get unrelated invocation
   const uploadService = await Signer.generate()
@@ -257,6 +268,7 @@ test('handles a batch of single invocation without aggregate/offer', async t => 
   // @ts-expect-error not expecting type with just `aggregate/offer`
   await updateAggregateOfferTotal(ucanStreamInvocations, {
     workflowStore,
+    invocationStore,
     filecoinMetricsStore
   })
 
@@ -285,7 +297,7 @@ test('handles a batch of single invocation without aggregate/offer', async t => 
 
 /**
  * @param {{pieces: { link: PieceLink }[], aggregate: AggregateView }[][]} workflows
- * @param {{ bucketName: string, s3: import('@aws-sdk/client-s3').S3Client }} ctx
+ * @param {{ workflowBucketName: string, invocationBucketName: string, s3: import('@aws-sdk/client-s3').S3Client }} ctx
  */
 async function prepareUcanStream (workflows, ctx) {
   const w3sService = await Signer.generate()
@@ -300,7 +312,7 @@ async function prepareUcanStream (workflows, ctx) {
         aggregate: agg.aggregate.link,
         pieces: piecesBlock.cid,
       }
-      const invocation = DealerCapabilities.aggregateOffer.invoke({
+      const invocation = await DealerCapabilities.aggregateOffer.delegate({
         issuer: w3sService,
         audience: w3sService,
         with: w3sService.did(),
@@ -323,10 +335,20 @@ async function prepareUcanStream (workflows, ctx) {
     // Store UCAN invocation workflow
     const putObjectCmd = new PutObjectCommand({
       Key: `${agentMessageCarCid}/${agentMessageCarCid}`,
-      Bucket: ctx.bucketName,
+      Bucket: ctx.workflowBucketName,
       Body: body
     })
     await ctx.s3.send(putObjectCmd)
+
+    // Store UCAN invocations link
+    await Promise.all(invocationsToExecute.map(async ie => {
+      const putObjectCmd = new PutObjectCommand({
+        Key: `${ie.invocation.cid.toString()}/${agentMessageCarCid}.in`,
+        Bucket: ctx.invocationBucketName,
+        Body: body
+      })
+      await ctx.s3.send(putObjectCmd)
+    }))
 
     // Create UCAN Stream Invocation
     return {
@@ -339,6 +361,7 @@ async function prepareUcanStream (workflows, ctx) {
           aud: w3sService.did(),
           iss: w3sService.did()
       },
+      invocationCid: invocationsToExecute[0].invocation.cid.toString(),
       type: STREAM_TYPE.RECEIPT,
       out: {
         ok: true
@@ -353,13 +376,15 @@ async function prepareUcanStream (workflows, ctx) {
  * @param {import('@aws-sdk/client-s3').S3Client} s3Client
  */
 async function prepareResources (dynamoClient, s3Client) {
-  const [ tableName, bucketName ] = await Promise.all([
+  const [ tableName, workflowBucketName, invocationBucketName ] = await Promise.all([
     createDynamoTable(dynamoClient, adminMetricsTableProps),
-    createBucket(s3Client)
+    createBucket(s3Client),
+    createBucket(s3Client),
   ])
 
   return {
-    bucketName,
+    workflowBucketName,
+    invocationBucketName,
     tableName
   }
 }

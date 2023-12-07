@@ -1,7 +1,8 @@
 import * as Sentry from '@sentry/serverless'
 
-import { updateAggregateOfferTotal } from '../filecoin.js'
+import { updateAggregateOfferTotal, updateAggregateAcceptTotal } from '../filecoin.js'
 import { createWorkflowStore } from '../buckets/workflow-store.js'
+import { createInvocationStore } from '../buckets/invocation-store.js'
 import { createFilecoinMetricsTable } from '../stores/filecoin-metrics.js'
 import { parseKinesisEvent } from '../utils/parse-kinesis-event.js'
 import { mustGetEnv } from './utils.js'
@@ -21,10 +22,17 @@ async function handler(event) {
   const ucanInvocations = parseKinesisEvent(event)
   const {
     metricsTableName,
+    invocationBucketName,
     workflowBucketName
   } = getLambdaEnv()
 
   await updateAggregateOfferTotal(ucanInvocations, {
+    filecoinMetricsStore: createFilecoinMetricsTable(AWS_REGION, metricsTableName),
+    workflowStore: createWorkflowStore(AWS_REGION, workflowBucketName),
+    invocationStore: createInvocationStore(AWS_REGION, invocationBucketName)
+  })
+
+  await updateAggregateAcceptTotal(ucanInvocations, {
     filecoinMetricsStore: createFilecoinMetricsTable(AWS_REGION, metricsTableName),
     workflowStore: createWorkflowStore(AWS_REGION, workflowBucketName),
   })
@@ -34,6 +42,7 @@ function getLambdaEnv () {
   return {
     metricsTableName: mustGetEnv('METRICS_TABLE_NAME'),
     workflowBucketName: mustGetEnv('WORKFLOW_BUCKET_NAME'),
+    invocationBucketName: mustGetEnv('INVOCATION_BUCKET_NAME'),
   }
 }
 
