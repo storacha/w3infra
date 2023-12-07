@@ -326,7 +326,7 @@ export function UcanFirehoseStack ({ stack, app }) {
   })
   uploadAddTable.addDependsOn(glueDatabase)
 
-    // creates a table that can be seen in the AWS Glue table browser at 
+  // creates a table that can be seen in the AWS Glue table browser at 
   // https://console.aws.amazon.com/glue/home#/v2/data-catalog/tables
   // and in the data browser in the Athena Query editor at
   // https://console.aws.amazon.com/athena/home#/query-editor

@@ -141,8 +141,7 @@ export function createMetricsTable (region, tableName, options = {}) {
       })
 
       await dynamoDb.send(updateCmd)
-    }
-    ,
+    },
     /**
      * Increment total count from upload/add operations.
      *
@@ -164,6 +163,6 @@ export function createMetricsTable (region, tableName, options = {}) {
       })
 
       await dynamoDb.send(updateCmd)
-    }
+    },
   }
 }

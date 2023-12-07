@@ -9,7 +9,11 @@
     "@aws-sdk/client-dynamodb": "^3.226.0",
     "@aws-sdk/client-eventbridge": "^3.218.0",
     "@sentry/serverless": "^7.22.0",
+    "@ucanto/transport": "9.0.0",
+    "@ucanto/core": "9.0.0",
     "@web3-storage/capabilities": "^11.3.1",
+    "@web3-storage/data-segment": "5.0.0",
+    "multiformats": "^11.0.1",
     "uint8arrays": "^4.0.2"
   },
   "devDependencies": {
@@ -17,9 +21,15 @@
     "@aws-sdk/client-s3": "^3.226.0",
     "@serverless-stack/resources": "*",
     "@ucanto/interface": "^9.0.0",
+    "@web3-storage/filecoin-api": "4.3.0",
     "ava": "^4.3.3",
-    "multiformats": "^11.0.1",
     "nanoid": "4.0.0",
     "testcontainers": "^8.13.0"
+  },
+  "eslintConfig": {
+    "rules": {
+      "unicorn/prefer-array-flat": "off",
+      "unicorn/prefer-spread": "off"
+    }
   }
 }
