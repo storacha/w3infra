@@ -8,10 +8,14 @@ import {
 import { marshall, unmarshall } from '@aws-sdk/util-dynamodb'
 import { CID } from 'multiformats/cid'
 import * as Link from 'multiformats/link'
+import { RecordKeyConflict, RecordNotFound } from './lib.js'
 
-/** @typedef {import('@web3-storage/upload-api').StoreAddInput} StoreAddInput */
-/** @typedef {import('@web3-storage/upload-api').StoreAddOutput} StoreAddOutput */
-/** @typedef {import('@web3-storage/upload-api').StoreListItem} StoreListItem */
+/**
+ * @typedef {import('@web3-storage/upload-api').StoreTable} StoreTable
+ * @typedef {import('@web3-storage/upload-api').StoreAddInput} StoreAddInput
+ * @typedef {import('@web3-storage/upload-api').StoreAddOutput} StoreAddOutput
+ * @typedef {import('@web3-storage/upload-api').StoreListItem} StoreListItem
+ */
 
 /**
  * Abstraction layer to handle operations on Store Table.
@@ -20,6 +24,7 @@ import * as Link from 'multiformats/link'
  * @param {string} tableName
  * @param {object} [options]
  * @param {string} [options.endpoint]
+ * @returns {StoreTable}
  */
 export function createStoreTable(region, tableName, options = {}) {
   const dynamoDb = new DynamoDBClient({
@@ -33,7 +38,7 @@ export function createStoreTable(region, tableName, options = {}) {
 /**
  * @param {DynamoDBClient} dynamoDb
  * @param {string} tableName
- * @returns {import('@web3-storage/upload-api').StoreTable}
+ * @returns {StoreTable}
  */
 export function useStoreTable(dynamoDb, tableName) {
   return {
@@ -42,6 +47,7 @@ export function useStoreTable(dynamoDb, tableName) {
      *
      * @param {import('@ucanto/interface').DID} space
      * @param {import('@web3-storage/upload-api').UnknownLink} link
+     * @returns {ReturnType<StoreTable['exists']>}
      */
     exists: async (space, link) => {
       const cmd = new GetItemCommand({
@@ -55,16 +61,16 @@ export function useStoreTable(dynamoDb, tableName) {
 
       try {
         const response = await dynamoDb.send(cmd)
-        return response?.Item !== undefined
+        return { ok: Boolean(response.Item) }
       } catch {
-        return false
+        return { ok: false }
       }
     },
     /**
      * Bind a link CID to an account
      *
      * @param {StoreAddInput} item
-     * @returns {Promise<StoreAddOutput>}
+     * @returns {ReturnType<StoreTable['insert']>}
      */
     insert: async ({ space, link, origin, size, issuer, invocation }) => {
       const insertedAt = new Date().toISOString()
@@ -82,16 +88,26 @@ export function useStoreTable(dynamoDb, tableName) {
       const cmd = new PutItemCommand({
         TableName: tableName,
         Item: marshall(item, { removeUndefinedValues: true }),
+        ConditionExpression: 'attribute_not_exists(#S) AND attribute_not_exists(#L)',
+        ExpressionAttributeNames: { '#S': 'space', '#L': 'link' }
       })
 
-      await dynamoDb.send(cmd)
-      return { link, size, ...(origin && { origin }) }
+      try {
+        await dynamoDb.send(cmd)
+      } catch (/** @type {any} */ err) {
+        if (err.name === 'ConditionalCheckFailedException') {
+          return { error: new RecordKeyConflict() }
+        }
+        throw err
+      }
+      return { ok: { link, size, ...(origin && { origin }) } }
     },
     /**
      * Unbinds a link CID to an account
      *
      * @param {import('@ucanto/interface').DID} space
      * @param {import('@web3-storage/upload-api').UnknownLink} link
+     * @returns {ReturnType<StoreTable['remove']>}
      */
     remove: async (space, link) => {
       const cmd = new DeleteItemCommand({
@@ -100,18 +116,32 @@ export function useStoreTable(dynamoDb, tableName) {
           space,
           link: link.toString(),
         }),
+        ConditionExpression: 'attribute_exists(#S) AND attribute_exists(#L)',
+        ExpressionAttributeNames: { '#S': 'space', '#L': 'link' },
+        ReturnValues: 'ALL_OLD'
       })
 
-      await dynamoDb.send(cmd)
+      try {
+        const res = await dynamoDb.send(cmd)
+        if (!res.Attributes) {
+          throw new Error('missing return values')
+        }
+
+        const raw = unmarshall(res.Attributes)
+        return { ok: { size: Number(raw.size) } }
+      } catch (/** @type {any} */ err) {
+        if (err.name === 'ConditionalCheckFailedException') {
+          return { error: new RecordNotFound() }
+        }
+        throw err
+      }
     },
     /**
      * List all CARs bound to an account
      *
-     * @typedef {import('@web3-storage/upload-api').ListResponse<StoreListItem>} ListResponse
-     *
      * @param {import('@ucanto/interface').DID} space
      * @param {import('@web3-storage/upload-api').ListOptions} [options]
-     * @returns {Promise<ListResponse>}
+     * @returns {ReturnType<StoreTable['list']>}
      */
     list: async (space, options = {}) => {
       const exclusiveStartKey = options.cursor
@@ -148,16 +178,19 @@ export function useStoreTable(dynamoDb, tableName) {
       const before = options.pre ? lastLinkCID : firstLinkCID
       const after = options.pre ? firstLinkCID : lastLinkCID
       return {
-        size: results.length,
-        before,
-        after,
-        cursor: after,
-        results: options.pre ? results.reverse() : results,
+        ok: {
+          size: results.length,
+          before,
+          after,
+          cursor: after,
+          results: options.pre ? results.reverse() : results,
+        }
       }
     },
     /**
      * @param {import('@web3-storage/upload-api').DID} space
      * @param {import('@web3-storage/upload-api').UnknownLink} link
+     * @returns {ReturnType<StoreTable['get']>}
      */
     async get(space, link) {
       const item = {
@@ -171,18 +204,17 @@ export function useStoreTable(dynamoDb, tableName) {
       }
 
       const response = await dynamoDb.send(new GetItemCommand(params))
-      if (response?.Item) {
-        const { space, link, size, origin, issuer, invocation, insertedAt } =
-          unmarshall(response?.Item)
+      if (!response.Item) {
+        return { error: new RecordNotFound() }
+      }
 
-        return {
-          space,
-          link: Link.parse(link),
-          size: Number(size),
-          ...(origin ? { origin: Link.parse(origin) } : {}),
-          issuer,
-          invocation: Link.parse(invocation),
-          insertedAt,
+      const raw = unmarshall(response.Item)
+      return {
+        ok: {
+          link: Link.parse(raw.link),
+          size: Number(raw.size),
+          ...(raw.origin ? { origin: Link.parse(origin) } : {}),
+          insertedAt: raw.insertedAt,
         }
       }
     },
@@ -190,7 +222,8 @@ export function useStoreTable(dynamoDb, tableName) {
     /**
      * Get information about a CID.
      * 
-     * @param {import('@web3-storage/upload-api').UnknownLink} link 
+     * @param {import('@web3-storage/upload-api').UnknownLink} link
+     * @returns {ReturnType<StoreTable['inspect']>}
      */
     inspect: async (link) => {
       const response = await dynamoDb.send(new QueryCommand({
@@ -202,15 +235,17 @@ export function useStoreTable(dynamoDb, tableName) {
         }
       }))
       return {
-        spaces: response.Items ? response.Items.map(
-          i => {
-            const item = unmarshall(i)
-            return ({
-              did: item.space,
-              insertedAt: item.insertedAt
-            })
-          }
-        ) : []
+        ok: {
+          spaces: response.Items ? response.Items.map(
+            i => {
+              const item = unmarshall(i)
+              return ({
+                did: item.space,
+                insertedAt: item.insertedAt
+              })
+            }
+          ) : []
+        }
       }
     }
   }
