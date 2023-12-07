@@ -144,7 +144,7 @@ export function UcanInvocationStack({ stack, app }) {
     deadLetterQueue: metricsUploadRemoveTotalDLQ.cdk.queue,
   })
 
-  // `aggregate/offer` and `aggregate-accept` total
+  // `aggregate/offer` + `aggregate-accept` total
   const metricsAggregateOfferAcceptTotalDLQ = new Queue(stack, 'metrics-aggregate-offer-accept-total-dlq')
   const metricsAggregateOfferAcceptTotalConsumer = new Function(stack, 'metrics-aggregate-offer-accept-total-consumer', {
     environment: {
