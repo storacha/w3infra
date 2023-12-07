@@ -301,23 +301,6 @@ export function UcanInvocationStack({ stack, app }) {
           }
         }
       },
-      // Filecoin metrics
-      metricsAggregateOfferTotalConsumer: {
-        function: metricsAggregateOfferTotalConsumer,
-        cdk: {
-          eventSource: {
-            ...(getKinesisEventSourceConfig(stack))
-          }
-        }
-      },
-      metricsAggregateAcceptTotalConsumer: {
-        function: metricsAggregateAcceptTotalConsumer,
-        cdk: {
-          eventSource: {
-            ...(getKinesisEventSourceConfig(stack))
-          }
-        }
-      },
       spaceMetricsUploadAddTotalConsumer: {
         function: spaceMetricsUploadAddTotalConsumer,
         cdk: {
@@ -379,6 +362,28 @@ export function UcanInvocationStack({ stack, app }) {
     },
   })
 
+  // Filecoin metrics
+  ucanStream.addConsumers(stack, {
+    metricsAggregateOfferTotalConsumer: {
+      function: metricsAggregateOfferTotalConsumer,
+      cdk: {
+        eventSource: {
+          ...(getKinesisEventSourceConfig(stack))
+        }
+      }
+    },
+    metricsAggregateAcceptTotalConsumer: {
+      function: metricsAggregateAcceptTotalConsumer,
+      cdk: {
+        eventSource: {
+          ...(getKinesisEventSourceConfig(stack))
+        }
+      }
+    },
+  })
+
+
+  
   return {
     invocationBucket,
     taskBucket,
