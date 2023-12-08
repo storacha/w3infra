@@ -266,7 +266,11 @@ export async function executionContextToUcantoTestServerContext (t) {
         t.fail(error.message);
       },
     },
-    maxUploadSize: 5_000_000_000,
+    // The largest object that can be uploaded in a single PUT is 5 GB
+    // https://aws.amazon.com/s3/faqs/
+    // However, this would allow for only 5 shards per Filecoin sector (if all
+    // 5GB). 4GB would allow a minimum 7 shards per sector.
+    maxUploadSize: 4_261_412_864,
     storeTable,
     uploadTable,
     carStoreBucket,
