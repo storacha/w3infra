@@ -16,13 +16,14 @@ export const findSpaceUsageDeltas = messages => {
     /** @type {number|undefined} */
     let size
     if (isReceiptForCapability(message, StoreCaps.add) && isStoreAddSuccess(message.out)) {
-      size = message.value.att[0].nb?.size
+      size = message.out.ok.allocated
     } else if (isReceiptForCapability(message, StoreCaps.remove) && isStoreRemoveSuccess(message.out)) {
       size = -message.out.ok.size
     }
 
-    // message is not a valid store/add or store/remove receipt
-    if (size == null) {
+    // Is message is a repeat store/add for the same shard or not a valid
+    // store/add or store/remove receipt?
+    if (size == 0 || size == null) {
       continue
     }
 

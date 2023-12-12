@@ -41,7 +41,7 @@ export const test = {
         aud: await randomDID(),
         cid: randomLink()
       },
-      out: { ok: { status: 'upload' } },
+      out: { ok: { status: 'upload', allocated: 138 } },
       ts: new Date()
     }, {
       type: 'receipt',
@@ -95,7 +95,7 @@ export const test = {
         aud: consumer.provider,
         cid: randomLink()
       },
-      out: { ok: { status: 'upload' } },
+      out: { ok: { status: 'upload', allocated: 138 } },
       ts: new Date(from.getTime() + 1)
     }, {
       type: 'receipt',
@@ -113,7 +113,7 @@ export const test = {
         aud: consumer.provider,
         cid: randomLink()
       },
-      out: { ok: { status: 'upload' } },
+      out: { ok: { status: 'upload', allocated: 1138 } },
       ts: new Date(from.getTime() + 2)
     }]
 
@@ -142,5 +142,49 @@ export const test = {
         d.delta === r.value.att[0].nb?.size
       )))
     }
+  },
+  'should filter non-allocating store/add messages': async (/** @type {import('entail').assert} */ assert, ctx) => {
+    const consumer = await randomConsumer()
+
+    await ctx.consumerStore.put(consumer)
+
+    const from = new Date()
+
+    /** @type {import('../../lib/api.js').UcanReceiptMessage<[import('@web3-storage/capabilities/types').StoreAdd]>[]} */
+    const receipts = [{
+      type: 'receipt',
+      carCid: randomLink(),
+      invocationCid: randomLink(),
+      value: {
+        att: [{
+          with: Schema.did({ method: 'key' }).from(consumer.consumer),
+          can: 'store/add',
+          nb: {
+            link: randomLink(),
+            size: 138
+          }
+        }],
+        aud: consumer.provider,
+        cid: randomLink()
+      },
+      // allocated: 0 indicates this shard was previously stored in this space
+      out: { ok: { status: 'upload', allocated: 0 } },
+      ts: new Date(from.getTime() + 1)
+    }]
+
+    const deltas = findSpaceUsageDeltas(receipts)
+
+    for (const d of deltas) {
+      const res = await storeSpaceUsageDelta(d, ctx)
+      assert.ok(res.ok)
+    }
+
+    const res = await ctx.spaceDiffStore.list({
+      provider: consumer.provider,
+      space: consumer.consumer,
+      from
+    }, { size: 1000 })
+    assert.ok(res.ok)
+    assert.equal(res.ok.results.length, 0)
   }
 }
