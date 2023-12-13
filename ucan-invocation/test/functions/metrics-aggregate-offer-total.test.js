@@ -1,4 +1,7 @@
 import { testConsumerWithBucket as test } from '../helpers/context.js'
+import { toString } from 'uint8arrays/to-string'
+import { fromString } from 'uint8arrays/from-string'
+import * as DAGJson from '@ipld/dag-json'
 
 import { CBOR, CAR } from '@ucanto/core'
 import * as Signer from '@ucanto/principal/ed25519'
@@ -69,7 +72,6 @@ test('handles a batch of single invocation with aggregate/offer', async t => {
     s3: t.context.s3
   })
 
-  // @ts-expect-error not expecting type with just `aggregate/offer`
   await updateAggregateOfferTotal(ucanStreamInvocations, {
     workflowStore,
     invocationStore,
@@ -127,7 +129,6 @@ test('handles a batch of single invocation with multiple aggregate/offer attribu
     s3: t.context.s3
   })
 
-  // @ts-expect-error not expecting type with just `aggregate/offer`
   await updateAggregateOfferTotal(ucanStreamInvocations, {
     workflowStore,
     invocationStore,
@@ -189,7 +190,6 @@ test('handles a batch of multiple invocations with single aggregate/offer attrib
     s3: t.context.s3
   })
 
-  // @ts-expect-error not expecting type with just `aggregate/offer`
   await updateAggregateOfferTotal(ucanStreamInvocations, {
     workflowStore,
     invocationStore,
@@ -351,7 +351,7 @@ async function prepareUcanStream (workflows, ctx) {
     }))
 
     // Create UCAN Stream Invocation
-    return {
+    const streamData = fromString(JSON.stringify({
       carCid: agentMessageCarCid,
       value: {
           att: invocationsToExecute.map(ie => DealerCapabilities.aggregateOffer.create({
@@ -367,7 +367,12 @@ async function prepareUcanStream (workflows, ctx) {
         ok: true
       },
       ts: Date.now()
-    }
+    }))
+
+    const decoder = new TextDecoder('utf8')
+    const b64encoded = btoa(decoder.decode(streamData))
+    const b64decoded = fromString(b64encoded, 'base64')
+    return DAGJson.parse(toString(b64decoded, 'utf8'))
   }))
 }
 
