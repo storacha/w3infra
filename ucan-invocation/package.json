@@ -26,11 +26,5 @@
     "ava": "^4.3.3",
     "nanoid": "4.0.0",
     "testcontainers": "^8.13.0"
-  },
-  "eslintConfig": {
-    "rules": {
-      "unicorn/prefer-array-flat": "off",
-      "unicorn/prefer-spread": "off"
-    }
   }
 }

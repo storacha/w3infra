@@ -2,20 +2,6 @@ import type { DID, Link } from '@ucanto/interface'
 import { ToString, UnknownLink } from 'multiformats'
 import { Ability, Capability, Capabilities } from '@ucanto/interface'
 
-export interface FilecoinMetricsStore {
-  incrementTotal: (metricName: string, n: number) => Promise<void>
-  incrementTotals: (metricsToUpdate: Record<string, number>) => Promise<void>
-}
-
-export interface FilecoinMetricsCtx {
-  filecoinMetricsStore: FilecoinMetricsStore
-  workflowStore: WorkflowBucket
-}
-
-export interface FilecoinAggregateOfferMetricsCtx extends FilecoinMetricsCtx {
-  invocationStore: InvocationBucket
-}
-
 export interface MetricsTable {
   incrementStoreAddTotal: (incrementSizeTotal: Capability<Ability, `${string}:${string}`, unknown>[]) => Promise<void>
   incrementStoreAddSizeTotal: (incrementSizeTotal: Capability<Ability, `${string}:${string}`, unknown>[]) => Promise<void>
@@ -27,14 +13,6 @@ export interface MetricsTable {
 
 export interface CarStoreBucket {
   getSize: (link: UnknownLink) => Promise<number>
-}
-
-export interface WorkflowBucket {
-  get: (Cid: string) => Promise<Uint8Array|undefined>
-}
-
-export interface InvocationBucket {
-  getInLink: (cid: string) => Promise<string|undefined>
 }
 
 export interface TotalSizeCtx {

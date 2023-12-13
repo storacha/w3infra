@@ -3,10 +3,10 @@ import { toString } from 'uint8arrays/to-string'
 import { fromString } from 'uint8arrays/from-string'
 import * as DAGJson from '@ipld/dag-json'
 
-import { updateAggregateOfferTotal, updateAggregateAcceptTotal } from '../filecoin.js'
-import { createWorkflowStore } from '../buckets/workflow-store.js'
-import { createInvocationStore } from '../buckets/invocation-store.js'
-import { createFilecoinMetricsTable } from '../stores/filecoin-metrics.js'
+import { updateAggregateOfferTotal, updateAggregateAcceptTotal } from '../metrics.js'
+import { createWorkflowStore } from '../store/workflow.js'
+import { createInvocationStore } from '../store/invocation.js'
+import { createFilecoinMetricsTable } from '../store/metrics.js'
 import { mustGetEnv } from './utils.js'
 
 Sentry.AWSLambda.init({
