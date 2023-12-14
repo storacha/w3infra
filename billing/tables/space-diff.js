@@ -12,8 +12,6 @@ export const spaceDiffTableProps = {
     pk: 'string',
     /** Composite key with format: "receiptAt#cause" */
     sk: 'string',
-    /** Customer DID (did:mailto:...). */
-    customer: 'string',
     /** Space DID (did:key:...). */
     space: 'string',
     /** Storage provider for the space. */
