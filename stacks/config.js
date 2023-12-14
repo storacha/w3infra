@@ -74,7 +74,7 @@ export function getCustomDomain (stage, hostedZone) {
  * @param {import('@serverless-stack/resources').Stack} stack
  */
 export function getKinesisEventSourceConfig (stack) {
-  if (stack.stage !== 'production') {
+  if (stack.stage !== 'prod') {
     return {
       batchSize: 10,
       // The maximum amount of time to gather records before invoking the function.
@@ -103,7 +103,7 @@ export function getKinesisEventSourceConfig (stack) {
  * @param {import('@serverless-stack/resources').Stack} stack
  */
 export function getKinesisStreamConfig (stack) {
-  if (stack.stage !== 'production' && stack.stage !== 'staging') {
+  if (stack.stage !== 'prod' && stack.stage !== 'staging') {
     return {
       retentionPeriod: Duration.hours(24)
     }
