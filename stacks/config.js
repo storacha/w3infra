@@ -70,7 +70,39 @@ export function getCustomDomain (stage, hostedZone) {
   return { domainName, hostedZone }
 }
 
+
+
 /**
+ * @param {import('@serverless-stack/resources').Stack} stack
+ */
+export function getEventSourceConfig (stack) {
+  if (stack.stage !== 'production') {
+    return {
+      batchSize: 10,
+      // The maximum amount of time to gather records before invoking the function.
+      maxBatchingWindow: Duration.seconds(5),
+      // If the function returns an error, split the batch in two and retry.
+      bisectBatchOnError: true,
+      // Where to begin consuming the stream.
+      startingPosition: StartingPosition.LATEST
+    }
+  }
+
+  return {
+    // Dynamo Transactions allow up to 100 writes per transactions. If we allow 10 capabilities executed per request, we can have up to 100.
+    // TODO: we use bisectBatchOnError, so maybe we can attempt bigger batch sizes to be optimistic?
+    batchSize: 10,
+    // The maximum amount of time to gather records before invoking the function.
+    maxBatchingWindow: Duration.minutes(2),
+    // If the function returns an error, split the batch in two and retry.
+    bisectBatchOnError: true,
+    // Where to begin consuming the stream.
+    startingPosition: StartingPosition.TRIM_HORIZON
+  }
+}
+
+/**
+ * @deprecated
  * @param {import('@serverless-stack/resources').Stack} stack
  */
 export function getKinesisEventSourceConfig (stack) {
@@ -103,7 +135,7 @@ export function getKinesisEventSourceConfig (stack) {
  * @param {import('@serverless-stack/resources').Stack} stack
  */
 export function getKinesisStreamConfig (stack) {
-  if (stack.stage !== 'production' && stack.stage !== 'staging') {
+  if (stack.stage !== 'prod' && stack.stage !== 'staging') {
     return {
       retentionPeriod: Duration.hours(24)
     }

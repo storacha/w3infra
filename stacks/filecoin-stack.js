@@ -11,7 +11,7 @@ import { BusStack } from './bus-stack.js'
 import { CarparkStack } from './carpark-stack.js'
 import { UploadDbStack } from './upload-db-stack.js'
 import { UcanInvocationStack } from './ucan-invocation-stack.js'
-import { setupSentry, getEnv, getCdkNames, getCustomDomain, getKinesisEventSourceConfig } from './config.js'
+import { setupSentry, getEnv, getCdkNames, getCustomDomain } from './config.js'
 import { CARPARK_EVENT_BRIDGE_SOURCE_EVENT } from '../carpark/event-bus/source.js'
 import { Status } from '../filecoin/store/piece.js'
 
@@ -45,7 +45,7 @@ export function FilecoinStack({ stack, app }) {
   // Get store table reference
   const { pieceTable, privateKey, contentClaimsPrivateKey, adminMetricsTable } = use(UploadDbStack)
   // Get UCAN store references
-  const { workflowBucket, invocationBucket, ucanStream } = use(UcanInvocationStack)
+  const { workflowBucket, invocationBucket } = use(UcanInvocationStack)
 
   /**
    * 1st processor queue - filecoin submit
@@ -298,7 +298,8 @@ export function FilecoinStack({ stack, app }) {
 
   // `aggregate/offer` + `aggregate-accept` metrics
   const metricsAggregateOfferAcceptTotalDLQ = new Queue(stack, 'metrics-aggregate-offer-accept-total-dlq')
-  const metricsAggregateOfferAcceptTotalConsumer = new Function(stack, 'metrics-aggregate-offer-accept-total-consumer', {
+  // const metricsAggregateOfferAcceptTotalConsumer = 
+  new Function(stack, 'metrics-aggregate-offer-accept-total-consumer', {
     environment: {
       METRICS_TABLE_NAME: adminMetricsTable.tableName,
       WORKFLOW_BUCKET_NAME: workflowBucket.bucketName,
@@ -309,16 +310,16 @@ export function FilecoinStack({ stack, app }) {
     deadLetterQueue: metricsAggregateOfferAcceptTotalDLQ.cdk.queue,
   })
 
-  ucanStream.addConsumers(stack, {
-    metricsAggregateOfferAcceptTotalConsumer: {
-      function: metricsAggregateOfferAcceptTotalConsumer,
-      cdk: {
-        eventSource: {
-          ...(getKinesisEventSourceConfig(stack))
-        }
-      }
-    }
-  })
+  // ucanStream.addConsumers(stack, {
+  //   metricsAggregateOfferAcceptTotalConsumer: {
+  //     function: metricsAggregateOfferAcceptTotalConsumer,
+  //     cdk: {
+  //       eventSource: {
+  //         ...(getKinesisEventSourceConfig(stack))
+  //       }
+  //     }
+  //   }
+  // })
 
   return {
     filecoinSubmitQueue,
