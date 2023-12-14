@@ -1,4 +1,4 @@
-import { testConsumerWithBucket as test } from '../helpers/context.js'
+import { testConsumerWithBucket as test } from './helpers/context.js'
 
 import { CBOR } from '@ucanto/core'
 import * as Signer from '@ucanto/principal/ed25519'
@@ -6,21 +6,21 @@ import * as DealerCapabilities from '@web3-storage/capabilities/filecoin/dealer'
 import * as StoreCapabilities from '@web3-storage/capabilities/store'
 import { randomAggregate } from '@web3-storage/filecoin-api/test'
 
-import { updateAggregateAcceptTotal } from '../../filecoin.js'
+import { updateAggregateAcceptTotal } from '../metrics.js'
 
-import { adminMetricsTableProps } from '../../tables/index.js'
-import { createFilecoinMetricsTable } from '../../stores/filecoin-metrics.js'
-import { createWorkflowStore } from '../../buckets/workflow-store.js'
-import { METRICS_NAMES, STREAM_TYPE } from '../../constants.js'
+import { adminMetricsTableProps } from '@web3-storage/w3infra-ucan-invocation/tables/index.js'
+import { METRICS_NAMES, STREAM_TYPE } from '@web3-storage/w3infra-ucan-invocation/constants.js'
+import { createFilecoinMetricsTable } from '../store/metrics.js'
+import { createWorkflowStore } from '../store/workflow.js'
 
 import {
   createDynamodDb,
   createS3,
   createBucket,
-} from '../helpers/resources.js'
-import { randomCAR } from '../helpers/random.js'
-import { createDynamoTable, getItemFromTable} from '../helpers/tables.js'
-import { createSpace } from '../helpers/ucanto.js'
+} from './helpers/resources.js'
+import { randomCAR } from '@web3-storage/w3infra-ucan-invocation/test/helpers/random.js'
+import { createDynamoTable, getItemFromTable} from '@web3-storage/w3infra-ucan-invocation/test/helpers/tables.js'
+import { createSpace } from '@web3-storage/w3infra-ucan-invocation/test/helpers/ucanto.js'
 
 const REGION = 'us-west-2'
 
@@ -40,12 +40,12 @@ test.before(async t => {
 
   // S3
   const { client, clientOpts } = await createS3()
-  t.context.s3 = client
+  t.context.s3Client = client
   t.context.s3Opts = clientOpts
 })
 
 test('handles a batch of single invocation with aggregate/offer', async t => {
-  const { tableName, bucketName } = await prepareResources(t.context.dynamoClient, t.context.s3)
+  const { tableName, bucketName } = await prepareResources(t.context.dynamoClient, t.context.s3Client)
 
   // Context
   const filecoinMetricsStore = createFilecoinMetricsTable(REGION, tableName, {
@@ -99,7 +99,7 @@ test('handles a batch of single invocation with aggregate/offer', async t => {
 })
 
 test('handles a batch of single invocation with aggregate/accept', async t => {
-  const { tableName, bucketName } = await prepareResources(t.context.dynamoClient, t.context.s3)
+  const { tableName, bucketName } = await prepareResources(t.context.dynamoClient, t.context.s3Client)
 
   // Context
   const filecoinMetricsStore = createFilecoinMetricsTable(REGION, tableName, {
@@ -153,7 +153,7 @@ test('handles a batch of single invocation with aggregate/accept', async t => {
 })
 
 test('handles a batch of single invocation without aggregate/accept', async t => {
-  const { tableName, bucketName } = await prepareResources(t.context.dynamoClient, t.context.s3)
+  const { tableName, bucketName } = await prepareResources(t.context.dynamoClient, t.context.s3Client)
 
   // Context
   const filecoinMetricsStore = createFilecoinMetricsTable(REGION, tableName, {
@@ -203,7 +203,7 @@ test('handles a batch of single invocation without aggregate/accept', async t =>
 })
 
 test('handles a batch of single invocation with aggregate/accept without receipts', async t => {
-  const { tableName, bucketName } = await prepareResources(t.context.dynamoClient, t.context.s3)
+  const { tableName, bucketName } = await prepareResources(t.context.dynamoClient, t.context.s3Client)
 
   // Context
   const filecoinMetricsStore = createFilecoinMetricsTable(REGION, tableName, {

@@ -1,4 +1,5 @@
 import * as Signer from '@ucanto/principal/ed25519'
+import { Message } from '@ucanto/core'
 import * as Server from '@ucanto/server'
 import * as Client from '@ucanto/client'
 import * as CAR from '@ucanto/transport/car'
@@ -6,6 +7,13 @@ import { Assert } from '@web3-storage/content-claims/capability'
 
 import { OperationFailed } from './errors.js'
 import { mockService } from './mocks.js'
+
+/**
+ * @typedef {import('@ucanto/interface').IssuedInvocation} IssuedInvocation
+ * @typedef {import('@ucanto/interface').Receipt} Receipt
+ * @typedef {import('@ucanto/interface').Tuple<Receipt>} TupleReceipt
+ * @typedef {import('@ucanto/interface').Tuple<IssuedInvocation>} TupleIssuedInvocation
+ */
 
 const nop = (/** @type {any} */ invCap) => {}
 
@@ -87,4 +95,21 @@ export async function getServiceCtx () {
       raw: claims
     }
   }
+}
+
+
+/**
+ * @param {object} source
+ * @param {IssuedInvocation[]} [source.invocations]
+ * @param {Receipt[]} [source.receipts]
+ */
+export const encodeAgentMessage = async (source) => {
+  const message = await Message.build({
+    invocations: /** @type {TupleIssuedInvocation} */ (
+      source.invocations
+    ),
+    receipts: /** @type {TupleReceipt} */ (source.receipts),
+  })
+
+  return CAR.request.encode(message)
 }

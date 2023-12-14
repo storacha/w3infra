@@ -6,6 +6,29 @@ import {
 } from '@ucanto/interface'
 import { PieceRecord, PieceRecordKey } from '@web3-storage/filecoin-api/storefront/api'
 
+export interface FilecoinMetricsStore {
+  incrementTotal: (metricName: string, n: number) => Promise<void>
+  incrementTotals: (metricsToUpdate: Record<string, number>) => Promise<void>
+}
+
+export interface FilecoinMetricsCtx {
+  filecoinMetricsStore: FilecoinMetricsStore
+  workflowStore: WorkflowBucket
+}
+
+export interface FilecoinAggregateOfferMetricsCtx extends FilecoinMetricsCtx {
+  invocationStore: InvocationBucket
+}
+
+export interface WorkflowBucket {
+  get: (Cid: string) => Promise<Uint8Array|undefined>
+}
+
+export interface InvocationBucket {
+  getInLink: (cid: string) => Promise<string|undefined>
+}
+
+
 export interface ClaimsInvocationConfig {
   /**
    * Signing authority that is issuing the UCAN invocation(s).

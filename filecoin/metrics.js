@@ -4,9 +4,9 @@ import * as Block from 'multiformats/block'
 import { sha256 } from 'multiformats/hashes/sha2'
 import { Piece } from '@web3-storage/data-segment'
 
-import { hasOkReceipt } from './utils/receipt.js'
-import { AGGREGATE_ACCEPT, AGGREGATE_OFFER, METRICS_NAMES } from './constants.js'
-import { DecodeBlockOperationError, NotFoundWorkflowError } from './errors.js'
+import { hasOkReceipt } from '@web3-storage/w3infra-ucan-invocation/utils/receipt.js'
+import { AGGREGATE_ACCEPT, AGGREGATE_OFFER, METRICS_NAMES } from '@web3-storage/w3infra-ucan-invocation/constants.js'
+import { DecodeBlockOperationError, NotFoundWorkflowError } from '@web3-storage/w3infra-ucan-invocation/errors.js'
 
 /**
  * @typedef {import('@web3-storage/capabilities/types.js').AggregateOffer} AggregateOffer
@@ -24,7 +24,7 @@ import { DecodeBlockOperationError, NotFoundWorkflowError } from './errors.js'
  * Metrics:
  * - AGGREGATE_ACCEPT_TOTAL: increment number of `aggregate/accept` success receipts
  * 
- * @param {import('./types').UcanInvocation[]} ucanInvocations
+ * @param {import('@web3-storage/w3infra-ucan-invocation/types.js').UcanInvocation[]} ucanInvocations
  * @param {import('./types').FilecoinMetricsCtx} ctx
  */
 export async function updateAggregateAcceptTotal (ucanInvocations, ctx) {
@@ -45,7 +45,7 @@ export async function updateAggregateAcceptTotal (ucanInvocations, ctx) {
  * - AGGREGATE_OFFER_PIECES_TOTAL: increment number of pieces included in `aggregate/offer` success receipts
  * - AGGREGATE_OFFER_PIECES_SIZE_TOTAL: increment size of pieces included of `aggregate/offer` success receipts
  *
- * @param {import('./types').UcanInvocation[]} ucanInvocations
+ * @param {import('@web3-storage/w3infra-ucan-invocation/types.js').UcanInvocation[]} ucanInvocations
  * @param {import('./types').FilecoinAggregateOfferMetricsCtx} ctx
  */
 export async function updateAggregateOfferTotal (ucanInvocations, ctx) {
@@ -97,7 +97,7 @@ export async function updateAggregateOfferTotal (ucanInvocations, ctx) {
 /**
  * Get a map of workflows that include given capability.
  *
- * @param {import('./types').UcanInvocation[]} ucanInvocations
+ * @param {import('@web3-storage/w3infra-ucan-invocation/types.js').UcanInvocation[]} ucanInvocations
  * @param {string} capability
  */
 function getWorkflowsWithReceiptForCapability (ucanInvocations, capability) {

@@ -31,5 +31,11 @@
     "p-defer": "^4.0.0",
     "sqs-consumer": "^7.4.0",
     "testcontainers": "^8.13.0"
+  },
+  "eslintConfig": {
+    "rules": {
+      "unicorn/prefer-array-flat": "off",
+      "unicorn/prefer-spread": "off"
+    }
   }
 }
