@@ -76,7 +76,7 @@ export function getCustomDomain (stage, hostedZone) {
  * @param {import('@serverless-stack/resources').Stack} stack
  */
 export function getEventSourceConfig (stack) {
-  if (stack.stage !== 'production') {
+  if (stack.stage !== 'prod') {
     return {
       batchSize: 10,
       // The maximum amount of time to gather records before invoking the function.
@@ -102,7 +102,8 @@ export function getEventSourceConfig (stack) {
 }
 
 /**
- * @deprecated
+ * @deprecated as production stage name is bad.
+ *
  * @param {import('@serverless-stack/resources').Stack} stack
  */
 export function getKinesisEventSourceConfig (stack) {
