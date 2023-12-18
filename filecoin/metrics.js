@@ -28,9 +28,13 @@ import { DecodeBlockOperationError, NotFoundWorkflowError } from '@web3-storage/
  * @param {import('./types').FilecoinMetricsCtx} ctx
  */
 export async function updateAggregateAcceptTotal (ucanInvocations, ctx) {
-  const aggregateAcceptInvocations = ucanInvocations.filter(
-    inv => inv.value.att.find(a => a.can === AGGREGATE_ACCEPT) && hasOkReceipt(inv)
-  )
+  const aggregateAcceptInvocations = ucanInvocations
+    // timestamp
+    .filter(inv => !ctx.startEpochMs || inv.ts > ctx.startEpochMs)
+    // invocation cap
+    .filter(
+      inv => inv.value.att.find(a => a.can === AGGREGATE_ACCEPT) && hasOkReceipt(inv)
+    )
 
   await ctx.filecoinMetricsStore.incrementTotals({
     [METRICS_NAMES.AGGREGATE_ACCEPT_TOTAL]: aggregateAcceptInvocations.length
@@ -51,7 +55,7 @@ export async function updateAggregateAcceptTotal (ucanInvocations, ctx) {
 export async function updateAggregateOfferTotal (ucanInvocations, ctx) {
   // Get a Map of workflows that include aggregate offer receipts
   /** @type {Map<string, AggregateOfferInvocation>} */
-  const workflowsWithAggregateOffers = getWorkflowsWithReceiptForCapability(ucanInvocations, AGGREGATE_OFFER)
+  const workflowsWithAggregateOffers = getWorkflowsWithReceiptForCapability(ucanInvocations, AGGREGATE_OFFER, ctx)
 
   // From workflows that include aggregate offer receipts, try to get the block with Pieces included in Aggregate
   /** @type {AggregateOfferGet[]} */
@@ -99,11 +103,16 @@ export async function updateAggregateOfferTotal (ucanInvocations, ctx) {
  *
  * @param {import('@web3-storage/w3infra-ucan-invocation/types.js').UcanInvocation[]} ucanInvocations
  * @param {string} capability
+ * @param {import('./types').FilecoinAggregateOfferMetricsCtx} ctx
  */
-function getWorkflowsWithReceiptForCapability (ucanInvocations, capability) {
+function getWorkflowsWithReceiptForCapability (ucanInvocations, capability, ctx) {
   return ucanInvocations
   .reduce(
     (acc, workflowInvocations) => {
+      // if not in the range of time provided skip it
+      if (ctx.startEpochMs && ctx.startEpochMs > workflowInvocations.ts) {
+        return acc
+      }
       const aggregateOfferReceipts = workflowInvocations.value.att.filter(a => a.can === capability)
 
       // If no `aggregate/offer` as receipts we can stop

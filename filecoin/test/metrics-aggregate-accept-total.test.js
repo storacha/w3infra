@@ -256,6 +256,61 @@ test('handles a batch of single invocation with aggregate/accept without receipt
   t.is(aggregateOfferTotal?.value, 0)
 })
 
+test('skips invocation with aggregate/accept if before start epoch ms', async t => {
+  const { tableName, bucketName } = await prepareResources(t.context.dynamoClient, t.context.s3Client)
+
+  // Context
+  const filecoinMetricsStore = createFilecoinMetricsTable(REGION, tableName, {
+    endpoint: t.context.dbEndpoint
+  })
+  const workflowStore = createWorkflowStore(REGION, bucketName, t.context.s3Opts)
+
+  // Invocation ctx
+  const w3sService = await Signer.generate()
+  const car = await randomCAR(128)
+
+  // Generate aggregate for test
+  const { pieces, aggregate } = await randomAggregate(100, 128)
+  const offer = pieces.map((p) => p.link)
+      const piecesBlock = await CBOR.write(offer)
+
+  const invocations = [{
+    carCid: car.cid.toString(),
+    value: {
+        att: [
+          DealerCapabilities.aggregateAccept.create({
+            with: w3sService.did(),
+            nb: {
+              aggregate: aggregate.link,
+              pieces: piecesBlock.cid,
+            }
+          })
+        ],
+        aud: w3sService.did(),
+          iss: w3sService.did()
+    },
+    type: STREAM_TYPE.RECEIPT,
+    out: {
+      ok: true
+    },
+    ts: Date.now()
+  }]
+
+  // @ts-expect-error not expecting type with just `aggregate/accept`
+  await updateAggregateAcceptTotal(invocations, {
+    workflowStore,
+    filecoinMetricsStore,
+    startEpochMs: Date.now() + 100
+  })
+
+  const aggregateOfferTotal = await getItemFromTable(t.context.dynamoClient, tableName, {
+    name: METRICS_NAMES.AGGREGATE_ACCEPT_TOTAL
+  })
+  t.truthy(aggregateOfferTotal)
+  t.is(aggregateOfferTotal?.name, METRICS_NAMES.AGGREGATE_ACCEPT_TOTAL)
+  t.is(aggregateOfferTotal?.value, 0)
+})
+
 /**
  * @param {import('@aws-sdk/client-dynamodb').DynamoDBClient} dynamoClient
  * @param {import('@aws-sdk/client-s3').S3Client} s3Client

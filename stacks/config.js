@@ -193,7 +193,8 @@ export function getEnv() {
     // Not required
     STOREFRONT_PROOF: process.env.STOREFRONT_PROOF ?? '',
     CONTENT_CLAIMS_PROOF: process.env.CONTENT_CLAIMS_PROOF ?? '',
-    DISABLE_PIECE_CID_COMPUTE: process.env.DISABLE_PIECE_CID_COMPUTE ?? ''
+    DISABLE_PIECE_CID_COMPUTE: process.env.DISABLE_PIECE_CID_COMPUTE ?? '',
+    START_FILECOIN_METRICS_EPOCH_MS: process.env.START_FILECOIN_METRICS_EPOCH_MS ?? ''
   }
 }
 
