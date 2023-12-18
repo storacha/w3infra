@@ -28,7 +28,7 @@ export const encode = input => {
     return {
       ok: {
         pk: `${input.provider}#${input.space}`,
-        sk: `${input.receiptAt}#${input.cause}`,
+        sk: `${input.receiptAt.toISOString()}#${input.cause}`,
         space: input.space,
         provider: input.provider,
         subscription: input.subscription,
