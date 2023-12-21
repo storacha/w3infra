@@ -6,13 +6,15 @@
 
 The given API is currently public.
 
-### `GET /{carCid}`
+### `GET /{cid}`
 
-Redirects to a presigned URL where the requested CAR file (by its CID) can be downloaded from. This will use web3.storage `carpark` as the location of the requested CARs. The request will return a `302 Redirect` to a created presigned URL.
+Redirects to a presigned URL where the requested CAR file (by its CID) can be downloaded from. The given CID can be the CAR CID, or an equivalent CID to it, such as a PieceCIDv2. The request will return a `302 Redirect` to a created presigned URL.
 
 It also supports a query parameter `expires` with the number of seconds this presigned URL should be valid for. You can set a value from one second to 7 days (604,800 seconds). By default the expiration is set for 3 days (259,200 seconds).
 
 ### `GET /key/{key}?bucket=bucket-name`
+
+> Deprecated and should not be used in production
 
 Redirects to a presigned URL where the requested bucket value can be downloaded from by its key. Unlike `GET /{carCid}`, this endpoint takes a key and is compatible with any web3.storage account bucket. The request will return a `302 Redirect` to a created presigned URL.
 

@@ -10,14 +10,9 @@ import { identity } from 'multiformats/hashes/identity'
 import { sha256 as hasher } from 'multiformats/hashes/sha2'
 import * as pb from '@ipld/dag-pb'
 import { CarBufferWriter } from '@ipld/car'
+import { CAR } from '@ucanto/transport'
 
 import { getSigner } from '../index.js'
-import {
-  parseQueryStringParameters,
-  MAX_EXPIRES_IN,
-  MIN_EXPIRES_IN,
-  DEFAULT_EXPIRES_IN
-} from '../utils.js'
 
 import { createS3, createBucket } from './helpers/resources.js'
 
@@ -54,57 +49,6 @@ test('fails to create signed url for object not in bucket', async t => {
   t.falsy(signedUrl)
 })
 
-test('parses valid expires', t => {
-  const queryParams = {
-    expires: '900'
-  }
-  const param = parseQueryStringParameters(queryParams)
-  t.is(param.expiresIn, parseInt(queryParams.expires))
-})
-
-test('parses bucket name', t => {
-  const queryParams = {
-    bucket: 'dagcargo'
-  }
-  const param = parseQueryStringParameters(queryParams)
-  t.is(param.bucketName, queryParams.bucket)
-})
-
-test('fails to parse bucket name not accepted', t => {
-  const queryParams = {
-    bucket: 'dagcargo-not-this'
-  }
-  t.throws(() => parseQueryStringParameters(queryParams))
-})
-
-test('parses valid expires query parameter', t => {
-  const queryParams = {
-    expires: '900'
-  }
-  const param = parseQueryStringParameters(queryParams)
-  t.is(param.expiresIn, parseInt(queryParams.expires))
-})
-
-test('defaults expires when there is no query parameter', t => {
-  const queryParams = {
-    nosearch: '900'
-  }
-  const param = parseQueryStringParameters(queryParams)
-  t.is(param.expiresIn, DEFAULT_EXPIRES_IN)
-})
-
-test('fails to parse expires query parameter when not acceptable value', t => {
-  const queryParamsBigger = {
-    expires: `${MAX_EXPIRES_IN + 1}`
-  }
-  t.throws(() => parseQueryStringParameters(queryParamsBigger))
-
-  const queryParamsSmaller = {
-    expires: `${MIN_EXPIRES_IN - 1}`
-  }
-  t.throws(() => parseQueryStringParameters(queryParamsSmaller))
-})
-
 /**
  * @param {import('@aws-sdk/client-s3').S3Client} s3Client
  * @param {string} bucketName 
@@ -128,7 +72,8 @@ async function putCarToBucket (s3Client, bucketName) {
 
   const Body = car.close()
 
-  const key = `${parent.cid.toString()}/${parent.cid.toString()}.car`
+  const link = await CAR.codec.link(car.bytes)
+  const key = `${link.toString()}/${link.toString()}.car`
   await s3Client.send(
     new PutObjectCommand({
       Bucket: bucketName,
@@ -137,5 +82,5 @@ async function putCarToBucket (s3Client, bucketName) {
     })
   )
 
-  return parent.cid
+  return link
 }

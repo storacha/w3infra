@@ -13,7 +13,7 @@ test.before(t => {
 })
 
 test('HEAD /{cid}', async t => {
-  const carparkCid = 'bagbaiera223xmiutg62dsthdyd6kqgsft25knslnlaxxvwe6nc4zrwezezeq'
+  const carparkCid = 'bagbaieraky3zsxcozokb33wunu5bmxixfpkz2t2pe25rs6tokqcgm3h3d5ya'
   const response = await fetch(
     `${t.context.roundaboutEndpoint}/${carparkCid}`,
     {

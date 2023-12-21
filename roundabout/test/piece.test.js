@@ -4,13 +4,14 @@ import * as Raw from 'multiformats/codecs/raw'
 import { sha256 } from 'multiformats/hashes/sha2'
 import * as Digest from 'multiformats/hashes/digest'
 import { Piece, MIN_PAYLOAD_SIZE } from '@web3-storage/data-segment'
-import { findEquivalentCarCids, asCarCid, asPieceCidV1, asPieceCidV2, CAR_CODE } from '../piece.js'
+import { asCarCid, asPieceCidV1, asPieceCidV2, CAR_CODE } from '../piece.js'
+import { findEquivalentCarCids } from '../claims.js'
 
 test('findEquivalentCarCids', async t => {
   const bytes = new Uint8Array(MIN_PAYLOAD_SIZE)
   const pieceCid = Piece.fromPayload(bytes).link
-  const carCid = CID.createV1(CAR_CODE, sha256.digest(bytes))
-  const rawCid = CID.createV1(Raw.code, sha256.digest(bytes))
+  const carCid = CID.createV1(CAR_CODE, await sha256.digest(bytes))
+  const rawCid = CID.createV1(Raw.code, await sha256.digest(bytes))
   const carSet = await findEquivalentCarCids(pieceCid, async () => {
     return [
       { type: 'assert/equals', content: pieceCid, equals: carCid }, // yes! is equivalent carCid
@@ -38,36 +39,36 @@ test('findEquivalentCarCids from content-claims api', async t => {
   t.is(found.toString(), carCid.toString())
 })
 
-test('asCarCid', t => {
+test('asCarCid', async t => {
   const bytes = new Uint8Array(MIN_PAYLOAD_SIZE)
   const pieceCid = Piece.fromPayload(bytes).link
-  const carCid = CID.createV1(CAR_CODE, sha256.digest(bytes)) 
-  const rawCid = CID.createV1(Raw.code, sha256.digest(bytes))
+  const carCid = CID.createV1(CAR_CODE, await sha256.digest(bytes)) 
+  const rawCid = CID.createV1(Raw.code, await sha256.digest(bytes))
   t.is(asCarCid(pieceCid), undefined)
   t.is(asCarCid(carCid), carCid)
   t.is(asCarCid(rawCid), undefined)
 })
 
-test('asPieceCidv2', t => {
+test('asPieceCidv2', async t => {
   const bytes = new Uint8Array(MIN_PAYLOAD_SIZE)
   const piece = Piece.fromPayload(bytes)
   const pieceCidV2 = piece.link
   const pieceCidV1 = CID.createV1(Piece.FilCommitmentUnsealed, Digest.create(Piece.Sha256Trunc254Padded, piece.root))
-  const carCid = CID.createV1(CAR_CODE, sha256.digest(bytes)) 
-  const rawCid = CID.createV1(Raw.code, sha256.digest(bytes))
+  const carCid = CID.createV1(CAR_CODE, await sha256.digest(bytes)) 
+  const rawCid = CID.createV1(Raw.code, await sha256.digest(bytes))
   t.is(asPieceCidV2(pieceCidV1), undefined)
   t.is(asPieceCidV2(pieceCidV2), pieceCidV2)
   t.is(asPieceCidV2(carCid), undefined)
   t.is(asPieceCidV2(rawCid), undefined)
 })
 
-test('asPieceCidv1', t => {
+test('asPieceCidv1', async t => {
   const bytes = new Uint8Array(MIN_PAYLOAD_SIZE)
   const piece = Piece.fromPayload(bytes)
   const pieceCidV2 = piece.link
   const pieceCidV1 = CID.createV1(Piece.FilCommitmentUnsealed, Digest.create(Piece.Sha256Trunc254Padded, piece.root))
-  const carCid = CID.createV1(CAR_CODE, sha256.digest(bytes)) 
-  const rawCid = CID.createV1(Raw.code, sha256.digest(bytes))
+  const carCid = CID.createV1(CAR_CODE, await sha256.digest(bytes)) 
+  const rawCid = CID.createV1(Raw.code, await sha256.digest(bytes))
   t.is(asPieceCidV1(pieceCidV1), pieceCidV1)
   t.is(asPieceCidV1(pieceCidV2),undefined)
   t.is(asPieceCidV1(carCid), undefined)

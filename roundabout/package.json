@@ -11,16 +11,24 @@
     "@sentry/serverless": "^7.22.0",
     "@web3-storage/content-claims": "^3.0.1",
     "multiformats": "^11.0.2",
+    "p-any": "^4.0.0",
     "undici": "^5.24.0"
   },
   "devDependencies": {
     "@ipld/car": "^5.1.1",
     "@ipld/dag-pb": "^3.0.0",
+    "@ucanto/client":"^9.0.0",
     "@web3-storage/data-segment": "^5.0.0",
     "@web3-storage/w3up-client": "^9.2.2",
     "ava": "^4.3.3",
     "multiformats": "^11.0.2",
     "nanoid": "^4.0.0",
     "testcontainers": "^8.13.0"
+  },
+  "eslintConfig": {
+    "rules": {
+      "no-useless-return": "off",
+      "unicorn/prefer-spread": "off"
+    }
   }
 }
