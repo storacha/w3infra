@@ -296,6 +296,58 @@ test('handles a batch of single invocation without aggregate/offer', async t => 
   t.is(aggregateOfferPiecesSizeTotal?.value, 0)
 })
 
+test('skips invocation with aggregate/offer if before start epoch ms', async t => {
+  const { tableName, workflowBucketName, invocationBucketName } = await prepareResources(t.context.dynamoClient, t.context.s3Client)
+
+  // Context
+  const filecoinMetricsStore = createFilecoinMetricsTable(REGION, tableName, {
+    endpoint: t.context.dbEndpoint
+  })
+  const workflowStore = createWorkflowStore(REGION, workflowBucketName, t.context.s3Opts)
+  const invocationStore = createInvocationStore(REGION, invocationBucketName, t.context.s3Opts)
+
+  // Generate aggregate for test
+  const { pieces, aggregate } = await randomAggregate(100, 128)
+  const aggregateOffers = [{ pieces, aggregate }]
+  const workflows = [aggregateOffers]
+
+  // Get UCAN Stream Invocations
+  const ucanStreamInvocations = await prepareUcanStream(workflows, {
+    workflowBucketName,
+    invocationBucketName,
+    s3: t.context.s3Client
+  })
+
+  await updateAggregateOfferTotal(ucanStreamInvocations, {
+    workflowStore,
+    invocationStore,
+    filecoinMetricsStore,
+    startEpochMs: Date.now() + 100
+  })
+
+  // Validate metrics
+  const aggregateOfferTotal = await getItemFromTable(t.context.dynamoClient, tableName, {
+    name: METRICS_NAMES.AGGREGATE_OFFER_TOTAL
+  })
+  t.truthy(aggregateOfferTotal)
+  t.is(aggregateOfferTotal?.name, METRICS_NAMES.AGGREGATE_OFFER_TOTAL)
+  t.is(aggregateOfferTotal?.value, 0)
+
+  const aggregateOfferPiecesTotal = await getItemFromTable(t.context.dynamoClient, tableName, {
+    name: METRICS_NAMES.AGGREGATE_OFFER_PIECES_TOTAL
+  })
+  t.truthy(aggregateOfferPiecesTotal)
+  t.is(aggregateOfferPiecesTotal?.name, METRICS_NAMES.AGGREGATE_OFFER_PIECES_TOTAL)
+  t.is(aggregateOfferPiecesTotal?.value, 0)
+
+  const aggregateOfferPiecesSizeTotal = await getItemFromTable(t.context.dynamoClient, tableName, {
+    name: METRICS_NAMES.AGGREGATE_OFFER_PIECES_SIZE_TOTAL
+  })
+  t.truthy(aggregateOfferPiecesSizeTotal)
+  t.is(aggregateOfferPiecesSizeTotal?.name, METRICS_NAMES.AGGREGATE_OFFER_PIECES_SIZE_TOTAL)
+  t.is(aggregateOfferPiecesSizeTotal?.value, 0)
+})
+
 /**
  * @param {{pieces: { link: PieceLink }[], aggregate: AggregateView }[][]} workflows
  * @param {{ workflowBucketName: string, invocationBucketName: string, s3: import('@aws-sdk/client-s3').S3Client }} ctx

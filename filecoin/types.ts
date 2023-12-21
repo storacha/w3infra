@@ -14,6 +14,7 @@ export interface FilecoinMetricsStore {
 export interface FilecoinMetricsCtx {
   filecoinMetricsStore: FilecoinMetricsStore
   workflowStore: WorkflowBucket
+  startEpochMs?: number
 }
 
 export interface FilecoinAggregateOfferMetricsCtx extends FilecoinMetricsCtx {

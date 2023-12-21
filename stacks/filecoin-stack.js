@@ -31,7 +31,8 @@ export function FilecoinStack({ stack, app }) {
     CONTENT_CLAIMS_PROOF,
     DISABLE_PIECE_CID_COMPUTE,
     UPLOAD_API_DID,
-    STOREFRONT_PROOF
+    STOREFRONT_PROOF,
+    START_FILECOIN_METRICS_EPOCH_MS
   } = getEnv()
   const storefrontCustomDomain = getCustomDomain(stack.stage, process.env.HOSTED_ZONE)
 
@@ -303,6 +304,7 @@ export function FilecoinStack({ stack, app }) {
       METRICS_TABLE_NAME: adminMetricsTable.tableName,
       WORKFLOW_BUCKET_NAME: workflowBucket.bucketName,
       INVOCATION_BUCKET_NAME: invocationBucket.bucketName,
+      START_FILECOIN_METRICS_EPOCH_MS
     },
     permissions: [adminMetricsTable, workflowBucket, invocationBucket],
     handler: 'functions/metrics-aggregate-offer-and-accept-total.consumer',
