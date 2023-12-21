@@ -11,7 +11,8 @@ import { BusStack } from './bus-stack.js'
 import { CarparkStack } from './carpark-stack.js'
 import { UploadDbStack } from './upload-db-stack.js'
 import { UcanInvocationStack } from './ucan-invocation-stack.js'
-import { setupSentry, getEnv, getCdkNames, getCustomDomain, getEventSourceConfig } from './config.js'
+// import { setupSentry, getEnv, getCdkNames, getCustomDomain, getEventSourceConfig } from './config.js'
+import { setupSentry, getEnv, getCdkNames, getCustomDomain } from './config.js'
 import { CARPARK_EVENT_BRIDGE_SOURCE_EVENT } from '../carpark/event-bus/source.js'
 import { Status } from '../filecoin/store/piece.js'
 
@@ -45,7 +46,8 @@ export function FilecoinStack({ stack, app }) {
   // Get store table reference
   const { pieceTable, privateKey, contentClaimsPrivateKey, adminMetricsTable } = use(UploadDbStack)
   // Get UCAN store references
-  const { workflowBucket, invocationBucket, ucanStream } = use(UcanInvocationStack)
+  // const { workflowBucket, invocationBucket, ucanStream } = use(UcanInvocationStack)
+  const { workflowBucket, invocationBucket } = use(UcanInvocationStack)
 
   /**
    * 1st processor queue - filecoin submit
@@ -297,28 +299,29 @@ export function FilecoinStack({ stack, app }) {
   })
 
   // `aggregate/offer` + `aggregate-accept` metrics
-  const metricsAggregateOfferAcceptTotalDLQ = new Queue(stack, 'metrics-aggregate-offer-accept-total-dlq')
-  const metricsAggregateOfferAcceptTotalConsumer = new Function(stack, 'metrics-aggregate-offer-accept-total-consumer', {
+  const metricsAggregateTotalDLQ = new Queue(stack, 'metrics-aggregate-total-dlq')
+  // const metricsAggregateTotalConsumer = new Function(stack, 'metrics-aggregate-total-consumer', {
+  new Function(stack, 'metrics-aggregate-total-consumer', {
     environment: {
       METRICS_TABLE_NAME: adminMetricsTable.tableName,
       WORKFLOW_BUCKET_NAME: workflowBucket.bucketName,
       INVOCATION_BUCKET_NAME: invocationBucket.bucketName,
     },
     permissions: [adminMetricsTable, workflowBucket, invocationBucket],
-    handler: 'functions/metrics-aggregate-offer-and-accept-total.consumer',
-    deadLetterQueue: metricsAggregateOfferAcceptTotalDLQ.cdk.queue,
+    handler: 'functions/metrics-aggregate-accept-total.consumer',
+    deadLetterQueue: metricsAggregateTotalDLQ.cdk.queue,
   })
 
-  ucanStream.addConsumers(stack, {
-    metricsAggregateOfferAcceptTotalConsumer: {
-      function: metricsAggregateOfferAcceptTotalConsumer,
-      cdk: {
-        eventSource: {
-          ...(getEventSourceConfig(stack))
-        }
-      }
-    }
-  })
+  // ucanStream.addConsumers(stack, {
+  //   metricsAggregateTotalConsumer: {
+  //     function: metricsAggregateTotalConsumer,
+  //     cdk: {
+  //       eventSource: {
+  //         ...(getEventSourceConfig(stack))
+  //       }
+  //     }
+  //   }
+  // })
 
   return {
     filecoinSubmitQueue,
