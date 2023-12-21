@@ -91,7 +91,7 @@ export async function recordMetrics (metrics, metricsTable) {
  * @property {Prom.Counter<'can'>} aggregatedPiecesBytes
  */
 
-function createRegistry (ns = 'w3up') {
+function createRegistry (ns = 'w3up', filecoinNs = 'w3filecoin') {
   const registry = new Prom.Registry()
   return {
     registry,
@@ -109,19 +109,19 @@ function createRegistry (ns = 'w3up') {
         registers: [registry]
       }),
       aggregates: new Prom.Counter({
-        name: `${ns}_aggregates_total`,
+        name: `${filecoinNs}_aggregates_total`,
         help: 'Total number of aggregates.',
         labelNames: ['can'],
         registers: [registry]
       }),
       aggregatedPieces: new Prom.Counter({
-        name: `${ns}_aggregated_pieces_total`,
+        name: `${filecoinNs}_aggregated_pieces_total`,
         help: 'Total number of pieces aggregated.',
         labelNames: ['can'],
         registers: [registry]
       }),
       aggregatedPiecesBytes: new Prom.Counter({
-        name: `${ns}_aggregated_pieces_bytes`,
+        name: `${filecoinNs}_aggregated_pieces_bytes`,
         help: 'Total bytes of pieces aggregated.',
         labelNames: ['can'],
         registers: [registry]
