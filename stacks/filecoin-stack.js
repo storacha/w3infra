@@ -308,7 +308,7 @@ export function FilecoinStack({ stack, app }) {
       INVOCATION_BUCKET_NAME: invocationBucket.bucketName,
     },
     permissions: [adminMetricsTable, workflowBucket, invocationBucket],
-    handler: 'functions/metrics-aggregate-accept-total.consumer',
+    handler: 'functions/metrics-aggregate-offer-and-accept-total.consumer',
     deadLetterQueue: metricsAggregateTotalDLQ.cdk.queue,
   })
 
