@@ -98,7 +98,7 @@ const reportUsage = async (usage, ctx) => {
   console.log(`Found Stripe subscription item: ${subID}`)
 
   const duration = usage.to.getTime() - usage.from.getTime()
-  const quantity = new Big(usage.usage.toString()).div(duration).div(1024 * 1024 * 1024).toNumber()
+  const quantity = Math.ceil(new Big(usage.usage.toString()).div(duration).div(1024 * 1024 * 1024).toNumber())
   const idempotencyKey = `${usage.from.toISOString()}-${usage.to.toISOString()}/${usage.customer}/${usage.provider}/${usage.space}`
   const usageRecord = await ctx.stripe.subscriptionItems.createUsageRecord(
     subID,
