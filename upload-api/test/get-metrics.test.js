@@ -1,11 +1,11 @@
-import { testMetrics as test } from './helpers/context.js'
+import { testGetMetrics as test } from './helpers/context.js'
 
 import {
   PutItemCommand,
 } from '@aws-sdk/client-dynamodb'
 import { marshall } from '@aws-sdk/util-dynamodb'
-import { adminMetricsTableProps } from '@web3-storage/w3infra-ucan-invocation/tables/index.js'
-import { METRICS_NAMES } from '@web3-storage/w3infra-ucan-invocation/constants.js'
+import { adminMetricsTableProps } from '../tables/index.js'
+import { METRICS_NAMES } from '../constants.js'
 
 import {
   createDynamodDb,

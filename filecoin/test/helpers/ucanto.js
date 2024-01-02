@@ -1,7 +1,7 @@
 import * as Signer from '@ucanto/principal/ed25519'
+import * as UcantoClient from '@ucanto/client'
 import { Message } from '@ucanto/core'
 import * as Server from '@ucanto/server'
-import * as Client from '@ucanto/client'
 import * as CAR from '@ucanto/transport/car'
 import { Assert } from '@web3-storage/content-claims/capability'
 
@@ -61,7 +61,7 @@ export async function getClaimsServiceServer (serviceProvider, options = {}) {
     codec: CAR.inbound,
     validateAuthorization: () => ({ ok: {} })
   })
-  const connection = Client.connect({
+  const connection = UcantoClient.connect({
     id: serviceProvider,
     codec: CAR.outbound,
     channel: server,
@@ -112,4 +112,21 @@ export const encodeAgentMessage = async (source) => {
   })
 
   return CAR.request.encode(message)
+}
+
+/**
+ * @param {import('@ucanto/interface').Principal} audience
+ */
+export async function createSpace (audience) {
+  const space = await Signer.generate()
+  const spaceDid = space.did()
+
+  return {
+    proof: await UcantoClient.delegate({
+      issuer: space,
+      audience,
+      capabilities: [{ can: '*', with: spaceDid }]
+    }),
+    spaceDid
+  }
 }

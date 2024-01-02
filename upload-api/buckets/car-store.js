@@ -25,7 +25,7 @@ export function createCarStore(region, bucketName, options) {
  *
  * @param {S3Client} s3
  * @param {string} bucketName
- * @returns {import('@web3-storage/upload-api').CarStoreBucket}
+ * @returns {import('../types').CarStore}
  */
 export function useCarStore(s3, bucketName) {
   return {
@@ -78,6 +78,28 @@ export function useCarStore(s3, bucketName) {
           'content-length': String(size),
         },
       }
+    },
+
+    /**
+     * @param {import('multiformats').UnknownLink} link
+     */
+    getSize: async (link) => {
+      const cid = link.toString()
+      const cmd = new HeadObjectCommand({
+        Key: `${cid}/${cid}.car`,
+        Bucket: bucketName,
+      })
+      let res
+      try {
+        res = await s3.send(cmd)
+      } catch (cause) {
+        // @ts-expect-error
+        if (cause?.$metadata?.httpStatusCode === 404) {
+          return 0
+        }
+        throw new Error('Failed to check if car-store', { cause })
+      }
+      return res.ContentLength || 0
     },
   }
 }

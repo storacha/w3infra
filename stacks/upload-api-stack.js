@@ -1,15 +1,18 @@
 import {
   Api,
   Config,
+  Function,
+  Queue,
   use
 } from '@serverless-stack/resources'
+import { StartingPosition } from 'aws-cdk-lib/aws-lambda'
 import { UploadDbStack } from './upload-db-stack.js'
 import { BillingDbStack } from './billing-db-stack.js'
 import { CarparkStack } from './carpark-stack.js'
 import { FilecoinStack } from './filecoin-stack.js'
 import { UcanInvocationStack } from './ucan-invocation-stack.js'
 
-import { getCustomDomain, getApiPackageJson, getGitInfo, setupSentry, getEnv } from './config.js'
+import { getCustomDomain, getApiPackageJson, getGitInfo, setupSentry, getEnv, getEventSourceConfig } from './config.js'
 
 /**
  * @param {import('@serverless-stack/resources').StackContext} properties
@@ -131,6 +134,50 @@ export function UploadApiStack({ stack, app }) {
     accessLog: {
       format:'{"requestTime":"$context.requestTime","requestId":"$context.requestId","httpMethod":"$context.httpMethod","path":"$context.path","routeKey":"$context.routeKey","status":$context.status,"responseLatency":$context.responseLatency,"integrationRequestId":"$context.integration.requestId","integrationStatus":"$context.integration.status","integrationLatency":"$context.integration.latency","integrationServiceStatus":"$context.integration.integrationStatus","ip":"$context.identity.sourceIp","userAgent":"$context.identity.userAgent"}'
     }
+  })
+
+  // UCAN stream metrics for admin and space
+  const uploadAdminMetricsDLQ = new Queue(stack, 'upload-admin-metrics-dlq')
+  const uploadAdminMetricsConsumer = new Function(stack, 'upload-admin-metrics-consumer', {
+    environment: {
+      METRICS_TABLE_NAME: adminMetricsTable.tableName,
+    },
+    permissions: [adminMetricsTable],
+    handler: 'functions/admin-metrics.consumer',
+    deadLetterQueue: uploadAdminMetricsDLQ.cdk.queue,
+  })
+
+  const uploadSpaceMetricsDLQ = new Queue(stack, 'upload-space-metrics-dlq')
+  const uploadSpaceMetricsConsumer = new Function(stack, 'upload-space-metrics-consumer', {
+    environment: {
+      METRICS_TABLE_NAME: spaceMetricsTable.tableName,
+    },
+    permissions: [spaceMetricsTable],
+    handler: 'functions/space-metrics.consumer',
+    deadLetterQueue: uploadSpaceMetricsDLQ.cdk.queue,
+  })
+
+  ucanStream.addConsumers(stack, {
+    uploadAdminMetricsConsumer: {
+      function: uploadAdminMetricsConsumer,
+      cdk: {
+        eventSource: {
+          ...(getEventSourceConfig(stack)),
+          // Override where to begin consuming the stream to latest as we already are reading from this stream
+          startingPosition: StartingPosition.LATEST
+        }
+      }
+    },
+    uploadSpaceMetricsConsumer: {
+      function: uploadSpaceMetricsConsumer,
+      cdk: {
+        eventSource: {
+          ...(getEventSourceConfig(stack)),
+          // Override where to begin consuming the stream to latest as we already are reading from this stream
+          startingPosition: StartingPosition.LATEST
+        }
+      }
+    },
   })
 
   stack.addOutputs({

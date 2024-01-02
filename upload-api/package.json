@@ -26,7 +26,6 @@
     "@web3-storage/access": "^18.0.5",
     "@web3-storage/capabilities": "^13.0.0",
     "@web3-storage/upload-api": "^8.0.0",
-    "@web3-storage/w3infra-ucan-invocation": "*",
     "multiformats": "^12.1.2",
     "nanoid": "^5.0.2",
     "preact": "^10.14.1",
@@ -54,5 +53,11 @@
     "singleQuote": true,
     "trailingComma": "es5",
     "semi": false
+  },
+  "eslintConfig": {
+    "rules": {
+      "unicorn/consistent-destructuring": "off",
+      "unicorn/prefer-array-flat-map": "off"
+    }
   }
 }

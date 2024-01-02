@@ -5,7 +5,7 @@ import { HeadObjectCommand } from '@aws-sdk/client-s3'
 import { PutItemCommand } from '@aws-sdk/client-dynamodb'
 import { marshall } from '@aws-sdk/util-dynamodb'
 
-import { METRICS_NAMES, SPACE_METRICS_NAMES } from '../ucan-invocation/constants.js'
+import { METRICS_NAMES, SPACE_METRICS_NAMES } from '../upload-api/constants.js'
 
 import { test } from './helpers/context.js'
 import {

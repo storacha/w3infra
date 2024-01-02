@@ -1,7 +1,7 @@
 import { customAlphabet } from 'nanoid'
 
-import { CreateTableCommand, QueryCommand } from '@aws-sdk/client-dynamodb'
-import { unmarshall } from '@aws-sdk/util-dynamodb'
+import { CreateTableCommand, GetItemCommand, QueryCommand } from '@aws-sdk/client-dynamodb'
+import { marshall, unmarshall } from '@aws-sdk/util-dynamodb'
 
 import { dynamoDBTableConfig } from './resources.js'
 
@@ -40,4 +40,18 @@ export async function getItemsFromTable(dynamo, tableName, keyConditions, option
   }
   const response = await dynamo.send(new QueryCommand(params))
   return response?.Items && response?.Items.map(i => unmarshall(i))
+}
+
+/**
+ * @param {import('@aws-sdk/client-dynamodb').DynamoDBClient} dynamo
+ * @param {string} tableName
+ * @param {Record<string, string>} key
+ */
+export async function getItemFromTable(dynamo, tableName, key) {
+  const params = {
+    TableName: tableName,
+    Key: marshall(key)
+  }
+  const response = await dynamo.send(new GetItemCommand(params))
+  return response?.Item && unmarshall(response?.Item)
 }
