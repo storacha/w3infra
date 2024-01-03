@@ -140,7 +140,8 @@ export function UploadApiStack({ stack, app }) {
   const uploadAdminMetricsDLQ = new Queue(stack, 'upload-admin-metrics-dlq')
   const uploadAdminMetricsConsumer = new Function(stack, 'upload-admin-metrics-consumer', {
     environment: {
-      METRICS_TABLE_NAME: adminMetricsTable.tableName,
+      ADMIN_METRICS_TABLE_NAME: adminMetricsTable.tableName,
+      STORE_BUCKET_NAME: carparkBucket.bucketName,
     },
     permissions: [adminMetricsTable],
     handler: 'functions/admin-metrics.consumer',
@@ -150,7 +151,8 @@ export function UploadApiStack({ stack, app }) {
   const uploadSpaceMetricsDLQ = new Queue(stack, 'upload-space-metrics-dlq')
   const uploadSpaceMetricsConsumer = new Function(stack, 'upload-space-metrics-consumer', {
     environment: {
-      METRICS_TABLE_NAME: spaceMetricsTable.tableName,
+      SPACE_METRICS_TABLE_NAME: spaceMetricsTable.tableName,
+      STORE_BUCKET_NAME: carparkBucket.bucketName,
     },
     permissions: [spaceMetricsTable],
     handler: 'functions/space-metrics.consumer',
