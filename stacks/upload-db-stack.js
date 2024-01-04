@@ -7,12 +7,10 @@ import {
   subscriptionTableProps,
   delegationTableProps,
   revocationTableProps,
-  rateLimitTableProps
-} from '../upload-api/tables/index.js'
-import {
+  rateLimitTableProps,
   adminMetricsTableProps,
   spaceMetricsTableProps
-} from '../ucan-invocation/tables/index.js'
+} from '../upload-api/tables/index.js'
 import {
   pieceTableProps
 } from '../filecoin/store/index.js'

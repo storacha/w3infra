@@ -7,9 +7,9 @@ import * as StoreCapabilities from '@web3-storage/capabilities/store'
 import { randomAggregate } from '@web3-storage/filecoin-api/test'
 
 import { updateAggregateAcceptTotal } from '../metrics.js'
+import { METRICS_NAMES, STREAM_TYPE } from '../constants.js'
 
-import { adminMetricsTableProps } from '@web3-storage/w3infra-ucan-invocation/tables/index.js'
-import { METRICS_NAMES, STREAM_TYPE } from '@web3-storage/w3infra-ucan-invocation/constants.js'
+import { adminMetricsTableProps } from '@web3-storage/w3infra-upload-api/tables/index.js'
 import { createFilecoinMetricsTable } from '../store/metrics.js'
 import { createWorkflowStore } from '../store/workflow.js'
 
@@ -18,9 +18,9 @@ import {
   createS3,
   createBucket,
 } from './helpers/resources.js'
-import { randomCAR } from '@web3-storage/w3infra-ucan-invocation/test/helpers/random.js'
-import { createDynamoTable, getItemFromTable} from '@web3-storage/w3infra-ucan-invocation/test/helpers/tables.js'
-import { createSpace } from '@web3-storage/w3infra-ucan-invocation/test/helpers/ucanto.js'
+import { randomCAR } from './helpers/random.js'
+import { createDynamoTable, getItemFromTable} from './helpers/tables.js'
+import { createSpace } from './helpers/ucanto.js'
 
 const REGION = 'us-west-2'
 

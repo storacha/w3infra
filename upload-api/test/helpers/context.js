@@ -8,14 +8,22 @@ import anyTest from 'ava'
  * @typedef {import('@ucanto/principal/ed25519').Signer.Signer<`did:web:${string}`, import('@ucanto/principal/ed25519').SigAlg>} Signer
  * @typedef {object} ServiceContext
  * @property {Signer} service
- * @typedef {object} MetricsContext
+ * @typedef {object} GetMetricsContext
  * @property {import('../../types').MetricsTable} metricsTable
  * @property {string} tableName
+ * @typedef {object} MetricsContext
+ * @property {import('../../types').MetricsStore} adminMetricsStore
+ * @property {string} adminMetricsTableName
+ * @property {import('../../types').SpaceMetricsStore} spaceMetricsStore
+ * @property {string} spaceMetricsTableName
+ * @property {import('../../types').CarStore} carStore
+ * @property {string} carStoreBucketName
  *
  * @typedef {import("ava").TestFn<DynamoContext & S3Context & ServiceContext>} Test
  * @typedef {import("ava").TestFn<DynamoContext>} TestDynamo
  * @typedef {import("ava").TestFn<S3Context>} TestS3
- * @typedef {import("ava").TestFn<DynamoContext & MetricsContext>} TestMetrics
+ * @typedef {import("ava").TestFn<DynamoContext & GetMetricsContext>} TestGetMetrics
+ * @typedef {import("ava").TestFn<DynamoContext & S3Context & MetricsContext>} TestMetrics
  * @typedef {import("ava").TestFn<ServiceContext>} TestService
  */
 
@@ -27,6 +35,9 @@ export const dynamo = /** @type {TestDynamo} */ (anyTest)
 
 // eslint-disable-next-line unicorn/prefer-export-from
 export const test = /** @type {Test} */ (anyTest)
+
+// eslint-disable-next-line unicorn/prefer-export-from
+export const testGetMetrics = /** @type {TestGetMetrics} */ (anyTest)
 
 // eslint-disable-next-line unicorn/prefer-export-from
 export const testMetrics = /** @type {TestMetrics} */ (anyTest)

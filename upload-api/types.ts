@@ -3,7 +3,7 @@ import { DID, Link, Delegation, Signature, Block, UCANLink, ByteView, DIDKey, Re
 import { UnknownLink } from 'multiformats'
 import { CID } from 'multiformats/cid'
 import { Kinesis } from '@aws-sdk/client-kinesis'
-import { AccountDID, ProviderDID, Service, SpaceDID } from '@web3-storage/upload-api'
+import { AccountDID, ProviderDID, Service, SpaceDID, CarStoreBucket } from '@web3-storage/upload-api'
 
 export interface StoreOperationError extends Error {
   name: 'StoreOperationFailed'
@@ -28,6 +28,33 @@ export interface ReceiptBlockCtx extends UcanStreamCtx {
   invocationBucket: InvocationBucket
   taskBucket: TaskBucket
   workflowBucket: WorkflowBucket
+}
+
+export interface MetricsStore {
+  incrementTotals: (metricsToUpdate: Record<string, number>) => Promise<void>
+}
+
+export interface MetricsCtx {
+  metricsStore: MetricsStore
+  carStore: CarStore
+}
+
+export interface SpaceMetricsItem {
+  value: number
+  space: string
+}
+
+export interface SpaceMetricsStore {
+  incrementTotals: (metricsToUpdate: Record<string, SpaceMetricsItem[]>) => Promise<void>
+}
+
+export interface SpaceMetricsCtx {
+  metricsStore: SpaceMetricsStore
+  carStore: CarStore
+}
+
+export interface CarStore extends CarStoreBucket {
+  getSize: (link: UnknownLink) => Promise<number>
 }
 
 export interface InvocationBucket {
@@ -167,6 +194,17 @@ export interface CustomerTable {
 }
 
 export type SpaceService = Pick<Service, "space">
+
+export type UcanStreamInvocationType = 'workflow' | 'receipt'
+
+export interface UcanStreamInvocation {
+  carCid: string
+  invocationCid: string
+  value: UcanInvocation
+  ts: number
+  type: UcanStreamInvocationType
+  out?: ReceiptResult
+}
 
 export interface UcanInvocation {
   att: UCAN.Capabilities

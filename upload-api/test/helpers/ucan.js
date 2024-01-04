@@ -10,7 +10,7 @@ import {
   createBucket,
   createTable
 } from '../helpers/resources.js';
-import { storeTableProps, uploadTableProps, consumerTableProps, delegationTableProps, subscriptionTableProps, rateLimitTableProps, revocationTableProps } from '../../tables/index.js';
+import { storeTableProps, uploadTableProps, consumerTableProps, delegationTableProps, subscriptionTableProps, rateLimitTableProps, revocationTableProps, spaceMetricsTableProps } from '../../tables/index.js';
 import { useCarStore } from '../../buckets/car-store.js';
 import { useDudewhereStore } from '../../buckets/dudewhere-store.js';
 import { useStoreTable } from '../../tables/store.js';
@@ -25,7 +25,6 @@ import { useInvocationStore } from '../../buckets/invocation-store.js';
 import { useWorkflowStore } from '../../buckets/workflow-store.js';
 import { useRateLimitTable } from '../../tables/rate-limit.js';
 import { useSpaceMetricsTable } from '../../tables/space-metrics.js';
-import { spaceMetricsTableProps } from '@web3-storage/w3infra-ucan-invocation/tables/index.js';
 import { createCustomerStore, customerTableProps } from '@web3-storage/w3infra-billing/tables/customer.js';
 import { usePlansStore } from '../../stores/plans.js';
 import { pieceTableProps } from '../../../filecoin/store/index.js';
