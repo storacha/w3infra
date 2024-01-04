@@ -9,7 +9,6 @@ export const STREAM_TYPE = {
 }
 
 // UCAN protocol
-// TODO: RM
 export const AGGREGATE_OFFER = aggregateOffer.can
 export const AGGREGATE_ACCEPT = aggregateAccept.can
 
