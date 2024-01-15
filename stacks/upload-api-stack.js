@@ -143,7 +143,7 @@ export function UploadApiStack({ stack, app }) {
       ADMIN_METRICS_TABLE_NAME: adminMetricsTable.tableName,
       STORE_BUCKET_NAME: carparkBucket.bucketName,
     },
-    permissions: [adminMetricsTable],
+    permissions: [adminMetricsTable, carparkBucket],
     handler: 'functions/admin-metrics.consumer',
     deadLetterQueue: uploadAdminMetricsDLQ.cdk.queue,
   })
@@ -154,7 +154,7 @@ export function UploadApiStack({ stack, app }) {
       SPACE_METRICS_TABLE_NAME: spaceMetricsTable.tableName,
       STORE_BUCKET_NAME: carparkBucket.bucketName,
     },
-    permissions: [spaceMetricsTable],
+    permissions: [spaceMetricsTable, carparkBucket],
     handler: 'functions/space-metrics.consumer',
     deadLetterQueue: uploadSpaceMetricsDLQ.cdk.queue,
   })
