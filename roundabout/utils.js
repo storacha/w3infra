@@ -6,7 +6,7 @@ export const DEFAULT_EXPIRES_IN = 3 * 24 * 60 * 60 // 3 days in seconds by defau
 export const VALID_BUCKETS_BY_KEY = ['dagcargo']
 export const VALID_R2_BUCKETS_DEFAULT = ['carpark-prod-0', 'carpark-prod-1', 'dagcargo']
 export const VALID_S3_BUCKETS_DEFAULT = ['carpark-prod-0']
-export const CF_R2_DOMAIN = 'r2.cloudflarestorage.com'
+export const CF_R2_DOMAIN = 'fffa4b4363a7e5250af8357087263b3a.r2.cloudflarestorage.com'
 export const AWS_S3_DOMAIN = 's3.amazonaws.com'
 
 /**

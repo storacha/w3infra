@@ -31,7 +31,7 @@ test('resolves a CAR in a valid R2 bucket claim', async t => {
     expiresIn,
     fetchClaims: (link) => {
       return Promise.resolve([
-        { type: 'assert/location', content: link, location: [`https://account-id.r2.cloudflarestorage.com/${bucketName}/${link.toString()}/${link.toString()}.car`] }
+        { type: 'assert/location', content: link, location: [`https://fffa4b4363a7e5250af8357087263b3a.r2.cloudflarestorage.com/${bucketName}/${link.toString()}/${link.toString()}.car`] }
       ])
     },
     validR2Buckets: [bucketName]
@@ -79,7 +79,7 @@ test('falls back to resolve a CAR if not in a valid bucket for claims, but on de
       return Promise.resolve([
         { type: 'assert/location', content: link, location: [
           `https://${bucketName}.s3.amazonaws.com/${link.toString()}/${link.toString()}.car`,
-          `https://account-id.r2.cloudflarestorage.com/${bucketName}/${link.toString()}/${link.toString()}.car`
+          `https://fffa4b4363a7e5250af8357087263b3a.r2.cloudflarestorage.com/${bucketName}/${link.toString()}/${link.toString()}.car`
         ] }
       ])
     },
@@ -103,7 +103,7 @@ test('does not resolve a CAR if not in a valid bucket', async t => {
       return Promise.resolve([
         { type: 'assert/location', content: link, location: [
           `https://${bucketName}.s3.amazonaws.com/${link.toString()}/${link.toString()}.car`,
-          `https://account-id.r2.cloudflarestorage.com/${bucketName}/${link.toString()}/${link.toString()}.car`
+          `https://fffa4b4363a7e5250af8357087263b3a.r2.cloudflarestorage.com/${bucketName}/${link.toString()}/${link.toString()}.car`
         ] }
       ])
     },
@@ -126,7 +126,7 @@ test('does not resolve a CAR if not available in the bucket but a claim exists',
     expiresIn,
     fetchClaims: (link) => {
       return Promise.resolve([
-        { type: 'assert/location', content: link, location: [`https://account-id.r2.cloudflarestorage.com/${bucketName}/${otherCarLink.toString()}/${otherCarLink.toString()}.car`] }
+        { type: 'assert/location', content: link, location: [`https://fffa4b4363a7e5250af8357087263b3a.r2.cloudflarestorage.com/${bucketName}/${otherCarLink.toString()}/${otherCarLink.toString()}.car`] }
       ])
     },
     validR2Buckets: [bucketName]
