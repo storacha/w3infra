@@ -56,8 +56,8 @@ export const createCustomerStore = (conf, { tableName }) => ({
         Key: marshall({ customer }),
         UpdateExpression: 'SET product = :product, updatedAt = :updatedAt',
         ExpressionAttributeValues: marshall({
-          product,
-          updatedAt: new Date().toISOString()
+          ':product': product,
+          ':updatedAt': new Date().toISOString()
         })
       }))
       if (res.$metadata.httpStatusCode !== 200) {

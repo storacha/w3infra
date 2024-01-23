@@ -104,6 +104,7 @@ export function UploadApiStack({ stack, app }) {
           R2_DUDEWHERE_BUCKET_NAME: process.env.R2_DUDEWHERE_BUCKET_NAME ?? '',
           R2_DELEGATION_BUCKET_NAME: process.env.R2_DELEGATION_BUCKET_NAME ?? '',
           R2_ENDPOINT: process.env.R2_ENDPOINT ?? '',
+          STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY ?? '',
           REQUIRE_PAYMENT_PLAN: process.env.REQUIRE_PAYMENT_PLAN ?? '',
           UPLOAD_API_DID: process.env.UPLOAD_API_DID ?? '',
           STRIPE_PRICING_TABLE_ID: process.env.STRIPE_PRICING_TABLE_ID ?? '',

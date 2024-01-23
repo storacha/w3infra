@@ -31,6 +31,7 @@ import { pieceTableProps } from '../../../filecoin/store/index.js';
 import { usePieceTable } from '../../../filecoin/store/piece.js'
 import { createTaskStore as createFilecoinTaskStore } from '../../../filecoin/store/task.js'
 import { createReceiptStore as createFilecoinReceiptStore } from '../../../filecoin/store/receipt.js'
+import { createTestBillingProvider } from './billing.js';
 
 export { API }
 
@@ -246,7 +247,8 @@ export async function executionContextToUcantoTestServerContext (t) {
     [service.did()]
   );
   const customersStore = createCustomerStore(dynamo, { tableName: await createTable(dynamo, customerTableProps) })
-  const plansStorage = usePlansStore(customersStore)
+  const billingProvider = createTestBillingProvider()
+  const plansStorage = usePlansStore(customersStore, billingProvider)
   const email = new DebugEmail();
 
   /** @type {import('@web3-storage/upload-api').UcantoServerContext} */

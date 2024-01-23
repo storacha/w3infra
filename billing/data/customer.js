@@ -10,7 +10,7 @@ import { EncodeFailure, DecodeFailure, Schema } from './lib.js'
 
 const schema = Schema.struct({
   customer: Schema.did({ method: 'mailto' }),
-  account: Schema.uri({ protocol: 'stripe:' }),
+  account: Schema.uri({ protocol: 'stripe:' }).optional(),
   product: Schema.text(),
   insertedAt: Schema.date(),
   updatedAt: Schema.date().optional()
@@ -47,7 +47,7 @@ export const decode = input => {
     return {
       ok: {
         customer: Schema.did({ method: 'mailto' }).from(input.customer),
-        account: Schema.uri({ protocol: 'stripe:' }).from(input.account),
+        account: input.account ? Schema.uri({ protocol: 'stripe:' }).from(input.account) : undefined,
         product: /** @type {string} */ (input.product),
         insertedAt: new Date(input.insertedAt),
         updatedAt: input.updatedAt ? new Date(input.updatedAt) : undefined

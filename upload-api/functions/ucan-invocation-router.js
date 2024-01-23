@@ -3,6 +3,7 @@ import * as Server from '@ucanto/server'
 import { Kinesis } from '@aws-sdk/client-kinesis'
 import * as Sentry from '@sentry/serverless'
 import * as DID from '@ipld/dag-ucan/did'
+import Stripe from 'stripe'
 
 import { processAgentMessageArchive } from '../ucan-invocation.js'
 import { createCarStore } from '../buckets/car-store.js'
@@ -37,6 +38,7 @@ import { createCustomerStore } from '@web3-storage/w3infra-billing/tables/custom
 import { createSpaceDiffStore } from '@web3-storage/w3infra-billing/tables/space-diff.js'
 import { createSpaceSnapshotStore } from '@web3-storage/w3infra-billing/tables/space-snapshot.js'
 import { useUsageStore } from '../stores/usage.js'
+import { createStripeBillingProvider } from '../billing.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -61,6 +63,7 @@ const R2_SECRET_ACCESS_KEY = process.env.R2_SECRET_ACCESS_KEY || ''
 const R2_REGION = process.env.R2_REGION || 'auto'
 const R2_DUDEWHERE_BUCKET_NAME = process.env.R2_DUDEWHERE_BUCKET_NAME || ''
 const R2_ENDPOINT = process.env.R2_ENDPOINT || ``
+const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY
 
 /**
  * We define a ucanto codec that will switch encoder / decoder based on the
@@ -152,7 +155,9 @@ export async function ucanInvocationRouter(request) {
     endpoint: dbEndpoint
   });
   const customerStore = createCustomerStore({ region: AWS_REGION }, { tableName: customerTableName })
-  const plansStorage = usePlansStore(customerStore)
+  if (!STRIPE_SECRET_KEY) throw new Error('missing secret: STRIPE_SECRET_KEY')
+  const stripe = new Stripe(STRIPE_SECRET_KEY, { apiVersion: '2023-10-16' })
+  const plansStorage = usePlansStore(customerStore, createStripeBillingProvider(stripe))
   const rateLimitsStorage = createRateLimitTable(AWS_REGION, rateLimitTableName)
   const spaceMetricsTable = createSpaceMetricsTable(AWS_REGION, spaceMetricsTableName)
 
