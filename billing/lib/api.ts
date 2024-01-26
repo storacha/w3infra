@@ -77,7 +77,7 @@ export interface Customer {
    * Opaque identifier representing an account in the payment system
    * e.g. Stripe customer ID (stripe:cus_9s6XKzkNRiz8i3)
    */
-  account?: AccountID
+  account: AccountID
   /** Unique identifier of the product a.k.a tier. */
   product: string
   /** Time the record was added to the database. */

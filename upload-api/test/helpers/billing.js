@@ -12,9 +12,7 @@ export function createTestBillingProvider() {
    * 
    * @type {Record<import("@web3-storage/upload-api").AccountDID, import("@ucanto/interface").DID>}
    */
-  const customers = {
-    'did:mailto:example.com:alice': 'did:web:initial.web3.storage'
-  }
+  const customers = {}
   return {
     async hasCustomer(customer) {
       return { ok: !!customers[customer] }
