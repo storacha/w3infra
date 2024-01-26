@@ -49,14 +49,13 @@ export function usePlansStore(customerStore, billingProvider) {
     },
 
     set: async (account, plan) => {
-      const hasBillingAccountResponse = await billingProvider.hasCustomer(account)
       const hasCustomerRecordResponse = await customerStore.get({ customer: account })
-      if ((hasBillingAccountResponse.ok === false) || hasBillingAccountResponse.error || hasCustomerRecordResponse.error) {
+      if (hasCustomerRecordResponse.error) {
         return {
           error: {
             name: 'CustomerNotFound',
             message: 'could not find customer to update plan',
-            cause: hasBillingAccountResponse.error || hasCustomerRecordResponse.error
+            cause: hasCustomerRecordResponse.error
           }
         }
       }
