@@ -8,7 +8,7 @@ export function createTestBillingProvider() {
   const customers = {}
   return {
     async hasCustomer(customer) {
-      return { ok: !!customers[customer] }
+      return { ok: Boolean(customers[customer]) }
     },
 
     async setPlan(customer, product) {

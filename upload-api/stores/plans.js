@@ -1,5 +1,3 @@
-import { Failure } from '@ucanto/server'
-
 /**
  * 
  * @param {import("@web3-storage/w3infra-billing/lib/api").CustomerStore} customerStore
@@ -19,8 +17,13 @@ export function usePlansStore(customerStore, billingProvider) {
         }
       }
       if (!externalID.startsWith('stripe:')) {
-        // TODO: add an error type to the `PlansStorage` interface to handle this case
-        throw new Error('external ID must be a "stripe:" URI but is not')
+        return ({
+          error: {
+            name: 'UnexpectedError',
+            message: 'external ID must be a "stripe:" URI but is not',
+            cause: null
+          }
+        })
       }
       const stripeID = /** @type {import('@ucanto/interface').URI<'stripe:'>} */(externalID)
       await customerStore.put({
