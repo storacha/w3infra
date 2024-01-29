@@ -86,7 +86,7 @@ export function BillingStack ({ stack, app }) {
   // Cron job to kick off a billing run
   const billingCron = new Cron(stack, 'billing-cron', {
     job: billingCronHandler,
-    schedule: 'cron(0 0 30 * ? *)' // https://crontab.guru/#0_0_1_*_*
+    schedule: 'cron(0 0 28 * ? *)' // https://crontab.guru/#0_0_1_*_*
   })
 
   const { ucanStream } = use(UcanInvocationStack)
