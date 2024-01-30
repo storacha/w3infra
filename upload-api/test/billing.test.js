@@ -49,7 +49,7 @@ async function setupCustomer(stripe, email) {
 }
 
 test('stripe plan can be updated', async (t) => {
-  const stripeSecretKey = process.env.TESTING_STRIPE_TEST_PK
+  const stripeSecretKey = process.env.STRIPE_TEST_SECRET_KEY
   if (stripeSecretKey) {
     const stripe = new Stripe(stripeSecretKey, { apiVersion: '2023-10-16' })
     const billingProvider = createStripeBillingProvider(stripe)
@@ -88,6 +88,6 @@ test('stripe plan can be updated', async (t) => {
       }
     }
   } else {
-    t.fail('TESTING_STRIPE_TEST_PK environment variable is not set')
+    t.fail('STRIPE_TEST_SECRET_KEY environment variable is not set')
   }
 })
