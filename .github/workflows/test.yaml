@@ -24,4 +24,4 @@ jobs:
           AWS_REGION: 'us-west-2'
           AWS_ACCESS_KEY_ID: 'NOSUCH'
           AWS_SECRET_ACCESS_KEY: 'NOSUCH'
-          TESTING_STRIPE_TEST_PK: ${{ vars.TESTING_STRIPE_TEST_PK }}
+          STRIPE_TEST_SECRET_KEY: ${{ vars.STRIPE_TEST_SECRET_KEY }}

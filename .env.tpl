@@ -45,6 +45,8 @@ MAILSLURP_TIMEOUT = '120000'
 # these values are from the Stripe test environment
 STRIPE_PRICING_TABLE_ID = 'prctbl_1NzhdvF6A5ufQX5vKNZuRhie'
 STRIPE_PUBLISHABLE_KEY = 'pk_test_51LO87hF6A5ufQX5viNsPTbuErzfavdrEFoBuaJJPfoIhzQXdOUdefwL70YewaXA32ZrSRbK4U4fqebC7SVtyeNcz00qmgNgueC'
+# this is used in tests and should always be set to the test env secret key
+STRIPE_TEST_SECRET_KEY = 'sk_test_51LO87hF6A5ufQX5vgKiZh1dmXRwuyOKkDsoqEbzvkGEFBye9LoriSuhSPar1ouwWEt5hUtLfQp4OWc0qLfYiTQRb00TFYWFG3r'
 
 # Feature flags
 REQUIRE_PAYMENT_PLAN = 'true'
