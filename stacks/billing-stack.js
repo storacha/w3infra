@@ -16,7 +16,8 @@ export function BillingStack ({ stack, app }) {
     customerTable,
     spaceSnapshotTable,
     spaceDiffTable,
-    usageTable
+    usageTable,
+    stripeSecretKey
   } = use(BillingDbStack)
   const { subscriptionTable, consumerTable } = use(UploadDbStack)
 
@@ -112,8 +113,6 @@ export function BillingStack ({ stack, app }) {
       }
     }
   })
-
-  const stripeSecretKey = new Config.Secret(stack, 'STRIPE_SECRET_KEY')
 
   // Lambda that sends usage table records to Stripe for invoicing.
   const usageTableHandler = new Function(stack, 'usage-table-handler', {

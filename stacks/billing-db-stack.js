@@ -1,4 +1,4 @@
-import { Table } from '@serverless-stack/resources'
+import { Table, Config } from '@serverless-stack/resources'
 import { customerTableProps } from '../billing/tables/customer.js'
 import { spaceDiffTableProps } from '../billing/tables/space-diff.js'
 import { spaceSnapshotTableProps } from '../billing/tables/space-snapshot.js'
@@ -23,5 +23,7 @@ export const BillingDbStack = ({ stack }) => {
     usageTable: usageTable.tableName
   })
 
-  return { customerTable, spaceSnapshotTable, spaceDiffTable, usageTable }
+  const stripeSecretKey = new Config.Secret(stack, 'STRIPE_SECRET_KEY')
+
+  return { customerTable, spaceSnapshotTable, spaceDiffTable, usageTable, stripeSecretKey }
 }

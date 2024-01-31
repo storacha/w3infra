@@ -63,7 +63,6 @@ const R2_SECRET_ACCESS_KEY = process.env.R2_SECRET_ACCESS_KEY || ''
 const R2_REGION = process.env.R2_REGION || 'auto'
 const R2_DUDEWHERE_BUCKET_NAME = process.env.R2_DUDEWHERE_BUCKET_NAME || ''
 const R2_ENDPOINT = process.env.R2_ENDPOINT || ``
-const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY
 
 /**
  * We define a ucanto codec that will switch encoder / decoder based on the
@@ -138,7 +137,7 @@ export async function ucanInvocationRouter(request) {
   }
 
   const { UPLOAD_API_DID } = process.env
-  const { PRIVATE_KEY } = Config
+  const { PRIVATE_KEY, STRIPE_SECRET_KEY } = Config
   const serviceSigner = getServiceSigner({ did: UPLOAD_API_DID, privateKey: PRIVATE_KEY })
 
   const invocationBucket = createInvocationStore(
