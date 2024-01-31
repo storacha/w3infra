@@ -135,7 +135,7 @@ export async function ucanInvocationRouter(request) {
   }
 
   const { UPLOAD_API_DID } = process.env
-  const { PRIVATE_KEY } = Config
+  const { PRIVATE_KEY, STRIPE_SECRET_KEY } = Config
   const serviceSigner = getServiceSigner({ did: UPLOAD_API_DID, privateKey: PRIVATE_KEY })
 
   const invocationBucket = createInvocationStore(
