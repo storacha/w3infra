@@ -58,11 +58,14 @@ test('stripe plan can be updated', async (t) => {
     )
     const email = toEmail(customerDID)
 
-    const initialPlan = 'did:web:starter.dev.web3.storage'
-    const updatedPlan = 'did:web:lite.dev.web3.storage'
+    const initialPlan = 'did:web:starter.web3.storage'
+    const updatedPlan = 'did:web:lite.web3.storage'
 
     const prices = await stripe.prices.list({ lookup_keys: [initialPlan] })
     const initialPriceID = prices.data.find(price => price.lookup_key === initialPlan)?.id
+    if (!initialPriceID){
+      t.fail(`could not find Stripe price with lookup_key ${initialPlan}`)
+    }
     let customer
     try {
       // create a new customer and set up its subscription with "initialPlan"
