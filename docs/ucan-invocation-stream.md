@@ -57,7 +57,7 @@ In the context of `space-metrics` table, a partition key with `space` is used to
 ### Delivery Firehose
 
 At the end of the invocation stream we archive UCAN invocations and receipts as JSON
-logs stored in S3. We partition log storage by "type" (ie, `workflow` or `receipt`),
+logs stored in S3. We [partition log storage](https://github.com/web3-storage/w3infra/blob/9def8df1ac3e0dda6e7aad710b1ec534af50af0a/stacks/firehose-stack.js#L163) by "type" (ie, `workflow` or `receipt`),
 "op" (ie, the UCAN's ability - `store/add`, `upload/remove`, etc) and "day"
 (a `%Y-%m-%d` formatted string). We designed partitioning this way to make it easy to 
 find logs for a particular operation on a particular day, which is used extensively
@@ -69,7 +69,7 @@ For example, receipts of the `store/add` operation from January 1, 2024 are stor
 
 #### Glue
 
-We use AWS Glue to defined "tables" that take advantage of the partitioning structure
+We [use AWS Glue](https://github.com/web3-storage/w3infra/blob/9def8df1ac3e0dda6e7aad710b1ec534af50af0a/stacks/firehose-stack.js#L171) to defined "tables" that take advantage of the partitioning structure
 above. Glue allows us to define "columns" that map to either partition parameters or
 keys and nested keys in the JSON-formatted UCAN values themselves.
 
@@ -77,7 +77,7 @@ keys and nested keys in the JSON-formatted UCAN values themselves.
 
 Athena uses the tables defined in Glue to execute SQL queries as map-reduce jobs over
 the parititioned UCAN logs in S3. We define a variety of useful default queries in 
-the [firehose stack](../stacks/firehose-stack.js) and often use the interactive query
+the [firehose stack](https://github.com/web3-storage/w3infra/blob/9def8df1ac3e0dda6e7aad710b1ec534af50af0a/stacks/firehose-stack.js#L604) and often use the interactive query
 console in the AWS Athena console to run ad-hoc queries. 
 
 Athena queries are efficient as long as they are constrained to only search a relatively
