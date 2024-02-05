@@ -25,6 +25,11 @@ export function usePlansStore(customerStore, billingProvider) {
           }
         })
       }
+      // Note that there is a possible race condition here - if two `initialize` calls come in at
+      // the same time, they may both get here since the account hasn't been initialized yet.
+      // In that case, the last `put` will win, which should be fine - as far as I can tell
+      // there's no way we can really determine which one was "valid" so accepting whichever of them
+      // happens to go last should be fine.
       const stripeID = /** @type {import('@ucanto/interface').URI<'stripe:'>} */(externalID)
       await customerStore.put({
         customer: account,
