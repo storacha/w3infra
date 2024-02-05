@@ -56,11 +56,11 @@ In the context of `space-metrics` table, a partition key with `space` is used to
 
 ### Delivery Firehose
 
-At the end of the invocation stream we archive UCAN invocations and receipts as JSON
-logs stored in S3. We [partition log storage](https://github.com/web3-storage/w3infra/blob/9def8df1ac3e0dda6e7aad710b1ec534af50af0a/stacks/firehose-stack.js#L163) by "type" (ie, `workflow` or `receipt`),
+Each UCAN Invocation/receipt that goes through the stream is stored 
+in S3. We [partition log storage](https://github.com/web3-storage/w3infra/blob/9def8df1ac3e0dda6e7aad710b1ec534af50af0a/stacks/firehose-stack.js#L163) by "type" (ie, `workflow` or `receipt`),
 "op" (ie, the UCAN's ability - `store/add`, `upload/remove`, etc) and "day"
-(a `%Y-%m-%d` formatted string). We designed partitioning this way to make it easy to 
-find logs for a particular operation on a particular day, which is used extensively
+(a `%Y-%m-%d` formatted string). We designed partitioning this way to make it easy and efficient to 
+find logs for a particular operation on a particular date, which is used extensively
 by AWS Athena to make UCAN log queries efficient.
 
 For example, receipts of the `store/add` operation from January 1, 2024 are stored in:
@@ -69,7 +69,7 @@ For example, receipts of the `store/add` operation from January 1, 2024 are stor
 
 #### Glue
 
-We [use AWS Glue](https://github.com/web3-storage/w3infra/blob/9def8df1ac3e0dda6e7aad710b1ec534af50af0a/stacks/firehose-stack.js#L171) to defined "tables" that take advantage of the partitioning structure
+We [use AWS Glue](https://github.com/web3-storage/w3infra/blob/9def8df1ac3e0dda6e7aad710b1ec534af50af0a/stacks/firehose-stack.js#L171) to define "tables" that take advantage of the partitioning structure
 above. Glue allows us to define "columns" that map to either partition parameters or
 keys and nested keys in the JSON-formatted UCAN values themselves.
 
