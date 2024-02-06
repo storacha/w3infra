@@ -260,6 +260,9 @@ declare module '@serverless-stack/node/config' {
     },
     UCAN_INVOCATION_POST_BASIC_AUTH: {
       value: string
+    },
+    STRIPE_SECRET_KEY: {
+      value: string
     }
   }
 }
