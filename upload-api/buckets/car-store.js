@@ -104,7 +104,6 @@ export function useCarStore(s3, bucketName) {
   }
 }
 
-
 /**
  * compose many car stores.
  * store#createUploadUrl is from first store.
@@ -137,5 +136,6 @@ function composeSome(...hasFunctions) {
     for (const has of hasFunctions) {
       if (await has(e)) return true
     }
+    return false
   }
 }

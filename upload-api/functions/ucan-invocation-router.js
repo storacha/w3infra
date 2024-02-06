@@ -6,7 +6,7 @@ import * as DID from '@ipld/dag-ucan/did'
 import Stripe from 'stripe'
 
 import { processAgentMessageArchive } from '../ucan-invocation.js'
-import { createCarStore } from '../buckets/car-store.js'
+import { composeCarStores, createCarStore } from '../buckets/car-store.js'
 import { createDudewhereStore } from '../buckets/dudewhere-store.js'
 import { createInvocationStore } from '../buckets/invocation-store.js'
 import { createTaskStore } from '../buckets/task-store.js'
@@ -128,6 +128,10 @@ export async function ucanInvocationRouter(request) {
     // set for testing
     dbEndpoint,
     accessServiceURL,
+    carparkBucketName,
+    carparkBucketEndpoint,
+    carparkBucketAccessKeyId,
+    carparkBucketSecretAccessKey,
   } = getLambdaEnv()
 
   if (request.body === undefined) {
@@ -178,7 +182,16 @@ export async function ucanInvocationRouter(request) {
     storeTable: createStoreTable(AWS_REGION, storeTableName, {
       endpoint: dbEndpoint,
     }),
-    carStoreBucket: createCarStore(AWS_REGION, storeBucketName),
+    carStoreBucket: composeCarStores(
+      createCarStore(AWS_REGION, storeBucketName),
+      createCarStore('auto', carparkBucketName, {
+        endpoint: carparkBucketEndpoint,
+        credentials: {
+          accessKeyId: carparkBucketAccessKeyId,
+          secretAccessKey: carparkBucketSecretAccessKey,
+        }, 
+      }),
+    ),
     dudewhereBucket: createDudewhereStore(R2_REGION, R2_DUDEWHERE_BUCKET_NAME, {
       endpoint: R2_ENDPOINT,
       credentials: {
@@ -332,5 +345,9 @@ function getLambdaEnv () {
     dealTrackerUrl: mustGetEnv('DEAL_TRACKER_URL'),
     // set for testing
     dbEndpoint: process.env.DYNAMO_DB_ENDPOINT,
+    carparkBucketName: mustGetEnv('R2_CARPARK_BUCKET_NAME'),
+    carparkBucketEndpoint: mustGetEnv('R2_ENDPOINT'),
+    carparkBucketAccessKeyId: mustGetEnv('R2_ACCESS_KEY_ID'),
+    carparkBucketSecretAccessKey: mustGetEnv('R2_SECRET_ACCESS_KEY'),
   }
 }
