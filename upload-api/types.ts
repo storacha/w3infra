@@ -1,5 +1,5 @@
 import * as UCAN from '@ipld/dag-ucan'
-import { DID, Link, Delegation, Signature, Block, UCANLink, ByteView, DIDKey, Result, Failure } from '@ucanto/interface'
+import { DID, Link, Delegation, Signature, Block, UCANLink, ByteView, DIDKey, Result, Failure, Unit } from '@ucanto/interface'
 import { UnknownLink } from 'multiformats'
 import { CID } from 'multiformats/cid'
 import { Kinesis } from '@aws-sdk/client-kinesis'
@@ -260,8 +260,26 @@ declare module '@serverless-stack/node/config' {
     },
     UCAN_INVOCATION_POST_BASIC_AUTH: {
       value: string
+    },
+    STRIPE_SECRET_KEY: {
+      value: string
     }
   }
+}
+
+export interface InvalidSubscriptionState extends Failure {
+  name: 'InvalidSubscriptionState'
+}
+
+export interface BillingProviderUpdateError extends Failure {
+  name: 'BillingProviderUpdateError'
+}
+
+type SetPlanFailure = InvalidSubscriptionState | BillingProviderUpdateError
+
+export interface BillingProvider {
+  hasCustomer: (customer: AccountDID) => Promise<Result<boolean, Failure>>
+  setPlan: (customer: AccountDID, plan: DID) => Promise<Result<Unit, SetPlanFailure>>
 }
 
 export {}

@@ -5,6 +5,10 @@ import * as Signer from '@ucanto/principal/ed25519'
 import { AgentData } from '@web3-storage/access/agent'
 import { Client } from '@web3-storage/w3up-client'
 import { MailSlurp } from "mailslurp-client"
+import { fileURLToPath } from 'node:url'
+import dotenv from 'dotenv'
+
+dotenv.config({ path: fileURLToPath(new URL('../../.env', import.meta.url)) })
 
 /**
  * 

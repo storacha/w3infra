@@ -31,7 +31,7 @@ export function UploadApiStack({ stack, app }) {
   const { carparkBucket } = use(CarparkStack)
   const { storeTable, uploadTable, delegationBucket, delegationTable, revocationTable, adminMetricsTable, spaceMetricsTable, consumerTable, subscriptionTable, rateLimitTable, pieceTable, privateKey } = use(UploadDbStack)
   const { invocationBucket, taskBucket, workflowBucket, ucanStream } = use(UcanInvocationStack)
-  const { customerTable, spaceDiffTable, spaceSnapshotTable } = use(BillingDbStack)
+  const { customerTable, spaceDiffTable, spaceSnapshotTable, stripeSecretKey } = use(BillingDbStack)
   const { pieceOfferQueue, filecoinSubmitQueue } = use(FilecoinStack)
 
   // Setup API
@@ -113,7 +113,8 @@ export function UploadApiStack({ stack, app }) {
         },
         bind: [
           privateKey,
-          ucanInvocationPostbasicAuth
+          ucanInvocationPostbasicAuth,
+          stripeSecretKey
         ]
       }
     },
