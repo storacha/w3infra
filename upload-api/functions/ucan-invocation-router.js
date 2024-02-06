@@ -184,7 +184,7 @@ export async function ucanInvocationRouter(request) {
     }),
     carStoreBucket: composeCarStores(
       createCarStore(AWS_REGION, storeBucketName),
-      createCarStore('auto', carparkBucketName, {
+      createCarStore(R2_REGION, carparkBucketName, {
         endpoint: carparkBucketEndpoint,
         credentials: {
           accessKeyId: carparkBucketAccessKeyId,
