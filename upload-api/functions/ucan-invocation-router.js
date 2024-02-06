@@ -6,7 +6,7 @@ import * as DID from '@ipld/dag-ucan/did'
 import Stripe from 'stripe'
 
 import { processAgentMessageArchive } from '../ucan-invocation.js'
-import { composeCarStores, createCarStore } from '../buckets/car-store.js'
+import { composeCarStoresWithOrderedHas, createCarStore } from '../buckets/car-store.js'
 import { createDudewhereStore } from '../buckets/dudewhere-store.js'
 import { createInvocationStore } from '../buckets/invocation-store.js'
 import { createTaskStore } from '../buckets/task-store.js'
@@ -182,7 +182,7 @@ export async function ucanInvocationRouter(request) {
     storeTable: createStoreTable(AWS_REGION, storeTableName, {
       endpoint: dbEndpoint,
     }),
-    carStoreBucket: composeCarStores(
+    carStoreBucket: composeCarStoresWithOrderedHas(
       createCarStore(AWS_REGION, storeBucketName),
       createCarStore(R2_REGION, carparkBucketName, {
         endpoint: carparkBucketEndpoint,
@@ -343,11 +343,12 @@ function getLambdaEnv () {
     requirePaymentPlan: (process.env.REQUIRE_PAYMENT_PLAN === 'true'),
     dealTrackerDid: mustGetEnv('DEAL_TRACKER_DID'),
     dealTrackerUrl: mustGetEnv('DEAL_TRACKER_URL'),
-    // set for testing
-    dbEndpoint: process.env.DYNAMO_DB_ENDPOINT,
+    // carpark bucket - CAR file bytes may be found here with keys like {cid}/{cid}.car
     carparkBucketName: mustGetEnv('R2_CARPARK_BUCKET_NAME'),
     carparkBucketEndpoint: mustGetEnv('R2_ENDPOINT'),
     carparkBucketAccessKeyId: mustGetEnv('R2_ACCESS_KEY_ID'),
     carparkBucketSecretAccessKey: mustGetEnv('R2_SECRET_ACCESS_KEY'),
+    // set for testing
+    dbEndpoint: process.env.DYNAMO_DB_ENDPOINT,
   }
 }

@@ -112,11 +112,10 @@ export function useCarStore(s3, bucketName) {
  * @param  {import('@web3-storage/upload-api').CarStoreBucket} carStore 
  * @param  {Array<import('@web3-storage/upload-api').CarStoreBucket>} moreCarStores 
  */
-export function composeCarStores(carStore, ...moreCarStores) {
-  const has = composeSome(carStore.has, ...moreCarStores.map(s => s.has.bind(s)))
+export function composeCarStoresWithOrderedHas(carStore, ...moreCarStores) {
   return {
     ...carStore,
-    has,
+    has: composeSome(carStore.has, ...moreCarStores.map(s => s.has.bind(s))),
   }
 }
 

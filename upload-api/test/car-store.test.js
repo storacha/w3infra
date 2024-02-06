@@ -1,5 +1,5 @@
 import { test } from './helpers/context.js'
-import { composeCarStores, createCarStore } from '../buckets/car-store.js'
+import { composeCarStoresWithOrderedHas, createCarStore } from '../buckets/car-store.js'
 import * as Link from 'multiformats/link'
 
 test('car-store can be backed by S3 Client reading from R2', testR2CarStore)
@@ -40,7 +40,7 @@ async function testCanComposeCarStores(t) {
   const carStore2 = createMapCarStore(new Map([
     [linkA, true],
   ]))
-  const carStoreComposed = composeCarStores(carStore1, carStore2)
+  const carStoreComposed = composeCarStoresWithOrderedHas(carStore1, carStore2)
   t.assert(await carStoreComposed.has(linkA))
 }
 
