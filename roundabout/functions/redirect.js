@@ -3,7 +3,7 @@ import { S3Client } from '@aws-sdk/client-s3'
 import { CID } from 'multiformats/cid'
 
 import { getSigner } from '../index.js'
-import { findEquivalentCarCids, asPieceCidV1, asPieceCidV2, asCarCid } from '../piece.js'
+import { findEquivalentCarCids, asPieceCidV1, asPieceCidV2 } from '../piece.js'
 import { getEnv, parseQueryStringParameters } from '../utils.js'
 
 Sentry.AWSLambda.init({
