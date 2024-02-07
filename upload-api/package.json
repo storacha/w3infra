@@ -27,7 +27,7 @@
     "@web3-storage/capabilities": "^13.1.1",
     "@web3-storage/did-mailto": "^2.1.0",
     "@web3-storage/upload-api": "^8.3.0",
-    "multiformats": "^12.1.2",
+    "multiformats": "^11.0.2",
     "nanoid": "^5.0.2",
     "preact": "^10.14.1",
     "preact-render-to-string": "^6.2.2",

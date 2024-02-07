@@ -138,3 +138,20 @@ function composeSome(...hasFunctions) {
     return false
   }
 }
+
+/**
+ * car store backed by a simple map. useful for testing.
+ * 
+ * @param {Map<import('multiformats').UnknownLink, any>} map
+ * @returns {import('@web3-storage/upload-api').CarStoreBucket}
+ */
+export function createMapCarStore(map=new Map) {
+  return {
+    async has(link) {
+      return map.has(link)
+    },
+    createUploadUrl() {
+      throw new Error('not implemented')
+    }
+  };
+}
