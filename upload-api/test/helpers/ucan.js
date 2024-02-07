@@ -179,13 +179,12 @@ export const encodeAgentMessage = async (source) => {
  * @returns {Promise<import('@web3-storage/upload-api').UcantoServerTestContext>}
  */
 
-export async function executionContextToUcantoTestServerContext (t) {
+export async function executionContextToUcantoTestServerContext(t) {
   const service = Signer.Signer.parse('MgCYWjE6vp0cn3amPan2xPO+f6EZ3I+KwuN1w2vx57vpJ9O0Bn4ci4jn8itwc121ujm7lDHkCW24LuKfZwIdmsifVysY=').withDID(
     'did:web:test.web3.storage'
   );
   const { dynamo, s3, r2 } = t.context;
   const bucketName = await createBucket(s3);
-  const carParkBucketName = r2 ? await createBucket(r2) : undefined
 
   const storeTable = useStoreTable(
     dynamo,
@@ -196,12 +195,21 @@ export async function executionContextToUcantoTestServerContext (t) {
     dynamo,
     await createTable(dynamo, uploadTableProps)
   );
-  const carParkBucket = carParkBucketName ? useCarStore(r2, carParkBucketName) : undefined
+
+  const r2CarStoreBucketName = r2
+    ? await createBucket(r2)
+    : undefined
+  const r2CarStoreBucket = r2CarStoreBucketName
+    ? useCarStore(r2, r2CarStoreBucketName)
+    : undefined
   const s3CarStoreBucket = useCarStore(s3, bucketName);
-  const carStoreBucket = carParkBucket ? composeCarStoresWithOrderedHas(
-    s3CarStoreBucket,
-    carParkBucket,
-  ) : s3CarStoreBucket
+
+  const carStoreBucket = r2CarStoreBucket
+    ? composeCarStoresWithOrderedHas(
+      s3CarStoreBucket,
+      r2CarStoreBucket,
+    )
+    : s3CarStoreBucket
 
   const dudewhereBucket = useDudewhereStore(s3, bucketName);
 
@@ -269,7 +277,7 @@ export async function executionContextToUcantoTestServerContext (t) {
     revocationsStorage,
     plansStorage,
     errorReporter: {
-      catch (error) {
+      catch(error) {
         t.fail(error.message);
       },
     },
@@ -277,7 +285,7 @@ export async function executionContextToUcantoTestServerContext (t) {
     storeTable,
     uploadTable,
     carStoreBucket,
-    carParkBucket,
+    r2CarStoreBucket,
     dudewhereBucket,
     validateAuthorization: () => ({ ok: {} }),
     // filecoin/*
