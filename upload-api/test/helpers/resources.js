@@ -163,6 +163,12 @@ export async function createS3(opts = {}) {
 }
 
 /**
+ * represents connection to cloudflare r2 over its s3-compatiable API,
+ * e.g. carpark
+ */
+export const createR2 = createS3;
+
+/**
  * @param {S3Client} s3
  */
 export async function createBucket(s3) {

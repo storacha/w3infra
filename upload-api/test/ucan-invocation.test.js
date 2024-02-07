@@ -443,7 +443,8 @@ test('can process ucan log request for given receipt after its invocation stored
   const message = await CAR.request.decode(workflow)
 
   const invocationCid = message.invocations[0].cid
-  t.deepEqual(invocationCid, invocation.link())
+
+  t.deepEqual(invocationCid.bytes, invocation.link().bytes)
   const taskCid = invocationCid
 
   // Create Workflow request with car
@@ -491,7 +492,7 @@ test('can process ucan log request for given receipt after its invocation stored
   const receiptWorkflow = await encodeAgentMessage({ receipts: [receipt] })
   const receiptArchive = await CAR.request.decode(receiptWorkflow)
   const decodedCarReceipts = await CAR.codec.decode(
-    /** @type {Uint8Array} */ (receiptWorkflow.body)
+    /** @type {Uint8Array} */(receiptWorkflow.body)
   )
   const agentMessageCarReceiptsCid = decodedCarReceipts.roots[0].cid.toString()
   const receiptRequest = lambdaUtils.mockEventCreator.createAPIGatewayEvent({
@@ -518,7 +519,7 @@ test('can process ucan log request for given receipt after its invocation stored
 
           const [record] = input.Records || []
           const data = JSON.parse(
-            toString(/** @type {Uint8Array} */ (record.Data))
+            toString(/** @type {Uint8Array} */(record.Data))
           )
           t.truthy(data)
           t.is(data.carCid, receiptArchive.root.cid.toString())

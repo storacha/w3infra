@@ -4,6 +4,7 @@ import { test } from '../helpers/context.js'
 import {
   createS3,
   createDynamodDb,
+  createR2,
 } from '../helpers/resources.js'
 import { executionContextToUcantoTestServerContext } from '../helpers/ucan.js'
 import { assertsFromExecutionContext } from '../helpers/assert.js'
@@ -11,6 +12,7 @@ import { assertsFromExecutionContext } from '../helpers/assert.js'
 test.before(async (t) => {
   Object.assign(t.context, {
     dynamo: await createDynamodDb(),
+    r2: (await createR2()).client,
     s3: (await createS3()).client,
   })
 })

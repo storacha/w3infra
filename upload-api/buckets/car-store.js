@@ -103,3 +103,55 @@ export function useCarStore(s3, bucketName) {
     },
   }
 }
+
+/**
+ * compose many car stores.
+ * store#createUploadUrl is from first store.
+ * store#has will check stores in order until 0-1 `true` are found.
+ * 
+ * @param  {import('@web3-storage/upload-api').CarStoreBucket} carStore 
+ * @param  {Array<import('@web3-storage/upload-api').CarStoreBucket>} moreCarStores 
+ */
+export function composeCarStoresWithOrderedHas(carStore, ...moreCarStores) {
+  return {
+    ...carStore,
+    has: composeSome(carStore.has, ...moreCarStores.map(s => s.has.bind(s))),
+  }
+}
+
+/**
+ * compose async functions that return Promise<boolean>.
+ * The returned function will have the same signature,
+ * but will try the composed functions in order until one (or none) returns true.
+ * 
+ * @template T
+ * @param  {Array<(e: T) => Promise<boolean>>} hasFunctions 
+ */
+function composeSome(...hasFunctions) {
+  /**
+   * @param {T} e
+   */
+  return async function (e) {
+    for (const has of hasFunctions) {
+      if (await has(e)) return true
+    }
+    return false
+  }
+}
+
+/**
+ * car store backed by a simple map. useful for testing.
+ * 
+ * @param {Map<import('multiformats').UnknownLink, any>} map
+ * @returns {import('@web3-storage/upload-api').CarStoreBucket}
+ */
+export function createMapCarStore(map=new Map) {
+  return {
+    async has(link) {
+      return map.has(link)
+    },
+    createUploadUrl() {
+      throw new Error('not implemented')
+    }
+  };
+}
