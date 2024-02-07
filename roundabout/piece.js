@@ -18,7 +18,7 @@ export const PIECE_V1_MULTIHASH = 0x10_12
 export const PIECE_V2_MULTIHASH = 0x10_11
 
 /** 
- * @typedef {import('multiformats/cid').Link} Link
+ * @typedef {import('multiformats/cid').CID} CID
  * @typedef {import('@web3-storage/w3up-client/types').CARLink} CARLink
  * @typedef {import('@web3-storage/content-claims/client/api').Claim} Claim
  **/
@@ -26,7 +26,7 @@ export const PIECE_V2_MULTIHASH = 0x10_11
 /**
  * Return the cid if it is a Piece CID or undefined if not
  *
- * @param {Link} cid
+ * @param {CID} cid
  */
 export function asPieceCidV2 (cid) {
   if (cid.multihash.code === PIECE_V2_MULTIHASH && cid.code === Raw.code) {
@@ -37,7 +37,7 @@ export function asPieceCidV2 (cid) {
 /**
  * Return the cid if it is a v1 Piece CID or undefined if not
  *
- * @param {Link} cid
+ * @param {CID} cid
  */
 export function asPieceCidV1 (cid) {
   if (cid.multihash.code === PIECE_V1_MULTIHASH && cid.code === PIECE_V1_CODE) {
@@ -48,7 +48,7 @@ export function asPieceCidV1 (cid) {
 /**
  * Return the cid if it is a CAR CID or undefined if not
  *
- * @param {Link} cid
+ * @param {CID} cid
  */
 export function asCarCid(cid) {
   if (cid.code === CAR_CODE) {
@@ -59,8 +59,8 @@ export function asCarCid(cid) {
 /**
  * Find the set of CAR CIDs that are claimed to be equivalent to the Piece CID.
  * 
- * @param {Link} piece
- * @param {(Link) => Promise<Claim[]>} [fetchClaims] - returns content claims for a cid
+ * @param {CID} piece
+ * @param {(CID) => Promise<Claim[]>} [fetchClaims] - returns content claims for a cid
  */
 export async function findEquivalentCarCids (piece, fetchClaims = createClaimsClientForEnv()) {
   /** @type {Set<CARLink>} */
