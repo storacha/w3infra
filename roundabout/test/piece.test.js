@@ -15,11 +15,11 @@ test('findEquivalentCids', async t => {
     return [
       { type: 'assert/equals', content: pieceCid, equals: carCid }, // yes! is equivalent carCid
       { type: 'assert/equals', content: carCid, equals: pieceCid }, // no: is duplicate
-      { type: 'assert/equals', content: pieceCid, equals: rawCid }, // no: pieceCId not mapped to carCid
+      { type: 'assert/equals', content: pieceCid, equals: rawCid }, // yes! pieceCId mapped to rawCid
       { type: 'assert/location', content: pieceCid, location: `ipfs://${carCid}` }, // no: is not equals claim
     ]
   })
-  t.is(carSet.size, 1, 'should return 1 unique carCid')
+  t.is(carSet.size, 2, 'should return mapped CIDs')
   t.is([...carSet].at(0).toString(), carCid.toString())
 })
 
