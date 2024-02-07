@@ -22,7 +22,7 @@ The entry point for the UCAN Invocation stream is an HTTP endpoint `POST /ucan`.
 
 AWS Kinesis is the central piece of this architecture. Multiple stream consumers can be hooked into AWS Kinesis for post processing of UCAN invocations.
 
-![High level Architecture](https://bafybeifub7gefocq2yqw4dbvpbon2aduw6sq4aqfaergaennhgts4d3hpa.ipfs.w3s.link/ucan-log-stream-v2.jpg)
+![High level Architecture](./ucan-log-stream.jpg)
 
 Note that at the time of writing Event Archival flow is still to be implemented.
 
