@@ -122,6 +122,7 @@ export function UploadApiStack({ stack, app }) {
     routes: {
       'POST /':       'functions/ucan-invocation-router.handler',
       'POST /ucan':   'functions/ucan.handler',
+      'POST /bridge': 'functions/bridge.handler',
       'GET /':        'functions/get.home',
       'GET /validate-email': 'functions/validate-email.preValidateEmail',
       'POST /validate-email': 'functions/validate-email.validateEmail',
