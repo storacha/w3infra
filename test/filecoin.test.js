@@ -32,7 +32,7 @@ test.before(t => {
   }
 })
 
-test.skip('w3filecoin integration flow', async t => {
+test('w3filecoin integration flow', async t => {
   const s3Client = getAwsBucketClient()
   const s3ClientFilecoin = getAwsBucketClient('us-east-2')
   const inbox = await createMailSlurpInbox()
