@@ -72,7 +72,7 @@ export async function findEquivalentCids (piece, fetchClaims = createClaimsClien
     }
     // an equivalence claim may have the pieceCid as the content cid _or_ the equals cid
     // so if content does not equal piece, we can grab the content. Otherwise equals
-    const equivalentCid = !claim.content.equals(piece) ? claim.content : claim.equals
+    const equivalentCid = claim.content.equals(piece) ? claim.equals : claim.content
     cids.add(equivalentCid)
   }
   return cids
