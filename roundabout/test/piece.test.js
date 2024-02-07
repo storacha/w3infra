@@ -4,14 +4,14 @@ import * as Raw from 'multiformats/codecs/raw'
 import { sha256 } from 'multiformats/hashes/sha2'
 import * as Digest from 'multiformats/hashes/digest'
 import { Piece, MIN_PAYLOAD_SIZE } from '@web3-storage/data-segment'
-import { findEquivalentCarCids, asCarCid, asPieceCidV1, asPieceCidV2, CAR_CODE } from '../piece.js'
+import { findEquivalentCids, asCarCid, asPieceCidV1, asPieceCidV2, CAR_CODE } from '../piece.js'
 
-test('findEquivalentCarCids', async t => {
+test('findEquivalentCids', async t => {
   const bytes = new Uint8Array(MIN_PAYLOAD_SIZE)
   const pieceCid = Piece.fromPayload(bytes).link
   const carCid = CID.createV1(CAR_CODE, sha256.digest(bytes))
   const rawCid = CID.createV1(Raw.code, sha256.digest(bytes))
-  const carSet = await findEquivalentCarCids(pieceCid, async () => {
+  const carSet = await findEquivalentCids(pieceCid, async () => {
     return [
       { type: 'assert/equals', content: pieceCid, equals: carCid }, // yes! is equivalent carCid
       { type: 'assert/equals', content: carCid, equals: pieceCid }, // no: is duplicate
@@ -23,10 +23,10 @@ test('findEquivalentCarCids', async t => {
   t.is([...carSet].at(0).toString(), carCid.toString())
 })
 
-test('findEquivalentCarCids from content-claims api', async t => {
+test('findEquivalentCids from content-claims api', async t => {
   const pieceCid = CID.parse('bafkzcibbai3tdo4zvruj6zxo6wlt4suu3imi6to4vzmaojh4n475mdp5jcbtg')
   const carCid = CID.parse('bagbaieratdhefxxpkhkae2ovil2tcs7pfr2grvabvvoykful7k2maeepox3q')
-  const carSet = await findEquivalentCarCids(pieceCid)
+  const carSet = await findEquivalentCids(pieceCid)
   let found
   for (const cid of carSet) {
     if (cid.toString() === carCid.toString()) {

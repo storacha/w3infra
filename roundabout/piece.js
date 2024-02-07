@@ -19,7 +19,6 @@ export const PIECE_V2_MULTIHASH = 0x10_11
 
 /** 
  * @typedef {import('multiformats/cid').CID} CID
- * @typedef {import('@web3-storage/w3up-client/types').CARLink} CARLink
  * @typedef {import('@web3-storage/content-claims/client/api').Claim} Claim
  **/
 
@@ -57,13 +56,13 @@ export function asCarCid(cid) {
 }
 
 /**
- * Find the set of CAR CIDs that are claimed to be equivalent to the Piece CID.
+ * Find the set of CIDs that are claimed to be equivalent to the Piece CID.
  * 
  * @param {CID} piece
  * @param {(CID) => Promise<Claim[]>} [fetchClaims] - returns content claims for a cid
  */
-export async function findEquivalentCarCids (piece, fetchClaims = createClaimsClientForEnv()) {
-  /** @type {Set<CARLink>} */
+export async function findEquivalentCids (piece, fetchClaims = createClaimsClientForEnv()) {
+  /** @type {Set<import('multiformats').UnknownLink>} */
   const cids = new Set()
   const claims = await fetchClaims(piece)
   for (const claim of claims) {
@@ -72,11 +71,9 @@ export async function findEquivalentCarCids (piece, fetchClaims = createClaimsCl
       continue
     }
     // an equivalence claim may have the pieceCid as the content cid _or_ the equals cid
-    // so check both properties for the car cid.
-    const carCid = asCarCid(claim.equals) ?? asCarCid(claim.content)
-    if (carCid) {
-      cids.add(carCid)
-    }
+    // so if content does not equal piece, we can grab the content. Otherwise equals
+    const equivalentCid = !claim.content.equals(piece) ? claim.content : claim.equals
+    cids.add(equivalentCid)
   }
   return cids
 }

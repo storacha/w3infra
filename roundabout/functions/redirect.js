@@ -3,7 +3,7 @@ import { S3Client } from '@aws-sdk/client-s3'
 import { CID } from 'multiformats/cid'
 
 import { getSigner } from '../index.js'
-import { findEquivalentCarCids, asPieceCidV1, asPieceCidV2 } from '../piece.js'
+import { findEquivalentCids, asPieceCidV1, asPieceCidV2 } from '../piece.js'
 import { getEnv, parseQueryStringParameters } from '../utils.js'
 
 Sentry.AWSLambda.init({
@@ -73,17 +73,17 @@ async function resolveContent (cid, locateContent) {
  * @param {(cid: CID) => Promise<string | undefined> } locateContent
  */
 async function resolvePiece (cid, locateContent) {
-  const cars = await findEquivalentCarCids(cid)
-  if (cars.size === 0) {
-    return { statusCode: 404, body: 'No equivalent CAR CID for Piece CID found' }
+  const cids = await findEquivalentCids(cid)
+  if (cids.size === 0) {
+    return { statusCode: 404, body: 'No equivalent CID for Piece CID found' }
   }
-  for (const cid of cars) {
+  for (const cid of cids) {
     const url = await locateContent(cid)
     if (url) {
       return redirectTo(url)
     }
   }
-  return { statusCode: 404, body: 'No CARs found for Piece CID' }
+  return { statusCode: 404, body: 'No content found for Piece CID' }
 }
 
 /**
