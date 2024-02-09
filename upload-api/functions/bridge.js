@@ -129,7 +129,10 @@ async function handlerFn(request) {
     if (result.ok) {
       return {
         statusCode: 200,
-        body: result.ok
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(result.ok)
       }
     } else {
       return {
