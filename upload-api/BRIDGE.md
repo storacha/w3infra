@@ -9,7 +9,9 @@ A user can submit an HTTP request like (simplified for clarity):
 
 ```
 POST /bridge
-Authorization: MYmI4NWUwMGFhNzNlZDlkM2Y2NDYxYWEwZjk1NDdjOWY=
+X-Auth-Secret: NGY2YTQ1YjYwNWFiYWU2YWNmYmY4NWFhODc4YjEwYzQ=
+Authorization: Bearer eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCIsInVjdiI6IjAuOS4xIn0.eyJhdHQiOlt7ImNhbiI6InVwbG9hZC9saXN0Iiwid2l0aCI6ImRpZDprZXk6ejZNa3JUblpIRU1aQnYzMjRIMlV5N2N1cjZIR29weXRuZkc4V3RBbzEyTFByQjk0In1dLCJhdWQiOiJkaWQ6a2V5Ono2TWtyczNVbkRZVndVZ2FDWDl5OGdVeGY0c2VKblFxSGE5OWltQkhLa2hiekV5dSIsImV4cCI6MTcwNzUyMzIzNCwiaXNzIjoiZGlkOmtleTp6Nk1ralJ4QmkycDdHelRrTFFRSE5RNGZIY1ExWHQzaVBKVVpxRGVKMnd3UTRlVVUiLCJwcmYiOlsiYmFmeXJlaWQ2dXNwNnZncmprNjRuNXZ6ZGlkZ2gyeW9mbHA0NnRwcmZvdnFwdHozM283eTRvcmxyM3EiXX0.VH09YeLZjT28QpipB4kDRHWdnHq08GiwjlCIaxD2z8XXr5-WC2eR39scKYC8_kAxiRc5EdJ8Vj25hwld2eTyBw
+Content-Type: application/json
 
 {
   "ability": "store/add",
@@ -17,8 +19,7 @@ Authorization: MYmI4NWUwMGFhNzNlZDlkM2Y2NDYxYWEwZjk1NDdjOWY=
   "inputs": {
     "link": "bafybeicxsrpxilwb6bdtq6iztjziosrqts5qq2kgali3xuwgwjjjpx5j24",
     "size": 42
-  },
-  "proof": "MOqJlcm9vdHOB2CpYJQABcRIg8oX3pzNhQ6omQIViTTLdoga/hH4EFdTlQDRJKzd5LQFndmVyc2lvbgGaAgFxEiCa4m5KeAneTomW0WJzcF3a6Wst3m8oLY4/Q4VZRoOsJqdhc1hE7aEDQNCsmjfCsOrj/m0iVZDjxZxwj66cf9hN5yxTkC/t/4MKqR7hsRQzDXep4O0Js9p3cgSlhAOdkbMarQx+qk0i8QNhdmUwLjkuMWNhdHSBomNjYW5hKmR3aXRoeDhkaWQ6a2V5Ono2TWttNXFITjlnOU5RU0diQmZMN2lHcDlzZXhkc3Npb1Q0Q3p5VmFwOUFUcUdxWGNhdWRYIu0Bu8P7ClUb33SVOyLOPQxUZ5Xe5crrHlKRvQO8uOgxtCpjZXhw9mNpc3NYIu0BYoScyDzOAQt1rUCkSiErSfsJrVf1kwu74l1i3GgbnlpjcHJmgMMDAXESIBulnNb9LPB9Br8qPQbpPi7OENfFXODPt9+62t/tNC9Xp2FzWETtoQNAsmFzSClooNmdbQazHFOZ7zus4WGhxq0G5QSk+RZdGo4NVUg8fuwaR4nxlnYr128AtgrE9c6Onzf+Yu10anbxA2F2ZTAuOS4xY2F0dIKiY2NhbmlzdG9yZS9hZGRkd2l0aHg4ZGlkOmtleTp6Nk1rbTVxSE45ZzlOUVNHYkJmTDdpR3A5c2V4ZHNzaW9UNEN6eVZhcDlBVHFHcViiY2Nhbmp1cGxvYWQvYWRkZHdpdGh4OGRpZDprZXk6ejZNa201cUhOOWc5TlFTR2JCZkw3aUdwOXNleGRzc2lvVDRDenlWYXA5QVRxR3FYY2F1ZFgi7QEYGA5FY50aOrnMapmJCO0DvHovsz4HtRZ9bd7PKJarL2NleHABY2lzc1gi7QG7w/sKVRvfdJU7Is49DFRnld7lyuseUpG9A7y46DG0KmNwcmaC2CpYJQABcRIgmuJuSngJ3k6JltFic3Bd2ulrLd5vKC2OP0OFWUaDrCbYKlglAAFxEiCa4m5KeAneTomW0WJzcF3a6Wst3m8oLY4/Q4VZRoOsJlkBcRIg8oX3pzNhQ6omQIViTTLdoga/hH4EFdTlQDRJKzd5LQGhanVjYW5AMC45LjHYKlglAAFxEiAbpZzW/SzwfQa/Kj0G6T4uzhDXxVzgz7ffutrf7TQvVw=="
+  }
 }
 ```
 
@@ -26,16 +27,33 @@ And receive a JSON-encoded UCAN receipt in response.
 
 ### Authorization
 
-The `Authorization` header and `proof` field's values can be generated with the `bridge generate-tokens` command of `w3cli`:
+The `X-Auth-Secret` and `Authorization` header values can be generated with the `bridge generate-tokens` command of `w3cli`:
 
 ```sh
 $ w3 bridge generate-tokens did:key:z6Mkm5qHN9g9NQSGbBfL7iGp9sexdssioT4CzyVap9ATqGqX --expiration 1707264563641
 
-Authorization header: MYmI4NWUwMGFhNzNlZDlkM2Y2NDYxYWEwZjk1NDdjOWY=
+X-Auth-Secret header: NGY2YTQ1YjYwNWFiYWU2YWNmYmY4NWFhODc4YjEwYzQ=
 
-Proof: MOqJlcm9vdHOB2CpYJQABcRIg8oX3pzNhQ6omQIViTTLdoga/hH4EFdTlQDRJKzd5LQFndmVyc2lvbgGaAgFxEiCa4m5KeAneTomW0WJzcF3a6Wst3m8oLY4/Q4VZRoOsJqdhc1hE7aEDQNCsmjfCsOrj/m0iVZDjxZxwj66cf9hN5yxTkC/t/4MKqR7hsRQzDXep4O0Js9p3cgSlhAOdkbMarQx+qk0i8QNhdmUwLjkuMWNhdHSBomNjYW5hKmR3aXRoeDhkaWQ6a2V5Ono2TWttNXFITjlnOU5RU0diQmZMN2lHcDlzZXhkc3Npb1Q0Q3p5VmFwOUFUcUdxWGNhdWRYIu0Bu8P7ClUb33SVOyLOPQxUZ5Xe5crrHlKRvQO8uOgxtCpjZXhw9mNpc3NYIu0BYoScyDzOAQt1rUCkSiErSfsJrVf1kwu74l1i3GgbnlpjcHJmgMMDAXESIBulnNb9LPB9Br8qPQbpPi7OENfFXODPt9+62t/tNC9Xp2FzWETtoQNAsmFzSClooNmdbQazHFOZ7zus4WGhxq0G5QSk+RZdGo4NVUg8fuwaR4nxlnYr128AtgrE9c6Onzf+Yu10anbxA2F2ZTAuOS4xY2F0dIKiY2NhbmlzdG9yZS9hZGRkd2l0aHg4ZGlkOmtleTp6Nk1rbTVxSE45ZzlOUVNHYkJmTDdpR3A5c2V4ZHNzaW9UNEN6eVZhcDlBVHFHcViiY2Nhbmp1cGxvYWQvYWRkZHdpdGh4OGRpZDprZXk6ejZNa201cUhOOWc5TlFTR2JCZkw3aUdwOXNleGRzc2lvVDRDenlWYXA5QVRxR3FYY2F1ZFgi7QEYGA5FY50aOrnMapmJCO0DvHovsz4HtRZ9bd7PKJarL2NleHABY2lzc1gi7QG7w/sKVRvfdJU7Is49DFRnld7lyuseUpG9A7y46DG0KmNwcmaC2CpYJQABcRIgmuJuSngJ3k6JltFic3Bd2ulrLd5vKC2OP0OFWUaDrCbYKlglAAFxEiCa4m5KeAneTomW0WJzcF3a6Wst3m8oLY4/Q4VZRoOsJlkBcRIg8oX3pzNhQ6omQIViTTLdoga/hH4EFdTlQDRJKzd5LQGhanVjYW5AMC45LjHYKlglAAFxEiAbpZzW/SzwfQa/Kj0G6T4uzhDXxVzgz7ffutrf7TQvVw==
+Authorization header: Bearer eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCIsInVjdiI6IjAuOS4xIn0.eyJhdHQiOlt7ImNhbiI6InVwbG9hZC9saXN0Iiwid2l0aCI6ImRpZDprZXk6ejZNa3JUblpIRU1aQnYzMjRIMlV5N2N1cjZIR29weXRuZkc4V3RBbzEyTFByQjk0In1dLCJhdWQiOiJkaWQ6a2V5Ono2TWtyczNVbkRZVndVZ2FDWDl5OGdVeGY0c2VKblFxSGE5OWltQkhLa2hiekV5dSIsImV4cCI6MTcwNzUyMzIzNCwiaXNzIjoiZGlkOmtleTp6Nk1ralJ4QmkycDdHelRrTFFRSE5RNGZIY1ExWHQzaVBKVVpxRGVKMnd3UTRlVVUiLCJwcmYiOlsiYmFmeXJlaWQ2dXNwNnZncmprNjRuNXZ6ZGlkZ2gyeW9mbHA0NnRwcmZvdnFwdHozM283eTRvcmxyM3EiXX0.VH09YeLZjT28QpipB4kDRHWdnHq08GiwjlCIaxD2z8XXr5-WC2eR39scKYC8_kAxiRc5EdJ8Vj25hwld2eTyBw
 ```
 
+`X-Auth-Secret` is a base64pad-encoded Uint8Array of arbitrary length that will be used to derive an ed25519 principal as follows:
+
+```typescript
+
+import { sha256 } from '@ucanto/core'
+import { ed25519 } from '@ucanto/principal'
+
+async function deriveSigner(secret: Uint8Array): Promise<ed25519.EdSigner> {
+  const { digest } = await sha256.digest(secret)
+  return ed25519.Signer.derive(digest)
+}
+```
+
+`Authorization` is a JWT [Bearer token](https://datatracker.ietf.org/doc/html/rfc6750) representing a UCAN delegation as described by 
+the [`ucan-http-bearer-token`](https:// github.com/ucan-wg/ucan-http-bearer-token?tab=readme-ov-file#ucan-as-bearer-token-specification-v030) specification.
+It should grant the principal identified by `X-Auth-Secret` appropriate capabilities
+on the resource identified in the JSON body of the HTTP request.
 
 ### Invocation Fields
 

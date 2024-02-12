@@ -4,9 +4,9 @@ import { connect } from '@ucanto/client'
 import * as CAR from '@ucanto/transport/car'
 import * as HTTP from '@ucanto/transport/http'
 import { sha256 } from '@ucanto/core'
-import * as Delegation from '@ucanto/core/delegation'
 import { ed25519 } from '@ucanto/principal'
 import { base64pad } from 'multiformats/bases/base64'
+import * as UCAN from "@ipld/dag-ucan"
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -50,6 +50,16 @@ async function handlerFn(request) {
       }
     }
 
+    // parse headers
+    const authSecretHeader = request.headers['x-auth-secret']
+    if (!authSecretHeader) {
+      return {
+        statusCode: 401,
+        body: 'request has no x-auth-secret header'
+      }
+    }
+    const secret = base64pad.baseDecode(authSecretHeader)
+
     const authorizationHeader = request.headers['authorization']
     if (!authorizationHeader) {
       return {
@@ -57,10 +67,17 @@ async function handlerFn(request) {
         body: 'request has no authorization header'
       }
     }
-    const secret = base64pad.decode(authorizationHeader)
+    if (!authorizationHeader.startsWith('Bearer ')) {
+      return {
+        statusCode: 401,
+        body: 'authorization header must use the Bearer directive'
+      }
+    }
+    const jwt = authorizationHeader.replace('Bearer ', '')
+    const delegation = UCAN.parse(jwt)
 
+    // parse body
     const body = request.body
-
     if (!body) {
       return {
         statusCode: 400,
@@ -91,21 +108,6 @@ async function handlerFn(request) {
       }
     }
     const resource = /** @type {import('@ucanto/interface').Resource} */(jsonBody.resource)
-
-    if (typeof jsonBody.proof !== 'string') {
-      return {
-        statusCode: 400,
-        body: 'proof must be a base64pad multibase encoding of a Delegation archive'
-      }
-    }
-    const delegationResult = await Delegation.extract(base64pad.decode(jsonBody.proof))
-    if (delegationResult.error) {
-      return {
-        statusCode: 400,
-        body: 'error'
-      }
-    }
-    const delegation = delegationResult.ok
 
     const invocation = invoke({
       issuer: await deriveSigner(secret),
@@ -142,6 +144,7 @@ async function handlerFn(request) {
       }
     }
   } catch (/** @type {any} */ error) {
+    console.error(error)
     return {
       statusCode: error.status ?? 500,
       body: Buffer.from(error.message).toString('base64'),
