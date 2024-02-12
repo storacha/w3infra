@@ -88,26 +88,26 @@ async function handlerFn(request) {
     const jsonBody = JSON.parse(body)
 
     if (
-      (typeof jsonBody.ability !== 'string') ||
-      (jsonBody.ability.split('/').length < 2)
+      (typeof jsonBody.call !== 'string') ||
+      (jsonBody.call.split('/').length < 2)
     ) {
       return {
         statusCode: 400,
-        body: 'ability must be /-separated string like "store/add" or "admin/store/info"'
+        body: 'call must be /-separated string like "store/add" or "admin/store/info"'
       }
     }
-    const ability = /** @type {import('@ucanto/interface').Ability} */(jsonBody.ability)
+    const ability = /** @type {import('@ucanto/interface').Ability} */(jsonBody.call)
 
     if (
-      (typeof jsonBody.resource !== 'string') ||
-      (jsonBody.resource.split(':').length < 2)
+      (typeof jsonBody.on !== 'string') ||
+      (jsonBody.on.split(':').length < 2)
     ) {
       return {
         statusCode: 400,
-        body: 'resource must be a URI'
+        body: 'on must be a URI'
       }
     }
-    const resource = /** @type {import('@ucanto/interface').Resource} */(jsonBody.resource)
+    const resource = /** @type {import('@ucanto/interface').Resource} */(jsonBody.on)
 
     const invocation = invoke({
       issuer: await deriveSigner(secret),

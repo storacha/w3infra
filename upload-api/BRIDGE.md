@@ -14,8 +14,8 @@ Authorization: Bearer eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCIsInVjdiI6IjAuOS4xIn0.ey
 Content-Type: application/json
 
 {
-  "ability": "store/add",
-  "resource": "did:key:z6Mkm5qHN9g9NQSGbBfL7iGp9sexdssioT4CzyVap9ATqGqX",
+  "call": "store/add",
+  "on": "did:key:z6Mkm5qHN9g9NQSGbBfL7iGp9sexdssioT4CzyVap9ATqGqX",
   "inputs": {
     "link": "bafybeicxsrpxilwb6bdtq6iztjziosrqts5qq2kgali3xuwgwjjjpx5j24",
     "size": 42
@@ -57,10 +57,10 @@ on the resource identified in the JSON body of the HTTP request.
 
 ### Invocation Fields
 
-`ability`, `resource` and `inputs` should be specified according to the capability you wish to invoke. 
+`call`, `on` and `inputs` should be specified according to the capability you wish to invoke. 
 
-`ability` should be a string like `store/add` or `upload/add` and must be included in the set of abilities passed to the `--can` option of `w3 bridge generate-tokens`. By default, `--can` is set to `['upload/add', 'store/add']`.
+`call` should be an "ability" string like `store/add` or `upload/add` and must be included in the set of abilities passed to the `--can` option of `w3 bridge generate-tokens`. By default, `--can` is set to `['upload/add', 'store/add']`.
 
 Information about possible `inputs` for a particular ability can be found in https://github.com/web3-storage/specs/
 
-`resource` MUST match the resource passed as the first option to `w3 bridge generate-tokens`.
+`on` MUST match the resource passed as the first option to `w3 bridge generate-tokens`.
