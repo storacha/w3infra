@@ -1,12 +1,12 @@
 import * as Sentry from '@sentry/serverless'
-import { invoke, DID } from '@ucanto/core'
+import { invoke, DID, Delegation } from '@ucanto/core'
 import { connect } from '@ucanto/client'
 import * as CAR from '@ucanto/transport/car'
 import * as HTTP from '@ucanto/transport/http'
 import { sha256 } from '@ucanto/core'
 import { ed25519 } from '@ucanto/principal'
-import { base64pad } from 'multiformats/bases/base64'
-import * as UCAN from "@ipld/dag-ucan"
+import { base64url } from 'multiformats/bases/base64'
+import * as dagJSON from '@ipld/dag-json'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -16,12 +16,86 @@ Sentry.AWSLambda.init({
 
 /**
  * 
- * @param {Uint8Array} secret
- * @returns 
+ * @type {import('../bridge/types').AuthSecretHeaderParser}
  */
-async function deriveSigner(secret) {
+async function parseAuthSecretHeader(headerValue) {
+  const secret = base64url.decode(headerValue)
   const { digest } = await sha256.digest(secret)
-  return await ed25519.Signer.derive(digest)
+  return { ok: await ed25519.Signer.derive(digest) }
+}
+
+/**
+ * @type {import('../bridge/types').AuthorizationHeaderParser}
+ */
+async function parseAuthorizationHeader(headerValue) {
+  const result = await Delegation.extract(base64url.decode(headerValue))
+  if (result.ok) {
+    return { ok: result.ok }
+  } else {
+    return {
+      error: {
+        name: 'DelegationParsingError',
+        message: 'could not extract delegation from authorization header value',
+        cause: result.error
+      }
+    }
+  }
+}
+
+/**
+ * @type {import('../bridge/types').BodyParser}
+ */
+async function parseBody(body) {
+  const tasks = JSON.parse(body)
+  // TODO we should validate that tasks matches the shape of Task[] before casting here!
+  return { ok: { tasks: /** @type {import('../bridge/types').Task[]} */(tasks) } }
+}
+
+/**
+ * @param {import('aws-lambda').APIGatewayProxyEventV2} request 
+ */
+function parseAwsLambdaRequest(request) {
+  const authSecretHeader = request.headers['x-auth-secret']
+  const authorizationHeader = request.headers['authorization']
+  const body = request.body
+  return { authSecretHeader, authorizationHeader, body }
+}
+
+/**
+ * 
+ * @type {import('../bridge/types').TasksExecutor}
+ */
+export async function invokeAndExecuteTasks(
+  issuer, servicePrincipal, serviceURL, tasks, delegation
+) {
+  const invocations = tasks.map(task => invoke({
+    issuer,
+    audience: servicePrincipal,
+    capability: {
+      can: task.do,
+      with: task.sub,
+      nb: task.args
+    },
+    proofs: [delegation]
+  }))
+  /**
+   * @type {import('@ucanto/interface').ConnectionView<import('@web3-storage/upload-api').Service>}
+   */
+  const connection = connect({
+    id: servicePrincipal,
+    codec: CAR.outbound,
+    channel: HTTP.open({
+      url: serviceURL,
+      method: 'POST'
+    })
+  })
+  // this is an annoying hack to make typescript happy - it wants at LEAST one argument and needs
+  // to be assured that that's the case
+  const [firstInvocation, ...restOfInvocations] = invocations
+  // @ts-ignore multiple issues here
+  const receipts = await connection.execute(firstInvocation, ...restOfInvocations)
+  // @ts-ignore - TODO this is not great, but TS thinks this should be never - fix before shipping
+  return receipts.map(r => r.out)
 }
 
 /**
@@ -50,34 +124,41 @@ async function handlerFn(request) {
       }
     }
 
-    // parse headers
-    const authSecretHeader = request.headers['x-auth-secret']
+    const { authSecretHeader, authorizationHeader, body } = parseAwsLambdaRequest(request)
+
     if (!authSecretHeader) {
       return {
         statusCode: 401,
         body: 'request has no x-auth-secret header'
       }
     }
-    const secret = base64pad.baseDecode(authSecretHeader)
 
-    const authorizationHeader = request.headers['authorization']
     if (!authorizationHeader) {
       return {
         statusCode: 401,
         body: 'request has no authorization header'
       }
     }
-    if (!authorizationHeader.startsWith('Bearer ')) {
+
+    const parseAuthSecretResult = await parseAuthSecretHeader(authSecretHeader)
+
+    if (parseAuthSecretResult.error) {
       return {
         statusCode: 401,
-        body: 'authorization header must use the Bearer directive'
+        body: parseAuthSecretResult.error.message
       }
     }
-    const jwt = authorizationHeader.replace('Bearer ', '')
-    const delegation = UCAN.parse(jwt)
+    const issuer = parseAuthSecretResult.ok
 
-    // parse body
-    const body = request.body
+    const parseAuthorizationResult = await parseAuthorizationHeader(authorizationHeader)
+    if (parseAuthorizationResult.error) {
+      return {
+        statusCode: 401,
+        body: parseAuthorizationResult.error.message
+      }
+    }
+    const delegation = parseAuthorizationResult.ok
+
     if (!body) {
       return {
         statusCode: 400,
@@ -85,63 +166,29 @@ async function handlerFn(request) {
       }
     }
 
-    const jsonBody = JSON.parse(body)
-
-    if (
-      (typeof jsonBody.call !== 'string') ||
-      (jsonBody.call.split('/').length < 2)
-    ) {
+    const parseBodyResult = await parseBody(body)
+    if (parseBodyResult.error) {
       return {
         statusCode: 400,
-        body: 'call must be /-separated string like "store/add" or "admin/store/info"'
+        body: parseBodyResult.error.message
       }
     }
-    const ability = /** @type {import('@ucanto/interface').Ability} */(jsonBody.call)
+    const tasks = parseBodyResult.ok.tasks
+    const results = await invokeAndExecuteTasks(
+      issuer,
+      DID.parse(UPLOAD_API_DID),
+      new URL(ACCESS_SERVICE_URL),
+      tasks,
+      delegation
+    )
 
-    if (
-      (typeof jsonBody.on !== 'string') ||
-      (jsonBody.on.split(':').length < 2)
-    ) {
-      return {
-        statusCode: 400,
-        body: 'on must be a URI'
-      }
-    }
-    const resource = /** @type {import('@ucanto/interface').Resource} */(jsonBody.on)
-
-    const invocation = invoke({
-      issuer: await deriveSigner(secret),
-      audience: DID.parse(UPLOAD_API_DID),
-      capability: {
-        can: ability,
-        with: resource,
-        nb: jsonBody.inputs
+    // TODO how do we handle mixed failure?
+    return {
+      statusCode: 200,
+      headers: {
+        "Content-Type": "application/json"
       },
-      proofs: [delegation]
-    })
-    const receipt = await invocation.execute(connect({
-      id: DID.parse(UPLOAD_API_DID),
-      codec: CAR.outbound,
-      channel: HTTP.open({
-        url: new URL(ACCESS_SERVICE_URL),
-        method: 'POST'
-      })
-    }))
-    const result = receipt.out
-    if (result.ok) {
-      return {
-        statusCode: 200,
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(result.ok)
-      }
-    } else {
-      return {
-        statusCode: 500,
-        body: Buffer.from(result.error?.message ?? 'no error message received').toString('base64'),
-        isBase64Encoded: true
-      }
+      body: dagJSON.stringify(results)
     }
   } catch (/** @type {any} */ error) {
     console.error(error)
