@@ -38,12 +38,17 @@ test('can create signed url for object in bucket', async t => {
     expiresIn
   })
 
-  t.assert(signedUrl)
+  if (!signedUrl) {
+    throw new Error('presigned url must be received')
+  }
   t.truthy(signedUrl?.includes(`X-Amz-Expires=${expiresIn}`))
   t.truthy(signedUrl?.includes(`${carCid}/${carCid}.car`))
+
+  const fetchResponse = await fetch(signedUrl)
+  t.assert(fetchResponse.ok)
 })
 
-test('fails to create signed url for object not in bucket', async t => {
+test('fails to fetch from signed url for object not in bucket', async t => {
   const bucketName = await createBucket(t.context.s3Client)
   const carCid = CID.parse('bagbaiera222226db4v4oli5fldqghzgbv5rqv3n4ykyfxk7shfr42bfnqwua')
 
@@ -51,7 +56,13 @@ test('fails to create signed url for object not in bucket', async t => {
   const key = `${carCid}/${carCid}.car`
   const signedUrl = await signer.getUrl(key)
 
-  t.falsy(signedUrl)
+  if (!signedUrl) {
+    throw new Error('presigned url must be received')
+  }
+
+  const fetchResponse = await fetch(signedUrl)
+  t.falsy(fetchResponse.ok)
+  t.is(fetchResponse.status, 404)
 })
 
 test('parses valid expires', t => {

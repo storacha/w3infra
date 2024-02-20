@@ -1,8 +1,5 @@
 import { getSignedUrl as getR2SignedUrl } from "@aws-sdk/s3-request-presigner"
-import {
-  GetObjectCommand,
-  HeadObjectCommand
-} from "@aws-sdk/client-s3"
+import { GetObjectCommand } from "@aws-sdk/client-s3"
 
 /**
  * @typedef {import('@aws-sdk/client-s3').S3Client} S3Client
@@ -21,20 +18,6 @@ export function getSigner (s3Client, bucketName) {
      * @param {RequestPresigningArguments} [options]
      */
     getUrl: async (key, options) => {
-      // Validate bucket has requested cid
-      const headCommand = new HeadObjectCommand({
-        Bucket: bucketName,
-        Key: key,
-      })
-      try {
-        await s3Client.send(headCommand)
-      } catch (err) {
-        if (err?.$metadata?.httpStatusCode === 404) {
-          return
-        }
-        throw new Error(`Failed to HEAD object in bucket for: ${key}`)
-      }
-
       const signedUrl = await getR2SignedUrl(
         s3Client,
         new GetObjectCommand({
