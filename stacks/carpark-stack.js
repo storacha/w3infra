@@ -73,12 +73,14 @@ export function CarparkStack({ stack, app }) {
     permissions: [eventBus],
     handler: 'functions/carpark-bucket-event.carparkBucketConsumer',
   })
-  carparkBucket.addNotifications(stack, {
-    newCarPut: {
-      function: carparkPutEventConsumer,
-      events: ['object_created'],
-    }
-  })
+  if (stack.stage === 'production' || stack.stage === 'staging') {
+    carparkBucket.addNotifications(stack, {
+      newCarPut: {
+        function: carparkPutEventConsumer,
+        events: ['object_created'],
+      }
+    })
+  }
 
   stack.addOutputs({
     BucketName: carparkBucket.bucketName,

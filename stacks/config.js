@@ -1,4 +1,5 @@
-import { Duration, RemovalPolicy } from 'aws-cdk-lib'
+// import { Duration, RemovalPolicy } from 'aws-cdk-lib'
+import { Duration } from 'aws-cdk-lib'
 import { createRequire } from 'module'
 import { StartingPosition } from 'aws-cdk-lib/aws-lambda'
 import git from 'git-rev-sync'
@@ -46,8 +47,9 @@ export function getBucketConfig(name, stage, version = 0){
   return {
     bucketName: getBucketName(name, stage, version),
     ...(isPrBuild(stage) && {
-      autoDeleteObjects: true,
-      removalPolicy: RemovalPolicy.DESTROY
+      // not in place to avoid using old versions of node not anymore supported
+      // autoDeleteObjects: true,
+      // removalPolicy: RemovalPolicy.DESTROY
     })
   }
 }
