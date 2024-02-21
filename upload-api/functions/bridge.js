@@ -1,12 +1,14 @@
 import * as Sentry from '@sentry/serverless'
-import { invoke, DID, Delegation } from '@ucanto/core'
+import { invoke, DID, Delegation, sha256 } from '@ucanto/core'
 import { connect } from '@ucanto/client'
 import * as CAR from '@ucanto/transport/car'
 import * as HTTP from '@ucanto/transport/http'
-import { sha256 } from '@ucanto/core'
 import { ed25519 } from '@ucanto/principal'
 import { base64url } from 'multiformats/bases/base64'
 import * as dagJSON from '@ipld/dag-json'
+import * as CBOR from 'cborg'
+import { streamToArrayBuffer, stringToStream } from '../bridge/streams.js'
+import { isRecord } from '../bridge/types.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -29,14 +31,67 @@ async function parseAuthSecretHeader(headerValue) {
  */
 async function parseAuthorizationHeader(headerValue) {
   const result = await Delegation.extract(base64url.decode(headerValue))
-  if (result.ok) {
-    return { ok: result.ok }
+  return result.ok ? result : {
+    error: {
+      name: 'DelegationParsingError',
+      message: 'could not extract delegation from authorization header value',
+      cause: result.error
+    }
+  }
+}
+
+/**
+ * @type {import('../bridge/types').TaskParser}
+ */
+async function parseTask(maybeTask) {
+  if (isRecord(maybeTask)) {
+    // FUTURE-TODO: if we'd like to support more than one task format in the future, we can
+    // add a `type` field to task and transform to a common format here
+    return (maybeTask.do && maybeTask.sub && maybeTask.args) ? {
+      // weird to have to cast twice, but TypeScript complains unless I cast back to unknown first
+      ok: /** @type {import('../bridge/types').Task} */(/** @type {unknown} */(maybeTask))
+    } : {
+      error: {
+        name: 'InvalidTask',
+        message: 'maybeTask is missing one or more of the do, sub or args fields required of a Task'
+      }
+    }
   } else {
     return {
       error: {
-        name: 'DelegationParsingError',
-        message: 'could not extract delegation from authorization header value',
-        cause: result.error
+        name: 'InvalidTask',
+        message: 'maybeTask is not a Record'
+      }
+    }
+  }
+}
+
+/**
+ * 
+ * @type {import('../bridge/types').TasksParser}
+ */
+async function parseTasks(maybeTasks) {
+  if (Array.isArray(maybeTasks)) {
+    /**
+     * @type {import('../bridge/types').Task[]}
+     */
+    const tasks = []
+    for (const maybeTask of maybeTasks) {
+      const taskResult = await parseTask(maybeTask)
+      if (taskResult.ok) {
+        tasks.push(taskResult.ok)
+      } else {
+        return {
+          error: taskResult.error
+        }
+      }
+    }
+    return { ok: tasks }
+  } else {
+    return {
+      error: {
+        name: 'InvalidTasks',
+        message: 'maybeTasks is not an array'
       }
     }
   }
@@ -45,20 +100,32 @@ async function parseAuthorizationHeader(headerValue) {
 /**
  * @type {import('../bridge/types').BodyParser}
  */
-async function parseBody(body) {
-  const tasks = JSON.parse(body)
-  // TODO we should validate that tasks matches the shape of Task[] before casting here!
-  return { ok: { tasks: /** @type {import('../bridge/types').Task[]} */(tasks) } }
+async function parseBody(contentType, body) {
+  const bodyBytes = await streamToArrayBuffer(body)
+  let parsedBody
+  if (contentType === 'application/json') {
+    parsedBody = JSON.parse(new TextDecoder().decode(bodyBytes))
+  } else if (contentType === 'application/cbor') {
+    parsedBody = CBOR.decode(bodyBytes)
+  }
+  const tasksResult = await parseTasks(parsedBody.tasks)
+  return (tasksResult.ok) ? {
+    ok: { tasks: tasksResult.ok }
+  } : {
+    error: tasksResult.error
+  }
 }
 
 /**
  * @param {import('aws-lambda').APIGatewayProxyEventV2} request 
+ * @returns {import('../bridge/types').ParsedRequest}
  */
 function parseAwsLambdaRequest(request) {
   const authSecretHeader = request.headers['x-auth-secret']
-  const authorizationHeader = request.headers['authorization']
-  const body = request.body
-  return { authSecretHeader, authorizationHeader, body }
+  const authorizationHeader = request.headers.authorization
+  const contentType = request.headers['content-type']
+  const body = request.body !== undefined ? stringToStream(request.body) : request.body
+  return { authorizationHeader, authSecretHeader, body, contentType }
 }
 
 /**
@@ -124,19 +191,33 @@ async function handlerFn(request) {
       }
     }
 
-    const { authSecretHeader, authorizationHeader, body } = parseAwsLambdaRequest(request)
-
-    if (!authSecretHeader) {
-      return {
-        statusCode: 401,
-        body: 'request has no x-auth-secret header'
-      }
-    }
+    const { authSecretHeader, authorizationHeader, body, contentType } = parseAwsLambdaRequest(request)
 
     if (!authorizationHeader) {
       return {
         statusCode: 401,
-        body: 'request has no authorization header'
+        body: 'request has no Authorization header'
+      }
+    }
+
+    if (!authSecretHeader) {
+      return {
+        statusCode: 401,
+        body: 'request has no X-Auth-Secret header'
+      }
+    }
+
+    if (!body) {
+      return {
+        statusCode: 400,
+        body: 'request has no body'
+      }
+    }
+
+    if (!contentType) {
+      return {
+        statusCode: 400,
+        body: 'request has no Content-Type header'
       }
     }
 
@@ -159,14 +240,8 @@ async function handlerFn(request) {
     }
     const delegation = parseAuthorizationResult.ok
 
-    if (!body) {
-      return {
-        statusCode: 400,
-        body: 'request has no body'
-      }
-    }
 
-    const parseBodyResult = await parseBody(body)
+    const parseBodyResult = await parseBody(contentType, body)
     if (parseBodyResult.error) {
       return {
         statusCode: 400,
