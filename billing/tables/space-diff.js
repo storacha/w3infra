@@ -4,7 +4,7 @@ import { validate, encode, lister, decode } from '../data/space-diff.js'
 /**
  * Stores changes to total space size.
  *
- * @type {import('@serverless-stack/resources').TableProps}
+ * @type {import('sst/constructs').TableProps}
  */
 export const spaceDiffTableProps = {
   fields: {

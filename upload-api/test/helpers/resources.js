@@ -1,4 +1,5 @@
 import { customAlphabet } from 'nanoid'
+import pRetry from 'p-retry'
 import { GenericContainer as Container } from 'testcontainers'
 import { S3Client, CreateBucketCommand } from '@aws-sdk/client-s3'
 import { DynamoDBClient, CreateTableCommand } from '@aws-sdk/client-dynamodb'
@@ -46,7 +47,7 @@ export async function createDynamodDb(opts = {}) {
 /**
  * 
  * @param {string} indexName 
- * @param {import('@serverless-stack/resources').TableGlobalIndexProps} props 
+ * @param {import('sst/constructs').TableGlobalIndexProps} props 
  */
 function globalIndexPropsToGlobalIndexSpec (indexName, props) {
   const { partitionKey, projection, sortKey } = props
@@ -91,7 +92,7 @@ function globalIndexPropsToGlobalIndexSpec (indexName, props) {
  * Convert SST TableProps to DynamoDB `CreateTableCommandInput` config
  *
  * @typedef {import('@aws-sdk/client-dynamodb').CreateTableCommandInput} CreateTableCommandInput
- * @typedef {import('@serverless-stack/resources').TableProps} TableProps
+ * @typedef {import('sst/constructs').TableProps} TableProps
  *
  * @param {TableProps} props
  * @returns {Pick<CreateTableCommandInput, 'AttributeDefinitions' | 'KeySchema' | 'GlobalSecondaryIndexes'>}
@@ -141,10 +142,12 @@ export async function createS3(opts = {}) {
   const region = opts.region || 'us-west-2'
   const port = opts.port || 9000
 
-  const minio = await new Container('quay.io/minio/minio')
-    .withCmd(['server', '/data'])
-    .withExposedPorts(port)
-    .start()
+  const minio = await pRetry(() =>
+    new Container('quay.io/minio/minio')
+      .withCommand(['server', '/data'])
+      .withExposedPorts(port)
+      .start()
+  )
 
   const clientOpts = {
     endpoint: `http://${minio.getHost()}:${minio.getMappedPort(port)}`,

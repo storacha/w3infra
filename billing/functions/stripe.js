@@ -1,5 +1,5 @@
 import * as Sentry from '@sentry/serverless'
-import { Config } from '@serverless-stack/node/config/index.js'
+import { Config } from 'sst/node/config'
 import Stripe from 'stripe'
 import { expect, mustGetEnv } from './lib.js'
 import { createCustomerStore } from '../tables/customer.js'

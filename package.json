@@ -12,17 +12,15 @@
     "console": "sst console",
     "lint": "tsc && eslint '**/*.js'",
     "clean": "rm -rf dist node_modules package-lock.json ./*/{.cache,dist,node_modules}",
-    "test": "npm test -w billing -w upload-api -w carpark -w replicator -w satnav -w ucan-invocation -w roundabout -w filecoin",
+    "test": "npm test -w billing -w upload-api -w carpark -w replicator -w satnav -w roundabout -w filecoin",
     "test-integration": "ava --verbose --serial --timeout=600s test/*.test.js",
     "fetch-metrics-for-space": "npm run fetch-metrics-for-space -w tools",
     "follow-filecoin-receipt-chain": "npm run follow-filecoin-receipt-chain -w tools",
     "d1-dynamo-migration": "npm run d1-dynamo-migration -w tools"
   },
   "devDependencies": {
-    "@ipld/car": "^5.1.0",
+    "@ipld/car": "^5.2.6",
     "@ipld/dag-ucan": "^3.0.1",
-    "@serverless-stack/cli": "^1.18.0",
-    "@serverless-stack/resources": "^1.18.0",
     "@tsconfig/node16": "^1.0.3",
     "@types/git-rev-sync": "^2.0.0",
     "@ucanto/client": "^9.0.0",
@@ -37,19 +35,21 @@
     "@web3-storage/filecoin-client": "3.0.1",
     "@web3-storage/w3up-client": "^9.2.2",
     "ava": "^4.3.3",
+    "constructs": "10.3.0",
+    "chalk": "4.1.2",
     "dotenv": "^16.0.3",
     "git-rev-sync": "^3.0.2",
     "hd-scripts": "^3.0.2",
     "lint-staged": "^13.0.3",
     "mailslurp-client": "^15.17.2",
-    "multiformats": "^11.0.1",
+    "multiformats": "^13.1.0",
     "p-wait-for": "^5.0.0",
     "typescript": "^4.9.3"
   },
   "dependencies": {
     "@ipld/dag-json": "^10.1.5",
-    "@serverless-stack/node": "^1.18.0",
-    "aws-cdk-lib": "2.50.0"
+    "sst": "^2.40.3",
+    "aws-cdk-lib": "2.124.0"
   },
   "simple-git-hooks": {
     "pre-commit": "npx lint-staged"
@@ -74,6 +74,7 @@
       "unicorn/no-array-for-each": "off",
       "unicorn/no-array-reduce": "off",
       "unicorn/no-await-expression-member": "off",
+      "unicorn/no-for-loop": "off",
       "unicorn/prefer-export-from": "off",
       "unicorn/prefer-object-from-entries": "off",
       "unicorn/prefer-set-has": "off",

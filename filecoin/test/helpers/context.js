@@ -22,7 +22,7 @@ import anyTest from 'ava'
  * @typedef {object} Stoppable
  * @property {() => Promise<any>} stop
  *
- * @typedef {import('ava').TestFn<Awaited<S3Context & DynamoContext>>} TestAnyFn
+ * @typedef {import('ava').TestFn<Awaited<S3Context & DynamoContext & Stoppable>>} TestAnyFn
  * @typedef {import('ava').TestFn<Awaited<S3Context & DynamoContext & MultipleQueueContext & Stoppable>>} TestServiceFn
  * @typedef {import("ava").TestFn<Awaited<DynamoContext & S3Context>>} TestConsumerWithBucketFn
  */

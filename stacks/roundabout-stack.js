@@ -1,17 +1,13 @@
 import {
   Api,
-} from '@serverless-stack/resources'
+} from 'sst/constructs'
 
 import { getCustomDomain, setupSentry } from './config.js'
 
 /**
- * @param {import('@serverless-stack/resources').StackContext} properties
+ * @param {import('sst/constructs').StackContext} properties
  */
 export function RoundaboutStack({ stack, app }) {
-  stack.setDefaultFunctionProps({
-    srcPath: 'roundabout'
-  })
-
   // Setup app monitoring with Sentry
   setupSentry(app, stack)
 
@@ -32,10 +28,10 @@ export function RoundaboutStack({ stack, app }) {
       }
     },
     routes: {
-      'GET /{cid}':       'functions/redirect.handler',
-      'HEAD /{cid}':      'functions/redirect.handler',
-      'GET /key/{key}':   'functions/redirect.keyHandler',
-      'HEAD /key/{key}':   'functions/redirect.keyHandler',
+      'GET /{cid}':       'roundabout/functions/redirect.handler',
+      'HEAD /{cid}':      'roundabout/functions/redirect.handler',
+      'GET /key/{key}':   'roundabout/functions/redirect.keyHandler',
+      'HEAD /key/{key}':   'roundabout/functions/redirect.keyHandler',
     },
     accessLog: {
       format:'{"requestTime":"$context.requestTime","requestId":"$context.requestId","httpMethod":"$context.httpMethod","path":"$context.path","routeKey":"$context.routeKey","status":$context.status,"responseLatency":$context.responseLatency,"integrationRequestId":"$context.integration.requestId","integrationStatus":"$context.integration.status","integrationLatency":"$context.integration.latency","integrationServiceStatus":"$context.integration.integrationStatus","ip":"$context.identity.sourceIp","userAgent":"$context.identity.userAgent"}'

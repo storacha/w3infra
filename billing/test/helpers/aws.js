@@ -24,7 +24,7 @@ export const createDynamoDB = async (opts = {}) => {
  * Convert SST TableProps to DynamoDB `CreateTableCommandInput` config.
  * 
  * @typedef {import('@aws-sdk/client-dynamodb').CreateTableCommandInput} CreateTableCommandInput
- * @typedef {import('@serverless-stack/resources').TableProps} TableProps
+ * @typedef {import('sst/constructs').TableProps} TableProps
  * @param {TableProps} props
  * @returns {Pick<CreateTableCommandInput, 'AttributeDefinitions' | 'KeySchema' | 'GlobalSecondaryIndexes'>}
  */
@@ -74,7 +74,7 @@ const toKeySchema = ({ partitionKey, sortKey }) => {
 
 /**
  * @param {import('@aws-sdk/client-dynamodb').DynamoDBClient} dynamo
- * @param {import("@serverless-stack/resources").TableProps} tableProps
+ * @param {import("sst/constructs").TableProps} tableProps
  * @param {string} [pfx]
  */
 export async function createTable (dynamo, tableProps, pfx = '') {

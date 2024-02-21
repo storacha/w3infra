@@ -7,7 +7,7 @@ import { StoreOperationFailure } from './lib.js'
 /**
  * Stores customer details.
  *
- * @type {import('@serverless-stack/resources').TableProps}
+ * @type {import('sst/constructs').TableProps}
  */
 export const customerTableProps = {
   fields: {

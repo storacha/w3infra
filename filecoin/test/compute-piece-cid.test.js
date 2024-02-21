@@ -14,18 +14,27 @@ const AWS_REGION = 'us-west-2'
 
 test.before(async t => {
   // S3
-  const { client } = await createS3({ port: 9000 })
+  const { client, stop: s3Stop } = await createS3({ port: 9000 })
   // DynamoDB
   const {
     client: dynamoClient,
-    endpoint: dbEndpoint
+    endpoint: dbEndpoint,
+    stop: dynamoStop
   } = await createDynamodDb({ port: 8000 })
 
   Object.assign(t.context, {
     s3Client: client,
     dbEndpoint,
-    dynamoClient
+    dynamoClient,
+    stop: async () => {
+      await s3Stop()
+      await dynamoStop()
+    }
   })
+})
+
+test.after(async t => {
+  await t.context.stop()
 })
 
 test('computes piece CID from a CAR file in the bucket', async t => {

@@ -1,4 +1,4 @@
-import { use, Cron, Queue, Function, Config, Api } from '@serverless-stack/resources'
+import { use, Cron, Queue, Function, Config, Api } from 'sst/constructs'
 import { StartingPosition } from 'aws-cdk-lib/aws-lambda'
 import { Duration } from 'aws-cdk-lib'
 import { UcanInvocationStack } from './ucan-invocation-stack.js'
@@ -6,10 +6,10 @@ import { BillingDbStack } from './billing-db-stack.js'
 import { UploadDbStack } from './upload-db-stack.js'
 import { setupSentry, getCustomDomain } from './config.js'
 
-/** @param {import('@serverless-stack/resources').StackContext} props */
+/**
+ * @param {import('sst/constructs').StackContext} properties
+ */
 export function BillingStack ({ stack, app }) {
-  stack.setDefaultFunctionProps({ srcPath: 'billing' })
-
   setupSentry(app, stack)
 
   const {
@@ -24,7 +24,7 @@ export function BillingStack ({ stack, app }) {
   // Lambda that does a billing run for a given space and customer
   const spaceBillingQueueHandler = new Function(stack, 'space-billing-queue-handler', {
     permissions: [spaceSnapshotTable, spaceDiffTable, usageTable],
-    handler: 'functions/space-billing-queue.handler',
+    handler: 'billing/functions/space-billing-queue.handler',
     timeout: '15 minutes',
     environment: {
       SPACE_DIFF_TABLE_NAME: spaceDiffTable.tableName,
@@ -49,7 +49,7 @@ export function BillingStack ({ stack, app }) {
   // Lambda that does a billing run for a given customer
   const customerBillingQueueHandler = new Function(stack, 'customer-billing-queue-handler', {
     permissions: [subscriptionTable, consumerTable, spaceBillingQueue],
-    handler: 'functions/customer-billing-queue.handler',
+    handler: 'billing/functions/customer-billing-queue.handler',
     timeout: '15 minutes',
     environment: {
       SUBSCRIPTION_TABLE_NAME: subscriptionTable.tableName,
@@ -74,7 +74,7 @@ export function BillingStack ({ stack, app }) {
   // Lambda that queues account DIDs to be billed
   const billingCronHandler = new Function(stack, 'billing-cron-handler', {
     permissions: [customerTable, customerBillingQueue],
-    handler: 'functions/billing-cron.handler',
+    handler: 'billing/functions/billing-cron.handler',
     timeout: '15 minutes',
     environment: {
       CUSTOMER_TABLE_NAME: customerTable.tableName,
@@ -95,7 +95,7 @@ export function BillingStack ({ stack, app }) {
   // Lambda that receives UCAN stream events and writes diffs to spaceSizeDiffTable
   const ucanStreamHandler = new Function(stack, 'ucan-stream-handler', {
     permissions: [spaceDiffTable, consumerTable],
-    handler: 'functions/ucan-stream.handler',
+    handler: 'billing/functions/ucan-stream.handler',
     environment: {
       SPACE_DIFF_TABLE_NAME: spaceDiffTable.tableName,
       CONSUMER_TABLE_NAME: consumerTable.tableName
@@ -117,7 +117,7 @@ export function BillingStack ({ stack, app }) {
   // Lambda that sends usage table records to Stripe for invoicing.
   const usageTableHandler = new Function(stack, 'usage-table-handler', {
     permissions: [spaceSnapshotTable, spaceDiffTable],
-    handler: 'functions/usage-table.handler',
+    handler: 'billing/functions/usage-table.handler',
     timeout: '15 minutes',
     bind: [stripeSecretKey]
   })
@@ -157,7 +157,7 @@ export function BillingStack ({ stack, app }) {
       },
     },
     routes: {
-      'POST /stripe': 'functions/stripe.webhook',
+      'POST /stripe': 'billing/functions/stripe.webhook',
     },
     accessLog: {
       format: '{"requestTime":"$context.requestTime","requestId":"$context.requestId","httpMethod":"$context.httpMethod","path":"$context.path","routeKey":"$context.routeKey","status":$context.status,"responseLatency":$context.responseLatency,"integrationRequestId":"$context.integration.requestId","integrationStatus":"$context.integration.status","integrationLatency":"$context.integration.latency","integrationServiceStatus":"$context.integration.integrationStatus","ip":"$context.identity.sourceIp","userAgent":"$context.identity.userAgent"}'

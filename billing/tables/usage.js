@@ -4,7 +4,7 @@ import { validate, encode } from '../data/usage.js'
 /**
  * Stores per space usage across billing periods.
  *
- * @type {import('@serverless-stack/resources').TableProps}
+ * @type {import('sst/constructs').TableProps}
  */
 export const usageTableProps = {
   fields: {

@@ -9,7 +9,7 @@ import { METRICS_NAMES, SPACE_METRICS_NAMES } from '../upload-api/constants.js'
 
 import { test } from './helpers/context.js'
 import {
-  stage,
+  getStage,
   getApiEndpoint,
   getAwsBucketClient,
   getCloudflareBucketClient,
@@ -36,6 +36,7 @@ test('GET /', async t => {
 })
 
 test('GET /version', async t => {
+  const stage = getStage()
   const response = await fetch(`${t.context.apiEndpoint}/version`)
   t.is(response.status, 200)
 
@@ -113,6 +114,7 @@ test('authorizations can be blocked by email or domain', async t => {
 
 // Integration test for all flow from uploading a file to Kinesis events consumers and replicator
 test('w3infra integration flow', async t => {
+  const stage = getStage()
   const inbox = await createMailSlurpInbox()
   const client = await setupNewClient(t.context.apiEndpoint, { inbox })
   const spaceDid = client.currentSpace()?.did()
@@ -184,7 +186,9 @@ test('w3infra integration flow', async t => {
   } while (!uploadFound)
 
   t.is(uploadFound.shards?.length, 1)
-  t.deepEqual(shards, uploadFound.shards)
+  for (let i = 0; i < shards.length; i++) {
+    t.truthy(uploadFound.shards[i].equals(shards[i]))
+  }
 
   // Remove file from space
   const removeResult = await client.capability.upload.remove(fileLink)

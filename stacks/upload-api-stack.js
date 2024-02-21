@@ -4,7 +4,7 @@ import {
   Function,
   Queue,
   use
-} from '@serverless-stack/resources'
+} from 'sst/constructs'
 import { StartingPosition } from 'aws-cdk-lib/aws-lambda'
 import { UploadDbStack } from './upload-db-stack.js'
 import { BillingDbStack } from './billing-db-stack.js'
@@ -15,13 +15,9 @@ import { UcanInvocationStack } from './ucan-invocation-stack.js'
 import { getCustomDomain, getApiPackageJson, getGitInfo, setupSentry, getEnv, getEventSourceConfig } from './config.js'
 
 /**
- * @param {import('@serverless-stack/resources').StackContext} properties
+ * @param {import('sst/constructs').StackContext} properties
  */
 export function UploadApiStack({ stack, app }) {
-  stack.setDefaultFunctionProps({
-    srcPath: 'upload-api'
-  })
-
   const { AGGREGATOR_DID } = getEnv()
 
   // Setup app monitoring with Sentry
@@ -120,18 +116,18 @@ export function UploadApiStack({ stack, app }) {
       }
     },
     routes: {
-      'POST /':       'functions/ucan-invocation-router.handler',
-      'POST /ucan':   'functions/ucan.handler',
-      'GET /':        'functions/get.home',
-      'GET /validate-email': 'functions/validate-email.preValidateEmail',
-      'POST /validate-email': 'functions/validate-email.validateEmail',
-      'GET /error':   'functions/get.error',
-      'GET /version': 'functions/get.version',
-      'GET /metrics': 'functions/metrics.handler',
-      'GET /receipt/{taskCid}': 'functions/receipt.handler',
-      'GET /storefront-cron': 'functions/storefront-cron.handler',
+      'POST /':       'upload-api/functions/ucan-invocation-router.handler',
+      'POST /ucan':   'upload-api/functions/ucan.handler',
+      'GET /':        'upload-api/functions/get.home',
+      'GET /validate-email': 'upload-api/functions/validate-email.preValidateEmail',
+      'POST /validate-email': 'upload-api/functions/validate-email.validateEmail',
+      'GET /error':   'upload-api/functions/get.error',
+      'GET /version': 'upload-api/functions/get.version',
+      'GET /metrics': 'upload-api/functions/metrics.handler',
+      'GET /receipt/{taskCid}': 'upload-api/functions/receipt.handler',
+      'GET /storefront-cron': 'upload-api/functions/storefront-cron.handler',
       // AWS API Gateway does not know trailing slash... and Grafana Agent puts trailing slash
-      'GET /metrics/{proxy+}': 'functions/metrics.handler',
+      'GET /metrics/{proxy+}': 'upload-api/functions/metrics.handler',
     },
     accessLog: {
       format:'{"requestTime":"$context.requestTime","requestId":"$context.requestId","httpMethod":"$context.httpMethod","path":"$context.path","routeKey":"$context.routeKey","status":$context.status,"responseLatency":$context.responseLatency,"integrationRequestId":"$context.integration.requestId","integrationStatus":"$context.integration.status","integrationLatency":"$context.integration.latency","integrationServiceStatus":"$context.integration.integrationStatus","ip":"$context.identity.sourceIp","userAgent":"$context.identity.userAgent"}'
@@ -146,7 +142,7 @@ export function UploadApiStack({ stack, app }) {
       STORE_BUCKET_NAME: carparkBucket.bucketName,
     },
     permissions: [adminMetricsTable, carparkBucket],
-    handler: 'functions/admin-metrics.consumer',
+    handler: 'upload-api/functions/admin-metrics.consumer',
     deadLetterQueue: uploadAdminMetricsDLQ.cdk.queue,
   })
 
@@ -157,7 +153,7 @@ export function UploadApiStack({ stack, app }) {
       STORE_BUCKET_NAME: carparkBucket.bucketName,
     },
     permissions: [spaceMetricsTable, carparkBucket],
-    handler: 'functions/space-metrics.consumer',
+    handler: 'upload-api/functions/space-metrics.consumer',
     deadLetterQueue: uploadSpaceMetricsDLQ.cdk.queue,
   })
 

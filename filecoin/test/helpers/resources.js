@@ -13,10 +13,11 @@ import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
 export async function createDynamodDb(opts = {}) {
   const port = opts.port || 8000
   const region = opts.region || 'us-west-2'
-  const dbContainer = await new Container('amazon/dynamodb-local:latest')
-    .withExposedPorts(port)
-    .start()
-
+  const dbContainer = await pRetry(() =>
+    new Container('amazon/dynamodb-local:latest')
+      .withExposedPorts(port)
+      .start()
+  )
   const endpoint = `http://${dbContainer.getHost()}:${dbContainer.getMappedPort(8000)}`
   return {
     client: new DynamoDBClient({
@@ -32,7 +33,7 @@ export async function createDynamodDb(opts = {}) {
  * Convert SST TableProps to DynamoDB `CreateTableCommandInput` config
  * 
  * @typedef {import('@aws-sdk/client-dynamodb').CreateTableCommandInput} CreateTableCommandInput
- * @typedef {import('@serverless-stack/resources').TableProps} TableProps
+ * @typedef {import('sst/constructs').TableProps} TableProps
  * @param {TableProps} props
  * @returns {Pick<CreateTableCommandInput, 'AttributeDefinitions' | 'KeySchema' | 'GlobalSecondaryIndexes'>}
  */
@@ -95,10 +96,12 @@ function toKeySchema ({partitionKey, sortKey}) {
   const region = opts.region || 'us-west-2'
   const port = opts.port || 9000
 
-  const minio = await new Container('quay.io/minio/minio')
-    .withCmd(['server', '/data'])
-    .withExposedPorts(port)
-    .start()
+  const minio = await pRetry(() =>
+    new Container('quay.io/minio/minio')
+      .withCommand(['server', '/data'])
+      .withExposedPorts(port)
+      .start()
+  )
 
   const clientOpts = {
     endpoint: `http://${minio.getHost()}:${minio.getMappedPort(port)}`,

@@ -1,4 +1,4 @@
-/** @typedef {import('@serverless-stack/resources').TableProps} TableProps */
+/** @typedef {import('sst/constructs').TableProps} TableProps */
 
 /** @type TableProps */
 export const pieceTableProps = {
