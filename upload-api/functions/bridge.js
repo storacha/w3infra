@@ -6,7 +6,7 @@ import * as HTTP from '@ucanto/transport/http'
 import { ed25519 } from '@ucanto/principal'
 import { base64url } from 'multiformats/bases/base64'
 import * as dagJSON from '@ipld/dag-json'
-import * as CBOR from 'cborg'
+import * as dagCBOR from '@ipld/dag-cbor'
 import { streamToArrayBuffer, stringToStream } from '../bridge/streams.js'
 import { isRecord } from '../bridge/types.js'
 
@@ -103,10 +103,17 @@ async function parseTasks(maybeTasks) {
 async function parseBody(contentType, body) {
   const bodyBytes = await streamToArrayBuffer(body)
   let parsedBody
-  if (contentType === 'application/json') {
-    parsedBody = JSON.parse(new TextDecoder().decode(bodyBytes))
-  } else if (contentType === 'application/cbor') {
-    parsedBody = CBOR.decode(bodyBytes)
+  if (contentType === 'application/json' || contentType === 'application/vnd.ipld.dag-json') {
+    parsedBody = dagJSON.parse(new TextDecoder().decode(bodyBytes))
+  } else if (contentType === 'application/cbor' || contentType === 'application/vnd.ipld.dag-cbor') {
+    parsedBody = dagCBOR.decode(bodyBytes)
+  } else {
+    return {
+      error: {
+        name: 'UnknownContentType',
+        message: `${contentType} is not supported`
+      }
+    }
   }
   const tasksResult = await parseTasks(parsedBody.tasks)
   return (tasksResult.ok) ? {
