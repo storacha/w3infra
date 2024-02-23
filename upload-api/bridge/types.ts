@@ -1,4 +1,4 @@
-import { Ability, DID, Delegation, Failure, Principal, Result } from "@ucanto/interface"
+import { Ability, DID, Delegation, Failure, Principal, Result, Receipt, OutcomeModel, Signature } from "@ucanto/interface"
 import { ed25519 } from '@ucanto/principal'
 
 export interface UnexpectedFailure extends Failure {}
@@ -10,11 +10,7 @@ export interface ParsedRequest {
   body?: ReadableStream
 }
 
-export interface Task {
-  do: Ability
-  sub: DID
-  args: Record<string, any>
-}
+export type Task = [Ability, DID, Record<string, any>]
 
 export type AuthSecretHeaderParsingFailure = UnexpectedFailure
 export type AuthSecretHeaderParser = (headerValue: string) =>
@@ -53,13 +49,24 @@ export type TasksParser = (tasks: unknown) =>
   Promise<Result<Task[], TasksParsingFailure>>
 
 export type TasksExecutionFailure = UnexpectedFailure
+export type TaskReceipt = Receipt<any, TasksExecutionFailure>
 export type TasksExecutor = (
   issuer: ed25519.EdSigner,
   servicePrincipal: Principal,
   serviceURL: URL,
   tasks: Task[],
   proof: Delegation
-) => Promise<Result<any, TasksExecutionFailure>[]>
+) => 
+  Promise<Receipt<any, TasksExecutionFailure>[]>
+  
+export interface BridgeReceipt {
+  data: OutcomeModel,
+  sig: Signature
+}
+export type BridgeReceiptFailure = UnexpectedFailure
+export type BridgeReceiptBuilder = (receipts: TaskReceipt[]) => 
+  Promise<Result<BridgeReceipt[], BridgeReceiptFailure>>
+export type BridgeBodyBuilder = (receipts: BridgeReceipt[], accepts: string | undefined) => string
 
 export function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);

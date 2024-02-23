@@ -44,10 +44,10 @@ async function parseAuthorizationHeader(headerValue) {
  * @type {import('../bridge/types').TaskParser}
  */
 async function parseTask(maybeTask) {
-  if (isRecord(maybeTask)) {
+  if (Array.isArray(maybeTask)) {
     // FUTURE-TODO: if we'd like to support more than one task format in the future, we can
     // add a `type` field to task and transform to a common format here
-    return (maybeTask.do && maybeTask.sub && maybeTask.args) ? {
+    return (maybeTask[0] && maybeTask[1] && maybeTask[2]) ? {
       // weird to have to cast twice, but TypeScript complains unless I cast back to unknown first
       ok: /** @type {import('../bridge/types').Task} */(/** @type {unknown} */(maybeTask))
     } : {
@@ -137,18 +137,51 @@ function parseAwsLambdaRequest(request) {
 
 /**
  * 
+ * @type {import('../bridge/types.js').BridgeReceiptBuilder}
+ */
+async function buildBridgeReceipts(receipts) {
+  /** @type {import('../bridge/types.js').BridgeReceipt[]} */
+  const bridgeReceipts = []
+  for (const receipt of receipts) {
+    if (receipt.root.data) {
+      bridgeReceipts.push({
+        data: receipt.root.data?.ocm,
+        sig: receipt.root.data?.sig
+      })
+    } else {
+      return {
+        error: {
+          name: 'BridgeReceiptFailure',
+          message: 'One of the receipts contains no data'
+        }
+      }
+    }
+  }
+  return { ok: bridgeReceipts }
+}
+
+/**
+ * @type {import('../bridge/types.js').BridgeBodyBuilder}
+ */
+function serializeBridgeReceipts(_, receipts){
+  // TODO: use first parameter to pick serialization format
+  return dagJSON.stringify(receipts)
+}
+
+/**
+ * 
  * @type {import('../bridge/types').TasksExecutor}
  */
 export async function invokeAndExecuteTasks(
   issuer, servicePrincipal, serviceURL, tasks, delegation
 ) {
-  const invocations = tasks.map(task => invoke({
+  const invocations = tasks.map((task) => invoke({
     issuer,
     audience: servicePrincipal,
     capability: {
-      can: task.do,
-      with: task.sub,
-      nb: task.args
+      can: task[0],
+      with: task[1],
+      nb: task[2]
     },
     proofs: [delegation]
   }))
@@ -167,9 +200,7 @@ export async function invokeAndExecuteTasks(
   // to be assured that that's the case
   const [firstInvocation, ...restOfInvocations] = invocations
   // @ts-ignore multiple issues here
-  const receipts = await connection.execute(firstInvocation, ...restOfInvocations)
-  // @ts-ignore - TODO this is not great, but TS thinks this should be never - fix before shipping
-  return receipts.map(r => r.out)
+  return connection.execute(firstInvocation, ...restOfInvocations)
 }
 
 /**
@@ -256,7 +287,7 @@ async function handlerFn(request) {
       }
     }
     const tasks = parseBodyResult.ok.tasks
-    const results = await invokeAndExecuteTasks(
+    const receipts = await invokeAndExecuteTasks(
       issuer,
       DID.parse(UPLOAD_API_DID),
       new URL(ACCESS_SERVICE_URL),
@@ -264,14 +295,22 @@ async function handlerFn(request) {
       delegation
     )
 
-    // TODO how do we handle mixed failure?
-    return {
-      statusCode: 200,
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: dagJSON.stringify(results)
+    const bridgeReceipts = await buildBridgeReceipts(receipts)
+    if (bridgeReceipts.ok){
+      return {
+        statusCode: 200,
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: serializeBridgeReceipts(bridgeReceipts.ok, request.headers['accepts'])
+      }
+    } else {
+      return {
+        statusCode: 500,
+        body: bridgeReceipts.error.message
+      }
     }
+
   } catch (/** @type {any} */ error) {
     console.error(error)
     return {
