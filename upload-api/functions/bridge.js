@@ -8,7 +8,6 @@ import { base64url } from 'multiformats/bases/base64'
 import * as dagJSON from '@ipld/dag-json'
 import * as dagCBOR from '@ipld/dag-cbor'
 import { streamToArrayBuffer, stringToStream } from '../bridge/streams.js'
-import { isRecord } from '../bridge/types.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -163,8 +162,8 @@ async function buildBridgeReceipts(receipts) {
 /**
  * @type {import('../bridge/types.js').BridgeBodyBuilder}
  */
-function serializeBridgeReceipts(_, receipts){
-  // TODO: use first parameter to pick serialization format
+function serializeBridgeReceipts(receipts){
+  // TODO: use second parameter to pick serialization format
   return dagJSON.stringify(receipts)
 }
 
