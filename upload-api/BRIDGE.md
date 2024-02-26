@@ -142,7 +142,6 @@ The request body should be a JSON or CBOR-encoded map with one key named `tasks`
 `subject` is the DID of the resource the capability should be invoked against
 `arguments` is a (possibly nested) map from string keys to arbitrary arguments
 
-`command`, `subject` and `arguments` should be specified according to the capability you wish to invoke. 
 
 `command` should be an "ability" string like `store/add` or `upload/add` and must be included in the set of abilities passed to the `--can` option of `w3 bridge generate-tokens`. By default, `--can` is set to `['upload/add', 'store/add']`.
 
