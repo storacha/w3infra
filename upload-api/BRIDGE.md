@@ -14,29 +14,92 @@ Authorization: uOqJlcm9vdHOB2CpYJQABcRIggNKF1CtKV9n5k1T8575Uh8T5P-Ju8u9J4PMymVnX
 Content-Type: application/json
 {
   tasks: [
-    {
-      "do": "store/add",
-      "sub": "did:key:z6Mkm5qHN9g9NQSGbBfL7iGp9sexdssioT4CzyVap9ATqGqX",
-      "args": {
+    ["store/add", "did:key:z6Mkm5qHN9g9NQSGbBfL7iGp9sexdssioT4CzyVap9ATqGqX", {
         "link": "bagbaierah5sr5zt3tqgkrixptqzyerpxp5vwyjlx3n5frp2tbnr3clqrmrqa",
         "size": 42
-      },
-    },
-    {
-      "do": "store/add",
-      "sub": "did:key:z6Mkm5qHN9g9NQSGbBfL7iGp9sexdssioT4CzyVap9ATqGqX",
-      "args": {
+    }],
+    ["store/add", "did:key:z6Mkm5qHN9g9NQSGbBfL7iGp9sexdssioT4CzyVap9ATqGqX", {
         "link": "bafybeicajpuoxboivzka7cyft7okjf6vp43uk5udnedsrle6jews2cqj3a",
         "size": 789
-      }
-    }
+    }]
   ]
 }
 ```
 
-TODO: support alternate content types, (specifically dag-cbor?)
+And receive a dag-json-encoded list of UCAN bridge receipts like:
 
-And receive a dag-json-encoded list of UCAN receipt results [q: should this be the full receipt?] in response.
+```json
+[
+  {
+    "data": {
+      "fx": {
+        "fork": []
+      },
+      "iss": "did:web:staging.web3.storage",
+      "meta": {},
+      "out": {
+        "ok": {
+          "before": "bafybeiabommx77q4ltcolzsmyqykuk6tsnerkixr6lsoegrx7qejcfurhu",
+          "results": [
+            {
+              "insertedAt": "2024-02-09T00:53:54.545Z",
+              "root": {
+                "/": "bafybeiabommx77q4ltcolzsmyqykuk6tsnerkixr6lsoegrx7qejcfurhu"
+              },
+              "shards": [
+                {
+                  "/": "bagbaierah5sr5zt3tqgkrixptqzyerpxp5vwyjlx3n5frp2tbnr3clqrmrqa"
+                }
+              ],
+              "updatedAt": "2024-02-09T00:53:54.545Z"
+            },
+            {
+              "insertedAt": "2024-02-16T05:11:35.173Z",
+              "root": {
+                "/": "bafybeicajpuoxboivzka7cyft7okjf6vp43uk5udnedsrle6jews2cqj3a"
+              },
+              "shards": [
+                {
+                  "/": "bagbaierahw552ajjkkxsvfgu5amm3o5bpzfhvrrl5vouwubwwk5wpbjiu5eq"
+                }
+              ],
+              "updatedAt": "2024-02-16T05:11:35.173Z"
+            }
+          ],
+          "size": 2
+        }
+      },
+      "prf": [],
+      "ran": {
+        "/": "bafyreienff66mf7nse3rm2njikxlshja6d5dkr4fpnyzeik5l6vils6fvq"
+      }
+    },
+    "sig": {
+      "/": {
+        "bytes": "7aEDQCiJYmYe9Gf25hv84NVN/fjN+udnT4Q65kVHFmQb1MPB2EmwDnR+S/TeYNkMxBdwIsNOKDwyTCqKOxvUhbWkGA8"
+      }
+    }
+  }
+]
+```
+
+A UCAN bridge receipt has two fields, `data` and `sig`:
+
+`data` contains the result of an invocation (in the nested `out` field) along with information about the invocation.
+`sig` is a signature over a CBOR-encoded version of the value of the `data` field. It can be verified as follows:
+
+```javascript
+import * as Signature from '@ipld/dag-ucan/signature'
+import { ed25519 } from '@ucanto/principal'
+import { CBOR } from '@ucanto/core'
+
+...
+
+const { data, sig } = bridgeReceipt
+const signature = Signature.view(sig)
+const valid = signature.verify(ed25519.Verifier.parse(data.iss), CBOR.encode(data))
+
+```
 
 ### Authorization
 
@@ -56,9 +119,10 @@ Authorization header: uOqJlcm9vdHOB2CpYJQABcRIggNKF1CtKV9n5k1T8575Uh8T5P-Ju8u9J4
 import { sha256 } from '@ucanto/core'
 import { ed25519 } from '@ucanto/principal'
 
-async function deriveSigner(secret: Uint8Array): Promise<ed25519.EdSigner> {
+async function deriveSigner(headerValue: string): Promise<ed25519.EdSigner> {
+  const secret = base64url.decode(headerValue)
   const { digest } = await sha256.digest(secret)
-  return ed25519.Signer.derive(digest)
+  return await ed25519.Signer.derive(digest)
 }
 ```
 
@@ -66,12 +130,22 @@ async function deriveSigner(secret: Uint8Array): Promise<ed25519.EdSigner> {
 It should grant the principal identified by `X-Auth-Secret` appropriate capabilities
 on the resource identified in the JSON body of the HTTP request.
 
-### Invocation Fields
+### Request Format
 
-`do`, `sub` and `args` should be specified according to the capability you wish to invoke. 
+The request body should be a JSON or CBOR-encoded map with one key named `tasks` whose value is an array of "task specifications" of the form:
 
-`do` should be an "ability" string like `store/add` or `upload/add` and must be included in the set of abilities passed to the `--can` option of `w3 bridge generate-tokens`. By default, `--can` is set to `['upload/add', 'store/add']`.
+```javascript
+[command, subject, arguments]
+```
 
-Information about possible `inputs` for a particular ability can be found in https://github.com/web3-storage/specs/
+`command` is the name of the capability to be invoked
+`subject` is the DID of the resource the capability should be invoked against
+`arguments` is a (possibly nested) map from string keys to arbitrary arguments
 
-`sub` MUST match the resource passed as the first option to `w3 bridge generate-tokens`.
+`command`, `subject` and `arguments` should be specified according to the capability you wish to invoke. 
+
+`command` should be an "ability" string like `store/add` or `upload/add` and must be included in the set of abilities passed to the `--can` option of `w3 bridge generate-tokens`. By default, `--can` is set to `['upload/add', 'store/add']`.
+
+`subject` MUST match the resource passed as the first option to `w3 bridge generate-tokens`.
+
+Information about possible `arguments` for a particular ability can be found in https://github.com/web3-storage/specs/
