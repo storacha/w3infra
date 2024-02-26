@@ -44,22 +44,21 @@ async function parseAuthorizationHeader(headerValue) {
  */
 async function parseTask(maybeTask) {
   if (Array.isArray(maybeTask)) {
-    // FUTURE-TODO: if we'd like to support more than one task format in the future, we can
-    // add a `type` field to task and transform to a common format here
     return (maybeTask[0] && maybeTask[1] && maybeTask[2]) ? {
+      // TODO: should we do more verification of the format of these arguments?
       // weird to have to cast twice, but TypeScript complains unless I cast back to unknown first
       ok: /** @type {import('../bridge/types').Task} */(/** @type {unknown} */(maybeTask))
     } : {
       error: {
         name: 'InvalidTask',
-        message: 'maybeTask is missing one or more of the do, sub or args fields required of a Task'
+        message: 'maybeTask is missing one or more of the arguments required of a Task'
       }
     }
   } else {
     return {
       error: {
         name: 'InvalidTask',
-        message: 'maybeTask is not a Record'
+        message: 'maybeTask is not an Array'
       }
     }
   }
