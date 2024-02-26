@@ -162,7 +162,7 @@ async function buildBridgeReceipts(receipts) {
 /**
  * @type {import('../bridge/types.js').BridgeBodyBuilder}
  */
-function serializeBridgeReceipts(receipts){
+function serializeBridgeReceipts(receipts) {
   // TODO: use second parameter to pick serialization format
   return dagJSON.stringify(receipts)
 }
@@ -295,21 +295,16 @@ async function handlerFn(request) {
     )
 
     const bridgeReceipts = await buildBridgeReceipts(receipts)
-    if (bridgeReceipts.ok){
-      return {
-        statusCode: 200,
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: serializeBridgeReceipts(bridgeReceipts.ok, request.headers['accepts'])
-      }
-    } else {
-      return {
-        statusCode: 500,
-        body: bridgeReceipts.error.message
-      }
+    return bridgeReceipts.ok ? {
+      statusCode: 200,
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: serializeBridgeReceipts(bridgeReceipts.ok, request.headers.accepts)
+    } : {
+      statusCode: 500,
+      body: bridgeReceipts.error.message
     }
-
   } catch (/** @type {any} */ error) {
     console.error(error)
     return {
