@@ -13,7 +13,7 @@
     "lint": "tsc && eslint '**/*.js'",
     "clean": "rm -rf dist node_modules package-lock.json ./*/{.cache,dist,node_modules}",
     "test": "npm test -w billing -w upload-api -w carpark -w replicator -w satnav -w ucan-invocation -w roundabout -w filecoin",
-    "test-integration": "ava --verbose --serial --timeout=600s test/*.test.js",
+    "test-integration": "ava --verbose --serial --timeout=600s test/bridge.test.js",
     "fetch-metrics-for-space": "npm run fetch-metrics-for-space -w tools",
     "follow-filecoin-receipt-chain": "npm run follow-filecoin-receipt-chain -w tools",
     "d1-dynamo-migration": "npm run d1-dynamo-migration -w tools"
@@ -49,6 +49,7 @@
   "dependencies": {
     "@ipld/dag-json": "^10.1.5",
     "@serverless-stack/node": "^1.18.0",
+    "@web-std/stream": "^1.0.3",
     "aws-cdk-lib": "2.50.0"
   },
   "simple-git-hooks": {

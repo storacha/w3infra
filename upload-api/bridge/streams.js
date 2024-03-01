@@ -1,3 +1,4 @@
+import { ReadableStream } from "@web-std/stream"
 
 /**
  * Stream utilities adapted from https://stackoverflow.com/questions/40385133/retrieve-data-from-a-readablestream-object
