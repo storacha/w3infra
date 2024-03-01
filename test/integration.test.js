@@ -120,9 +120,7 @@ test('w3infra integration flow', async t => {
   if (!spaceDid) {
     throw new Error('Testing space DID must be set')
   }
-  console.log("GETTING ACCOUNT")
   const account = client.accounts()[DidMailto.fromEmail(inbox.email)]
-  console.log("GOT ACCOUNT", account)
 
   // it should be possible to create more than one space
   const space = await client.createSpace("2nd space")
