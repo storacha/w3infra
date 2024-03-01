@@ -35,7 +35,7 @@
     "@web-std/fetch": "^4.1.0",
     "@web3-storage/data-segment": "5.0.0",
     "@web3-storage/filecoin-client": "3.0.1",
-    "@web3-storage/w3up-client": "^9.2.2",
+    "@web3-storage/w3up-client": "^12.4.1",
     "ava": "^4.3.3",
     "dotenv": "^16.0.3",
     "git-rev-sync": "^3.0.2",

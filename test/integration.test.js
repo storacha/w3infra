@@ -103,7 +103,7 @@ test('authorizations can be blocked by email or domain', async t => {
   
   // it would be nice to use t.throwsAsync here, but that doesn't work with errors that aren't exceptions: https://github.com/avajs/ava/issues/2517
   try {
-    await client.authorize('travis@example2.com')
+    await client.login('travis@example2.com')
     t.fail('authorize should fail with a blocked domain')
   } catch (e) {
     t.is(e.name, 'AccountBlocked')
@@ -119,11 +119,12 @@ test('w3infra integration flow', async t => {
   if (!spaceDid) {
     throw new Error('Testing space DID must be set')
   }
+  const account = client.accounts[0]
 
   // it should be possible to create more than one space
   const space = await client.createSpace("2nd space")
-  await client.setCurrentSpace(space.did())
-  await client.registerSpace(inbox.email)
+  await account.provision(space.did())
+  await space.save()
 
   // Get space metrics before upload
   const spaceBeforeUploadAddMetrics = await getSpaceMetrics(t, spaceDid, SPACE_METRICS_NAMES.UPLOAD_ADD_TOTAL)
