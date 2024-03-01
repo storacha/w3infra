@@ -4,6 +4,7 @@ import pWaitFor from 'p-wait-for'
 import { HeadObjectCommand } from '@aws-sdk/client-s3'
 import { PutItemCommand } from '@aws-sdk/client-dynamodb'
 import { marshall } from '@aws-sdk/util-dynamodb'
+import * as DidMailto from '@web3-storage/did-mailto'
 
 import { METRICS_NAMES, SPACE_METRICS_NAMES } from '../upload-api/constants.js'
 
@@ -119,7 +120,9 @@ test('w3infra integration flow', async t => {
   if (!spaceDid) {
     throw new Error('Testing space DID must be set')
   }
-  const account = client.accounts[0]
+  console.log("GETTING ACCOUNT")
+  const account = client.accounts()[DidMailto.fromEmail(inbox.email)]
+  console.log("GOT ACCOUNT", account)
 
   // it should be possible to create more than one space
   const space = await client.createSpace("2nd space")
