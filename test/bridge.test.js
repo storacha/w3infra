@@ -105,8 +105,8 @@ test('the bridge can make various types of requests', async t => {
   t.deepEqual(response.status, 200)
   const receipts = dagJSON.parse(await response.text())
   t.deepEqual(receipts.length, 1)
-  t.assert(receipts[0].data.out.ok)
-  const result = receipts[0].data.out.ok
+  t.assert(receipts[0].p.out.ok)
+  const result = receipts[0].p.out.ok
   t.deepEqual(result.results, [])
   t.deepEqual(result.size, 0)
 
@@ -126,7 +126,7 @@ test('the bridge can make various types of requests', async t => {
   )
   const secondReceipts = dagJSON.parse(await secondResponse.text())
   // assert that the first item in the list is the item we just uploaded
-  t.deepEqual(secondReceipts[0].data.out.ok.results[0].root, fileLink)
+  t.deepEqual(secondReceipts[0].p.out.ok.results[0].root, fileLink)
 
 
   // verify expired requests fail
@@ -141,13 +141,12 @@ test('the bridge can make various types of requests', async t => {
     }
   )
   const expiredReceipts = dagJSON.parse(await expiredResponse.text())
-  t.assert(expiredReceipts[0].data.out.error)
+  t.assert(expiredReceipts[0].p.out.error)
 
   
   // ensure response is verifiable
-  const data = receipts[0].data
-  const sig = receipts[0].sig
-  const signature = Signature.view(sig)
+  const payload = receipts[0].p
+  const signature = Signature.view(receipts[0].s)
 
   // we need to get the service key out of band because the receipt
   // has a did:web as it's `iss` field but local development environments
@@ -155,7 +154,7 @@ test('the bridge can make various types of requests', async t => {
   // resolvable using the normal `did:web` resolution algorithm
   const publicKey = await getServicePublicKey(t.context.apiEndpoint)
   const verifier = ed25519.Verifier.parse(publicKey)
-  const verification = await signature.verify(verifier, CBOR.encode(data))
+  const verification = await signature.verify(verifier, CBOR.encode(payload))
   if (verification.error) {
     t.fail(verification.error.message)
     console.error(verification.error)

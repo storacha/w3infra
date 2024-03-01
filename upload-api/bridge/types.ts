@@ -41,7 +41,7 @@ export interface BridgeRequestContent {
 export interface UnknownContentType extends Failure {}
 export type BodyParsingFailure = UnknownContentType | UnexpectedFailure
 
-export type BodyParser = (contentType: string, body: ReadableStream) =>
+export type BodyParser = (body: ReadableStream, contentType?: string) =>
   Promise<Result<BridgeRequestContent, BodyParsingFailure>>
 
 export interface InvalidTask extends Failure {}
@@ -66,8 +66,8 @@ export type TasksExecutor = (
   Promise<Receipt<any, TasksExecutionFailure>[]>
   
 export interface BridgeReceipt {
-  data: OutcomeModel,
-  sig: Signature
+  p: OutcomeModel,
+  s: Signature
 }
 export type BridgeReceiptFailure = UnexpectedFailure
 export type BridgeReceiptBuilder = (receipts: TaskReceipt[]) => 

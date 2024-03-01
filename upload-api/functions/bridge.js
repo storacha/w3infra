@@ -99,11 +99,11 @@ async function parseTasks(maybeTasks) {
 /**
  * @type {import('../bridge/types').BodyParser}
  */
-async function parseBody(contentType, body) {
+async function parseBody(body, contentType) {
   const bodyBytes = await streamToArrayBuffer(body)
   let parsedBody
-  if (contentType === 'application/json' || contentType === 'application/vnd.ipld.dag-json') {
-    parsedBody = dagJSON.parse(new TextDecoder().decode(bodyBytes))
+  if (!contentType || contentType === 'application/json' || contentType === 'application/vnd.ipld.dag-json') {
+    parsedBody = dagJSON.decode(bodyBytes)
   } else if (contentType === 'application/cbor' || contentType === 'application/vnd.ipld.dag-cbor') {
     parsedBody = dagCBOR.decode(bodyBytes)
   } else {
@@ -144,8 +144,8 @@ async function buildBridgeReceipts(receipts) {
   for (const receipt of receipts) {
     if (receipt.root.data) {
       bridgeReceipts.push({
-        data: receipt.root.data?.ocm,
-        sig: receipt.root.data?.sig
+        p: receipt.root.data?.ocm,
+        s: receipt.root.data?.sig
       })
     } else {
       return {
@@ -238,13 +238,6 @@ export async function handleBridgeRequest(request, context) {
       }
     }
 
-    if (!contentType) {
-      return {
-        statusCode: 400,
-        body: 'request has no Content-Type header'
-      }
-    }
-
     const parseAuthSecretResult = await parseAuthSecretHeader(authSecretHeader)
 
     if (parseAuthSecretResult.error) {
@@ -265,7 +258,7 @@ export async function handleBridgeRequest(request, context) {
     const delegation = parseAuthorizationResult.ok
 
 
-    const parseBodyResult = await parseBody(contentType, body)
+    const parseBodyResult = await parseBody(body, contentType)
     if (parseBodyResult.error) {
       return {
         statusCode: 400,
@@ -285,7 +278,7 @@ export async function handleBridgeRequest(request, context) {
     return bridgeReceipts.ok ? {
       statusCode: 200,
       headers: {
-        "Content-Type": "application/json"
+        "Content-Type": "application/vnd.ipld.dag-json"
       },
       body: serializeBridgeReceipts(bridgeReceipts.ok, request.headers.accepts)
     } : {
