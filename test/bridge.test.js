@@ -101,10 +101,9 @@ test('the bridge can make various types of requests', async t => {
       ]
     }
   )
-  const responseBody = await response.text()
-  console.log("BRIDGE", responseBody)
+
   t.deepEqual(response.status, 200)
-  const receipts = dagJSON.parse(responseBody)
+  const receipts = dagJSON.parse(await response.text())
   t.deepEqual(receipts.length, 1)
   t.assert(receipts[0].p.out.ok)
   const result = receipts[0].p.out.ok
@@ -126,6 +125,9 @@ test('the bridge can make various types of requests', async t => {
     }
   )
   const secondReceipts = dagJSON.parse(await secondResponse.text())
+  console.log("BRIDGE OUT", secondReceipts[0].p.out)
+  t.assert(secondReceipts[0].p.out.ok)
+  t.deepEqual(secondReceipts[0].p.out.ok.results.length, 1)
   // assert that the first item in the list is the item we just uploaded
   t.deepEqual(secondReceipts[0].p.out.ok.results[0].root, fileLink)
 
