@@ -35,13 +35,12 @@ async function getServicePublicKey(apiEndpoint) {
 /**
  * 
  * @param {import('@web3-storage/w3up-client').Client} client 
- * @param {import('@ucanto/interface').DID} spaceDID 
  * @param {[import('@ucanto/interface').Capability, ...import('@ucanto/interface').Capability[]]} capabilities 
  * @param {number} expiration 
  * @param {string | undefined} password 
  * @returns 
  */
-async function generateAuthHeaders(client, spaceDID, capabilities, expiration, password = 'i am the very model of a modern major general') {
+async function generateAuthHeaders(client, capabilities, expiration, password = 'i am the very model of a modern major general') {
   const coupon = await client.coupon.issue({
     capabilities,
     expiration,
@@ -75,7 +74,6 @@ async function makeBridgeRequest(context, client, spaceDID, capabilities, expira
       'content-type': 'application/json',
       ...await generateAuthHeaders(
         client,
-        spaceDID,
         capabilities,
         expiration
       )
