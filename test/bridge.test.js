@@ -11,8 +11,6 @@ import {
 } from './helpers/deployment.js'
 import { randomFile } from './helpers/random.js'
 import { createMailSlurpInbox, setupNewClient } from './helpers/up-client.js'
-import { Client } from '@web3-storage/w3up-client'
-
 
 test.before(t => {
   t.context = {
@@ -36,7 +34,7 @@ async function getServicePublicKey(apiEndpoint) {
 
 /**
  * 
- * @param {Client} client 
+ * @param {import('@web3-storage/w3up-client').Client} client 
  * @param {import('@ucanto/interface').DID} spaceDID 
  * @param {[import('@ucanto/interface').Capability, ...import('@ucanto/interface').Capability[]]} capabilities 
  * @param {number} expiration 
@@ -53,7 +51,7 @@ async function generateAuthHeaders(client, spaceDID, capabilities, expiration, p
   const { ok: bytes, error } = await coupon.archive()
   if (!bytes) {
     console.error(error)
-    return process.exit(1)
+    throw new Error(error.message)
   }
   return {
     'X-Auth-Secret': base64url.encode(new TextEncoder().encode(password)),
@@ -64,7 +62,7 @@ async function generateAuthHeaders(client, spaceDID, capabilities, expiration, p
 /**
  * 
  * @param {import('./helpers/context.js').Context} context 
- * @param {Client} client 
+ * @param {import('@web3-storage/w3up-client').Client} client 
  * @param {import('@ucanto/interface').DID} spaceDID 
  * @param {[import('@ucanto/interface').Capability, ...import('@ucanto/interface').Capability[]]} capabilities 
  * @param {number} expiration 
