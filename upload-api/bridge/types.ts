@@ -1,5 +1,11 @@
+import { PrincipalView } from "@ipld/dag-ucan/."
 import { Ability, DID, Delegation, Failure, Principal, Result, Receipt, OutcomeModel, Signature } from "@ucanto/interface"
 import { ed25519 } from '@ucanto/principal'
+
+export interface BridgeRequestContext {
+  serviceDID: PrincipalView<DID>
+  serviceURL: URL
+}
 
 export interface UnexpectedFailure extends Failure {}
 

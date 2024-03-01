@@ -1,5 +1,6 @@
 import * as Sentry from '@sentry/serverless'
-import { invoke, DID, Delegation, sha256 } from '@ucanto/core'
+import { invoke, Delegation, sha256 } from '@ucanto/core'
+import * as DID from '@ipld/dag-ucan/did'
 import { connect } from '@ucanto/client'
 import * as CAR from '@ucanto/transport/car'
 import * as HTTP from '@ucanto/transport/http'
@@ -201,6 +202,8 @@ export async function invokeAndExecuteTasks(
   return connection.execute(firstInvocation, ...restOfInvocations)
 }
 
+
+
 /**
  * AWS HTTP Gateway handler for POST / with ucan invocation router.
  *
@@ -208,25 +211,10 @@ export async function invokeAndExecuteTasks(
  * see: https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-develop-integrations-lambda.html#http-api-develop-integrations-lambda.proxy-format
  *
  * @param {import('aws-lambda').APIGatewayProxyEventV2} request
+ * @param {import('../bridge/types').BridgeRequestContext} context
  */
-async function handlerFn(request) {
+export async function handleBridgeRequest(request, context) {
   try {
-    const { UPLOAD_API_DID, ACCESS_SERVICE_URL } = process.env
-
-    if (!UPLOAD_API_DID) {
-      return {
-        statusCode: 500,
-        body: 'UPLOAD_API_DID is not set'
-      }
-    }
-
-    if (!ACCESS_SERVICE_URL) {
-      return {
-        statusCode: 500,
-        body: 'ACCESS_SERVICE_URL is not set'
-      }
-    }
-
     const { authSecretHeader, authorizationHeader, body, contentType } = parseAwsLambdaRequest(request)
 
     if (!authorizationHeader) {
@@ -287,8 +275,8 @@ async function handlerFn(request) {
     const tasks = parseBodyResult.ok.tasks
     const receipts = await invokeAndExecuteTasks(
       issuer,
-      DID.parse(UPLOAD_API_DID),
-      new URL(ACCESS_SERVICE_URL),
+      context.serviceDID,
+      context.serviceURL,
       tasks,
       delegation
     )
@@ -314,4 +302,30 @@ async function handlerFn(request) {
   }
 }
 
-export const handler = Sentry.AWSLambda.wrapHandler(handlerFn)
+/**
+ * 
+ * @returns {import('aws-lambda').Handler}
+ */
+function createBridgeHandler(){
+  const { UPLOAD_API_DID, ACCESS_SERVICE_URL } = process.env
+
+  if (!UPLOAD_API_DID) {
+    throw new Error('UPLOAD_API_DID is not set')
+  }
+  const serviceDID = DID.parse(UPLOAD_API_DID)
+
+  if (!ACCESS_SERVICE_URL) {
+    throw new Error('ACCESS_SERVICE_URL is not set')
+  }
+  const serviceURL = new URL(ACCESS_SERVICE_URL)
+  /**
+   * @type {import('../bridge/types').BridgeRequestContext}
+   */
+  const context = {
+    serviceDID,
+    serviceURL
+  }
+  return (request) => handleBridgeRequest(request, context)
+}
+
+export const handler = Sentry.AWSLambda.wrapHandler(createBridgeHandler())
