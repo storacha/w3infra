@@ -101,9 +101,10 @@ test('the bridge can make various types of requests', async t => {
       ]
     }
   )
-
+  const responseBody = await response.text()
+  console.log("BRIDGE", responseBody)
   t.deepEqual(response.status, 200)
-  const receipts = dagJSON.parse(await response.text())
+  const receipts = dagJSON.parse(responseBody)
   t.deepEqual(receipts.length, 1)
   t.assert(receipts[0].p.out.ok)
   const result = receipts[0].p.out.ok
