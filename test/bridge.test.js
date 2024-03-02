@@ -4,6 +4,7 @@ import * as Signature from '@ipld/dag-ucan/signature'
 import { ed25519 } from '@ucanto/principal'
 import { CBOR } from '@ucanto/core'
 import * as dagJSON from '@ipld/dag-json'
+import pWaitFor from 'p-wait-for'
 import { test } from './helpers/context.js'
 import {
   getApiEndpoint,
@@ -112,10 +113,16 @@ test('the bridge can make various types of requests', async t => {
 
 
   // verify that uploading a file changes the upload/list response
+  // upload a file and wait for it to show up
   const file = await randomFile(42)
   const fileLink = await client.uploadFile(file)
-  await new Promise(resolve => setTimeout(resolve, 500))
-  console.log("UPLOADED", fileLink)
+  await pWaitFor(async () => {
+    const listResult = await client.capability.upload.list()
+    return !!listResult.results.find(upload => upload.root.equals(fileLink))
+  }, {
+    interval: 100,
+  })
+  
   const secondResponse = await makeBridgeRequest(
     t.context, client, spaceDID,
     [{ can: 'upload/list', with: spaceDID }],
@@ -126,8 +133,8 @@ test('the bridge can make various types of requests', async t => {
       ]
     }
   )
+
   const secondReceipts = dagJSON.parse(await secondResponse.text())
-  console.log("BRIDGE OUT", secondReceipts[0].p.out)
   t.assert(secondReceipts[0].p.out.ok)
   t.deepEqual(secondReceipts[0].p.out.ok.results.length, 1)
   // assert that the first item in the list is the item we just uploaded
@@ -148,7 +155,7 @@ test('the bridge can make various types of requests', async t => {
   const expiredReceipts = dagJSON.parse(await expiredResponse.text())
   t.assert(expiredReceipts[0].p.out.error)
 
-  
+
   // ensure response is verifiable
   const payload = receipts[0].p
   const signature = Signature.view(receipts[0].s)
