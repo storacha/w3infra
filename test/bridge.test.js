@@ -118,7 +118,7 @@ test('the bridge can make various types of requests', async t => {
   const fileLink = await client.uploadFile(file)
   await pWaitFor(async () => {
     const listResult = await client.capability.upload.list()
-    return !!listResult.results.find(upload => upload.root.equals(fileLink))
+    return listResult.results.some(upload => upload.root.equals(fileLink))
   }, {
     interval: 100,
   })
