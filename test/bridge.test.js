@@ -132,7 +132,7 @@ test('the bridge can make various types of requests', async t => {
   
     secondReceipts = dagJSON.parse(await secondResponse.text())
     const result = secondReceipts[0].p.out.ok.results[0]
-    return !!(result && result.root.equals(fileLink))
+    return Boolean(result && result.root.equals(fileLink))
   }, {
     interval: 100,
   })
