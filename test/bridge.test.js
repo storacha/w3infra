@@ -115,6 +115,7 @@ test('the bridge can make various types of requests', async t => {
   // verify that uploading a file changes the upload/list response
   // upload a file and wait for it to show up
   const file = await randomFile(42)
+  console.log('uploadFileing to', client.currentSpace().did())
   const fileLink = await client.uploadFile(file)
   await pWaitFor(async () => {
     const listResult = await client.capability.upload.list()
@@ -124,6 +125,7 @@ test('the bridge can make various types of requests', async t => {
     interval: 100,
   })
   
+  console.log('bridge listing', spaceDID)
   const secondResponse = await makeBridgeRequest(
     t.context, client, spaceDID,
     [{ can: 'upload/list', with: spaceDID }],
