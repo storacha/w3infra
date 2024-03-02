@@ -136,6 +136,7 @@ test('the bridge can make various types of requests', async t => {
   )
 
   const secondReceipts = dagJSON.parse(await secondResponse.text())
+  console.log("Second:", secondReceipts)
   t.assert(secondReceipts[0].p.out.ok)
   t.deepEqual(secondReceipts[0].p.out.ok.results.length, 1)
   // assert that the first item in the list is the item we just uploaded
