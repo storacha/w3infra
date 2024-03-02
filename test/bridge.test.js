@@ -117,27 +117,25 @@ test('the bridge can make various types of requests', async t => {
   const file = await randomFile(42)
   console.log('uploadFileing to', client.currentSpace().did())
   const fileLink = await client.uploadFile(file)
+  let secondReceipts
   await pWaitFor(async () => {
-    const listResult = await client.capability.upload.list()
-    console.log("bridge got list result", listResult)
-    return listResult.results.some(upload => upload.root.equals(fileLink))
+    const secondResponse = await makeBridgeRequest(
+      t.context, client, spaceDID,
+      [{ can: 'upload/list', with: spaceDID }],
+      Date.now() + (1000 * 60),
+      {
+        tasks: [
+          ['upload/list', spaceDID, {}]
+        ]
+      }
+    )
+  
+    secondReceipts = dagJSON.parse(await secondResponse.text())
+    return secondReceipts[0].p.out.ok.results[0].root.equals(fileLink) 
   }, {
     interval: 100,
   })
-  
-  console.log('bridge listing', spaceDID)
-  const secondResponse = await makeBridgeRequest(
-    t.context, client, spaceDID,
-    [{ can: 'upload/list', with: spaceDID }],
-    Date.now() + (1000 * 60),
-    {
-      tasks: [
-        ['upload/list', spaceDID, {}]
-      ]
-    }
-  )
 
-  const secondReceipts = dagJSON.parse(await secondResponse.text())
   console.log("Second:", secondReceipts[0].p.out)
   t.assert(secondReceipts[0].p.out.ok)
   t.deepEqual(secondReceipts[0].p.out.ok.results.length, 1)
