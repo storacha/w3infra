@@ -13,12 +13,7 @@ export function getStage () {
     return stage
   }
 
-  const f = fs.readFileSync(path.join(
-    process.cwd(),
-    '.sst/stage'
-  ))
-
-  return f.toString()
+  return fs.readFileSync(path.join(process.cwd(), '.sst', 'stage'), 'utf8')
 }
 
 export const getStackName = () => {
