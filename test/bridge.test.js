@@ -119,6 +119,7 @@ test('the bridge can make various types of requests', async t => {
   const fileLink = await client.uploadFile(file)
   let secondReceipts
   await pWaitFor(async () => {
+    console.log('bridge listing ', spaceDID, ' waiting for ', fileLink)
     const secondResponse = await makeBridgeRequest(
       t.context, client, spaceDID,
       [{ can: 'upload/list', with: spaceDID }],
