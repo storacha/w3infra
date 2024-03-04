@@ -138,7 +138,7 @@ test('the bridge can make various types of requests', async t => {
   t.assert(secondReceipts[0].p.out.ok)
   t.deepEqual(secondReceipts[0].p.out.ok.results.length, 1)
   // assert that the first item in the list is the item we just uploaded
-  t.deepEqual(secondReceipts[0].p.out.ok.results[0].root, fileLink)
+  t.deepEqual(secondReceipts[0].p.out.ok.results[0].root.toString(), fileLink.toString())
 
 
   // verify expired requests fail
