@@ -149,7 +149,7 @@ export function setupSentry (app, stack) {
 }
 
 /**
- * @param {import('@serverless-stack/resources').Stack} stack
+ * @param {import('sst/constructs').Stack} stack
  */
 export function getServiceURL (stack) {
   // in production we use the top level subdomain

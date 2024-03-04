@@ -63,12 +63,11 @@ async function generateAuthHeaders(client, capabilities, expiration, password = 
  * 
  * @param {import('./helpers/context.js').Context} context 
  * @param {import('@web3-storage/w3up-client').Client} client 
- * @param {import('@ucanto/interface').DID} spaceDID 
  * @param {[import('@ucanto/interface').Capability, ...import('@ucanto/interface').Capability[]]} capabilities 
  * @param {number} expiration 
  * @param {any} requestBody 
  */
-async function makeBridgeRequest(context, client, spaceDID, capabilities, expiration, requestBody) {
+async function makeBridgeRequest(context, client, capabilities, expiration, requestBody) {
   return fetch(`${context.apiEndpoint}/bridge`, {
     method: 'POST',
     headers: {
@@ -93,7 +92,7 @@ test('the bridge can make various types of requests', async t => {
   }
 
   const response = await makeBridgeRequest(
-    t.context, client, spaceDID,
+    t.context, client,
     [{ can: 'upload/list', with: spaceDID }],
     Date.now() + (1000 * 60),
     {
@@ -119,7 +118,7 @@ test('the bridge can make various types of requests', async t => {
   let secondReceipts
   await pWaitFor(async () => {
     const secondResponse = await makeBridgeRequest(
-      t.context, client, spaceDID,
+      t.context, client,
       [{ can: 'upload/list', with: spaceDID }],
       Date.now() + (1000 * 60),
       {
@@ -144,7 +143,7 @@ test('the bridge can make various types of requests', async t => {
 
   // verify expired requests fail
   const expiredResponse = await makeBridgeRequest(
-    t.context, client, spaceDID,
+    t.context, client,
     [{ can: 'upload/list', with: spaceDID }],
     0,
     {
