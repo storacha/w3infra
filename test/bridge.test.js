@@ -115,11 +115,9 @@ test('the bridge can make various types of requests', async t => {
   // verify that uploading a file changes the upload/list response
   // upload a file and wait for it to show up
   const file = await randomFile(42)
-  console.log('uploadFileing to', client.currentSpace().did())
   const fileLink = await client.uploadFile(file)
   let secondReceipts
   await pWaitFor(async () => {
-    console.log('bridge listing ', spaceDID, ' waiting for ', fileLink)
     const secondResponse = await makeBridgeRequest(
       t.context, client, spaceDID,
       [{ can: 'upload/list', with: spaceDID }],
@@ -131,7 +129,6 @@ test('the bridge can make various types of requests', async t => {
       }
     )
     const response = await secondResponse.text()
-    console.log("GOT", response)
     secondReceipts = dagJSON.parse(response)
     const result = secondReceipts[0].p.out.ok.results[0]
     return Boolean(result && result.root.equals(fileLink))
@@ -139,7 +136,6 @@ test('the bridge can make various types of requests', async t => {
     interval: 100,
   })
 
-  console.log("Second:", secondReceipts[0].p.out)
   t.assert(secondReceipts[0].p.out.ok)
   t.deepEqual(secondReceipts[0].p.out.ok.results.length, 1)
   // assert that the first item in the list is the item we just uploaded
