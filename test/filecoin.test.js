@@ -12,7 +12,7 @@ import {
   getAwsBucketClient,
   getRoundaboutEndpoint,
   getDynamoDb,
-  stage
+  getStage,
 } from './helpers/deployment.js'
 import { createMailSlurpInbox, setupNewClient } from './helpers/up-client.js'
 import { getClientConfig } from './helpers/fil-client.js'
@@ -33,6 +33,7 @@ test.before(t => {
 })
 
 test('w3filecoin integration flow', async t => {
+  const stage = getStage()
   const s3Client = getAwsBucketClient()
   const s3ClientFilecoin = getAwsBucketClient('us-east-2')
   const inbox = await createMailSlurpInbox()

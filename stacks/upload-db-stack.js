@@ -1,4 +1,4 @@
-import { Table, Bucket, Config } from '@serverless-stack/resources'
+import { Table, Bucket, Config } from 'sst/constructs'
 
 import {
   storeTableProps,
@@ -17,7 +17,7 @@ import {
 import { setupSentry, getBucketConfig } from './config.js'
 
 /**
- * @param {import('@serverless-stack/resources').StackContext} properties
+ * @param {import('sst/constructs').StackContext} properties
  */
 export function UploadDbStack({ stack, app }) {
 

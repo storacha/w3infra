@@ -1,11 +1,11 @@
-import { Table, Config } from '@serverless-stack/resources'
+import { Table, Config } from 'sst/constructs'
 import { customerTableProps } from '../billing/tables/customer.js'
 import { spaceDiffTableProps } from '../billing/tables/space-diff.js'
 import { spaceSnapshotTableProps } from '../billing/tables/space-snapshot.js'
 import { usageTableProps } from '../billing/tables/usage.js'
 
 /**
- * @param {import('@serverless-stack/resources').StackContext} properties
+ * @param {import('sst/constructs').StackContext} properties
  */
 export const BillingDbStack = ({ stack }) => {
   const customerTable = new Table(stack, 'customer', customerTableProps)

@@ -1,4 +1,4 @@
-import { Bucket, use } from '@serverless-stack/resources'
+import { Bucket, use } from 'sst/constructs'
 import {
   Aws,
   Duration,
@@ -19,13 +19,9 @@ import {
 } from './config.js'
 
 /**
- * @param {import('@serverless-stack/resources').StackContext} properties
+ * @param {import('sst/constructs').StackContext} properties
  */
 export function UcanFirehoseStack ({ stack, app }) {
-  stack.setDefaultFunctionProps({
-    srcPath: 'ucan-firehose'
-  })
-
   // Setup app monitoring with Sentry
   setupSentry(app, stack)
 

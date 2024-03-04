@@ -7,16 +7,16 @@
     "coverage": "c8 -r text -r html npm test"
   },
   "dependencies": {
-    "@aws-sdk/client-dynamodb": "^3.430.0",
-    "@aws-sdk/client-sqs": "^3.431.0",
-    "@aws-sdk/util-dynamodb": "^3.430.0",
+    "@aws-sdk/client-dynamodb": "^3.515.0",
+    "@aws-sdk/client-sqs": "^3.515.0",
+    "@aws-sdk/util-dynamodb": "^3.515.0",
     "@sentry/serverless": "^7.74.1",
     "@ucanto/interface": "^9.0.0",
     "@ucanto/server": "^9.0.1",
-    "@web3-storage/capabilities": "^13.0.0",
+    "@web3-storage/capabilities": "^13.1.1",
     "big.js": "^6.2.1",
-    "multiformats": "^12.1.2",
-    "p-retry": "^6.1.0",
+    "multiformats": "^13.1.0",
+    "p-retry": "^6.2.0",
     "stripe": "^14.2.0",
     "uint8arrays": "^4.0.6"
   },
@@ -25,7 +25,7 @@
     "aws-lambda": "^1.0.7",
     "c8": "^8.0.1",
     "entail": "^2.1.1",
-    "testcontainers": "^10.2.1"
+    "testcontainers": "^10.7.1"
   },
   "engines": {
     "node": ">=16.15"

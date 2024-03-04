@@ -49,7 +49,7 @@ test.beforeEach(async t => {
     queuedMessages.set(name, [])
 
     const queueConsumer = Consumer.create({
-      queueUrl: queueUrl,
+      queueUrl,
       sqs: t.context.sqsClient,
       handleMessage: (message) => {
         // @ts-expect-error may not have body
@@ -62,8 +62,8 @@ test.beforeEach(async t => {
     })
 
     queues[name] = {
-      queueName: queueName,
-      queueUrl: queueUrl,
+      queueName,
+      queueUrl,
       queueConsumer,
     }
   }

@@ -1,5 +1,5 @@
 import * as Sentry from '@sentry/serverless'
-import { Config } from '@serverless-stack/node/config/index.js'
+import { Config } from 'sst/node/config'
 import * as Delegation from '@ucanto/core/delegation'
 import { fromString } from 'uint8arrays/from-string'
 import * as DID from '@ipld/dag-ucan/did'

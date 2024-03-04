@@ -1,7 +1,7 @@
 import {
   Bucket,
   KinesisStream,
-} from '@serverless-stack/resources'
+} from 'sst/constructs'
 import { PolicyStatement, StarPrincipal, Effect } from 'aws-cdk-lib/aws-iam'
 
 import {
@@ -11,13 +11,9 @@ import {
 } from './config.js'
 
 /**
- * @param {import('@serverless-stack/resources').StackContext} properties
+ * @param {import('sst/constructs').StackContext} properties
  */
 export function UcanInvocationStack({ stack, app }) {
-  stack.setDefaultFunctionProps({
-    srcPath: 'ucan-invocation'
-  })
-
   // Setup app monitoring with Sentry
   setupSentry(app, stack)
 

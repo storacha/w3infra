@@ -4,7 +4,7 @@ import { validate, encode, decode, encodeKey } from '../data/space-snapshot.js'
 /**
  * Stores snapshots of total space size at a given time.
  *
- * @type {import('@serverless-stack/resources').TableProps}
+ * @type {import('sst/constructs').TableProps}
  */
 export const spaceSnapshotTableProps = {
   fields: {
