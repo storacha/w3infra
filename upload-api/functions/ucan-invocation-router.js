@@ -20,7 +20,7 @@ import { createClient as createFilecoinSubmitQueueClient } from '../../filecoin/
 import { createClient as createPieceOfferQueueClient } from '../../filecoin/queue/piece-offer-queue.js'
 import { getServiceSigner, parseServiceDids, getServiceConnection } from '../config.js'
 import { createUcantoServer } from '../service.js'
-import { Config } from '@serverless-stack/node/config/index.js'
+import { Config } from 'sst/node/config'
 import { CAR, Legacy, Codec } from '@ucanto/transport'
 import { Email } from '../email.js'
 import { useProvisionStore } from '../stores/provisions.js'

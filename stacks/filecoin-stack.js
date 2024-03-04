@@ -3,7 +3,7 @@ import {
   Function,
   Queue,
   use,
-} from '@serverless-stack/resources'
+} from 'sst/constructs'
 import { Duration, aws_events as awsEvents } from 'aws-cdk-lib'
 import { StartingPosition } from 'aws-cdk-lib/aws-lambda'
 
@@ -16,13 +16,9 @@ import { CARPARK_EVENT_BRIDGE_SOURCE_EVENT } from '../carpark/event-bus/source.j
 import { Status } from '../filecoin/store/piece.js'
 
 /**
- * @param {import('@serverless-stack/resources').StackContext} properties
+ * @param {import('sst/constructs').StackContext} properties
  */
 export function FilecoinStack({ stack, app }) {
-  stack.setDefaultFunctionProps({
-    srcPath: 'filecoin'
-  })
-
   const {
     AGGREGATOR_DID,
     AGGREGATOR_URL,
@@ -60,7 +56,7 @@ export function FilecoinStack({ stack, app }) {
   const filecoinSubmitQueue = new Queue(stack, filecoinSubmitQueueName)
   filecoinSubmitQueue.addConsumer(stack, {
     function: {
-      handler: 'functions/handle-filecoin-submit-message.main',
+      handler: 'filecoin/functions/handle-filecoin-submit-message.main',
       environment : {
         PIECE_TABLE_NAME: pieceTable.tableName,
       },
@@ -85,7 +81,7 @@ export function FilecoinStack({ stack, app }) {
   const pieceOfferQueue = new Queue(stack, pieceOfferQueueName)
   pieceOfferQueue.addConsumer(stack, {
     function: {
-      handler: 'functions/handle-piece-offer-message.main',
+      handler: 'filecoin/functions/handle-piece-offer-message.main',
       environment: {
         DID: UPLOAD_API_DID,
         AGGREGATOR_DID,
@@ -113,7 +109,7 @@ export function FilecoinStack({ stack, app }) {
     schedule: 'rate(10 minutes)',
     job: {
       function: {
-        handler: 'functions/handle-cron-tick.main',
+        handler: 'filecoin/functions/handle-cron-tick.main',
         environment : {
           DID: UPLOAD_API_DID,
           PIECE_TABLE_NAME: pieceTable.tableName,
@@ -142,7 +138,7 @@ export function FilecoinStack({ stack, app }) {
   pieceTable.addConsumers(stack, {
     handlePieceInsertToContentClaim: {
       function: {
-        handler: 'functions/handle-piece-insert-to-content-claim.main',
+        handler: 'filecoin/functions/handle-piece-insert-to-content-claim.main',
         environment: {
           CONTENT_CLAIMS_DID,
           CONTENT_CLAIMS_URL,
@@ -171,7 +167,7 @@ export function FilecoinStack({ stack, app }) {
     },
     handlePieceInsertToFilecoinSubmit: {
       function: {
-        handler: 'functions/handle-piece-insert-to-filecoin-submit.main',
+        handler: 'filecoin/functions/handle-piece-insert-to-filecoin-submit.main',
         environment: {
           DID: UPLOAD_API_DID,
           STOREFRONT_DID: UPLOAD_API_DID,
@@ -199,7 +195,7 @@ export function FilecoinStack({ stack, app }) {
     },
     handlePieceStatusUpdate: {
       function: {
-        handler: 'functions/handle-piece-status-update.main',
+        handler: 'filecoin/functions/handle-piece-status-update.main',
         environment: {
           DID: UPLOAD_API_DID,
           STOREFRONT_DID: UPLOAD_API_DID,
@@ -245,7 +241,7 @@ export function FilecoinStack({ stack, app }) {
         DISABLE_PIECE_CID_COMPUTE
       },
       permissions: [pieceTable, carparkBucket],
-      handler: 'functions/piece-cid-compute.handler',
+      handler: 'filecoin/functions/piece-cid-compute.handler',
       timeout: 15 * 60,
     },
   )
@@ -271,7 +267,7 @@ export function FilecoinStack({ stack, app }) {
     },
   })
 
-  /** @type {import('@serverless-stack/resources').EventBusQueueTargetProps} */
+  /** @type {import('sst/constructs').EventBusQueueTargetProps} */
   const targetPieceCidComputeQueue = {
     type: 'queue',
     queue: pieceCidComputeQueue,
@@ -307,7 +303,7 @@ export function FilecoinStack({ stack, app }) {
       START_FILECOIN_METRICS_EPOCH_MS
     },
     permissions: [adminMetricsTable, workflowBucket, invocationBucket],
-    handler: 'functions/metrics-aggregate-offer-and-accept-total.consumer',
+    handler: 'filecoin/functions/metrics-aggregate-offer-and-accept-total.consumer',
     deadLetterQueue: metricsAggregateTotalDLQ.cdk.queue,
   })
 

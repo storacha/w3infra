@@ -7,7 +7,7 @@ import { dynamoDBTableConfig } from './resources.js'
 
 /**
  * @param {import('@aws-sdk/client-dynamodb').DynamoDBClient} dynamo
- * @param {import("@serverless-stack/resources").TableProps} tableProps
+ * @param {import('sst/constructs').TableProps} tableProps
  */
 export async function createDynamoTable(dynamo, tableProps) {
   const id = customAlphabet('1234567890abcdefghijklmnopqrstuvwxyz', 10)

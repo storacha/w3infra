@@ -1,4 +1,4 @@
-import { Config } from '@serverless-stack/node/config/index.js'
+import { Config } from 'sst/node/config'
 import { Kinesis } from '@aws-sdk/client-kinesis'
 import * as Sentry from '@sentry/serverless'
 

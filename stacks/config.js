@@ -73,7 +73,7 @@ export function getCustomDomain (stage, hostedZone) {
 
 
 /**
- * @param {import('@serverless-stack/resources').Stack} stack
+ * @param {import('sst/constructs').Stack} stack
  */
 export function getEventSourceConfig (stack) {
   if (stack.stage !== 'prod') {
@@ -102,7 +102,7 @@ export function getEventSourceConfig (stack) {
 }
 
 /**
- * @param {import('@serverless-stack/resources').Stack} stack
+ * @param {import('sst/constructs').Stack} stack
  */
 export function getKinesisStreamConfig (stack) {
   if (stack.stage !== 'prod' && stack.stage !== 'staging') {
@@ -120,7 +120,7 @@ export function getApiPackageJson () {
   // @ts-expect-error ts thinks this is unused becuase of the ignore
   const require = createRequire(import.meta.url)
   // @ts-ignore ts dont see *.json and dont like it
-  const pkg = require('../../upload-api/package.json')
+  const pkg = require('./upload-api/package.json')
   return pkg
 }
 
@@ -132,8 +132,8 @@ export function getGitInfo () {
 }
 
 /**
- * @param {import('@serverless-stack/resources').App} app
- * @param {import('@serverless-stack/resources').Stack} stack
+ * @param {import('sst/constructs').App} app
+ * @param {import('sst/constructs').Stack} stack
  */
 export function setupSentry (app, stack) {
   // Skip when locally

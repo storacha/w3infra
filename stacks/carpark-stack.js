@@ -3,7 +3,7 @@ import {
   Function,
   Queue,
   use
-} from '@serverless-stack/resources'
+} from 'sst/constructs'
 import * as sqs from 'aws-cdk-lib/aws-sqs'
 
 import { BusStack } from './bus-stack.js'
@@ -11,13 +11,9 @@ import { CARPARK_EVENT_BRIDGE_SOURCE_EVENT } from '../carpark/event-bus/source.j
 import { getBucketConfig, setupSentry } from './config.js'
 
 /**
- * @param {import('@serverless-stack/resources').StackContext} properties
+ * @param {import('sst/constructs').StackContext} properties
  */
 export function CarparkStack({ stack, app }) {
-  stack.setDefaultFunctionProps({
-    srcPath: 'carpark'
-  })
-
   // Setup app monitoring with Sentry
   setupSentry(app, stack)
 
@@ -50,7 +46,7 @@ export function CarparkStack({ stack, app }) {
         EIPFS_INDEXER_SQS_URL
       },
       permissions: [indexerTopicQueue],
-      handler: 'event-bus/eipfs-indexer.handler',
+      handler: 'carpark/event-bus/eipfs-indexer.handler',
     },
   }
 
@@ -71,7 +67,7 @@ export function CarparkStack({ stack, app }) {
       EVENT_BUS_ARN: eventBus.eventBusArn,
     },
     permissions: [eventBus],
-    handler: 'functions/carpark-bucket-event.carparkBucketConsumer',
+    handler: 'carpark/functions/carpark-bucket-event.carparkBucketConsumer',
   })
   carparkBucket.addNotifications(stack, {
     newCarPut: {

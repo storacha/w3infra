@@ -1,6 +1,6 @@
 import * as Sentry from '@sentry/serverless'
 import { authorize } from '@web3-storage/upload-api/validate'
-import { Config } from '@serverless-stack/node/config/index.js'
+import { Config } from 'sst/node/config'
 import * as DidMailto from '@web3-storage/did-mailto'
 import { getServiceSigner, parseServiceDids } from '../config.js'
 import { Email } from '../email.js'

@@ -1,16 +1,10 @@
-import {
-  EventBus
-} from '@serverless-stack/resources'
+import { EventBus } from 'sst/constructs'
 import { setupSentry } from './config.js'
 
 /**
- * @param {import('@serverless-stack/resources').StackContext} properties
+ * @param {import('sst/constructs').StackContext} properties
  */
 export function BusStack({ stack, app }) {
-  stack.setDefaultFunctionProps({
-    srcPath: 'bus'
-  })
-
   // Setup app monitoring with Sentry
   setupSentry(app, stack)
 

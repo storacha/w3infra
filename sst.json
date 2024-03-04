@@ -1,5 +1,0 @@
-{
-  "name": "w3infra",
-  "region": "us-west-2",
-  "main": "stacks/index.js"
-}

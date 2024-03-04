@@ -1,4 +1,5 @@
 import { customAlphabet } from 'nanoid'
+import pRetry from 'p-retry'
 import { GenericContainer as Container } from 'testcontainers'
 import { S3Client, CreateBucketCommand } from '@aws-sdk/client-s3'
 
@@ -11,10 +12,12 @@ export async function createS3(opts = {}) {
   const region = opts.region || 'us-west-2'
   const port = opts.port || 9000
 
-  const minio = await new Container('quay.io/minio/minio')
-    .withCmd(['server', '/data'])
-    .withExposedPorts(port)
-    .start()
+  const minio = await pRetry(() =>
+    new Container('quay.io/minio/minio')
+      .withCommand(['server', '/data'])
+      .withExposedPorts(port)
+      .start()
+  )
 
   const clientOpts = {
     endpoint: `http://${minio.getHost()}:${minio.getMappedPort(port)}`,
