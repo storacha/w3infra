@@ -149,6 +149,22 @@ export function setupSentry (app, stack) {
 }
 
 /**
+ * @param {import('@serverless-stack/resources').Stack} stack
+ */
+export function getServiceURL (stack) {
+  // in production we use the top level subdomain
+  if (stack.stage === 'prod') {
+    return 'https://up.web3.storage'
+  // in staging and PR environments we use a sub-subdomain
+  } else if (stack.stage === 'staging' || stack.stage.startsWith('pr')) {
+    return `https://${stack.stage}.up.web3.storage`
+  // everywhere else we use something more estoteric - usually an AWS Lambda URL
+  } else {
+    return process.env.ACCESS_SERVICE_URL
+  }
+}
+
+/**
  * Get Env validating it is set.
  */
 export function getEnv() {
