@@ -19,11 +19,10 @@ function getAuthLinkFromEmail (email, accessServiceUrl) {
   // forgive me for I have s̵i̵n̴n̴e̵d̴ ̸a̸n̵d̷ ̷p̶a̵r̵s̵e̸d̷ Ȟ̷̞T̷̢̈́M̸̼̿L̴̎ͅ ̵̗̍ẅ̵̝́ï̸ͅt̴̬̅ḫ̸̔ ̵͚̔ŗ̵͊e̸͍͐g̶̜͒ė̷͖x̴̱̌
   // TODO we should update the email and add an ID to this element to make this more robust - tracked in https://github.com/web3-storage/w3infra/issues/208
   const link = email.match(/<a href="([^"]*)".*Verify email address/)[1]
-  if (!link.includes(process.env.ACCESS_SERVICE_URL)){
-    throw new Error('Could not find expected access service verification URL - does the value of ACCESS_SERVICE_URL in your local environment match the deployment you are testing?')
+  if (!link){
+    throw new Error(`Could not find email verification link in ${email}`)
   }
-  // test auth services always link to the staging URL but we want to hit the service we're testing
-  return link.replace(process.env.ACCESS_SERVICE_URL, accessServiceUrl)
+  return link
 }
 
 export async function createMailSlurpInbox() {
@@ -54,16 +53,16 @@ export async function setupNewClient (uploadServiceUrl, options = {}) {
   const client = await createNewClient(uploadServiceUrl)
 
   const timeoutMs = process.env.MAILSLURP_TIMEOUT ? parseInt(process.env.MAILSLURP_TIMEOUT) : 60_000
-  const authorizePromise = client.authorize(email)
+  const authorizePromise = client.login(email)
   // click link in email
   const latestEmail = await mailslurp.waitForLatestEmail(inboxId, timeoutMs)
   const authLink = getAuthLinkFromEmail(latestEmail.body, uploadServiceUrl)
   await fetch(authLink, { method: 'POST' })
-  await authorizePromise
+  const account = await authorizePromise
   if (!client.currentSpace()) {
     const space = await client.createSpace("test space")
-    await client.setCurrentSpace(space.did())
-    await client.registerSpace(email)
+    await account.provision(space.did())
+    await space.save()
   }
 
   return client

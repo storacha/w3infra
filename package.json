@@ -33,10 +33,10 @@
     "@web-std/fetch": "^4.1.0",
     "@web3-storage/data-segment": "5.0.0",
     "@web3-storage/filecoin-client": "3.0.1",
-    "@web3-storage/w3up-client": "^9.2.2",
+    "@web3-storage/w3up-client": "^12.4.1",
     "ava": "^4.3.3",
-    "constructs": "10.3.0",
     "chalk": "4.1.2",
+    "constructs": "10.3.0",
     "dotenv": "^16.0.3",
     "git-rev-sync": "^3.0.2",
     "hd-scripts": "^3.0.2",
@@ -48,8 +48,9 @@
   },
   "dependencies": {
     "@ipld/dag-json": "^10.1.5",
-    "sst": "^2.40.3",
-    "aws-cdk-lib": "2.124.0"
+    "@web-std/stream": "^1.0.3",
+    "aws-cdk-lib": "2.124.0",
+    "sst": "^2.40.3"
   },
   "simple-git-hooks": {
     "pre-commit": "npx lint-staged"

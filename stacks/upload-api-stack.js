@@ -12,7 +12,7 @@ import { CarparkStack } from './carpark-stack.js'
 import { FilecoinStack } from './filecoin-stack.js'
 import { UcanInvocationStack } from './ucan-invocation-stack.js'
 
-import { getCustomDomain, getApiPackageJson, getGitInfo, setupSentry, getEnv, getEventSourceConfig } from './config.js'
+import { getCustomDomain, getApiPackageJson, getGitInfo, setupSentry, getEnv, getEventSourceConfig, getServiceURL } from './config.js'
 
 /**
  * @param {import('sst/constructs').StackContext} properties
@@ -91,7 +91,7 @@ export function UploadApiStack({ stack, app }) {
           VERSION: pkg.version,
           COMMIT: git.commmit,
           STAGE: stack.stage,
-          ACCESS_SERVICE_URL: process.env.ACCESS_SERVICE_URL ?? '',
+          ACCESS_SERVICE_URL: getServiceURL(stack) ?? '',
           POSTMARK_TOKEN: process.env.POSTMARK_TOKEN ?? '',
           PROVIDERS: process.env.PROVIDERS ?? '',
           R2_ACCESS_KEY_ID: process.env.R2_ACCESS_KEY_ID ?? '',
@@ -118,6 +118,7 @@ export function UploadApiStack({ stack, app }) {
     routes: {
       'POST /':       'upload-api/functions/ucan-invocation-router.handler',
       'POST /ucan':   'upload-api/functions/ucan.handler',
+      'POST /bridge': 'upload-api/functions/bridge.handler',
       'GET /':        'upload-api/functions/get.home',
       'GET /validate-email': 'upload-api/functions/validate-email.preValidateEmail',
       'POST /validate-email': 'upload-api/functions/validate-email.validateEmail',
