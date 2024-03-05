@@ -102,15 +102,24 @@ async function parseTasks(maybeTasks) {
 async function parseBody(body, contentType) {
   const bodyBytes = await streamToArrayBuffer(body)
   let parsedBody
-  if (!contentType || contentType === 'application/json' || contentType === 'application/vnd.ipld.dag-json') {
-    parsedBody = dagJSON.decode(bodyBytes)
-  } else if (contentType === 'application/cbor' || contentType === 'application/vnd.ipld.dag-cbor') {
-    parsedBody = dagCBOR.decode(bodyBytes)
-  } else {
+  try {
+    if (!contentType || contentType === 'application/json' || contentType === 'application/vnd.ipld.dag-json') {
+      parsedBody = dagJSON.decode(bodyBytes)
+    } else if (contentType === 'application/cbor' || contentType === 'application/vnd.ipld.dag-cbor') {
+      parsedBody = dagCBOR.decode(bodyBytes)
+    } else {
+      return {
+        error: {
+          name: 'UnknownContentType',
+          message: `${contentType} is not supported`
+        }
+      }
+    }
+  } catch (/** @type {any} */ err) {
     return {
       error: {
-        name: 'UnknownContentType',
-        message: `${contentType} is not supported`
+        name: 'UnexpectedError',
+        message: err.message
       }
     }
   }
@@ -144,8 +153,8 @@ async function buildBridgeReceipts(receipts) {
   for (const receipt of receipts) {
     if (receipt.root.data) {
       bridgeReceipts.push({
-        p: receipt.root.data?.ocm,
-        s: receipt.root.data?.sig
+        p: receipt.root.data.ocm,
+        s: receipt.root.data.sig
       })
     } else {
       return {
@@ -220,14 +229,14 @@ export async function handleBridgeRequest(request, context) {
     if (!authorizationHeader) {
       return {
         statusCode: 401,
-        body: 'request has no Authorization header'
+        body: 'request missing Authorization header'
       }
     }
 
     if (!authSecretHeader) {
       return {
         statusCode: 401,
-        body: 'request has no X-Auth-Secret header'
+        body: 'request missing X-Auth-Secret header'
       }
     }
 
@@ -299,7 +308,7 @@ export async function handleBridgeRequest(request, context) {
  * 
  * @returns {import('aws-lambda').Handler}
  */
-function createBridgeHandler(){
+function createBridgeHandler() {
   const { UPLOAD_API_DID, ACCESS_SERVICE_URL } = process.env
 
   if (!UPLOAD_API_DID) {
