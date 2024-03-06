@@ -208,7 +208,7 @@ export const ValidateEmail = ({ ucan, qrcode, email, audience, stripePricingTabl
               dangerouslySetInnerHTML={{
                 __html: qrcode,
               }}
-              class="mcenter"
+              class='mcenter'
               style={{
                 width: '300px',
               }}
