@@ -2,6 +2,14 @@
 
 ## Usage
 
+Create your own `.env.local` file and fill in the relevant details:
+
+```sh
+cp billing/scripts/.env.template billing/scripts/.env.local
+```
+
+Run the billing pipeline:
+
 ```sh
 cd billing/scripts
 node dry-run.js
