@@ -79,6 +79,7 @@ const reportUsage = async (usage, ctx) => {
   console.log(`Processing usage for: ${usage.space}`)
   console.log(`Provider: ${usage.provider}`)
   console.log(`Customer: ${usage.customer}`)
+  console.log(`Account: ${usage.account}`)
   console.log(`Period: ${usage.from.toISOString()} - ${usage.to.toISOString()}`)
 
   if (!usage.account.startsWith('stripe:')) {
@@ -91,17 +92,23 @@ const reportUsage = async (usage, ctx) => {
     limit: 1
   })
 
-  const subID = subs[0]?.id
-  if (!subID) {
+  const sub = subs[0]
+  if (!sub) {
     return { error: new Error(`no subscriptions: ${usage.account}`) }
   }
-  console.log(`Found Stripe subscription item: ${subID}`)
+  console.log(`Found Stripe subscription: ${sub.id}`)
+
+  const subItem = sub.items.data[0]
+  if (!subItem) {
+    return { error: new Error(`no subscription items: ${sub.id}`) }
+  }
+  console.log(`Found Stripe subscription item: ${subItem.id}`)
 
   const duration = usage.to.getTime() - usage.from.getTime()
   const quantity = new Big(usage.usage.toString()).div(duration).div(1024 * 1024 * 1024).toNumber()
   const idempotencyKey = `${usage.from.toISOString()}-${usage.to.toISOString()}/${usage.customer}/${usage.provider}/${usage.space}`
   const usageRecord = await ctx.stripe.subscriptionItems.createUsageRecord(
-    subID,
+    subItem.id,
     { quantity, action: 'increment' },
     { idempotencyKey }
   )
