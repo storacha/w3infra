@@ -24,7 +24,10 @@
     "@types/big.js": "^6.2.1",
     "aws-lambda": "^1.0.7",
     "c8": "^8.0.1",
+    "csv-stringify": "^6.4.6",
+    "dotenv": "^16.4.5",
     "entail": "^2.1.1",
+    "p-all": "^5.0.0",
     "testcontainers": "^10.7.1"
   },
   "engines": {

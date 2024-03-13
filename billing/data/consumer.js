@@ -52,7 +52,7 @@ export const decode = input => {
         consumer: Schema.did().from(input.consumer),
         provider: Schema.did({ method: 'web' }).from(input.provider),
         subscription: /** @type {string} */ (input.subscription),
-        cause: Link.parse(/** @type {string} */ (input.cause)),
+        cause: input.cause ? Link.parse(/** @type {string} */ (input.cause)) : undefined,
         insertedAt: new Date(input.insertedAt),
         updatedAt: input.updatedAt ? new Date(input.updatedAt) : undefined
       }
