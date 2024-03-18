@@ -228,7 +228,7 @@ export async function ucanInvocationRouter(request) {
     options: {
       // TODO: we compute and put all pieces into the queue on bucket event
       // We may change this to validate user provided piece
-      skipFilecoinSubmitQueue: true
+      skipFilecoinSubmitQueue: false
     },
     plansStorage,
     requirePaymentPlan,

@@ -12,6 +12,7 @@ import { encodeAgentMessage } from './ucan.js'
 import { pieceTableProps } from '../../store/index.js'
 
 // store clients
+import { useDataStore as createDataStoreClient } from '../../store/data.js'
 import { usePieceTable as createPieceStoreClient } from '../../store/piece.js'
 import { useTaskStore as createTaskStoreClient } from '../../store/task.js'
 import { useReceiptStore as createReceiptStoreClient } from '../../store/receipt.js'
@@ -26,15 +27,17 @@ import { createClient as createFilecoinSubmitQueueClient } from '../../queue/fil
 export async function getStores (ctx) {
   const { dynamoClient, s3Client } = ctx
   const pieceStore = await createDynamoTable(dynamoClient, pieceTableProps)
-  const [ invocationBucketName, workflowBucketName ] = await Promise.all([
+  const [ invocationBucketName, workflowBucketName, dataStoreBucketName ] = await Promise.all([
     createBucket(s3Client),
-    createBucket(s3Client)
+    createBucket(s3Client),
+    createBucket(s3Client),
   ])
 
   return {
     pieceStore: createPieceStoreClient(dynamoClient, pieceStore),
     taskStore: getTaskStoreClient(s3Client, invocationBucketName, workflowBucketName),
     receiptStore: getReceiptStoreClient(s3Client, invocationBucketName, workflowBucketName),
+    dataStore: createDataStoreClient(s3Client, dataStoreBucketName)
   }
 }
 

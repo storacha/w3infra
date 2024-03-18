@@ -1,9 +1,14 @@
-import { S3Client } from '@aws-sdk/client-s3'
 import * as Sentry from '@sentry/serverless'
+import { S3Client } from '@aws-sdk/client-s3'
+import { Config } from 'sst/node/config'
+import { Storefront } from '@web3-storage/filecoin-client'
+import * as Delegation from '@ucanto/core/delegation'
+import { fromString } from 'uint8arrays/from-string'
+import * as DID from '@ipld/dag-ucan/did'
 
 import { computePieceCid } from '../index.js'
+import { getServiceConnection, getServiceSigner } from '../service.js'
 import { mustGetEnv } from './utils.js'
-import { createPieceTable } from '../store/piece.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -11,19 +16,15 @@ Sentry.AWSLambda.init({
   tracesSampleRate: 1.0,
 })
 
-const AWS_REGION = process.env.AWS_REGION || 'us-west-2'
-
 /**
- * Get EventRecord from the SQS Event triggering the handler
+ * Get EventRecord from the SQS Event triggering the handler.
+ * Trigger `filecoin/offer` from bucket event
  *
  * @param {import('aws-lambda').SQSEvent} event
  */
 async function computeHandler (event) {
-  const {
-    pieceTableName,
-    disablePieceCidCompute,
-    did
-  } = getEnv()
+  const { PRIVATE_KEY: privateKey } = Config
+  const { storefrontDid, storefrontUrl, did, storefrontProof, disablePieceCidCompute } = getEnv()
 
   if (disablePieceCidCompute) {
     const body = 'piece cid computation is disabled'
@@ -34,21 +35,46 @@ async function computeHandler (event) {
     }
   }
 
+  // Create context
+  let storefrontSigner = getServiceSigner({
+    privateKey
+  })
+  const connection = getServiceConnection({
+    did: storefrontDid,
+    url: storefrontUrl
+  })
+  const storefrontServiceProofs = []
+  if (storefrontProof) {
+    const proof = await Delegation.extract(fromString(storefrontProof, 'base64pad'))
+    if (!proof.ok) throw new Error('failed to extract proof', { cause: proof.error })
+    storefrontServiceProofs.push(proof.ok)
+  } else {
+    // if no proofs, we must be using the service private key to sign
+    storefrontSigner = storefrontSigner.withDID(DID.parse(did).did())
+  }
+  const storefrontService = {
+    connection,
+      invocationConfig: {
+        issuer: storefrontSigner,
+        with: storefrontSigner.did(),
+        audience: storefrontSigner,
+        proofs: storefrontServiceProofs
+      },
+  }
+
+  // Decode record
   const record = parseEvent(event)
   if (!record) {
     throw new Error('Unexpected sqs record format')
   }
 
   const s3Client = new S3Client({ region: record.bucketRegion })
-  const pieceTable = createPieceTable(AWS_REGION, pieceTableName)
 
+  // Compute piece for record
   const { error, ok } = await computePieceCid({
     record,
     s3Client,
-    pieceTable,
-    group: did
   })
-
   if (error) {
     console.error(error)
 
@@ -58,9 +84,23 @@ async function computeHandler (event) {
     }
   }
 
+  // Invoke `filecoin/offer`
+  const filecoinSubmitInv = await Storefront.filecoinOffer(
+    storefrontService.invocationConfig,
+    ok.content,
+    ok.piece,
+    { connection: storefrontService.connection }
+  )
+
+  if (filecoinSubmitInv.out.error) {
+    return {
+      statusCode: 500,
+      body: filecoinSubmitInv.out.error,
+    }
+  }
+
   return {
     statusCode: 200,
-    body: ok
   }
 }
 
@@ -71,8 +111,10 @@ export const handler = Sentry.AWSLambda.wrapHandler(computeHandler)
  */
 function getEnv () {
   return {
-    pieceTableName: mustGetEnv('PIECE_TABLE_NAME'),
     did: mustGetEnv('DID'),
+    storefrontDid: mustGetEnv('STOREFRONT_DID'),
+    storefrontUrl: mustGetEnv('STOREFRONT_URL'),
+    storefrontProof: process.env.PROOF,
     disablePieceCidCompute: process.env.DISABLE_PIECE_CID_COMPUTE === 'true'
   }
 }

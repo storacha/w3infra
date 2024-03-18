@@ -4,7 +4,6 @@ import * as Hasher from 'fr32-sha2-256-trunc254-padded-binary-tree-multihash'
 import * as Digest from 'multiformats/hashes/digest'
 import { Piece } from '@web3-storage/data-segment'
 import { CID } from 'multiformats/cid'
-import { Assert } from '@web3-storage/content-claims/capability'
 
 import { GetCarFailed, ComputePieceFailed } from './errors.js'
 
@@ -27,14 +26,10 @@ import { GetCarFailed, ComputePieceFailed } from './errors.js'
  * @param {object} props
  * @param {EventRecord} props.record
  * @param {S3Client} props.s3Client
- * @param {string} props.group
- * @param {import('@web3-storage/filecoin-api/storefront/api').PieceStore} props.pieceTable
  */
 export async function computePieceCid({
   record,
-  s3Client,
-  pieceTable,
-  group
+  s3Client
 }) {
   const key = record.key
   // CIDs in carpark are in format `${carCid}/${carCid}.car`
@@ -80,57 +75,10 @@ export async function computePieceCid({
     }
   }
 
-  // Write to table
-  const insertedAt = (new Date()).toISOString()
-  const { ok, error } = await pieceTable.put({
-    content: CID.parse(cidString),
-    piece: piece.link,
-    status: 'submitted',
-    insertedAt,
-    updatedAt: insertedAt,
-    group
-  })
-
   return {
-    ok,
-    error
-  }
-}
-
-/**
- * @param {object} props
- * @param {import('@web3-storage/data-segment').PieceLink} props.piece
- * @param {import('multiformats').CID} props.content
- * @param {import('@ucanto/principal/ed25519').ConnectionView<any>} props.claimsServiceConnection
- * @param {import('./types.js').ClaimsInvocationConfig} props.claimsInvocationConfig
- */
-export async function reportPieceCid ({
-  piece,
-  content,
-  claimsServiceConnection,
-  claimsInvocationConfig
-}) {
-  // Add claim for reading
-  const claimResult = await Assert.equals
-    .invoke({
-      issuer: claimsInvocationConfig.issuer,
-      audience: claimsInvocationConfig.audience,
-      with: claimsInvocationConfig.with,
-      nb: {
-        content,
-        equals: piece
-      },
-      expiration: Infinity,
-      proofs: claimsInvocationConfig.proofs
-    })
-    .execute(claimsServiceConnection)
-  if (claimResult.out.error) {
-    return {
-      error: claimResult.out.error
-    }
-  }
-
-  return {
-    ok: {},
+    ok: {
+      content: CID.parse(cidString),
+      piece: piece.link
+    },
   }
 }

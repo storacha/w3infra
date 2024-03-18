@@ -48,7 +48,6 @@ export function FilecoinStack({ stack, app }) {
    * 1st processor queue - filecoin submit
    * On filecoin submit queue messages, validate piece for given content and store it in store.
    */
-  // TODO: This will ONLY run when we validate pieces provided by user
   const filecoinSubmitQueueName = getCdkNames('filecoin-submit-queue', stack.stage)
   const filecoinSubmitQueueDLQ = new Queue(stack, `${filecoinSubmitQueueName}-dlq`, {
     cdk: { queue: { retentionPeriod: Duration.days(14) } }
@@ -59,8 +58,17 @@ export function FilecoinStack({ stack, app }) {
       handler: 'filecoin/functions/handle-filecoin-submit-message.main',
       environment : {
         PIECE_TABLE_NAME: pieceTable.tableName,
+        // Setup both buckets
+        STORE_BUCKET_NAME: carparkBucket.bucketName,
+        R2_ACCESS_KEY_ID: process.env.R2_ACCESS_KEY_ID ?? '',
+        R2_SECRET_ACCESS_KEY: process.env.R2_SECRET_ACCESS_KEY ?? '',
+        R2_REGION: process.env.R2_REGION ?? '',
+        R2_ENDPOINT: process.env.R2_ENDPOINT ?? '',
+        R2_CARPARK_BUCKET_NAME: process.env.R2_CARPARK_BUCKET_NAME ?? '',
       },
       permissions: [pieceTable],
+      // piece is computed in this lambda
+      timeout: 15 * 60,
     },
     deadLetterQueue: filecoinSubmitQueueDLQ.cdk.queue,
     cdk: {
@@ -230,19 +238,22 @@ export function FilecoinStack({ stack, app }) {
   })
 
   // piece-cid compute
-  // Shortcut from system that goes directly into submitted status
+  // Shortcut from system that offers piece anyway on bucket event
   const pieceCidComputeHandler = new Function(
     stack,
     'piece-cid-compute-handler',
     {
       environment : {
-        PIECE_TABLE_NAME: pieceTable.tableName,
+        DISABLE_PIECE_CID_COMPUTE,
         DID: UPLOAD_API_DID,
-        DISABLE_PIECE_CID_COMPUTE
+        STOREFRONT_DID: UPLOAD_API_DID,
+        STOREFRONT_URL: storefrontCustomDomain?.domainName ? `https://${storefrontCustomDomain?.domainName}` : '',
       },
+      bind: [
+        privateKey
+      ],
       permissions: [pieceTable, carparkBucket],
       handler: 'filecoin/functions/piece-cid-compute.handler',
-      timeout: 15 * 60,
     },
   )
 
