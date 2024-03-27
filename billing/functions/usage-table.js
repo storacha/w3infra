@@ -82,6 +82,11 @@ const reportUsage = async (usage, ctx) => {
   console.log(`Account: ${usage.account}`)
   console.log(`Period: ${usage.from.toISOString()} - ${usage.to.toISOString()}`)
 
+  if (usage.space === 'did:key:z6Mkj8ynPJNkKc1e6S9VXpVDfQd8M1bPxZTgDg2Uhhjt9LoV') {
+    console.log('not reporting usage for space: did:key:z6Mkj8ynPJNkKc1e6S9VXpVDfQd8M1bPxZTgDg2Uhhjt9LoV')
+    return { ok: {} }
+  }
+
   if (!usage.account.startsWith('stripe:')) {
     return { error: new Error('unknown payment system') }
   }
