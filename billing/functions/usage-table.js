@@ -97,7 +97,7 @@ const reportUsage = async (usage, ctx) => {
     limit: 1
   })
 
-  const sub = subs[0]
+  const sub = subs.find(s => s.status === 'active') ?? subs[0]
   if (!sub) {
     return { error: new Error(`no subscriptions: ${usage.account}`) }
   }
