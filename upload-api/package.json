@@ -25,7 +25,7 @@
     "@web3-storage/access": "^18.2.0",
     "@web3-storage/capabilities": "^13.1.1",
     "@web3-storage/did-mailto": "^2.1.0",
-    "@web3-storage/upload-api": "^8.3.0",
+    "@web3-storage/upload-api": "^9.0.0",
     "multiformats": "^13.1.0",
     "nanoid": "^5.0.2",
     "preact": "^10.14.1",

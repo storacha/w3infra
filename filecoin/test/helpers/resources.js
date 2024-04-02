@@ -140,7 +140,7 @@ export const createSQS = async (opts = {}) => {
   const port = opts.port || 9324
 
   const queue = await pRetry(() =>
-    new Container('softwaremill/elasticmq')
+    new Container('softwaremill/elasticmq:1.5.4')
       .withExposedPorts(port)
       .start()
   )

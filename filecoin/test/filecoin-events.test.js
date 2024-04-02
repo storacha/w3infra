@@ -104,6 +104,8 @@ for (const [title, unit] of Object.entries(filecoinApiTest.events.storefront)) {
     // context
     const storefrontSigner = await Signer.generate()
     const aggregatorSigner = await Signer.generate()
+    const claimsSigner = await Signer.generate()
+
     const service = getMockService()
     const storefrontConnection = getConnection(
       storefrontSigner,
@@ -113,6 +115,7 @@ for (const [title, unit] of Object.entries(filecoinApiTest.events.storefront)) {
       aggregatorSigner,
       service
     ).connection
+    const claimsConnection = getConnection(claimsSigner, service).connection
 
     await unit(
       {
@@ -142,6 +145,14 @@ for (const [title, unit] of Object.entries(filecoinApiTest.events.storefront)) {
             issuer: storefrontSigner,
             with: storefrontSigner.did(),
             audience: aggregatorSigner,
+          },
+        },
+        claimsService: {
+          connection: claimsConnection,
+          invocationConfig: {
+            issuer: storefrontSigner,
+            with: storefrontSigner.did(),
+            audience: claimsSigner,
           },
         },
         errorReporter: {

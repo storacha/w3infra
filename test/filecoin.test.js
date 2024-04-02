@@ -1,6 +1,7 @@
 import { testFilecoin as test } from './helpers/context.js'
 import { fetch } from '@web-std/fetch'
 import pWaitFor from 'p-wait-for'
+import pRetry from 'p-retry'
 import * as CAR from '@ucanto/transport/car'
 import { Storefront } from '@web3-storage/filecoin-client'
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
@@ -77,6 +78,7 @@ test('w3filecoin integration flow', async t => {
   }
 
   // Check filecoin pieces computed after leaving queue
+  // Bucket event given client is not invoking this
   await Promise.all(uploads.map(async (upload) => {
     const pieces = await getPiecesByContent(t, upload.content.toString())
     t.assert(pieces)
@@ -84,6 +86,8 @@ test('w3filecoin integration flow', async t => {
     t.truthy(pieces?.[0].piece)
     t.is(pieces?.[0].piece, upload.piece.toString())
   }))
+
+  console.log('pieces in table')
 
   // we only care about one making its way to the finish, as based on timings an individual piece may need to wait for a new batch
   await Promise.race(uploads.map(async testUpload => {
@@ -212,7 +216,7 @@ test('w3filecoin integration flow', async t => {
     await waitForStoreOperationOkResult(
       async () => {
         // Trigger cron to update and issue receipts based on deals
-        const callDealerCronRes = await fetch(`https://staging.dealer.web3.storage/cron`)
+        const callDealerCronRes = await pRetry(() => fetch(`https://staging.dealer.web3.storage/cron`))
         t.true(callDealerCronRes.ok)
 
         return receiptStoreFilecoin.get(aggregateAcceptReceiptCid)

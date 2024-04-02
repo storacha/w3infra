@@ -1,13 +1,13 @@
 import * as Sentry from '@sentry/serverless'
 import { Config } from 'sst/node/config'
 import { unmarshall } from '@aws-sdk/util-dynamodb'
-import { Piece } from '@web3-storage/data-segment'
-import { CID } from 'multiformats/cid'
 import * as Delegation from '@ucanto/core/delegation'
 import { fromString } from 'uint8arrays/from-string'
 import * as DID from '@ipld/dag-ucan/did'
 
-import { reportPieceCid } from '../index.js'
+import * as storefrontEvents from '@web3-storage/filecoin-api/storefront/events'
+
+import { decodeRecord } from '../store/piece.js'
 import { getServiceConnection, getServiceSigner } from '../service.js'
 import { mustGetEnv } from './utils.js'
 
@@ -35,11 +35,10 @@ async function pieceCidReport (event) {
 
   /** @type {PieceStoreRecord} */
   // @ts-expect-error can't figure out type of new
-  const pieceRecord = unmarshall(records[0].new)
-  const piece = Piece.fromString(pieceRecord.piece).link
-  const content = CID.parse(pieceRecord.content)
+  const storeRecord = unmarshall(records[0].new)
+  const record = decodeRecord(storeRecord)
 
-  const claimsServiceConnection = getServiceConnection({
+  const connection = getServiceConnection({
     did: contentClaimsDid,
     url: contentClaimsUrl
   })
@@ -56,24 +55,24 @@ async function pieceCidReport (event) {
     claimsIssuer = claimsIssuer.withDID(DID.parse(contentClaimsDid).did())
   }
 
-  const { ok, error } = await reportPieceCid({
-    piece,
-    content,
-    claimsServiceConnection,
-    claimsInvocationConfig: /** @type {import('../types.js').ClaimsInvocationConfig} */ ({
-      issuer: claimsIssuer,
-      audience: claimsServiceConnection.id,
-      with: claimsIssuer.did(),
-      proofs: claimsProofs
-    })
-  })
+  const context = {
+    claimsService: {
+      connection,
+      invocationConfig: {
+        issuer: claimsIssuer,
+        audience: connection.id,
+        with: claimsIssuer.did(),
+        proofs: claimsProofs
+      },
+    },
+  }
 
+  const { ok, error } = await storefrontEvents.handlePieceInsertToEquivalencyClaim(context, record)
   if (error) {
     console.error(error)
-
     return {
       statusCode: 500,
-      body: error.message || 'failed to add aggregate'
+      body: error.message || 'failed to handle piece insert event to content claim'
     }
   }
 
