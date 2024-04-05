@@ -253,6 +253,7 @@ export function FilecoinStack({ stack, app }) {
         privateKey
       ],
       permissions: [pieceTable, carparkBucket],
+      timeout: '5 minutes',
       handler: 'filecoin/functions/piece-cid-compute.handler',
     },
   )
