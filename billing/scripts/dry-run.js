@@ -20,6 +20,9 @@ import { createConsumerStore } from '../tables/consumer.js'
 import { createSpaceDiffStore } from '../tables/space-diff.js'
 import { createSpaceSnapshotStore } from '../tables/space-snapshot.js'
 import * as Usage from '../data/usage.js'
+import * as SpaceSnapshot from '../data/space-snapshot.js'
+
+/** @typedef {import('../lib/api.js').Usage & import('../lib/api.js').SpaceSnapshot} UsageAndSnapshot */
 
 dotenv.config({ path: '.env.local' })
 
@@ -101,16 +104,28 @@ await all(customerBillingInstructions.map(instruction => async () => {
 
 console.log(`✅ Billing run completed successfully`)
 
-const { results } = expect(await usageStore.list({}))
+const { results: usages } = expect(await usageStore.list({}))
+const { results: snapshots } = expect(await writableSpaceSnapshotStore.list({}))
+
+/** @type {UsageAndSnapshot[]} */
+const usageSnapshots = []
+for (const usage of usages) {
+  const snap = snapshots.find(s => s.recordedAt.getTime() === to.getTime() && s.provider === usage.provider && s.space === usage.space)
+  if (!snap) throw new Error(`missing snapshot: ${usage.space}`)
+  usageSnapshots.push({ ...usage, ...snap })
+}
+
+/** @param {Date} d */
+const toDateString = d => d.toISOString().split('T')[0]
 
 await fs.promises.writeFile(
-  `./usage-${from.toISOString()}-${to.toISOString()}.json`,
-  JSON.stringify(results.map(r => Usage.encode(r).ok))
+  `./usage-${toDateString(from)}-${toDateString(to)}.json`,
+  JSON.stringify(usageSnapshots.map(r => ({ ...Usage.encode(r).ok, ...SpaceSnapshot.encode(r).ok })))
 )
 
-/** @type {Map<string, import('../lib/api.js').Usage[]>} */
+/** @type {Map<string, UsageAndSnapshot[]>} */
 const usageByCustomer = new Map()
-for (const usage of results) {
+for (const usage of usageSnapshots) {
   let customerUsages = usageByCustomer.get(usage.customer)
   if (!customerUsages) {
     customerUsages = []
@@ -119,27 +134,29 @@ for (const usage of results) {
   customerUsages.push(usage)
 }
 
-/** @type {Array<[string, string, number]>} */
+/** @type {Array<[string, string, string, number]>} */
 const data = []
 const duration = to.getTime() - from.getTime()
 
 for (const [customer, usages] of usageByCustomer.entries()) {
   let product
+  let size = 0n
   let totalUsage = 0n
   for (const u of usages) {
     product = product ?? u.product
+    size += u.size
     totalUsage += u.usage
   }
   if (!product) throw new Error('missing product')
   try {
-    data.push([customer, product, calculateCost(product, totalUsage, duration)])
+    data.push([customer, product, size.toString(), calculateCost(product, totalUsage, duration)])
   } catch (err) {
     console.warn(`failed to calculate cost for: ${customer}`, err)
   }
 }
-data.sort((a, b) => b[2] - a[2])
+data.sort((a, b) => b[3] - a[3])
 
 await fs.promises.writeFile(
-  `./summary-${from.toISOString()}-${to.toISOString()}.csv`,
-  CSV.stringify(data, { header: true, columns: ['Customer', 'Product', 'Total'] })
+  `./summary-${toDateString(from)}-${toDateString(to)}.csv`,
+  CSV.stringify(data, { header: true, columns: ['Customer', 'Product', 'Bytes', 'Cost ($)'] })
 )

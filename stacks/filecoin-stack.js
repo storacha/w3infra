@@ -52,7 +52,13 @@ export function FilecoinStack({ stack, app }) {
   const filecoinSubmitQueueDLQ = new Queue(stack, `${filecoinSubmitQueueName}-dlq`, {
     cdk: { queue: { retentionPeriod: Duration.days(14) } }
    })
-  const filecoinSubmitQueue = new Queue(stack, filecoinSubmitQueueName)
+  const filecoinSubmitQueue = new Queue(stack, filecoinSubmitQueueName, {
+    cdk: {
+      queue: {
+        visibilityTimeout: Duration.seconds(15 * 60)
+      }
+    }
+  })
   filecoinSubmitQueue.addConsumer(stack, {
     function: {
       handler: 'filecoin/functions/handle-filecoin-submit-message.main',
