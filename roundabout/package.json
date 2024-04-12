@@ -16,8 +16,7 @@
   "devDependencies": {
     "@ipld/car": "^5.1.1",
     "@ipld/dag-pb": "^3.0.0",
-    "@web3-storage/data-segment": "^5.0.0",
-    "@web3-storage/w3up-client": "^9.2.2",
+    "@web3-storage/data-segment": "^5.1.0",
     "ava": "^4.3.3",
     "multiformats": "^11.0.2",
     "nanoid": "^4.0.0",
