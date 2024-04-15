@@ -1,6 +1,7 @@
 import { Table, Bucket, Config } from 'sst/constructs'
 
 import {
+  allocationTableProps,
   storeTableProps,
   uploadTableProps,
   consumerTableProps,
@@ -30,6 +31,12 @@ export function UploadDbStack({ stack, app }) {
   // Content claims private key
   // TODO: we should look into creating a trust layer for content claims
   const contentClaimsPrivateKey = new Config.Secret(stack, 'CONTENT_CLAIMS_PRIVATE_KEY')
+
+  /**
+   * The allocation table tracks allocated multihashes per space.
+   * Used by the blob/* service capabilities.
+   */
+  const allocationTable = new Table(stack, 'allocation', allocationTableProps)
 
   /**
    * This table takes a stored CAR and makes an entry in the store table
@@ -99,6 +106,7 @@ export function UploadDbStack({ stack, app }) {
   const spaceMetricsTable = new Table(stack, 'space-metrics', spaceMetricsTableProps)
 
   return {
+    allocationTable,
     storeTable,
     uploadTable,
     pieceTable,

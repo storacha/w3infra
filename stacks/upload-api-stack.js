@@ -25,7 +25,7 @@ export function UploadApiStack({ stack, app }) {
 
   // Get references to constructs created in other stacks
   const { carparkBucket } = use(CarparkStack)
-  const { storeTable, uploadTable, delegationBucket, delegationTable, revocationTable, adminMetricsTable, spaceMetricsTable, consumerTable, subscriptionTable, rateLimitTable, pieceTable, privateKey } = use(UploadDbStack)
+  const { allocationTable, storeTable, uploadTable, delegationBucket, delegationTable, revocationTable, adminMetricsTable, spaceMetricsTable, consumerTable, subscriptionTable, rateLimitTable, pieceTable, privateKey } = use(UploadDbStack)
   const { invocationBucket, taskBucket, workflowBucket, ucanStream } = use(UcanInvocationStack)
   const { customerTable, spaceDiffTable, spaceSnapshotTable, stripeSecretKey } = use(BillingDbStack)
   const { pieceOfferQueue, filecoinSubmitQueue } = use(FilecoinStack)
@@ -41,6 +41,7 @@ export function UploadApiStack({ stack, app }) {
     defaults: {
       function: {
         permissions: [
+          allocationTable,
           storeTable,
           uploadTable,
           customerTable,
@@ -66,6 +67,7 @@ export function UploadApiStack({ stack, app }) {
         environment: {
           DID: process.env.UPLOAD_API_DID ?? '',
           AGGREGATOR_DID,
+          ALLOCATION_TABLE_NAME: allocationTable.tableName,
           STORE_TABLE_NAME: storeTable.tableName,
           STORE_BUCKET_NAME: carparkBucket.bucketName,
           UPLOAD_TABLE_NAME: uploadTable.tableName,
@@ -92,6 +94,7 @@ export function UploadApiStack({ stack, app }) {
           COMMIT: git.commmit,
           STAGE: stack.stage,
           ACCESS_SERVICE_URL: getServiceURL(stack, customDomain) ?? '',
+          UPLOAD_SERVICE_URL: getServiceURL(stack, customDomain) ?? '',
           POSTMARK_TOKEN: process.env.POSTMARK_TOKEN ?? '',
           PROVIDERS: process.env.PROVIDERS ?? '',
           R2_ACCESS_KEY_ID: process.env.R2_ACCESS_KEY_ID ?? '',

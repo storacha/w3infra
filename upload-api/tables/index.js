@@ -34,6 +34,22 @@ export const uploadTableProps = {
 }
 
 /** @type TableProps */
+export const allocationTableProps = {
+  fields: {
+    space: 'string',        // `did:key:space`
+    multihash: 'string',         // `bagy...1`
+    size: 'number',         // `101`
+    invocation: 'string',   // `baf...ucan` (CID of invcation UCAN)
+    insertedAt: 'string',   // `2022-12-24T...`
+  },
+  // space + link must be unique to satisfy index constraint
+  primaryIndex: { partitionKey: 'space', sortKey: 'multihash' },
+  globalIndexes: {
+    multihash: { partitionKey: 'multihash', sortKey: 'space', projection: ['space', 'insertedAt'] }
+  }
+}
+
+/** @type TableProps */
 export const delegationTableProps = {
   fields: {
     cause: 'string',      // `baf...x`(CID of the invocation)
