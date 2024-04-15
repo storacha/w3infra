@@ -60,7 +60,7 @@ export async function followFilecoinReceiptChain () {
   console.log('piece/offer', filecoinSubmitReceiptGet.ok.fx.join)
   
   // Get `piece/offer` receipt
-  const pieceOfferReceiptGet = await receiptStore.get(filecoinSubmitReceiptGet.ok.fx.join)
+  const pieceOfferReceiptGet = await receiptStore.get(filecoinSubmitReceiptGet.ok.fx.join.link())
   if (pieceOfferReceiptGet.error) throw new Error('could not find receipt')
   console.log('out:', pieceOfferReceiptGet.ok.out)
   
@@ -68,7 +68,7 @@ export async function followFilecoinReceiptChain () {
   console.log('piece/accept', pieceOfferReceiptGet.ok.fx.join)
   
   // Get `piece/accept` receipt
-  const pieceAcceptReceiptGet = await receiptStore.get(pieceOfferReceiptGet.ok.fx.join)
+  const pieceAcceptReceiptGet = await receiptStore.get(pieceOfferReceiptGet.ok.fx.join.link())
   if (pieceAcceptReceiptGet.error) throw new Error('could not find receipt')
   console.log('out:', pieceOfferReceiptGet.ok.out)
   
@@ -76,7 +76,7 @@ export async function followFilecoinReceiptChain () {
   console.log('aggregate/offer', pieceAcceptReceiptGet.ok.fx.join)
   
   // Get `aggregate/offer` receipt
-  const aggregateOfferReceiptGet = await receiptStore.get(pieceAcceptReceiptGet.ok.fx.join)
+  const aggregateOfferReceiptGet = await receiptStore.get(pieceAcceptReceiptGet.ok.fx.join.link())
   if (aggregateOfferReceiptGet.error) throw new Error('could not find receipt')
   console.log('out:', aggregateOfferReceiptGet.ok.out)
   
@@ -84,7 +84,7 @@ export async function followFilecoinReceiptChain () {
   console.log('aggregate/accept', aggregateOfferReceiptGet.ok.fx.join)
   
   // Get `aggregate/accept` receipt
-  const aggregateAcceptReceiptGet = await receiptStore.get(pieceAcceptReceiptGet.ok.fx.join)
+  const aggregateAcceptReceiptGet = await receiptStore.get(pieceAcceptReceiptGet.ok.fx.join.link())
   if (aggregateAcceptReceiptGet.error) throw new Error('could not find receipt')
   console.log('out:', aggregateAcceptReceiptGet.ok.out)
   
