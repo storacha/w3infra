@@ -88,7 +88,7 @@ export function useAllocationsStorage(dynamoDb, tableName) {
             digest: base58btc.decode(raw.multihash),
             size: raw.size
           },
-          invocation: Link.parse(raw.invocation)
+          cause: Link.parse(raw.cause)
         }
       }
     },
@@ -98,7 +98,7 @@ export function useAllocationsStorage(dynamoDb, tableName) {
      * @param {BlobAddInput} item
      * @returns {ReturnType<AllocationsStorage['insert']>}
      */
-    insert: async ({ space, blob, invocation }) => {
+    insert: async ({ space, blob, cause }) => {
       const insertedAt = new Date().toISOString()
       const multihash58btc = base58btc.encode(blob.digest)
 
@@ -106,7 +106,7 @@ export function useAllocationsStorage(dynamoDb, tableName) {
         space,
         multihash: multihash58btc,
         size: blob.size,
-        invocation: invocation.toString(),
+        cause: cause.toString(),
         insertedAt,
       }
       const cmd = new PutItemCommand({
