@@ -31,6 +31,9 @@ export class TasksScheduler {
    */
   async schedule(invocation) {
     const connection = this.getServiceConnection()
+    // This performs a HTTP Request to the Service URL.
+    // upload-api service URL stores received invocations and produced
+    // receipts on the server.
     const [res] = await connection.execute(invocation)
 
     if (res.out.error) {

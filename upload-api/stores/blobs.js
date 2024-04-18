@@ -31,6 +31,8 @@ export function createBlobsStorage(region, bucketName, options) {
 }
 
 /**
+ * This is quite similar with buckets/car-store with few modifications given new key schema
+ * and multihash instead of Link.
  *
  * @param {S3Client} s3
  * @param {string} bucketName
@@ -64,18 +66,22 @@ export function useBlobsStorage(s3, bucketName) {
      *
      * @param {Uint8Array} multihash
      * @param {number} size
+     * @param {number} expiresIn
      */
-    createUploadUrl: async (multihash, size) => {
+    createUploadUrl: async (multihash, size, expiresIn) => {
       const encodedMultihash = base58btc.encode(multihash)
       const multihashDigest = digestDecode(multihash)
       const checksum = base64pad.baseEncode(multihashDigest.digest)
       const cmd = new PutObjectCommand({
+        // Some cloud bucket implementations like S3 have rate limits applied.
+        // Rate limits happen across shards that are based on the folders structure
+        // of the bucket. By relying on folder as a hash, the rate limit from bucket
+        // providers can be prevented.
         Key: `${encodedMultihash}/${encodedMultihash}.blob`,
         Bucket: bucketName,
         ChecksumSHA256: checksum,
         ContentLength: size,
       })
-      const expiresIn = 60 * 60 * 24 // 1 day
       const url = new URL(
         await getSignedUrl(s3, cmd, {
           expiresIn,
