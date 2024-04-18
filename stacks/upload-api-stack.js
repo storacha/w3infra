@@ -91,7 +91,7 @@ export function UploadApiStack({ stack, app }) {
           VERSION: pkg.version,
           COMMIT: git.commmit,
           STAGE: stack.stage,
-          ACCESS_SERVICE_URL: getServiceURL(stack) ?? '',
+          ACCESS_SERVICE_URL: getServiceURL(stack, customDomain) ?? '',
           POSTMARK_TOKEN: process.env.POSTMARK_TOKEN ?? '',
           PROVIDERS: process.env.PROVIDERS ?? '',
           R2_ACCESS_KEY_ID: process.env.R2_ACCESS_KEY_ID ?? '',
