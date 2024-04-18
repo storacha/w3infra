@@ -57,6 +57,7 @@ test('w3filecoin integration flow', async t => {
       /** @type {{ content: CARLink, piece: PieceLink}[]} */
       const uploadFiles = []
 
+      // TODO: New client should use blob directly and this should be the same and work :)
       // Upload new file
       await client.uploadFile(file, {
         onShardStored: (meta) => {
