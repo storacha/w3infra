@@ -10,7 +10,11 @@ import {
   createBucket,
   createTable
 } from '../helpers/resources.js';
-import { storeTableProps, uploadTableProps, consumerTableProps, delegationTableProps, subscriptionTableProps, rateLimitTableProps, revocationTableProps, spaceMetricsTableProps } from '../../tables/index.js';
+import { storeTableProps, uploadTableProps, allocationTableProps, consumerTableProps, delegationTableProps, subscriptionTableProps, rateLimitTableProps, revocationTableProps, spaceMetricsTableProps } from '../../tables/index.js';
+import { useTasksStorage } from '../../stores/tasks.js';
+import { useReceiptsStorage } from '../../stores/receipts.js';
+import { useAllocationsStorage } from '../../stores/allocations.js';
+import { composeblobStoragesWithOrderedHas, useBlobsStorage } from '../../stores/blobs.js';
 import { composeCarStoresWithOrderedHas, useCarStore } from '../../buckets/car-store.js';
 import { useDudewhereStore } from '../../buckets/dudewhere-store.js';
 import { useStoreTable } from '../../tables/store.js';
@@ -32,6 +36,7 @@ import { usePieceTable } from '../../../filecoin/store/piece.js'
 import { createTaskStore as createFilecoinTaskStore } from '../../../filecoin/store/task.js'
 import { createReceiptStore as createFilecoinReceiptStore } from '../../../filecoin/store/receipt.js'
 import { createTestBillingProvider } from './billing.js';
+import { createTasksScheduler } from '../../scheduler.js';
 
 export { API }
 
@@ -184,8 +189,34 @@ export async function executionContextToUcantoTestServerContext(t) {
     'did:web:test.web3.storage'
   );
   const { dynamo, s3, r2 } = t.context;
-  const bucketName = await createBucket(s3);
+  const bucketName = await createBucket(s3)
+  const r2CarStoreBucketName = r2
+    ? await createBucket(r2)
+    : undefined
+  const tasksBucketName = await createBucket(s3)
+  const delegationsBucketName = await createBucket(s3)
+  const invocationsBucketName = await createBucket(s3)
+  const workflowBucketName = await createBucket(s3)
 
+  const s3BlobsStorageBucket = useBlobsStorage(s3, bucketName)
+  const r2BlobsStorageBucket = r2CarStoreBucketName
+  ? useBlobsStorage(r2, r2CarStoreBucketName)
+  : undefined
+  const blobsStorage = r2BlobsStorageBucket
+    ? composeblobStoragesWithOrderedHas(
+      s3BlobsStorageBucket,
+      r2BlobsStorageBucket,
+    )
+    : s3BlobsStorageBucket
+  const tasksStorage = useTasksStorage(s3, invocationsBucketName, workflowBucketName)
+  const receiptsStorage = useReceiptsStorage(s3, tasksBucketName, invocationsBucketName, workflowBucketName)
+  const allocationsStorage = useAllocationsStorage(dynamo,
+    await createTable(dynamo, allocationTableProps)
+  )
+  const getServiceConnection = () => connection
+  const tasksScheduler = createTasksScheduler(getServiceConnection)
+
+  // To be deprecated
   const storeTable = useStoreTable(
     dynamo,
     await createTable(dynamo, storeTableProps)
@@ -196,14 +227,11 @@ export async function executionContextToUcantoTestServerContext(t) {
     await createTable(dynamo, uploadTableProps)
   );
 
-  const r2CarStoreBucketName = r2
-    ? await createBucket(r2)
-    : undefined
+  // To be deprecated
+  const s3CarStoreBucket = useCarStore(s3, bucketName)
   const r2CarStoreBucket = r2CarStoreBucketName
     ? useCarStore(r2, r2CarStoreBucketName)
     : undefined
-  const s3CarStoreBucket = useCarStore(s3, bucketName);
-
   const carStoreBucket = r2CarStoreBucket
     ? composeCarStoresWithOrderedHas(
       s3CarStoreBucket,
@@ -216,10 +244,6 @@ export async function executionContextToUcantoTestServerContext(t) {
   const signer = await Signer.Signer.generate();
   const id = signer.withDID('did:web:test.web3.storage');
   const aggregatorSigner = await Signer.Signer.generate();
-
-  const delegationsBucketName = await createBucket(s3);
-  const invocationsBucketName = await createBucket(s3);
-  const workflowBucketName = await createBucket(s3);
 
   const revocationsStorage = useRevocationsTable(
     dynamo,
@@ -271,6 +295,12 @@ export async function executionContextToUcantoTestServerContext(t) {
     signer: id,
     email,
     url: new URL('http://example.com'),
+    allocationsStorage,
+    blobsStorage,
+    tasksStorage,
+    receiptsStorage,
+    tasksScheduler,
+    getServiceConnection,
     provisionsStorage,
     delegationsStorage,
     rateLimitsStorage,
@@ -282,10 +312,13 @@ export async function executionContextToUcantoTestServerContext(t) {
       },
     },
     maxUploadSize: 5_000_000_000,
+    // TODO: to be deprecated with `store/*` protocol
     storeTable,
     uploadTable,
+    // TODO: to be deprecated with `store/*` protocol
     carStoreBucket,
     r2CarStoreBucket,
+    // TODO: to be deprecated with `store/*` protocol
     dudewhereBucket,
     validateAuthorization: () => ({ ok: {} }),
     // filecoin/*
@@ -307,7 +340,6 @@ export async function executionContextToUcantoTestServerContext(t) {
     id: serviceContext.id,
     channel: createServer(serviceContext)
   });
-
 
   return {
     ...serviceContext,

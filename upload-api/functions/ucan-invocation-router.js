@@ -23,6 +23,10 @@ import { createUcantoServer } from '../service.js'
 import { Config } from 'sst/node/config'
 import { CAR, Legacy, Codec } from '@ucanto/transport'
 import { Email } from '../email.js'
+import { createTasksStorage } from '../stores/tasks.js'
+import { createReceiptsStorage } from '../stores/receipts.js'
+import { createAllocationsStorage } from '../stores/allocations.js'
+import { createBlobsStorage, composeblobStoragesWithOrderedHas } from '../stores/blobs.js'
 import { useProvisionStore } from '../stores/provisions.js'
 import { useSubscriptionsStore } from '../stores/subscriptions.js'
 import { createDelegationsTable } from '../tables/delegations.js'
@@ -39,6 +43,7 @@ import { createSpaceDiffStore } from '@web3-storage/w3infra-billing/tables/space
 import { createSpaceSnapshotStore } from '@web3-storage/w3infra-billing/tables/space-snapshot.js'
 import { useUsageStore } from '../stores/usage.js'
 import { createStripeBillingProvider } from '../billing.js'
+import { createTasksScheduler } from '../scheduler.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -99,6 +104,7 @@ export async function ucanInvocationRouter(request) {
     storeTableName,
     storeBucketName,
     uploadTableName,
+    allocationTableName,
     consumerTableName,
     customerTableName,
     subscriptionTableName,
@@ -122,6 +128,7 @@ export async function ucanInvocationRouter(request) {
     aggregatorDid,
     dealTrackerDid,
     dealTrackerUrl,
+    uploadServiceURL,
     pieceOfferQueueUrl,
     filecoinSubmitQueueUrl,
     requirePaymentPlan,
@@ -143,6 +150,22 @@ export async function ucanInvocationRouter(request) {
   const { UPLOAD_API_DID } = process.env
   const { PRIVATE_KEY, STRIPE_SECRET_KEY } = Config
   const serviceSigner = getServiceSigner({ did: UPLOAD_API_DID, privateKey: PRIVATE_KEY })
+
+  const tasksStorage = createTasksStorage(AWS_REGION, invocationBucketName, workflowBucketName)
+  const receiptsStorage = createReceiptsStorage(AWS_REGION, taskBucketName, invocationBucketName, workflowBucketName)
+  const allocationsStorage = createAllocationsStorage(AWS_REGION, allocationTableName, {
+    endpoint: dbEndpoint,
+  })
+  const blobsStorage = composeblobStoragesWithOrderedHas(
+    createBlobsStorage(R2_REGION, carparkBucketName, {
+      endpoint: carparkBucketEndpoint,
+      credentials: {
+        accessKeyId: carparkBucketAccessKeyId,
+        secretAccessKey: carparkBucketSecretAccessKey,
+      }, 
+    }),
+    createBlobsStorage(AWS_REGION, storeBucketName),
+  )
 
   const invocationBucket = createInvocationStore(
     AWS_REGION,
@@ -172,16 +195,29 @@ export async function ucanInvocationRouter(request) {
   const spaceSnapshotStore = createSpaceSnapshotStore({ region: AWS_REGION }, { tableName: spaceSnapshotTableName })
   const usageStorage = useUsageStore({ spaceDiffStore, spaceSnapshotStore })
 
-  const connection = getServiceConnection({
+  const dealTrackerConnection = getServiceConnection({
     did: dealTrackerDid,
     url: dealTrackerUrl
   })
+  const selfConnection = getServiceConnection({
+    did: serviceSigner.did(),
+    url: uploadServiceURL
+  })
+  const tasksScheduler = createTasksScheduler(() => selfConnection)
 
   const server = createUcantoServer(serviceSigner, {
     codec,
+    allocationsStorage,
+    blobsStorage,
+    tasksStorage,
+    receiptsStorage,
+    tasksScheduler,
+    getServiceConnection: () => selfConnection,
+    // TODO: to be deprecated with `store/*` protocol
     storeTable: createStoreTable(AWS_REGION, storeTableName, {
       endpoint: dbEndpoint,
     }),
+    // TODO: to be deprecated with `store/*` protocol
     carStoreBucket: composeCarStoresWithOrderedHas(
       createCarStore(AWS_REGION, storeBucketName),
       createCarStore(R2_REGION, carparkBucketName, {
@@ -192,6 +228,7 @@ export async function ucanInvocationRouter(request) {
         }, 
       }),
     ),
+    // TODO: to be deprecated with `store/*` protocol
     dudewhereBucket: createDudewhereStore(R2_REGION, R2_DUDEWHERE_BUCKET_NAME, {
       endpoint: R2_ENDPOINT,
       credentials: {
@@ -218,10 +255,10 @@ export async function ucanInvocationRouter(request) {
     pieceOfferQueue: createPieceOfferQueueClient({ region: AWS_REGION }, { queueUrl: pieceOfferQueueUrl }),
     filecoinSubmitQueue: createFilecoinSubmitQueueClient({ region: AWS_REGION }, { queueUrl: filecoinSubmitQueueUrl }),
     dealTrackerService: {
-      connection,
+      connection: dealTrackerConnection,
       invocationConfig: {
         issuer: serviceSigner,
-        audience: connection.id,
+        audience: dealTrackerConnection.id,
         with: serviceSigner.did()
       }
     },
@@ -316,6 +353,7 @@ function getLambdaEnv () {
     storeTableName: mustGetEnv('STORE_TABLE_NAME'),
     storeBucketName: mustGetEnv('STORE_BUCKET_NAME'),
     uploadTableName: mustGetEnv('UPLOAD_TABLE_NAME'),
+    allocationTableName: mustGetEnv('ALLOCATION_TABLE_NAME'),
     consumerTableName: mustGetEnv('CONSUMER_TABLE_NAME'),
     customerTableName: mustGetEnv('CUSTOMER_TABLE_NAME'),
     subscriptionTableName: mustGetEnv('SUBSCRIPTION_TABLE_NAME'),
@@ -339,6 +377,7 @@ function getLambdaEnv () {
     postmarkToken: mustGetEnv('POSTMARK_TOKEN'),
     providers: mustGetEnv('PROVIDERS'),
     accessServiceURL: mustGetEnv('ACCESS_SERVICE_URL'),
+    uploadServiceURL: mustGetEnv('UPLOAD_SERVICE_URL'),
     aggregatorDid: mustGetEnv('AGGREGATOR_DID'),
     requirePaymentPlan: (process.env.REQUIRE_PAYMENT_PLAN === 'true'),
     dealTrackerDid: mustGetEnv('DEAL_TRACKER_DID'),

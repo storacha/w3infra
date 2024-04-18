@@ -22,10 +22,10 @@
     "@ucanto/transport": "^9.1.1",
     "@ucanto/validator": "^9.0.2",
     "@web-std/fetch": "^4.1.0",
-    "@web3-storage/access": "^18.3.0",
-    "@web3-storage/capabilities": "^13.3.0",
+    "@web3-storage/access": "^18.3.1",
+    "@web3-storage/capabilities": "^13.3.1",
     "@web3-storage/did-mailto": "^2.1.0",
-    "@web3-storage/upload-api": "^9.0.1",
+    "@web3-storage/upload-api": "^9.1.5",
     "multiformats": "^13.1.0",
     "nanoid": "^5.0.2",
     "preact": "^10.14.1",
@@ -65,7 +65,8 @@
   "eslintConfig": {
     "rules": {
       "unicorn/consistent-destructuring": "off",
-      "unicorn/prefer-array-flat-map": "off"
+      "unicorn/prefer-array-flat-map": "off",
+      "unicorn/no-useless-undefined": "off"
     }
   }
 }
