@@ -157,9 +157,7 @@ export function useAllocationsStorage(dynamoDb, tableName) {
       } catch (/** @type {any} */ err) {
         if (err.name === 'ConditionalCheckFailedException') {
           return {
-            ok: {
-              size: 0
-            }
+            error: new RecordNotFound()
           }
         }
         return {
@@ -178,7 +176,7 @@ export function useAllocationsStorage(dynamoDb, tableName) {
       const exclusiveStartKey = options.cursor
         ? marshall({
             space,
-            link: options.cursor,
+            multihash: options.cursor,
           })
         : undefined
 
@@ -191,7 +189,6 @@ export function useAllocationsStorage(dynamoDb, tableName) {
             AttributeValueList: [{ S: space }],
           },
         },
-        ScanIndexForward: !options.pre,
         ExclusiveStartKey: exclusiveStartKey,
         AttributesToGet: ['multihash', 'size', 'insertedAt'],
       })
@@ -206,15 +203,16 @@ export function useAllocationsStorage(dynamoDb, tableName) {
         response.LastEvaluatedKey && unmarshall(response.LastEvaluatedKey)
       const lastLinkCID = lastKey ? lastKey.multihash : undefined
 
-      const before = options.pre ? lastLinkCID : firstLinkCID
-      const after = options.pre ? firstLinkCID : lastLinkCID
+      const before = firstLinkCID
+      const after = lastLinkCID
+
       return {
         ok: {
           size: results.length,
           before,
           after,
           cursor: after,
-          results: options.pre ? results.reverse() : results,
+          results,
         }
       }
     },
