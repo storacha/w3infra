@@ -3,9 +3,10 @@ import {
   GetItemCommand,
   PutItemCommand,
   QueryCommand,
+  DeleteItemCommand,
 } from '@aws-sdk/client-dynamodb'
 import { marshall, unmarshall } from '@aws-sdk/util-dynamodb'
-import { RecordKeyConflict, RecordNotFound } from '@web3-storage/upload-api/errors'
+import { RecordKeyConflict, RecordNotFound, StorageOperationFailed } from '@web3-storage/upload-api/errors'
 import { base58btc } from 'multiformats/bases/base58'
 import * as Link from 'multiformats/link'
 
@@ -125,6 +126,46 @@ export function useAllocationsStorage(dynamoDb, tableName) {
         throw err
       }
       return { ok: { blob } }
+    },
+    /**
+     * @param {import('@web3-storage/upload-api').DID} space
+     * @param {Uint8Array} blobMultihash
+     * @returns {ReturnType<AllocationsStorage['remove']>}
+     */
+    async remove(space, blobMultihash) {
+      const key = getKey(space, blobMultihash)
+      const cmd = new DeleteItemCommand({
+        TableName: tableName,
+        Key: key,
+        ConditionExpression: 'attribute_exists(#S) AND attribute_exists(#M)',
+        ExpressionAttributeNames: { '#S': 'space', '#M': 'multihash' },
+        ReturnValues: 'ALL_OLD'
+      })
+
+      try {
+        const res = await dynamoDb.send(cmd)
+        if (!res.Attributes) {
+          throw new Error('missing return values')
+        }
+
+        const raw = unmarshall(res.Attributes)
+        return {
+          ok: {
+            size: Number(raw.size)
+          }
+        }
+      } catch (/** @type {any} */ err) {
+        if (err.name === 'ConditionalCheckFailedException') {
+          return {
+            ok: {
+              size: 0
+            }
+          }
+        }
+        return {
+          error: new StorageOperationFailed(err.name)
+        }
+      }
     },
     /**
      * List all CARs bound to an account
