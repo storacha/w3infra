@@ -72,7 +72,7 @@ export function useStoreTable(dynamoDb, tableName) {
      * @param {StoreAddInput} item
      * @returns {ReturnType<StoreTable['insert']>}
      */
-    insert: async ({ space, link, origin, size, issuer, invocation }) => {
+    insert: async ({ space, link, origin, size, invocation }) => {
       const insertedAt = new Date().toISOString()
 
       const item = {
@@ -80,7 +80,6 @@ export function useStoreTable(dynamoDb, tableName) {
         link: link.toString(),
         size,
         origin: origin?.toString(),
-        issuer,
         invocation: invocation.toString(),
         insertedAt,
       }
