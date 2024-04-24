@@ -1,4 +1,7 @@
 import { Schema } from '@ucanto/core'
+import * as ServiceBlobCaps from '@web3-storage/capabilities/web3.storage/blob'
+import * as BlobCaps from '@web3-storage/capabilities/blob'
+import * as StoreCaps from '@web3-storage/capabilities/store'
 import { findSpaceUsageDeltas, storeSpaceUsageDelta } from '../../lib/ucan-stream.js'
 import { randomConsumer } from '../helpers/consumer.js'
 import { randomLink } from '../helpers/dag.js'
@@ -14,7 +17,7 @@ export const test = {
       value: {
         att: [{
           with: await randomDID(),
-          can: 'store/list'
+          can: StoreCaps.list.can
         }],
         aud: await randomDID(),
         cid: randomLink()
@@ -39,7 +42,7 @@ export const test = {
       value: {
         att: [{
           with: await randomDIDKey(),
-          can: 'web3.storage/blob/allocate',
+          can: ServiceBlobCaps.allocate.can,
           nb: {
             blob: {
               digest: randomLink().multihash.bytes,
@@ -61,7 +64,7 @@ export const test = {
       value: {
         att: [{
           with: await randomDIDKey(),
-          can: 'blob/remove',
+          can: BlobCaps.remove.can,
           nb: {
             digest: randomLink().multihash.bytes
           }
@@ -78,7 +81,7 @@ export const test = {
       value: {
         att: [{
           with: await randomDIDKey(),
-          can: 'store/add',
+          can: StoreCaps.add.can,
           nb: {
             link: shard,
             size: 138
@@ -96,7 +99,7 @@ export const test = {
       value: {
         att: [{
           with: await randomDIDKey(),
-          can: 'store/remove',
+          can: StoreCaps.remove.can,
           nb: { link: shard }
         }],
         aud: await randomDID(),
@@ -114,7 +117,7 @@ export const test = {
       assert.ok(deltas.some(d => (
         d.cause.toString() === r.invocationCid.toString() &&
         // resource for blob allocate is found in the caveats
-        (r.value.att[0].can === 'web3.storage/blob/allocate'
+        (r.value.att[0].can === ServiceBlobCaps.allocate.can
           ? d.resource === r.value.att[0].nb.space
           : d.resource === r.value.att[0].with)
       )))
@@ -135,7 +138,7 @@ export const test = {
       value: {
         att: [{
           with: Schema.did({ method: 'key' }).from(consumer.consumer),
-          can: 'store/add',
+          can: StoreCaps.add.can,
           nb: {
             link: randomLink(),
             size: 138
@@ -153,7 +156,7 @@ export const test = {
       value: {
         att: [{
           with: Schema.did({ method: 'key' }).from(consumer.consumer),
-          can: 'store/add',
+          can: StoreCaps.add.can,
           nb: {
             link: randomLink(),
             size: 1138
@@ -207,7 +210,7 @@ export const test = {
       value: {
         att: [{
           with: Schema.did({ method: 'key' }).from(consumer.consumer),
-          can: 'store/add',
+          can: StoreCaps.add.can,
           nb: {
             link: randomLink(),
             size: 138
