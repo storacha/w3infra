@@ -262,11 +262,6 @@ export async function ucanInvocationRouter(request) {
         with: serviceSigner.did()
       }
     },
-    options: {
-      // TODO: we compute and put all pieces into the queue on bucket event
-      // We may change this to validate user provided piece
-      skipFilecoinSubmitQueue: false
-    },
     plansStorage,
     requirePaymentPlan,
     usageStorage,
