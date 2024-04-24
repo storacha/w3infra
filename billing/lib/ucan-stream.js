@@ -1,3 +1,5 @@
+import * as ServiceBlobCaps from '@web3-storage/capabilities/web3.storage/blob'
+import * as BlobCaps from '@web3-storage/capabilities/blob'
 import * as StoreCaps from '@web3-storage/capabilities/store'
 
 /**
@@ -13,23 +15,35 @@ export const findSpaceUsageDeltas = messages => {
   for (const message of messages) {
     if (!isReceipt(message)) continue
 
+    /** @type {import('@ucanto/interface').DID|undefined} */
+    let resource
     /** @type {number|undefined} */
     let size
-    if (isReceiptForCapability(message, StoreCaps.add) && isStoreAddSuccess(message.out)) {
+    if (isReceiptForCapability(message, ServiceBlobCaps.allocate) && isServiceBlobAllocateSuccess(message.out)) {
+      resource = message.value.att[0].nb?.space
+      size = message.out.ok.size
+    } else if (isReceiptForCapability(message, BlobCaps.remove) && isBlobRemoveSuccess(message.out)) {
+      resource = /** @type {import('@ucanto/interface').DID} */ (message.value.att[0].with)
+      size = -message.out.ok.size
+    // TODO: remove me LEGACY store/add
+    } else if (isReceiptForCapability(message, StoreCaps.add) && isStoreAddSuccess(message.out)) {
+      resource = /** @type {import('@ucanto/interface').DID} */ (message.value.att[0].with)
       size = message.out.ok.allocated
+    // TODO: remove me LEGACY store/remove
     } else if (isReceiptForCapability(message, StoreCaps.remove) && isStoreRemoveSuccess(message.out)) {
+      resource = /** @type {import('@ucanto/interface').DID} */ (message.value.att[0].with)
       size = -message.out.ok.size
     }
 
     // Is message is a repeat store/add for the same shard or not a valid
     // store/add or store/remove receipt?
-    if (size == 0 || size == null) {
+    if (resource == null || size == 0 || size == null) {
       continue
     }
 
     /** @type {import('./api.js').UsageDelta} */
     const delta = {
-      resource: /** @type {import('@ucanto/interface').DID} */ (message.value.att[0].with),
+      resource,
       cause: message.invocationCid,
       delta: size,
       // TODO: use receipt timestamp per https://github.com/web3-storage/w3up/issues/970
@@ -82,6 +96,28 @@ export const storeSpaceUsageDelta = async (delta, ctx) => {
  * @returns {m is import('./api').UcanReceiptMessage}
  */
 const isReceipt = m => m.type === 'receipt'
+
+/**
+ * @param {import('@ucanto/interface').Result} r
+ * @returns {r is { ok: import('@web3-storage/capabilities/types').BlobAllocateSuccess }}
+ */
+const isServiceBlobAllocateSuccess = r =>
+  !r.error &&
+  r.ok != null &&
+  typeof r.ok === 'object' &&
+  'size' in r.ok &&
+  (typeof r.ok.size === 'number')
+
+/**
+ * @param {import('@ucanto/interface').Result} r
+ * @returns {r is { ok: import('@web3-storage/capabilities/types').BlobRemoveSuccess }}
+ */
+const isBlobRemoveSuccess = r =>
+  !r.error &&
+  r.ok != null &&
+  typeof r.ok === 'object' &&
+  'size' in r.ok &&
+  (typeof r.ok.size === 'number')
 
 /**
  * @param {import('@ucanto/interface').Result} r

@@ -2,7 +2,7 @@ import { Schema } from '@ucanto/core'
 import { findSpaceUsageDeltas, storeSpaceUsageDelta } from '../../lib/ucan-stream.js'
 import { randomConsumer } from '../helpers/consumer.js'
 import { randomLink } from '../helpers/dag.js'
-import { randomDID } from '../helpers/did.js'
+import { randomDID, randomDIDKey } from '../helpers/did.js'
 
 /** @type {import('./api').TestSuite<import('./api').UCANStreamTestContext>} */
 export const test = {
@@ -24,14 +24,60 @@ export const test = {
 
     const shard = randomLink()
 
-    /** @type {import('../../lib/api.js').UcanReceiptMessage[]} */
+    /**
+     * @type {import('../../lib/api.js').UcanReceiptMessage<[
+     *   | import('@web3-storage/capabilities/types').BlobAllocate
+     *   | import('@web3-storage/capabilities/types').BlobRemove
+     *   | import('@web3-storage/capabilities/types').StoreAdd
+     *   | import('@web3-storage/capabilities/types').StoreRemove
+     * ]>[]}
+     */
     const receipts = [{
       type: 'receipt',
       carCid: randomLink(),
       invocationCid: randomLink(),
       value: {
         att: [{
-          with: await randomDID(),
+          with: await randomDIDKey(),
+          can: 'web3.storage/blob/allocate',
+          nb: {
+            blob: {
+              digest: randomLink().multihash.bytes,
+              size: 138
+            },
+            cause: randomLink(),
+            space: await randomDIDKey()
+          }
+        }],
+        aud: await randomDID(),
+        cid: randomLink()
+      },
+      out: { ok: { size: 138 } },
+      ts: new Date()
+    }, {
+      type: 'receipt',
+      carCid: randomLink(),
+      invocationCid: randomLink(),
+      value: {
+        att: [{
+          with: await randomDIDKey(),
+          can: 'blob/remove',
+          nb: {
+            digest: randomLink().multihash.bytes
+          }
+        }],
+        aud: await randomDID(),
+        cid: randomLink()
+      },
+      out: { ok: { size: 138 } },
+      ts: new Date()
+    }, {
+      type: 'receipt',
+      carCid: randomLink(),
+      invocationCid: randomLink(),
+      value: {
+        att: [{
+          with: await randomDIDKey(),
           can: 'store/add',
           nb: {
             link: shard,
@@ -49,7 +95,7 @@ export const test = {
       invocationCid: randomLink(),
       value: {
         att: [{
-          with: await randomDID(),
+          with: await randomDIDKey(),
           can: 'store/remove',
           nb: { link: shard }
         }],
@@ -66,8 +112,11 @@ export const test = {
     // ensure we have a delta for every receipt
     for (const r of receipts) {
       assert.ok(deltas.some(d => (
-        d.resource === r.value.att[0].with &&
-        d.cause.toString() === r.invocationCid.toString()
+        d.cause.toString() === r.invocationCid.toString() &&
+        // resource for blob allocate is found in the caveats
+        (r.value.att[0].can === 'web3.storage/blob/allocate'
+          ? d.resource === r.value.att[0].nb.space
+          : d.resource === r.value.att[0].with)
       )))
     }
   },
