@@ -11,8 +11,11 @@ const randomDomain = () =>
 export const randomDIDMailto = () => 
   `did:mailto:${randomDomain()}:${randomAlphas(randomInteger(1, 16))}`
 
-  /** @returns {Promise<import("@ucanto/interface").DID>} */
-export const randomDID = async () => {
+/** @returns {Promise<import("@ucanto/interface").DID>} */
+export const randomDID = () => randomDIDKey()
+
+/** @returns {Promise<import("@ucanto/interface").DID<'key'>>} */
+export const randomDIDKey = async () => {
   const signer = await Signer.generate()
   return signer.did()
 }

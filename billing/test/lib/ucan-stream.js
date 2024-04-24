@@ -1,8 +1,11 @@
 import { Schema } from '@ucanto/core'
+import * as ServiceBlobCaps from '@web3-storage/capabilities/web3.storage/blob'
+import * as BlobCaps from '@web3-storage/capabilities/blob'
+import * as StoreCaps from '@web3-storage/capabilities/store'
 import { findSpaceUsageDeltas, storeSpaceUsageDelta } from '../../lib/ucan-stream.js'
 import { randomConsumer } from '../helpers/consumer.js'
 import { randomLink } from '../helpers/dag.js'
-import { randomDID } from '../helpers/did.js'
+import { randomDID, randomDIDKey } from '../helpers/did.js'
 
 /** @type {import('./api').TestSuite<import('./api').UCANStreamTestContext>} */
 export const test = {
@@ -14,7 +17,7 @@ export const test = {
       value: {
         att: [{
           with: await randomDID(),
-          can: 'store/list'
+          can: StoreCaps.list.can
         }],
         aud: await randomDID(),
         cid: randomLink()
@@ -24,15 +27,61 @@ export const test = {
 
     const shard = randomLink()
 
-    /** @type {import('../../lib/api.js').UcanReceiptMessage[]} */
+    /**
+     * @type {import('../../lib/api.js').UcanReceiptMessage<[
+     *   | import('@web3-storage/capabilities/types').BlobAllocate
+     *   | import('@web3-storage/capabilities/types').BlobRemove
+     *   | import('@web3-storage/capabilities/types').StoreAdd
+     *   | import('@web3-storage/capabilities/types').StoreRemove
+     * ]>[]}
+     */
     const receipts = [{
       type: 'receipt',
       carCid: randomLink(),
       invocationCid: randomLink(),
       value: {
         att: [{
-          with: await randomDID(),
-          can: 'store/add',
+          with: await randomDIDKey(),
+          can: ServiceBlobCaps.allocate.can,
+          nb: {
+            blob: {
+              digest: randomLink().multihash.bytes,
+              size: 138
+            },
+            cause: randomLink(),
+            space: await randomDIDKey()
+          }
+        }],
+        aud: await randomDID(),
+        cid: randomLink()
+      },
+      out: { ok: { size: 138 } },
+      ts: new Date()
+    }, {
+      type: 'receipt',
+      carCid: randomLink(),
+      invocationCid: randomLink(),
+      value: {
+        att: [{
+          with: await randomDIDKey(),
+          can: BlobCaps.remove.can,
+          nb: {
+            digest: randomLink().multihash.bytes
+          }
+        }],
+        aud: await randomDID(),
+        cid: randomLink()
+      },
+      out: { ok: { size: 138 } },
+      ts: new Date()
+    }, {
+      type: 'receipt',
+      carCid: randomLink(),
+      invocationCid: randomLink(),
+      value: {
+        att: [{
+          with: await randomDIDKey(),
+          can: StoreCaps.add.can,
           nb: {
             link: shard,
             size: 138
@@ -49,8 +98,8 @@ export const test = {
       invocationCid: randomLink(),
       value: {
         att: [{
-          with: await randomDID(),
-          can: 'store/remove',
+          with: await randomDIDKey(),
+          can: StoreCaps.remove.can,
           nb: { link: shard }
         }],
         aud: await randomDID(),
@@ -66,8 +115,11 @@ export const test = {
     // ensure we have a delta for every receipt
     for (const r of receipts) {
       assert.ok(deltas.some(d => (
-        d.resource === r.value.att[0].with &&
-        d.cause.toString() === r.invocationCid.toString()
+        d.cause.toString() === r.invocationCid.toString() &&
+        // resource for blob allocate is found in the caveats
+        (r.value.att[0].can === ServiceBlobCaps.allocate.can
+          ? d.resource === r.value.att[0].nb.space
+          : d.resource === r.value.att[0].with)
       )))
     }
   },
@@ -86,7 +138,7 @@ export const test = {
       value: {
         att: [{
           with: Schema.did({ method: 'key' }).from(consumer.consumer),
-          can: 'store/add',
+          can: StoreCaps.add.can,
           nb: {
             link: randomLink(),
             size: 138
@@ -104,7 +156,7 @@ export const test = {
       value: {
         att: [{
           with: Schema.did({ method: 'key' }).from(consumer.consumer),
-          can: 'store/add',
+          can: StoreCaps.add.can,
           nb: {
             link: randomLink(),
             size: 1138
@@ -158,7 +210,7 @@ export const test = {
       value: {
         att: [{
           with: Schema.did({ method: 'key' }).from(consumer.consumer),
-          can: 'store/add',
+          can: StoreCaps.add.can,
           nb: {
             link: randomLink(),
             size: 138
