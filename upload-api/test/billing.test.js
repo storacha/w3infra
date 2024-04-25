@@ -5,6 +5,8 @@ import dotenv from 'dotenv'
 
 import Stripe from 'stripe'
 import { fileURLToPath } from 'node:url'
+import { createCustomerStore, customerTableProps } from '@web3-storage/w3infra-billing/tables/customer.js'
+import { createTable } from './helpers/resources.js'
 
 dotenv.config({ path: fileURLToPath(new URL('../../.env', import.meta.url)) })
 
@@ -51,8 +53,11 @@ async function setupCustomer(stripe, email) {
 test('stripe plan can be updated', async (t) => {
   const stripeSecretKey = process.env.STRIPE_TEST_SECRET_KEY
   if (stripeSecretKey) {
+
     const stripe = new Stripe(stripeSecretKey, { apiVersion: '2023-10-16' })
-    const billingProvider = createStripeBillingProvider(stripe)
+    const { dynamo } = t.context
+    const customerStore = createCustomerStore(dynamo, {tableName: await createTable(dynamo, customerTableProps})
+    const billingProvider = createStripeBillingProvider(stripe, customerStore)
     const customerDID = /** @type {import('@web3-storage/did-mailto').DidMailto} */(
       `did:mailto:example.com:w3up-billing-test-${Date.now()}`
     )
@@ -63,14 +68,14 @@ test('stripe plan can be updated', async (t) => {
 
     const prices = await stripe.prices.list({ lookup_keys: [initialPlan] })
     const initialPriceID = prices.data.find(price => price.lookup_key === initialPlan)?.id
-    if (!initialPriceID){
+    if (!initialPriceID) {
       t.fail(`could not find Stripe price with lookup_key ${initialPlan}`)
     }
     let customer
     try {
       // create a new customer and set up its subscription with "initialPlan"
       customer = await setupCustomer(stripe, email)
-      
+
       // create a subscription to initialPlan
       await stripe.subscriptions.create({ customer: customer.id, items: [{ price: initialPriceID }] })
 
