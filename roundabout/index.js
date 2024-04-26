@@ -1,8 +1,5 @@
 import { getSignedUrl as getR2SignedUrl } from '@aws-sdk/s3-request-presigner'
-import {
-  GetObjectCommand,
-  HeadObjectCommand
-} from '@aws-sdk/client-s3'
+import { GetObjectCommand } from '@aws-sdk/client-s3'
 import { base58btc } from 'multiformats/bases/base58'
 
 import { RAW_CODE } from './constants.js'
@@ -45,9 +42,7 @@ export function getSigner (s3Client, bucketName) {
  * Blobs are stored as `b58btc(multihash)/b58btc(multihash).blob` and requested to
  * Roundabout via a RAW CID.
  * Store protocol SHOULD receive CAR files that are stored as
- * `carCid/carCid.car`, but in practise there is not validation that these CIDs are
- * really a CAR CID. There is non CAR CIDs in this key format, and we MUST fallback
- * to this format if a Blob is non existent for a RAW CID.
+ * `carCid/carCid.car`.
  *
  * @param {object} config
  * @param {S3Client} config.s3Client
@@ -65,24 +60,6 @@ export function contentLocationResolver ({ s3Client, bucket, expiresIn }) {
     if (cid.code === RAW_CODE) {
       const encodedMultihash = base58btc.encode(cid.multihash.bytes)
       const blobKey = `${encodedMultihash}/${encodedMultihash}.blob`
-      // We MUST double check blob key actually exists before returning
-      // a presigned URL for it.
-      // This is required because `store/add` accepts to store data that
-      // did not have a CAR CID, and was still stored as `${CID}/${CID}.car`
-      const headCommand = new HeadObjectCommand({
-        Bucket: bucket,
-        Key: blobKey,
-      })
-      try {
-        await s3Client.send(headCommand)
-      } catch (err) {
-        if (err?.$metadata?.httpStatusCode === 404) {
-          // Fallback to attempt CAR CID
-          return signer.getUrl(carKey, { expiresIn })
-        }
-        throw new Error(`Failed to HEAD object in bucket for: ${blobKey}`)
-      }
-
       return signer.getUrl(blobKey, { expiresIn })
     }
     return signer.getUrl(carKey, { expiresIn })

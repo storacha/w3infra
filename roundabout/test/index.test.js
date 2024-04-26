@@ -73,28 +73,6 @@ test('can create signed url for Blob in bucket and get it', async t => {
   t.assert(fetchResponse.ok)
 })
 
-test('fallsback to create signed url for CAR in bucket if Blob not found', async t => {
-  const bucketName = await createBucket(t.context.s3Client)
-  const rawCid = await putBlobAsCarToBucket(t.context.s3Client, bucketName)
-  const expiresIn = 3 * 24 * 60 * 60 // 3 days in seconds
-
-  const locateContent = contentLocationResolver({ 
-    bucket: bucketName,
-    s3Client: t.context.s3Client,
-    expiresIn
-  })
-
-  const signedUrl = await locateContent(rawCid)
-  if (!signedUrl) {
-    throw new Error('presigned url must be received')
-  }
-  t.truthy(signedUrl?.includes(`X-Amz-Expires=${expiresIn}`))
-  t.truthy(signedUrl?.includes(`${rawCid}/${rawCid}.car`))
-
-  const fetchResponse = await fetch(signedUrl)
-  t.assert(fetchResponse.ok)
-})
-
 test('fails to fetch from signed url for object not in bucket', async t => {
   const bucketName = await createBucket(t.context.s3Client)
   const carCid = CID.parse('bagbaiera222226db4v4oli5fldqghzgbv5rqv3n4ykyfxk7shfr42bfnqwua')
@@ -174,27 +152,6 @@ async function getContent () {
     codec: pb,
     hasher,
   })
-}
-
-/**
- * @param {import('@aws-sdk/client-s3').S3Client} s3Client
- * @param {string} bucketName 
- */
-async function putBlobAsCarToBucket (s3Client, bucketName) {
-  // Write non CAR CID as .car
-  const content = await getContent()
-  const rawCid = new CID(1, RAW_CODE, content.cid.multihash, content.cid.multihash.bytes)
-  const key = `${rawCid.toString()}/${rawCid.toString()}.car`
-  await s3Client.send(
-    new PutObjectCommand({
-      Bucket: bucketName,
-      Key: key,
-      Body: content.bytes,
-    })
-  )
-
-  // Return RAW CID
-  return rawCid
 }
 
 /**
