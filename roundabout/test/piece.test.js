@@ -4,7 +4,9 @@ import * as Raw from 'multiformats/codecs/raw'
 import { sha256 } from 'multiformats/hashes/sha2'
 import * as Digest from 'multiformats/hashes/digest'
 import { Piece, MIN_PAYLOAD_SIZE } from '@web3-storage/data-segment'
-import { findEquivalentCids, asCarCid, asPieceCidV1, asPieceCidV2, CAR_CODE } from '../piece.js'
+import { asCarCid } from '../utils.js'
+import { CAR_CODE } from '../constants.js'
+import { findEquivalentCids, asPieceCidV1, asPieceCidV2 } from '../piece.js'
 
 test('findEquivalentCids', async t => {
   const bytes = new Uint8Array(MIN_PAYLOAD_SIZE)
