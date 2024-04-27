@@ -1,8 +1,6 @@
 import * as CAR from '@ucanto/transport/car'
 import pRetry from 'p-retry'
-import {
-  PutObjectCommand,
-} from '@aws-sdk/client-s3'
+import { PutObjectCommand } from '@aws-sdk/client-s3'
 
 import { createBucket } from './resources.js'
 import { createDynamoTable } from './tables.js'
@@ -12,10 +10,10 @@ import { encodeAgentMessage } from './ucan.js'
 import { pieceTableProps } from '../../store/index.js'
 
 // store clients
-import { useDataStore as createDataStoreClient } from '../../store/data.js'
 import { usePieceTable as createPieceStoreClient } from '../../store/piece.js'
 import { useTaskStore as createTaskStoreClient } from '../../store/task.js'
 import { useReceiptStore as createReceiptStoreClient } from '../../store/receipt.js'
+import { TestContentStore } from './content-store.js'
 
 // queue clients
 import { createClient as createPieceOfferQueueClient } from '../../queue/piece-offer-queue.js'
@@ -27,17 +25,18 @@ import { createClient as createFilecoinSubmitQueueClient } from '../../queue/fil
 export async function getStores (ctx) {
   const { dynamoClient, s3Client } = ctx
   const pieceStore = await createDynamoTable(dynamoClient, pieceTableProps)
-  const [ invocationBucketName, workflowBucketName, dataStoreBucketName ] = await Promise.all([
-    createBucket(s3Client),
+  const [ invocationBucketName, workflowBucketName ] = await Promise.all([
     createBucket(s3Client),
     createBucket(s3Client),
   ])
+  const testContentStore = await TestContentStore.activate()
 
   return {
     pieceStore: createPieceStoreClient(dynamoClient, pieceStore),
     taskStore: getTaskStoreClient(s3Client, invocationBucketName, workflowBucketName),
     receiptStore: getReceiptStoreClient(s3Client, invocationBucketName, workflowBucketName),
-    dataStore: createDataStoreClient(s3Client, dataStoreBucketName)
+    contentStore: testContentStore.contentStore,
+    testContentStore
   }
 }
 

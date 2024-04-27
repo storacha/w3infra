@@ -11,6 +11,7 @@ import { BusStack } from './bus-stack.js'
 import { CarparkStack } from './carpark-stack.js'
 import { UploadDbStack } from './upload-db-stack.js'
 import { UcanInvocationStack } from './ucan-invocation-stack.js'
+import { RoundaboutStack } from './roundabout-stack.js'
 import { setupSentry, getEnv, getCdkNames, getCustomDomain, getEventSourceConfig } from './config.js'
 import { CARPARK_EVENT_BRIDGE_SOURCE_EVENT } from '../carpark/event-bus/source.js'
 import { Status } from '../filecoin/store/piece.js'
@@ -43,6 +44,7 @@ export function FilecoinStack({ stack, app }) {
   const { pieceTable, privateKey, contentClaimsPrivateKey, adminMetricsTable } = use(UploadDbStack)
   // Get UCAN store references
   const { workflowBucket, invocationBucket, ucanStream } = use(UcanInvocationStack)
+  const { roundaboutApiUrl } = use(RoundaboutStack)
 
   /**
    * 1st processor queue - filecoin submit
@@ -64,13 +66,7 @@ export function FilecoinStack({ stack, app }) {
       handler: 'filecoin/functions/handle-filecoin-submit-message.main',
       environment : {
         PIECE_TABLE_NAME: pieceTable.tableName,
-        // Setup both buckets
-        STORE_BUCKET_NAME: carparkBucket.bucketName,
-        R2_ACCESS_KEY_ID: process.env.R2_ACCESS_KEY_ID ?? '',
-        R2_SECRET_ACCESS_KEY: process.env.R2_SECRET_ACCESS_KEY ?? '',
-        R2_REGION: process.env.R2_REGION ?? '',
-        R2_ENDPOINT: process.env.R2_ENDPOINT ?? '',
-        R2_CARPARK_BUCKET_NAME: process.env.R2_CARPARK_BUCKET_NAME ?? '',
+        CONTENT_STORE_HTTP_ENDPOINT: roundaboutApiUrl
       },
       permissions: [pieceTable],
       // piece is computed in this lambda
