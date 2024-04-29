@@ -34,6 +34,28 @@ export function UploadApiStack({ stack, app }) {
   const { customerTable, spaceDiffTable, spaceSnapshotTable, stripeSecretKey } = use(BillingDbStack)
   const { pieceOfferQueue, filecoinSubmitQueue } = use(FilecoinStack)
 
+  // Blob protocol
+  // Elastic IPFS event for multihashes
+  const multihashesQueue = new Queue(stack, 'multihashes-topic-queue', {
+    cdk: {
+      queue: sqs.Queue.fromQueueArn(
+        stack,
+        'multihashes-topic',
+        EIPFS_MULTIHASHES_SQS_ARN
+      ),
+    },
+  })
+
+  const blocksCarPositionTable = new Table(stack, 'blocks-car-position', {
+    cdk: {
+      table: dynamodb.Table.fromTableArn(
+        stack,
+        'blocks-car-position',
+        EIPFS_BLOCKS_CAR_POSITION_TABLE_ARN
+      ),
+    },
+  })
+
   // Setup API
   const customDomain = getCustomDomain(stack.stage, process.env.HOSTED_ZONE)
   const pkg = getApiPackageJson()
@@ -187,28 +209,6 @@ export function UploadApiStack({ stack, app }) {
           startingPosition: StartingPosition.LATEST
         }
       }
-    },
-  })
-
-  // Blob protocol
-  // Elastic IPFS event for multihashes
-  const multihashesQueue = new Queue(stack, 'multihashes-topic-queue', {
-    cdk: {
-      queue: sqs.Queue.fromQueueArn(
-        stack,
-        'multihashes-topic',
-        EIPFS_MULTIHASHES_SQS_ARN
-      ),
-    },
-  })
-
-  const blocksCarPositionTable = new Table(stack, 'blocks-car-position', {
-    cdk: {
-      table: dynamodb.Table.fromTableArn(
-        stack,
-        'blocks-car-position',
-        EIPFS_BLOCKS_CAR_POSITION_TABLE_ARN
-      ),
     },
   })
 
