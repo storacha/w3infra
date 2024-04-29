@@ -2,7 +2,7 @@ import * as Sentry from '@sentry/serverless'
 import { S3Client } from '@aws-sdk/client-s3'
 import { CID } from 'multiformats/cid'
 
-import { getSigner } from '../index.js'
+import { getSigner, contentLocationResolver } from '../index.js'
 import { findEquivalentCids, asPieceCidV1, asPieceCidV2 } from '../piece.js'
 import { getEnv, parseQueryStringParameters } from '../utils.js'
 
@@ -13,7 +13,7 @@ Sentry.AWSLambda.init({
 })
 
 /**
- * AWS HTTP Gateway handler for GET /{cid} by CID or Piece CID
+ * AWS HTTP Gateway handler for GET /{cid} by CAR CID, RAW CID or Piece CID
  *
  * @param {import('aws-lambda').APIGatewayProxyEventV2} request
  */
@@ -84,26 +84,6 @@ async function resolvePiece (cid, locateContent) {
     }
   }
   return { statusCode: 404, body: 'No content found for Piece CID' }
-}
-
-/**
- * Creates a helper function that returns signed bucket url for a car cid, 
- * or undefined if the CAR does not exist in the bucket.
- *
- * @param {object} config
- * @param {S3Client} config.s3Client
- * @param {string} config.bucket
- * @param {number} config.expiresIn
- */
-function contentLocationResolver ({ s3Client, bucket, expiresIn }) {
-  const signer = getSigner(s3Client, bucket)
-  /**
-   * @param {CID} cid
-   */
-  return async function locateContent (cid) {
-    const key = `${cid}/${cid}.car`
-    return signer.getUrl(key, { expiresIn })
-  }
 }
 
 /**

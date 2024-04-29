@@ -1,9 +1,15 @@
+import { CAR_CODE } from './constants.js'
+
 // Per https://developers.cloudflare.com/r2/api/s3/presigned-urls/
 export const MAX_EXPIRES_IN = 3 * 24 * 60 * 60 // 7 days in seconds
 export const MIN_EXPIRES_IN = 1
 export const DEFAULT_EXPIRES_IN = 3 * 24 * 60 * 60 // 3 days in seconds by default
 
 export const VALID_BUCKETS = ['dagcargo']
+
+/** 
+ * @typedef {import('multiformats/cid').CID} CID
+ **/
 
 /**
  * @param {import('aws-lambda').APIGatewayProxyEventPathParameters | undefined} queryStringParameters
@@ -51,3 +57,15 @@ function mustGetEnv (name) {
   if (!value) throw new Error(`Missing env var: ${name}`)
   return value
 }
+
+/**
+ * Return the cid if it is a CAR CID or undefined if not
+ *
+ * @param {CID} cid
+ */
+export function asCarCid(cid) {
+  if (cid.code === CAR_CODE) {
+    return cid
+  }
+}
+

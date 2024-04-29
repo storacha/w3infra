@@ -1,17 +1,17 @@
 import { test } from './helpers/context.js'
 
-import {
-  PutObjectCommand,
-} from '@aws-sdk/client-s3'
-
+import { PutObjectCommand } from '@aws-sdk/client-s3'
 import { encode } from 'multiformats/block'
 import { CID } from 'multiformats/cid'
+import { base58btc } from 'multiformats/bases/base58'
 import { identity } from 'multiformats/hashes/identity'
 import { sha256 as hasher } from 'multiformats/hashes/sha2'
 import * as pb from '@ipld/dag-pb'
 import { CarBufferWriter } from '@ipld/car'
+import * as CAR from '@ucanto/transport/car'
 
-import { getSigner } from '../index.js'
+import { RAW_CODE } from '../constants.js'
+import { getSigner, contentLocationResolver } from '../index.js'
 import {
   parseQueryStringParameters,
   MAX_EXPIRES_IN,
@@ -27,22 +27,47 @@ test.before(async t => {
   t.context.s3Client = client
 })
 
-test('can create signed url for object in bucket', async t => {
+test('can create signed url for CAR in bucket and get it', async t => {
   const bucketName = await createBucket(t.context.s3Client)
   const carCid = await putCarToBucket(t.context.s3Client, bucketName)
   const expiresIn = 3 * 24 * 60 * 60 // 3 days in seconds
 
-  const signer = getSigner(t.context.s3Client, bucketName)
-  const key = `${carCid}/${carCid}.car`
-  const signedUrl = await signer.getUrl(key, {
+  const locateContent = contentLocationResolver({ 
+    bucket: bucketName,
+    s3Client: t.context.s3Client,
     expiresIn
   })
 
+  const signedUrl = await locateContent(carCid)
   if (!signedUrl) {
     throw new Error('presigned url must be received')
   }
   t.truthy(signedUrl?.includes(`X-Amz-Expires=${expiresIn}`))
   t.truthy(signedUrl?.includes(`${carCid}/${carCid}.car`))
+
+  const fetchResponse = await fetch(signedUrl)
+  t.assert(fetchResponse.ok)
+})
+
+test('can create signed url for Blob in bucket and get it', async t => {
+  const bucketName = await createBucket(t.context.s3Client)
+  const blobCid = await putBlobToBucket(t.context.s3Client, bucketName)
+  const expiresIn = 3 * 24 * 60 * 60 // 3 days in seconds
+
+  const locateContent = contentLocationResolver({ 
+    bucket: bucketName,
+    s3Client: t.context.s3Client,
+    expiresIn
+  })
+
+  const signedUrl = await locateContent(blobCid)
+  if (!signedUrl) {
+    throw new Error('presigned url must be received')
+  }
+  t.truthy(signedUrl?.includes(`X-Amz-Expires=${expiresIn}`))
+
+  const encodedMultihash = base58btc.encode(blobCid.multihash.bytes)
+  t.truthy(signedUrl?.includes(`${encodedMultihash}/${encodedMultihash}.blob`))
 
   const fetchResponse = await fetch(signedUrl)
   t.assert(fetchResponse.ok)
@@ -116,30 +141,56 @@ test('fails to parse expires query parameter when not acceptable value', t => {
   t.throws(() => parseQueryStringParameters(queryParamsSmaller))
 })
 
+async function getContent () {
+  const id = await encode({
+    value: pb.prepare({ Data: 'a red car on the street!' }),
+    codec: pb,
+    hasher: identity,
+  })
+  return await encode({
+    value: pb.prepare({ Links: [id.cid] }),
+    codec: pb,
+    hasher,
+  })
+}
+
+/**
+ * @param {import('@aws-sdk/client-s3').S3Client} s3Client
+ * @param {string} bucketName 
+ */
+async function putBlobToBucket (s3Client, bucketName) {
+  // Write original car to origin bucket
+  const content = await getContent()
+  const encodedMultihash = base58btc.encode(content.cid.multihash.bytes)
+  const key = `${encodedMultihash}/${encodedMultihash}.blob`
+  await s3Client.send(
+    new PutObjectCommand({
+      Bucket: bucketName,
+      Key: key,
+      Body: content.bytes,
+    })
+  )
+
+  // Return RAW CID
+  return new CID(1, RAW_CODE, content.cid.multihash, content.cid.multihash.bytes)
+}
+
 /**
  * @param {import('@aws-sdk/client-s3').S3Client} s3Client
  * @param {string} bucketName 
  */
 async function putCarToBucket (s3Client, bucketName) {
   // Write original car to origin bucket
-  const id = await encode({
-    value: pb.prepare({ Data: 'a red car on the street!' }),
-    codec: pb,
-    hasher: identity,
-  })
-  const parent = await encode({
-    value: pb.prepare({ Links: [id.cid] }),
-    codec: pb,
-    hasher,
-  })
+  const content = await getContent()
   const car = CarBufferWriter.createWriter(Buffer.alloc(1000), {
-    roots: [parent.cid],
+    roots: [content.cid],
   })
-  car.write(parent)
+  car.write(content)
 
   const Body = car.close()
+  const carCid = await CAR.codec.link(Body)
 
-  const key = `${parent.cid.toString()}/${parent.cid.toString()}.car`
+  const key = `${carCid.toString()}/${carCid.toString()}.car`
   await s3Client.send(
     new PutObjectCommand({
       Bucket: bucketName,
@@ -148,5 +199,5 @@ async function putCarToBucket (s3Client, bucketName) {
     })
   )
 
-  return parent.cid
+  return carCid
 }
