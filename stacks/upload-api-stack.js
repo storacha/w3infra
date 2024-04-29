@@ -184,6 +184,10 @@ export function UploadApiStack({ stack, app }) {
     },
   })
 
+  // Blob protocol
+  // TODO do we need a consumer for this feature? I'm thinking we don't right now
+  const multihashesQ = new Queue(stack, 'multihashes-topic')
+
   stack.addOutputs({
     ApiEndpoint: api.url,
     CustomDomain:  customDomain ? `https://${customDomain.domainName}` : 'Set HOSTED_ZONE in env to deploy to a custom domain'
