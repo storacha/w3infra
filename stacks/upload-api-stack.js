@@ -94,7 +94,7 @@ export function UploadApiStack({ stack, app }) {
           PIECE_TABLE_NAME: pieceTable.tableName,
           PIECE_OFFER_QUEUE_URL: pieceOfferQueue.queueUrl,
           FILECOIN_SUBMIT_QUEUE_URL: filecoinSubmitQueue.queueUrl,
-          BLOCKS_CAR_POSITION_TABLE_NAME: blocksCARPositionTable.tableName,
+          BLOCKS_CAR_POSITION_TABLE_NAME: blocksCarPositionTable.tableName,
           NAME: pkg.name,
           VERSION: pkg.version,
           COMMIT: git.commmit,
@@ -202,7 +202,7 @@ export function UploadApiStack({ stack, app }) {
     },
   })
 
-  const blocksCARPositionTable = new Table(stack, 'blocks-car-position', {
+  const blocksCarPositionTable = new Table(stack, 'blocks-car-position', {
     cdk: {
       table: dynamodb.Table.fromTableArn(
         stack,
