@@ -116,6 +116,7 @@ export function UploadApiStack({ stack, app }) {
           PIECE_TABLE_NAME: pieceTable.tableName,
           PIECE_OFFER_QUEUE_URL: pieceOfferQueue.queueUrl,
           FILECOIN_SUBMIT_QUEUE_URL: filecoinSubmitQueue.queueUrl,
+          MULTIHASHES_QUEUE_URL: multihashesQueue.queueUrl,
           BLOCKS_CAR_POSITION_TABLE_NAME: blocksCarPositionTable.tableName,
           NAME: pkg.name,
           VERSION: pkg.version,
