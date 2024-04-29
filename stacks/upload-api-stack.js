@@ -46,7 +46,7 @@ export function UploadApiStack({ stack, app }) {
     },
   })
 
-  const blocksCarPositionTable = new Table(stack, 'blocks-car-position', {
+  const blocksCarPositionTable = new Table(stack, 'blocks-car-position-table', {
     cdk: {
       table: dynamodb.Table.fromTableArn(
         stack,
