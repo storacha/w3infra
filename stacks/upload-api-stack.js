@@ -3,8 +3,12 @@ import {
   Config,
   Function,
   Queue,
+  Table,
   use
 } from 'sst/constructs'
+import * as sqs from 'aws-cdk-lib/aws-sqs'
+import * as dynamodb from 'aws-cdk-lib/aws-dynamodb'
+
 import { StartingPosition } from 'aws-cdk-lib/aws-lambda'
 import { UploadDbStack } from './upload-db-stack.js'
 import { BillingDbStack } from './billing-db-stack.js'
@@ -18,7 +22,7 @@ import { getCustomDomain, getApiPackageJson, getGitInfo, setupSentry, getEnv, ge
  * @param {import('sst/constructs').StackContext} properties
  */
 export function UploadApiStack({ stack, app }) {
-  const { AGGREGATOR_DID } = getEnv()
+  const { AGGREGATOR_DID, EIPFS_MULTIHASHES_SQS_ARN, EIPFS_BLOCKS_CAR_POSITION_TABLE_ARN } = getEnv()
 
   // Setup app monitoring with Sentry
   setupSentry(app, stack)
@@ -29,6 +33,28 @@ export function UploadApiStack({ stack, app }) {
   const { invocationBucket, taskBucket, workflowBucket, ucanStream } = use(UcanInvocationStack)
   const { customerTable, spaceDiffTable, spaceSnapshotTable, stripeSecretKey } = use(BillingDbStack)
   const { pieceOfferQueue, filecoinSubmitQueue } = use(FilecoinStack)
+
+  // Blob protocol
+  // Elastic IPFS event for multihashes
+  const multihashesQueue = new Queue(stack, 'multihashes-topic-queue', {
+    cdk: {
+      queue: sqs.Queue.fromQueueArn(
+        stack,
+        'multihashes-topic',
+        EIPFS_MULTIHASHES_SQS_ARN
+      ),
+    },
+  })
+
+  const blocksCarPositionTable = new Table(stack, 'blocks-car-position-table', {
+    cdk: {
+      table: dynamodb.Table.fromTableArn(
+        stack,
+        'blocks-car-position',
+        EIPFS_BLOCKS_CAR_POSITION_TABLE_ARN
+      ),
+    },
+  })
 
   // Setup API
   const customDomain = getCustomDomain(stack.stage, process.env.HOSTED_ZONE)
@@ -62,7 +88,8 @@ export function UploadApiStack({ stack, app }) {
           workflowBucket,
           ucanStream,
           pieceOfferQueue,
-          filecoinSubmitQueue
+          filecoinSubmitQueue,
+          multihashesQueue,
         ],
         environment: {
           DID: process.env.UPLOAD_API_DID ?? '',
@@ -89,6 +116,8 @@ export function UploadApiStack({ stack, app }) {
           PIECE_TABLE_NAME: pieceTable.tableName,
           PIECE_OFFER_QUEUE_URL: pieceOfferQueue.queueUrl,
           FILECOIN_SUBMIT_QUEUE_URL: filecoinSubmitQueue.queueUrl,
+          MULTIHASHES_QUEUE_URL: multihashesQueue.queueUrl,
+          BLOCKS_CAR_POSITION_TABLE_NAME: blocksCarPositionTable.tableName,
           NAME: pkg.name,
           VERSION: pkg.version,
           COMMIT: git.commmit,
