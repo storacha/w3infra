@@ -203,10 +203,6 @@ AWS URL for Elastic IPFS SQS indexer used to request Elastic IPFS to index given
 
 AWS ARN for Elastic IPFS SQS multihashes used to enqueue multihashes for indexed CAR files.
 
-#### `EIPFS_MULTIHASHES_SQS_URL`
-
-AWS URL for Elastic IPFS SQS multihashes used to enqueue multihashes for indexed CAR files.
-
 #### `EIPFS_BLOCKS_CAR_POSITION_TABLE_ARN`
 
 AWS ARN for Elastic IPFS DynamoDB table used to store blocks and positions for indexed CAR files.

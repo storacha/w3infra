@@ -22,7 +22,7 @@ import { getCustomDomain, getApiPackageJson, getGitInfo, setupSentry, getEnv, ge
  * @param {import('sst/constructs').StackContext} properties
  */
 export function UploadApiStack({ stack, app }) {
-  const { AGGREGATOR_DID, EIPFS_MULTIHASHES_SQS_ARN, EIPFS_MULTIHASHES_SQS_URL, EIPFS_BLOCKS_CAR_POSITION_TABLE_ARN } = getEnv()
+  const { AGGREGATOR_DID, EIPFS_MULTIHASHES_SQS_ARN, EIPFS_BLOCKS_CAR_POSITION_TABLE_ARN } = getEnv()
 
   // Setup app monitoring with Sentry
   setupSentry(app, stack)
@@ -201,18 +201,6 @@ export function UploadApiStack({ stack, app }) {
       ),
     },
   })
-
-  // Event Bus targets
-  const eIpfsMultihashesTarget = {
-    function: {
-      environment: {
-        EIPFS_MULTIHASHES_SQS_URL
-      },
-      permissions: [multihashesQueue],
-      // TODO do we need a handler here?
-      // handler: 'carpark/event-bus/eipfs-indexer.handler',
-    },
-  }
 
   const blocksCARPositionTable = new Table(stack, 'blocks-car-position', {
     cdk: {
