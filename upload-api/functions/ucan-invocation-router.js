@@ -115,7 +115,6 @@ export async function ucanInvocationRouter(request) {
     pieceTableName,
     spaceDiffTableName,
     spaceSnapshotTableName,
-    blocksCARPositionTableName,
     r2DelegationBucketEndpoint,
     r2DelegationBucketAccessKeyId,
     r2DelegationBucketSecretAccessKey,
@@ -383,8 +382,6 @@ function getLambdaEnv () {
     carparkBucketEndpoint: mustGetEnv('R2_ENDPOINT'),
     carparkBucketAccessKeyId: mustGetEnv('R2_ACCESS_KEY_ID'),
     carparkBucketSecretAccessKey: mustGetEnv('R2_SECRET_ACCESS_KEY'),
-    // blob protocol
-    blocksCARPositionTableName: mustGetEnv('BLOCKS_CAR_POSITION_TABLE_NAME'),
     // set for testing
     dbEndpoint: process.env.DYNAMO_DB_ENDPOINT,
   }

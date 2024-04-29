@@ -3,9 +3,11 @@ import {
   Config,
   Function,
   Queue,
+  Table,
   use
 } from 'sst/constructs'
 import * as sqs from 'aws-cdk-lib/aws-sqs'
+import * as dynamodb from 'aws-cdk-lib/aws-dynamodb'
 
 import { StartingPosition } from 'aws-cdk-lib/aws-lambda'
 import { UploadDbStack } from './upload-db-stack.js'
@@ -20,7 +22,7 @@ import { getCustomDomain, getApiPackageJson, getGitInfo, setupSentry, getEnv, ge
  * @param {import('sst/constructs').StackContext} properties
  */
 export function UploadApiStack({ stack, app }) {
-  const { AGGREGATOR_DID, EIPFS_MULTIHASHES_SQS_ARN, EIPFS_MULTIHASHES_SQS_URL } = getEnv()
+  const { AGGREGATOR_DID, EIPFS_MULTIHASHES_SQS_ARN, EIPFS_MULTIHASHES_SQS_URL, EIPFS_BLOCKS_CAR_POSITION_TABLE_ARN } = getEnv()
 
   // Setup app monitoring with Sentry
   setupSentry(app, stack)
@@ -64,7 +66,8 @@ export function UploadApiStack({ stack, app }) {
           workflowBucket,
           ucanStream,
           pieceOfferQueue,
-          filecoinSubmitQueue
+          filecoinSubmitQueue,
+          multihashesQueue,
         ],
         environment: {
           DID: process.env.UPLOAD_API_DID ?? '',
@@ -91,6 +94,7 @@ export function UploadApiStack({ stack, app }) {
           PIECE_TABLE_NAME: pieceTable.tableName,
           PIECE_OFFER_QUEUE_URL: pieceOfferQueue.queueUrl,
           FILECOIN_SUBMIT_QUEUE_URL: filecoinSubmitQueue.queueUrl,
+          BLOCKS_CAR_POSITION_TABLE_NAME: blocksCARPositionTable.tableName,
           NAME: pkg.name,
           VERSION: pkg.version,
           COMMIT: git.commmit,
@@ -209,6 +213,16 @@ export function UploadApiStack({ stack, app }) {
       // handler: 'carpark/event-bus/eipfs-indexer.handler',
     },
   }
+
+  const blocksCARPositionTable = new Table(stack, 'blocks-car-position', {
+    cdk: {
+      table: dynamodb.Table.fromTableArn(
+        stack,
+        'blocks-car-position',
+        EIPFS_BLOCKS_CAR_POSITION_TABLE_ARN
+      ),
+    },
+  })
 
   stack.addOutputs({
     ApiEndpoint: api.url,
