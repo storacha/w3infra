@@ -5,6 +5,8 @@ import {
   Queue,
   use
 } from 'sst/constructs'
+import * as sqs from 'aws-cdk-lib/aws-sqs'
+
 import { StartingPosition } from 'aws-cdk-lib/aws-lambda'
 import { UploadDbStack } from './upload-db-stack.js'
 import { BillingDbStack } from './billing-db-stack.js'
@@ -18,7 +20,7 @@ import { getCustomDomain, getApiPackageJson, getGitInfo, setupSentry, getEnv, ge
  * @param {import('sst/constructs').StackContext} properties
  */
 export function UploadApiStack({ stack, app }) {
-  const { AGGREGATOR_DID } = getEnv()
+  const { AGGREGATOR_DID, EIPFS_MULTIHASHES_SQS_ARN, EIPFS_MULTIHASHES_SQS_URL } = getEnv()
 
   // Setup app monitoring with Sentry
   setupSentry(app, stack)
@@ -185,8 +187,28 @@ export function UploadApiStack({ stack, app }) {
   })
 
   // Blob protocol
-  // TODO do we need a consumer for this feature? I'm thinking we don't right now
-  const multihashesQ = new Queue(stack, 'multihashes-topic')
+  // Elastic IPFS event for multihashes
+  const multihashesQueue = new Queue(stack, 'multihashes-topic-queue', {
+    cdk: {
+      queue: sqs.Queue.fromQueueArn(
+        stack,
+        'multihashes-topic',
+        EIPFS_MULTIHASHES_SQS_ARN
+      ),
+    },
+  })
+
+  // Event Bus targets
+  const eIpfsMultihashesTarget = {
+    function: {
+      environment: {
+        EIPFS_MULTIHASHES_SQS_URL
+      },
+      permissions: [multihashesQueue],
+      // TODO do we need a handler here?
+      // handler: 'carpark/event-bus/eipfs-indexer.handler',
+    },
+  }
 
   stack.addOutputs({
     ApiEndpoint: api.url,

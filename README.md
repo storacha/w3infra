@@ -199,6 +199,14 @@ AWS ARN for Elastic IPFS SQS indexer used to request Elastic IPFS to index given
 
 AWS URL for Elastic IPFS SQS indexer used to request Elastic IPFS to index given CAR files.
 
+#### `EIPFS_MULTIHASHES_SQS_ARN`
+
+AWS ARN for Elastic IPFS SQS multihashes used to enqueue multihashes for indexed CAR files.
+
+#### `EIPFS_MULTIHASHES_SQS_URL`
+
+AWS URL for Elastic IPFS SQS multihashes used to enqueue multihashes for indexed CAR files.
+
 #### `POSTMARK_TOKEN`
 
 Postmark API token, which is used by the email verification system to send emails.
