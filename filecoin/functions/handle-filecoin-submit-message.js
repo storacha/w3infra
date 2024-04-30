@@ -3,7 +3,7 @@ import * as Sentry from '@sentry/serverless'
 import * as storefrontEvents from '@web3-storage/filecoin-api/storefront/events'
 
 import { createPieceTable } from '../store/piece.js'
-import { createDataStore, composeDataStoresWithOrderedStream } from '../store/data.js'
+import { useContentStore } from '../store/content.js'
 import { decodeMessage } from '../queue/filecoin-submit-queue.js'
 import { mustGetEnv } from './utils.js'
 
@@ -14,7 +14,6 @@ Sentry.AWSLambda.init({
 })
 
 const AWS_REGION = process.env.AWS_REGION || 'us-west-2'
-const R2_REGION = process.env.R2_REGION || 'auto'
 
 /**
  * Get EventRecord from the SQS Event triggering the handler.
@@ -38,24 +37,12 @@ async function handleFilecoinSubmitMessage (sqsEvent) {
   // create context
   const {
     pieceTableName,
-    s3BucketName,
-    r2BucketName,
-    r2BucketEndpoint,
-    r2BucketAccessKeyId,
-    r2BucketSecretAccessKey
+    contentStoreHttpEndpoint
+    
   } = getEnv()
   const context = {
     pieceStore: createPieceTable(AWS_REGION, pieceTableName),
-    dataStore: composeDataStoresWithOrderedStream(
-      createDataStore(AWS_REGION, s3BucketName),
-      createDataStore(R2_REGION, r2BucketName, {
-        endpoint: r2BucketEndpoint,
-        credentials: {
-          accessKeyId: r2BucketAccessKeyId,
-          secretAccessKey: r2BucketSecretAccessKey,
-        },
-      })
-    )
+    contentStore: useContentStore(contentStoreHttpEndpoint)
   }
 
   const { ok, error } = await storefrontEvents.handleFilecoinSubmitMessage(context, record)
@@ -78,12 +65,7 @@ async function handleFilecoinSubmitMessage (sqsEvent) {
 function getEnv () {
   return {
     pieceTableName: mustGetEnv('PIECE_TABLE_NAME'),
-    // carpark buckets - CAR file bytes may be found here with keys like {cid}/{cid}.car
-    s3BucketName: mustGetEnv('STORE_BUCKET_NAME'),
-    r2BucketName: mustGetEnv('R2_CARPARK_BUCKET_NAME'),
-    r2BucketEndpoint: mustGetEnv('R2_ENDPOINT'),
-    r2BucketAccessKeyId: mustGetEnv('R2_ACCESS_KEY_ID'),
-    r2BucketSecretAccessKey: mustGetEnv('R2_SECRET_ACCESS_KEY'),
+    contentStoreHttpEndpoint: new URL(mustGetEnv('CONTENT_STORE_HTTP_ENDPOINT'))
   }
 }
 
