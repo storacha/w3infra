@@ -31,10 +31,10 @@ export const useContentStore = (storeHttpEndpoint) => {
           })
           if (fetchRes.status === 404) {
             throw new RecordNotFound(`blob ${cid.toString()} not found in store`)
-          } else if (fetchRes.status > 299 || !fetchRes.body) {
+          } else if (!fetchRes.ok || !fetchRes.body) {
               throw new StoreOperationFailed(fetchRes.statusText)
           }
-          return fetchRes
+          return fetchRes.body
         }), { retries: 5 })
       } catch (err) {
         /** @type {RecordNotFound | StoreOperationFailed} */
@@ -45,15 +45,8 @@ export const useContentStore = (storeHttpEndpoint) => {
         }
       }
 
-      // To satisfy typescript
-      if (!res.body) {
-        return {
-          error: new StoreOperationFailed(res.statusText)
-        }
-      }
-
       return {
-        ok: res.body
+        ok: res
       }
     }
   }
