@@ -21,6 +21,7 @@ import { getCustomDomain, getApiPackageJson, getGitInfo, setupSentry, getEnv, ge
 /**
  * @param {import('sst/constructs').StackContext} properties
  */
+// eslint-disable-next-line complexity
 export function UploadApiStack({ stack, app }) {
   const { AGGREGATOR_DID, EIPFS_MULTIHASHES_SQS_ARN, EIPFS_BLOCKS_CAR_POSITION_TABLE_ARN } = getEnv()
 
@@ -131,6 +132,7 @@ export function UploadApiStack({ stack, app }) {
           R2_REGION: process.env.R2_REGION ?? '',
           R2_CARPARK_BUCKET_NAME: process.env.R2_CARPARK_BUCKET_NAME ?? '',
           R2_DUDEWHERE_BUCKET_NAME: process.env.R2_DUDEWHERE_BUCKET_NAME ?? '',
+          R2_SATNAV_BUCKET_NAME: process.env.R2_SATNAV_BUCKET_NAME ?? '',
           R2_DELEGATION_BUCKET_NAME: process.env.R2_DELEGATION_BUCKET_NAME ?? '',
           R2_ENDPOINT: process.env.R2_ENDPOINT ?? '',
           REQUIRE_PAYMENT_PLAN: process.env.REQUIRE_PAYMENT_PLAN ?? '',

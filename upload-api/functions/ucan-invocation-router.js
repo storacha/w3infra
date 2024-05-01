@@ -139,6 +139,10 @@ export async function ucanInvocationRouter(request) {
     carparkBucketEndpoint,
     carparkBucketAccessKeyId,
     carparkBucketSecretAccessKey,
+    dudewhereBucketConfig,
+    satnavBucketConfig,
+    eipfsBlocksCarsPositionTableConfig,
+    eipfsMultihashesQueueConfig,
   } = getLambdaEnv()
 
   if (request.body === undefined) {
@@ -205,10 +209,13 @@ export async function ucanInvocationRouter(request) {
   })
   const tasksScheduler = createTasksScheduler(() => selfConnection)
 
+  const ipniService = createIPNIService(dudewhereBucketConfig, satnavBucketConfig, eipfsBlocksCarsPositionTableConfig, eipfsMultihashesQueueConfig)
+
   const server = createUcantoServer(serviceSigner, {
     codec,
     allocationsStorage,
     blobsStorage,
+    blobRetriever: blobsStorage,
     tasksStorage,
     receiptsStorage,
     tasksScheduler,
@@ -265,6 +272,7 @@ export async function ucanInvocationRouter(request) {
     plansStorage,
     requirePaymentPlan,
     usageStorage,
+    ipniService,
   })
 
   const processingCtx = {
@@ -382,6 +390,33 @@ function getLambdaEnv () {
     carparkBucketEndpoint: mustGetEnv('R2_ENDPOINT'),
     carparkBucketAccessKeyId: mustGetEnv('R2_ACCESS_KEY_ID'),
     carparkBucketSecretAccessKey: mustGetEnv('R2_SECRET_ACCESS_KEY'),
+    // IPNI service
+    dudewhereBucketConfig: {
+      name: mustGetEnv('R2_DUDEWHERE_BUCKET_NAME'),
+      region: mustGetEnv('R2_REGION'),
+      endpoint: mustGetEnv('R2_ENDPOINT'),
+      credentials: {
+        accessKeyId: mustGetEnv('R2_ACCESS_KEY_ID'),
+        secretAccessKey: mustGetEnv('R2_SECRET_ACCESS_KEY'),
+      }
+    },
+    satnavBucketConfig: {
+      name: mustGetEnv('R2_SATNAV_BUCKET_NAME'),
+      region: mustGetEnv('R2_REGION'),
+      endpoint: mustGetEnv('R2_ENDPOINT'),
+      credentials: {
+        accessKeyId: mustGetEnv('R2_ACCESS_KEY_ID'),
+        secretAccessKey: mustGetEnv('R2_SECRET_ACCESS_KEY'),
+      }
+    },
+    eipfsBlocksCarsPositionTableConfig: {
+      name: mustGetEnv('BLOCKS_CAR_POSITION_TABLE_NAME'),
+      region: mustGetEnv('AWS_REGION')
+    },
+    eipfsMultihashesQueueConfig: {
+      url: mustGetEnv('MULTIHASHES_QUEUE_URL'),
+      region: mustGetEnv('AWS_REGION')
+    },
     // set for testing
     dbEndpoint: process.env.DYNAMO_DB_ENDPOINT,
   }
