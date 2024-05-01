@@ -1,7 +1,3 @@
-// NOTE: shim globals needed by content-claims client deps that would be present in nodejs v18.
-// TODO: migrate to sst v2 and nodejs v18+
-import './globals.js'
-
 import { read } from '@web3-storage/content-claims/client'
 
 import { PIECE_V1_CODE, PIECE_V1_MULTIHASH, PIECE_V2_MULTIHASH, RAW_CODE } from './constants.js'
