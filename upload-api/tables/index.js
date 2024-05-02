@@ -158,3 +158,14 @@ export const spaceMetricsTableProps = {
   // space+name must be unique to satisfy index constraint
   primaryIndex: { partitionKey: 'space', sortKey: 'name' },
 }
+
+/** @type TableProps */
+export const blocksCarsPositionTableProps = {
+  fields: {
+    blockmultihash: 'string',
+    carpath: 'string',
+    offset: 'number',
+    length: 'number',
+  },
+  primaryIndex: { partitionKey: 'blockmultihash', sortKey: 'carpath' }
+}

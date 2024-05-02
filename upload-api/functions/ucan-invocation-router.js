@@ -44,6 +44,7 @@ import { createSpaceSnapshotStore } from '@web3-storage/w3infra-billing/tables/s
 import { useUsageStore } from '../stores/usage.js'
 import { createStripeBillingProvider } from '../billing.js'
 import { createTasksScheduler } from '../scheduler.js'
+import { createIPNIService } from '../external-services/ipni-service.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -139,10 +140,8 @@ export async function ucanInvocationRouter(request) {
     carparkBucketEndpoint,
     carparkBucketAccessKeyId,
     carparkBucketSecretAccessKey,
-    dudewhereBucketConfig,
-    satnavBucketConfig,
-    eipfsBlocksCarsPositionTableConfig,
-    eipfsMultihashesQueueConfig,
+    blocksCarsPositionTableConfig,
+    multihashesQueueConfig,
   } = getLambdaEnv()
 
   if (request.body === undefined) {
@@ -208,8 +207,7 @@ export async function ucanInvocationRouter(request) {
     url: uploadServiceURL
   })
   const tasksScheduler = createTasksScheduler(() => selfConnection)
-
-  const ipniService = createIPNIService(dudewhereBucketConfig, satnavBucketConfig, eipfsBlocksCarsPositionTableConfig, eipfsMultihashesQueueConfig)
+  const ipniService = createIPNIService(multihashesQueueConfig, blocksCarsPositionTableConfig)
 
   const server = createUcantoServer(serviceSigner, {
     codec,
@@ -391,30 +389,12 @@ function getLambdaEnv () {
     carparkBucketAccessKeyId: mustGetEnv('R2_ACCESS_KEY_ID'),
     carparkBucketSecretAccessKey: mustGetEnv('R2_SECRET_ACCESS_KEY'),
     // IPNI service
-    dudewhereBucketConfig: {
-      name: mustGetEnv('R2_DUDEWHERE_BUCKET_NAME'),
-      region: mustGetEnv('R2_REGION'),
-      endpoint: mustGetEnv('R2_ENDPOINT'),
-      credentials: {
-        accessKeyId: mustGetEnv('R2_ACCESS_KEY_ID'),
-        secretAccessKey: mustGetEnv('R2_SECRET_ACCESS_KEY'),
-      }
-    },
-    satnavBucketConfig: {
-      name: mustGetEnv('R2_SATNAV_BUCKET_NAME'),
-      region: mustGetEnv('R2_REGION'),
-      endpoint: mustGetEnv('R2_ENDPOINT'),
-      credentials: {
-        accessKeyId: mustGetEnv('R2_ACCESS_KEY_ID'),
-        secretAccessKey: mustGetEnv('R2_SECRET_ACCESS_KEY'),
-      }
-    },
-    eipfsBlocksCarsPositionTableConfig: {
-      name: mustGetEnv('BLOCKS_CAR_POSITION_TABLE_NAME'),
+    multihashesQueueConfig: {
+      url: new URL(mustGetEnv('MULTIHASHES_QUEUE_URL')),
       region: mustGetEnv('AWS_REGION')
     },
-    eipfsMultihashesQueueConfig: {
-      url: mustGetEnv('MULTIHASHES_QUEUE_URL'),
+    blocksCarsPositionTableConfig: {
+      name: mustGetEnv('BLOCKS_CAR_POSITION_TABLE_NAME'),
       region: mustGetEnv('AWS_REGION')
     },
     // set for testing
