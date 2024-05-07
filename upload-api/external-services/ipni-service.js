@@ -2,6 +2,8 @@ import { SQSClient, SendMessageBatchCommand } from '@aws-sdk/client-sqs'
 import { DynamoDBClient, BatchWriteItemCommand } from '@aws-sdk/client-dynamodb'
 import { marshall } from '@aws-sdk/util-dynamodb'
 import { base58btc } from 'multiformats/bases/base58'
+import * as Link from 'multiformats/link'
+import * as raw from 'multiformats/codecs/raw'
 import retry from 'p-retry'
 import { ok, error } from '@ucanto/server'
 
@@ -19,22 +21,22 @@ import { ok, error } from '@ucanto/server'
  */
 export const createIPNIService = (multihashesQueueConfig, blocksCarsPositionConfig) => {
   const sqs = new SQSClient(multihashesQueueConfig)
-  const multihashesQueue = new MultihashesQueue({ client: sqs, url: multihashesQueueConfig.url })
+  const multihashesQueue = new BlockAdvertisementPublisher({ client: sqs, url: multihashesQueueConfig.url })
   const dynamo = new DynamoDBClient(blocksCarsPositionConfig)
-  const blocksCarsPositionStore = new BlocksCarsPositionStore({ client: dynamo, name: blocksCarsPositionConfig.name })
+  const blocksCarsPositionStore = new BlockIndexStore({ client: dynamo, name: blocksCarsPositionConfig.name })
   return useIPNIService(multihashesQueue, blocksCarsPositionStore)
 }
 
 /**
- * @param {MultihashesQueue} multihashesQueue
- * @param {BlocksCarsPositionStore} blocksCarsPositionStore
+ * @param {BlockAdvertisementPublisher} blockAdvertPublisher
+ * @param {BlockIndexStore} blockIndexStore
  * @returns {import('@web3-storage/upload-api').IPNIService}
  */
-export const useIPNIService = (multihashesQueue, blocksCarsPositionStore) => ({
+export const useIPNIService = (blockAdvertPublisher, blockIndexStore) => ({
   /** @param {import('@web3-storage/upload-api').ShardedDAGIndex} index */
   async publish (index) {
     /** @type {import('multiformats').MultihashDigest[]} */
-    const items = [...index.shards.keys()]
+    const items = []
     /** @type {BlocksCarsPositionRecord[]} */
     const records = []
     for (const shard of index.shards.values()) {
@@ -42,23 +44,26 @@ export const useIPNIService = (multihashesQueue, blocksCarsPositionStore) => ({
         items.push(digest)
         records.push({
           digest,
-          location: new URL(`https://w3s.link/blob/${base58btc.encode(digest.bytes)}`),
+          location: new URL(`https://w3s.link/ipfs/${Link.create(raw.code, digest)}`),
           range
         })
       }
     }
-    const results = await Promise.all([
-      multihashesQueue.addAll(items),
-      blocksCarsPositionStore.putAll(records)
-    ])
-    for (const res of results) {
-      if (res.error) return res
-    }
+
+    const addRes = await blockAdvertPublisher.addAll(items)
+    if (addRes.error) return addRes
+
+    const putRes = await blockIndexStore.putAll(records)
+    if (putRes.error) return putRes
+
     return ok({})
   }
 })
 
-export class MultihashesQueue {
+/** The maximum size an SQS batch can be. */
+const MAX_QUEUE_BATCH_SIZE = 10
+
+export class BlockAdvertisementPublisher {
   #client
   #url
 
@@ -78,14 +83,13 @@ export class MultihashesQueue {
    */
   async addAll (digests) {
     try {
-      const items = [...digests]
+      // stringify and dedupe
+      const items = [...new Set(digests.map(d => base58btc.encode(d.bytes))).values()]
       while (true) {
-        const batch = items.splice(0, 10)
+        const batch = items.splice(0, MAX_QUEUE_BATCH_SIZE)
         if (!batch.length) break
 
-        const dedupedBatch = new Set(batch.map(s => base58btc.encode(s.bytes)))
-        let entries = [...dedupedBatch.values()].map(s => ({ Id: s, MessageBody: s }))
-
+        let entries = batch.map(s => ({ Id: s, MessageBody: s }))
         await retry(async () => {
           const cmd = new SendMessageBatchCommand({
             QueueUrl: this.#url.toString(),
@@ -107,7 +111,10 @@ export class MultihashesQueue {
   }
 }
 
-export class BlocksCarsPositionStore {
+/** The maximum size a Dynamo batch can be. */
+const MAX_TABLE_BATCH_SIZE = 25
+
+export class BlockIndexStore {
   #client
   #name
 
@@ -129,7 +136,7 @@ export class BlocksCarsPositionStore {
     try {
       const items = [...records]
       while (true) {
-        const batch = items.splice(0, 25)
+        const batch = items.splice(0, MAX_TABLE_BATCH_SIZE)
         if (!batch.length) break
 
         /** @type {Record<string, import('@aws-sdk/client-dynamodb').WriteRequest[]>} */
