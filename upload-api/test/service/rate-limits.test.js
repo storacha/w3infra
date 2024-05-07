@@ -6,11 +6,13 @@ import { rateLimitsStorageTests } from '@web3-storage/upload-api/test'
 import {
   createS3,
   createDynamodDb,
+  createSQS,
 } from '../helpers/resources.js'
 
 test.before(async (t) => {
   Object.assign(t.context, {
     dynamo: await createDynamodDb(),
+    sqs: (await createSQS()).client,
     s3: (await createS3()).client,
   })
 })

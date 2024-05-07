@@ -29,7 +29,7 @@ import { useInvocationStore } from '../../buckets/invocation-store.js';
 import { useWorkflowStore } from '../../buckets/workflow-store.js';
 import { useRateLimitTable } from '../../tables/rate-limit.js';
 import { useSpaceMetricsTable } from '../../tables/space-metrics.js';
-import { createCustomerStore, customerTableProps } from '@web3-storage/w3infra-billing/tables/customer.js';
+import { createCustomerStore, customerTableProps } from '../../../billing/tables/customer.js';
 import { usePlansStore } from '../../stores/plans.js';
 import { pieceTableProps } from '../../../filecoin/store/index.js';
 import { usePieceTable } from '../../../filecoin/store/piece.js'
@@ -37,6 +37,7 @@ import { createTaskStore as createFilecoinTaskStore } from '../../../filecoin/st
 import { createReceiptStore as createFilecoinReceiptStore } from '../../../filecoin/store/receipt.js'
 import { createTestBillingProvider } from './billing.js';
 import { createTasksScheduler } from '../../scheduler.js';
+import { createTestIPNIService } from './ipni-service.js'
 
 export { API }
 
@@ -177,18 +178,15 @@ export const encodeAgentMessage = async (source) => {
   return await CAR.request.encode(message)
 }
 
-
 /**
- *
  * @param {import('ava').ExecutionContext} t
  * @returns {Promise<import('@web3-storage/upload-api').UcantoServerTestContext>}
  */
-
 export async function executionContextToUcantoTestServerContext(t) {
   const service = Signer.Signer.parse('MgCYWjE6vp0cn3amPan2xPO+f6EZ3I+KwuN1w2vx57vpJ9O0Bn4ci4jn8itwc121ujm7lDHkCW24LuKfZwIdmsifVysY=').withDID(
     'did:web:test.web3.storage'
   );
-  const { dynamo, s3, r2 } = t.context;
+  const { dynamo, sqs, s3, r2 } = t.context;
   const bucketName = await createBucket(s3)
   const r2CarStoreBucketName = r2
     ? await createBucket(r2)
@@ -288,6 +286,7 @@ export async function executionContextToUcantoTestServerContext(t) {
   const billingProvider = createTestBillingProvider()
   const plansStorage = usePlansStore(customersStore, billingProvider)
   const email = new DebugEmail();
+  const ipniService = await createTestIPNIService({ sqs, dynamo })
 
   /** @type {import('@web3-storage/upload-api').UcantoServerContext} */
   const serviceContext = {
@@ -297,6 +296,7 @@ export async function executionContextToUcantoTestServerContext(t) {
     url: new URL('http://example.com'),
     allocationsStorage,
     blobsStorage,
+    blobRetriever: blobsStorage,
     tasksStorage,
     receiptsStorage,
     tasksScheduler,
@@ -330,6 +330,7 @@ export async function executionContextToUcantoTestServerContext(t) {
     pieceOfferQueue: {},
     // @ts-expect-error not tested here
     filecoinSubmitQueue: {},
+    ipniService,
     options: {
       // TODO: we compute and put all pieces into the queue on bucket event
       // We may change this to validate user provided piece
@@ -343,6 +344,7 @@ export async function executionContextToUcantoTestServerContext(t) {
 
   return {
     ...serviceContext,
+    ipniService,
     mail: email,
     grantAccess: (mail) => confirmConfirmationUrl(connection, mail),
     service: id,

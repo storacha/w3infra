@@ -66,6 +66,7 @@ export function UploadApiStack({ stack, app }) {
     customDomain,
     defaults: {
       function: {
+        timeout: '30 seconds',
         permissions: [
           allocationTable,
           storeTable,

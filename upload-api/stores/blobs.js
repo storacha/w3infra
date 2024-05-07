@@ -1,16 +1,20 @@
 import { base64pad } from 'multiformats/bases/base64'
 import { decode as digestDecode } from 'multiformats/hashes/digest'
 import { base58btc } from 'multiformats/bases/base58'
+import { BlobNotFound } from '@web3-storage/upload-api/blob'
+import { ok, error } from '@ucanto/server'
 
 import {
   S3Client,
   HeadObjectCommand,
   PutObjectCommand,
+  GetObjectCommand,
 } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 
 /**
  * @typedef {import('@web3-storage/upload-api/types').BlobsStorage} BlobsStorage
+ * @typedef {import('@web3-storage/upload-api').BlobRetriever} BlobRetriever
  * @typedef {import('@ucanto/interface').Failure} Failure
  * @typedef {import('@ucanto/interface').Result<boolean, Failure>} HasResult
  */
@@ -36,7 +40,7 @@ export function createBlobsStorage(region, bucketName, options) {
  *
  * @param {S3Client} s3
  * @param {string} bucketName
- * @returns {BlobsStorage}
+ * @returns {BlobsStorage & BlobRetriever}
  */
 export function useBlobsStorage(s3, bucketName) {
   return {
@@ -60,6 +64,23 @@ export function useBlobsStorage(s3, bucketName) {
       }
       return { ok: true }
     },
+
+    /** @param {import('multiformats').MultihashDigest} digest */
+    async stream (digest) {
+      const encodedMultihash = base58btc.encode(digest.bytes)
+      const cmd = new GetObjectCommand({
+        Key: `${encodedMultihash}/${encodedMultihash}.blob`,
+        Bucket: bucketName,
+      })
+      try {
+        const res = await s3.send(cmd)
+        if (!res.Body) throw new BlobNotFound(digest)
+        return ok(res.Body.transformToWebStream())
+      } catch (/** @type {any} */err) {
+        return error(err.$metadata?.httpStatusCode === 404 ? new BlobNotFound(digest) : err)
+      }
+    },
+
     /**
      * Create a presigned s3 url allowing the recipient to upload
      * only the CAR that matches the provided Link
@@ -106,7 +127,7 @@ export function useBlobsStorage(s3, bucketName) {
  * store#createUploadUrl is from first store.
  * store#has will check stores in order until 0-1 `true` are found.
  * 
- * @param  {BlobsStorage} blobStorage 
+ * @param  {BlobsStorage & BlobRetriever} blobStorage 
  * @param  {Array<BlobsStorage>} moreblobStorages 
  */
 export function composeblobStoragesWithOrderedHas(blobStorage, ...moreblobStorages) {

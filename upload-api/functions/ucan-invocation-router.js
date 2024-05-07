@@ -44,6 +44,7 @@ import { createSpaceSnapshotStore } from '@web3-storage/w3infra-billing/tables/s
 import { useUsageStore } from '../stores/usage.js'
 import { createStripeBillingProvider } from '../billing.js'
 import { createTasksScheduler } from '../scheduler.js'
+import { createIPNIService } from '../external-services/ipni-service.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -139,6 +140,8 @@ export async function ucanInvocationRouter(request) {
     carparkBucketEndpoint,
     carparkBucketAccessKeyId,
     carparkBucketSecretAccessKey,
+    blocksCarsPositionTableConfig,
+    multihashesQueueConfig,
   } = getLambdaEnv()
 
   if (request.body === undefined) {
@@ -204,11 +207,13 @@ export async function ucanInvocationRouter(request) {
     url: uploadServiceURL
   })
   const tasksScheduler = createTasksScheduler(() => selfConnection)
+  const ipniService = createIPNIService(multihashesQueueConfig, blocksCarsPositionTableConfig)
 
   const server = createUcantoServer(serviceSigner, {
     codec,
     allocationsStorage,
     blobsStorage,
+    blobRetriever: blobsStorage,
     tasksStorage,
     receiptsStorage,
     tasksScheduler,
@@ -265,6 +270,7 @@ export async function ucanInvocationRouter(request) {
     plansStorage,
     requirePaymentPlan,
     usageStorage,
+    ipniService,
   })
 
   const processingCtx = {
@@ -382,6 +388,15 @@ function getLambdaEnv () {
     carparkBucketEndpoint: mustGetEnv('R2_ENDPOINT'),
     carparkBucketAccessKeyId: mustGetEnv('R2_ACCESS_KEY_ID'),
     carparkBucketSecretAccessKey: mustGetEnv('R2_SECRET_ACCESS_KEY'),
+    // IPNI service
+    multihashesQueueConfig: {
+      url: new URL(mustGetEnv('MULTIHASHES_QUEUE_URL')),
+      region: mustGetEnv('AWS_REGION')
+    },
+    blocksCarsPositionTableConfig: {
+      name: mustGetEnv('BLOCKS_CAR_POSITION_TABLE_NAME'),
+      region: mustGetEnv('AWS_REGION')
+    },
     // set for testing
     dbEndpoint: process.env.DYNAMO_DB_ENDPOINT,
   }
