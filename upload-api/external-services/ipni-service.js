@@ -44,7 +44,7 @@ export const useIPNIService = (blockAdvertPublisher, blockIndexStore) => ({
         items.push(digest)
         records.push({
           digest,
-          location: new URL(`https://w3s.link/ipfs/${Link.create(raw.code, digest)}`),
+          location: new URL(`https://w3s.link/ipfs/${Link.create(raw.code, digest)}?format=raw`),
           range
         })
       }
