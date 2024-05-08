@@ -41,6 +41,7 @@ export default {
 
     app.stack(BusStack)
     app.stack(UploadDbStack)
+    app.stack(RoundaboutStack)
     app.stack(BillingDbStack)
     app.stack(CarparkStack)
     app.stack(UcanInvocationStack)
@@ -50,7 +51,6 @@ export default {
     app.stack(UploadApiStack)
     app.stack(ReplicatorStack)
     app.stack(UcanFirehoseStack)
-    app.stack(RoundaboutStack)
 
     // tags let us discover all the aws resource costs incurred by this app
     // see: https://docs.sst.dev/advanced/tagging-resources

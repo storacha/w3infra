@@ -3,19 +3,8 @@
 import './globals.js'
 
 import { read } from '@web3-storage/content-claims/client'
-import * as Raw from 'multiformats/codecs/raw'
 
-/** https://github.com/multiformats/multicodec/blob/master/table.csv#L140 */
-export const CAR_CODE = 0x02_02
-
-/** https://github.com/multiformats/multicodec/blob/master/table.csv#L520 */
-export const PIECE_V1_CODE = 0xf1_01
-
-/** https://github.com/multiformats/multicodec/blob/master/table.csv#L151 */
-export const PIECE_V1_MULTIHASH = 0x10_12
-
-/** https://github.com/multiformats/multicodec/pull/331/files */
-export const PIECE_V2_MULTIHASH = 0x10_11
+import { PIECE_V1_CODE, PIECE_V1_MULTIHASH, PIECE_V2_MULTIHASH, RAW_CODE } from './constants.js'
 
 /** 
  * @typedef {import('multiformats/cid').CID} CID
@@ -28,7 +17,7 @@ export const PIECE_V2_MULTIHASH = 0x10_11
  * @param {CID} cid
  */
 export function asPieceCidV2 (cid) {
-  if (cid.multihash.code === PIECE_V2_MULTIHASH && cid.code === Raw.code) {
+  if (cid.multihash.code === PIECE_V2_MULTIHASH && cid.code === RAW_CODE) {
     return cid
   }
 }
@@ -40,17 +29,6 @@ export function asPieceCidV2 (cid) {
  */
 export function asPieceCidV1 (cid) {
   if (cid.multihash.code === PIECE_V1_MULTIHASH && cid.code === PIECE_V1_CODE) {
-    return cid
-  }
-}
-
-/**
- * Return the cid if it is a CAR CID or undefined if not
- *
- * @param {CID} cid
- */
-export function asCarCid(cid) {
-  if (cid.code === CAR_CODE) {
     return cid
   }
 }
