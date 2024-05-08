@@ -148,7 +148,6 @@ test('stripe billing session can be generated', async (t) => {
 
   await withCustomer(context, async () => {
     const response = await billingProvider.createAdminSession(customerDID, 'https://example.com/return-url')
-    console.log(response)
     t.assert(response.ok)
     t.assert(response.ok?.url)
   })
