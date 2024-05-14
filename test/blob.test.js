@@ -1,6 +1,9 @@
 import { testBlob as test } from './helpers/context.js'
 
 import { base58btc } from 'multiformats/bases/base58'
+import * as Link from 'multiformats/link'
+import { equals } from 'multiformats/bytes'
+import { code as RAW_CODE } from 'multiformats/codecs/raw'
 import { HeadObjectCommand } from '@aws-sdk/client-s3'
 import { Assert } from '@web3-storage/content-claims/capability'
 import { useReceiptsStorage } from '../upload-api/stores/receipts.js'
@@ -11,6 +14,7 @@ import {
   getAwsBucketClient,
   getCloudflareBucketClient,
   getCarparkBucketInfo,
+  getRoundaboutEndpoint
 } from './helpers/deployment.js'
 import { randomFile } from './helpers/random.js'
 import { createMailSlurpInbox, setupNewClientWithBlob } from './helpers/up-client.js'
@@ -18,6 +22,7 @@ import { createMailSlurpInbox, setupNewClientWithBlob } from './helpers/up-clien
 test.before(t => {
   t.context = {
     apiEndpoint: getApiEndpoint(),
+    roundaboutEndpoint: getRoundaboutEndpoint(),
   }
 })
 
@@ -85,8 +90,15 @@ test('blob integration flow', async t => {
   t.is(acceptForks?.length, 1)
   t.truthy(acceptForks?.find(f => f.capabilities[0].can === Assert.location.can))
 
-  // TODO: Read from Roundabout
-  // see `roundabaout.test.js` as example and fetch to get the bytes of the blobs
+  // Read from Roundabout and check bytes can be read by raw CID
+  const rawCid = Link.create(RAW_CODE, res.multihash)
+  const roundaboutResponse = await fetch(
+    `${t.context.roundaboutEndpoint}/${rawCid.toString()}`
+  )
+  t.is(roundaboutResponse.status, 200)
+
+  const fetchedBytes =  new Uint8Array(await roundaboutResponse.arrayBuffer())
+  t.truthy(equals(data, fetchedBytes))
 
   // TODO: Read from w3link
   // fetch `https://${rootCid}.ipfs.w3s.link
@@ -97,7 +109,6 @@ test('blob integration flow', async t => {
   // cid.contact
   // Should find our deployed hoverboard URL https://github.com/web3-storage/hoverboard
   // dns4/elastic.ipfs??
-
 
   // use https://github.com/ipfs/helia to connect to hoverboard peer and read som bytes
 

@@ -27,6 +27,7 @@ dotenv.config({
  * 
  * @typedef {object} BlobContext
  * @property {string} apiEndpoint
+ * @property {string} roundaboutEndpoint
  *
  * @typedef {import("ava").TestFn<Awaited<Context>>} TestContextFn
  * @typedef {import("ava").TestFn<Awaited<RoundaboutContext>>} TestRoundaboutContextFn
