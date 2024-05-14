@@ -33,7 +33,6 @@ export const createIPNIService = (multihashesQueueConfig, blocksCarsPositionConf
  * @returns {import('@web3-storage/upload-api').IPNIService}
  */
 export const useIPNIService = (blockAdvertPublisher, blockIndexStore) => ({
-  /** @param {import('@web3-storage/upload-api').ShardedDAGIndex} index */
   async publish (index) {
     /** @type {import('multiformats').MultihashDigest[]} */
     const items = []
