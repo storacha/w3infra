@@ -88,6 +88,10 @@ export function usePlansStore(customerStore, billingProvider) {
         }
       }
       return { ok: {} }
+    },
+
+    createAdminSession: (account, returnURL) => {
+      throw new Error('not implemented')
     }
   }
 }
