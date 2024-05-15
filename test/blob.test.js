@@ -1,5 +1,6 @@
 import { testBlob as test } from './helpers/context.js'
 
+import * as BlobCapabilities from '@web3-storage/capabilities/blob'
 import { base58btc } from 'multiformats/bases/base58'
 import * as Link from 'multiformats/link'
 import { equals } from 'multiformats/bytes'
@@ -8,6 +9,7 @@ import { HeadObjectCommand } from '@aws-sdk/client-s3'
 import { Assert } from '@web3-storage/content-claims/capability'
 import { useReceiptsStorage } from '../upload-api/stores/receipts.js'
 
+import * as Blob from './helpers/blob-client.js'
 import {
   getStage,
   getApiEndpoint,
@@ -17,7 +19,7 @@ import {
   getRoundaboutEndpoint
 } from './helpers/deployment.js'
 import { randomFile } from './helpers/random.js'
-import { createMailSlurpInbox, setupNewClientWithBlob } from './helpers/up-client.js'
+import { createMailSlurpInbox, setupNewClient, getServiceProps } from './helpers/up-client.js'
 
 test.before(t => {
   t.context = {
@@ -27,10 +29,11 @@ test.before(t => {
 })
 
 // Integration test for all flow from uploading a blob, to all the reads pipelines to work.
-test('blob integration flow', async t => {
+test('blob integration flow with receipts validation', async t => {
   const stage = getStage()
   const inbox = await createMailSlurpInbox()
-  const { client, blobClient } = await setupNewClientWithBlob(t.context.apiEndpoint, { inbox })
+  const client = await setupNewClient(t.context.apiEndpoint, { inbox })
+  const serviceProps = getServiceProps(client, t.context.apiEndpoint, BlobCapabilities.add.can)
   const spaceDid = client.currentSpace()?.did()
   if (!spaceDid) {
     throw new Error('Testing space DID must be set')
@@ -40,17 +43,16 @@ test('blob integration flow', async t => {
   const file = await randomFile(100)
   const data = new Uint8Array(await file.arrayBuffer())
 
-  // Add blob
-  // TODO: Rely on new client
-  const res = await blobClient.add(data)
+  // Add blob using custom client to be able to access receipts
+  const res = await Blob.add(serviceProps.conf, data, { connection: serviceProps.connection })
   t.truthy(res)
 
   // Get bucket clients
   const s3Client = getAwsBucketClient()
   const r2Client = getCloudflareBucketClient()
 
-  const encodedMultihash = base58btc.encode(res.multihash.bytes)
   // Check blob exists in R2, but not S3
+  const encodedMultihash = base58btc.encode(res.multihash.bytes)
   const r2Request = await r2Client.send(
     new HeadObjectCommand({
       // Env var
@@ -69,8 +71,6 @@ test('blob integration flow', async t => {
   } catch (cause) {
     t.is(cause?.$metadata?.httpStatusCode, 404)
   }
-
-  // TODO: are indexes written? check dudewhere + satnav (based on what Alan is woerking on for `index/add` handler)
 
   // Check receipts were written
   const receiptsStorage = useReceiptsStorage(s3Client, `task-store-${stage}-0`, `invocation-store-${stage}-0`, `workflow-store-${stage}-0`)
@@ -100,7 +100,7 @@ test('blob integration flow', async t => {
   const fetchedBytes =  new Uint8Array(await roundaboutResponse.arrayBuffer())
   t.truthy(equals(data, fetchedBytes))
 
-  // TODO: Read from w3link
+  // TODO: Read from w3link (staging?)
   // fetch `https://${rootCid}.ipfs.w3s.link
 
   // Read from bitswap
@@ -111,5 +111,4 @@ test('blob integration flow', async t => {
   // dns4/elastic.ipfs??
 
   // use https://github.com/ipfs/helia to connect to hoverboard peer and read som bytes
-
 })

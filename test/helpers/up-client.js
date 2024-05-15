@@ -74,9 +74,13 @@ export async function setupNewClient (uploadServiceUrl, options = {}) {
   return client
 }
 
-export async function setupNewClientWithBlob (uploadServiceUrl, options = {}) {
-  const client = await setupNewClient(uploadServiceUrl, options)
 
+/**
+ * @param {Client} client
+ * @param {string} serviceUrl
+ * @param {string} capability
+ */
+export function getServiceProps (client, serviceUrl, capability) {
   // Get invocation config
   const resource = client.agent.currentSpace()
   if (!resource) {
@@ -85,20 +89,31 @@ export async function setupNewClientWithBlob (uploadServiceUrl, options = {}) {
     )
   }
 
-  const connection = getUploadServiceConnection(uploadServiceUrl)
-  const conf = {
-    issuer: client.agent.issuer,
-    with: resource,
-    proofs: client.agent.proofs(
-      [BlobCapabilities.add.can].map((can) => ({ can, with: resource }))
-    ),
-    audience: DID.parse('did:web:staging.web3.storage')
+  const connection = getUploadServiceConnection(serviceUrl)
+
+  return {
+    connection,
+    conf: {
+      issuer: client.agent.issuer,
+      with: resource,
+      proofs: client.agent.proofs(
+        [BlobCapabilities.add.can].map((can) => ({ can, with: resource }))
+      ),
+      audience: DID.parse('did:web:staging.web3.storage')
+    }
   }
+}
+
+export async function setupNewClientWithBlob (uploadServiceUrl, options = {}) {
+  const client = await setupNewClient(uploadServiceUrl, options)
+
+  // Get invocation config
+  const serviceProps = getServiceProps(client, uploadServiceUrl, BlobCapabilities.add.can)
 
   return {
     client,
     blobClient: {
-      add: (data) => add(conf, data, { connection })
+      add: (data) => add(serviceProps.conf, data, { connection: serviceProps.connection })
     }
   }
 }

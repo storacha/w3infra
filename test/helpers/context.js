@@ -28,11 +28,16 @@ dotenv.config({
  * @typedef {object} BlobContext
  * @property {string} apiEndpoint
  * @property {string} roundaboutEndpoint
+ * 
+ * @typedef {object} StoreContext
+ * @property {string} apiEndpoint
+ * @property {Dynamo} rateLimitsDynamo
  *
  * @typedef {import("ava").TestFn<Awaited<Context>>} TestContextFn
  * @typedef {import("ava").TestFn<Awaited<RoundaboutContext>>} TestRoundaboutContextFn
  * @typedef {import("ava").TestFn<Awaited<FilecoinContext>>} TestFilecoinContextFn
  * @typedef {import("ava").TestFn<Awaited<BlobContext>>} TestBlobContextFn
+ * @typedef {import("ava").TestFn<Awaited<StoreContext>>} TestStoreContextFn
  */
 
 // eslint-disable-next-line unicorn/prefer-export-from
@@ -47,3 +52,5 @@ export const testFilecoin  = /** @type {TestFilecoinContextFn} */ (anyTest)
 // eslint-disable-next-line unicorn/prefer-export-from
 export const testBlob  = /** @type {TestBlobContextFn} */ (anyTest)
 
+// eslint-disable-next-line unicorn/prefer-export-from
+export const testStore  = /** @type {TestStoreContextFn} */ (anyTest)

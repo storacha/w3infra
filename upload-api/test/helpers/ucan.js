@@ -346,6 +346,7 @@ export async function executionContextToUcantoTestServerContext(t) {
     ...serviceContext,
     ipniService,
     mail: email,
+    // @ts-expect-error 
     grantAccess: (mail) => confirmConfirmationUrl(connection, mail),
     service: id,
     connection,
