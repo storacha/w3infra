@@ -128,7 +128,10 @@ export function useBlobsStorage(s3, bucketName) {
 
     /** @param {Uint8Array} digestBytes */
     createDownloadUrl: async (digestBytes) => {
-      return ok(`https://${bucketName}.r2.w3s.link/${contentKey(digestDecode(digestBytes))}`)
+      return ok(
+        /** @type {import('@ucanto/interface').URI} */
+        (`https://${bucketName}.r2.w3s.link/${contentKey(digestDecode(digestBytes))}`)
+      )
     }
   }
 }
