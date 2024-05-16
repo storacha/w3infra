@@ -14,7 +14,7 @@ import { storeTableProps, uploadTableProps, allocationTableProps, consumerTableP
 import { useTasksStorage } from '../../stores/tasks.js';
 import { useReceiptsStorage } from '../../stores/receipts.js';
 import { useAllocationsStorage } from '../../stores/allocations.js';
-import { composeblobStoragesWithOrderedHas, useBlobsStorage } from '../../stores/blobs.js';
+import { composeblobStoragesWithOrderedHas } from '../../stores/blobs.js';
 import { composeCarStoresWithOrderedHas, useCarStore } from '../../buckets/car-store.js';
 import { useDudewhereStore } from '../../buckets/dudewhere-store.js';
 import { useStoreTable } from '../../tables/store.js';
@@ -37,6 +37,7 @@ import { createTaskStore as createFilecoinTaskStore } from '../../../filecoin/st
 import { createReceiptStore as createFilecoinReceiptStore } from '../../../filecoin/store/receipt.js'
 import { createTestBillingProvider } from './billing.js';
 import { createTasksScheduler } from '../../scheduler.js';
+import { useTestBlobsStorage } from './blobs-storage.js'
 import { createTestIPNIService } from './ipni-service.js'
 
 export { API }
@@ -196,10 +197,10 @@ export async function executionContextToUcantoTestServerContext(t) {
   const invocationsBucketName = await createBucket(s3)
   const workflowBucketName = await createBucket(s3)
 
-  const s3BlobsStorageBucket = useBlobsStorage(s3, bucketName)
+  const s3BlobsStorageBucket = await useTestBlobsStorage(s3, bucketName)
   const r2BlobsStorageBucket = r2CarStoreBucketName
-  ? useBlobsStorage(r2, r2CarStoreBucketName)
-  : undefined
+    ? await useTestBlobsStorage(r2, r2CarStoreBucketName)
+    : undefined
   const blobsStorage = r2BlobsStorageBucket
     ? composeblobStoragesWithOrderedHas(
       s3BlobsStorageBucket,

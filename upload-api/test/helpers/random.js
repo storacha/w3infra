@@ -1,7 +1,7 @@
 import { webcrypto } from 'crypto'
-import { Blob } from '@web-std/blob'
 import { CarWriter } from '@ipld/car'
 import { CID } from 'multiformats/cid'
+import * as Link from 'multiformats/link'
 import * as raw from 'multiformats/codecs/raw'
 import { sha256 } from 'multiformats/hashes/sha2'
 import * as CAR from '@ucanto/transport/car'
@@ -17,6 +17,17 @@ export async function randomBytes(size) {
     bytes.set(chunk, size)
   }
   return bytes
+}
+
+/** @param {number} size */
+export async function randomBlob(size) {
+  const bytes = await randomBytes(size)
+  const multihash = await sha256.digest(bytes)
+  const digest = multihash.bytes
+  const blobSize = bytes.byteLength
+  const cid = Link.create(raw.code, multihash)
+
+  return { digest, size: blobSize, cid }
 }
 
 export async function randomCID() {

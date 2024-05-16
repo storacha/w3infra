@@ -3,7 +3,7 @@ import { DID, Link, Delegation, Signature, Block, UCANLink, ByteView, DIDKey, Re
 import { UnknownLink } from 'multiformats'
 import { CID } from 'multiformats/cid'
 import { Kinesis } from '@aws-sdk/client-kinesis'
-import { AccountDID, ProviderDID, Service, SpaceDID, CarStoreBucket } from '@web3-storage/upload-api'
+import { AccountDID, ProviderDID, Service, SpaceDID, CarStoreBucket, AllocationsStorage } from '@web3-storage/upload-api'
 
 export interface StoreOperationError extends Error {
   name: 'StoreOperationFailed'
@@ -37,6 +37,7 @@ export interface MetricsStore {
 export interface MetricsCtx {
   metricsStore: MetricsStore
   carStore: CarStore
+  allocationsStorage: AllocationsStorage
 }
 
 export interface SpaceMetricsItem {
@@ -51,6 +52,7 @@ export interface SpaceMetricsStore {
 export interface SpaceMetricsCtx {
   metricsStore: SpaceMetricsStore
   carStore: CarStore
+  allocationsStorage: AllocationsStorage
 }
 
 export interface CarStore extends CarStoreBucket {
