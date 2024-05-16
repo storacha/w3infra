@@ -20,6 +20,19 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
  */
 
 /**
+ * Some cloud bucket implementations like S3 have rate limits applied.
+ * Rate limits happen across shards that are based on the folders structure of
+ * the bucket. By relying on folder as a hash, the rate limit from bucket
+ * providers can be prevented.
+ *
+ * @param {import('multiformats').MultihashDigest} digest
+ */
+const contentKey = (digest) => {
+  const encodedMultihash = base58btc.encode(digest.bytes)
+  return `${encodedMultihash}/${encodedMultihash}.blob`
+}
+
+/**
  * Abstraction layer with Factory to perform operations on bucket storing Blobs.
  *
  * @param {string} region
@@ -48,9 +61,8 @@ export function useBlobsStorage(s3, bucketName) {
      * @param {Uint8Array} multihash
      */
     has: async (multihash) => {
-      const encodedMultihash = base58btc.encode(multihash)
       const cmd = new HeadObjectCommand({
-        Key: `${encodedMultihash}/${encodedMultihash}.blob`,
+        Key: contentKey(digestDecode(multihash)),
         Bucket: bucketName,
       })
       try {
@@ -67,9 +79,8 @@ export function useBlobsStorage(s3, bucketName) {
 
     /** @param {import('multiformats').MultihashDigest} digest */
     async stream (digest) {
-      const encodedMultihash = base58btc.encode(digest.bytes)
       const cmd = new GetObjectCommand({
-        Key: `${encodedMultihash}/${encodedMultihash}.blob`,
+        Key: contentKey(digest),
         Bucket: bucketName,
       })
       try {
@@ -90,15 +101,10 @@ export function useBlobsStorage(s3, bucketName) {
      * @param {number} expiresIn
      */
     createUploadUrl: async (multihash, size, expiresIn) => {
-      const encodedMultihash = base58btc.encode(multihash)
       const multihashDigest = digestDecode(multihash)
       const checksum = base64pad.baseEncode(multihashDigest.digest)
       const cmd = new PutObjectCommand({
-        // Some cloud bucket implementations like S3 have rate limits applied.
-        // Rate limits happen across shards that are based on the folders structure
-        // of the bucket. By relying on folder as a hash, the rate limit from bucket
-        // providers can be prevented.
-        Key: `${encodedMultihash}/${encodedMultihash}.blob`,
+        Key: contentKey(multihashDigest),
         Bucket: bucketName,
         ChecksumSHA256: checksum,
         ContentLength: size,
@@ -119,6 +125,11 @@ export function useBlobsStorage(s3, bucketName) {
         }
       }
     },
+
+    /** @param {Uint8Array} digestBytes */
+    createDownloadUrl: async (digestBytes) => {
+      return ok(`https://${bucketName}.r2.w3s.link/${contentKey(digestDecode(digestBytes))}`)
+    }
   }
 }
 

@@ -1,5 +1,4 @@
 import { webcrypto } from 'crypto'
-import { Blob } from '@web-std/blob'
 import { CarWriter } from '@ipld/car'
 import { CID } from 'multiformats/cid'
 import * as Link from 'multiformats/link'
