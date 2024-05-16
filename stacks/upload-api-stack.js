@@ -91,6 +91,7 @@ export function UploadApiStack({ stack, app }) {
           pieceOfferQueue,
           filecoinSubmitQueue,
           multihashesQueue,
+          blocksCarPositionTable
         ],
         environment: {
           DID: process.env.UPLOAD_API_DID ?? '',
@@ -174,8 +175,9 @@ export function UploadApiStack({ stack, app }) {
     environment: {
       ADMIN_METRICS_TABLE_NAME: adminMetricsTable.tableName,
       STORE_BUCKET_NAME: carparkBucket.bucketName,
+      ALLOCATION_TABLE_NAME: allocationTable.tableName
     },
-    permissions: [adminMetricsTable, carparkBucket],
+    permissions: [adminMetricsTable, carparkBucket, allocationTable],
     handler: 'upload-api/functions/admin-metrics.consumer',
     deadLetterQueue: uploadAdminMetricsDLQ.cdk.queue,
   })
@@ -185,8 +187,9 @@ export function UploadApiStack({ stack, app }) {
     environment: {
       SPACE_METRICS_TABLE_NAME: spaceMetricsTable.tableName,
       STORE_BUCKET_NAME: carparkBucket.bucketName,
+      ALLOCATION_TABLE_NAME: allocationTable.tableName
     },
-    permissions: [spaceMetricsTable, carparkBucket],
+    permissions: [spaceMetricsTable, carparkBucket, allocationTable],
     handler: 'upload-api/functions/space-metrics.consumer',
     deadLetterQueue: uploadSpaceMetricsDLQ.cdk.queue,
   })

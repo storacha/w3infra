@@ -6,6 +6,7 @@ import * as DAGJson from '@ipld/dag-json'
 import { updateAdminMetrics } from '../metrics.js'
 import { createMetricsTable } from '../stores/metrics.js'
 import { createCarStore } from '../buckets/car-store.js'
+import { createAllocationsStorage } from '../stores/allocations.js'
 import { mustGetEnv } from './utils.js'
 
 Sentry.AWSLambda.init({
@@ -24,11 +25,13 @@ async function handler(event) {
   const {
     metricsTableName,
     storeBucketName,
+    allocationTableName,
   } = getLambdaEnv()
 
   await updateAdminMetrics(ucanInvocations, {
     metricsStore: createMetricsTable(AWS_REGION, metricsTableName),
     carStore: createCarStore(AWS_REGION, storeBucketName),
+    allocationsStorage: createAllocationsStorage(AWS_REGION, allocationTableName)
   })
 }
 
@@ -36,6 +39,7 @@ function getLambdaEnv () {
   return {
     metricsTableName: mustGetEnv('ADMIN_METRICS_TABLE_NAME'),
     storeBucketName: mustGetEnv('STORE_BUCKET_NAME'),
+    allocationTableName: mustGetEnv('ALLOCATION_TABLE_NAME'),
   }
 }
 
