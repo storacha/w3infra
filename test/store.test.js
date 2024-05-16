@@ -1,4 +1,4 @@
-import { testStore as test } from './helpers/context.js'
+import { test } from './helpers/context.js'
 
 import pWaitFor from 'p-wait-for'
 import { HeadObjectCommand } from '@aws-sdk/client-s3'
@@ -7,7 +7,10 @@ import { marshall } from '@aws-sdk/util-dynamodb'
 import * as StoreCapabilities from '@web3-storage/capabilities/store'
 import { ShardingStream, UnixFS, Store, Upload } from '@web3-storage/upload-client'
 
+import { METRICS_NAMES, SPACE_METRICS_NAMES } from '../upload-api/constants.js'
+
 import {
+  getStage,
   getApiEndpoint,
   getAwsBucketClient,
   getCloudflareBucketClient,
@@ -17,16 +20,20 @@ import {
 } from './helpers/deployment.js'
 import { createMailSlurpInbox, setupNewClient, getServiceProps } from './helpers/up-client.js'
 import { randomFile } from './helpers/random.js'
+import { getMetrics, getSpaceMetrics } from './helpers/metrics.js'
 
 test.before(t => {
   t.context = {
     apiEndpoint: getApiEndpoint(),
+    metricsDynamo: getDynamoDb('admin-metrics'),
+    spaceMetricsDynamo: getDynamoDb('space-metrics'),
     rateLimitsDynamo: getDynamoDb('rate-limit')
   }
 })
 
 // Integration test for all uploading flow with `store/add`
 test('store protocol integration flow', async t => {
+  const stage = getStage()
   const inbox = await createMailSlurpInbox()
   const client = await setupNewClient(t.context.apiEndpoint, { inbox })
   const serviceProps = getServiceProps(client, t.context.apiEndpoint, StoreCapabilities.add.can)
@@ -34,6 +41,15 @@ test('store protocol integration flow', async t => {
   if (!spaceDid) {
     throw new Error('Testing space DID must be set')
   }
+
+  // Get space metrics before store/add
+  const spaceBeforeStoreAddMetrics = await getSpaceMetrics(t, spaceDid, SPACE_METRICS_NAMES.STORE_ADD_TOTAL)
+  const spaceBeforeStoreAddSizeMetrics = await getSpaceMetrics(t, spaceDid, SPACE_METRICS_NAMES.STORE_ADD_SIZE_TOTAL)
+
+  // Get metrics before upload
+  const beforeOperationMetrics = await getMetrics(t)
+  const beforeStoreAddTotal = beforeOperationMetrics.find(row => row.name === METRICS_NAMES.STORE_ADD_TOTAL)
+  const beforeStoreAddSizeTotal = beforeOperationMetrics.find(row => row.name === METRICS_NAMES.STORE_ADD_SIZE_TOTAL)
 
   const s3Client = getAwsBucketClient()
   const r2Client = getCloudflareBucketClient()
@@ -85,8 +101,8 @@ test('store protocol integration flow', async t => {
     })
   )
   t.is(carparkRequest.$metadata.httpStatusCode, 200)
+  const carSize = carparkRequest.ContentLength
 
-  // const carSize = carparkRequest.ContentLength
   // Check dudewhere
   const dudewhereRequest = await r2Client.send(
     new HeadObjectCommand({
@@ -177,6 +193,34 @@ test('store protocol integration flow', async t => {
     }
   )
   t.is(w3linkResponse.status, 200)
+
+  // Check metrics were updated
+  if (beforeStoreAddSizeTotal && spaceBeforeStoreAddSizeMetrics) {
+    await pWaitFor(async () => {
+      const afterOperationMetrics = await getMetrics(t)
+      const afterStoreAddTotal = afterOperationMetrics.find(row => row.name === METRICS_NAMES.STORE_ADD_TOTAL)
+      const afterStoreAddSizeTotal = afterOperationMetrics.find(row => row.name === METRICS_NAMES.STORE_ADD_SIZE_TOTAL)
+      const spaceAfterStoreAddMetrics = await getSpaceMetrics(t, spaceDid, SPACE_METRICS_NAMES.STORE_ADD_TOTAL)
+      const spaceAfterStoreAddSizeMetrics = await getSpaceMetrics(t, spaceDid, SPACE_METRICS_NAMES.STORE_ADD_SIZE_TOTAL)
+
+      // If staging accept more broad condition given multiple parallel tests can happen there
+      if (stage === 'staging') {
+        return (
+          afterStoreAddTotal?.value >= beforeStoreAddTotal?.value + 1 &&
+          afterStoreAddSizeTotal?.value >= beforeStoreAddSizeTotal.value + carSize &&
+          spaceAfterStoreAddMetrics?.value >= spaceBeforeStoreAddMetrics?.value + 1 &&
+          spaceAfterStoreAddSizeMetrics?.value >= spaceBeforeStoreAddSizeMetrics?.value + carSize
+        )
+      }
+
+      return (
+        afterStoreAddTotal?.value === beforeStoreAddTotal?.value + 1 &&
+        afterStoreAddSizeTotal?.value === beforeStoreAddSizeTotal.value + carSize &&
+        spaceAfterStoreAddMetrics?.value === spaceBeforeStoreAddMetrics?.value + 1 &&
+        spaceAfterStoreAddSizeMetrics?.value === spaceBeforeStoreAddSizeMetrics?.value + carSize
+      )
+    })
+  }
 
   // verify that blocking a space makes it impossible to upload a file to it
   await t.context.rateLimitsDynamo.client.send(new PutItemCommand({

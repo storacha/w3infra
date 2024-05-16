@@ -94,6 +94,7 @@
       "no-void": "off",
       "no-console": "off",
       "no-continue": "off",
+      "no-loop-func": "off",
       "no-warning-comments": "off",
       "jsdoc/check-indentation": "off",
       "jsdoc/require-hyphen-before-param-description": "off",

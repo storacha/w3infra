@@ -10,8 +10,6 @@ import dotenv from 'dotenv'
 
 import * as BlobCapabilities from '@web3-storage/capabilities/blob'
 
-import { add } from './blob-client.js'
-
 dotenv.config({ path: fileURLToPath(new URL('../../.env', import.meta.url)) })
 
 /**
@@ -100,20 +98,6 @@ export function getServiceProps (client, serviceUrl, capability) {
         [BlobCapabilities.add.can].map((can) => ({ can, with: resource }))
       ),
       audience: DID.parse('did:web:staging.web3.storage')
-    }
-  }
-}
-
-export async function setupNewClientWithBlob (uploadServiceUrl, options = {}) {
-  const client = await setupNewClient(uploadServiceUrl, options)
-
-  // Get invocation config
-  const serviceProps = getServiceProps(client, uploadServiceUrl, BlobCapabilities.add.can)
-
-  return {
-    client,
-    blobClient: {
-      add: (data) => add(serviceProps.conf, data, { connection: serviceProps.connection })
     }
   }
 }

@@ -28,10 +28,16 @@ dotenv.config({
  * @typedef {object} BlobContext
  * @property {string} apiEndpoint
  * @property {string} roundaboutEndpoint
+ * @property {Dynamo} metricsDynamo
+ * @property {Dynamo} spaceMetricsDynamo
  * 
  * @typedef {object} StoreContext
  * @property {string} apiEndpoint
  * @property {Dynamo} rateLimitsDynamo
+ * 
+ * @typedef {object} MetricsContext
+ * @property {Dynamo} metricsDynamo
+ * @property {Dynamo} spaceMetricsDynamo
  *
  * @typedef {import("ava").TestFn<Awaited<Context>>} TestContextFn
  * @typedef {import("ava").TestFn<Awaited<RoundaboutContext>>} TestRoundaboutContextFn
