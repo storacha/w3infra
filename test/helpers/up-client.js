@@ -8,6 +8,8 @@ import { MailSlurp } from "mailslurp-client"
 import { fileURLToPath } from 'node:url'
 import dotenv from 'dotenv'
 
+import * as BlobCapabilities from '@web3-storage/capabilities/blob'
+
 dotenv.config({ path: fileURLToPath(new URL('../../.env', import.meta.url)) })
 
 /**
@@ -51,13 +53,15 @@ export async function setupNewClient (uploadServiceUrl, options = {}) {
   // create an inbox
   const { mailslurp, id: inboxId, email } = options.inbox || await createMailSlurpInbox()
   const client = await createNewClient(uploadServiceUrl)
-
   const timeoutMs = process.env.MAILSLURP_TIMEOUT ? parseInt(process.env.MAILSLURP_TIMEOUT) : 60_000
   const authorizePromise = client.login(email)
   // click link in email
   const latestEmail = await mailslurp.waitForLatestEmail(inboxId, timeoutMs)
   const authLink = getAuthLinkFromEmail(latestEmail.body, uploadServiceUrl)
-  await fetch(authLink, { method: 'POST' })
+  const res = await fetch(authLink, { method: 'POST' })
+  if (!res.ok) {
+    throw new Error('failed to authenticate by clickling on auth link from e-mail')
+  }
   const account = await authorizePromise
   if (!client.currentSpace()) {
     const space = await client.createSpace("test space")
@@ -66,6 +70,36 @@ export async function setupNewClient (uploadServiceUrl, options = {}) {
   }
 
   return client
+}
+
+
+/**
+ * @param {Client} client
+ * @param {string} serviceUrl
+ * @param {string} capability
+ */
+export function getServiceProps (client, serviceUrl, capability) {
+  // Get invocation config
+  const resource = client.agent.currentSpace()
+  if (!resource) {
+    throw new Error(
+      'missing current space: use createSpace() or setCurrentSpace()'
+    )
+  }
+
+  const connection = getUploadServiceConnection(serviceUrl)
+
+  return {
+    connection,
+    conf: {
+      issuer: client.agent.issuer,
+      with: resource,
+      proofs: client.agent.proofs(
+        [BlobCapabilities.add.can].map((can) => ({ can, with: resource }))
+      ),
+      audience: DID.parse('did:web:staging.web3.storage')
+    }
+  }
 }
 
 /**

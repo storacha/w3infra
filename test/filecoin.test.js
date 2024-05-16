@@ -5,6 +5,9 @@ import pRetry from 'p-retry'
 import * as CAR from '@ucanto/transport/car'
 import { Storefront } from '@web3-storage/filecoin-client'
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
+import * as Link from 'multiformats/link'
+import * as raw from 'multiformats/codecs/raw'
+import { base58btc } from 'multiformats/bases/base58'
 
 import { useReceiptStore } from '../filecoin/store/receipt.js'
 
@@ -57,25 +60,23 @@ test('w3filecoin integration flow', async t => {
       /** @type {{ content: CARLink, piece: PieceLink}[]} */
       const uploadFiles = []
 
+      // TODO: New client should use blob directly and this should be the same and work :)
       // Upload new file
       await client.uploadFile(file, {
         onShardStored: (meta) => {
+          const content = Link.create(raw.code, meta.cid.multihash)
+
           uploadFiles.push({
-            content: meta.cid,
+            content,
             piece: meta.piece
           })
-          console.log(`shard file written with {${meta.cid}, ${meta.piece}}`)
+          console.log(`shard file written with {${meta.cid}, ${content}, ${meta.piece}}`)
         },
       })
       t.is(uploadFiles.length, 1)
       return uploadFiles[0]
     }
   ))
-
-  // Shortcut if computing piece cid is disabled
-  if (process.env.DISABLE_PIECE_CID_COMPUTE === 'true') {
-    return
-  }
 
   // Check filecoin pieces computed after leaving queue
   // Bucket event given client is not invoking this
@@ -94,20 +95,20 @@ test('w3filecoin integration flow', async t => {
     // Check roundabout can redirect from pieceCid to signed bucket url for car
     const roundaboutEndpoint = await getRoundaboutEndpoint()
     const roundaboutUrl = new URL(testUpload.piece.toString(), roundaboutEndpoint)
-    console.log('checking roundabout for one piece', roundaboutUrl.toString())
     await pWaitFor(async () => {
       try {
         const res = await fetch(roundaboutUrl, {
           method: 'HEAD',
           redirect: 'manual'
         })
-        return res.status === 302 && res.headers.get('location')?.includes(testUpload.content.toString())
+        const encodedMultihash = base58btc.encode(testUpload.content.multihash.bytes)
+        return res.status === 302 && res.headers.get('location')?.includes(encodedMultihash)
       } catch {}
       return false
     }, {
       interval: 100,
     })
-    console.log('roundabout redirected from piece to car', roundaboutUrl.toString())
+    console.log('roundabout redirected from piece to blob', roundaboutUrl.toString())
 
     // Invoke `filecoin/offer`
     console.log(`invoke 'filecoin/offer' for piece ${testUpload.piece.toString()} (${testUpload.content})`)
