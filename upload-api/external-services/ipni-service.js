@@ -43,7 +43,7 @@ export const useIPNIService = (blockAdvertPublisher, blockIndexStore, blobsStora
       for (const [digest, range] of shard.entries()) {
         items.push(digest)
 
-        const createUrlRes = await blobsStorage.createDownloadUrl(digest.bytes)
+        const createUrlRes = await blobsStorage.createDownloadUrl(shard.bytes)
         if (!createUrlRes.ok) return createUrlRes
 
         const location = new URL(createUrlRes.ok)
