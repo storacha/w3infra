@@ -1,6 +1,8 @@
 import { fetch } from '@web-std/fetch'
 import git from 'git-rev-sync'
 import pWaitFor from 'p-wait-for'
+import * as Link from 'multiformats/link'
+import { code as RAW_CODE } from 'multiformats/codecs/raw'
 import { base58btc } from 'multiformats/bases/base58'
 import { HeadObjectCommand } from '@aws-sdk/client-s3'
 import { PutItemCommand } from '@aws-sdk/client-dynamodb'
@@ -14,6 +16,7 @@ import {
   getStage,
   getApiEndpoint,
   getCloudflareBucketClient,
+  getRoundaboutEndpoint,
   getDynamoDb
 } from './helpers/deployment.js'
 import { createMailSlurpInbox, createNewClient, setupNewClient } from './helpers/up-client.js'
@@ -23,6 +26,7 @@ import { getMetrics, getSpaceMetrics } from './helpers/metrics.js'
 test.before(t => {
   t.context = {
     apiEndpoint: getApiEndpoint(),
+    roundaboutEndpoint: getRoundaboutEndpoint(),
     metricsDynamo: getDynamoDb('admin-metrics'),
     spaceMetricsDynamo: getDynamoDb('space-metrics'),
     rateLimitsDynamo: getDynamoDb('rate-limit')
@@ -111,7 +115,20 @@ test('authorizations can be blocked by email or domain', async t => {
   }
 })
 
-// Integration test for all flow from uploading a file to Kinesis events consumers and replicator
+/**
+ * Integration test for all main flow on uploading a file to read interfaces and kinesis stream
+ * 1. Login client
+ * 2. Create new space
+ * 3. Get metrics before uploading any data
+ * 4. Upload a small file with single Blob
+ * 5. Check Blob was correctly stored on bucket
+ * 6. Check Space Uploads include Blob
+ * 7. Read from Roundabout
+ * 8. Read from w3link
+ * 9. Read from Hoverboard
+ * 10. Remove
+ * 11. Verify metrics
+ */
 test('w3infra store/upload integration flow', async t => {
   const stage = getStage()
   const inbox = await createMailSlurpInbox()
@@ -182,8 +199,16 @@ test('w3infra store/upload integration flow', async t => {
     t.truthy(uploadFound.shards?.[i].equals(shards[i]))
   }
 
+  // Read from Roundabout returns 200
+  const rawCid = Link.create(RAW_CODE, shards[0].multihash)
+  const roundaboutResponse = await fetch(
+    `${t.context.roundaboutEndpoint}/${rawCid.toString()}`
+  )
+  t.is(roundaboutResponse.status, 200)
+
+  // Verify w3link can resolve uploaded file via HTTP
+  // TODO: FIX ME
   console.log('file link', fileLink.toString())
-  // Verify w3s.link can resolve uploaded file
   // const w3linkResponse = await fetch(
   //   `https://${fileLink}.ipfs-staging.w3s.link`,
   //   {
@@ -192,9 +217,8 @@ test('w3infra store/upload integration flow', async t => {
   // )
   // t.is(w3linkResponse.status, 200)
 
-  // TODO: Hoverboard
-
-  // TODO: Roundabout
+  // Verify hoverboard can resolved uploaded root via Bitswap
+  // TODO: FIX ME
 
   // Remove file from space
   const removeResult = await client.capability.upload.remove(fileLink)

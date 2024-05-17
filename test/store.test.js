@@ -12,6 +12,7 @@ import { METRICS_NAMES, SPACE_METRICS_NAMES } from '../upload-api/constants.js'
 import {
   getStage,
   getApiEndpoint,
+  getRoundaboutEndpoint,
   getAwsBucketClient,
   getCloudflareBucketClient,
   getSatnavBucketInfo,
@@ -25,13 +26,28 @@ import { getMetrics, getSpaceMetrics } from './helpers/metrics.js'
 test.before(t => {
   t.context = {
     apiEndpoint: getApiEndpoint(),
+    roundaboutEndpoint: getRoundaboutEndpoint(),
     metricsDynamo: getDynamoDb('admin-metrics'),
     spaceMetricsDynamo: getDynamoDb('space-metrics'),
     rateLimitsDynamo: getDynamoDb('rate-limit')
   }
 })
 
-// Integration test for all uploading flow with `store/add`
+/**
+ * Integration test for all flow from `blob/add` and `index/add`, to read interfaces and kinesis stream.
+ * 1. Login client
+ * 2. Get metrics before uploading any data
+ * 3. Store a CAR
+ * 4. Add an Upload associated with the CAR previously added
+ * 5. Check CAR was correctly stored on bucket
+ * 6. Check DUDEWHERE index was correctly stored on bucket
+ * 7. Check upload list includes CAR stored
+ * 8. Remove CAR
+ * 9. Verify Replicator
+ * 10. Read from w3link
+ * 11. Read from Roundabout
+ * 12. Verify metrics
+ */
 test('store protocol integration flow', async t => {
   const stage = getStage()
   const inbox = await createMailSlurpInbox()
@@ -185,7 +201,7 @@ test('store protocol integration flow', async t => {
     interval: 100,
   })
 
-  // Verify w3s.link can resolve uploaded file
+  // Verify w3link can resolve uploaded file
   const w3linkResponse = await fetch(
     `https://${root}.ipfs-staging.w3s.link`,
     {
@@ -193,6 +209,12 @@ test('store protocol integration flow', async t => {
     }
   )
   t.is(w3linkResponse.status, 200)
+
+  // Read from Roundabout returns 200
+  const roundaboutResponse = await fetch(
+    `${t.context.roundaboutEndpoint}/${shards[0].toString()}`
+  )
+  t.is(roundaboutResponse.status, 200)
 
   // Check metrics were updated
   if (beforeStoreAddSizeTotal && spaceBeforeStoreAddSizeMetrics) {

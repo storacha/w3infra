@@ -42,7 +42,20 @@ test.before(t => {
  * @typedef {import('multiformats').UnknownLink} UnknownLink
  */
 
-// Integration test for all flow from uploading a blob, to all the reads pipelines to work.
+/**
+ * Integration test for all flow from `blob/add` and `index/add`, to read interfaces and kinesis stream.
+ * 1. Login client
+ * 2. Get metrics before uploading any data
+ * 3. Add a Blob
+ * 4. Add an Index and Upload associated with the Blob previously added
+ * 5. Check Blob was correctly stored on bucket
+ * 6. Check Index was correctly stored on bucket
+ * 7. Check receceipts were stored
+ * 8. Read from Roundabout
+ * 9. Read from w3link
+ * 10. Read from Hoverboard
+ * 11. Verify metrics
+ */
 test('blob integration flow with receipts validation', async t => {
   const stage = getStage()
   const inbox = await createMailSlurpInbox()
@@ -166,7 +179,7 @@ test('blob integration flow with receipts validation', async t => {
     t.is(cause?.$metadata?.httpStatusCode, 404)
   }
 
-  // Check index exists
+  // Check index exists in R2
   const encodedIndexMultihash = base58btc.encode(resIndex.multihash.bytes)
   const r2IndexRequest = await r2Client.send(
     new HeadObjectCommand({
@@ -205,23 +218,23 @@ test('blob integration flow with receipts validation', async t => {
   const fetchedBytes =  new Uint8Array(await roundaboutResponse.arrayBuffer())
   t.truthy(equals(shardBytes[0], fetchedBytes))
 
-  // ----
+  // Verify w3link can resolve uploaded file via HTTP
+  // TODO: FIX ME
+  // const w3linkResponse = await fetch(
+  //   `https://${fileLink}.ipfs-staging.w3s.link`,
+  //   {
+  //     method: 'HEAD'
+  //   }
+  // )
+  // t.is(w3linkResponse.status, 200)
 
-  // TODO: Read from w3link (staging?)
-  // fetch `https://${rootCid}.ipfs.w3s.link
+  // Verify hoverboard can resolved uploaded root via Bitswap
 
-  // Read from bitswap
-  // use IPNI to find providers of CID
-  // TODO: does IPNI have a client
-  // cid.contact
   // Should find our deployed hoverboard URL https://github.com/web3-storage/hoverboard
-  // dns4/elastic.ipfs??
-
   // use https://github.com/ipfs/helia to connect to hoverboard peer and read som bytes
 
   // Validate metrics
   // Check metrics were updated
-  console.log('check metrics')
   if (beforeBlobAddSizeTotal && spaceBeforeBlobAddSizeMetrics) {
     await pWaitFor(async () => {
       const afterOperationMetrics = await getMetrics(t)
