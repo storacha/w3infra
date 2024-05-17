@@ -2,8 +2,6 @@ import { SQSClient, SendMessageBatchCommand } from '@aws-sdk/client-sqs'
 import { DynamoDBClient, BatchWriteItemCommand } from '@aws-sdk/client-dynamodb'
 import { marshall } from '@aws-sdk/util-dynamodb'
 import { base58btc } from 'multiformats/bases/base58'
-import * as Link from 'multiformats/link'
-import * as raw from 'multiformats/codecs/raw'
 import retry from 'p-retry'
 import { ok, error } from '@ucanto/server'
 
@@ -18,21 +16,23 @@ import { ok, error } from '@ucanto/server'
 /**
  * @param {{ url: URL, region: string }} multihashesQueueConfig 
  * @param {{ name: string, region: string }} blocksCarsPositionConfig
+ * @param {import('@web3-storage/upload-api').BlobsStorage} blobsStorage
  */
-export const createIPNIService = (multihashesQueueConfig, blocksCarsPositionConfig) => {
+export const createIPNIService = (multihashesQueueConfig, blocksCarsPositionConfig, blobsStorage) => {
   const sqs = new SQSClient(multihashesQueueConfig)
   const multihashesQueue = new BlockAdvertisementPublisher({ client: sqs, url: multihashesQueueConfig.url })
   const dynamo = new DynamoDBClient(blocksCarsPositionConfig)
   const blocksCarsPositionStore = new BlockIndexStore({ client: dynamo, name: blocksCarsPositionConfig.name })
-  return useIPNIService(multihashesQueue, blocksCarsPositionStore)
+  return useIPNIService(multihashesQueue, blocksCarsPositionStore, blobsStorage)
 }
 
 /**
  * @param {BlockAdvertisementPublisher} blockAdvertPublisher
  * @param {BlockIndexStore} blockIndexStore
+ * @param {import('@web3-storage/upload-api').BlobsStorage} blobsStorage
  * @returns {import('@web3-storage/upload-api').IPNIService}
  */
-export const useIPNIService = (blockAdvertPublisher, blockIndexStore) => ({
+export const useIPNIService = (blockAdvertPublisher, blockIndexStore, blobsStorage) => ({
   /** @param {import('@web3-storage/upload-api').ShardedDAGIndex} index */
   async publish (index) {
     /** @type {import('multiformats').MultihashDigest[]} */
@@ -42,11 +42,12 @@ export const useIPNIService = (blockAdvertPublisher, blockIndexStore) => ({
     for (const shard of index.shards.values()) {
       for (const [digest, range] of shard.entries()) {
         items.push(digest)
-        records.push({
-          digest,
-          location: new URL(`https://w3s.link/ipfs/${Link.create(raw.code, digest)}?format=raw`),
-          range
-        })
+
+        const createUrlRes = await blobsStorage.createDownloadUrl(digest)
+        if (!createUrlRes.ok) return createUrlRes
+
+        const location = new URL(createUrlRes.ok)
+        records.push({ digest, location, range })
       }
     }
 

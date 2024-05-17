@@ -207,7 +207,7 @@ export async function ucanInvocationRouter(request) {
     url: uploadServiceURL
   })
   const tasksScheduler = createTasksScheduler(() => selfConnection)
-  const ipniService = createIPNIService(multihashesQueueConfig, blocksCarsPositionTableConfig)
+  const ipniService = createIPNIService(multihashesQueueConfig, blocksCarsPositionTableConfig, blobsStorage)
 
   const server = createUcantoServer(serviceSigner, {
     codec,
