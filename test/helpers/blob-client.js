@@ -8,6 +8,9 @@ import { sha256 } from 'multiformats/hashes/sha2'
 import { SpaceDID } from '@web3-storage/capabilities/utils'
 import pRetry from 'p-retry'
 
+// Blob custom client to be able to access receipts
+// and enable a more internal testing
+
 /**
  * @typedef {import('@ucanto/interface').Failure} Failure
  * @typedef {import('@web3-storage/capabilities/types').BlobAddSuccess} BlobAddSuccess

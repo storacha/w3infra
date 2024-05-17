@@ -101,6 +101,7 @@ test('blob integration flow with receipts validation', async t => {
           const bytes = new Uint8Array(await car.arrayBuffer())
 
           // Add blob using custom client to be able to access receipts
+          // Given Blob client exported from client would only return multihash
           const res = await Blob.add(serviceProps.conf, bytes, { connection: serviceProps.connection })
           t.truthy(res)
           t.truthy(res.multihash)
@@ -140,7 +141,6 @@ test('blob integration flow with receipts validation', async t => {
     index.shards.set(shard.multihash, slices)
   }
   const indexBytes = await index.archive()
-  /* c8 ignore next 3 */
   if (!indexBytes.ok) {
     throw new Error('failed to archive DAG index', { cause: indexBytes.error })
   }
@@ -218,10 +218,11 @@ test('blob integration flow with receipts validation', async t => {
   const fetchedBytes =  new Uint8Array(await roundaboutResponse.arrayBuffer())
   t.truthy(equals(shardBytes[0], fetchedBytes))
 
+  console.log('file link', root)
   // Verify w3link can resolve uploaded file via HTTP
   // TODO: FIX ME
   // const w3linkResponse = await fetch(
-  //   `https://${fileLink}.ipfs-staging.w3s.link`,
+  //   `https://${root}.ipfs-staging.w3s.link`,
   //   {
   //     method: 'HEAD'
   //   }

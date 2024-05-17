@@ -109,6 +109,7 @@ test('store protocol integration flow', async t => {
   // Invoke upload/add
   await Upload.add(serviceProps.conf, root, shards, { connection: serviceProps.connection })
 
+  console.log('root', root)
   // Check carpark
   const carparkRequest = await s3Client.send(
     new HeadObjectCommand({

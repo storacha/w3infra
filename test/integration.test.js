@@ -1,6 +1,8 @@
 import { fetch } from '@web-std/fetch'
 import git from 'git-rev-sync'
 import pWaitFor from 'p-wait-for'
+// import { unixfs } from '@helia/unixfs'
+// import { multiaddr } from '@multiformats/multiaddr'
 import * as Link from 'multiformats/link'
 import { code as RAW_CODE } from 'multiformats/codecs/raw'
 import { base58btc } from 'multiformats/bases/base58'
@@ -22,6 +24,7 @@ import {
 import { createMailSlurpInbox, createNewClient, setupNewClient } from './helpers/up-client.js'
 import { randomFile } from './helpers/random.js'
 import { getMetrics, getSpaceMetrics } from './helpers/metrics.js'
+// import { createNode } from './helpers/helia.js'
 
 test.before(t => {
   t.context = {
@@ -219,6 +222,19 @@ test('w3infra store/upload integration flow', async t => {
 
   // Verify hoverboard can resolved uploaded root via Bitswap
   // TODO: FIX ME
+  // const helia = await createNode()
+  // const heliaFs = unixfs(helia)
+  // const hoverboardMultiaddr = multiaddr('/dns4/elastic.dag.house/tcp/443/wss/p2p/QmQzqxhK82kAmKvARFZSkUVS6fo9sySaiogAnx5EnZ6ZmC')
+  // // const hoverboardMultiaddr = multiaddr('/dns4/elastic-staging.dag.house/tcp/443/wss/p2p/Qmc5vg9zuLYvDR1wtYHCaxjBHenfCNautRwCjG3n5v5fbs')
+  // console.log(`Dialing ${hoverboardMultiaddr}`)
+  // await helia.libp2p.dial(hoverboardMultiaddr)
+
+  // console.log(`Fetching ${fileLink}`)
+  // // @ts-expect-error link different from CID
+  // const rootStat = await heliaFs.stat(Link.parse('bafybeidwmcbcznlzd3xtygsc3tgxtvkklv2ycssavk43xbh5wb4iyv4prq'))
+  // t.truthy(rootStat)
+  // // TODO: check
+  // t.is(rootStat.type, 'directory')
 
   // Remove file from space
   const removeResult = await client.capability.upload.remove(fileLink)
