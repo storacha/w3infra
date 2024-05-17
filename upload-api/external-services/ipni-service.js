@@ -39,11 +39,11 @@ export const useIPNIService = (blockAdvertPublisher, blockIndexStore, blobsStora
     const items = []
     /** @type {BlocksCarsPositionRecord[]} */
     const records = []
-    for (const shard of index.shards.values()) {
-      for (const [digest, range] of shard.entries()) {
+    for (const [shard, slices] of index.shards.entries()) {
+      for (const [digest, range] of slices.entries()) {
         items.push(digest)
 
-        const createUrlRes = await blobsStorage.createDownloadUrl(digest.bytes)
+        const createUrlRes = await blobsStorage.createDownloadUrl(shard.bytes)
         if (!createUrlRes.ok) return createUrlRes
 
         const location = new URL(createUrlRes.ok)
