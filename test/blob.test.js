@@ -8,9 +8,10 @@ import { equals } from 'multiformats/bytes'
 import { code as RAW_CODE } from 'multiformats/codecs/raw'
 import { HeadObjectCommand } from '@aws-sdk/client-s3'
 import { Assert } from '@web3-storage/content-claims/capability'
-import { ShardingStream, UnixFS } from '@web3-storage/upload-client'
-import { useReceiptsStorage } from '../upload-api/stores/receipts.js'
+import { ShardingStream, UnixFS, Upload, Index } from '@web3-storage/upload-client'
 import { codec as carCodec } from '@ucanto/transport/car'
+import { ShardedDAGIndex } from '@web3-storage/blob-index'
+import { useReceiptsStorage } from '../upload-api/stores/receipts.js'
 
 import { METRICS_NAMES, SPACE_METRICS_NAMES } from '../upload-api/constants.js'
 
@@ -70,6 +71,8 @@ test('blob integration flow with receipts validation', async t => {
   const shards = []
   /** @type {Uint8Array[]} */
   const shardBytes = []
+  /** @type {Array<Map<import('@web3-storage/upload-client/types').SliceDigest, import('@web3-storage/upload-client/types').Position>>} */
+  const shardIndexes = []
   /** @type {import('@web3-storage/upload-client/types').AnyLink | undefined} */
   let root
 
@@ -103,6 +106,10 @@ test('blob integration flow with receipts validation', async t => {
           root = root || meta.roots[0]
           shards.push(meta.cid)
           shardBytes.push(meta.bytes)
+
+          // add the CAR shard itself to the slices
+          meta.slices.set(meta.cid.multihash, [0, meta.size])
+          shardIndexes.push(meta.slices)
         },
       })
     )
@@ -113,7 +120,25 @@ test('blob integration flow with receipts validation', async t => {
 
   console.log('root', root)
 
-  // TODO: add upload + index to have reads available
+  // Add the index with `index/add`
+  const index = ShardedDAGIndex.create(root)
+  for (const [i, shard] of shards.entries()) {
+    const slices = shardIndexes[i]
+    index.shards.set(shard.multihash, slices)
+  }
+  const indexBytes = await index.archive()
+  /* c8 ignore next 3 */
+  if (!indexBytes.ok) {
+    throw new Error('failed to archive DAG index', { cause: indexBytes.error })
+  }
+  // Store the index in the space
+  const resIndex = await Blob.add(serviceProps.conf, indexBytes.ok, { connection: serviceProps.connection })
+  const indexLink = Link.create(carCodec.code, resIndex.multihash)
+
+  // Register the index with the service
+  await Index.add(serviceProps.conf, indexLink, { connection: serviceProps.connection })
+  // Register an upload with the service
+  await Upload.add(serviceProps.conf, root, shards, { connection: serviceProps.connection })
 
   // Get bucket clients
   const s3Client = getAwsBucketClient()
@@ -140,6 +165,17 @@ test('blob integration flow with receipts validation', async t => {
   } catch (cause) {
     t.is(cause?.$metadata?.httpStatusCode, 404)
   }
+
+  // Check index exists
+  const encodedIndexMultihash = base58btc.encode(resIndex.multihash.bytes)
+  const r2IndexRequest = await r2Client.send(
+    new HeadObjectCommand({
+      // Env var
+      Bucket: 'carpark-staging-0',
+      Key: `${encodedIndexMultihash}/${encodedIndexMultihash}.blob`,
+    })
+  )
+  t.is(r2IndexRequest.$metadata.httpStatusCode, 200)
 
   // Check receipts were written
   const receiptsStorage = useReceiptsStorage(s3Client, `task-store-${stage}-0`, `invocation-store-${stage}-0`, `workflow-store-${stage}-0`)
