@@ -70,6 +70,7 @@ test('store protocol integration flow', async t => {
   const s3Client = getAwsBucketClient()
   const r2Client = getCloudflareBucketClient()
 
+  console.log('Creating new File')
   const file = await randomFile(100)
 
   // Encode file as Unixfs and perform store/add
@@ -109,8 +110,9 @@ test('store protocol integration flow', async t => {
   // Invoke upload/add
   await Upload.add(serviceProps.conf, root, shards, { connection: serviceProps.connection })
 
-  console.log('root', root)
+  console.log('Uploaded new file', root.toString())
   // Check carpark
+  console.log('Checking CAR stored in write target:', shards[0].toString())
   const carparkRequest = await s3Client.send(
     new HeadObjectCommand({
       Bucket: (getCarparkBucketInfo()).Bucket,
@@ -168,6 +170,7 @@ test('store protocol integration flow', async t => {
   })
 
   // Replicator
+  console.log('Checking replicator')
   // Check carpark
   await pWaitFor(async () => {
     let carpark
@@ -203,6 +206,7 @@ test('store protocol integration flow', async t => {
   })
 
   // Verify w3link can resolve uploaded file
+  console.log('Checking w3link can fetch root', root.toString())
   const w3linkResponse = await fetch(
     `https://${root}.ipfs-staging.w3s.link`,
     {
@@ -212,13 +216,17 @@ test('store protocol integration flow', async t => {
   t.is(w3linkResponse.status, 200)
 
   // Read from Roundabout returns 200
+  console.log('Checking Roundabout can fetch CAR:', shards[0].toString())
   const roundaboutResponse = await fetch(
     `${t.context.roundaboutEndpoint}/${shards[0].toString()}`
   )
   t.is(roundaboutResponse.status, 200)
 
+  // TODO: Check bitswap
+  // There is a big delay here as indexing happens in back-end, so not done for now
+
   // Check metrics were updated
-  console.log('check metrics match work done')
+  console.log('Checking metrics match work done')
   if (beforeStoreAddSizeTotal && spaceBeforeStoreAddSizeMetrics) {
     await pWaitFor(async () => {
       const afterOperationMetrics = await getMetrics(t)

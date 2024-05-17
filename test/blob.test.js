@@ -1,6 +1,8 @@
 import { testBlob as test } from './helpers/context.js'
 
 import pWaitFor from 'p-wait-for'
+import { unixfs } from '@helia/unixfs'
+import { multiaddr } from '@multiformats/multiaddr'
 import * as BlobCapabilities from '@web3-storage/capabilities/blob'
 import { base58btc } from 'multiformats/bases/base58'
 import * as Link from 'multiformats/link'
@@ -28,6 +30,7 @@ import {
 import { randomFile } from './helpers/random.js'
 import { createMailSlurpInbox, setupNewClient, getServiceProps } from './helpers/up-client.js'
 import { getMetrics, getSpaceMetrics } from './helpers/metrics.js'
+import { createNode } from './helpers/helia.js'
 
 test.before(t => {
   t.context = {
@@ -76,6 +79,7 @@ test('blob integration flow with receipts validation', async t => {
   const beforeBlobAddSizeTotal = beforeOperationMetrics.find(row => row.name === METRICS_NAMES.BLOB_ADD_SIZE_TOTAL)
 
   // Prepare data
+  console.log('Creating new File')
   const file = await randomFile(100)
   
   // Encode file as Unixfs and perform store/add
@@ -151,12 +155,16 @@ test('blob integration flow with receipts validation', async t => {
   // Register an upload with the service
   await Upload.add(serviceProps.conf, root, shards, { connection: serviceProps.connection })
 
+  console.log('Uploaded new file', root.toString())
+  console.log('Uploaded new Index', indexLink.toString())
+
   // Get bucket clients
   const s3Client = getAwsBucketClient()
   const r2Client = getCloudflareBucketClient()
 
   // Check blob exists in R2, but not S3
   const encodedMultihash = base58btc.encode(multihash.bytes)
+  console.log('Checking blob stored in write target:', encodedMultihash)
   const r2Request = await r2Client.send(
     new HeadObjectCommand({
       // Env var
@@ -179,6 +187,7 @@ test('blob integration flow with receipts validation', async t => {
 
   // Check index exists in R2
   const encodedIndexMultihash = base58btc.encode(resIndex.multihash.bytes)
+  console.log('Checking index stored in write target:', encodedIndexMultihash)
   const r2IndexRequest = await r2Client.send(
     new HeadObjectCommand({
       // Env var
@@ -208,6 +217,7 @@ test('blob integration flow with receipts validation', async t => {
 
   // Read from Roundabout and check bytes can be read by raw CID
   const rawCid = Link.create(RAW_CODE, multihash)
+  console.log('Checking Roundabout can fetch raw content:', rawCid.toString())
   const roundaboutResponse = await fetch(
     `${t.context.roundaboutEndpoint}/${rawCid.toString()}`
   )
@@ -217,7 +227,7 @@ test('blob integration flow with receipts validation', async t => {
   t.truthy(equals(shardBytes[0], fetchedBytes))
 
   // Verify w3link can resolve uploaded file via HTTP
-  console.log('Uploaded file link', root)
+  console.log('Checking w3link can fetch root', root.toString())
   const w3linkResponse = await fetch(
     `https://${root}.ipfs-staging.w3s.link`,
     {
@@ -227,12 +237,20 @@ test('blob integration flow with receipts validation', async t => {
   t.is(w3linkResponse.status, 200)
 
   // Verify hoverboard can resolved uploaded root via Bitswap
+  console.log('Checking Hoverboard can fetch root', root.toString())
+  const helia = await createNode()
+  const heliaFs = unixfs(helia)
+  const hoverboardMultiaddr = multiaddr('/dns4/elastic-staging.dag.house/tcp/443/wss/p2p/Qmc5vg9zuLYvDR1wtYHCaxjBHenfCNautRwCjG3n5v5fbs')
+  console.log(`Dialing ${hoverboardMultiaddr}`)
+  await helia.libp2p.dial(hoverboardMultiaddr)
 
-  // Should find our deployed hoverboard URL https://github.com/web3-storage/hoverboard
-  // use https://github.com/ipfs/helia to connect to hoverboard peer and read som bytes
+  // @ts-expect-error link different from CID
+  const rootStat = await heliaFs.stat(root)
+  t.truthy(rootStat)
+  t.is(rootStat.type, 'raw')
 
   // Validate metrics
-  console.log('check metrics match work done')
+  console.log('Checking metrics match work done')
   // Check metrics were updated
   if (beforeBlobAddSizeTotal && spaceBeforeBlobAddSizeMetrics) {
     await pWaitFor(async () => {

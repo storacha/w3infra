@@ -1,8 +1,8 @@
 import { fetch } from '@web-std/fetch'
 import git from 'git-rev-sync'
 import pWaitFor from 'p-wait-for'
-// import { unixfs } from '@helia/unixfs'
-// import { multiaddr } from '@multiformats/multiaddr'
+import { unixfs } from '@helia/unixfs'
+import { multiaddr } from '@multiformats/multiaddr'
 import * as Link from 'multiformats/link'
 import { code as RAW_CODE } from 'multiformats/codecs/raw'
 import { base58btc } from 'multiformats/bases/base58'
@@ -24,7 +24,7 @@ import {
 import { createMailSlurpInbox, createNewClient, setupNewClient } from './helpers/up-client.js'
 import { randomFile } from './helpers/random.js'
 import { getMetrics, getSpaceMetrics } from './helpers/metrics.js'
-// import { createNode } from './helpers/helia.js'
+import { createNode } from './helpers/helia.js'
 
 test.before(t => {
   t.context = {
@@ -143,7 +143,7 @@ test('w3infra store/upload integration flow', async t => {
   const account = client.accounts()[DidMailto.fromEmail(inbox.email)]
 
   // it should be possible to create more than one space
-  const space = await client.createSpace("2nd space")
+  const space = await client.createSpace('2nd space')
   await account.provision(space.did())
   await space.save()
 
@@ -160,6 +160,7 @@ test('w3infra store/upload integration flow', async t => {
 
   const r2Client = getCloudflareBucketClient()
 
+  console.log('Creating new File')
   const file = await randomFile(100)
   const shards = []
 
@@ -167,15 +168,16 @@ test('w3infra store/upload integration flow', async t => {
   const fileLink = await client.uploadFile(file, {
     onShardStored: (meta) => {
       shards.push(meta.cid)
-      console.log('shard file written', meta.cid)
+      console.log('Shard file written', meta.cid)
     }
   })
   t.truthy(fileLink)
   t.is(shards.length, 1)
+  console.log('Uploaded new file', fileLink)
 
   // Check carpark
   const encodedMultihash = base58btc.encode(shards[0].multihash.bytes)
-  console.log('encoded b58btc multihash blob stored:', encodedMultihash)
+  console.log('Checking blob stored in write target:', encodedMultihash)
   const carparkRequest = await r2Client.send(
     new HeadObjectCommand({
       Bucket: 'carpark-staging-0',
@@ -204,13 +206,14 @@ test('w3infra store/upload integration flow', async t => {
 
   // Read from Roundabout returns 200
   const rawCid = Link.create(RAW_CODE, shards[0].multihash)
+  console.log('Checking Roundabout can fetch raw content:', rawCid.toString())
   const roundaboutResponse = await fetch(
     `${t.context.roundaboutEndpoint}/${rawCid.toString()}`
   )
   t.is(roundaboutResponse.status, 200)
 
   // Verify w3link can resolve uploaded file via HTTP
-  console.log('Uploaded file link', fileLink.toString())
+  console.log('Checking w3link can fetch root', fileLink.toString())
   const w3linkResponse = await fetch(
     `https://${fileLink}.ipfs-staging.w3s.link`,
     {
@@ -220,27 +223,25 @@ test('w3infra store/upload integration flow', async t => {
   t.is(w3linkResponse.status, 200)
 
   // Verify hoverboard can resolved uploaded root via Bitswap
-  // TODO: FIX ME
-  // const helia = await createNode()
-  // const heliaFs = unixfs(helia)
-  // const hoverboardMultiaddr = multiaddr('/dns4/elastic.dag.house/tcp/443/wss/p2p/QmQzqxhK82kAmKvARFZSkUVS6fo9sySaiogAnx5EnZ6ZmC')
-  // // const hoverboardMultiaddr = multiaddr('/dns4/elastic-staging.dag.house/tcp/443/wss/p2p/Qmc5vg9zuLYvDR1wtYHCaxjBHenfCNautRwCjG3n5v5fbs')
-  // console.log(`Dialing ${hoverboardMultiaddr}`)
-  // await helia.libp2p.dial(hoverboardMultiaddr)
+  console.log('Checking Hoverboard can fetch root', fileLink.toString())
+  const helia = await createNode()
+  const heliaFs = unixfs(helia)
+  const hoverboardMultiaddr = multiaddr('/dns4/elastic-staging.dag.house/tcp/443/wss/p2p/Qmc5vg9zuLYvDR1wtYHCaxjBHenfCNautRwCjG3n5v5fbs')
+  console.log(`Dialing ${hoverboardMultiaddr}`)
+  await helia.libp2p.dial(hoverboardMultiaddr)
 
-  // console.log(`Fetching ${fileLink}`)
-  // // @ts-expect-error link different from CID
-  // const rootStat = await heliaFs.stat(Link.parse('bafybeidwmcbcznlzd3xtygsc3tgxtvkklv2ycssavk43xbh5wb4iyv4prq'))
-  // t.truthy(rootStat)
-  // // TODO: check
-  // t.is(rootStat.type, 'directory')
+  // @ts-expect-error link different from CID
+  const rootStat = await heliaFs.stat(fileLink)
+  t.truthy(rootStat)
+  t.is(rootStat.type, 'raw')
 
   // Remove file from space
+  console.log(`Removing ${fileLink}`)
   const removeResult = await client.capability.upload.remove(fileLink)
   // @ts-expect-error error not typed
   t.falsy(removeResult?.error)
 
-  console.log('check metrics match work done')
+  console.log('Checking metrics match work done')
   // Check metrics were updated
   if (beforeBlobAddSizeTotal && spaceBeforeUploadAddMetrics && spaceBeforeBlobAddSizeMetrics && beforeUploadAddTotal) {
     await pWaitFor(async () => {
