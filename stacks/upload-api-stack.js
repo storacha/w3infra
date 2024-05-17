@@ -61,6 +61,8 @@ export function UploadApiStack({ stack, app }) {
   const pkg = getApiPackageJson()
   const git = getGitInfo()
   const ucanInvocationPostbasicAuth = new Config.Secret(stack, 'UCAN_INVOCATION_POST_BASIC_AUTH')
+  // https://docs.aws.amazon.com/IAM/latest/UserGuide/reference-arns.html#arns-syntax
+  const indexerRegion = EIPFS_MULTIHASHES_SQS_ARN.split(':')[3]
 
   const api = new Api(stack, 'http-gateway', {
     customDomain,
@@ -141,7 +143,7 @@ export function UploadApiStack({ stack, app }) {
           STRIPE_PUBLISHABLE_KEY: process.env.STRIPE_PUBLISHABLE_KEY ?? '',
           DEAL_TRACKER_DID: process.env.DEAL_TRACKER_DID ?? '',
           DEAL_TRACKER_URL: process.env.DEAL_TRACKER_URL ?? '',
-          INDEXER_REGION: EIPFS_MULTIHASHES_SQS_ARN.includes('us-west-2') ? 'us-west-2' : 'us-east-2'
+          INDEXER_REGION: indexerRegion
         },
         bind: [
           privateKey,
