@@ -287,7 +287,7 @@ export async function executionContextToUcantoTestServerContext(t) {
   const billingProvider = createTestBillingProvider()
   const plansStorage = usePlansStore(customersStore, billingProvider)
   const email = new DebugEmail();
-  const ipniService = await createTestIPNIService({ sqs, dynamo })
+  const ipniService = await createTestIPNIService({ sqs, dynamo }, blobsStorage)
 
   /** @type {import('@web3-storage/upload-api').UcantoServerContext} */
   const serviceContext = {
