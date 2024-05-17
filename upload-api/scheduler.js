@@ -35,7 +35,6 @@ export class TasksScheduler {
     // upload-api service URL stores received invocations and produced
     // receipts on the server.
     const [res] = await connection.execute(invocation)
-
     if (res.out.error) {
       return res.out
     }
