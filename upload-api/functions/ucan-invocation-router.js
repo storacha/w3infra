@@ -391,11 +391,11 @@ function getLambdaEnv () {
     // IPNI service
     multihashesQueueConfig: {
       url: new URL(mustGetEnv('MULTIHASHES_QUEUE_URL')),
-      region: mustGetEnv('AWS_REGION')
+      region: mustGetEnv('INDEXER_REGION')
     },
     blocksCarsPositionTableConfig: {
       name: mustGetEnv('BLOCKS_CAR_POSITION_TABLE_NAME'),
-      region: mustGetEnv('AWS_REGION')
+      region: mustGetEnv('INDEXER_REGION')
     },
     // set for testing
     dbEndpoint: process.env.DYNAMO_DB_ENDPOINT,

@@ -141,6 +141,7 @@ export function UploadApiStack({ stack, app }) {
           STRIPE_PUBLISHABLE_KEY: process.env.STRIPE_PUBLISHABLE_KEY ?? '',
           DEAL_TRACKER_DID: process.env.DEAL_TRACKER_DID ?? '',
           DEAL_TRACKER_URL: process.env.DEAL_TRACKER_URL ?? '',
+          INDEXER_REGION: EIPFS_MULTIHASHES_SQS_ARN.includes('us-west-2') ? 'us-west-2' : 'us-east-2'
         },
         bind: [
           privateKey,
