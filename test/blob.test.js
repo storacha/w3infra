@@ -132,8 +132,6 @@ test('blob integration flow with receipts validation', async t => {
   if (multihash === undefined) throw new Error('missing multihash')
   t.is(shards.length, 1)
 
-  console.log('root', root)
-
   // Add the index with `index/add`
   const index = ShardedDAGIndex.create(root)
   for (const [i, shard] of shards.entries()) {
@@ -218,16 +216,15 @@ test('blob integration flow with receipts validation', async t => {
   const fetchedBytes =  new Uint8Array(await roundaboutResponse.arrayBuffer())
   t.truthy(equals(shardBytes[0], fetchedBytes))
 
-  console.log('file link', root)
   // Verify w3link can resolve uploaded file via HTTP
-  // TODO: FIX ME
-  // const w3linkResponse = await fetch(
-  //   `https://${root}.ipfs-staging.w3s.link`,
-  //   {
-  //     method: 'HEAD'
-  //   }
-  // )
-  // t.is(w3linkResponse.status, 200)
+  console.log('Uploaded file link', root)
+  const w3linkResponse = await fetch(
+    `https://${root}.ipfs-staging.w3s.link`,
+    {
+      method: 'HEAD'
+    }
+  )
+  t.is(w3linkResponse.status, 200)
 
   // Verify hoverboard can resolved uploaded root via Bitswap
 
@@ -235,6 +232,7 @@ test('blob integration flow with receipts validation', async t => {
   // use https://github.com/ipfs/helia to connect to hoverboard peer and read som bytes
 
   // Validate metrics
+  console.log('check metrics match work done')
   // Check metrics were updated
   if (beforeBlobAddSizeTotal && spaceBeforeBlobAddSizeMetrics) {
     await pWaitFor(async () => {

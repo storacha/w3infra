@@ -218,6 +218,7 @@ test('store protocol integration flow', async t => {
   t.is(roundaboutResponse.status, 200)
 
   // Check metrics were updated
+  console.log('check metrics match work done')
   if (beforeStoreAddSizeTotal && spaceBeforeStoreAddSizeMetrics) {
     await pWaitFor(async () => {
       const afterOperationMetrics = await getMetrics(t)

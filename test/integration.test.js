@@ -175,7 +175,7 @@ test('w3infra store/upload integration flow', async t => {
 
   // Check carpark
   const encodedMultihash = base58btc.encode(shards[0].multihash.bytes)
-  console.log('encoded b58btc multihash', encodedMultihash)
+  console.log('encoded b58btc multihash blob stored:', encodedMultihash)
   const carparkRequest = await r2Client.send(
     new HeadObjectCommand({
       Bucket: 'carpark-staging-0',
@@ -210,15 +210,14 @@ test('w3infra store/upload integration flow', async t => {
   t.is(roundaboutResponse.status, 200)
 
   // Verify w3link can resolve uploaded file via HTTP
-  // TODO: FIX ME
-  console.log('file link', fileLink.toString())
-  // const w3linkResponse = await fetch(
-  //   `https://${fileLink}.ipfs-staging.w3s.link`,
-  //   {
-  //     method: 'HEAD'
-  //   }
-  // )
-  // t.is(w3linkResponse.status, 200)
+  console.log('Uploaded file link', fileLink.toString())
+  const w3linkResponse = await fetch(
+    `https://${fileLink}.ipfs-staging.w3s.link`,
+    {
+      method: 'HEAD'
+    }
+  )
+  t.is(w3linkResponse.status, 200)
 
   // Verify hoverboard can resolved uploaded root via Bitswap
   // TODO: FIX ME
@@ -241,7 +240,7 @@ test('w3infra store/upload integration flow', async t => {
   // @ts-expect-error error not typed
   t.falsy(removeResult?.error)
 
-  console.log('check metrics')
+  console.log('check metrics match work done')
   // Check metrics were updated
   if (beforeBlobAddSizeTotal && spaceBeforeUploadAddMetrics && spaceBeforeBlobAddSizeMetrics && beforeUploadAddTotal) {
     await pWaitFor(async () => {
