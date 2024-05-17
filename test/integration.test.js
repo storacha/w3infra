@@ -234,6 +234,7 @@ test('w3infra store/upload integration flow', async t => {
   const rootStat = await heliaFs.stat(fileLink)
   t.truthy(rootStat)
   t.is(rootStat.type, 'raw')
+  await helia.stop()
 
   // Remove file from space
   console.log(`Removing ${fileLink}`)
