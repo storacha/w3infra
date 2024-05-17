@@ -35,6 +35,78 @@ export const createAgentStore = (settings) => {
 }
 
 /**
+ * Gets a invocation corresponding to the given task.
+ *
+ * @param {Connection} connection
+ * @param {API.UnknownLink} task
+ */
+export const getInvocation = async (connection, task) => {
+  const invocation = /** @type {API.UCANLink<[API.Capability]>} */ (task)
+  const { ok: archive, error } = await getMessageArchive(
+    { invocation },
+    connection
+  )
+
+  if (error) {
+    return { error }
+  }
+
+  const view = Invocation.view(
+    {
+      root: invocation,
+      blocks: archive.blocks,
+    },
+    null
+  )
+
+  return view ? { ok: view } : { error: new RecordNotFound() }
+}
+
+/**
+ * Gets a receipt corresponding to the given task.
+ *
+ * @param {Connection} connection
+ * @param {API.UnknownLink} task
+ */
+export const getReceipt = async (connection, task) {
+  const invocation = /** @type {API.UCANLink<[API.Capability]>} */ (task)
+    const { ok: path, error } = await resolveMessage(
+      { receipt: invocation },
+      connection
+    )
+    if (error) {
+      return { error }
+    }
+
+    const { ok: body, error: readError } = await readMessageArchive(
+      path,
+      connection
+    )
+    if (readError) {
+      return { error: readError }
+    }
+
+    const message = await CAR.request.decode({
+      body,
+      headers: {},
+    })
+
+    // Attempt to find a receipt corresponding to this task
+    const id = invocation.toString()
+    for (const { receipt } of AgentMessage.iterate(message)) {
+      if (receipt && receipt.ran.link().toString() === id) {
+        return { ok: receipt }
+      }
+    }
+
+    return {
+      error: new RecordNotFound(
+        `agent message ${path} does not contain receipt for ${id} task`
+      ),
+    }
+}
+
+/**
  * @typedef {object} Connection
  * @property {S3Client} s3
  * @property {AgentStoreSettings} settings
@@ -77,6 +149,9 @@ class AgentMessageStore {
   }
 
   /**
+   * Iterates over all invocations and receipts and yields corresponding S3 Put
+   * commands.
+   *
    * @param {API.AgentMessage} message
    */
   *assert(message) {
@@ -85,6 +160,7 @@ class AgentMessageStore {
     const { body } = CAR.request.encode(message)
     const id = message.root.cid
 
+    // We need to store the massage itself.
     yield new PutObjectCommand({
       Bucket: workflowBucketName,
       Key: `${id}/${id}`,
@@ -93,10 +169,11 @@ class AgentMessageStore {
 
     for (const { invocation, receipt } of AgentMessage.iterate(message)) {
       if (invocation) {
-        // Store mapping for where each receipt lives in agent message file.
-        // A pseudo symlink to `/${agentMessageArchive.cid}/${agentMessageArchive.cid}` via key
-        // `${invocation.cid}/${agentMessageArchive.cid}`.in to track where each invocation lives
-        // in a agent message file. As a pseudo symlink, it is an empty object.
+        // Store mapping for each invocation contained by this agent message.
+        // A pseudo symlink to `/${message.cid}/${message.cid}` via key
+        // `${invocation.cid}/${message.cid}`.in to track where each
+        // invocation lives in a agent message file. As a pseudo symlink, it is
+        // an empty object.
         yield new PutObjectCommand({
           Bucket: invocationBucketName,
           Key: `${invocation.link()}/${id}.in`,
@@ -106,9 +183,10 @@ class AgentMessageStore {
       if (receipt) {
         const invocationID = receipt.ran.link()
         // Store mapping for where each receipt lives in agent message file.
-        // a pseudo symlink to `/${agentMessageArchive.cid}/${agentMessageArchive.cid}` via key
-        // `${invocation.cid}/${agentMessageArchive.cid}.out` to track where each receipt lives
-        // in a agent message file. As a pseudo symlink, it is an empty object.
+        // a pseudo symlink to `/${message.cid}/${message.cid}` via key
+        // `${invocation.cid}/${message.cid}.out` to track where each receipt
+        // lives in a agent message file. As a pseudo symlink, it is an empty
+        // object.
         yield new PutObjectCommand({
           Bucket: invocationBucketName,
           Key: `${invocationID}/${id}.out`,
@@ -117,15 +195,17 @@ class AgentMessageStore {
         const taskID = receipt.ran.link()
         // Store mapping task to invocation
         // a pseudo symlink to `/${invocation.cid}/${invocation.cid}` via
-        // `${task.cid}/${invocation.cid}.invocation` to enable looking up invocations and
-        // receipts by a task. As a pseudo symlink, it is an empty object.
+        // `${task.cid}/${invocation.cid}.invocation` to enable looking up
+        // invocations and receipts by a task. As a pseudo symlink, it is an
+        // empty object.
         yield new PutObjectCommand({
           Bucket: taskBucketName,
           Key: `${taskID}/${invocationID}.invocation`,
         })
 
-        // Store receipt output
-        // A block containing the out field of the receipt.
+        // Store receipt output as a CBOR block containing the out field of the
+        // receipt.
+        // TODO: Figure out what is this used for.
         const bytes = CBOR.encode({
           out: receipt.out,
         })
@@ -296,25 +376,7 @@ class InvocationsIndex {
    * @param {API.UnknownLink} task
    */
   async get(task) {
-    const invocation = /** @type {API.UCANLink<[API.Capability]>} */ (task)
-    const { ok: archive, error } = await getMessageArchive(
-      { invocation },
-      this.connection
-    )
-
-    if (error) {
-      return { error }
-    }
-
-    const view = Invocation.view(
-      {
-        root: invocation,
-        blocks: archive.blocks,
-      },
-      null
-    )
-
-    return view ? { ok: view } : { error: new RecordNotFound() }
+    return getInvocation(this.connection, task)
   }
 }
 
@@ -333,40 +395,6 @@ class ReceiptsIndex {
    * @returns
    */
   async get(task) {
-    const invocation = /** @type {API.UCANLink<[API.Capability]>} */ (task)
-    const { ok: path, error } = await resolveMessage(
-      { receipt: invocation },
-      this.connection
-    )
-    if (error) {
-      return { error }
-    }
-
-    const { ok: body, error: readError } = await readMessageArchive(
-      path,
-      this.connection
-    )
-    if (readError) {
-      return { error: readError }
-    }
-
-    const message = await CAR.request.decode({
-      body,
-      headers: {},
-    })
-
-    // Attempt to find a receipt corresponding to this task
-    const id = invocation.toString()
-    for (const { receipt } of AgentMessage.iterate(message)) {
-      if (receipt && receipt.ran.link().toString() === id) {
-        return { ok: receipt }
-      }
-    }
-
-    return {
-      error: new RecordNotFound(
-        `agent message ${path} does not contain receipt for ${id} task`
-      ),
-    }
+    return getReceipt(this.connection, task)
   }
 }
