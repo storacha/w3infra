@@ -8,8 +8,9 @@ import { RecordNotFound } from '@web3-storage/upload-api/errors'
 
 /**
  * @param {{ sqs: import('@aws-sdk/client-sqs').SQSClient, dynamo: import('@aws-sdk/client-dynamodb').DynamoDBClient }} config
+ * @param {import('@web3-storage/upload-api').BlobsStorage} blobsStorage
  */
-export const createTestIPNIService = async ({ sqs, dynamo }) => {
+export const createTestIPNIService = async ({ sqs, dynamo }, blobsStorage) => {
   const queueURL = await createQueue(sqs, 'multihashes')
   const blockAdvertPublisher = new BlockAdvertisementPublisher({
     client: sqs,
@@ -24,7 +25,7 @@ export const createTestIPNIService = async ({ sqs, dynamo }) => {
 
   const messages = new Set()
   return Object.assign(
-    useIPNIService(blockAdvertPublisher, blockIndexStore),
+    useIPNIService(blockAdvertPublisher, blockIndexStore, blobsStorage),
     {
       /** @param {import('multiformats').MultihashDigest} digest */
       async query (digest) {
