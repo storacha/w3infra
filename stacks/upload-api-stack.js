@@ -93,7 +93,7 @@ export function UploadApiStack({ stack, app }) {
           pieceOfferQueue,
           filecoinSubmitQueue,
           multihashesQueue,
-          blocksCarPositionTable
+          blocksCarPositionTable,
         ],
         environment: {
           DID: process.env.UPLOAD_API_DID ?? '',
