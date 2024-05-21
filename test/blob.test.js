@@ -61,6 +61,11 @@ test.before(t => {
  */
 test('blob integration flow with receipts validation', async t => {
   const stage = getStage()
+  const writeTargetBucketName = process.env.R2_CARPARK_BUCKET_NAME
+  if (!writeTargetBucketName) {
+    throw new Error('no write target bucket name configure using ENV VAR `R2_CARPARK_BUCKET_NAME`')
+  }
+
   const inbox = await createMailSlurpInbox()
   const client = await setupNewClient(t.context.apiEndpoint, { inbox })
   const serviceProps = getServiceProps(client, t.context.apiEndpoint, BlobCapabilities.add.can)
@@ -168,7 +173,7 @@ test('blob integration flow with receipts validation', async t => {
   const r2Request = await r2Client.send(
     new HeadObjectCommand({
       // Env var
-      Bucket: 'carpark-staging-0',
+      Bucket: writeTargetBucketName,
       Key: `${encodedMultihash}/${encodedMultihash}.blob`,
     })
   )
@@ -191,7 +196,7 @@ test('blob integration flow with receipts validation', async t => {
   const r2IndexRequest = await r2Client.send(
     new HeadObjectCommand({
       // Env var
-      Bucket: 'carpark-staging-0',
+      Bucket: writeTargetBucketName,
       Key: `${encodedIndexMultihash}/${encodedIndexMultihash}.blob`,
     })
   )
