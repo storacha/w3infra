@@ -198,7 +198,7 @@ export function UcanFirehoseStack ({ stack, app }) {
         "projection.day.interval": "1",
         "projection.day.interval.unit": "DAYS",
         "projection.op.type": "enum",
-        "projection.op.values": 'access_authorize,access_claim,access_delegate,access_session,admin_store_inspect,admin_upload_inspect,aggregate_accept,aggregate_offer,deal_info,consumer_get,consumer_has,customer_get,filecoin_accept,filecoin_info,filecoin_offer,filecoin_submit,piece_accept,piece_offer,provider_add,rate-limit_add,rate-limit_list,rate-limit_remove,space_info,store_add,store_remove,subscription_get,ucan_revoke,upload_add,upload_list,upload_remove',
+        "projection.op.values": 'access_authorize,access_claim,access_delegate,access_session,admin_store_inspect,admin_upload_inspect,aggregate_accept,aggregate_offer,deal_info,consumer_get,consumer_has,customer_get,filecoin_accept,filecoin_info,filecoin_offer,filecoin_submit,piece_accept,piece_offer,provider_add,rate-limit_add,rate-limit_list,rate-limit_remove,space_info,store_add,store_remove,subscription_get,ucan_revoke,upload_add,upload_list,upload_remove,blob_add,web3.storage_blob_allocate,web3.storage_blob_accept,',
         "storage.location.template": `s3://${streamLogBucket.bucketName}/logs/receipt/\${op}/\${day}/`
       },
       storageDescriptor: {
@@ -257,7 +257,7 @@ export function UcanFirehoseStack ({ stack, app }) {
           // STRUCT here refers to the Apache Hive STRUCT datatype - see https://aws.amazon.com/blogs/big-data/create-tables-in-amazon-athena-from-nested-json-and-mappings-using-jsonserde/
           { name: 'value', type: 'STRUCT<att:ARRAY<struct<can:STRING,with:STRING,nb:STRUCT<size:BIGINT,link:STRUCT<_cid_slash:STRING>>>>,iss:STRING,aud:STRING>' },
           { name: "out", type: "STRUCT<error:STRUCT<name:STRING>,ok:STRUCT<status:STRING,link:STRUCT<_cid_slash:STRING>>>" },
-          { name: "ts", type: "timestamp" }
+          { name: "ts", type: 'timestamp' }
         ],
         inputFormat: 'org.apache.hadoop.mapred.TextInputFormat',
         outputFormat: 'org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat',
@@ -272,6 +272,155 @@ export function UcanFirehoseStack ({ stack, app }) {
     }
   })
   storeAddTable.addDependsOn(glueDatabase)
+
+  // creates a table that can be seen in the AWS Glue table browser at 
+  // https://console.aws.amazon.com/glue/home#/v2/data-catalog/tables
+  // and in the data browser in the Athena Query editor at
+  // https://console.aws.amazon.com/athena/home#/query-editor
+  const blobAddTableName = getCdkNames('blob-add-table', app.stage)
+  const blobAddTable = new glue.CfnTable(stack, blobAddTableName, {
+    catalogId: Aws.ACCOUNT_ID,
+    databaseName,
+    tableInput: {
+      name: blobAddTableName,
+      partitionKeys: [
+        { name: 'day', type: 'date' }
+      ],
+      parameters: {
+        classification: "json",
+        typeOfData: "file",
+        // @see https://docs.aws.amazon.com/athena/latest/ug/partition-projection-kinesis-firehose-example.html for more information on projection
+        // configuration - this should match the "day" parameter and S3 prefix configured in the delivery stream
+        "projection.enabled": "true",
+        "projection.day.type": "date",
+        "projection.day.format": "yyyy-MM-dd",
+        "projection.day.range": "2023-01-01,NOW",
+        "projection.day.interval": "1",
+        "projection.day.interval.unit": "DAYS",
+        "storage.location.template": `s3://${streamLogBucket.bucketName}/logs/receipt/blob_add/\${day}/`
+      },
+      storageDescriptor: {
+        location: `s3://${streamLogBucket.bucketName}/logs/receipt/blob_add/`,
+        columns: [
+          { name: 'carcid', type: 'string' },
+          // STRUCT here refers to the Apache Hive STRUCT datatype - see https://aws.amazon.com/blogs/big-data/create-tables-in-amazon-athena-from-nested-json-and-mappings-using-jsonserde/
+          { name: 'value', type: 'STRUCT<att:ARRAY<struct<can:STRING,with:STRING,nb:STRUCT<blob:STRUCT<size:BIGINT>>>>,iss:STRING,aud:STRING>' },
+          { name: "out", type: "STRUCT<error:STRUCT<name:STRING>,ok:STRUCT<site:STRING>>" },
+          { name: "ts", type: 'timestamp' }
+        ],
+        inputFormat: 'org.apache.hadoop.mapred.TextInputFormat',
+        outputFormat: 'org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat',
+        serdeInfo: {
+          serializationLibrary: 'org.openx.data.jsonserde.JsonSerDe',
+          parameters: {
+            // see https://aws.amazon.com/blogs/big-data/create-tables-in-amazon-athena-from-nested-json-and-mappings-using-jsonserde/
+            'mapping._cid_slash': '/'
+          }
+        }
+      }
+    }
+  })
+  blobAddTable.addDependsOn(glueDatabase)
+
+  // creates a table that can be seen in the AWS Glue table browser at 
+  // https://console.aws.amazon.com/glue/home#/v2/data-catalog/tables
+  // and in the data browser in the Athena Query editor at
+  // https://console.aws.amazon.com/athena/home#/query-editor
+  const blobAllocateTableName = getCdkNames('blob-allocate-table', app.stage)
+  const blobAllocateTable = new glue.CfnTable(stack, blobAllocateTableName, {
+    catalogId: Aws.ACCOUNT_ID,
+    databaseName,
+    tableInput: {
+      name: blobAllocateTableName,
+      partitionKeys: [
+        { name: 'day', type: 'date' }
+      ],
+      parameters: {
+        classification: "json",
+        typeOfData: "file",
+        // @see https://docs.aws.amazon.com/athena/latest/ug/partition-projection-kinesis-firehose-example.html for more information on projection
+        // configuration - this should match the "day" parameter and S3 prefix configured in the delivery stream
+        "projection.enabled": "true",
+        "projection.day.type": "date",
+        "projection.day.format": "yyyy-MM-dd",
+        "projection.day.range": "2023-01-01,NOW",
+        "projection.day.interval": "1",
+        "projection.day.interval.unit": "DAYS",
+        "storage.location.template": `s3://${streamLogBucket.bucketName}/logs/receipt/web3.storage_blob_allocate/\${day}/`
+      },
+      storageDescriptor: {
+        location: `s3://${streamLogBucket.bucketName}/logs/receipt/web3.storage_blob_allocate/`,
+        columns: [
+          { name: 'carcid', type: 'string' },
+          // STRUCT here refers to the Apache Hive STRUCT datatype - see https://aws.amazon.com/blogs/big-data/create-tables-in-amazon-athena-from-nested-json-and-mappings-using-jsonserde/
+          { name: 'value', type: 'STRUCT<att:ARRAY<struct<can:STRING,with:STRING,nb:STRUCT<blob:STRUCT<size:BIGINT>,space:STRING,cause:STRUCT<_cid_slash:STRING>>>>,iss:STRING,aud:STRING>' },
+          // No need to store URL for allocation here for now
+          { name: "out", type: "STRUCT<error:STRUCT<name:STRING>,ok:STRUCT<size:BIGINT>>" },
+          { name: "ts", type: "timestamp" }
+        ],
+        inputFormat: 'org.apache.hadoop.mapred.TextInputFormat',
+        outputFormat: 'org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat',
+        serdeInfo: {
+          serializationLibrary: 'org.openx.data.jsonserde.JsonSerDe',
+          parameters: {
+            // see https://aws.amazon.com/blogs/big-data/create-tables-in-amazon-athena-from-nested-json-and-mappings-using-jsonserde/
+            'mapping._cid_slash': '/'
+          }
+        }
+      }
+    }
+  })
+  blobAllocateTable.addDependsOn(glueDatabase)
+
+  // creates a table that can be seen in the AWS Glue table browser at 
+  // https://console.aws.amazon.com/glue/home#/v2/data-catalog/tables
+  // and in the data browser in the Athena Query editor at
+  // https://console.aws.amazon.com/athena/home#/query-editor
+  const blobAcceptTableName = getCdkNames('blob-accept-table', app.stage)
+  const blobAcceptTable = new glue.CfnTable(stack, blobAcceptTableName, {
+    catalogId: Aws.ACCOUNT_ID,
+    databaseName,
+    tableInput: {
+      name: blobAcceptTableName,
+      partitionKeys: [
+        { name: 'day', type: 'date' }
+      ],
+      parameters: {
+        classification: "json",
+        typeOfData: "file",
+        // @see https://docs.aws.amazon.com/athena/latest/ug/partition-projection-kinesis-firehose-example.html for more information on projection
+        // configuration - this should match the "day" parameter and S3 prefix configured in the delivery stream
+        "projection.enabled": "true",
+        "projection.day.type": "date",
+        "projection.day.format": "yyyy-MM-dd",
+        "projection.day.range": "2023-01-01,NOW",
+        "projection.day.interval": "1",
+        "projection.day.interval.unit": "DAYS",
+        "storage.location.template": `s3://${streamLogBucket.bucketName}/logs/receipt/web3.storage_blob_accept/\${day}/`
+      },
+      storageDescriptor: {
+        location: `s3://${streamLogBucket.bucketName}/logs/receipt/web3.storage_blob_accept/`,
+        columns: [
+          { name: 'carcid', type: 'string' },
+          // STRUCT here refers to the Apache Hive STRUCT datatype - see https://aws.amazon.com/blogs/big-data/create-tables-in-amazon-athena-from-nested-json-and-mappings-using-jsonserde/
+          { name: 'value', type: 'STRUCT<att:ARRAY<struct<can:STRING,with:STRING,nb:STRUCT<blob:STRUCT<size:BIGINT>,space:STRING>>>,iss:STRING,aud:STRING>' },
+          // No need to store URL for allocation here for now
+          { name: "out", type: "STRUCT<error:STRUCT<name:STRING>,ok:STRUCT<site:STRUCT<_cid_slash:STRING>>>" },
+          { name: "ts", type: "timestamp" }
+        ],
+        inputFormat: 'org.apache.hadoop.mapred.TextInputFormat',
+        outputFormat: 'org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat',
+        serdeInfo: {
+          serializationLibrary: 'org.openx.data.jsonserde.JsonSerDe',
+          parameters: {
+            // see https://aws.amazon.com/blogs/big-data/create-tables-in-amazon-athena-from-nested-json-and-mappings-using-jsonserde/
+            'mapping._cid_slash': '/'
+          }
+        }
+      }
+    }
+  })
+  blobAcceptTable.addDependsOn(glueDatabase)
 
   // creates a table that can be seen in the AWS Glue table browser at 
   // https://console.aws.amazon.com/glue/home#/v2/data-catalog/tables
@@ -370,6 +519,55 @@ export function UcanFirehoseStack ({ stack, app }) {
     }
   })
   storeRemoveTable.addDependsOn(glueDatabase)
+
+  // creates a table that can be seen in the AWS Glue table browser at 
+  // https://console.aws.amazon.com/glue/home#/v2/data-catalog/tables
+  // and in the data browser in the Athena Query editor at
+  // https://console.aws.amazon.com/athena/home#/query-editor
+  const blobRemoveTableName = getCdkNames('blob-remove-table', app.stage)
+  const blobRemoveTable = new glue.CfnTable(stack, blobRemoveTableName, {
+    catalogId: Aws.ACCOUNT_ID,
+    databaseName,
+    tableInput: {
+      name: blobRemoveTableName,
+      partitionKeys: [
+        { name: 'day', type: 'date' }
+      ],
+      parameters: {
+        classification: "json",
+        typeOfData: "file",
+        // @see https://docs.aws.amazon.com/athena/latest/ug/partition-projection-kinesis-firehose-example.html for more information on projection
+        // configuration - this should match the "day" parameter and S3 prefix configured in the delivery stream
+        "projection.enabled": "true",
+        "projection.day.type": "date",
+        "projection.day.format": "yyyy-MM-dd",
+        "projection.day.range": "2023-01-01,NOW",
+        "projection.day.interval": "1",
+        "projection.day.interval.unit": "DAYS",
+        "storage.location.template": `s3://${streamLogBucket.bucketName}/logs/receipt/blob_remove/\${day}/`
+      },
+      storageDescriptor: {
+        location: `s3://${streamLogBucket.bucketName}/logs/receipt/blob_remove/`,
+        columns: [
+          { name: 'carcid', type: 'string' },
+          // STRUCT here refers to the Apache Hive STRUCT datatype - see https://aws.amazon.com/blogs/big-data/create-tables-in-amazon-athena-from-nested-json-and-mappings-using-jsonserde/
+          { name: 'value', type: 'STRUCT<att:ARRAY<struct<can:STRING,with:STRING,nb:STRUCT<digest:BINARY>>>,iss:STRING,aud:STRING>' },
+          { name: "out", type: "STRUCT<error:STRUCT<name:STRING>,ok:STRUCT<size:BIGINT>>" },
+          { name: "ts", type: "timestamp" }
+        ],
+        inputFormat: 'org.apache.hadoop.mapred.TextInputFormat',
+        outputFormat: 'org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat',
+        serdeInfo: {
+          serializationLibrary: 'org.openx.data.jsonserde.JsonSerDe',
+          parameters: {
+            // see https://aws.amazon.com/blogs/big-data/create-tables-in-amazon-athena-from-nested-json-and-mappings-using-jsonserde/
+            'mapping._cid_slash': '/'
+          }
+        }
+      }
+    }
+  })
+  blobRemoveTable.addDependsOn(glueDatabase)
 
   // creates a table that can be seen in the AWS Glue table browser at 
   // https://console.aws.amazon.com/glue/home#/v2/data-catalog/tables
