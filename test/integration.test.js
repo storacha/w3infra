@@ -138,6 +138,10 @@ test('authorizations can be blocked by email or domain', async t => {
  */
 test('w3infra store/upload integration flow', async t => {
   const stage = getStage()
+  const writeTargetBucketName = process.env.R2_CARPARK_BUCKET_NAME
+  if (!writeTargetBucketName) {
+    throw new Error('no write target bucket name configure using ENV VAR `R2_CARPARK_BUCKET_NAME`')
+  }
   const inbox = await createMailSlurpInbox()
   const client = await setupNewClient(t.context.apiEndpoint, { inbox })
   const spaceDid = client.currentSpace()?.did()
@@ -184,7 +188,7 @@ test('w3infra store/upload integration flow', async t => {
   console.log('Checking blob stored in write target:', encodedMultihash)
   const carparkRequest = await r2Client.send(
     new HeadObjectCommand({
-      Bucket: 'carpark-staging-0',
+      Bucket: writeTargetBucketName,
       Key: `${encodedMultihash}/${encodedMultihash}.blob`,
     })
   )
