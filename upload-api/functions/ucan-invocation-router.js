@@ -186,7 +186,7 @@ export async function ucanInvocationRouter(request) {
   const customerStore = createCustomerStore({ region: AWS_REGION }, { tableName: customerTableName })
   if (!STRIPE_SECRET_KEY) throw new Error('missing secret: STRIPE_SECRET_KEY')
   const stripe = new Stripe(STRIPE_SECRET_KEY, { apiVersion: '2023-10-16' })
-  const plansStorage = usePlansStore(customerStore, createStripeBillingProvider(stripe))
+  const plansStorage = usePlansStore(customerStore, createStripeBillingProvider(stripe, customerStore))
   const rateLimitsStorage = createRateLimitTable(AWS_REGION, rateLimitTableName)
   const spaceMetricsTable = createSpaceMetricsTable(AWS_REGION, spaceMetricsTableName)
 

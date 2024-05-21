@@ -14,6 +14,10 @@ export function createTestBillingProvider() {
     async setPlan(customer, product) {
       customers[customer] = product
       return { ok: {} }
+    },
+
+    async createAdminSession(customer) {
+      return { ok: { url: 'https://example/test-billing-admin-session' } }
     }
   }
 }

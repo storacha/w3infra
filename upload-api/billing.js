@@ -35,10 +35,11 @@ export class BillingProviderUpdateError extends Failure {
 
 /**
  * 
- * @param {import('stripe').Stripe} stripe 
+ * @param {import('stripe').Stripe} stripe
+ * @param {import("@web3-storage/w3infra-billing/lib/api").CustomerStore} customerStore
  * @returns {import("./types").BillingProvider}
  */
-export function createStripeBillingProvider(stripe) {
+export function createStripeBillingProvider(stripe, customerStore) {
   return {
     async hasCustomer(customer) {
       const customersResponse = await stripe.customers.list({ email: toEmail(/** @type {import('@web3-storage/did-mailto').DidMailto} */(customer)) })
@@ -83,6 +84,29 @@ export function createStripeBillingProvider(stripe) {
         return { ok: {} }
       } catch (/** @type {any} */ err) {
         return { error: new BillingProviderUpdateError(err.message, { cause: err }) }
+      }
+    },
+
+    async createAdminSession(account, returnURL) {
+      const response = await customerStore.get({ customer: account })
+      if (response.error) {
+        return {
+          error: {
+            name: 'CustomerNotFound',
+            message: 'Error getting customer',
+            cause: response.error
+          }
+        }
+      }
+      const customer = response.ok.account.slice('stripe:'.length)
+      const session = await stripe.billingPortal.sessions.create({
+        customer,
+        return_url: returnURL
+      })
+      return {
+        ok: {
+          url: session.url
+        }
       }
     }
   }

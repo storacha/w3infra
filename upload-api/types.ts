@@ -3,7 +3,7 @@ import { DID, Link, Delegation, Signature, Block, UCANLink, ByteView, DIDKey, Re
 import { UnknownLink } from 'multiformats'
 import { CID } from 'multiformats/cid'
 import { Kinesis } from '@aws-sdk/client-kinesis'
-import { AccountDID, ProviderDID, Service, SpaceDID, CarStoreBucket, AllocationsStorage } from '@web3-storage/upload-api'
+import { AccountDID, ProviderDID, Service, SpaceDID, CarStoreBucket, AllocationsStorage, PlanCreateAdminSessionSuccess, PlanCreateAdminSessionFailure } from '@web3-storage/upload-api'
 
 export interface StoreOperationError extends Error {
   name: 'StoreOperationFailed'
@@ -282,6 +282,7 @@ type SetPlanFailure = InvalidSubscriptionState | BillingProviderUpdateError
 export interface BillingProvider {
   hasCustomer: (customer: AccountDID) => Promise<Result<boolean, Failure>>
   setPlan: (customer: AccountDID, plan: DID) => Promise<Result<Unit, SetPlanFailure>>
+  createAdminSession: (customer: AccountDID, returnURL: string) => Promise<Result<PlanCreateAdminSessionSuccess, PlanCreateAdminSessionFailure>>
 }
 
 export {}

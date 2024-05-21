@@ -90,8 +90,6 @@ export function usePlansStore(customerStore, billingProvider) {
       return { ok: {} }
     },
 
-    createAdminSession: (account, returnURL) => {
-      throw new Error('not implemented')
-    }
+    createAdminSession: async (account, returnURL) => billingProvider.createAdminSession(account, returnURL)
   }
 }
