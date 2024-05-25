@@ -21,10 +21,7 @@ import {
 import { useTasksStorage } from '../../stores/tasks.js'
 import { useReceiptsStorage } from '../../stores/receipts.js'
 import { useAllocationsStorage } from '../../stores/allocations.js'
-import {
-  composeblobStoragesWithOrderedHas,
-  useBlobsStorage,
-} from '../../stores/blobs.js'
+import { composeblobStoragesWithOrderedHas } from '../../stores/blobs.js'
 import {
   composeCarStoresWithOrderedHas,
   useCarStore,
@@ -51,9 +48,10 @@ import { pieceTableProps } from '../../../filecoin/store/index.js'
 import { usePieceTable } from '../../../filecoin/store/piece.js'
 import { createTaskStore as createFilecoinTaskStore } from '../../../filecoin/store/task.js'
 import { createReceiptStore as createFilecoinReceiptStore } from '../../../filecoin/store/receipt.js'
-import { createTestBillingProvider } from './billing.js'
-import { createTestIPNIService } from './ipni-service.js'
 import * as AgentStore from '../../stores/agent.js'
+import { createTestBillingProvider } from './billing.js'
+import { useTestBlobsStorage } from './blobs-storage.js'
+import { createTestIPNIService } from './ipni-service.js'
 
 export { API }
 
@@ -210,9 +208,9 @@ export async function executionContextToUcantoTestServerContext(t) {
   const invocationsBucketName = await createBucket(s3)
   const workflowBucketName = await createBucket(s3)
 
-  const s3BlobsStorageBucket = useBlobsStorage(s3, bucketName)
+  const s3BlobsStorageBucket = await useTestBlobsStorage(s3, bucketName)
   const r2BlobsStorageBucket = r2CarStoreBucketName
-    ? useBlobsStorage(r2, r2CarStoreBucketName)
+    ? await useTestBlobsStorage(r2, r2CarStoreBucketName)
     : undefined
   const blobsStorage = r2BlobsStorageBucket
     ? composeblobStoragesWithOrderedHas(
@@ -220,7 +218,17 @@ export async function executionContextToUcantoTestServerContext(t) {
         r2BlobsStorageBucket
       )
     : s3BlobsStorageBucket
-
+  const tasksStorage = useTasksStorage(
+    s3,
+    invocationsBucketName,
+    workflowBucketName
+  )
+  const receiptsStorage = useReceiptsStorage(
+    s3,
+    tasksBucketName,
+    invocationsBucketName,
+    workflowBucketName
+  )
   const agentStore = AgentStore.open({
     store: {
       connection: { channel: s3 },
@@ -234,19 +242,6 @@ export async function executionContextToUcantoTestServerContext(t) {
       name: '',
     },
   })
-
-  const tasksStorage = useTasksStorage(
-    s3,
-    invocationsBucketName,
-    workflowBucketName
-  )
-  const receiptsStorage = useReceiptsStorage(
-    s3,
-    tasksBucketName,
-    invocationsBucketName,
-    workflowBucketName
-  )
-
   const allocationsStorage = useAllocationsStorage(
     dynamo,
     await createTable(dynamo, allocationTableProps)
@@ -324,7 +319,7 @@ export async function executionContextToUcantoTestServerContext(t) {
   const billingProvider = createTestBillingProvider()
   const plansStorage = usePlansStore(customersStore, billingProvider)
   const email = new DebugEmail()
-  const ipniService = await createTestIPNIService({ sqs, dynamo })
+  const ipniService = await createTestIPNIService({ sqs, dynamo }, blobsStorage)
 
   /** @type {import('@web3-storage/upload-api').UcantoServerContext} */
   const serviceContext = {
@@ -336,8 +331,8 @@ export async function executionContextToUcantoTestServerContext(t) {
     blobsStorage,
     blobRetriever: blobsStorage,
     tasksStorage,
-    agentStore,
     receiptsStorage,
+    agentStore,
     getServiceConnection,
     provisionsStorage,
     delegationsStorage,
