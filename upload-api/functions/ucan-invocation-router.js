@@ -226,7 +226,7 @@ export async function ucanInvocationRouter(request) {
   const stripe = new Stripe(STRIPE_SECRET_KEY, { apiVersion: '2023-10-16' })
   const plansStorage = usePlansStore(
     customerStore,
-    createStripeBillingProvider(stripe)
+    createStripeBillingProvider(stripe, customerStore)
   )
   const rateLimitsStorage = createRateLimitTable(AWS_REGION, rateLimitTableName)
   const spaceMetricsTable = createSpaceMetricsTable(
@@ -268,7 +268,7 @@ export async function ucanInvocationRouter(request) {
   const ipniService = createIPNIService(
     multihashesQueueConfig,
     blocksCarsPositionTableConfig
-  )
+  , blobsStorage)
 
   const server = createUcantoServer(serviceSigner, {
     codec,
@@ -475,11 +475,11 @@ function getLambdaEnv() {
     // IPNI service
     multihashesQueueConfig: {
       url: new URL(mustGetEnv('MULTIHASHES_QUEUE_URL')),
-      region: mustGetEnv('AWS_REGION'),
+      region: mustGetEnv('INDEXER_REGION'),
     },
     blocksCarsPositionTableConfig: {
       name: mustGetEnv('BLOCKS_CAR_POSITION_TABLE_NAME'),
-      region: mustGetEnv('AWS_REGION'),
+      region: mustGetEnv('INDEXER_REGION'),
     },
     // set for testing
     dbEndpoint: process.env.DYNAMO_DB_ENDPOINT,

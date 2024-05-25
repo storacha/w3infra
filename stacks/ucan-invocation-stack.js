@@ -80,6 +80,12 @@ export function UcanInvocationStack({ stack, app }) {
     }
   })
 
+  stack.addOutputs({
+    workflowBucketName: workflowBucket.bucketName,
+    invocationBucketName: invocationBucket.bucketName,
+    taskBucketName: taskBucket.bucketName
+  })
+
   return {
     invocationBucket,
     taskBucket,

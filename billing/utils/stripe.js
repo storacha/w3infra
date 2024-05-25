@@ -7,6 +7,15 @@ import * as DidMailto from '@web3-storage/did-mailto'
  */
 
 /**
+ * 
+ * @param {string} stripeID 
+ * @returns {AccountID}
+ */
+export function stripeIDToAccountID(stripeID) {
+  return /** @type {AccountID} */(`stripe:${stripeID}`)
+}
+
+/**
  *
  * @param {Stripe} stripe
  * @param {CustomerSubscriptionCreatedEvent} event
@@ -21,7 +30,7 @@ export async function handleCustomerSubscriptionCreated(stripe, event, customerS
     return { error: new Error(`Invalid product: ${product}`) }
   }
 
-  const account = /** @type {AccountID} */ (`stripe:${customerId}`)
+  const account = stripeIDToAccountID(customerId)
   const stripeCustomer = await stripe.customers.retrieve(customerId)
   if (stripeCustomer.deleted) {
     return {

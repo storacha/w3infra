@@ -20,7 +20,7 @@ import {
   ProviderDID,
   Service,
   SpaceDID,
-  CarStoreBucket,
+  CarStoreBucket, AllocationsStorage, PlanCreateAdminSessionSuccess, PlanCreateAdminSessionFailure,
 } from '@web3-storage/upload-api'
 
 export type {
@@ -71,6 +71,7 @@ export interface MetricsStore {
 export interface MetricsCtx {
   metricsStore: MetricsStore
   carStore: CarStore
+  allocationsStorage: AllocationsStorage
 }
 
 export interface SpaceMetricsItem {
@@ -87,6 +88,7 @@ export interface SpaceMetricsStore {
 export interface SpaceMetricsCtx {
   metricsStore: SpaceMetricsStore
   carStore: CarStore
+  allocationsStorage: AllocationsStorage
 }
 
 export interface CarStore extends CarStoreBucket {
@@ -332,6 +334,7 @@ export interface BillingProvider {
     customer: AccountDID,
     plan: DID
   ) => Promise<Result<Unit, SetPlanFailure>>
+  createAdminSession: (customer: AccountDID, returnURL: string) => Promise<Result<PlanCreateAdminSessionSuccess, PlanCreateAdminSessionFailure>>
 }
 
 export {}
