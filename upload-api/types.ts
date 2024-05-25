@@ -33,6 +33,11 @@ export type {
   WriteError,
   Writer,
   Unit,
+  Link,
+  ReceiptModel,
+  Invocation,
+  ParsedAgentMessage,
+  AgentMessageIndexRecord,
 } from '@web3-storage/upload-api'
 
 export interface StoreOperationError extends Error {
@@ -50,7 +55,6 @@ export interface UcanStreamCtx {
 
 export interface WorkflowCtx extends UcanStreamCtx {
   invocationBucket: InvocationBucket
-  taskBucket: TaskBucket
   workflowBucket: WorkflowBucket
 }
 

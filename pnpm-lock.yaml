@@ -1,0 +1,20 @@
+lockfileVersion: '9.0'
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
+importers:
+
+  .:
+    dependencies:
+      '@web3-storage/upload-api':
+        specifier: ^13.0.2
+        version: link:../w3up/packages/upload-api
+    devDependencies:
+      '@web3-storage/filecoin-client':
+        specifier: ^3.3.3
+        version: link:../w3up/packages/filecoin-client
+      '@web3-storage/w3up-client':
+        specifier: ^12.5.3
+        version: link:../w3up/packages/w3up-client

@@ -67,14 +67,6 @@ export async function processAgentMessageArchive(request, ctx) {
   const agentMessageCar = await CAR.request.decode(request)
   const messageCid = agentMessageCar.root.cid.toString()
 
-  // persist workflow message and its invocations/receipts
-  await persistAgentMessageArchive(
-    agentMessageCar,
-    request,
-    ctx.invocationBucket,
-    ctx.workflowBucket
-  )
-
   // Process message content
   await Promise.all([
     processMessageInvocations(agentMessageCar.invocations, messageCid, ctx),
@@ -204,36 +196,6 @@ async function processMessageReceipts(receipts, carCid, ctx) {
     })),
     StreamName: ctx.streamName,
   })
-}
-
-/**
- * Persist agent message archive with invocations to be handled by the router.
- * Persist symlink per invocation to which workflow they come from.
- *
- * @param {API.AgentMessage} agentMessage
- * @param {API.HTTPRequest} request
- * @param {import('./types').InvocationBucket} invocationStore
- * @param {import('./types').WorkflowBucket} workflowStore
- */
-export async function persistAgentMessageArchive(
-  agentMessage,
-  request,
-  invocationStore,
-  workflowStore
-) {
-  const carCid = agentMessage.root.cid.toString()
-  const invocations = agentMessage.invocations
-  const receipts = [...agentMessage.receipts.values()]
-
-  const tasks = [
-    workflowStore.put(carCid, request.body),
-    invocations.map((i) => invocationStore.putInLink(i.cid.toString(), carCid)),
-    receipts.map((r) =>
-      invocationStore.putOutLink(r.ran.link().toString(), carCid)
-    ),
-  ]
-
-  await Promise.all(tasks)
 }
 
 /**

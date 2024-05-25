@@ -33,7 +33,7 @@
     "@web-std/fetch": "^4.1.0",
     "@web3-storage/data-segment": "^5.1.0",
     "@web3-storage/filecoin-client": "^3.3.3",
-    "@web3-storage/w3up-client": "^12.5.3",
+    "@web3-storage/w3up-client": "file:../w3up/packages/w3up-client",
     "ava": "^4.3.3",
     "chalk": "4.1.2",
     "constructs": "10.3.0",
@@ -50,7 +50,7 @@
   "dependencies": {
     "@ipld/dag-json": "^10.1.5",
     "@web-std/stream": "^1.0.3",
-    "@web3-storage/upload-api": "^13.0.2",
+    "@web3-storage/upload-api": "file:../w3up/packages/upload-api",
     "aws-cdk-lib": "2.124.0",
     "sst": "^2.40.3"
   },

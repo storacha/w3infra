@@ -46,11 +46,11 @@ export async function createDynamodDb(opts = {}) {
 }
 
 /**
- * 
- * @param {string} indexName 
- * @param {import('sst/constructs').TableGlobalIndexProps} props 
+ *
+ * @param {string} indexName
+ * @param {import('sst/constructs').TableGlobalIndexProps} props
  */
-function globalIndexPropsToGlobalIndexSpec (indexName, props) {
+function globalIndexPropsToGlobalIndexSpec(indexName, props) {
   const { partitionKey, projection, sortKey } = props
   /**
    * @type {import('@aws-sdk/client-dynamodb').GlobalSecondaryIndex}
@@ -60,30 +60,30 @@ function globalIndexPropsToGlobalIndexSpec (indexName, props) {
     KeySchema: [
       {
         AttributeName: partitionKey,
-        KeyType: "HASH",
+        KeyType: 'HASH',
       },
     ],
     ProvisionedThroughput: {
       ReadCapacityUnits: 5,
-      WriteCapacityUnits: 5
+      WriteCapacityUnits: 5,
     },
     Projection: {
-      ProjectionType: "KEYS_ONLY",
-      NonKeyAttributes: undefined
-    }
+      ProjectionType: 'KEYS_ONLY',
+      NonKeyAttributes: undefined,
+    },
   }
   if (sortKey) {
     spec.KeySchema?.push({ AttributeName: sortKey, KeyType: 'RANGE' })
   }
   if (projection && projection == 'all') {
     spec.Projection = {
-      ProjectionType: "ALL",
-      NonKeyAttributes: undefined
+      ProjectionType: 'ALL',
+      NonKeyAttributes: undefined,
     }
   } else if (Array.isArray(projection)) {
     spec.Projection = {
       ProjectionType: 'INCLUDE',
-      NonKeyAttributes: projection
+      NonKeyAttributes: projection,
     }
   }
   return spec
@@ -98,7 +98,7 @@ function globalIndexPropsToGlobalIndexSpec (indexName, props) {
  * @param {TableProps} props
  * @returns {Pick<CreateTableCommandInput, 'AttributeDefinitions' | 'KeySchema' | 'GlobalSecondaryIndexes'>}
  */
-export function dynamoDBTableConfig ({ fields, primaryIndex, globalIndexes }) {
+export function dynamoDBTableConfig({ fields, primaryIndex, globalIndexes }) {
   if (!primaryIndex || !fields)
     throw new Error('Expected primaryIndex and fields on TableProps')
   const attributes = Object.values(primaryIndex)
@@ -112,7 +112,10 @@ export function dynamoDBTableConfig ({ fields, primaryIndex, globalIndexes }) {
     .filter(([k]) => attributes.includes(k)) // 'The number of attributes in key schema must match the number of attributes defined in attribute definitions'
     .map(([k, v]) => ({
       AttributeName: k,
-      AttributeType: /** @type {import('@aws-sdk/client-dynamodb').ScalarAttributeType} */ (v[0].toUpperCase()),
+      AttributeType:
+        /** @type {import('@aws-sdk/client-dynamodb').ScalarAttributeType} */ (
+          v[0].toUpperCase()
+        ),
     }))
   /** @type {import('@aws-sdk/client-dynamodb').KeySchemaElement[]} */
   const KeySchema = [
@@ -124,11 +127,12 @@ export function dynamoDBTableConfig ({ fields, primaryIndex, globalIndexes }) {
   /** @type {Pick<CreateTableCommandInput, 'AttributeDefinitions' | 'KeySchema' | 'GlobalSecondaryIndexes'>} */
   const result = {
     AttributeDefinitions,
-    KeySchema
+    KeySchema,
   }
   if (globalIndexes) {
     result.GlobalSecondaryIndexes = Object.entries(globalIndexes).map(
-      ([indexName, props]) => globalIndexPropsToGlobalIndexSpec(indexName, props)
+      ([indexName, props]) =>
+        globalIndexPropsToGlobalIndexSpec(indexName, props)
     )
   }
   return result
@@ -170,7 +174,7 @@ export async function createS3(opts = {}) {
  * represents connection to cloudflare r2 over its s3-compatiable API,
  * e.g. carpark
  */
-export const createR2 = createS3;
+export const createR2 = createS3
 
 /**
  * @param {S3Client} s3
@@ -212,7 +216,9 @@ export const createSQS = async (opts = {}) => {
   const container = await new Container('softwaremill/elasticmq-native')
     .withExposedPorts(port)
     .start()
-  const endpoint = `http://${container.getHost()}:${container.getMappedPort(9324)}`
+  const endpoint = `http://${container.getHost()}:${container.getMappedPort(
+    9324
+  )}`
   return { client: new SQSClient({ region, endpoint }), endpoint }
 }
 
@@ -220,7 +226,7 @@ export const createSQS = async (opts = {}) => {
  * @param {import('@aws-sdk/client-sqs').SQSClient} sqs
  * @param {string} [pfx]
  */
-export async function createQueue (sqs, pfx = '') {
+export async function createQueue(sqs, pfx = '') {
   const id = customAlphabet('1234567890abcdefghijklmnopqrstuvwxyz', 10)
   const name = id()
   const res = await sqs.send(new CreateQueueCommand({ QueueName: name }))
@@ -256,7 +262,7 @@ export async function createAccessServer() {
     id: signer,
     service: mockAccessService(),
     codec: Legacy.inbound,
-    validateAuthorization: () => ({ ok: {} })
+    validateAuthorization: () => ({ ok: {} }),
   })
 
   const httpServer = HTTP.createServer(async (request, response) => {
