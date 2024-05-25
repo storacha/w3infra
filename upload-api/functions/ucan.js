@@ -34,20 +34,18 @@ async function handlerFn(request) {
 
   const { UCAN_INVOCATION_POST_BASIC_AUTH } = Config
 
-  const invocationBucket = createInvocationStore(
-    AWS_REGION,
-    invocationBucketName
-  )
-  // const taskBucket = createTaskStore(AWS_REGION, taskBucketName)
+  const invocationBucket = createInvocationStore(AWS_REGION, invocationBucketName)
+  const taskBucket = createTaskStore(AWS_REGION, taskBucketName)
   const workflowBucket = createWorkflowStore(AWS_REGION, workflowBucketName)
 
   try {
     await processUcanLogRequest(request, {
       invocationBucket,
+      taskBucket,
       workflowBucket,
       streamName,
       basicAuth: UCAN_INVOCATION_POST_BASIC_AUTH,
-      kinesisClient,
+      kinesisClient
     })
   } catch (/** @type {any} */ error) {
     return {
@@ -58,7 +56,7 @@ async function handlerFn(request) {
   }
 
   return {
-    statusCode: 200,
+    statusCode: 200
   }
 }
 
