@@ -43,7 +43,7 @@
     "@web3-storage/capabilities": "17.1.0",
     "@web3-storage/data-segment": "5.1.0",
     "@web3-storage/filecoin-client": "^3.3.3",
-    "@web3-storage/w3up-client": "file:../w3up/packages/w3up-client",
+    "@web3-storage/w3up-client": "14.0.0-rc.0",
     "@web3-storage/upload-client": "15.0.0",
     "ava": "^4.3.3",
     "chalk": "4.1.2",
@@ -63,7 +63,7 @@
   "dependencies": {
     "@ipld/dag-json": "^10.1.5",
     "@web-std/stream": "^1.0.3",
-    "@web3-storage/upload-api": "file:../w3up/packages/upload-api",
+    "@web3-storage/upload-api": "16.0.0-dev-agent-store",
     "aws-cdk-lib": "2.124.0",
     "sst": "^2.40.3"
   },
