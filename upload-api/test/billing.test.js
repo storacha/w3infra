@@ -10,7 +10,9 @@ import { createTable } from './helpers/resources.js'
 import { createDynamoDB } from '@web3-storage/w3infra-billing/test/helpers/aws.js'
 import { stripeIDToAccountID } from '@web3-storage/w3infra-billing/utils/stripe.js'
 
-dotenv.config({ path: fileURLToPath(new URL('../../.env', import.meta.url)) })
+dotenv.config({
+  path: fileURLToPath(new URL('../../.env.local', import.meta.url)),
+})
 
 /**
  * @typedef {object} BillingContext

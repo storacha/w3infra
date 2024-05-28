@@ -67,34 +67,36 @@ export const write = async (store, message) => {
  * commands.
  *
  * @param {Store} store
- * @param {API.ParsedAgentMessage} message
+ * @param {API.ParsedAgentMessage} input
  */
-export function* assert({ buckets }, message) {
-  const id = message.data.root.cid
+export function* assert({ buckets }, input) {
+  const message = input.data.root.cid
   // If the `content-type` is set to `application/vnd.ipld.car` than message
   // source is in the format we store store it in. Otherwise we need to encode
   // message into CAR format.
   const { body } =
-    message.source.headers['content-type'] === CAR.codec.contentType
-      ? message.source
-      : CAR.response.encode(message.data)
+    input.source.headers['content-type'] === CAR.codec.contentType
+      ? input.source
+      : CAR.response.encode(input.data)
 
   // Store a message in the message object store under the key `${id}/${id}`
   yield new PutObjectCommand({
     Bucket: buckets.message.name,
-    Key: `${id}/${id}`,
+    Key: `${message}/${message}`,
     Body: body,
+    ContentLength: body.byteLength,
   })
 
   // Index all the invocations and receipts enclosed in the agent message
-  for (const entry of message.index) {
+  for (const entry of input.index) {
     if (entry.invocation) {
       const { task, invocation, message } = entry.invocation
       // Index invoked task by the task CID so it could be looked up and
       // loaded later.
       yield new PutObjectCommand({
         Bucket: buckets.index.name,
-        Key: `${task}/${invocation}@${message}.in`,
+        Key: `${task}/${invocation.link()}@${message}.in`,
+        ContentLength: 0,
       })
     }
 
@@ -107,7 +109,8 @@ export function* assert({ buckets }, message) {
       // object.
       yield new PutObjectCommand({
         Bucket: buckets.index.name,
-        Key: `${task}/${receipt}@${message}.out`,
+        Key: `${task}/${receipt.link()}@${message}.out`,
+        ContentLength: 0,
       })
     }
   }
@@ -302,7 +305,7 @@ const toIndexEntry = (path) => {
   const offset = path.indexOf('@')
   return offset > 0
     ? {
-        root: path.slice(start, offset),
+        root: path.slice(start + 1, offset),
         at: path.slice(offset + 1, path.indexOf('.')),
       }
     : {
@@ -358,7 +361,7 @@ const list = async (connection, { prefix, suffix }) => {
  */
 const read = async ({ buckets, channel }, at) => {
   const getCmd = new GetObjectCommand({
-    Bucket: buckets.index.name,
+    Bucket: buckets.message.name,
     Key: `${at}/${at}`,
   })
 
