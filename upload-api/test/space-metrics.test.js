@@ -17,7 +17,7 @@ import {
 import { createSpace } from './helpers/ucan.js'
 import { randomCAR, randomBlob } from './helpers/random.js'
 
-import { STREAM_TYPE } from '../ucan-invocation.js'
+import * as Stream from '../stores/agent/stream.js'
 import { useCarStore } from '../buckets/car-store.js'
 import { useMetricsTable } from '../stores/space-metrics.js'
 import { useAllocationsStorage } from '../stores/allocations.js'
@@ -74,7 +74,7 @@ test('handles a batch of single invocation with blob/add', async t => {
         aud: uploadService.did(),
         iss: alice.did()
     },
-    type: STREAM_TYPE.RECEIPT,
+    type: Stream.defaults.receipt.type,
     out: {
       ok: true
     },
@@ -116,7 +116,7 @@ test('handles batch of single invocations with multiple blob/add attributes', as
       aud: uploadService.did(),
       iss: alice.did()
     },
-    type: STREAM_TYPE.RECEIPT,
+    type: Stream.defaults.receipt.type,
     out: {
       ok: true
     },
@@ -160,7 +160,7 @@ test('handles a batch of single invocation with blob/add without receipt', async
         aud: uploadService.did(),
         iss: alice.did()
     },
-    type: STREAM_TYPE.WORKFLOW,
+    type: Stream.defaults.workflow.type,
     out: {
       ok: true
     },
@@ -216,7 +216,7 @@ test('handles a batch of invocations with upload-api tracking capabilities', asy
         aud: uploadService.did(),
         iss: alice.did()
       },
-      type: STREAM_TYPE.RECEIPT,
+      type: Stream.defaults.receipt.type,
       out: {
         ok: true
       },
@@ -238,7 +238,7 @@ test('handles a batch of invocations with upload-api tracking capabilities', asy
           aud: uploadService.did(),
           iss: alice.did()
       },
-      type: STREAM_TYPE.RECEIPT,
+      type: Stream.defaults.receipt.type,
       out: {
         ok: true
       },
@@ -259,7 +259,7 @@ test('handles a batch of invocations with upload-api tracking capabilities', asy
           aud: uploadService.did(),
           iss: alice.did()
       },
-      type: STREAM_TYPE.RECEIPT,
+      type: Stream.defaults.receipt.type,
       out: {
         ok: true
       },
@@ -278,7 +278,7 @@ test('handles a batch of invocations with upload-api tracking capabilities', asy
         aud: uploadService.did(),
         iss: alice.did()
       },
-      type: STREAM_TYPE.RECEIPT,
+      type: Stream.defaults.receipt.type,
       out: {
         ok: true
       },

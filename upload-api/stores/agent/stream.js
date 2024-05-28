@@ -6,6 +6,16 @@ import * as Store from './store.js'
 
 export { API }
 
+export const defaults = {
+  workflow: { type: 'workflow' },
+  receipt: { type: 'receipt' },
+
+  // https://docs.aws.amazon.com/streams/latest/dev/key-concepts.html
+  // A partition key is used to group data by shard within a stream.
+  // It is required, and now we are starting with one shard. We need to study best partition key
+  partitionKey: 'key',
+}
+
 /**
  * @typedef {import('@aws-sdk/client-kinesis').KinesisClientConfig} Address
  * @typedef {Kinesis} Channel
@@ -41,12 +51,9 @@ export const open = ({ connection, name, partitionKey, ...settings }) => ({
     ? new Kinesis(connection.address)
     : connection.channel ?? null,
   name,
-  workflow: { type: 'workflow', ...settings.workflow },
-  receipt: { type: 'receipt', ...settings.receipt },
-  // https://docs.aws.amazon.com/streams/latest/dev/key-concepts.html
-  // A partition key is used to group data by shard within a stream.
-  // It is required, and now we are starting with one shard. We need to study best partition key
-  partitionKey: partitionKey ?? 'key',
+  workflow: { ...defaults.workflow, ...settings.workflow },
+  receipt: { ...defaults.receipt, ...settings.receipt },
+  partitionKey: partitionKey ?? defaults.partitionKey,
 })
 
 /**

@@ -19,6 +19,7 @@ import {
   AccountDID,
   ProviderDID,
   Service,
+  AgentStore,
   SpaceDID,
   CarStoreBucket, AllocationsStorage, PlanCreateAdminSessionSuccess, PlanCreateAdminSessionFailure,
 } from '@web3-storage/upload-api'
@@ -44,8 +45,9 @@ export interface StoreOperationError extends Error {
   name: 'StoreOperationFailed'
 }
 
-export interface UcanLogCtx extends WorkflowCtx, ReceiptBlockCtx {
+export interface UcanLogCtx {
   basicAuth: string
+  agentStore: AgentStore
 }
 
 export interface UcanStreamCtx {

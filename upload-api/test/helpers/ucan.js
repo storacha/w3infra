@@ -18,8 +18,6 @@ import {
   revocationTableProps,
   spaceMetricsTableProps,
 } from '../../tables/index.js'
-import { useTasksStorage } from '../../stores/tasks.js'
-import { useReceiptsStorage } from '../../stores/receipts.js'
 import { useAllocationsStorage } from '../../stores/allocations.js'
 import { composeblobStoragesWithOrderedHas } from '../../stores/blobs.js'
 import {
@@ -203,7 +201,6 @@ export async function executionContextToUcantoTestServerContext(t) {
   const { dynamo, sqs, s3, r2 } = t.context
   const bucketName = await createBucket(s3)
   const r2CarStoreBucketName = r2 ? await createBucket(r2) : undefined
-  const tasksBucketName = await createBucket(s3)
   const delegationsBucketName = await createBucket(s3)
   const invocationsBucketName = await createBucket(s3)
   const workflowBucketName = await createBucket(s3)
@@ -218,17 +215,7 @@ export async function executionContextToUcantoTestServerContext(t) {
         r2BlobsStorageBucket
       )
     : s3BlobsStorageBucket
-  const tasksStorage = useTasksStorage(
-    s3,
-    invocationsBucketName,
-    workflowBucketName
-  )
-  const receiptsStorage = useReceiptsStorage(
-    s3,
-    tasksBucketName,
-    invocationsBucketName,
-    workflowBucketName
-  )
+
   const agentStore = AgentStore.open({
     store: {
       connection: { channel: s3 },
@@ -330,8 +317,6 @@ export async function executionContextToUcantoTestServerContext(t) {
     allocationsStorage,
     blobsStorage,
     blobRetriever: blobsStorage,
-    tasksStorage,
-    receiptsStorage,
     agentStore,
     getServiceConnection,
     provisionsStorage,
