@@ -3,10 +3,7 @@ import * as Sentry from '@sentry/serverless'
 import * as DID from '@ipld/dag-ucan/did'
 import Stripe from 'stripe'
 
-import {
-  composeCarStoresWithOrderedHas,
-  createCarStore,
-} from '../buckets/car-store.js'
+import { composeCarStoresWithOrderedHas, createCarStore } from '../buckets/car-store.js'
 import { createDudewhereStore } from '../buckets/dudewhere-store.js'
 import { createInvocationStore } from '../buckets/invocation-store.js'
 import { createWorkflowStore } from '../buckets/workflow-store.js'
@@ -17,21 +14,14 @@ import { createTaskStore as createFilecoinTaskStore } from '../../filecoin/store
 import { createReceiptStore as createFilecoinReceiptStore } from '../../filecoin/store/receipt.js'
 import { createClient as createFilecoinSubmitQueueClient } from '../../filecoin/queue/filecoin-submit-queue.js'
 import { createClient as createPieceOfferQueueClient } from '../../filecoin/queue/piece-offer-queue.js'
-import {
-  getServiceSigner,
-  parseServiceDids,
-  getServiceConnection,
-} from '../config.js'
+import { getServiceSigner, parseServiceDids, getServiceConnection } from '../config.js'
 import { createUcantoServer } from '../service.js'
 import { Config } from 'sst/node/config'
 import { CAR, Legacy, Codec } from '@ucanto/transport'
 import { Email } from '../email.js'
 import * as AgentStore from '../stores/agent.js'
 import { createAllocationsStorage } from '../stores/allocations.js'
-import {
-  createBlobsStorage,
-  composeblobStoragesWithOrderedHas,
-} from '../stores/blobs.js'
+import { createBlobsStorage, composeblobStoragesWithOrderedHas } from '../stores/blobs.js'
 import { useProvisionStore } from '../stores/provisions.js'
 import { useSubscriptionsStore } from '../stores/subscriptions.js'
 import { createDelegationsTable } from '../tables/delegations.js'
@@ -65,7 +55,6 @@ export { API }
  * @property {import('@ucanto/interface').Signer} signer
  */
 
-// const kinesisClient = new Kinesis({})
 const AWS_REGION = process.env.AWS_REGION || 'us-west-2'
 
 // Specified in SST environment
@@ -155,10 +144,7 @@ export async function ucanInvocationRouter(request) {
 
   const { UPLOAD_API_DID } = process.env
   const { PRIVATE_KEY, STRIPE_SECRET_KEY } = Config
-  const serviceSigner = getServiceSigner({
-    did: UPLOAD_API_DID,
-    privateKey: PRIVATE_KEY,
-  })
+  const serviceSigner = getServiceSigner({ did: UPLOAD_API_DID, privateKey: PRIVATE_KEY })
 
   const agentStore = AgentStore.open({
     store: {
@@ -178,13 +164,9 @@ export async function ucanInvocationRouter(request) {
     },
   })
 
-  const allocationsStorage = createAllocationsStorage(
-    AWS_REGION,
-    allocationTableName,
-    {
-      endpoint: dbEndpoint,
-    }
-  )
+  const allocationsStorage = createAllocationsStorage(AWS_REGION, allocationTableName, {
+    endpoint: dbEndpoint,
+  })
   const blobsStorage = composeblobStoragesWithOrderedHas(
     createBlobsStorage(R2_REGION, carparkBucketName, {
       endpoint: carparkBucketEndpoint,
@@ -193,82 +175,42 @@ export async function ucanInvocationRouter(request) {
         secretAccessKey: carparkBucketSecretAccessKey,
       },
     }),
-    createBlobsStorage(AWS_REGION, storeBucketName)
+    createBlobsStorage(AWS_REGION, storeBucketName),
   )
 
   const invocationBucket = createInvocationStore(
     AWS_REGION,
     invocationBucketName
   )
-
   const workflowBucket = createWorkflowStore(AWS_REGION, workflowBucketName)
-  const delegationBucket = createDelegationsStore(
-    r2DelegationBucketEndpoint,
-    r2DelegationBucketAccessKeyId,
-    r2DelegationBucketSecretAccessKey,
-    r2DelegationBucketName
-  )
-  const subscriptionTable = createSubscriptionTable(
-    AWS_REGION,
-    subscriptionTableName,
-    {
-      endpoint: dbEndpoint,
-    }
-  )
+  const delegationBucket = createDelegationsStore(r2DelegationBucketEndpoint, r2DelegationBucketAccessKeyId, r2DelegationBucketSecretAccessKey, r2DelegationBucketName)
+  const subscriptionTable = createSubscriptionTable(AWS_REGION, subscriptionTableName, {
+    endpoint: dbEndpoint
+  });
   const consumerTable = createConsumerTable(AWS_REGION, consumerTableName, {
-    endpoint: dbEndpoint,
-  })
-  const customerStore = createCustomerStore(
-    { region: AWS_REGION },
-    { tableName: customerTableName }
-  )
+    endpoint: dbEndpoint
+  });
+  const customerStore = createCustomerStore({ region: AWS_REGION }, { tableName: customerTableName })
   if (!STRIPE_SECRET_KEY) throw new Error('missing secret: STRIPE_SECRET_KEY')
   const stripe = new Stripe(STRIPE_SECRET_KEY, { apiVersion: '2023-10-16' })
-  const plansStorage = usePlansStore(
-    customerStore,
-    createStripeBillingProvider(stripe, customerStore)
-  )
+  const plansStorage = usePlansStore(customerStore, createStripeBillingProvider(stripe, customerStore))
   const rateLimitsStorage = createRateLimitTable(AWS_REGION, rateLimitTableName)
-  const spaceMetricsTable = createSpaceMetricsTable(
-    AWS_REGION,
-    spaceMetricsTableName
-  )
+  const spaceMetricsTable = createSpaceMetricsTable(AWS_REGION, spaceMetricsTableName)
 
-  const provisionsStorage = useProvisionStore(
-    subscriptionTable,
-    consumerTable,
-    spaceMetricsTable,
-    parseServiceDids(providers)
-  )
+  const provisionsStorage = useProvisionStore(subscriptionTable, consumerTable, spaceMetricsTable, parseServiceDids(providers))
   const subscriptionsStorage = useSubscriptionsStore({ consumerTable })
-  const delegationsStorage = createDelegationsTable(
-    AWS_REGION,
-    delegationTableName,
-    { bucket: delegationBucket, invocationBucket, workflowBucket }
-  )
-  const revocationsStorage = createRevocationsTable(
-    AWS_REGION,
-    revocationTableName
-  )
-  const spaceDiffStore = createSpaceDiffStore(
-    { region: AWS_REGION },
-    { tableName: spaceDiffTableName }
-  )
-  const spaceSnapshotStore = createSpaceSnapshotStore(
-    { region: AWS_REGION },
-    { tableName: spaceSnapshotTableName }
-  )
+  const delegationsStorage = createDelegationsTable(AWS_REGION, delegationTableName, { bucket: delegationBucket, invocationBucket, workflowBucket })
+  const revocationsStorage = createRevocationsTable(AWS_REGION, revocationTableName)
+  const spaceDiffStore = createSpaceDiffStore({ region: AWS_REGION }, { tableName: spaceDiffTableName })
+  const spaceSnapshotStore = createSpaceSnapshotStore({ region: AWS_REGION }, { tableName: spaceSnapshotTableName })
   const usageStorage = useUsageStore({ spaceDiffStore, spaceSnapshotStore })
 
   const dealTrackerConnection = getServiceConnection({
     did: dealTrackerDid,
-    url: dealTrackerUrl,
+    url: dealTrackerUrl
   })
 
-  const ipniService = createIPNIService(
-    multihashesQueueConfig,
-    blocksCarsPositionTableConfig
-  , blobsStorage)
+  const ipniService = createIPNIService(multihashesQueueConfig, blocksCarsPositionTableConfig, blobsStorage)
 
   const server = createUcantoServer(serviceSigner, {
     codec,
@@ -289,7 +231,7 @@ export async function ucanInvocationRouter(request) {
           accessKeyId: carparkBucketAccessKeyId,
           secretAccessKey: carparkBucketSecretAccessKey,
         },
-      })
+      }),
     ),
     // TODO: to be deprecated with `store/*` protocol
     dudewhereBucket: createDudewhereStore(R2_REGION, R2_DUDEWHERE_BUCKET_NAME, {
@@ -314,31 +256,17 @@ export async function ucanInvocationRouter(request) {
     rateLimitsStorage,
     aggregatorId: DID.parse(aggregatorDid),
     pieceStore: createPieceTable(AWS_REGION, pieceTableName),
-    taskStore: createFilecoinTaskStore(
-      AWS_REGION,
-      invocationBucketName,
-      workflowBucketName
-    ),
-    receiptStore: createFilecoinReceiptStore(
-      AWS_REGION,
-      invocationBucketName,
-      workflowBucketName
-    ),
-    pieceOfferQueue: createPieceOfferQueueClient(
-      { region: AWS_REGION },
-      { queueUrl: pieceOfferQueueUrl }
-    ),
-    filecoinSubmitQueue: createFilecoinSubmitQueueClient(
-      { region: AWS_REGION },
-      { queueUrl: filecoinSubmitQueueUrl }
-    ),
+    taskStore: createFilecoinTaskStore(AWS_REGION, invocationBucketName, workflowBucketName),
+    receiptStore: createFilecoinReceiptStore(AWS_REGION, invocationBucketName, workflowBucketName),
+    pieceOfferQueue: createPieceOfferQueueClient({ region: AWS_REGION }, { queueUrl: pieceOfferQueueUrl }),
+    filecoinSubmitQueue: createFilecoinSubmitQueueClient({ region: AWS_REGION }, { queueUrl: filecoinSubmitQueueUrl }),
     dealTrackerService: {
       connection: dealTrackerConnection,
       invocationConfig: {
         issuer: serviceSigner,
         audience: dealTrackerConnection.id,
-        with: serviceSigner.did(),
-      },
+        with: serviceSigner.did()
+      }
     },
     plansStorage,
     requirePaymentPlan,
@@ -351,62 +279,9 @@ export async function ucanInvocationRouter(request) {
     channel: server,
   })
 
-  // const processingCtx = {
-  //   invocationBucket,
-  //   taskBucket,
-  //   workflowBucket,
-  //   streamName,
-  //   kinesisClient,
-  // }
-
   const payload = fromLambdaRequest(request)
 
   const response = await UploadAPI.handle(server, payload)
-
-  // const result = server.codec.accept(payload)
-  // // if we can not select a codec we respond with error.
-  // if (result.error) {
-  //   return toLambdaResponse({
-  //     status: result.error.status,
-  //     headers: result.error.headers || {},
-  //     body: Buffer.from(result.error.message || ''),
-  //   })
-  // }
-
-  // const { encoder, decoder } = result.ok
-
-  // const contentType = payload.headers['content-type']
-  // // Process workflow
-  // // We block until we can log the UCAN invocation if this fails we return a 500
-  // // to the client. That is because in the future we expect that invocations will
-  // // be written to a queue first and then processed asynchronously, so if we
-  // // fail to queue the invocation we should not handle it.
-  // const incoming = await processAgentMessageArchive(
-  //   // If the `content-type` is set to `application/vnd.ipld.car` use CAR codec
-  //   // format is already up to date so we pass payload as is. Otherwise we
-  //   // transform the payload into modern CAR format.
-  //   contentType === CAR.contentType
-  //     ? payload
-  //     : CAR.request.encode(await decoder.decode(payload)),
-  //   processingCtx
-  // )
-
-  // UploadAPI.handle
-
-  // Decode incoming request
-  // const incoming = await decoder.decode(payload)
-  // Execute invocations
-  // const outgoing = await UploadAPI.execute(server, incoming)
-
-  // const response = await encoder.encode(outgoing)
-  // await processAgentMessageArchive(
-  //   // If response is already in CAR format we pass it as is. Otherwise we
-  //   // transform the response into legacy CAR format.
-  //   response.headers['content-type'] === CAR.contentType
-  //     ? response
-  //     : CAR.response.encode(outgoing),
-  //   processingCtx
-  // )
 
   return toLambdaResponse(response)
 }
@@ -433,7 +308,7 @@ export const fromLambdaRequest = (request) => ({
   body: Buffer.from(request.body || '', 'base64'),
 })
 
-function getLambdaEnv() {
+function getLambdaEnv () {
   return {
     storeTableName: mustGetEnv('STORE_TABLE_NAME'),
     storeBucketName: mustGetEnv('STORE_BUCKET_NAME'),
@@ -464,7 +339,7 @@ function getLambdaEnv() {
     accessServiceURL: mustGetEnv('ACCESS_SERVICE_URL'),
     uploadServiceURL: mustGetEnv('UPLOAD_SERVICE_URL'),
     aggregatorDid: mustGetEnv('AGGREGATOR_DID'),
-    requirePaymentPlan: process.env.REQUIRE_PAYMENT_PLAN === 'true',
+    requirePaymentPlan: (process.env.REQUIRE_PAYMENT_PLAN === 'true'),
     dealTrackerDid: mustGetEnv('DEAL_TRACKER_DID'),
     dealTrackerUrl: mustGetEnv('DEAL_TRACKER_URL'),
     // carpark bucket - CAR file bytes may be found here with keys like {cid}/{cid}.car
@@ -475,11 +350,11 @@ function getLambdaEnv() {
     // IPNI service
     multihashesQueueConfig: {
       url: new URL(mustGetEnv('MULTIHASHES_QUEUE_URL')),
-      region: mustGetEnv('INDEXER_REGION'),
+      region: mustGetEnv('INDEXER_REGION')
     },
     blocksCarsPositionTableConfig: {
       name: mustGetEnv('BLOCKS_CAR_POSITION_TABLE_NAME'),
-      region: mustGetEnv('INDEXER_REGION'),
+      region: mustGetEnv('INDEXER_REGION')
     },
     // set for testing
     dbEndpoint: process.env.DYNAMO_DB_ENDPOINT,
