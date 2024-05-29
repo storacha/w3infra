@@ -43,7 +43,8 @@ class AgentMessageStore {
    * @param {API.ParsedAgentMessage} message
    * @returns {Promise<API.Result<API.Unit, API.WriteError>>}
    */
-  async write(message) {
+  async write({ data, index, source }) {
+    const message = { data, source, index: [...index] }
     const save = Store.write(this.connection.store, message)
     const analyze = Stream.write(this.connection, message)
 

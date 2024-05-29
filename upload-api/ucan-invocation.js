@@ -1,4 +1,5 @@
 import * as CAR from '@ucanto/transport/car'
+import * as Link from 'multiformats/link'
 import { AgentMessage } from '@web3-storage/upload-api'
 
 import {
@@ -84,3 +85,38 @@ function parseAuthorizationHeader(header) {
   return header.slice(6)
 }
 
+/**
+ * @param {any} value
+ */
+export const replaceAllLinkValues = (value) => {
+  // Array with Links?
+  if (Array.isArray(value)) {
+    for (let i = 0; i < value.length; i++) {
+      if (Link.isLink(value[i])) {
+        value[i] = toJSON(value[i])
+      } else {
+        replaceAllLinkValues(value[i])
+      }
+    }
+  }
+  // Object with Links?
+  else if (typeof value === 'object') {
+    for (const key of Object.keys(value)) {
+      if (Link.isLink(value[key])) {
+        value[key] = toJSON(value[key])
+      }
+      replaceAllLinkValues(value[key])
+    }
+  }
+
+  return value
+}
+
+/**
+ * @template {import('multiformats').UnknownLink} Link
+ * @param {Link} link
+ */
+export const toJSON = (link) =>
+  /** @type {import('@web3-storage/upload-api').LinkJSON<Link>} */ ({
+    '/': link.toString(),
+  })

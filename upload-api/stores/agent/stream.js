@@ -98,7 +98,7 @@ export const assert = async (message, { stream, store }) => {
         Data: UTF8.fromString(
           JSON.stringify({
             // This is bad naming but not worth a breaking change
-            carCid: message,
+            carCid: message.toString(),
             task: task.toString(),
             value: {
               att: invocation.capabilities,
@@ -132,7 +132,7 @@ export const assert = async (message, { stream, store }) => {
         Data: UTF8.fromString(
           JSON.stringify({
             // This is bad naming but not worth a breaking change
-            carCid: message,
+            carCid: message.toString(),
             task: task.toString(),
             value: {
               att: invocation.capabilities,
