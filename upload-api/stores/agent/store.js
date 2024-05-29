@@ -15,7 +15,7 @@ import * as API from '../../types.js'
 export { API }
 
 /**
- * @typedef {import('@aws-sdk/client-s3').S3ClientConfig & {region:string}} Address
+ * @typedef {import('@aws-sdk/client-s3').S3ClientConfig} Address
  * @typedef {S3Client} Channel
  *
  * @typedef {API.Variant<{
@@ -29,10 +29,12 @@ export { API }
  *
  * @typedef {object} Options
  * @property {Connection} connection
+ * @property {string} region
  * @property {Buckets} buckets
  *
  * @typedef {object} Store
  * @property {Channel} channel
+ * @property {string} region
  * @property {Buckets} buckets
  */
 
@@ -40,8 +42,9 @@ export { API }
  * @param {Options} options
  * @returns {Store}
  */
-export const open = ({ connection, buckets }) => ({
-  channel: connection.channel ?? new S3Client(connection.address),
+export const open = ({ connection, region, buckets }) => ({
+  channel: connection.channel ?? new S3Client({ ...connection.address, region }),
+  region,
   buckets,
 })
 
@@ -82,7 +85,7 @@ export function* assert({ buckets }, input) {
   // Store a message in the message object store under the key `${id}/${id}`
   yield new PutObjectCommand({
     Bucket: buckets.message.name,
-    Key: `${message}/${message}`,
+    Key: toMessagePath({ message }),
     Body: body,
     ContentLength: body.byteLength,
   })
@@ -95,7 +98,7 @@ export function* assert({ buckets }, input) {
       // loaded later.
       yield new PutObjectCommand({
         Bucket: buckets.index.name,
-        Key: `${task}/${invocation.link()}@${message}.in`,
+        Key: toInvocationPath({ task, invocation: invocation.link(), message }),
         ContentLength: 0,
       })
     }
@@ -109,7 +112,7 @@ export function* assert({ buckets }, input) {
       // object.
       yield new PutObjectCommand({
         Bucket: buckets.index.name,
-        Key: `${task}/${receipt.link()}@${message}.out`,
+        Key: toReceiptPath({ task, receipt: receipt.link(), message }),
         ContentLength: 0,
       })
     }
@@ -166,7 +169,7 @@ export const getReceipt = async (store, task) => {
     return { error }
   }
 
-  const { ok: body, error: readError } = await read(store, entry.at)
+  const { ok: body, error: readError } = await read(store, entry.message)
   if (readError) {
     return { error: readError }
   }
@@ -175,7 +178,7 @@ export const getReceipt = async (store, task) => {
     const archive = await CAR.codec.decode(body)
     const receipt = Receipt.view(
       {
-        root: /** @type {API.Link<API.ReceiptModel>} */ (parseLink(entry.root)),
+        root: entry.root,
         blocks: archive.blocks,
       },
       null
@@ -198,7 +201,7 @@ export const getReceipt = async (store, task) => {
 
   return {
     error: new RecordNotFound(
-      `agent message ${entry.at} does not contain receipt for ${task} task`
+      `agent message ${entry.message} does not contain receipt for ${task} task`
     ),
   }
 }
@@ -218,13 +221,13 @@ export const getReceipt = async (store, task) => {
 /**
  * Resolves paths to an agent message for the given key.
  *
- * @typedef {{root?: string, at:string}} IndexEntry
+ * @typedef {{root?: API.Link, message:API.Link}} IndexEntry
  *
  * @param {Store} store
  * @param {AgentMessageQuery} query
  * @returns {Promise<API.Result<IndexEntry, RecordNotFound|StorageOperationFailed>>}
  */
-const resolve = async (store, { invocation, receipt }) => {
+export const resolve = async (store, { invocation, receipt }) => {
   // If we are resolving an invocation we need to find an INcoming message
   // which get `.in` suffix. If we are looking for a receipt we need to find
   // an OUTgoing message which get `.out` suffix.
@@ -281,8 +284,8 @@ const load = async (store, query) => {
     return { error }
   }
 
-  const { at, root } = index
-  const { ok: bytes, error: readError } = await read(store, at)
+  const { message, root } = index
+  const { ok: bytes, error: readError } = await read(store, message)
   if (readError) {
     return { error: readError }
   }
@@ -290,7 +293,7 @@ const load = async (store, query) => {
   return {
     ok: {
       archive: await CAR.codec.decode(bytes),
-      root: root ? parseLink(root) : null,
+      root: root ?? null,
     },
   }
 }
@@ -299,17 +302,18 @@ const load = async (store, query) => {
  * identifiers.
  *
  * @param {string} path
+ * @returns {IndexEntry}
  */
 const toIndexEntry = (path) => {
   const start = path.indexOf('/')
   const offset = path.indexOf('@')
   return offset > 0
     ? {
-        root: path.slice(start + 1, offset),
-        at: path.slice(offset + 1, path.indexOf('.')),
+        root: parseLink(path.slice(start + 1, offset)),
+        message: parseLink(path.slice(offset + 1, path.indexOf('.'))),
       }
     : {
-        at: path.slice(start + 1, path.indexOf('.')),
+        message: parseLink(path.slice(start + 1, path.indexOf('.'))),
       }
 }
 
@@ -337,14 +341,14 @@ const list = async (connection, { prefix, suffix }) => {
       ? { ok: /** @type {[string, ...string[]]} */ (entries) }
       : {
           error: new RecordNotFound(
-            `any pseudo symlink from invocation ${prefix}*${suffix} was found`
+            `no pseudo symlink matching query ${prefix}*${suffix} was found`
           ),
         }
   } catch (/** @type {any} */ error) {
     if (error?.$metadata?.httpStatusCode === 404) {
       return {
         error: new RecordNotFound(
-          `any pseudo symlink from invocation ${prefix}*${suffix} was found`
+          `no pseudo symlink matching query ${prefix}*${suffix} was found`
         ),
       }
     }
@@ -356,13 +360,13 @@ const list = async (connection, { prefix, suffix }) => {
 
 /**
  * @param {Store} connection
- * @param {string} at
+ * @param {API.Link} message
  * @returns {Promise<API.Result<Uint8Array, RecordNotFound|StorageOperationFailed>>}
  */
-const read = async ({ buckets, channel }, at) => {
+const read = async ({ buckets, channel }, message) => {
   const getCmd = new GetObjectCommand({
     Bucket: buckets.message.name,
-    Key: `${at}/${at}`,
+    Key: toMessagePath({ message }),
   })
 
   let res
@@ -372,7 +376,7 @@ const read = async ({ buckets, channel }, at) => {
     if (error?.$metadata?.httpStatusCode === 404) {
       return {
         error: new RecordNotFound(
-          `agent message archive ${at} not found in store`
+          `agent message archive ${message} not found in store`
         ),
       }
     }
@@ -383,7 +387,7 @@ const read = async ({ buckets, channel }, at) => {
   if (!res || !res.Body) {
     return {
       error: new RecordNotFound(
-        `agent message archive ${at} not found in store`
+        `agent message archive ${message} not found in store`
       ),
     }
   }
@@ -394,3 +398,37 @@ const read = async ({ buckets, channel }, at) => {
     ok: bytes,
   }
 }
+
+/**
+ * @param {Store} store
+ * @param {API.Link} message
+ */
+export const toMessageURL = (store, message) =>
+  new URL(`https://${store.buckets.message.name}.s3.${store.region}.amazonaws.com/${toMessagePath({message})}`)
+
+
+/**
+ * @param {object} source
+ * @param {API.Link} source.message 
+ */
+
+export const toMessagePath = ({message}) =>
+  `${message}/${message}`
+
+/**
+ * @param {object} source
+ * @param {API.Link} source.message
+ * @param {API.Link} source.task
+ * @param {API.Link} source.invocation
+ */
+export const toInvocationPath = ({message, task, invocation}) =>
+  `${task}/${invocation}@${message}.in`
+
+/**
+ * @param {object} source
+ * @param {API.Link} source.message
+ * @param {API.Link} source.task
+ * @param {API.Link} source.receipt
+ */
+export const toReceiptPath = ({message, task, receipt}) =>
+  `${task}/${receipt}@${message}.out`

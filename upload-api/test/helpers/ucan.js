@@ -177,9 +177,34 @@ export const encodeAgentMessage = async (source) => {
   return await CAR.request.encode(message)
 }
 
+
+
 /**
+ * @typedef {import('@web3-storage/upload-api').Assert} Assert
+ * @typedef {(assert: Assert, context: TestContext) => unknown} Test
+ * @typedef {Record<string, Test>} Tests
+ * @typedef {import('@web3-storage/upload-api').UcantoServerTestContext} UploadAPITestContext
+ * @typedef {UploadAPITestContext & {
+ * dynamo: import('@aws-sdk/client-dynamodb').DynamoDBClient
+ * sqs: {
+ *  channel: import('@aws-sdk/client-sqs').SQSClient
+ * },
+ * s3: {
+ *  channel: import('@aws-sdk/client-s3').S3Client,
+ *  region: string,
+ * },
+ * r2: {
+ *  channel: import('@aws-sdk/client-s3').S3Client,
+ *  region: string,
+ * },
+ * buckets: {
+ *  index: { name: string }
+ *  message: { name: string }
+ * }
+ * }} TestContext
+ * 
  * @param {import('ava').ExecutionContext} t
- * @returns {Promise<import('@web3-storage/upload-api').UcantoServerTestContext>}
+ * @returns {Promise<TestContext>}
  */
 export async function executionContextToUcantoTestServerContext(t) {
   const service = Signer.Signer.parse('MgCYWjE6vp0cn3amPan2xPO+f6EZ3I+KwuN1w2vx57vpJ9O0Bn4ci4jn8itwc121ujm7lDHkCW24LuKfZwIdmsifVysY=').withDID(
@@ -208,6 +233,7 @@ export async function executionContextToUcantoTestServerContext(t) {
   const agentStore = AgentStore.open({
     store: {
       connection: { channel: s3 },
+      region: 'us-west-2',
       buckets: {
         message: { name: workflowBucketName },
         index: { name: invocationsBucketName },
@@ -357,6 +383,23 @@ export async function executionContextToUcantoTestServerContext(t) {
     service: id,
     connection,
     fetch,
+
+    dynamo,
+    sqs: {
+      channel: sqs
+    },
+    r2: {
+      channel: r2,
+      region: 'us-west-2',
+    },
+    s3: {
+      channel: s3,
+      region: 'us-west-2',
+    },
+    buckets: {
+      index: { name: invocationsBucketName },
+      message: { name: workflowBucketName },
+    },
   }
 }
 
