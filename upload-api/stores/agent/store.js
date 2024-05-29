@@ -15,7 +15,7 @@ import * as API from '../../types.js'
 export { API }
 
 /**
- * @typedef {import('@aws-sdk/client-s3').S3ClientConfig & {region:string}} Address
+ * @typedef {import('@aws-sdk/client-s3').S3ClientConfig} Address
  * @typedef {S3Client} Channel
  *
  * @typedef {API.Variant<{
@@ -29,10 +29,12 @@ export { API }
  *
  * @typedef {object} Options
  * @property {Connection} connection
+ * @property {string} region
  * @property {Buckets} buckets
  *
  * @typedef {object} Store
  * @property {Channel} channel
+ * @property {string} region
  * @property {Buckets} buckets
  */
 
@@ -40,8 +42,9 @@ export { API }
  * @param {Options} options
  * @returns {Store}
  */
-export const open = ({ connection, buckets }) => ({
-  channel: connection.channel ?? new S3Client(connection.address),
+export const open = ({ connection, region, buckets }) => ({
+  channel: connection.channel ?? new S3Client({ ...connection.address, region }),
+  region,
   buckets,
 })
 

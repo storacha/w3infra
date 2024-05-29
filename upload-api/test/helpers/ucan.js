@@ -208,6 +208,7 @@ export async function executionContextToUcantoTestServerContext(t) {
   const agentStore = AgentStore.open({
     store: {
       connection: { channel: s3 },
+      region: 'us-west-2',
       buckets: {
         message: { name: workflowBucketName },
         index: { name: invocationsBucketName },

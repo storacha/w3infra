@@ -655,6 +655,7 @@ async function getStores(ctx) {
       connection: {
         channel: ctx.s3
       },
+      region: 'us-west-2',
       buckets: {
         message: { name: workflowBucketName },
         index: { name: invocationBucketName }

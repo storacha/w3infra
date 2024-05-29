@@ -111,9 +111,9 @@ function createAuthorizeContext () {
     store: {
       connection: {
         address: {
-          region: AWS_REGION,
         },
       },
+      region: AWS_REGION,
       buckets: {
         message: { name: WORKFLOW_BUCKET_NAME },
         index: { name: INVOCATION_BUCKET_NAME },

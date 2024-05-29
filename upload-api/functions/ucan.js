@@ -32,9 +32,9 @@ async function handlerFn(request) {
     store: {
       connection: {
         address: {
-          region: AWS_REGION,
         },
       },
+      region: AWS_REGION,
       buckets: {
         message: { name: workflowBucketName },
         index: { name: invocationBucketName },
