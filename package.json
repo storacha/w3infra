@@ -64,7 +64,7 @@
     "@ipld/dag-json": "^10.1.5",
     "@web-std/stream": "^1.0.3",
     "aws-cdk-lib": "2.142.1",
-    "@web3-storage/upload-api": "16.0.0-dev-agent-store",
+    "@web3-storage/upload-api": "16.0.0-dev-agent-store-4",
     "sst": "^2.40.3"
   },
   "simple-git-hooks": {
