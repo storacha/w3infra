@@ -173,7 +173,7 @@ export async function ucanInvocationRouter(request) {
       credentials: {
         accessKeyId: carparkBucketAccessKeyId,
         secretAccessKey: carparkBucketSecretAccessKey,
-      },
+      }, 
     }),
     createBlobsStorage(AWS_REGION, storeBucketName),
   )

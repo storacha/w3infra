@@ -3,51 +3,38 @@ import * as CAR from '@ucanto/transport/car'
 import * as Signer from '@ucanto/principal/ed25519'
 import * as UcantoClient from '@ucanto/client'
 
-import { stringToDelegation } from '@web3-storage/access/encoding'
-import { connect, createServer } from '@web3-storage/upload-api'
-import { DebugEmail } from '@web3-storage/upload-api/test'
-import { createBucket, createTable } from '../helpers/resources.js'
+import { stringToDelegation } from '@web3-storage/access/encoding';
+import { connect, createServer } from '@web3-storage/upload-api';
+import { DebugEmail } from '@web3-storage/upload-api/test';
 import {
-  storeTableProps,
-  uploadTableProps,
-  allocationTableProps,
-  consumerTableProps,
-  delegationTableProps,
-  subscriptionTableProps,
-  rateLimitTableProps,
-  revocationTableProps,
-  spaceMetricsTableProps,
-} from '../../tables/index.js'
-import { useAllocationsStorage } from '../../stores/allocations.js'
-import { composeblobStoragesWithOrderedHas } from '../../stores/blobs.js'
-import {
-  composeCarStoresWithOrderedHas,
-  useCarStore,
-} from '../../buckets/car-store.js'
-import { useDudewhereStore } from '../../buckets/dudewhere-store.js'
-import { useStoreTable } from '../../tables/store.js'
-import { useUploadTable } from '../../tables/upload.js'
-import { useProvisionStore } from '../../stores/provisions.js'
-import { useConsumerTable } from '../../tables/consumer.js'
-import { useSubscriptionTable } from '../../tables/subscription.js'
-import { useDelegationsTable } from '../../tables/delegations.js'
-import { useRevocationsTable } from '../../stores/revocations.js'
-import { useDelegationsStore } from '../../buckets/delegations-store.js'
-import { useInvocationStore } from '../../buckets/invocation-store.js'
-import { useWorkflowStore } from '../../buckets/workflow-store.js'
-import { useRateLimitTable } from '../../tables/rate-limit.js'
-import { useSpaceMetricsTable } from '../../tables/space-metrics.js'
-import {
-  createCustomerStore,
-  customerTableProps,
-} from '../../../billing/tables/customer.js'
-import { usePlansStore } from '../../stores/plans.js'
-import { pieceTableProps } from '../../../filecoin/store/index.js'
+  createBucket,
+  createTable
+} from '../helpers/resources.js';
+import { storeTableProps, uploadTableProps, allocationTableProps, consumerTableProps, delegationTableProps, subscriptionTableProps, rateLimitTableProps, revocationTableProps, spaceMetricsTableProps } from '../../tables/index.js';
+import { useAllocationsStorage } from '../../stores/allocations.js';
+import { composeblobStoragesWithOrderedHas } from '../../stores/blobs.js';
+import { composeCarStoresWithOrderedHas, useCarStore } from '../../buckets/car-store.js';
+import { useDudewhereStore } from '../../buckets/dudewhere-store.js';
+import { useStoreTable } from '../../tables/store.js';
+import { useUploadTable } from '../../tables/upload.js';
+import { useProvisionStore } from '../../stores/provisions.js';
+import { useConsumerTable } from '../../tables/consumer.js';
+import { useSubscriptionTable } from '../../tables/subscription.js';
+import { useDelegationsTable } from '../../tables/delegations.js';
+import { useRevocationsTable } from '../../stores/revocations.js';
+import { useDelegationsStore } from '../../buckets/delegations-store.js';
+import { useInvocationStore } from '../../buckets/invocation-store.js';
+import { useWorkflowStore } from '../../buckets/workflow-store.js';
+import { useRateLimitTable } from '../../tables/rate-limit.js';
+import { useSpaceMetricsTable } from '../../tables/space-metrics.js';
+import { createCustomerStore, customerTableProps } from '../../../billing/tables/customer.js';
+import { usePlansStore } from '../../stores/plans.js';
+import { pieceTableProps } from '../../../filecoin/store/index.js';
 import { usePieceTable } from '../../../filecoin/store/piece.js'
 import { createTaskStore as createFilecoinTaskStore } from '../../../filecoin/store/task.js'
 import { createReceiptStore as createFilecoinReceiptStore } from '../../../filecoin/store/receipt.js'
 import * as AgentStore from '../../stores/agent.js'
-import { createTestBillingProvider } from './billing.js'
+import { createTestBillingProvider } from './billing.js';
 import { useTestBlobsStorage } from './blobs-storage.js'
 import { createTestIPNIService } from './ipni-service.js'
 
@@ -195,12 +182,14 @@ export const encodeAgentMessage = async (source) => {
  * @returns {Promise<import('@web3-storage/upload-api').UcantoServerTestContext>}
  */
 export async function executionContextToUcantoTestServerContext(t) {
-  const service = Signer.Signer.parse(
-    'MgCYWjE6vp0cn3amPan2xPO+f6EZ3I+KwuN1w2vx57vpJ9O0Bn4ci4jn8itwc121ujm7lDHkCW24LuKfZwIdmsifVysY='
-  ).withDID('did:web:test.web3.storage')
-  const { dynamo, sqs, s3, r2 } = t.context
+  const service = Signer.Signer.parse('MgCYWjE6vp0cn3amPan2xPO+f6EZ3I+KwuN1w2vx57vpJ9O0Bn4ci4jn8itwc121ujm7lDHkCW24LuKfZwIdmsifVysY=').withDID(
+    'did:web:test.web3.storage'
+  );
+  const { dynamo, sqs, s3, r2 } = t.context;
   const bucketName = await createBucket(s3)
-  const r2CarStoreBucketName = r2 ? await createBucket(r2) : undefined
+  const r2CarStoreBucketName = r2
+    ? await createBucket(r2)
+    : undefined
   const delegationsBucketName = await createBucket(s3)
   const invocationsBucketName = await createBucket(s3)
   const workflowBucketName = await createBucket(s3)
@@ -211,9 +200,9 @@ export async function executionContextToUcantoTestServerContext(t) {
     : undefined
   const blobsStorage = r2BlobsStorageBucket
     ? composeblobStoragesWithOrderedHas(
-        s3BlobsStorageBucket,
-        r2BlobsStorageBucket
-      )
+      s3BlobsStorageBucket,
+      r2BlobsStorageBucket,
+    )
     : s3BlobsStorageBucket
 
   const agentStore = AgentStore.open({
@@ -229,8 +218,7 @@ export async function executionContextToUcantoTestServerContext(t) {
       name: '',
     },
   })
-  const allocationsStorage = useAllocationsStorage(
-    dynamo,
+  const allocationsStorage = useAllocationsStorage(dynamo,
     await createTable(dynamo, allocationTableProps)
   )
   const getServiceConnection = () => connection
@@ -239,12 +227,12 @@ export async function executionContextToUcantoTestServerContext(t) {
   const storeTable = useStoreTable(
     dynamo,
     await createTable(dynamo, storeTableProps)
-  )
+  );
 
   const uploadTable = useUploadTable(
     dynamo,
     await createTable(dynamo, uploadTableProps)
-  )
+  );
 
   // To be deprecated
   const s3CarStoreBucket = useCarStore(s3, bucketName)
@@ -252,14 +240,17 @@ export async function executionContextToUcantoTestServerContext(t) {
     ? useCarStore(r2, r2CarStoreBucketName)
     : undefined
   const carStoreBucket = r2CarStoreBucket
-    ? composeCarStoresWithOrderedHas(s3CarStoreBucket, r2CarStoreBucket)
+    ? composeCarStoresWithOrderedHas(
+      s3CarStoreBucket,
+      r2CarStoreBucket,
+    )
     : s3CarStoreBucket
 
-  const dudewhereBucket = useDudewhereStore(s3, bucketName)
+  const dudewhereBucket = useDudewhereStore(s3, bucketName);
 
-  const signer = await Signer.Signer.generate()
-  const id = signer.withDID('did:web:test.web3.storage')
-  const aggregatorSigner = await Signer.Signer.generate()
+  const signer = await Signer.Signer.generate();
+  const id = signer.withDID('did:web:test.web3.storage');
+  const aggregatorSigner = await Signer.Signer.generate();
 
   const revocationsStorage = useRevocationsTable(
     dynamo,
@@ -273,7 +264,7 @@ export async function executionContextToUcantoTestServerContext(t) {
       invocationBucket: useInvocationStore(s3, invocationsBucketName),
       workflowBucket: useWorkflowStore(s3, workflowBucketName),
     }
-  )
+  );
   const rateLimitsStorage = useRateLimitTable(
     dynamo,
     await createTable(dynamo, rateLimitTableProps)
@@ -281,11 +272,11 @@ export async function executionContextToUcantoTestServerContext(t) {
   const subscriptionTable = useSubscriptionTable(
     dynamo,
     await createTable(dynamo, subscriptionTableProps)
-  )
+  );
   const consumerTable = useConsumerTable(
     dynamo,
     await createTable(dynamo, consumerTableProps)
-  )
+  );
   const spaceMetricsTable = useSpaceMetricsTable(
     dynamo,
     await createTable(dynamo, spaceMetricsTableProps)
@@ -299,13 +290,11 @@ export async function executionContextToUcantoTestServerContext(t) {
     consumerTable,
     spaceMetricsTable,
     [service.did()]
-  )
-  const customersStore = createCustomerStore(dynamo, {
-    tableName: await createTable(dynamo, customerTableProps),
-  })
+  );
+  const customersStore = createCustomerStore(dynamo, { tableName: await createTable(dynamo, customerTableProps) })
   const billingProvider = createTestBillingProvider()
   const plansStorage = usePlansStore(customersStore, billingProvider)
-  const email = new DebugEmail()
+  const email = new DebugEmail();
   const ipniService = await createTestIPNIService({ sqs, dynamo }, blobsStorage)
 
   /** @type {import('@web3-storage/upload-api').UcantoServerContext} */
@@ -326,7 +315,7 @@ export async function executionContextToUcantoTestServerContext(t) {
     plansStorage,
     errorReporter: {
       catch(error) {
-        t.fail(error.message)
+        t.fail(error.message);
       },
     },
     maxUploadSize: 5_000_000_000,
@@ -342,16 +331,8 @@ export async function executionContextToUcantoTestServerContext(t) {
     // filecoin/*
     aggregatorId: aggregatorSigner,
     pieceStore,
-    taskStore: createFilecoinTaskStore(
-      s3,
-      invocationsBucketName,
-      workflowBucketName
-    ),
-    receiptStore: createFilecoinReceiptStore(
-      s3,
-      invocationsBucketName,
-      workflowBucketName
-    ),
+    taskStore: createFilecoinTaskStore(s3, invocationsBucketName, workflowBucketName),
+    receiptStore: createFilecoinReceiptStore(s3, invocationsBucketName, workflowBucketName),
     // @ts-expect-error not tested here
     pieceOfferQueue: {},
     // @ts-expect-error not tested here
@@ -360,13 +341,13 @@ export async function executionContextToUcantoTestServerContext(t) {
     options: {
       // TODO: we compute and put all pieces into the queue on bucket event
       // We may change this to validate user provided piece
-      skipFilecoinSubmitQueue: true,
+      skipFilecoinSubmitQueue: true
     },
-  }
+  };
   const connection = connect({
     id: serviceContext.id,
-    channel: createServer(serviceContext),
-  })
+    channel: createServer(serviceContext)
+  });
 
   return {
     ...serviceContext,
