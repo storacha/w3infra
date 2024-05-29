@@ -2,15 +2,14 @@ import { s3 as test } from './helpers/context.js'
 
 import * as AgentStore from '../stores/agent.js'
 import * as Stream from '../stores/agent/stream.js'
-import { GetObjectCommand, HeadObjectCommand } from '@aws-sdk/client-s3'
+import { HeadObjectCommand } from '@aws-sdk/client-s3'
 import * as Signer from '@ucanto/principal/ed25519'
 // eslint-disable-next-line no-unused-vars
-import { Receipt, CBOR, API } from '@ucanto/core'
+import { Receipt, API } from '@ucanto/core'
 import * as CAR from '@ucanto/transport/car'
 import { add as storeAdd } from '@web3-storage/capabilities/store'
 import { add as uploadAdd } from '@web3-storage/capabilities/upload'
 import { toString } from 'uint8arrays/to-string'
-import { equals } from 'uint8arrays/equals'
 // @ts-expect-error
 import lambdaUtils from 'aws-lambda-test-utils'
 
@@ -24,9 +23,7 @@ import {
   encodeAgentMessage,
 } from './helpers/ucan.js'
 
-import { useInvocationStore } from '../buckets/invocation-store.js'
-import { useTaskStore } from '../buckets/task-store.js'
-import { useWorkflowStore } from '../buckets/workflow-store.js'
+
 import {
   processUcanLogRequest,
   replaceAllLinkValues
@@ -48,6 +45,9 @@ test.before(async (t) => {
 test('processes agent message as CAR with multiple invocations', async (t) => {
   t.plan(18)
   const kinesis = {
+    /**
+     * @param {any} input 
+     */
     putRecords: (input) => {
       t.is(input.StreamName, agentStore.connection.stream.name)
       t.is(input.Records?.length, invocations.length)
@@ -434,7 +434,6 @@ test('can process ucan log request for given receipt after its invocation stored
   const invocationCid = message.invocations[0].cid
 
   t.deepEqual(invocationCid.bytes, invocation.link().bytes)
-  const taskCid = invocationCid
 
   // Create Workflow request with car
   const workflowRequest = lambdaUtils.mockEventCreator.createAPIGatewayEvent({
