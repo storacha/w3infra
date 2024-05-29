@@ -51,7 +51,6 @@ export async function add(
       proofs,
     })
   const blobAddresult = await blobAddInvocation.execute(conn)
-
   if (!blobAddresult.out.ok) {
     throw new Error(`failed ${BlobCapabilities.add.can} invocation`, {
       cause: blobAddresult.out.error,
@@ -167,7 +166,9 @@ export function parseBlobAddReceiptNext(receipt) {
   const putTask = forkInvocations.find(
     (fork) => fork.capabilities[0].can === HTTPCapabilities.put.can
   )
-  const acceptTask = receipt.fx.join
+  const acceptTask = forkInvocations.find(
+    (fork) => fork.capabilities[0].can === W3sBlobCapabilities.accept.can
+  )
   if (!allocateTask || !concludefxs.length || !putTask || !acceptTask) {
     throw new Error('mandatory effects not received')
   }
