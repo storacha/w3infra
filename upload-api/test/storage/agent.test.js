@@ -23,8 +23,8 @@ for (const [title, unit] of Object.entries(agentStoreTests)) {
   const define = title.startsWith('only ')
     ? test.only
     : title.startsWith('skip ')
-    ? test.skip
-    : test
+      ? test.skip
+      : test
   define(title, async (t) => {
     await unit(
       assertsFromExecutionContext(t),

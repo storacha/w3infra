@@ -154,7 +154,6 @@ export function UploadApiStack({ stack, app }) {
     },
     routes: {
       'POST /':       'upload-api/functions/ucan-invocation-router.handler',
-      'POST /ucan':   'upload-api/functions/ucan.handler',
       'POST /bridge': 'upload-api/functions/bridge.handler',
       'GET /':        'upload-api/functions/get.home',
       'GET /validate-email': 'upload-api/functions/validate-email.preValidateEmail',
