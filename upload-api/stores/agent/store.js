@@ -338,14 +338,14 @@ const list = async (connection, { prefix, suffix }) => {
       ? { ok: /** @type {[string, ...string[]]} */ (entries) }
       : {
           error: new RecordNotFound(
-            `any pseudo symlink from invocation ${prefix}*${suffix} was found`
+            `no pseudo symlink matching query ${prefix}*${suffix} was found`
           ),
         }
   } catch (/** @type {any} */ error) {
     if (error?.$metadata?.httpStatusCode === 404) {
       return {
         error: new RecordNotFound(
-          `any pseudo symlink from invocation ${prefix}*${suffix} was found`
+          `no pseudo symlink matching query ${prefix}*${suffix} was found`
         ),
       }
     }
@@ -409,8 +409,8 @@ export const toMessageURL = (store, message) =>
  * @param {API.Link} source.message 
  */
 
-export const toMessagePath = (source) =>
-  `${source}/${source}`
+export const toMessagePath = ({message}) =>
+  `${message}/${message}`
 
 /**
  * @param {object} source
