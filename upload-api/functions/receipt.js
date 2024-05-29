@@ -1,7 +1,7 @@
 import * as Sentry from '@sentry/serverless'
 import { parseLink } from '@ucanto/server'
 
-import { createInvocationStore } from '../buckets/invocation-store.js'
+import * as Store from '../stores/agent/store.js'
 import { mustGetEnv } from './utils.js'
 
 Sentry.AWSLambda.init({
@@ -10,22 +10,16 @@ Sentry.AWSLambda.init({
   tracesSampleRate: 1.0,
 })
 
-const AWS_REGION = process.env.AWS_REGION || 'us-west-2'
 
 /**
  * AWS HTTP Gateway handler for GET /receipt.
  *
- * @param {import('aws-lambda').APIGatewayProxyEventV2} event
+ * @param {{pathParameters: {taskCid?: string}}} event
+ * @param {Store.Options} options
+ * 
  */
-export async function receiptGet (event) {
-  const {
-    invocationBucketName,
-    workflowBucketName,
-  } = getLambdaEnv()
-  const invocationBucket = createInvocationStore(
-    AWS_REGION,
-    invocationBucketName
-  )
+export async function receiptGet (event, options = implicitContext()) {
+  const store = Store.open(options)
 
   if (!event.pathParameters?.taskCid) {
     return {
@@ -34,24 +28,38 @@ export async function receiptGet (event) {
     }
   }
   const taskCid = parseLink(event.pathParameters.taskCid)
-
-  const workflowLinkWithReceipt = await invocationBucket.getWorkflowLink(taskCid.toString())
-  const url = `https://${workflowBucketName}.s3.${AWS_REGION}.amazonaws.com/${workflowLinkWithReceipt}/${workflowLinkWithReceipt}`
+  const result = await Store.resolve(store, { receipt: taskCid })
+  if (result.error) {
+    console.log(result.error)
+    return {
+      statusCode: 404,
+      body: Buffer.from(`No receipt for task ${taskCid} is found`)
+    }
+  }
+  const url = Store.toMessageURL(store, result.ok.message)
 
   // redirect to bucket
   return {
     statusCode: 302,
     headers: {
-      Location: url
+      Location: url.href
     }
   }
 }
 
-function getLambdaEnv () {
+/**
+ * 
+ * @returns {Store.Options}
+ */
+export function implicitContext () {
   return {
-    invocationBucketName: mustGetEnv('INVOCATION_BUCKET_NAME'),
-    workflowBucketName: mustGetEnv('WORKFLOW_BUCKET_NAME'),
+    connection: { address: {} },
+    region: process.env.AWS_REGION || 'us-west-2',
+    buckets: {
+      index: { name: mustGetEnv('INVOCATION_BUCKET_NAME') },
+      message: { name: mustGetEnv('WORKFLOW_BUCKET_NAME') },
+    }
   }
 }
 
-export const handler = Sentry.AWSLambda.wrapHandler(receiptGet)
+export const handler = Sentry.AWSLambda.wrapHandler((event) => receiptGet(event))
