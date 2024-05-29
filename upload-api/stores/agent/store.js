@@ -152,6 +152,7 @@ export const getInvocation = async (store, task) => {
  *
  * @param {Store} store
  * @param {API.UnknownLink} task
+ * @returns {Promise<API.Result<API.Receipt, API.StorageGetError>>}
  */
 export const getReceipt = async (store, task) => {
   const result = await load(store, { invocation: task })

@@ -32,6 +32,7 @@ class AgentMessageStore {
   constructor(connection) {
     this.connection = connection
     this.invocations = new InvocationsIndex(connection.store)
+    
     this.receipts = new ReceiptsIndex(connection.store)
   }
 
@@ -101,6 +102,9 @@ class InvocationsIndex {
   }
 }
 
+/**
+ * @implements {API.Accessor<API.UnknownLink, API.Receipt>}
+ */
 class ReceiptsIndex {
   /**
    * @param {Store.Store} connection
@@ -111,8 +115,9 @@ class ReceiptsIndex {
 
   /**
    * @param {API.UnknownLink} task
+   * @returns {Promise<API.Result<API.Receipt, API.StorageGetError>>}
    */
-  async get(task) {
+  get(task) {
     return Store.getReceipt(this.connection, task)
   }
 }
