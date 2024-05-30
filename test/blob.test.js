@@ -13,7 +13,7 @@ import { Assert } from '@web3-storage/content-claims/capability'
 import { ShardingStream, UnixFS, Upload, Index } from '@web3-storage/upload-client'
 import { codec as carCodec } from '@ucanto/transport/car'
 import { ShardedDAGIndex } from '@web3-storage/blob-index'
-import { useReceiptsStorage } from '../upload-api/stores/receipts.js'
+import * as AgentStore from '../upload-api/stores/agent.js'
 
 import { METRICS_NAMES, SPACE_METRICS_NAMES } from '../upload-api/constants.js'
 
@@ -26,6 +26,7 @@ import {
   getCarparkBucketInfo,
   getRoundaboutEndpoint,
   getDynamoDb,
+  getAwsRegion
 } from './helpers/deployment.js'
 import { randomFile } from './helpers/random.js'
 import { createMailSlurpInbox, setupNewClient, getServiceProps } from './helpers/up-client.js'
@@ -203,12 +204,24 @@ test('blob integration flow with receipts validation', async t => {
   t.is(r2IndexRequest.$metadata.httpStatusCode, 200)
 
   // Check receipts were written
-  const receiptsStorage = useReceiptsStorage(s3Client, `task-store-${stage}-0`, `invocation-store-${stage}-0`, `workflow-store-${stage}-0`)
-  const getPutTaskReceipt = await receiptsStorage.get(next?.put.task.link())
+  const agentStore = AgentStore.open({
+    store: {
+      region: getAwsRegion(),
+      connection: { channel: s3Client },
+      buckets: {
+        message: { name: `workflow-store-${stage}-0` },
+        index: { name: `invocation-store-${stage}-0` },
+      },
+    },
+    stream: {
+      connection: { disable: {} },
+      name: '',
+    },
+  })
+  const getPutTaskReceipt = await agentStore.receipts.get(next?.put.task.link())
   t.truthy(getPutTaskReceipt.ok?.out.ok)
   t.deepEqual(getPutTaskReceipt.ok?.out.ok, {})
-
-  const getAcceptTaskReceipt = await receiptsStorage.get(next?.accept.task.link())
+  const getAcceptTaskReceipt = await agentStore.receipts.get(next?.accept.task.link())
   t.truthy(getAcceptTaskReceipt.ok?.out.ok)
   t.truthy(getAcceptTaskReceipt.ok?.out.ok.site)
 

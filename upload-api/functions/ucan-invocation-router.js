@@ -1,15 +1,11 @@
 import { API } from '@ucanto/core'
-import * as Server from '@ucanto/server'
-import { Kinesis } from '@aws-sdk/client-kinesis'
 import * as Sentry from '@sentry/serverless'
 import * as DID from '@ipld/dag-ucan/did'
 import Stripe from 'stripe'
 
-import { processAgentMessageArchive } from '../ucan-invocation.js'
 import { composeCarStoresWithOrderedHas, createCarStore } from '../buckets/car-store.js'
 import { createDudewhereStore } from '../buckets/dudewhere-store.js'
 import { createInvocationStore } from '../buckets/invocation-store.js'
-import { createTaskStore } from '../buckets/task-store.js'
 import { createWorkflowStore } from '../buckets/workflow-store.js'
 import { createStoreTable } from '../tables/store.js'
 import { createUploadTable } from '../tables/upload.js'
@@ -23,8 +19,7 @@ import { createUcantoServer } from '../service.js'
 import { Config } from 'sst/node/config'
 import { CAR, Legacy, Codec } from '@ucanto/transport'
 import { Email } from '../email.js'
-import { createTasksStorage } from '../stores/tasks.js'
-import { createReceiptsStorage } from '../stores/receipts.js'
+import * as AgentStore from '../stores/agent.js'
 import { createAllocationsStorage } from '../stores/allocations.js'
 import { createBlobsStorage, composeblobStoragesWithOrderedHas } from '../stores/blobs.js'
 import { useProvisionStore } from '../stores/provisions.js'
@@ -43,8 +38,8 @@ import { createSpaceDiffStore } from '@web3-storage/w3infra-billing/tables/space
 import { createSpaceSnapshotStore } from '@web3-storage/w3infra-billing/tables/space-snapshot.js'
 import { useUsageStore } from '../stores/usage.js'
 import { createStripeBillingProvider } from '../billing.js'
-import { createTasksScheduler } from '../scheduler.js'
 import { createIPNIService } from '../external-services/ipni-service.js'
+import * as UploadAPI from '@web3-storage/upload-api'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -60,7 +55,6 @@ export { API }
  * @property {import('@ucanto/interface').Signer} signer
  */
 
-const kinesisClient = new Kinesis({})
 const AWS_REGION = process.env.AWS_REGION || 'us-west-2'
 
 // Specified in SST environment
@@ -121,7 +115,6 @@ export async function ucanInvocationRouter(request) {
     r2DelegationBucketSecretAccessKey,
     r2DelegationBucketName,
     invocationBucketName,
-    taskBucketName,
     workflowBucketName,
     streamName,
     postmarkToken,
@@ -129,7 +122,6 @@ export async function ucanInvocationRouter(request) {
     aggregatorDid,
     dealTrackerDid,
     dealTrackerUrl,
-    uploadServiceURL,
     pieceOfferQueueUrl,
     filecoinSubmitQueueUrl,
     requirePaymentPlan,
@@ -154,8 +146,24 @@ export async function ucanInvocationRouter(request) {
   const { PRIVATE_KEY, STRIPE_SECRET_KEY } = Config
   const serviceSigner = getServiceSigner({ did: UPLOAD_API_DID, privateKey: PRIVATE_KEY })
 
-  const tasksStorage = createTasksStorage(AWS_REGION, invocationBucketName, workflowBucketName)
-  const receiptsStorage = createReceiptsStorage(AWS_REGION, taskBucketName, invocationBucketName, workflowBucketName)
+  const agentStore = AgentStore.open({
+    store: {
+      connection: {
+        address: {
+        },
+      },
+      region: AWS_REGION,
+      buckets: {
+        message: { name: workflowBucketName },
+        index: { name: invocationBucketName },
+      },
+    },
+    stream: {
+      connection: { address: {} },
+      name: streamName,
+    },
+  })
+
   const allocationsStorage = createAllocationsStorage(AWS_REGION, allocationTableName, {
     endpoint: dbEndpoint,
   })
@@ -174,7 +182,6 @@ export async function ucanInvocationRouter(request) {
     AWS_REGION,
     invocationBucketName
   )
-  const taskBucket = createTaskStore(AWS_REGION, taskBucketName)
   const workflowBucket = createWorkflowStore(AWS_REGION, workflowBucketName)
   const delegationBucket = createDelegationsStore(r2DelegationBucketEndpoint, r2DelegationBucketAccessKeyId, r2DelegationBucketSecretAccessKey, r2DelegationBucketName)
   const subscriptionTable = createSubscriptionTable(AWS_REGION, subscriptionTableName, {
@@ -202,11 +209,7 @@ export async function ucanInvocationRouter(request) {
     did: dealTrackerDid,
     url: dealTrackerUrl
   })
-  const selfConnection = getServiceConnection({
-    did: serviceSigner.did(),
-    url: uploadServiceURL
-  })
-  const tasksScheduler = createTasksScheduler(() => selfConnection)
+
   const ipniService = createIPNIService(multihashesQueueConfig, blocksCarsPositionTableConfig, blobsStorage)
 
   const server = createUcantoServer(serviceSigner, {
@@ -214,10 +217,7 @@ export async function ucanInvocationRouter(request) {
     allocationsStorage,
     blobsStorage,
     blobRetriever: blobsStorage,
-    tasksStorage,
-    receiptsStorage,
-    tasksScheduler,
-    getServiceConnection: () => selfConnection,
+    getServiceConnection: () => connection,
     // TODO: to be deprecated with `store/*` protocol
     storeTable: createStoreTable(AWS_REGION, storeTableName, {
       endpoint: dbEndpoint,
@@ -230,7 +230,7 @@ export async function ucanInvocationRouter(request) {
         credentials: {
           accessKeyId: carparkBucketAccessKeyId,
           secretAccessKey: carparkBucketSecretAccessKey,
-        }, 
+        },
       }),
     ),
     // TODO: to be deprecated with `store/*` protocol
@@ -248,6 +248,7 @@ export async function ucanInvocationRouter(request) {
     // TODO: we should set URL from a different env var, doing this for now to avoid that refactor - tracking in https://github.com/web3-storage/w3infra/issues/209
     url: new URL(accessServiceURL),
     email: new Email({ token: postmarkToken }),
+    agentStore,
     provisionsStorage,
     subscriptionsStorage,
     delegationsStorage,
@@ -273,56 +274,14 @@ export async function ucanInvocationRouter(request) {
     ipniService,
   })
 
-  const processingCtx = {
-    invocationBucket,
-    taskBucket,
-    workflowBucket,
-    streamName,
-    kinesisClient,
-  }
+  const connection = UploadAPI.connect({
+    id: serviceSigner,
+    channel: server,
+  })
 
   const payload = fromLambdaRequest(request)
 
-  const result = server.codec.accept(payload)
-  // if we can not select a codec we respond with error.
-  if (result.error) {
-    return toLambdaResponse({
-      status: result.error.status,
-      headers: result.error.headers || {},
-      body: Buffer.from(result.error.message || ''),
-    })
-  }
-
-  const { encoder, decoder } = result.ok
-
-  const contentType = payload.headers['content-type']
-  // Process workflow
-  // We block until we can log the UCAN invocation if this fails we return a 500
-  // to the client. That is because in the future we expect that invocations will
-  // be written to a queue first and then processed asynchronously, so if we
-  // fail to queue the invocation we should not handle it.
-  const incoming = await processAgentMessageArchive(
-    // If the `content-type` is set to `application/vnd.ipld.car` use CAR codec
-    // format is already up to date so we pass payload as is. Otherwise we
-    // transform the payload into modern CAR format.
-    contentType === CAR.contentType
-      ? payload
-      : CAR.request.encode(await decoder.decode(payload)),
-    processingCtx
-  )
-
-  // Execute invocations
-  const outgoing = await Server.execute(incoming, server)
-
-  const response = await encoder.encode(outgoing)
-  await processAgentMessageArchive(
-    // If response is already in CAR format we pass it as is. Otherwise we
-    // transform the response into legacy CAR format.
-    response.headers['content-type'] === CAR.contentType
-      ? response
-      : CAR.response.encode(outgoing),
-    processingCtx
-  )
+  const response = await UploadAPI.handle(server, payload)
 
   return toLambdaResponse(response)
 }

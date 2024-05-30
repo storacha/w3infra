@@ -11,8 +11,6 @@ import {
   createTable
 } from '../helpers/resources.js';
 import { storeTableProps, uploadTableProps, allocationTableProps, consumerTableProps, delegationTableProps, subscriptionTableProps, rateLimitTableProps, revocationTableProps, spaceMetricsTableProps } from '../../tables/index.js';
-import { useTasksStorage } from '../../stores/tasks.js';
-import { useReceiptsStorage } from '../../stores/receipts.js';
 import { useAllocationsStorage } from '../../stores/allocations.js';
 import { composeblobStoragesWithOrderedHas } from '../../stores/blobs.js';
 import { composeCarStoresWithOrderedHas, useCarStore } from '../../buckets/car-store.js';
@@ -35,8 +33,8 @@ import { pieceTableProps } from '../../../filecoin/store/index.js';
 import { usePieceTable } from '../../../filecoin/store/piece.js'
 import { createTaskStore as createFilecoinTaskStore } from '../../../filecoin/store/task.js'
 import { createReceiptStore as createFilecoinReceiptStore } from '../../../filecoin/store/receipt.js'
+import * as AgentStore from '../../stores/agent.js'
 import { createTestBillingProvider } from './billing.js';
-import { createTasksScheduler } from '../../scheduler.js';
 import { useTestBlobsStorage } from './blobs-storage.js'
 import { createTestIPNIService } from './ipni-service.js'
 
@@ -179,9 +177,34 @@ export const encodeAgentMessage = async (source) => {
   return await CAR.request.encode(message)
 }
 
+
+
 /**
+ * @typedef {import('@web3-storage/upload-api').Assert} Assert
+ * @typedef {(assert: Assert, context: TestContext) => unknown} Test
+ * @typedef {Record<string, Test>} Tests
+ * @typedef {import('@web3-storage/upload-api').UcantoServerTestContext} UploadAPITestContext
+ * @typedef {UploadAPITestContext & {
+ * dynamo: import('@aws-sdk/client-dynamodb').DynamoDBClient
+ * sqs: {
+ *  channel: import('@aws-sdk/client-sqs').SQSClient
+ * },
+ * s3: {
+ *  channel: import('@aws-sdk/client-s3').S3Client,
+ *  region: string,
+ * },
+ * r2: {
+ *  channel: import('@aws-sdk/client-s3').S3Client,
+ *  region: string,
+ * },
+ * buckets: {
+ *  index: { name: string }
+ *  message: { name: string }
+ * }
+ * }} TestContext
+ * 
  * @param {import('ava').ExecutionContext} t
- * @returns {Promise<import('@web3-storage/upload-api').UcantoServerTestContext>}
+ * @returns {Promise<TestContext>}
  */
 export async function executionContextToUcantoTestServerContext(t) {
   const service = Signer.Signer.parse('MgCYWjE6vp0cn3amPan2xPO+f6EZ3I+KwuN1w2vx57vpJ9O0Bn4ci4jn8itwc121ujm7lDHkCW24LuKfZwIdmsifVysY=').withDID(
@@ -192,7 +215,6 @@ export async function executionContextToUcantoTestServerContext(t) {
   const r2CarStoreBucketName = r2
     ? await createBucket(r2)
     : undefined
-  const tasksBucketName = await createBucket(s3)
   const delegationsBucketName = await createBucket(s3)
   const invocationsBucketName = await createBucket(s3)
   const workflowBucketName = await createBucket(s3)
@@ -207,13 +229,25 @@ export async function executionContextToUcantoTestServerContext(t) {
       r2BlobsStorageBucket,
     )
     : s3BlobsStorageBucket
-  const tasksStorage = useTasksStorage(s3, invocationsBucketName, workflowBucketName)
-  const receiptsStorage = useReceiptsStorage(s3, tasksBucketName, invocationsBucketName, workflowBucketName)
+
+  const agentStore = AgentStore.open({
+    store: {
+      connection: { channel: s3 },
+      region: 'us-west-2',
+      buckets: {
+        message: { name: workflowBucketName },
+        index: { name: invocationsBucketName },
+      },
+    },
+    stream: {
+      connection: { disable: {} },
+      name: '',
+    },
+  })
   const allocationsStorage = useAllocationsStorage(dynamo,
     await createTable(dynamo, allocationTableProps)
   )
   const getServiceConnection = () => connection
-  const tasksScheduler = createTasksScheduler(getServiceConnection)
 
   // To be deprecated
   const storeTable = useStoreTable(
@@ -298,9 +332,7 @@ export async function executionContextToUcantoTestServerContext(t) {
     allocationsStorage,
     blobsStorage,
     blobRetriever: blobsStorage,
-    tasksStorage,
-    receiptsStorage,
-    tasksScheduler,
+    agentStore,
     getServiceConnection,
     provisionsStorage,
     delegationsStorage,
@@ -351,6 +383,23 @@ export async function executionContextToUcantoTestServerContext(t) {
     service: id,
     connection,
     fetch,
+
+    dynamo,
+    sqs: {
+      channel: sqs
+    },
+    r2: {
+      channel: r2,
+      region: 'us-west-2',
+    },
+    s3: {
+      channel: s3,
+      region: 'us-west-2',
+    },
+    buckets: {
+      index: { name: invocationsBucketName },
+      message: { name: workflowBucketName },
+    },
   }
 }
 

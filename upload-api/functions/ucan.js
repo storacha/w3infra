@@ -1,11 +1,7 @@
 import { Config } from 'sst/node/config'
-import { Kinesis } from '@aws-sdk/client-kinesis'
 import * as Sentry from '@sentry/serverless'
-
-import { createInvocationStore } from '../buckets/invocation-store.js'
-import { createTaskStore } from '../buckets/task-store.js'
-import { createWorkflowStore } from '../buckets/workflow-store.js'
 import { processUcanLogRequest } from '../ucan-invocation.js'
+import * as AgentStore from '../stores/agent.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -13,7 +9,6 @@ Sentry.AWSLambda.init({
   tracesSampleRate: 1.0,
 })
 
-const kinesisClient = new Kinesis({})
 const AWS_REGION = process.env.AWS_REGION || 'us-west-2'
 
 /**
@@ -27,25 +22,34 @@ const AWS_REGION = process.env.AWS_REGION || 'us-west-2'
 async function handlerFn(request) {
   const {
     INVOCATION_BUCKET_NAME: invocationBucketName = '',
-    TASK_BUCKET_NAME: taskBucketName = '',
     WORKFLOW_BUCKET_NAME: workflowBucketName = '',
     UCAN_LOG_STREAM_NAME: streamName = '',
   } = process.env
 
   const { UCAN_INVOCATION_POST_BASIC_AUTH } = Config
 
-  const invocationBucket = createInvocationStore(AWS_REGION, invocationBucketName)
-  const taskBucket = createTaskStore(AWS_REGION, taskBucketName)
-  const workflowBucket = createWorkflowStore(AWS_REGION, workflowBucketName)
+  const agentStore = AgentStore.open({
+    store: {
+      connection: {
+        address: {
+        },
+      },
+      region: AWS_REGION,
+      buckets: {
+        message: { name: workflowBucketName },
+        index: { name: invocationBucketName },
+      },
+    },
+    stream: {
+      connection: { address: {} },
+      name: streamName,
+    },
+  })
 
   try {
     await processUcanLogRequest(request, {
-      invocationBucket,
-      taskBucket,
-      workflowBucket,
-      streamName,
       basicAuth: UCAN_INVOCATION_POST_BASIC_AUTH,
-      kinesisClient
+      agentStore
     })
   } catch (/** @type {any} */ error) {
     return {

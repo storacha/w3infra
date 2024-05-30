@@ -1,10 +1,6 @@
-import {
-  S3Client,
-  GetObjectCommand,
-  ListObjectsV2Command
-} from '@aws-sdk/client-s3'
-import * as CAR from '@ucanto/transport/car'
-import { StoreOperationFailed, RecordNotFound } from '@web3-storage/filecoin-api/errors'
+import { S3Client } from '@aws-sdk/client-s3'
+import { StoreOperationFailed } from '@web3-storage/filecoin-api/errors'
+import * as Store from '../../upload-api/stores/agent/store.js'
 
 /**
  * Abstraction layer with Factory to perform operations on bucket storing
@@ -30,97 +26,27 @@ export function createReceiptStore(region, invocationBucketName, workflowBucketN
  * @returns {import('@web3-storage/filecoin-api/storefront/api').ReceiptStore}
  */
 export const useReceiptStore = (s3client, invocationBucketName, workflowBucketName) => {
+  const store = Store.open({
+    connection: { channel: s3client },
+    region: typeof s3client.config.region === 'string' ? s3client.config.region : 'us-west-2',
+    buckets: {
+      index: { name: invocationBucketName },
+      message: { name: workflowBucketName },
+    }
+  })
+  
   return {
     put: async (record) => {
       return {
         error: new StoreOperationFailed('no new receipt should be put by storefront')
       }
     },
-    get: async (taskCid) => {
-      // TODO: When we distinct between TaskCid and InvocationCid, we also need to see this mapping.
-      const invocationCid = taskCid
-
-      // Find agent message archive CID where this receipt was stored
-      const encodedInvocationKeyPrefix = `${invocationCid.toString()}/`
-      const listCmd = new ListObjectsV2Command({
-        Bucket: invocationBucketName,
-        Prefix: encodedInvocationKeyPrefix
-      })
-      let listRes
-      try {
-        listRes = await s3client.send(listCmd)
-      } catch (/** @type {any} */ error) {
-        if (error?.$metadata?.httpStatusCode === 404) {
-          return {
-            error: new RecordNotFound(`any pseudo symlink from invocation ${invocationCid.toString()} was found`)
-          }
-        }
-        return {
-          error: new StoreOperationFailed(error.message)
-        }
-      }
-      if (!listRes.Contents?.length) {
-        return {
-          error: new RecordNotFound(`any pseudo symlink from invocation ${invocationCid.toString()} was found`)
-        }
-      }
-      // Key in format `${invocation.cid}/${agentMessageArchive.cid}.out`
-      const agentMessageArchiveWithReceipt = listRes.Contents.find(c => c.Key?.endsWith('.out'))
-      if (!agentMessageArchiveWithReceipt || !agentMessageArchiveWithReceipt.Key) {
-        return {
-          error: new RecordNotFound(`any pseudo symlink from invocation ${invocationCid.toString()} was found with a receipt`)
-        }
-      }
-
-      // Get Message Archive with receipt
-      const agentMessageArchiveWithReceiptCid = agentMessageArchiveWithReceipt.Key
-        .replace(encodedInvocationKeyPrefix, '')
-        .replace('.out', '')
-
-      const encodedAgentMessageArchiveKey = `${agentMessageArchiveWithReceiptCid}/${agentMessageArchiveWithReceiptCid}`
-      const getCmd = new GetObjectCommand({
-        Bucket: workflowBucketName,
-        Key: encodedAgentMessageArchiveKey,
-      })
-
-      let res
-      try {
-        res = await s3client.send(getCmd)
-      } catch (/** @type {any} */ error) {
-        if (error?.$metadata?.httpStatusCode === 404) {
-          return {
-            error: new RecordNotFound(`agent message archive ${encodedAgentMessageArchiveKey} not found in store`)
-          }
-        }
-        return {
-          error: new StoreOperationFailed(error.message)
-        }
-      }
-      if (!res || !res.Body) {
-        return {
-          error: new RecordNotFound(`agent message archive ${encodedAgentMessageArchiveKey} not found in store`)
-        }
-      }
-
-
-      // Get receipt from Message Archive
-      const agentMessageBytes = await res.Body.transformToByteArray()
-      const agentMessage = await CAR.request.decode({
-        body: agentMessageBytes,
-        headers: {},
-      })
-
-      // @ts-expect-error unknown link does not mach expectations
-      const receipt = agentMessage.receipts.get(invocationCid.toString())
-      if (!receipt) {
-        return {
-          error: new RecordNotFound(`agent message archive ${encodedAgentMessageArchiveKey} does not include receipt for invocation ${invocationCid.toString()}`)
-        }
-      }
-      return {
-        ok: receipt
-      }
-    },
+    /**
+     * @param {import('@ucanto/interface').UnknownLink} taskCid
+     */
+    get: (taskCid) =>  
+      // @ts-expect-error - need to align RecordNotFoundError
+      Store.getReceipt(store, taskCid),
     has: async (record) => {
       return {
         error: new StoreOperationFailed('no receipt should checked by storefront')

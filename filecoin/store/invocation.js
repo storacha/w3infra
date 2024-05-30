@@ -1,7 +1,6 @@
-import {
-  S3Client,
-  ListObjectsV2Command,
-} from '@aws-sdk/client-s3'
+import { S3Client } from '@aws-sdk/client-s3'
+import { parseLink } from '@ucanto/core'
+import * as Store from '../../upload-api/stores/agent/store.js'
 
 /**
  * Abstraction layer with Factory to perform operations on bucket storing
@@ -25,6 +24,15 @@ export function createInvocationStore(region, bucketName, options = {}) {
  * @returns {import('../types').InvocationBucket}
  */
 export const useInvocationStore = (s3client, bucketName) => {
+  const store = Store.open({
+    connection: { channel: s3client },
+    region: typeof s3client.config.region === 'string' ? s3client.config.region : 'us-west-2',
+    buckets: {
+      index: { name: bucketName },
+      message: { name: bucketName },
+    }
+  })
+
   return {
     /**
      * Get the agent message file CID for an invocation.
@@ -32,21 +40,10 @@ export const useInvocationStore = (s3client, bucketName) => {
      * @param {string} invocationCid 
      */
     getInLink: async (invocationCid) => {
-      const prefix = `${invocationCid}/`
-      // Multiple entries may match the key prefix. Picking an arbitrary one is fine given
-      //  can receive same invocations in multiple CAR files.
-      const listObjectCmd = new ListObjectsV2Command({
-        Bucket: bucketName,
-        Prefix: prefix,
-      })
-      const listObject = await s3client.send(listObjectCmd)
-      const carEntry = listObject.Contents?.find(
-        content => content.Key?.endsWith('.in')
-      )
-      if (!carEntry) {
-        return
+      const result = await Store.resolve(store, { invocation: parseLink(invocationCid) })
+      if (result.ok) {
+        return result.ok.message.toString()
       }
-      return carEntry.Key?.replace(prefix, '').replace('.in', '')
     },
   }
 }

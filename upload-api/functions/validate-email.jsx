@@ -11,7 +11,7 @@ import { createWorkflowStore } from '../buckets/workflow-store.js'
 import { createSubscriptionTable } from '../tables/subscription.js'
 import { createConsumerTable } from '../tables/consumer.js'
 import { createRevocationsTable } from '../stores/revocations.js'
-
+import * as AgentStore from '../stores/agent.js'
 import { useProvisionStore } from '../stores/provisions.js'
 import {
   HtmlResponse,
@@ -87,6 +87,7 @@ function createAuthorizeContext () {
     PROVIDERS = '',
     STRIPE_PRICING_TABLE_ID = '',
     STRIPE_PUBLISHABLE_KEY = '',
+    UCAN_LOG_STREAM_NAME = '',
     // set for testing
     DYNAMO_DB_ENDPOINT: dbEndpoint,
   } = process.env
@@ -105,6 +106,25 @@ function createAuthorizeContext () {
   });
   const customerStore = createCustomerStore({ region: AWS_REGION }, { tableName: CUSTOMER_TABLE_NAME })
   const spaceMetricsTable = createSpaceMetricsTable(AWS_REGION, SPACE_METRICS_TABLE_NAME)
+
+  const agentStore = AgentStore.open({
+    store: {
+      connection: {
+        address: {
+        },
+      },
+      region: AWS_REGION,
+      buckets: {
+        message: { name: WORKFLOW_BUCKET_NAME },
+        index: { name: INVOCATION_BUCKET_NAME },
+      },
+    },
+    stream: {
+      connection: { address: {} },
+      name: UCAN_LOG_STREAM_NAME,
+    },
+  })
+
   return {
     // TODO: we should set URL from a different env var, doing this for now to avoid that refactor
     url: new URL(ACCESS_SERVICE_URL),
@@ -114,7 +134,8 @@ function createAuthorizeContext () {
     revocationsStorage: createRevocationsTable(AWS_REGION, REVOCATION_TABLE_NAME),
     provisionsStorage: useProvisionStore(subscriptionTable, consumerTable, spaceMetricsTable, parseServiceDids(PROVIDERS)),
     rateLimitsStorage: createRateLimitTable(AWS_REGION, RATE_LIMIT_TABLE_NAME),
-    customerStore: customerStore,
+    customerStore,
+    agentStore,
     stripePricingTableId: STRIPE_PRICING_TABLE_ID,
     stripePublishableKey: STRIPE_PUBLISHABLE_KEY,
   }

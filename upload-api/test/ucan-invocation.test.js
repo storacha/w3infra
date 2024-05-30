@@ -1,14 +1,15 @@
 import { s3 as test } from './helpers/context.js'
 
-import { GetObjectCommand, HeadObjectCommand } from '@aws-sdk/client-s3'
+import * as AgentStore from '../stores/agent.js'
+import * as Stream from '../stores/agent/stream.js'
+import { HeadObjectCommand } from '@aws-sdk/client-s3'
 import * as Signer from '@ucanto/principal/ed25519'
 // eslint-disable-next-line no-unused-vars
-import { Receipt, CBOR, API } from '@ucanto/core'
+import { Receipt, API } from '@ucanto/core'
 import * as CAR from '@ucanto/transport/car'
 import { add as storeAdd } from '@web3-storage/capabilities/store'
 import { add as uploadAdd } from '@web3-storage/capabilities/upload'
 import { toString } from 'uint8arrays/to-string'
-import { equals } from 'uint8arrays/equals'
 // @ts-expect-error
 import lambdaUtils from 'aws-lambda-test-utils'
 
@@ -22,13 +23,10 @@ import {
   encodeAgentMessage,
 } from './helpers/ucan.js'
 
-import { useInvocationStore } from '../buckets/invocation-store.js'
-import { useTaskStore } from '../buckets/task-store.js'
-import { useWorkflowStore } from '../buckets/workflow-store.js'
+
 import {
   processUcanLogRequest,
-  replaceAllLinkValues,
-  STREAM_TYPE,
+  replaceAllLinkValues
 } from '../ucan-invocation.js'
 
 /**
@@ -46,9 +44,43 @@ test.before(async (t) => {
 
 test('processes agent message as CAR with multiple invocations', async (t) => {
   t.plan(18)
-  const stores = await getStores(t.context)
+  const kinesis = {
+    /**
+     * @param {any} input 
+     */
+    putRecords: (input) => {
+      t.is(input.StreamName, agentStore.connection.stream.name)
+      t.is(input.Records?.length, invocations.length)
+      for (const record of input.Records || []) {
+        if (!record.Data) {
+          throw new Error('must have Data')
+        }
+        const invocation = JSON.parse(toString(record.Data))
+        t.truthy(invocation)
+        t.truthy(invocation.ts)
+        t.is(invocation.type,  Stream.defaults.workflow.type)
+        t.is(invocation.carCid, agentMessageCarCid)
+
+        const cap = capabilities.find(
+          (cap) => cap.can === invocation.value.att[0].can
+        )
+        t.truthy(cap)
+        t.deepEqual(
+          replaceAllLinkValues(cap?.nb),
+          invocation.value.att[0].nb
+        )
+      }
+
+      return Promise.resolve()
+    }
+  }
+
+  const { agentStore } = await getStores({
+    ...t.context,
+    streamName: 'stream-name',
+    kinesis: { channel: kinesis }
+  })
   const basicAuth = 'test-token'
-  const streamName = 'stream-name'
 
   // Create agent message with two invocations
   const uploadService = await Signer.generate()
@@ -98,39 +130,8 @@ test('processes agent message as CAR with multiple invocations', async (t) => {
 
   await t.notThrowsAsync(() =>
     processUcanLogRequest(carRequest, {
-      invocationBucket: stores.invocation.bucket,
-      taskBucket: stores.task.bucket,
-      workflowBucket: stores.workflow.bucket,
-      basicAuth,
-      streamName,
-      kinesisClient: {
-        // @ts-expect-error not same return type
-        putRecords: (input) => {
-          t.is(input.StreamName, streamName)
-          t.is(input.Records?.length, invocations.length)
-          for (const record of input.Records || []) {
-            if (!record.Data) {
-              throw new Error('must have Data')
-            }
-            const invocation = JSON.parse(toString(record.Data))
-            t.truthy(invocation)
-            t.truthy(invocation.ts)
-            t.is(invocation.type, STREAM_TYPE.WORKFLOW)
-            t.is(invocation.carCid, agentMessageCarCid)
-
-            const cap = capabilities.find(
-              (cap) => cap.can === invocation.value.att[0].can
-            )
-            t.truthy(cap)
-            t.deepEqual(
-              replaceAllLinkValues(cap?.nb),
-              invocation.value.att[0].nb
-            )
-          }
-
-          return Promise.resolve()
-        },
-      },
+      agentStore,
+      basicAuth
     })
   )
 
@@ -140,7 +141,7 @@ test('processes agent message as CAR with multiple invocations', async (t) => {
   // Verify CAR agent message persisted
   const cmd = new HeadObjectCommand({
     Key: `${agentMessageCarCid}/${agentMessageCarCid}`,
-    Bucket: stores.workflow.name,
+    Bucket: agentStore.connection.store.buckets.message.name,
   })
   const s3Response = await t.context.s3.send(cmd)
   t.is(s3Response.$metadata.httpStatusCode, 200)
@@ -148,8 +149,8 @@ test('processes agent message as CAR with multiple invocations', async (t) => {
   // Verify invocation symlink for car agent message stored
   for (const invocation of agentMessage.invocations) {
     const cmdInvocationStored = new HeadObjectCommand({
-      Key: `${invocation.cid.toString()}/${agentMessageCarCid}.in`,
-      Bucket: stores.invocation.name,
+      Key: `${invocation.cid}/${invocation.cid}@${agentMessageCarCid}.in`,
+      Bucket: agentStore.connection.store.buckets.index.name,
     })
     const s3ResponseInvocationStored = await t.context.s3.send(
       cmdInvocationStored
@@ -159,10 +160,27 @@ test('processes agent message as CAR with multiple invocations', async (t) => {
 })
 
 test('processes agent message as CAR with receipt', async (t) => {
-  t.plan(15)
-  const stores = await getStores(t.context)
+  t.plan(12)
+  const kinesis = {
+    // @ts-expect-error not same return type
+    putRecords: (input) => {
+      for (const record of input.Records || []) {
+        if (!record.Data) {
+          throw new Error('must have Data')
+        }
+
+        kinesisWorkflowInvocations?.push(JSON.parse(toString(record.Data)))
+      }
+      return Promise.resolve()
+    }
+  }
+
+  const { agentStore } = await getStores({
+    ...t.context,
+    streamName: 'stream-name',
+    kinesis: { channel: kinesis }
+  })
   const basicAuth = 'test-token'
-  const streamName = 'stream-name'
 
   const uploadService = await Signer.generate()
   const alice = await Signer.generate()
@@ -207,24 +225,8 @@ test('processes agent message as CAR with receipt', async (t) => {
   const kinesisWorkflowInvocations = []
   await t.notThrowsAsync(() =>
     processUcanLogRequest(carInvocationsRequest, {
-      invocationBucket: stores.invocation.bucket,
-      taskBucket: stores.task.bucket,
-      workflowBucket: stores.workflow.bucket,
+      agentStore,
       basicAuth,
-      streamName,
-      kinesisClient: {
-        // @ts-expect-error not same return type
-        putRecords: (input) => {
-          for (const record of input.Records || []) {
-            if (!record.Data) {
-              throw new Error('must have Data')
-            }
-
-            kinesisWorkflowInvocations?.push(JSON.parse(toString(record.Data)))
-          }
-          return Promise.resolve()
-        },
-      },
     })
   )
 
@@ -265,42 +267,36 @@ test('processes agent message as CAR with receipt', async (t) => {
     }
   )
 
+  kinesis.putRecords = (input) => {
+    t.is(input.StreamName, agentStore.connection.stream.name)
+    t.is(input.Records?.length, receipts.length)
+    for (const record of input.Records || []) {
+      if (!record.Data) {
+        throw new Error('must have Data')
+      }
+      const data = JSON.parse(toString(record.Data))
+      t.truthy(data)
+      t.is(data.carCid, agentMessageCarReceiptsCid.toString())
+      t.is(data.task, invocationCid)
+      t.is(data.type, agentStore.connection.stream.receipt.type)
+      t.deepEqual(data.out, result)
+      t.deepEqual(data.value, kinesisWorkflowInvocations[0].value)
+    }
+    return Promise.resolve()
+  }
+
   // process ucan log request for message
   /** @type {any[]} */
   await t.notThrowsAsync(() =>
     processUcanLogRequest(carReceiptsRequest, {
-      invocationBucket: stores.invocation.bucket,
-      taskBucket: stores.task.bucket,
-      workflowBucket: stores.workflow.bucket,
-      basicAuth,
-      streamName,
-      kinesisClient: {
-        // @ts-expect-error not same return type
-        putRecords: (input) => {
-          t.is(input.StreamName, streamName)
-          t.is(input.Records?.length, receipts.length)
-          for (const record of input.Records || []) {
-            if (!record.Data) {
-              throw new Error('must have Data')
-            }
-            const data = JSON.parse(toString(record.Data))
-            t.truthy(data)
-            t.is(data.carCid, agentMessageCarReceiptsCid.toString())
-            t.is(data.invocationCid, invocationCid)
-            t.is(data.type, STREAM_TYPE.RECEIPT)
-            t.deepEqual(data.out, result)
-            t.deepEqual(data.value, kinesisWorkflowInvocations[0].value)
-          }
-          return Promise.resolve()
-        },
-      },
-    })
-  )
+      agentStore,
+      basicAuth
+  }))
 
   // Verify CAR agent message persisted
   const cmd = new HeadObjectCommand({
     Key: `${agentMessageCarReceiptsCid}/${agentMessageCarReceiptsCid}`,
-    Bucket: stores.workflow.name,
+    Bucket: agentStore.connection.store.buckets.message.name,
   })
   const s3Response = await t.context.s3.send(cmd)
   t.is(s3Response.$metadata.httpStatusCode, 200)
@@ -308,47 +304,32 @@ test('processes agent message as CAR with receipt', async (t) => {
   // Verify receipts
   for (const receipt of agentMessageReceipts.receipts.values()) {
     const invocationCid = receipt.ran.link().toString()
-    const taskCid = invocationCid
 
     // Verify receipt symlink for car agent message stored
     const cmdInvocationStored = new HeadObjectCommand({
-      Key: `${invocationCid}/${agentMessageCarReceiptsCid}.out`,
-      Bucket: stores.invocation.name,
+      Key: `${invocationCid}/${receipt.link()}@${agentMessageCarReceiptsCid}.out`,
+      Bucket: agentStore.connection.store.buckets.index.name,
     })
     const s3ResponseInvocationStored = await t.context.s3.send(
       cmdInvocationStored
     )
     t.is(s3ResponseInvocationStored.$metadata.httpStatusCode, 200)
-
-    // Validate stored task result
-    const cmdTaskResult = new GetObjectCommand({
-      Key: `${taskCid}/${taskCid}.result`,
-      Bucket: stores.task.name,
-    })
-    const s3ResponseTaskResult = await t.context.s3.send(cmdTaskResult)
-    t.is(s3ResponseTaskResult.$metadata.httpStatusCode, 200)
-
-    // @ts-expect-error AWS types with readable stream
-    const s3TaskResultBytes = (await s3ResponseTaskResult.Body.toArray())[0]
-    const taskResult = await CBOR.write({ out: result })
-    t.truthy(equals(s3TaskResultBytes, taskResult.bytes))
-
-    // Validate task index within invocation stored
-    const cmdTaskIndexStored = new HeadObjectCommand({
-      Key: `${taskCid}/${invocationCid}.invocation`,
-      Bucket: stores.task.name,
-    })
-    const s3ResponseTaskIndexStored = await t.context.s3.send(
-      cmdTaskIndexStored
-    )
-    t.is(s3ResponseTaskIndexStored.$metadata.httpStatusCode, 200)
   }
 })
 
 test('fails to process agent message as CAR with receipt when there is no invocation previously stored', async (t) => {
-  const stores = await getStores(t.context)
+  const kinesis = {
+    putRecords: () => {
+      return Promise.resolve()
+    },
+  }
+
+  const { agentStore } = await getStores({
+    ...t.context,
+    streamName: 'stream-name',
+    kinesis: { channel: kinesis },
+  })
   const basicAuth = 'test-token'
-  const streamName = 'stream-name'
 
   const uploadService = await Signer.generate()
   const alice = await Signer.generate()
@@ -407,25 +388,33 @@ test('fails to process agent message as CAR with receipt when there is no invoca
   /** @type {any[]} */
   await t.throwsAsync(() =>
     processUcanLogRequest(carReceiptsRequest, {
-      invocationBucket: stores.invocation.bucket,
-      taskBucket: stores.task.bucket,
-      workflowBucket: stores.workflow.bucket,
+      agentStore,
       basicAuth,
-      streamName,
-      kinesisClient: {
-        // @ts-expect-error not same return type
-        putRecords: () => {
-          return Promise.resolve()
-        },
-      },
     })
   )
 })
 
 test('can process ucan log request for given receipt after its invocation stored', async (t) => {
-  const stores = await getStores(t.context)
+  const kinesis = {
+    // @ts-expect-error not same return type
+    putRecords: (input) => {
+      for (const record of input.Records || []) {
+        if (!record.Data) {
+          throw new Error('must have Data')
+        }
+
+        kinesisWorkflowInvocations?.push(JSON.parse(toString(record.Data)))
+      }
+      return Promise.resolve()
+    },
+  }
+
+  const { agentStore } = await getStores({
+    ...t.context,
+    streamName: 'stream-name',
+    kinesis: { channel: kinesis }
+  })
   const basicAuth = 'test-token'
-  const streamName = 'stream-name'
   const uploadService = await Signer.generate()
 
   // Create workflow with one UCAN invocation
@@ -445,7 +434,6 @@ test('can process ucan log request for given receipt after its invocation stored
   const invocationCid = message.invocations[0].cid
 
   t.deepEqual(invocationCid.bytes, invocation.link().bytes)
-  const taskCid = invocationCid
 
   // Create Workflow request with car
   const workflowRequest = lambdaUtils.mockEventCreator.createAPIGatewayEvent({
@@ -461,24 +449,8 @@ test('can process ucan log request for given receipt after its invocation stored
   const kinesisWorkflowInvocations = []
   await t.notThrowsAsync(() =>
     processUcanLogRequest(workflowRequest, {
-      invocationBucket: stores.invocation.bucket,
-      taskBucket: stores.task.bucket,
-      workflowBucket: stores.workflow.bucket,
-      basicAuth,
-      streamName,
-      kinesisClient: {
-        // @ts-expect-error not same return type
-        putRecords: (input) => {
-          for (const record of input.Records || []) {
-            if (!record.Data) {
-              throw new Error('must have Data')
-            }
-
-            kinesisWorkflowInvocations?.push(JSON.parse(toString(record.Data)))
-          }
-          return Promise.resolve()
-        },
-      },
+      agentStore,
+      basicAuth
     })
   )
 
@@ -503,94 +475,74 @@ test('can process ucan log request for given receipt after its invocation stored
     body: toString(receiptWorkflow.body, 'base64'),
   })
 
+  kinesis.putRecords = (input) => {
+    t.is(input.StreamName, agentStore.connection.stream.name)
+    t.is(input.Records?.length, 1)
+
+    const [record] = input.Records || []
+    const data = JSON.parse(
+      toString(/** @type {Uint8Array} */(record.Data))
+    )
+    t.truthy(data)
+    t.is(data.carCid, receiptArchive.root.cid.toString())
+    t.is(data.task, invocationCid.toString())
+    t.is(data.type, agentStore.connection.stream.receipt.type)
+    t.deepEqual(data.out, out)
+    t.deepEqual(data.value, kinesisWorkflowInvocations[0].value)
+    return Promise.resolve()
+  }
+
   // process ucan log request for receipt
   await t.notThrowsAsync(() =>
     processUcanLogRequest(receiptRequest, {
-      invocationBucket: stores.invocation.bucket,
-      taskBucket: stores.task.bucket,
-      workflowBucket: stores.workflow.bucket,
-      basicAuth,
-      streamName,
-      kinesisClient: {
-        // @ts-expect-error not same return type
-        putRecords: (input) => {
-          t.is(input.StreamName, streamName)
-          t.is(input.Records?.length, 1)
-
-          const [record] = input.Records || []
-          const data = JSON.parse(
-            toString(/** @type {Uint8Array} */(record.Data))
-          )
-          t.truthy(data)
-          t.is(data.carCid, receiptArchive.root.cid.toString())
-          t.is(data.invocationCid, invocationCid.toString())
-          t.is(data.type, STREAM_TYPE.RECEIPT)
-          t.deepEqual(data.out, out)
-          t.deepEqual(data.value, kinesisWorkflowInvocations[0].value)
-          return Promise.resolve()
-        },
-      },
+      agentStore,
+      basicAuth
     })
   )
 
   // Verify CAR agent message persisted
   const cmd = new HeadObjectCommand({
     Key: `${agentMessageCarReceiptsCid}/${agentMessageCarReceiptsCid}`,
-    Bucket: stores.workflow.name,
+    Bucket: agentStore.connection.store.buckets.message.name,
   })
   const s3Response = await t.context.s3.send(cmd)
   t.is(s3Response.$metadata.httpStatusCode, 200)
 
   // Verify receipt symlink for car agent message stored
   const cmdInvocationStored = new HeadObjectCommand({
-    Key: `${invocationCid}/${agentMessageCarReceiptsCid}.out`,
-    Bucket: stores.invocation.name,
+    Key: `${invocationCid}/${receipt.link()}@${agentMessageCarReceiptsCid}.out`,
+    Bucket: agentStore.connection.store.buckets.index.name
   })
   const s3ResponseInvocationStored = await t.context.s3.send(
     cmdInvocationStored
   )
   t.is(s3ResponseInvocationStored.$metadata.httpStatusCode, 200)
-
-  // Validate stored task result
-  const cmdTaskResult = new GetObjectCommand({
-    Key: `${taskCid}/${taskCid}.result`,
-    Bucket: stores.task.name,
-  })
-  const s3ResponseTaskResult = await t.context.s3.send(cmdTaskResult)
-  t.is(s3ResponseTaskResult.$metadata.httpStatusCode, 200)
-
-  // @ts-expect-error AWS types with readable stream
-  const s3TaskResultBytes = (await s3ResponseTaskResult.Body.toArray())[0]
-  const taskResult = await CBOR.write({ out })
-  t.truthy(equals(s3TaskResultBytes, taskResult.bytes))
-
-  // Validate task index within invocation stored
-  const cmdTaskIndexStored = new HeadObjectCommand({
-    Key: `${taskCid}/${invocationCid}.invocation`,
-    Bucket: stores.task.name,
-  })
-  const s3ResponseTaskIndexStored = await t.context.s3.send(cmdTaskIndexStored)
-  t.is(s3ResponseTaskIndexStored.$metadata.httpStatusCode, 200)
 })
 
 test('fails to process ucan log request with no Authorization header', async (t) => {
-  const stores = await getStores(t.context)
+  const { agentStore } = await getStores({
+    ...t.context,
+    streamName: 'name',
+    kinesis: { disable: {} }
+  })
   const basicAuth = 'test-token'
   const request = lambdaUtils.mockEventCreator.createAPIGatewayEvent()
 
   await t.throwsAsync(() =>
     processUcanLogRequest(request, {
-      invocationBucket: stores.invocation.bucket,
-      taskBucket: stores.task.bucket,
-      workflowBucket: stores.workflow.bucket,
-      streamName: 'name',
+      agentStore,
       basicAuth,
     })
   )
 })
 
 test('fails to process ucan log request with no Authorization basic header', async (t) => {
-  const stores = await getStores(t.context)
+  const { agentStore } = await getStores({
+    ...t.context,
+    streamName: 'name',
+    kinesis: { disable: {} }
+  })
+
   const basicAuth = 'test-token'
   const request = lambdaUtils.mockEventCreator.createAPIGatewayEvent({
     headers: {
@@ -600,17 +552,18 @@ test('fails to process ucan log request with no Authorization basic header', asy
 
   await t.throwsAsync(() =>
     processUcanLogRequest(request, {
-      invocationBucket: stores.invocation.bucket,
-      taskBucket: stores.task.bucket,
-      workflowBucket: stores.workflow.bucket,
-      streamName: 'name',
+      agentStore,
       basicAuth,
     })
   )
 })
 
 test('fails to process ucan log request with Authorization basic token empty', async (t) => {
-  const stores = await getStores(t.context)
+  const { agentStore } = await getStores({
+    ...t.context,
+    streamName: 'name',
+    kinesis: { disable: {} }
+  })
   const basicAuth = 'test-token'
   const request = lambdaUtils.mockEventCreator.createAPIGatewayEvent({
     headers: {
@@ -620,17 +573,18 @@ test('fails to process ucan log request with Authorization basic token empty', a
 
   await t.throwsAsync(() =>
     processUcanLogRequest(request, {
-      invocationBucket: stores.invocation.bucket,
-      taskBucket: stores.task.bucket,
-      workflowBucket: stores.workflow.bucket,
-      streamName: 'name',
+      agentStore,
       basicAuth,
     })
   )
 })
 
 test('fails to process ucan log request with invalid Authorization basic token', async (t) => {
-  const stores = await getStores(t.context)
+  const { agentStore } = await getStores({
+    ...t.context,
+    streamName: 'name',
+    kinesis: { disable: {} }
+  })
   const basicAuth = 'test-token'
   const request = lambdaUtils.mockEventCreator.createAPIGatewayEvent({
     headers: {
@@ -640,10 +594,7 @@ test('fails to process ucan log request with invalid Authorization basic token',
 
   await t.throwsAsync(() =>
     processUcanLogRequest(request, {
-      invocationBucket: stores.invocation.bucket,
-      taskBucket: stores.task.bucket,
-      workflowBucket: stores.workflow.bucket,
-      streamName: 'name',
+      agentStore,
       basicAuth,
     })
   )
@@ -693,39 +644,44 @@ test('replace all link values as object and array', async (t) => {
 })
 
 /**
- * @param {{ s3: any; }} ctx
+ * @param {{ s3: any; kinesis: any; streamName?: string }} ctx
  */
 async function getStores(ctx) {
-  const { invocationBucketName, taskBucketName, workflowBucketName } =
+  const { invocationBucketName, workflowBucketName } =
     await prepareResources(ctx.s3)
 
+  const agentStore = AgentStore.open({
+    store: {
+      connection: {
+        channel: ctx.s3
+      },
+      region: 'us-west-2',
+      buckets: {
+        message: { name: workflowBucketName },
+        index: { name: invocationBucketName }
+      }
+    },
+    stream: {
+      name: ctx.streamName ?? 'stream-name',
+      connection: ctx.kinesis
+    }
+  })
+
   return {
-    invocation: {
-      bucket: useInvocationStore(ctx.s3, invocationBucketName),
-      name: invocationBucketName,
-    },
-    task: {
-      bucket: useTaskStore(ctx.s3, taskBucketName),
-      name: taskBucketName,
-    },
-    workflow: {
-      bucket: useWorkflowStore(ctx.s3, workflowBucketName),
-      name: workflowBucketName,
-    },
+    agentStore,
   }
 }
+
 
 /**
  * @param {import("@aws-sdk/client-s3").S3Client} s3Client
  */
 async function prepareResources(s3Client) {
   const invocationBucketName = await createBucket(s3Client)
-  const taskBucketName = await createBucket(s3Client)
   const workflowBucketName = await createBucket(s3Client)
 
   return {
     invocationBucketName,
-    taskBucketName,
     workflowBucketName,
   }
 }

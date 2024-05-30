@@ -1,5 +1,5 @@
 /* eslint-disable no-loop-func, no-nested-ternary, no-only-tests/no-only-tests */
-import { receiptsStorageTests } from '@web3-storage/upload-api/test'
+import { agentStoreTests } from '@web3-storage/upload-api/test'
 import { test } from '../helpers/context.js'
 import {
   createS3,
@@ -19,7 +19,7 @@ test.before(async (t) => {
   })
 })
 
-for (const [title, unit] of Object.entries(receiptsStorageTests)) {
+for (const [title, unit] of Object.entries(agentStoreTests)) {
   const define = title.startsWith('only ')
     ? test.only
     : title.startsWith('skip ')
