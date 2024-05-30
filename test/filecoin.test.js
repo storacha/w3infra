@@ -9,6 +9,7 @@ import * as Link from 'multiformats/link'
 import * as raw from 'multiformats/codecs/raw'
 import { base58btc } from 'multiformats/bases/base58'
 
+import * as AgentStore from '../upload-api/stores/agent.js'
 import { useReceiptStore } from '../filecoin/store/receipt.js'
 
 import {
@@ -17,6 +18,7 @@ import {
   getRoundaboutEndpoint,
   getDynamoDb,
   getStage,
+  getAwsRegion
 } from './helpers/deployment.js'
 import { createMailSlurpInbox, setupNewClient } from './helpers/up-client.js'
 import { getClientConfig } from './helpers/fil-client.js'
@@ -157,13 +159,41 @@ test('w3filecoin integration flow', async t => {
 
     // Verify receipt chain
     console.log(`wait for receipt chain...`)
-    const receiptStore = useReceiptStore(s3Client, `invocation-store-${stage}-0`, `workflow-store-${stage}-0`)
+    const agentStore = AgentStore.open({
+      store: {
+        region: getAwsRegion(),
+        connection: { channel: s3Client },
+        buckets: {
+          message: { name: `workflow-store-${stage}-0` },
+          index: { name: `invocation-store-${stage}-0` },
+        },
+      },
+      stream: {
+        connection: { disable: {} },
+        name: '',
+      },
+    })
+    // const agentStoreFilecoin = AgentStore.open({
+    //   store: {
+    //     region: 'us-east-2',
+    //     connection: { channel: s3Client },
+    //     buckets: {
+    //       message: { name: `workflow-store-staging-0` },
+    //       index: { name: `invocation-store-staging-0` },
+    //     },
+    //   },
+    //   stream: {
+    //     connection: { disable: {} },
+    //     name: '',
+    //   },
+    // })
     const receiptStoreFilecoin = useReceiptStore(s3ClientFilecoin, 'invocation-store-staging-0', 'workflow-store-staging-0')
 
     // Await for `filecoin/submit` receipt
     console.log(`wait for filecoin/submit receipt ${filecoinSubmitReceiptCid.toString()} ...`)
     const receiptFilecoinSubmitRes = await waitForStoreOperationOkResult(
-      () => receiptStore.get(filecoinSubmitReceiptCid),
+      // () => receiptStore.get(filecoinSubmitReceiptCid),
+      () => agentStore.receipts.get(filecoinSubmitReceiptCid.link()),
       (res) => Boolean(res.ok)
     )
     
@@ -175,6 +205,7 @@ test('w3filecoin integration flow', async t => {
     console.log(`wait for piece/offer receipt ${pieceOfferReceiptCid.toString()} ...`)
     const receiptPieceOfferRes = await waitForStoreOperationOkResult(
       () => receiptStoreFilecoin.get(pieceOfferReceiptCid),
+      // () => agentStoreFilecoin.receipts.get(filecoinSubmitReceiptCid.link()),
       (res) => Boolean(res.ok)
     )
 
@@ -186,6 +217,7 @@ test('w3filecoin integration flow', async t => {
     console.log(`wait for piece/accept receipt ${pieceAcceptReceiptCid.toString()} ...`)
     const receiptPieceAcceptRes = await waitForStoreOperationOkResult(
       () => receiptStoreFilecoin.get(pieceAcceptReceiptCid),
+      // () => agentStoreFilecoin.receipts.get(pieceAcceptReceiptCid.link()),
       (res) => Boolean(res.ok)
     )
 
@@ -197,6 +229,7 @@ test('w3filecoin integration flow', async t => {
     console.log(`wait for aggregate/offer receipt ${aggregateOfferReceiptCid.toString()} ...`)
     const receiptAggregateOfferRes = await waitForStoreOperationOkResult(
       () => receiptStoreFilecoin.get(aggregateOfferReceiptCid),
+      // () => agentStoreFilecoin.receipts.get(aggregateOfferReceiptCid.link()),
       (res) => Boolean(res.ok)
     )
 
@@ -221,6 +254,7 @@ test('w3filecoin integration flow', async t => {
         t.true(callDealerCronRes.ok)
 
         return receiptStoreFilecoin.get(aggregateAcceptReceiptCid)
+        // return agentStoreFilecoin.receipts.get(aggregateAcceptReceiptCid)
       },
       (res) => Boolean(res.ok)
     )

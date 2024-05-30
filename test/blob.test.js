@@ -26,6 +26,7 @@ import {
   getCarparkBucketInfo,
   getRoundaboutEndpoint,
   getDynamoDb,
+  getAwsRegion
 } from './helpers/deployment.js'
 import { randomFile } from './helpers/random.js'
 import { createMailSlurpInbox, setupNewClient, getServiceProps } from './helpers/up-client.js'
@@ -205,6 +206,7 @@ test('blob integration flow with receipts validation', async t => {
   // Check receipts were written
   const agentStore = AgentStore.open({
     store: {
+      region: getAwsRegion(),
       connection: { channel: s3Client },
       buckets: {
         message: { name: `workflow-store-${stage}-0` },
