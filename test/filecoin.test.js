@@ -173,26 +173,11 @@ test('w3filecoin integration flow', async t => {
         name: '',
       },
     })
-    // const agentStoreFilecoin = AgentStore.open({
-    //   store: {
-    //     region: 'us-east-2',
-    //     connection: { channel: s3Client },
-    //     buckets: {
-    //       message: { name: `workflow-store-staging-0` },
-    //       index: { name: `invocation-store-staging-0` },
-    //     },
-    //   },
-    //   stream: {
-    //     connection: { disable: {} },
-    //     name: '',
-    //   },
-    // })
     const receiptStoreFilecoin = useReceiptStore(s3ClientFilecoin, 'invocation-store-staging-0', 'workflow-store-staging-0')
 
     // Await for `filecoin/submit` receipt
     console.log(`wait for filecoin/submit receipt ${filecoinSubmitReceiptCid.toString()} ...`)
     const receiptFilecoinSubmitRes = await waitForStoreOperationOkResult(
-      // () => receiptStore.get(filecoinSubmitReceiptCid),
       () => agentStore.receipts.get(filecoinSubmitReceiptCid.link()),
       (res) => Boolean(res.ok)
     )
@@ -205,7 +190,6 @@ test('w3filecoin integration flow', async t => {
     console.log(`wait for piece/offer receipt ${pieceOfferReceiptCid.toString()} ...`)
     const receiptPieceOfferRes = await waitForStoreOperationOkResult(
       () => receiptStoreFilecoin.get(pieceOfferReceiptCid),
-      // () => agentStoreFilecoin.receipts.get(filecoinSubmitReceiptCid.link()),
       (res) => Boolean(res.ok)
     )
 
@@ -217,7 +201,6 @@ test('w3filecoin integration flow', async t => {
     console.log(`wait for piece/accept receipt ${pieceAcceptReceiptCid.toString()} ...`)
     const receiptPieceAcceptRes = await waitForStoreOperationOkResult(
       () => receiptStoreFilecoin.get(pieceAcceptReceiptCid),
-      // () => agentStoreFilecoin.receipts.get(pieceAcceptReceiptCid.link()),
       (res) => Boolean(res.ok)
     )
 
@@ -229,7 +212,6 @@ test('w3filecoin integration flow', async t => {
     console.log(`wait for aggregate/offer receipt ${aggregateOfferReceiptCid.toString()} ...`)
     const receiptAggregateOfferRes = await waitForStoreOperationOkResult(
       () => receiptStoreFilecoin.get(aggregateOfferReceiptCid),
-      // () => agentStoreFilecoin.receipts.get(aggregateOfferReceiptCid.link()),
       (res) => Boolean(res.ok)
     )
 
