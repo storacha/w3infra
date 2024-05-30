@@ -110,6 +110,9 @@ export const assert = async (message, { stream, store }) => {
             type: stream.workflow.type,
           })
         ),
+        // https://docs.aws.amazon.com/streams/latest/dev/key-concepts.html
+        // A partition key is used to group data by shard within a stream.
+        // It is required, and now we are starting with one shard. We need to study best partition key
         PartitionKey: stream.partitionKey,
       })
     }
@@ -133,6 +136,7 @@ export const assert = async (message, { stream, store }) => {
           JSON.stringify({
             // This is bad naming but not worth a breaking change
             carCid: message.toString(),
+            invocationCid: invocation.cid.toString(),
             task: task.toString(),
             value: {
               att: invocation.capabilities,
