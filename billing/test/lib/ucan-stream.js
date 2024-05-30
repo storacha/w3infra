@@ -83,6 +83,7 @@ export const test = {
           with: await randomDIDKey(),
           can: StoreCaps.add.can,
           nb: {
+            // @ts-expect-error different CID type per dep versions
             link: shard,
             size: 138
           }
@@ -100,6 +101,7 @@ export const test = {
         att: [{
           with: await randomDIDKey(),
           can: StoreCaps.remove.can,
+          // @ts-expect-error different CID type per dep versions
           nb: { link: shard }
         }],
         aud: await randomDID(),
@@ -140,6 +142,7 @@ export const test = {
           with: Schema.did({ method: 'key' }).from(consumer.consumer),
           can: StoreCaps.add.can,
           nb: {
+            // @ts-expect-error different CID type per dep versions
             link: randomLink(),
             size: 138
           }
@@ -158,6 +161,7 @@ export const test = {
           with: Schema.did({ method: 'key' }).from(consumer.consumer),
           can: StoreCaps.add.can,
           nb: {
+            // @ts-expect-error different CID type per dep versions
             link: randomLink(),
             size: 1138
           }
@@ -212,6 +216,7 @@ export const test = {
           with: Schema.did({ method: 'key' }).from(consumer.consumer),
           can: StoreCaps.add.can,
           nb: {
+            // @ts-expect-error different CID type per dep versions
             link: randomLink(),
             size: 138
           }
