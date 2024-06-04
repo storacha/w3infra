@@ -16,6 +16,7 @@ import {
   getApiEndpoint,
   getAwsBucketClient,
   getRoundaboutEndpoint,
+  getReceiptsEndpoint,
   getDynamoDb,
   getStage,
   getAwsRegion
@@ -74,6 +75,7 @@ test('w3filecoin integration flow', async t => {
           })
           console.log(`shard file written with {${meta.cid}, ${content}, ${meta.piece}}`)
         },
+        receiptsEndpoint: getReceiptsEndpoint()
       })
       t.is(uploadFiles.length, 1)
       return uploadFiles[0]
