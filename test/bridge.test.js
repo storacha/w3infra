@@ -8,6 +8,7 @@ import pWaitFor from 'p-wait-for'
 import { test } from './helpers/context.js'
 import {
   getApiEndpoint,
+  getReceiptsEndpoint,
   getDynamoDb
 } from './helpers/deployment.js'
 import { randomFile } from './helpers/random.js'
@@ -114,7 +115,9 @@ test('the bridge can make various types of requests', async t => {
   // verify that uploading a file changes the upload/list response
   // upload a file and wait for it to show up
   const file = await randomFile(42)
-  const fileLink = await client.uploadFile(file)
+  const fileLink = await client.uploadFile(file, {
+    receiptsEndpoint: getReceiptsEndpoint()
+  })
   let secondReceipts
   await pWaitFor(async () => {
     const secondResponse = await makeBridgeRequest(

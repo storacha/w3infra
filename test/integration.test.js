@@ -19,6 +19,7 @@ import {
   getApiEndpoint,
   getCloudflareBucketClient,
   getRoundaboutEndpoint,
+  getReceiptsEndpoint,
   getDynamoDb
 } from './helpers/deployment.js'
 import { createMailSlurpInbox, createNewClient, setupNewClient } from './helpers/up-client.js'
@@ -177,7 +178,8 @@ test('w3infra store/upload integration flow', async t => {
     onShardStored: (meta) => {
       shards.push(meta.cid)
       console.log('Shard file written', meta.cid)
-    }
+    },
+    receiptsEndpoint: getReceiptsEndpoint()
   })
   t.truthy(fileLink)
   t.is(shards.length, 1)
