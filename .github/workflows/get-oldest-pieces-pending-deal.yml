@@ -1,0 +1,36 @@
+name: Get oldest pieces pending deals
+
+on:
+  workflow_dispatch:
+    inputs:
+      env:
+        required: true
+        description: The env to fetch metrics against. Default is production.
+        options: 
+          - staging
+          - production
+        default: production
+
+jobs:
+  getOldestPiecesOffered:
+    name: Get oldest pieces pending deals
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        env: ['staging', 'production']
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          registry-url: 'https://registry.npmjs.org'
+          node-version: 20
+          cache: 'npm'
+      - run: npm ci
+      - name: Run job
+        env:
+          DEBUG: '*'
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          ENV: ${{ github.event.inputs.env }}
+        run: npm run get-oldest-pieces-pending-deals -w tools
