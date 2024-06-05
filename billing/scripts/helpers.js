@@ -58,10 +58,9 @@ export const calculateCost = (product, usage, duration) => {
   const info = productInfo[product]
   if (!info) throw new Error(`missing product info: ${product}`)
 
-  let overageBytes = new Big(usage.toString()).div(duration).minus(info.included)
-  if (overageBytes.lt(0)) {
-    overageBytes = new Big(0)
-  }
-  const overageCost = overageBytes.mul(info.overage).toNumber()
-  return info.cost + overageCost
+  let quantity = Math.floor(new Big(usage.toString()).div(duration).div(GB).toNumber())
+  quantity = quantity - (info.included / GB)
+  quantity = quantity < 0 ? 0 : quantity
+
+  return info.cost + (quantity * GB * info.overage)
 }
