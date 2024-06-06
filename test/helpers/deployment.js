@@ -88,30 +88,6 @@ export const getReceiptsEndpoint = () => {
   return `${testEnv[`${getStackName()}-${id}`].ApiEndpoint}/receipt/`
 }
 
-export const getSatnavBucketInfo = () => {
-  // CI/CD deployment
-  if (process.env.SEED_APP_NAME) {
-    const stage = getStage()
-    return {
-      Bucket: `satnav-${stage}-0`,
-      Region: 'us-east-2'
-    }
-  }
-
-  const require = createRequire(import.meta.url)
-  const testEnv = require(path.join(
-    process.cwd(),
-    '.sst/outputs.json'
-  ))
-
-  // Get Satnav metadata
-  const id = 'SatnavStack'
-  return {
-    Bucket: testEnv[`${getStackName()}-${id}`].BucketName,
-    Region: testEnv[`${getStackName()}-${id}`].Region,
-  }
-}
-
 export const getCarparkBucketInfo = () => {
   // CI/CD deployment
   if (process.env.SEED_APP_NAME) {

@@ -11,7 +11,7 @@ import git from 'git-rev-sync'
  * @param {number} version
  */
 export function getBucketName (name, stage, version = 0) {
-  // e.g `carpark-prod-0` or `satnav-pr101-0`
+  // e.g `carpark-prod-0` or `carpark-pr101-0`
   return `${name}-${stage}-${version}`
 }
 
