@@ -15,7 +15,6 @@ import {
   getRoundaboutEndpoint,
   getAwsBucketClient,
   getCloudflareBucketClient,
-  getSatnavBucketInfo,
   getCarparkBucketInfo,
   getDynamoDb,
 } from './helpers/deployment.js'
@@ -152,23 +151,6 @@ test('store protocol integration flow', async t => {
   // @ts-expect-error error type not found
   t.falsy(removeResult?.error)
 
-  // Check Satnav side index asynchronously created
-  await pWaitFor(async () => {
-    let satnavRequest
-    try {
-      satnavRequest = await s3Client.send(
-        new HeadObjectCommand({
-          Bucket: (getSatnavBucketInfo()).Bucket,
-          Key: `${shards[0].toString()}/${shards[0].toString()}.car.idx`
-        })
-      )
-    } catch {}
-
-    return satnavRequest?.$metadata.httpStatusCode === 200
-  }, {
-    interval: 100,
-  })
-
   // Replicator
   console.log('Checking replicator')
   // Check carpark
@@ -184,23 +166,6 @@ test('store protocol integration flow', async t => {
     } catch {}
 
     return carpark?.$metadata.httpStatusCode === 200
-  }, {
-    interval: 100,
-  })
-
-  // Check satnav
-  await pWaitFor(async () => {
-    let satnav
-    try {
-      satnav = await r2Client.send(
-        new HeadObjectCommand({
-          Bucket: process.env.R2_SATNAV_BUCKET_NAME || '',
-          Key: `${shards[0].toString()}/${shards[0].toString()}.car.idx`
-        })
-      )
-    } catch {}
-
-    return satnav?.$metadata.httpStatusCode === 200
   }, {
     interval: 100,
   })

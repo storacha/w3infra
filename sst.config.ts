@@ -9,7 +9,6 @@ import { UcanInvocationStack } from './stacks/ucan-invocation-stack.js'
 import { BusStack } from './stacks/bus-stack.js'
 import { CarparkStack } from './stacks/carpark-stack.js'
 import { FilecoinStack } from './stacks/filecoin-stack.js'
-import { SatnavStack } from './stacks/satnav-stack.js'
 import { ReplicatorStack } from './stacks/replicator-stack.js'
 import { UcanFirehoseStack } from './stacks/firehose-stack.js'
 import { RoundaboutStack } from './stacks/roundabout-stack.js'
@@ -47,7 +46,6 @@ export default {
     app.stack(UcanInvocationStack)
     app.stack(BillingStack)
     app.stack(FilecoinStack)
-    app.stack(SatnavStack)
     app.stack(UploadApiStack)
     app.stack(ReplicatorStack)
     app.stack(UcanFirehoseStack)
