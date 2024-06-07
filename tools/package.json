@@ -7,6 +7,7 @@
   "type": "module",
   "scripts": {
     "fetch-metrics-for-space": "node cli.js fetch-metrics-for-space",
+    "get-oldest-pieces-pending-deals": "node cli.js get-oldest-pieces-pending-deals",
     "follow-filecoin-receipt-chain": "node cli.js follow-filecoin-receipt-chain",
     "d1-dynamo-migration": "node cli.js d1-dynamo-migration"
   },
