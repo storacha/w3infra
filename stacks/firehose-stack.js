@@ -198,7 +198,7 @@ export function UcanFirehoseStack ({ stack, app }) {
         "projection.day.interval": "1",
         "projection.day.interval.unit": "DAYS",
         "projection.op.type": "enum",
-        "projection.op.values": 'access_authorize,access_claim,access_delegate,access_session,admin_store_inspect,admin_upload_inspect,aggregate_accept,aggregate_offer,deal_info,consumer_get,consumer_has,customer_get,filecoin_accept,filecoin_info,filecoin_offer,filecoin_submit,piece_accept,piece_offer,provider_add,rate-limit_add,rate-limit_list,rate-limit_remove,space_info,store_add,store_remove,subscription_get,ucan_revoke,upload_add,upload_list,upload_remove,blob_add,web3.storage_blob_allocate,web3.storage_blob_accept,',
+        "projection.op.values": 'access_authorize,access_claim,access_delegate,access_session,admin_store_inspect,admin_upload_inspect,aggregate_accept,aggregate_offer,deal_info,consumer_get,consumer_has,customer_get,filecoin_accept,filecoin_info,filecoin_offer,filecoin_submit,piece_accept,piece_offer,provider_add,rate-limit_add,rate-limit_list,rate-limit_remove,space_info,store_add,store_remove,subscription_get,ucan_revoke,upload_add,upload_list,upload_remove,space_blob_add,web3.storage_blob_allocate,web3.storage_blob_accept,',
         "storage.location.template": `s3://${streamLogBucket.bucketName}/logs/receipt/\${op}/\${day}/`
       },
       storageDescriptor: {
@@ -277,12 +277,12 @@ export function UcanFirehoseStack ({ stack, app }) {
   // https://console.aws.amazon.com/glue/home#/v2/data-catalog/tables
   // and in the data browser in the Athena Query editor at
   // https://console.aws.amazon.com/athena/home#/query-editor
-  const blobAddTableName = getCdkNames('blob-add-table', app.stage)
-  const blobAddTable = new glue.CfnTable(stack, blobAddTableName, {
+  const spaceBlobAddTableName = getCdkNames('space-blob-add-table', app.stage)
+  const spaceBlobAddTable = new glue.CfnTable(stack, spaceBlobAddTableName, {
     catalogId: Aws.ACCOUNT_ID,
     databaseName,
     tableInput: {
-      name: blobAddTableName,
+      name: spaceBlobAddTableName,
       partitionKeys: [
         { name: 'day', type: 'date' }
       ],
@@ -297,10 +297,10 @@ export function UcanFirehoseStack ({ stack, app }) {
         "projection.day.range": "2023-01-01,NOW",
         "projection.day.interval": "1",
         "projection.day.interval.unit": "DAYS",
-        "storage.location.template": `s3://${streamLogBucket.bucketName}/logs/receipt/blob_add/\${day}/`
+        "storage.location.template": `s3://${streamLogBucket.bucketName}/logs/receipt/space_blob_add/\${day}/`
       },
       storageDescriptor: {
-        location: `s3://${streamLogBucket.bucketName}/logs/receipt/blob_add/`,
+        location: `s3://${streamLogBucket.bucketName}/logs/receipt/space_blob_add/`,
         columns: [
           { name: 'carcid', type: 'string' },
           // STRUCT here refers to the Apache Hive STRUCT datatype - see https://aws.amazon.com/blogs/big-data/create-tables-in-amazon-athena-from-nested-json-and-mappings-using-jsonserde/
@@ -320,7 +320,7 @@ export function UcanFirehoseStack ({ stack, app }) {
       }
     }
   })
-  blobAddTable.addDependsOn(glueDatabase)
+  spaceBlobAddTable.addDependsOn(glueDatabase)
 
   // creates a table that can be seen in the AWS Glue table browser at 
   // https://console.aws.amazon.com/glue/home#/v2/data-catalog/tables
