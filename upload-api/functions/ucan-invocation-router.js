@@ -21,7 +21,7 @@ import { CAR, Legacy, Codec } from '@ucanto/transport'
 import { Email } from '../email.js'
 import * as AgentStore from '../stores/agent.js'
 import { createAllocationsStorage } from '../stores/allocations.js'
-import { createBlobsStorage, composeblobStoragesWithOrderedHas } from '../stores/blobs.js'
+import { createBlobsStorage, composeBlobStoragesWithOrderedHas } from '../stores/blobs.js'
 import { useProvisionStore } from '../stores/provisions.js'
 import { useSubscriptionsStore } from '../stores/subscriptions.js'
 import { createDelegationsTable } from '../tables/delegations.js'
@@ -167,7 +167,7 @@ export async function ucanInvocationRouter(request) {
   const allocationsStorage = createAllocationsStorage(AWS_REGION, allocationTableName, {
     endpoint: dbEndpoint,
   })
-  const blobsStorage = composeblobStoragesWithOrderedHas(
+  const blobsStorage = composeBlobStoragesWithOrderedHas(
     createBlobsStorage(R2_REGION, carparkBucketName, {
       endpoint: carparkBucketEndpoint,
       credentials: {

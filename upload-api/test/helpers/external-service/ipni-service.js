@@ -1,9 +1,9 @@
 import { base58btc } from 'multiformats/bases/base58'
 import { error, ok } from '@ucanto/server'
-import { useIPNIService, BlockAdvertisementPublisher, BlockIndexStore } from '../../external-services/ipni-service.js'
-import { blocksCarsPositionTableProps } from '../../tables/index.js'
-import { createTable, createQueue } from '../helpers/resources.js'
-import { collectQueueMessages } from './queue.js'
+import { useIPNIService, BlockAdvertisementPublisher, BlockIndexStore } from '../../../external-services/ipni-service.js'
+import { blocksCarsPositionTableProps } from '../../../tables/index.js'
+import { createTable, createQueue } from '../../helpers/resources.js'
+import { collectQueueMessages } from '../queue.js'
 import { RecordNotFound } from '@web3-storage/upload-api/errors'
 
 /**

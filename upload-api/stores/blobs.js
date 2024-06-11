@@ -1,5 +1,4 @@
 import { base64pad } from 'multiformats/bases/base64'
-import { decode as digestDecode } from 'multiformats/hashes/digest'
 import { base58btc } from 'multiformats/bases/base58'
 import { BlobNotFound } from '@web3-storage/upload-api/blob'
 import { ok, error } from '@ucanto/server'
@@ -58,11 +57,11 @@ export function createBlobsStorage(region, bucketName, options) {
 export function useBlobsStorage(s3, bucketName) {
   return {
     /**
-     * @param {Uint8Array} multihash
+     * @param {import('multiformats').MultihashDigest} digest
      */
-    has: async (multihash) => {
+    has: async (digest) => {
       const cmd = new HeadObjectCommand({
-        Key: contentKey(digestDecode(multihash)),
+        Key: contentKey(digest),
         Bucket: bucketName,
       })
       try {
@@ -96,15 +95,14 @@ export function useBlobsStorage(s3, bucketName) {
      * Create a presigned s3 url allowing the recipient to upload
      * only the CAR that matches the provided Link
      *
-     * @param {Uint8Array} multihash
+     * @param {import('multiformats').MultihashDigest} digest
      * @param {number} size
      * @param {number} expiresIn
      */
-    createUploadUrl: async (multihash, size, expiresIn) => {
-      const multihashDigest = digestDecode(multihash)
-      const checksum = base64pad.baseEncode(multihashDigest.digest)
+    createUploadUrl: async (digest, size, expiresIn) => {
+      const checksum = base64pad.baseEncode(digest.digest)
       const cmd = new PutObjectCommand({
-        Key: contentKey(multihashDigest),
+        Key: contentKey(digest),
         Bucket: bucketName,
         ChecksumSHA256: checksum,
         ContentLength: size,
@@ -126,11 +124,11 @@ export function useBlobsStorage(s3, bucketName) {
       }
     },
 
-    /** @param {Uint8Array} digestBytes */
-    createDownloadUrl: async (digestBytes) => {
+    /** @param {import('multiformats').MultihashDigest} digest */
+    createDownloadUrl: async (digest) => {
       return ok(
         /** @type {import('@ucanto/interface').URI} */
-        (`https://${bucketName}.r2.w3s.link/${contentKey(digestDecode(digestBytes))}`)
+        (`https://${bucketName}.r2.w3s.link/${contentKey(digest)}`)
       )
     }
   }
@@ -140,14 +138,15 @@ export function useBlobsStorage(s3, bucketName) {
  * compose many blob stores.
  * store#createUploadUrl is from first store.
  * store#has will check stores in order until 0-1 `true` are found.
- * 
- * @param  {BlobsStorage & BlobRetriever} blobStorage 
- * @param  {Array<BlobsStorage>} moreblobStorages 
+ *
+ * @template {BlobsStorage} T
+ * @param {T} blobStorage
+ * @param {T[]} moreBlobStorages
  */
-export function composeblobStoragesWithOrderedHas(blobStorage, ...moreblobStorages) {
+export function composeBlobStoragesWithOrderedHas(blobStorage, ...moreBlobStorages) {
   return {
     ...blobStorage,
-    has: composeSome(blobStorage.has, ...moreblobStorages.map(s => s.has.bind(s))),
+    has: composeSome(blobStorage.has, ...moreBlobStorages.map(s => s.has.bind(s))),
   }
 }
 
