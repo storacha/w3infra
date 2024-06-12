@@ -22,14 +22,21 @@ import { getCustomDomain, getApiPackageJson, getGitInfo, setupSentry, getEnv, ge
  * @param {import('sst/constructs').StackContext} properties
  */
 export function UploadApiStack({ stack, app }) {
-  const { AGGREGATOR_DID, EIPFS_MULTIHASHES_SQS_ARN, EIPFS_BLOCKS_CAR_POSITION_TABLE_ARN } = getEnv()
+  const {
+    AGGREGATOR_DID,
+    CONTENT_CLAIMS_DID,
+    CONTENT_CLAIMS_URL,
+    CONTENT_CLAIMS_PROOF,
+    EIPFS_MULTIHASHES_SQS_ARN,
+    EIPFS_BLOCKS_CAR_POSITION_TABLE_ARN
+  } = getEnv()
 
   // Setup app monitoring with Sentry
   setupSentry(app, stack)
 
   // Get references to constructs created in other stacks
   const { carparkBucket } = use(CarparkStack)
-  const { allocationTable, storeTable, uploadTable, delegationBucket, delegationTable, revocationTable, adminMetricsTable, spaceMetricsTable, consumerTable, subscriptionTable, rateLimitTable, pieceTable, privateKey } = use(UploadDbStack)
+  const { allocationTable, storeTable, uploadTable, delegationBucket, delegationTable, revocationTable, adminMetricsTable, spaceMetricsTable, consumerTable, subscriptionTable, rateLimitTable, pieceTable, privateKey, contentClaimsPrivateKey } = use(UploadDbStack)
   const { invocationBucket, taskBucket, workflowBucket, ucanStream } = use(UcanInvocationStack)
   const { customerTable, spaceDiffTable, spaceSnapshotTable, stripeSecretKey } = use(BillingDbStack)
   const { pieceOfferQueue, filecoinSubmitQueue } = use(FilecoinStack)
@@ -143,12 +150,16 @@ export function UploadApiStack({ stack, app }) {
           STRIPE_PUBLISHABLE_KEY: process.env.STRIPE_PUBLISHABLE_KEY ?? '',
           DEAL_TRACKER_DID: process.env.DEAL_TRACKER_DID ?? '',
           DEAL_TRACKER_URL: process.env.DEAL_TRACKER_URL ?? '',
-          INDEXER_REGION: indexerRegion
+          INDEXER_REGION: indexerRegion,
+          CONTENT_CLAIMS_DID,
+          CONTENT_CLAIMS_URL,
+          CONTENT_CLAIMS_PROOF
         },
         bind: [
           privateKey,
           ucanInvocationPostbasicAuth,
-          stripeSecretKey
+          stripeSecretKey,
+          contentClaimsPrivateKey
         ]
       }
     },
