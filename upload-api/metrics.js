@@ -110,7 +110,7 @@ export async function updateSpaceMetrics (ucanInvocations, ctx) {
     const { digest } = r.nb
 
     // @ts-expect-error space string type different
-    const blob = await ctx.allocationsStorage.get(space, digest)
+    const blob = await ctx.allocationsStorage.get(space, Digest.decode(digest))
     r.nb.size = blob.ok?.blob.size
     return r
   }))
