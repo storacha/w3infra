@@ -32,13 +32,20 @@ export function CarparkStack({ stack, app }) {
   // In PRs, the indexer lambda does not have access to the new bucket.
   if (isPrBuild(app.stage)) {
     const EIPFS_INDEXER_LAMBDA_ARN = mustGetEnv('EIPFS_INDEXER_LAMBDA_ARN')
+
+    const carparkRoleName = getCdkNames('carpark-bucket-role', app.stage)
+    const carparkRole = new iam.Role(stack, carparkRoleName, {
+      assumedBy: new iam.ArnPrincipal(EIPFS_INDEXER_LAMBDA_ARN),
+      roleName: carparkRoleName
+    })
+
     const policyName = getCdkNames('carpark-bucket-policy', app.stage)
     new iam.Policy(stack, policyName, {
       policyName,
+      roles: [carparkRole],
       statements: [
         new iam.PolicyStatement({
           effect: iam.Effect.ALLOW,
-          principals: [new iam.ArnPrincipal(EIPFS_INDEXER_LAMBDA_ARN)],
           resources: [
             carparkBucket.bucketArn,
             `${carparkBucket.bucketArn}/*`
