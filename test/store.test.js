@@ -121,15 +121,6 @@ test('store protocol integration flow', async t => {
   t.is(carparkRequest.$metadata.httpStatusCode, 200)
   const carSize = carparkRequest.ContentLength
 
-  // Check dudewhere
-  const dudewhereRequest = await r2Client.send(
-    new HeadObjectCommand({
-      Bucket: process.env.R2_DUDEWHERE_BUCKET_NAME || '',
-      Key: `${root.toString()}/${shards[0].toString()}`
-    })
-  )
-  t.is(dudewhereRequest.$metadata.httpStatusCode, 200)
-
   // List space files
   let uploadFound, cursor
   do {

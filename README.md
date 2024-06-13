@@ -170,14 +170,6 @@ Endpoint for S3 like cloud object storage to replicate content into.
 
 Bucket name to replicate written CAR files.
 
-#### `R2_SATNAV_BUCKET_NAME`
-
-Bucket name to replicate written .idx files.
-
-#### `R2_DUDEWHERE_BUCKET_NAME`
-
-Bucket name to replicate root CID to car CIDs mapping.
-
 #### `R2_DELEGATION_BUCKET_NAME`
 
 Bucket name where delegations are stored.
