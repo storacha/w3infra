@@ -109,8 +109,9 @@ export function useCarStore(s3, bucketName) {
  * store#createUploadUrl is from first store.
  * store#has will check stores in order until 0-1 `true` are found.
  * 
- * @param  {import('@web3-storage/upload-api').CarStoreBucket} carStore 
- * @param  {Array<import('@web3-storage/upload-api').CarStoreBucket>} moreCarStores 
+ * @template {import('@web3-storage/upload-api').CarStoreBucket} T
+ * @param {T} carStore
+ * @param {T[]} moreCarStores
  */
 export function composeCarStoresWithOrderedHas(carStore, ...moreCarStores) {
   return {

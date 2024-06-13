@@ -3,7 +3,7 @@
   "version": "3.0.0",
   "type": "module",
   "scripts": {
-    "test": "ava --node-arguments='--experimental-fetch' --verbose --timeout=60s --no-worker-threads --serial '**/*.test.js'",
+    "test": "ava --node-arguments='--experimental-fetch' --verbose --timeout=60s --no-worker-threads --serial --fail-fast '**/*.test.js'",
     "build:html": "babel --presets @babel/preset-react ./html.jsx --out-dir ./dist"
   },
   "dependencies": {
@@ -24,7 +24,7 @@
     "@web3-storage/access": "^20.0.0",
     "@web3-storage/capabilities": "^17.2.0",
     "@web3-storage/did-mailto": "^2.1.0",
-    "@web3-storage/upload-api": "^17.1.0",
+    "@web3-storage/upload-api": "^18.0.0",
     "multiformats": "^13.1.0",
     "nanoid": "^5.0.2",
     "preact": "^10.14.1",
@@ -39,6 +39,7 @@
     "@babel/preset-react": "^7.23.3",
     "@ipld/car": "^5.2.6",
     "@types/aws-lambda": "^8.10.108",
+    "@web3-storage/content-claims-infra": "^1.2.1",
     "@web3-storage/sigv4": "^1.0.2",
     "ava": "^4.3.3",
     "aws-lambda-test-utils": "^1.3.0",

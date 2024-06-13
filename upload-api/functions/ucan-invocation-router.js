@@ -1,10 +1,11 @@
 import { API } from '@ucanto/core'
+import * as Delegation from '@ucanto/core/delegation'
+import { base64pad } from 'multiformats/bases/base64'
 import * as Sentry from '@sentry/serverless'
 import * as DID from '@ipld/dag-ucan/did'
 import Stripe from 'stripe'
 
 import { composeCarStoresWithOrderedHas, createCarStore } from '../buckets/car-store.js'
-import { createDudewhereStore } from '../buckets/dudewhere-store.js'
 import { createInvocationStore } from '../buckets/invocation-store.js'
 import { createWorkflowStore } from '../buckets/workflow-store.js'
 import { createStoreTable } from '../tables/store.js'
@@ -21,7 +22,7 @@ import { CAR, Legacy, Codec } from '@ucanto/transport'
 import { Email } from '../email.js'
 import * as AgentStore from '../stores/agent.js'
 import { createAllocationsStorage } from '../stores/allocations.js'
-import { createBlobsStorage, composeblobStoragesWithOrderedHas } from '../stores/blobs.js'
+import { createBlobsStorage, composeBlobStoragesWithOrderedHas } from '../stores/blobs.js'
 import { useProvisionStore } from '../stores/provisions.js'
 import { useSubscriptionsStore } from '../stores/subscriptions.js'
 import { createDelegationsTable } from '../tables/delegations.js'
@@ -48,6 +49,7 @@ Sentry.AWSLambda.init({
 })
 
 export { API }
+
 /**
  * @typedef {import('../types').Receipt} Receipt
  * @typedef {import('@ucanto/interface').Block<Receipt>} BlockReceipt
@@ -56,13 +58,7 @@ export { API }
  */
 
 const AWS_REGION = process.env.AWS_REGION || 'us-west-2'
-
-// Specified in SST environment
-const R2_ACCESS_KEY_ID = process.env.R2_ACCESS_KEY_ID || ''
-const R2_SECRET_ACCESS_KEY = process.env.R2_SECRET_ACCESS_KEY || ''
 const R2_REGION = process.env.R2_REGION || 'auto'
-const R2_DUDEWHERE_BUCKET_NAME = process.env.R2_DUDEWHERE_BUCKET_NAME || ''
-const R2_ENDPOINT = process.env.R2_ENDPOINT || ``
 
 /**
  * We define a ucanto codec that will switch encoder / decoder based on the
@@ -142,8 +138,8 @@ export async function ucanInvocationRouter(request) {
     }
   }
 
-  const { UPLOAD_API_DID } = process.env
-  const { PRIVATE_KEY, STRIPE_SECRET_KEY } = Config
+  const { UPLOAD_API_DID, CONTENT_CLAIMS_PROOF } = process.env
+  const { PRIVATE_KEY, STRIPE_SECRET_KEY, CONTENT_CLAIMS_PRIVATE_KEY } = Config
   const serviceSigner = getServiceSigner({ did: UPLOAD_API_DID, privateKey: PRIVATE_KEY })
 
   const agentStore = AgentStore.open({
@@ -167,7 +163,7 @@ export async function ucanInvocationRouter(request) {
   const allocationsStorage = createAllocationsStorage(AWS_REGION, allocationTableName, {
     endpoint: dbEndpoint,
   })
-  const blobsStorage = composeblobStoragesWithOrderedHas(
+  const blobsStorage = composeBlobStoragesWithOrderedHas(
     createBlobsStorage(R2_REGION, carparkBucketName, {
       endpoint: carparkBucketEndpoint,
       credentials: {
@@ -212,6 +208,31 @@ export async function ucanInvocationRouter(request) {
 
   const ipniService = createIPNIService(multihashesQueueConfig, blocksCarsPositionTableConfig, blobsStorage)
 
+  const claimsServicePrincipal = DID.parse(mustGetEnv('CONTENT_CLAIMS_DID'))
+  const claimsServiceURL = new URL(mustGetEnv('CONTENT_CLAIMS_URL'))
+  let claimsIssuer = getServiceSigner({ privateKey: CONTENT_CLAIMS_PRIVATE_KEY })
+  const claimsProofs = []
+  if (CONTENT_CLAIMS_PROOF) {
+    const proof = await Delegation.extract(base64pad.decode(CONTENT_CLAIMS_PROOF))
+    if (!proof.ok) throw new Error('failed to extract proof', { cause: proof.error })
+    claimsProofs.push(proof.ok)
+  } else {
+    // if no proofs, we must be using the service private key to sign
+    claimsIssuer = claimsIssuer.withDID(claimsServicePrincipal.did())
+  }
+  const claimsService = {
+    invocationConfig: {
+      issuer: claimsIssuer,
+      audience: claimsServicePrincipal,
+      with: claimsIssuer.did(),
+      proofs: claimsProofs
+    },
+    connection: getServiceConnection({
+      did: claimsServicePrincipal.did(),
+      url: claimsServiceURL.toString()
+    })
+  }
+
   const server = createUcantoServer(serviceSigner, {
     codec,
     allocationsStorage,
@@ -233,14 +254,6 @@ export async function ucanInvocationRouter(request) {
         },
       }),
     ),
-    // TODO: to be deprecated with `store/*` protocol
-    dudewhereBucket: createDudewhereStore(R2_REGION, R2_DUDEWHERE_BUCKET_NAME, {
-      endpoint: R2_ENDPOINT,
-      credentials: {
-        accessKeyId: R2_ACCESS_KEY_ID,
-        secretAccessKey: R2_SECRET_ACCESS_KEY,
-      },
-    }),
     uploadTable: createUploadTable(AWS_REGION, uploadTableName, {
       endpoint: dbEndpoint,
     }),
@@ -272,6 +285,7 @@ export async function ucanInvocationRouter(request) {
     requirePaymentPlan,
     usageStorage,
     ipniService,
+    claimsService
   })
 
   const connection = UploadAPI.connect({

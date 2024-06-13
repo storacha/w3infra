@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "test": "ava --verbose --timeout=60s **/*.test.js"
+    "test": "ava --verbose --timeout=60s --fail-fast **/*.test.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.515.0",

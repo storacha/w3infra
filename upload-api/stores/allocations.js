@@ -47,11 +47,11 @@ export function useAllocationsStorage(dynamoDb, tableName) {
      * Check if the given link CID is bound to the uploader account
      *
      * @param {import('@ucanto/interface').DID} space
-     * @param {Uint8Array} blobMultihash
+     * @param {import('@web3-storage/upload-api').MultihashDigest} digest
      * @returns {ReturnType<AllocationsStorage['exists']>}
      */
-    exists: async (space, blobMultihash) => {
-      const key = getKey(space, blobMultihash)
+    exists: async (space, digest) => {
+      const key = getKey(space, digest)
       const cmd = new GetItemCommand({
         TableName: tableName,
         Key: key,
@@ -67,11 +67,11 @@ export function useAllocationsStorage(dynamoDb, tableName) {
     },
     /**
      * @param {import('@web3-storage/upload-api').DID} space
-     * @param {Uint8Array} blobMultihash
+     * @param {import('@web3-storage/upload-api').MultihashDigest} digest
      * @returns {ReturnType<AllocationsStorage['get']>}
      */
-    async get(space, blobMultihash) {
-      const key = getKey(space, blobMultihash)
+    async get(space, digest) {
+      const key = getKey(space, digest)
       const cmd = new GetItemCommand({
         TableName: tableName,
         Key: key,
@@ -129,11 +129,11 @@ export function useAllocationsStorage(dynamoDb, tableName) {
     },
     /**
      * @param {import('@web3-storage/upload-api').DID} space
-     * @param {Uint8Array} blobMultihash
+     * @param {import('@web3-storage/upload-api').MultihashDigest} digest
      * @returns {ReturnType<AllocationsStorage['remove']>}
      */
-    async remove(space, blobMultihash) {
-      const key = getKey(space, blobMultihash)
+    async remove(space, digest) {
+      const key = getKey(space, digest)
       const cmd = new DeleteItemCommand({
         TableName: tableName,
         Key: key,
@@ -237,10 +237,10 @@ export function toBlobListResult({ multihash, size, insertedAt }) {
 
 /**
  * @param {import('@web3-storage/upload-api').DID} space
- * @param {Uint8Array} blobMultihash
+ * @param {import('@web3-storage/upload-api').MultihashDigest} digest
  */
-const getKey = (space, blobMultihash) => {
-  const multihash58btc = base58btc.encode(blobMultihash)
+const getKey = (space, digest) => {
+  const multihash58btc = base58btc.encode(digest.bytes)
   const item = {
     space,
     multihash: multihash58btc.toString(),

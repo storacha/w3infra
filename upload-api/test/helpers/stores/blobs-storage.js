@@ -1,11 +1,12 @@
 import http from 'node:http'
 import { GetObjectCommand } from '@aws-sdk/client-s3'
 import { ok } from '@ucanto/server'
-import { useBlobsStorage } from '../../stores/blobs.js'
+import { useBlobsStorage } from '../../../stores/blobs.js'
 
 /**
  * @param {import('@aws-sdk/client-s3').S3Client} s3
  * @param {string} bucketName
+ * @returns {Promise<import('@web3-storage/upload-api').UcantoServerTestContext['blobsStorage'] & import('@web3-storage/upload-api').BlobRetriever>}
  */
 export const useTestBlobsStorage = async (s3, bucketName) => {
   const storage = useBlobsStorage(s3, bucketName)
@@ -37,12 +38,17 @@ export const useTestBlobsStorage = async (s3, bucketName) => {
 
   const createDownloadUrl = storage.createDownloadUrl.bind(storage)
   return Object.assign(storage, {
-    /** @param {Uint8Array} digestBytes */
-    async createDownloadUrl (digestBytes) {
-      const res = await createDownloadUrl(digestBytes)
+    /** @param {import('multiformats').MultihashDigest} digest */
+    async createDownloadUrl (digest) {
+      const res = await createDownloadUrl(digest)
       if (!res.ok) return res
       const { pathname } = new URL(res.ok)
       return ok(`http://127.0.0.1:${port}${pathname}`)
+    },
+
+    async deactivate () {
+      server.closeAllConnections()
+      await new Promise(resolve => server.close(resolve))
     }
   })
 }

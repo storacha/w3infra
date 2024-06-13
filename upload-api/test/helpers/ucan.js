@@ -6,15 +6,15 @@ import * as UcantoClient from '@ucanto/client'
 import { stringToDelegation } from '@web3-storage/access/encoding';
 import { connect, createServer } from '@web3-storage/upload-api';
 import { DebugEmail } from '@web3-storage/upload-api/test';
+import { tableProps as claimsTableProps } from '@web3-storage/content-claims-infra/lib/store'
 import {
   createBucket,
   createTable
 } from '../helpers/resources.js';
 import { storeTableProps, uploadTableProps, allocationTableProps, consumerTableProps, delegationTableProps, subscriptionTableProps, rateLimitTableProps, revocationTableProps, spaceMetricsTableProps } from '../../tables/index.js';
 import { useAllocationsStorage } from '../../stores/allocations.js';
-import { composeblobStoragesWithOrderedHas } from '../../stores/blobs.js';
-import { composeCarStoresWithOrderedHas, useCarStore } from '../../buckets/car-store.js';
-import { useDudewhereStore } from '../../buckets/dudewhere-store.js';
+import { composeBlobStoragesWithOrderedHas } from '../../stores/blobs.js';
+import { composeCarStoresWithOrderedHas } from '../../buckets/car-store.js';
 import { useStoreTable } from '../../tables/store.js';
 import { useUploadTable } from '../../tables/upload.js';
 import { useProvisionStore } from '../../stores/provisions.js';
@@ -35,8 +35,10 @@ import { createTaskStore as createFilecoinTaskStore } from '../../../filecoin/st
 import { createReceiptStore as createFilecoinReceiptStore } from '../../../filecoin/store/receipt.js'
 import * as AgentStore from '../../stores/agent.js'
 import { createTestBillingProvider } from './billing.js';
-import { useTestBlobsStorage } from './blobs-storage.js'
-import { createTestIPNIService } from './ipni-service.js'
+import { useTestBlobsStorage } from './stores/blobs-storage.js'
+import { useTestCarStore } from './buckets/car-store.js'
+import { createTestIPNIService } from './external-service/ipni-service.js'
+import * as ClaimsService from './external-service/content-claims.js'
 
 export { API }
 
@@ -224,7 +226,7 @@ export async function executionContextToUcantoTestServerContext(t) {
     ? await useTestBlobsStorage(r2, r2CarStoreBucketName)
     : undefined
   const blobsStorage = r2BlobsStorageBucket
-    ? composeblobStoragesWithOrderedHas(
+    ? composeBlobStoragesWithOrderedHas(
       s3BlobsStorageBucket,
       r2BlobsStorageBucket,
     )
@@ -261,9 +263,9 @@ export async function executionContextToUcantoTestServerContext(t) {
   );
 
   // To be deprecated
-  const s3CarStoreBucket = useCarStore(s3, bucketName)
+  const s3CarStoreBucket = await useTestCarStore(s3, bucketName)
   const r2CarStoreBucket = r2CarStoreBucketName
-    ? useCarStore(r2, r2CarStoreBucketName)
+    ? await useTestCarStore(r2, r2CarStoreBucketName)
     : undefined
   const carStoreBucket = r2CarStoreBucket
     ? composeCarStoresWithOrderedHas(
@@ -271,8 +273,6 @@ export async function executionContextToUcantoTestServerContext(t) {
       r2CarStoreBucket,
     )
     : s3CarStoreBucket
-
-  const dudewhereBucket = useDudewhereStore(s3, bucketName);
 
   const signer = await Signer.Signer.generate();
   const id = signer.withDID('did:web:test.web3.storage');
@@ -322,6 +322,12 @@ export async function executionContextToUcantoTestServerContext(t) {
   const plansStorage = usePlansStore(customersStore, billingProvider)
   const email = new DebugEmail();
   const ipniService = await createTestIPNIService({ sqs, dynamo }, blobsStorage)
+  const claimsService = await ClaimsService.activate({
+    s3,
+    dynamo,
+    bucketName: await createBucket(s3),
+    tableName: await createTable(dynamo, claimsTableProps)
+  })
 
   /** @type {import('@web3-storage/upload-api').UcantoServerContext} */
   const serviceContext = {
@@ -351,8 +357,7 @@ export async function executionContextToUcantoTestServerContext(t) {
     // TODO: to be deprecated with `store/*` protocol
     carStoreBucket,
     r2CarStoreBucket,
-    // TODO: to be deprecated with `store/*` protocol
-    dudewhereBucket,
+    claimsService,
     validateAuthorization: () => ({ ok: {} }),
     // filecoin/*
     aggregatorId: aggregatorSigner,
@@ -377,7 +382,10 @@ export async function executionContextToUcantoTestServerContext(t) {
 
   return {
     ...serviceContext,
+    carStoreBucket,
+    blobsStorage,
     ipniService,
+    claimsService,
     mail: email,
     grantAccess: (mail) => confirmConfirmationUrl(connection, mail),
     service: id,
