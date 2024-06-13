@@ -5,11 +5,10 @@ import {
   use
 } from 'sst/constructs'
 import * as sqs from 'aws-cdk-lib/aws-sqs'
-import * as iam from 'aws-cdk-lib/aws-iam'
 
 import { BusStack } from './bus-stack.js'
 import { CARPARK_EVENT_BRIDGE_SOURCE_EVENT } from '../carpark/event-bus/source.js'
-import { getBucketConfig, isPrBuild, setupSentry } from './config.js'
+import { getBucketConfig, setupSentry } from './config.js'
 
 /**
  * @param {import('sst/constructs').StackContext} properties
@@ -28,21 +27,6 @@ export function CarparkStack({ stack, app }) {
       bucket: getBucketConfig('carpark', app.stage)
     }
   })
-
-  // In PRs, the indexer lambda does not have access to the new bucket.
-  // The Elastic IPFS resources were given access to staging and production
-  // carpark bucket via a policy in their own infra.
-  if (isPrBuild(app.stage)) {
-    const EIPFS_INDEXER_LAMBDA_ARN = mustGetEnv('EIPFS_INDEXER_LAMBDA_ARN')
-    carparkBucket.cdk.bucket.addToResourcePolicy(
-      new iam.PolicyStatement({
-        effect: iam.Effect.ALLOW,
-        resources: [`${carparkBucket.bucketArn}/*`],
-        actions: ['s3:GetObject'],
-        principals: [new iam.ArnPrincipal(EIPFS_INDEXER_LAMBDA_ARN)]
-      })
-    )
-  }
 
   // Elastic IPFS event for indexing
   const indexerTopicQueue = new Queue(stack, 'indexer-topic-queue', {
