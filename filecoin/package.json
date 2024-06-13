@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "test": "ava --serial --no-worker-threads --verbose --timeout=60s **/*.test.js"
+    "test": "ava --serial --no-worker-threads --verbose --timeout=60s --fail-fast **/*.test.js"
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.515.0",

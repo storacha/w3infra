@@ -3,7 +3,7 @@
   "version": "3.0.0",
   "type": "module",
   "scripts": {
-    "test": "ava --node-arguments='--experimental-fetch' --verbose --timeout=60s --no-worker-threads --serial '**/*.test.js'",
+    "test": "ava --node-arguments='--experimental-fetch' --verbose --timeout=60s --no-worker-threads --serial --fail-fast '**/*.test.js'",
     "build:html": "babel --presets @babel/preset-react ./html.jsx --out-dir ./dist"
   },
   "dependencies": {

@@ -13,7 +13,7 @@
     "lint": "tsc && eslint '**/*.js'",
     "clean": "rm -rf dist node_modules package-lock.json ./*/{.cache,dist,node_modules}",
     "test": "npm test -w billing -w upload-api -w carpark -w replicator -w roundabout -w filecoin",
-    "test-integration": "ava --verbose --serial --timeout=660s test/*.test.js",
+    "test-integration": "ava --verbose --serial --timeout=660s --fail-fast test/*.test.js",
     "fetch-metrics-for-space": "npm run fetch-metrics-for-space -w tools",
     "follow-filecoin-receipt-chain": "npm run follow-filecoin-receipt-chain -w tools",
     "d1-dynamo-migration": "npm run d1-dynamo-migration -w tools"
