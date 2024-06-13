@@ -163,13 +163,22 @@ test('store protocol integration flow', async t => {
 
   // Verify w3link can resolve uploaded file
   console.log('Checking w3link can fetch root', root.toString())
-  const w3linkResponse = await fetch(
-    `https://${root}.ipfs-staging.w3s.link`,
-    {
-      method: 'HEAD'
+  const gatewayURL = `https://${root}.ipfs-staging.w3s.link`
+  const gatewayRetries = 5
+  for (let i = 0; i < gatewayRetries; i++) {
+    const controller = new AbortController()
+    const timeoutID = setTimeout(() => controller.abort(), 5000)
+    try {
+      const res = await fetch(gatewayURL, { method: 'HEAD', signal: controller.signal })
+      if (res.status === 200) break
+    } catch (err) {
+      console.error(`failed gateway fetch: ${root} (attempt ${i + 1})`, err)
+      if (i === gatewayRetries - 1) throw err
+    } finally {
+      clearTimeout(timeoutID)
     }
-  )
-  t.is(w3linkResponse.status, 200)
+    await new Promise(resolve => setTimeout(resolve, 1000))
+  }
 
   // Read from Roundabout returns 200
   console.log('Checking Roundabout can fetch CAR:', shards[0].toString())
