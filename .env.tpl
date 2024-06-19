@@ -31,7 +31,6 @@ R2_ENDPOINT = ''
 R2_REGION = ''
 R2_SECRET_ACCESS_KEY = ''
 R2_DELEGATION_BUCKET_NAME = ''
-SATNAV_BUCKET_NAME = ''
 
 # Following variables are only required to run integration tests
 
