@@ -44,7 +44,7 @@ export function useCarStore(s3, bucketName) {
         if (cause?.$metadata?.httpStatusCode === 404) {
           return false
         }
-        throw new Error('Failed to check if car-store', { cause })
+        throw new Error(`failed to check if CAR exists: ${link}`, { cause })
       }
       return true
     },
