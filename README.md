@@ -1,13 +1,10 @@
-<h1 align="center">⁂<br/>web3.storage</h1>
-<p align="center">
+# w3infra
 
-The Infra for [w3protocol] 
+The Infra for [w3protocol].
 
-</p>
+A [UCAN] based API to for storing CARs and registering uploads, built on [Ucanto] and [SST].
 
-A [UCAN] based API to for storing CARs and registering uploads, built on [ucanto] and [SST].
-
-The server-side implementation of the `store/*` and `upload/*` capabilities defined in [w3protocol].
+The server-side implementation of the capabilities defined in [w3protocol].
 
 ## Getting Started
 
@@ -346,7 +343,7 @@ const cid = await uploadFile({
 
 [SST]: https://sst.dev
 [UCAN]: https://github.com/ucan-wg/spec/
-[ucanto]: https://www.npmjs.com/package/ucanto
+[Ucanto]: https://www.npmjs.com/package/ucanto
 [seed.run]: https://seed.run
 [w3protocol]: https://github.com/web3-storage/w3protocol
 [upload-client]: https://www.npmjs.com/package/@web3-storage/upload-client
