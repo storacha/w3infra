@@ -107,7 +107,11 @@ export class BlockAdvertisementPublisher {
       }
       return ok({})
     } catch (/** @type {any} */ err) {
-      return error(err)
+      console.error('failed to add entries to IPNI advertisement publisher', err)
+      return error({
+        name: 'IPNIBlockAdvertPublisherAddEntriesError',
+        message: `failed to add entries to IPNI advertisement publisher: ${err.message}`
+      })
     }
   }
 }
@@ -164,7 +168,11 @@ export class BlockIndexStore {
       }
       return ok({})
     } catch (/** @type {any} */ err) {
-      return error(err)
+      console.error('failed to put records to block index', err)
+      return error({
+        name: 'BlockIndexPutRecordsError',
+        message: `failed to put records to block index: ${err.message}`
+      })
     }
   }
 }
