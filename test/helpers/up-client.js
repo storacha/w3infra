@@ -69,7 +69,7 @@ export async function setupNewClient (uploadServiceUrl, options = {}) {
     await space.save()
   }
 
-  return client
+  return { client, account }
 }
 
 

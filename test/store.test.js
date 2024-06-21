@@ -21,6 +21,7 @@ import {
 import { createMailSlurpInbox, setupNewClient, getServiceProps } from './helpers/up-client.js'
 import { randomFile } from './helpers/random.js'
 import { getMetrics, getSpaceMetrics } from './helpers/metrics.js'
+import { getUsage } from './helpers/store.js'
 
 test.before(t => {
   t.context = {
@@ -50,7 +51,7 @@ test.before(t => {
 test('store protocol integration flow', async t => {
   const stage = getStage()
   const inbox = await createMailSlurpInbox()
-  const client = await setupNewClient(t.context.apiEndpoint, { inbox })
+  const { client, account } = await setupNewClient(t.context.apiEndpoint, { inbox })
   const serviceProps = getServiceProps(client, t.context.apiEndpoint, StoreCapabilities.add.can)
   const spaceDid = client.currentSpace()?.did()
   if (!spaceDid) {
@@ -66,6 +67,8 @@ test('store protocol integration flow', async t => {
   const beforeStoreAddTotal = beforeOperationMetrics.find(row => row.name === METRICS_NAMES.STORE_ADD_TOTAL)
   const beforeStoreAddSizeTotal = beforeOperationMetrics.find(row => row.name === METRICS_NAMES.STORE_ADD_SIZE_TOTAL)
 
+  const beforeOperationUsage = await getUsage(client, account)
+  const spaceBeforeStoreAddUsage = beforeOperationUsage[spaceDid]
   const s3Client = getAwsBucketClient()
   const r2Client = getCloudflareBucketClient()
 
@@ -219,6 +222,18 @@ test('store protocol integration flow', async t => {
     })
   }
 
+  if (beforeOperationUsage) {
+    console.log("checking usage matches work done")
+    await pWaitFor(async () => {
+      const afterOperationUsage = await getUsage(client, account)
+      const spaceAfterStoreAddUsage = afterOperationUsage[spaceDid]
+      // If staging accept more broad condition given multiple parallel tests can happen there
+      return (
+          spaceAfterStoreAddUsage >= spaceBeforeStoreAddUsage + carSize
+      )
+    })
+  }
+
   // verify that blocking a space makes it impossible to upload a file to it
   await t.context.rateLimitsDynamo.client.send(new PutItemCommand({
     TableName: t.context.rateLimitsDynamo.tableName,
@@ -234,3 +249,4 @@ test('store protocol integration flow', async t => {
 
   t.is(uploadError?.message, 'failed store/add invocation')
 })
+

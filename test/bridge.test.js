@@ -85,7 +85,7 @@ async function makeBridgeRequest(context, client, capabilities, expiration, requ
 
 test('the bridge can make various types of requests', async t => {
   const inbox = await createMailSlurpInbox()
-  const client = await setupNewClient(t.context.apiEndpoint, { inbox })
+  const { client } = await setupNewClient(t.context.apiEndpoint, { inbox })
   const spaceDID = client.currentSpace()?.did()
   if (!spaceDID) {
     t.fail('client was set up but does not have a currentSpace - this is weird!')
