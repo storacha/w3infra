@@ -11,6 +11,11 @@ import { marshall, unmarshall } from '@aws-sdk/util-dynamodb'
  * key for.
  */
 
+/**
+ * 
+ * @param {string} oldSpaceDid 
+ * @param {string} newSpaceDid 
+ */
 export async function copyStoresAndUploadsToNewSpace(oldSpaceDid, newSpaceDid) {
   console.log(oldSpaceDid, newSpaceDid)
   const {
@@ -71,7 +76,10 @@ function* chunks(arr, chunkSize) {
 async function updateWithNewSpaceAndPutItems(dynamo, tableName, currentRows, space) {
   // max batch size is https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/client/dynamodb/command/BatchWriteItemCommand/
   const MAX_BATCH_SIZE = 25
-  const updatedRows = currentRows.map(item => ({ ...item, space }))
+  const updatedRows = currentRows.map(
+    /** @param {any} item */
+    (item) => ({ ...item, space })
+  )
   for (const rows of chunks(updatedRows, MAX_BATCH_SIZE)) {
     await dynamo.send(new BatchWriteItemCommand({
       RequestItems: {
@@ -97,6 +105,9 @@ async function* getAllTableRows(dynamo, tableName, space, options = {}) {
   let done = false
   let lastEvaluatedKey
   while (!done) {
+    /**
+     * @type {any}
+     */
     const response = await dynamo.send(new QueryCommand({
       TableName: tableName,
       Limit: options.limit || 100000,
