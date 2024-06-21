@@ -17,7 +17,7 @@
     "@ucanto/principal": "^9.0.1",
     "@ucanto/transport": "^9.1.1",
     "@web3-storage/data-segment": "^5.1.0",
-    "@web3-storage/filecoin-api": "^7.1.0",
+    "@web3-storage/filecoin-api": "^7.1.1",
     "@web3-storage/filecoin-client": "^3.3.3",
     "fr32-sha2-256-trunc254-padded-binary-tree-multihash": "^3.3.0",
     "multiformats": "^13.1.0",
