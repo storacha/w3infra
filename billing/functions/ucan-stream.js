@@ -38,8 +38,12 @@ export const handler = Sentry.AWSLambda.wrapHandler(
     }
 
     const deltas = findSpaceUsageDeltas(messages)
-    if (!deltas.length) return
-
+    if (!deltas.length) {
+      console.log("No messages found that contain space usage deltas", "capabilities", messages[0].value.att.map((att) => att.can), "resources", messages[0].value.att.map((att) => att.with) )
+      return
+    }
+    console.log("Storing space usage delta", deltas[0])
+    
     const ctx = {
       spaceDiffStore: createSpaceDiffStore({ region }, { tableName: spaceDiffTable }),
       consumerStore: createConsumerStore({ region }, { tableName: consumerTable })
