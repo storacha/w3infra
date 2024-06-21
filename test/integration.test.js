@@ -144,7 +144,7 @@ test('w3infra store/upload integration flow', async t => {
     throw new Error('no write target bucket name configure using ENV VAR `R2_CARPARK_BUCKET_NAME`')
   }
   const inbox = await createMailSlurpInbox()
-  const client = await setupNewClient(t.context.apiEndpoint, { inbox })
+  const { client } = await setupNewClient(t.context.apiEndpoint, { inbox })
   const spaceDid = client.currentSpace()?.did()
   if (!spaceDid) {
     throw new Error('Testing space DID must be set')

@@ -50,7 +50,7 @@ test('w3filecoin integration flow', async t => {
   const { invocationConfig, connection } = await getClientConfig(new URL(endpoint))
 
   // setup w3up client
-  const client = await setupNewClient(endpoint, { inbox })
+  const { client } = await setupNewClient(endpoint, { inbox })
   const spaceDid = client.currentSpace()?.did()
   if (!spaceDid) {
     throw new Error('Testing space DID must be set')

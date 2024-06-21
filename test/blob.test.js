@@ -31,6 +31,8 @@ import {
 import { randomFile } from './helpers/random.js'
 import { createMailSlurpInbox, setupNewClient, getServiceProps } from './helpers/up-client.js'
 import { getMetrics, getSpaceMetrics } from './helpers/metrics.js'
+import { getUsage } from './helpers/store.js'
+
 // import { createNode } from './helpers/helia.js'
 
 test.before(t => {
@@ -68,7 +70,7 @@ test('blob integration flow with receipts validation', async t => {
   }
 
   const inbox = await createMailSlurpInbox()
-  const client = await setupNewClient(t.context.apiEndpoint, { inbox })
+  const { client, account } = await setupNewClient(t.context.apiEndpoint, { inbox })
   const serviceProps = getServiceProps(client, t.context.apiEndpoint, BlobCapabilities.add.can)
   const spaceDid = client.currentSpace()?.did()
   if (!spaceDid) {
@@ -84,6 +86,9 @@ test('blob integration flow with receipts validation', async t => {
   const beforeBlobAddTotal = beforeOperationMetrics.find(row => row.name === METRICS_NAMES.BLOB_ADD_TOTAL)
   const beforeBlobAddSizeTotal = beforeOperationMetrics.find(row => row.name === METRICS_NAMES.BLOB_ADD_SIZE_TOTAL)
 
+  const beforeOperationUsage = await getUsage(client, account)
+  const spaceBeforeStoreAddUsage = beforeOperationUsage[spaceDid]
+  
   // Prepare data
   console.log('Creating new File')
   const file = await randomFile(100)
@@ -294,6 +299,19 @@ test('blob integration flow with receipts validation', async t => {
         afterBlobAddSizeTotal?.value === beforeBlobAddSizeTotal.value + carSize &&
         spaceAfterBlobAddMetrics?.value === spaceBeforeBlobAddMetrics?.value + 1 &&
         spaceAfterBlobAddSizeMetrics?.value === spaceBeforeBlobAddSizeMetrics?.value + carSize
+      )
+    })
+  }
+
+
+  if (beforeOperationUsage) {
+    console.log("Checking usage matches work done")
+    await pWaitFor(async () => {
+      const afterOperationUsage = await getUsage(client, account)
+      const spaceAfterStoreAddUsage = afterOperationUsage[spaceDid]
+      // If staging accept more broad condition given multiple parallel tests can happen there
+      return (
+          spaceAfterStoreAddUsage >= spaceBeforeStoreAddUsage + carSize
       )
     })
   }
