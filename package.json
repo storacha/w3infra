@@ -115,12 +115,13 @@
   "workspaces": [
     "billing",
     "carpark",
+    "filecoin",
+    "ipni",
     "replicator",
     "roundabout",
+    "tools",
     "ucan-invocation",
-    "upload-api",
-    "filecoin",
-    "tools"
+    "upload-api"
   ],
   "prettier": {
     "singleQuote": true,

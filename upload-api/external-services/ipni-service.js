@@ -1,8 +1,7 @@
-import { SQSClient, SendMessageBatchCommand } from '@aws-sdk/client-sqs'
-import { DynamoDBClient, BatchWriteItemCommand } from '@aws-sdk/client-dynamodb'
-import { marshall } from '@aws-sdk/util-dynamodb'
-import { base58btc } from 'multiformats/bases/base58'
+import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs'
+import * as dagJSON from '@ipld/dag-json'
 import retry from 'p-retry'
+import map from 'p-map'
 import { ok, error } from '@ucanto/server'
 
 /**
@@ -13,26 +12,32 @@ import { ok, error } from '@ucanto/server'
  * }} BlocksCarsPositionRecord
  */
 
+const CONCURRENCY = 10
+
 /**
- * @param {{ url: URL, region: string }} multihashesQueueConfig 
- * @param {{ name: string, region: string }} blocksCarsPositionConfig
+ * @param {{ url: URL, region: string }} blockAdvertisementPublisherQueueConfig 
+ * @param {{ url: URL, region: string }} blockIndexWriterQueueConfig
  * @param {import('@web3-storage/upload-api').BlobsStorage} blobsStorage
  */
-export const createIPNIService = (multihashesQueueConfig, blocksCarsPositionConfig, blobsStorage) => {
-  const sqs = new SQSClient(multihashesQueueConfig)
-  const multihashesQueue = new BlockAdvertisementPublisher({ client: sqs, url: multihashesQueueConfig.url })
-  const dynamo = new DynamoDBClient(blocksCarsPositionConfig)
-  const blocksCarsPositionStore = new BlockIndexStore({ client: dynamo, name: blocksCarsPositionConfig.name })
-  return useIPNIService(multihashesQueue, blocksCarsPositionStore, blobsStorage)
+export const createIPNIService = (blockAdvertisementPublisherQueueConfig, blockIndexWriterQueueConfig, blobsStorage) => {
+  const blockAdvertPublisherQueue = new BlockAdvertisementPublisherQueue({
+    client: new SQSClient(blockAdvertisementPublisherQueueConfig),
+    url: blockAdvertisementPublisherQueueConfig.url
+  })
+  const blockIndexWriterQueue = new BlockIndexWriterQueue({
+    client: new SQSClient(blockIndexWriterQueueConfig),
+    url: blockIndexWriterQueueConfig.url
+  })
+  return useIPNIService(blockAdvertPublisherQueue, blockIndexWriterQueue, blobsStorage)
 }
 
 /**
- * @param {BlockAdvertisementPublisher} blockAdvertPublisher
- * @param {BlockIndexStore} blockIndexStore
+ * @param {BlockAdvertisementPublisherQueue} blockAdvertPublisherQueue
+ * @param {BlockIndexWriterQueue} blockIndexWriterQueue
  * @param {import('@web3-storage/upload-api').BlobsStorage} blobsStorage
  * @returns {import('@web3-storage/upload-api').IPNIService}
  */
-export const useIPNIService = (blockAdvertPublisher, blockIndexStore, blobsStorage) => ({
+export const useIPNIService = (blockAdvertPublisherQueue, blockIndexWriterQueue, blobsStorage) => ({
   /** @param {import('@web3-storage/upload-api').ShardedDAGIndex} index */
   async publish (index) {
     /** @type {import('multiformats').MultihashDigest[]} */
@@ -51,20 +56,21 @@ export const useIPNIService = (blockAdvertPublisher, blockIndexStore, blobsStora
       }
     }
 
-    const addRes = await blockAdvertPublisher.addAll(items)
+    const addRes = await blockAdvertPublisherQueue.add(items)
     if (addRes.error) return addRes
 
-    const putRes = await blockIndexStore.putAll(records)
-    if (putRes.error) return putRes
+    const queueRes = await blockIndexWriterQueue.add(records)
+    if (queueRes.error) return queueRes
 
     return ok({})
   }
 })
 
-/** The maximum size an SQS batch can be. */
-const MAX_QUEUE_BATCH_SIZE = 10
+// Max SendMessage size is 256KB
+// new TextEncoder().encode(JSON.stringify(Array(3000).fill('{"/":{"bytes":"EiAAFf1QaZ0itsQw5NFRHmlfXiCHIsRpaFKFVqTdzPTBMg"}}'))).length = 219001
+const MAX_BLOCK_DIGESTS = 3000
 
-export class BlockAdvertisementPublisher {
+export class BlockAdvertisementPublisherQueue {
   #client
   #url
 
@@ -82,96 +88,88 @@ export class BlockAdvertisementPublisher {
    * @param {import('multiformats').MultihashDigest[]} digests
    * @returns {Promise<import('@ucanto/interface').Result<import('@ucanto/interface').Unit, import('@ucanto/interface').Failure>>}
    */
-  async addAll (digests) {
+  async add (digests) {
     try {
       // stringify and dedupe
-      const items = [...new Set(digests.map(d => base58btc.encode(d.bytes))).values()]
+      const items = [...new Set(digests.map(d => dagJSON.stringify(d.bytes))).values()]
+      let batches = []
       while (true) {
-        const batch = items.splice(0, MAX_QUEUE_BATCH_SIZE)
+        const batch = items.splice(0, MAX_BLOCK_DIGESTS)
         if (!batch.length) break
-
-        let entries = batch.map(s => ({ Id: s, MessageBody: s }))
-        await retry(async () => {
-          const cmd = new SendMessageBatchCommand({
-            QueueUrl: this.#url.toString(),
-            Entries: entries
-          })
-          const res = await this.#client.send(cmd)
-          const failures = res.Failed
-          if (failures?.length) {
-            failures.forEach(f => console.warn(f))
-            entries = entries.filter(e => failures.some(f => f.Id === e.Id))
-            throw new Error('failures in response')
-          }
-        })
+        batches.push(batch)
       }
+
+      await map(batches, async (batch) => {
+        await retry(async () => {
+          const cmd = new SendMessageCommand({
+            QueueUrl: this.#url.toString(),
+            MessageBody: JSON.stringify(batch)
+          })
+          await this.#client.send(cmd)
+        })
+      }, { concurrency: CONCURRENCY })
+
       return ok({})
     } catch (/** @type {any} */ err) {
-      console.error('failed to add entries to IPNI advertisement publisher', err)
+      console.error('failed to queue entries for IPNI advertisement publisher', err)
       return error({
-        name: 'IPNIBlockAdvertPublisherAddEntriesError',
-        message: `failed to add entries to IPNI advertisement publisher: ${err.message}`
+        name: 'IPNIBlockAdvertPublisherQueueEntriesError',
+        message: `failed to queue entries for IPNI advertisement publisher: ${err.message}`
       })
     }
   }
 }
 
-/** The maximum size a Dynamo batch can be. */
-const MAX_TABLE_BATCH_SIZE = 25
+const MAX_INDEX_ENTRIES = 500
 
-export class BlockIndexStore {
+export class BlockIndexWriterQueue {
   #client
-  #name
+  #url
 
   /**
    * @param {object} config
-   * @param {DynamoDBClient} config.client
-   * @param {string} config.name
+   * @param {SQSClient} config.client
+   * @param {URL} config.url
    */
   constructor (config) {
     this.#client = config.client
-    this.#name = config.name
+    this.#url = config.url
   }
 
   /**
    * @param {BlocksCarsPositionRecord[]} records
    * @returns {Promise<import('@ucanto/interface').Result<import('@ucanto/interface').Unit, import('@ucanto/interface').Failure>>}
    */
-  async putAll (records) {
+  async add (records) {
     try {
-      const items = [...records]
+      const items = records.map(r => ({
+        digest: r.digest.bytes,
+        location: r.location.toString(),
+        range: r.range
+      }))
+      let batches = []
       while (true) {
-        const batch = items.splice(0, MAX_TABLE_BATCH_SIZE)
+        const batch = items.splice(0, MAX_INDEX_ENTRIES)
         if (!batch.length) break
-
-        /** @type {Record<string, import('@aws-sdk/client-dynamodb').WriteRequest[]>} */
-        let requestItems = {
-          [this.#name]: batch.map(r => ({
-            PutRequest: {
-              Item: marshall({
-                blockmultihash: base58btc.encode(r.digest.bytes),
-                carpath: r.location.toString(),
-                offset: r.range[0],
-                length: r.range[1]
-              })
-            }
-          }))
-        }
-        await retry(async () => {
-          const cmd = new BatchWriteItemCommand({ RequestItems: requestItems })
-          const res = await this.#client.send(cmd)
-          if (res.UnprocessedItems && Object.keys(res.UnprocessedItems).length) {
-            requestItems = res.UnprocessedItems
-            throw new Error('unprocessed items')
-          }
-        })
+        batches.push(batch)
       }
+
+      await map(batches, async (batch) => {
+        await retry(async () => {
+          const cmd = new SendMessageCommand({
+            QueueUrl: this.#url.toString(),
+            MessageBody: dagJSON.stringify(batch)
+          })
+          await this.#client.send(cmd)
+        })
+      }, { concurrency: CONCURRENCY })
+
       return ok({})
     } catch (/** @type {any} */ err) {
-      console.error('failed to put records to block index', err)
+      console.error('failed to queue records for block index', err)
       return error({
-        name: 'BlockIndexPutRecordsError',
-        message: `failed to put records to block index: ${err.message}`
+        name: 'BlockIndexQueueRecordsError',
+        message: `failed to queue records for block index: ${err.message}`
       })
     }
   }
