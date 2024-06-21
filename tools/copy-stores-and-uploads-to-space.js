@@ -70,8 +70,6 @@ function* chunks(arr, chunkSize) {
  * @param {string} tableName
  * @param {unknown[]} currentRows
  * @param {string} space
- * @param {object} [options]
- * @param {number} [options.limit]
  */
 async function updateWithNewSpaceAndPutItems(dynamo, tableName, currentRows, space) {
   // max batch size is https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/client/dynamodb/command/BatchWriteItemCommand/
@@ -110,7 +108,7 @@ async function* getAllTableRows(dynamo, tableName, space, options = {}) {
      */
     const response = await dynamo.send(new QueryCommand({
       TableName: tableName,
-      Limit: options.limit || 100000,
+      Limit: options.limit || 4000,
       KeyConditions: {
         space: {
           ComparisonOperator: 'EQ',
