@@ -5,42 +5,47 @@ import {
 } from '@aws-sdk/client-dynamodb'
 import { marshall, unmarshall } from '@aws-sdk/util-dynamodb'
 
-export async function copyStoresAndUploadsToNewSpace() {
+/**
+ * This script can be used to copy a space's stores and uploads to a different space. This
+ * will allow us to help users recover access to spaces that they did not save a recovery
+ * key for.
+ */
+
+export async function copyStoresAndUploadsToNewSpace(oldSpaceDid, newSpaceDid) {
+  console.log(oldSpaceDid, newSpaceDid)
   const {
-    ENV,
-    OLD_SPACE_DID,
-    NEW_SPACE_DID
+    W3UP_ENV,
   } = getEnv()
 
   const { client: storeClient, tableName: storeTableName } = getDynamoDb(
     'store',
-    ENV,
-    getRegion(ENV)
+    W3UP_ENV,
+    getRegion(W3UP_ENV)
   )
 
-  const storeRows = getAllTableRows(storeClient, storeTableName, OLD_SPACE_DID)
+  const storeRows = getAllTableRows(storeClient, storeTableName, oldSpaceDid)
   const storeResults = []
   // this will run out of memory if things get tooooo big, but the items are very small so let's do this for now
   for await (const row of storeRows) {
     storeResults.push(row)
   }
   console.log(`Found ${storeResults.length} store rows`)
-  await updateWithNewSpaceAndPutItems(storeClient, storeTableName, storeResults, NEW_SPACE_DID)
+  await updateWithNewSpaceAndPutItems(storeClient, storeTableName, storeResults, newSpaceDid)
 
   const { client: uploadClient, tableName: uploadTableName } = getDynamoDb(
     'upload',
-    ENV,
-    getRegion(ENV)
+    W3UP_ENV,
+    getRegion(W3UP_ENV)
   )
 
-  const uploadRows = getAllTableRows(uploadClient, uploadTableName, OLD_SPACE_DID)
+  const uploadRows = getAllTableRows(uploadClient, uploadTableName, oldSpaceDid)
   const uploadResults = []
   // this will run out of memory if things get tooooo big, but the items are very small so let's do this for now
   for await (const row of uploadRows) {
     uploadResults.push(row)
   }
   console.log(`Found ${uploadResults.length} upload rows`)
-  await updateWithNewSpaceAndPutItems(uploadClient, uploadTableName, uploadResults, NEW_SPACE_DID)
+  await updateWithNewSpaceAndPutItems(uploadClient, uploadTableName, uploadResults, newSpaceDid)
 }
 
 /**
@@ -63,7 +68,7 @@ function* chunks(arr, chunkSize) {
  * @param {object} [options]
  * @param {number} [options.limit]
  */
-export async function updateWithNewSpaceAndPutItems(dynamo, tableName, currentRows, space) {
+async function updateWithNewSpaceAndPutItems(dynamo, tableName, currentRows, space) {
   // max batch size is https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/client/dynamodb/command/BatchWriteItemCommand/
   const MAX_BATCH_SIZE = 25
   const updatedRows = currentRows.map(item => ({ ...item, space }))
@@ -88,7 +93,7 @@ export async function updateWithNewSpaceAndPutItems(dynamo, tableName, currentRo
  * @param {object} [options]
  * @param {number} [options.limit]
  */
-export async function* getAllTableRows(dynamo, tableName, space, options = {}) {
+async function* getAllTableRows(dynamo, tableName, space, options = {}) {
   let done = false
   let lastEvaluatedKey
   while (!done) {
@@ -119,9 +124,7 @@ export async function* getAllTableRows(dynamo, tableName, space, options = {}) {
  */
 function getEnv() {
   return {
-    ENV: mustGetEnv('ENV'),
-    OLD_SPACE_DID: mustGetEnv('OLD_SPACE_DID'),
-    NEW_SPACE_DID: mustGetEnv('NEW_SPACE_DID'),
+    W3UP_ENV: mustGetEnv('W3UP_ENV'),
   }
 }
 
@@ -167,5 +170,3 @@ function getDynamoDb(tableName, env, region) {
     endpoint
   }
 }
-
-await copyStoresAndUploadsToNewSpace()
