@@ -131,6 +131,15 @@ export const assert = async (message, { stream, store }) => {
         throw new NoInvocationFoundForGivenReceiptError()
       }
 
+      // log any likely JSON serialization errors in the receipt
+      // big ints are handled below but worth understand what's
+      // happening
+      try {
+        JSON.stringify(receipt.out)
+      } catch (error) {
+        console.warn("receipt will not serialize to JSON", "receipt", receipt.out, "error", error)
+      }
+
       records.push({
         Data: UTF8.fromString(
           JSON.stringify({
