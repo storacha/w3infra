@@ -147,7 +147,7 @@ export const assert = async (message, { stream, store }) => {
             out: receipt.out,
             ts: Date.now(),
             type: stream.receipt.type,
-          })
+          }, (_, value) => typeof value === "bigint" ? Number(value) : value )
         ),
         PartitionKey: stream.partitionKey,
       })
