@@ -4,6 +4,7 @@ import * as dagJSON from '@ipld/dag-json'
 import * as Digest from 'multiformats/hashes/digest'
 import { mustGetEnv } from './lib.js'
 import { writeBlockIndexEntries } from '../lib/block-index-writer.js'
+import { createBlocksCarsPositionStore } from '../tables/blocks-cars-position.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -26,8 +27,9 @@ const handleBlockIndexWriterMessage = async (sqsEvent) => {
   const tableName = mustGetEnv('BLOCKS_CAR_POSITION_TABLE_NAME')
   const region = mustGetEnv('INDEXER_REGION')
   const client = new DynamoDBClient({ region })
+  const blocksCarsPositionStore = createBlocksCarsPositionStore(client, { tableName })
 
-  const { ok, error } = await writeBlockIndexEntries({ tableName, client }, entries)
+  const { ok, error } = await writeBlockIndexEntries({ blocksCarsPositionStore }, entries)
   if (error) {
     console.error(error)
     return {
@@ -39,7 +41,10 @@ const handleBlockIndexWriterMessage = async (sqsEvent) => {
   return { statusCode: 200, body: ok }
 }
 
-/** @param {string} body */
+/**
+ * @param {string} body
+ * @returns {import('../lib/api.js').Location[]}
+ */
 const decodeMessage = (body) => {
   /** @type {import('../types.js').BlockIndexQueueMessage} */
   const raw = dagJSON.parse(body)

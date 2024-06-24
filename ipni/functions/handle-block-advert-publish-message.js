@@ -4,6 +4,7 @@ import * as dagJSON from '@ipld/dag-json'
 import * as Digest from 'multiformats/hashes/digest'
 import { mustGetEnv } from './lib.js'
 import { publishBlockAdvertisement } from '../lib/block-advert-publisher.js'
+import { createMultihashesQueue } from '../queues/multihashes.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -26,8 +27,9 @@ const handleBlockAdvertPublishMessage = async (sqsEvent) => {
   const url = new URL(mustGetEnv('MULTIHASHES_QUEUE_URL'))
   const region = mustGetEnv('INDEXER_REGION')
   const client = new SQSClient({ region })
+  const multihashesQueue = createMultihashesQueue(client, { url })
 
-  const { ok, error } = await publishBlockAdvertisement({ url, client }, advert)
+  const { ok, error } = await publishBlockAdvertisement({ multihashesQueue }, advert)
   if (error) {
     console.error(error)
     return {
