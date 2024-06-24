@@ -2,14 +2,11 @@ import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs'
 import * as dagJSON from '@ipld/dag-json'
 import retry from 'p-retry'
 import map from 'p-map'
+import Queue from 'p-queue'
 import { ok, error } from '@ucanto/server'
 
 /**
- * @typedef {{
- *   digest: import('multiformats').MultihashDigest,
- *   location: URL,
- *   range: [number, number]
- * }} BlocksCarsPositionRecord
+ * @typedef {Map<import('multiformats').MultihashDigest, [offset: number, length: number]>} Slices
  */
 
 const CONCURRENCY = 10
@@ -41,22 +38,18 @@ export const useIPNIService = (blockAdvertPublisherQueue, blockIndexWriterQueue,
   /** @param {import('@web3-storage/upload-api').ShardedDAGIndex} index */
   async publish (index) {
     /** @type {import('multiformats').MultihashDigest[]} */
-    const items = []
-    /** @type {BlocksCarsPositionRecord[]} */
+    const entries = []
+    /** @type {Array<[location: URL, slices: Slices]>} */
     const records = []
     for (const [shard, slices] of index.shards.entries()) {
-      for (const [digest, range] of slices.entries()) {
-        items.push(digest)
-
-        const createUrlRes = await blobsStorage.createDownloadUrl(shard)
-        if (!createUrlRes.ok) return createUrlRes
-
-        const location = new URL(createUrlRes.ok)
-        records.push({ digest, location, range })
-      }
+      const createUrlRes = await blobsStorage.createDownloadUrl(shard)
+      if (!createUrlRes.ok) return createUrlRes
+      const location = new URL(createUrlRes.ok)
+      records.push([location, slices])
+      entries.push(...slices.keys())
     }
 
-    const addRes = await blockAdvertPublisherQueue.add(items)
+    const addRes = await blockAdvertPublisherQueue.add({ entries })
     if (addRes.error) return addRes
 
     const queueRes = await blockIndexWriterQueue.add(records)
@@ -66,10 +59,14 @@ export const useIPNIService = (blockAdvertPublisherQueue, blockIndexWriterQueue,
   }
 })
 
-// Max SendMessage size is 256KB
-// new TextEncoder().encode(JSON.stringify(Array(3000).fill('{"/":{"bytes":"EiAAFf1QaZ0itsQw5NFRHmlfXiCHIsRpaFKFVqTdzPTBMg"}}'))).length = 219001
+// Max SendMessage size is 262,144 bytes
+// ```js
+// new TextEncoder().encode(JSON.stringify(Array(3000).fill('{"/":{"bytes":"EiAAFf1QaZ0itsQw5NFRHmlfXiCHIsRpaFKFVqTdzPTBMg"}}'))).length
+// ```
+// = 219,001
 const MAX_BLOCK_DIGESTS = 3000
 
+/** Queues adverts for IPNI publishing. */
 export class BlockAdvertisementPublisherQueue {
   #client
   #url
@@ -85,13 +82,12 @@ export class BlockAdvertisementPublisherQueue {
   }
 
   /**
-   * @param {import('multiformats').MultihashDigest[]} digests
+   * @param {{ entries: import('multiformats').MultihashDigest[] }} advert
    * @returns {Promise<import('@ucanto/interface').Result<import('@ucanto/interface').Unit, import('@ucanto/interface').Failure>>}
    */
-  async add (digests) {
+  async add (advert) {
     try {
-      // stringify and dedupe
-      const items = [...new Set(digests.map(d => dagJSON.stringify(d.bytes))).values()]
+      const items = advert.entries.map(d => d.bytes)
       let batches = []
       while (true) {
         const batch = items.splice(0, MAX_BLOCK_DIGESTS)
@@ -99,29 +95,52 @@ export class BlockAdvertisementPublisherQueue {
         batches.push(batch)
       }
 
-      await map(batches, async (batch) => {
-        await retry(async () => {
+      await map(batches, (batch) => (
+        retry(() => {
+          /** @type {import('../../ipni/types.js').PublishAdvertisementMessage} */
+          const message = { entries: batch }
           const cmd = new SendMessageCommand({
             QueueUrl: this.#url.toString(),
-            MessageBody: JSON.stringify(batch)
+            MessageBody: dagJSON.stringify(message)
           })
-          await this.#client.send(cmd)
+          return this.#client.send(cmd)
         })
-      }, { concurrency: CONCURRENCY })
+      ), { concurrency: CONCURRENCY })
 
       return ok({})
     } catch (/** @type {any} */ err) {
       console.error('failed to queue entries for IPNI advertisement publisher', err)
       return error({
-        name: 'IPNIBlockAdvertPublisherQueueEntriesError',
+        name: 'BlockAdvertPublisherQueueError',
         message: `failed to queue entries for IPNI advertisement publisher: ${err.message}`
       })
     }
   }
 }
 
-const MAX_INDEX_ENTRIES = 500
+// Max SendMessage size is 262,144 bytes
+// ```js
+// const { base58btc } = await import('multiformats/bases/base58')
+// const Digest = await import('multiformats/hashes/digest')
+// const dagJSON = await import('@ipld/dag-json')
+// new TextEncoder().encode(
+//   dagJSON.stringify(
+//     [
+//       'https://xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.w3s.link/zQmNLfzmTMp1CBZAX8atkYWrefR6L3BTsSeghvmsQDMfaHt/zQmNLfzmTMp1CBZAX8atkYWrefR6L3BTsSeghvmsQDMfaHt.blob',
+//       Array(2000).fill(
+//         [
+//           Digest.decode(base58btc.decode('zQmNLfzmTMp1CBZAX8atkYWrefR6L3BTsSeghvmsQDMfaHt')).bytes,
+//           [Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER]
+//         ]
+//       )
+//     ]
+//   )
+// ).length
+// ```
+// = 206,156
+const MAX_INDEX_ENTRIES = 2000
 
+/** Queues block index records for writing to DynamoDB. */
 export class BlockIndexWriterQueue {
   #client
   #url
@@ -137,33 +156,35 @@ export class BlockIndexWriterQueue {
   }
 
   /**
-   * @param {BlocksCarsPositionRecord[]} records
+   * @param {Array<[location: URL, slices: Slices]>} records
    * @returns {Promise<import('@ucanto/interface').Result<import('@ucanto/interface').Unit, import('@ucanto/interface').Failure>>}
    */
   async add (records) {
     try {
-      const items = records.map(r => ({
-        digest: r.digest.bytes,
-        location: r.location.toString(),
-        range: r.range
-      }))
-      let batches = []
-      while (true) {
-        const batch = items.splice(0, MAX_INDEX_ENTRIES)
-        if (!batch.length) break
-        batches.push(batch)
+      const queue = new Queue({ concurrency: CONCURRENCY })
+      const requests = []
+
+      for (const [location, slices] of records) {
+        /** @type {Array<[Uint8Array, [number, number]]>} */
+        const items = [...slices.entries()].map(s => [s[0].bytes, s[1]])
+        while (true) {
+          const batch = items.splice(0, MAX_INDEX_ENTRIES)
+          if (!batch.length) break
+          requests.push(() => (
+            retry(() => {
+              /** @type {import('../../ipni/types.js').BlockIndexQueueMessage} */
+              const message = [location.toString(), batch]
+              const cmd = new SendMessageCommand({
+                QueueUrl: this.#url.toString(),
+                MessageBody: dagJSON.stringify(message)
+              })
+              return this.#client.send(cmd)
+            })
+          ))
+        }
       }
 
-      await map(batches, async (batch) => {
-        await retry(async () => {
-          const cmd = new SendMessageCommand({
-            QueueUrl: this.#url.toString(),
-            MessageBody: dagJSON.stringify(batch)
-          })
-          await this.#client.send(cmd)
-        })
-      }, { concurrency: CONCURRENCY })
-
+      await queue.addAll(requests)
       return ok({})
     } catch (/** @type {any} */ err) {
       console.error('failed to queue records for block index', err)

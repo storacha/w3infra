@@ -1,0 +1,21 @@
+{
+  "name": "@web3-storage/w3infra-ipni",
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "test": "entail '**/*.spec.js'"
+  },
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.602.0",
+    "@aws-sdk/client-sqs": "^3.600.0",
+    "@aws-sdk/util-dynamodb": "^3.602.0",
+    "@ipld/dag-json": "^10.2.1",
+    "@ucanto/server": "^10.0.0",
+    "multiformats": "^13.1.1",
+    "p-map": "^7.0.2",
+    "p-retry": "^6.2.0"
+  },
+  "devDependencies": {
+    "entail": "^2.1.2"
+  }
+}
