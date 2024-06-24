@@ -88,7 +88,7 @@ export class BlockAdvertisementPublisherQueue {
   async add (advert) {
     try {
       const items = advert.entries.map(d => d.bytes)
-      let batches = []
+      const batches = []
       while (true) {
         const batch = items.splice(0, MAX_BLOCK_DIGESTS)
         if (!batch.length) break
