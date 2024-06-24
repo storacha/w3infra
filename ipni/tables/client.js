@@ -25,7 +25,7 @@ export const createStoreBatchPutterClient = (conf, context) => {
   return {
     batchPut: async (items) => {
       /** @type {import('@aws-sdk/client-dynamodb').WriteRequest[]} */
-      let writeRequests = []
+      const writeRequests = []
       for (const item of items) {
         const encoding = context.encode(item)
         if (encoding.error) return encoding

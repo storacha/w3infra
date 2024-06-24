@@ -85,6 +85,7 @@
     },
     "rules": {
       "unicorn/prefer-number-properties": "off",
+      "unicorn/new-for-builtins": "off",
       "unicorn/no-null": "off",
       "unicorn/no-array-callback-reference": "off",
       "unicorn/no-array-for-each": "off",
@@ -94,6 +95,7 @@
       "unicorn/prefer-export-from": "off",
       "unicorn/prefer-object-from-entries": "off",
       "unicorn/prefer-set-has": "off",
+      "unicorn/prefer-spread": "off",
       "unicorn/catch-error-name": "off",
       "unicorn/explicit-length-check": "off",
       "unicorn/prefer-type-error": "off",
