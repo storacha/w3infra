@@ -10,7 +10,9 @@ export function IpniStack({ stack, app }) {
 
   const { multihashesQueue, blocksCarsPositionTable, indexerRegion } = use(ElasticIpfsStack)
 
-  const blockAdvertPublisherQueue = new Queue(stack, 'block-advert-publisher-queue')
+  const blockAdvertPublisherQueue = new Queue(stack, 'block-advert-publisher-queue', {
+    cdk: { queue: { visibilityTimeout: Duration.minutes(15) } }
+  })
   const blockAdvertPublisherDLQ = new Queue(stack, 'block-advert-publisher-dlq', {
     cdk: { queue: { retentionPeriod: Duration.days(14) } }
   })
@@ -32,7 +34,9 @@ export function IpniStack({ stack, app }) {
     },
   })
 
-  const blockIndexWriterQueue = new Queue(stack, 'block-index-writer-queue')
+  const blockIndexWriterQueue = new Queue(stack, 'block-index-writer-queue', {
+    cdk: { queue: { visibilityTimeout: Duration.minutes(15) } }
+  })
   const blockIndexWriterDLQ = new Queue(stack, 'block-index-writer-dlq', {
     cdk: { queue: { retentionPeriod: Duration.days(14) } }
   })
