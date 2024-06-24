@@ -368,11 +368,11 @@ function getLambdaEnv () {
     // IPNI service
     blockAdvertisementPublisherQueueConfig: {
       url: new URL(mustGetEnv('BLOCK_ADVERT_PUBLISHER_QUEUE_URL')),
-      region: mustGetEnv('BLOCK_ADVERT_PUBLISHER_REGION')
+      region: AWS_REGION
     },
     blockIndexWriterQueueConfig: {
       url: new URL(mustGetEnv('BLOCK_INDEX_WRITER_QUEUE_URL')),
-      region: mustGetEnv('BLOCK_INDEX_WRITER_REGION')
+      region: AWS_REGION
     },
     // set for testing
     dbEndpoint: process.env.DYNAMO_DB_ENDPOINT,
