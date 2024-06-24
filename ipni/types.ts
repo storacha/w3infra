@@ -4,5 +4,5 @@ export interface PublishAdvertisementMessage {
 
 export type BlockIndexQueueMessage = [
   location: string,
-  Array<[digest: Uint8Array, position: [offset: number, length: number]]>
+  slices: Array<[digest: Uint8Array, position: [offset: number, length: number]]>
 ]
