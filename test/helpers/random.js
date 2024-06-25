@@ -19,3 +19,6 @@ export async function randomFile(size) {
   const bytes = await randomBytes(size)
   return new Blob([bytes])
 }
+
+/** @param {number} max */
+export const randomInt = max => Math.floor(Math.random() * max)
