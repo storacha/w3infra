@@ -308,7 +308,7 @@ test('blob integration flow with receipts validation', async t => {
   }
 })
 
-test.only('10k NFT drop', async t => {
+test('10k NFT drop', async t => {
   const total = 20_000
   console.log('Creating client')
   const client = await setupNewClient(t.context.apiEndpoint)
@@ -318,8 +318,8 @@ test.only('10k NFT drop', async t => {
   const id = crypto.randomUUID()
   const files = []
   const randomTrait = () => {
-    const [trait_type, value] = crypto.randomUUID().split('-')
-    return { trait_type, value }
+    const [traitType, value] = crypto.randomUUID().split('-')
+    return { trait_type: traitType, value }
   }
   for (let i = 0; i < total; i++) {
     files.push(new File([JSON.stringify({
