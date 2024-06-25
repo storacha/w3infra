@@ -33,7 +33,7 @@ export async function receiptGet (event, options = implicitContext()) {
     console.log(result.error)
     return {
       statusCode: 404,
-      body: Buffer.from(`No receipt for task ${taskCid} is found`)
+      body: Buffer.from(`No receipt for task ${taskCid} is found`).toString('base64')
     }
   }
   const url = Store.toMessageURL(store, result.ok.message)

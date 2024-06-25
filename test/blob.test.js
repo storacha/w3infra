@@ -26,7 +26,8 @@ import {
   getCarparkBucketInfo,
   getRoundaboutEndpoint,
   getDynamoDb,
-  getAwsRegion
+  getAwsRegion,
+  getReceiptsEndpoint
 } from './helpers/deployment.js'
 import { randomFile, randomInt } from './helpers/random.js'
 import { createMailSlurpInbox, setupNewClient, getServiceProps } from './helpers/up-client.js'
@@ -335,7 +336,8 @@ test('10k NFT drop', async t => {
   const root = await client.uploadDirectory(files, {
     onShardStored ({ cid, size }) {
       console.log(`Uploaded blob ${cid} (${size} bytes)`)
-    }
+    },
+    receiptsEndpoint: getReceiptsEndpoint()
   })
 
   const sample = Array.from(Array(5), () => randomInt(total))
@@ -343,20 +345,23 @@ test('10k NFT drop', async t => {
     // Verify gateway can resolve uploaded file
     const gatewayURL = `https://${root}.ipfs-staging.w3s.link/${index}.json`
     console.log('Checking gateway can fetch', gatewayURL)
-    const gatewayRetries = 5
-    for (let i = 0; i < gatewayRetries; i++) {
-      const controller = new AbortController()
-      const timeoutID = setTimeout(() => controller.abort(), 5000)
-      try {
-        const res = await fetch(gatewayURL, { method: 'HEAD', signal: controller.signal })
-        if (res.status === 200) break
-      } catch (err) {
-        console.error(`failed gateway fetch: ${gatewayURL} (attempt ${i + 1})`, err)
-        if (i === gatewayRetries - 1) throw err
-      } finally {
-        clearTimeout(timeoutID)
+
+    await t.notThrowsAsync(async () => {
+      const gatewayRetries = 5
+      for (let i = 0; i < gatewayRetries; i++) {
+        const controller = new AbortController()
+        const timeoutID = setTimeout(() => controller.abort(), 5000)
+        try {
+          const res = await fetch(gatewayURL, { method: 'HEAD', signal: controller.signal })
+          if (res.status === 200) break
+        } catch (err) {
+          console.error(`failed gateway fetch: ${gatewayURL} (attempt ${i + 1})`, err)
+          if (i === gatewayRetries - 1) throw err
+        } finally {
+          clearTimeout(timeoutID)
+        }
+        await new Promise(resolve => setTimeout(resolve, 1000))
       }
-      await new Promise(resolve => setTimeout(resolve, 1000))
-    }
+    })
   }
 })
