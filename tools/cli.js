@@ -9,6 +9,7 @@ import { printD1ProvisionsEmails } from './d1-migration/print-d1-emails.js'
 import { verifyD1DynamoMigration } from './d1-migration/verify-d1-dynamo-migration.js'
 import { getOldestPiecesPendingDeals } from './get-oldest-pieces-pending-deals.js'
 import { copyStoresAndUploadsToNewSpace } from './copy-stores-and-uploads-to-space.js'
+import { rebuildSpaceMetrics } from './rebuild-space-metrics.js'
 
 const cli = sade('w3infra-cli')
 
@@ -39,7 +40,11 @@ cli
   .action(verifyD1DynamoMigration)
 
 cli
-  .command('copy-stores-and-uploads <old-space-did> <new-space-did>')
+  .command('copy-stores-and-uploads <old-space-did> <new-space-did>', 'Copy store and upload records of old-space-did to new-space-did')
   .action(copyStoresAndUploadsToNewSpace)
+
+cli
+  .command('rebuild-space-metrics <space-did>', 'Rebuild store and upload metrics for a space.')
+  .action(rebuildSpaceMetrics)
 
 cli.parse(process.argv)
