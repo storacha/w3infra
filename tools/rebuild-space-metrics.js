@@ -25,6 +25,7 @@ export async function rebuildSpaceMetrics(spaceDid) {
 
   let uploadCount = 0
   const uploadRows = tableRowsBySpace('upload', spaceDid)
+  // eslint-disable-next-line no-unused-vars
   for await (const _ of uploadRows) {
     uploadCount++
   }
@@ -49,7 +50,7 @@ function tableRowsBySpace(tableName, spaceDid, options = {}) {
     W3UP_ENV,
   } = getEnv()
 
-  const { client: client, tableName: fullTableName } = getDynamoDb(
+  const { client, tableName: fullTableName } = getDynamoDb(
     tableName,
     W3UP_ENV,
     getRegion(W3UP_ENV)
