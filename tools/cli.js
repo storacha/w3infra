@@ -45,6 +45,7 @@ cli
 
 cli
   .command('rebuild-space-metrics <space-did>', 'Rebuild store and upload metrics for a space.')
+  .option('-s, --snapshot', 'If set, create a billing snapshot after updating the space metrics.')
   .action(rebuildSpaceMetrics)
 
 cli.parse(process.argv)
