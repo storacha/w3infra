@@ -330,7 +330,7 @@ test('blob integration flow with receipts validation', async t => {
 test('10k NFT drop', async t => {
   const total = 20_000
   console.log('Creating client')
-  const client = await setupNewClient(t.context.apiEndpoint)
+  const { client } = await setupNewClient(t.context.apiEndpoint)
 
   // Prepare data
   console.log('Creating NFT metadata')
@@ -351,18 +351,12 @@ test('10k NFT drop', async t => {
   }
 
   console.log('Uploading NFT metadata')
-  let root
-  try {
-    root = await client.uploadDirectory(files, {
-      onShardStored ({ cid, size }) {
-        console.log(`Uploaded blob ${cid} (${size} bytes)`)
-      },
-      receiptsEndpoint: getReceiptsEndpoint()
-    })
-  } catch (err) {
-    console.log(err, err.cause)
-    throw err
-  }
+  const root = await client.uploadDirectory(files, {
+    onShardStored ({ cid, size }) {
+      console.log(`Uploaded blob ${cid} (${size} bytes)`)
+    },
+    receiptsEndpoint: getReceiptsEndpoint()
+  })
 
   const sample = Array.from(Array(5), () => randomInt(total))
   for (const index of sample) {
