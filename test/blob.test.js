@@ -351,12 +351,18 @@ test('10k NFT drop', async t => {
   }
 
   console.log('Uploading NFT metadata')
-  const root = await client.uploadDirectory(files, {
-    onShardStored ({ cid, size }) {
-      console.log(`Uploaded blob ${cid} (${size} bytes)`)
-    },
-    receiptsEndpoint: getReceiptsEndpoint()
-  })
+  let root
+  try {
+    root = await client.uploadDirectory(files, {
+      onShardStored ({ cid, size }) {
+        console.log(`Uploaded blob ${cid} (${size} bytes)`)
+      },
+      receiptsEndpoint: getReceiptsEndpoint()
+    })
+  } catch (err) {
+    console.log(err, err.cause)
+    throw err
+  }
 
   const sample = Array.from(Array(5), () => randomInt(total))
   for (const index of sample) {
