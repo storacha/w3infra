@@ -321,7 +321,7 @@ export async function executionContextToUcantoTestServerContext(t) {
   const billingProvider = createTestBillingProvider()
   const plansStorage = usePlansStore(customersStore, billingProvider)
   const email = new DebugEmail();
-  const ipniService = await createTestIPNIService({ sqs, dynamo }, blobsStorage)
+  const ipniService = await createTestIPNIService({ sqs }, blobsStorage)
   const claimsService = await ClaimsService.activate({
     s3,
     dynamo,

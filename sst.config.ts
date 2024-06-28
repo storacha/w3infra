@@ -11,6 +11,7 @@ import { CarparkStack } from './stacks/carpark-stack.js'
 import { FilecoinStack } from './stacks/filecoin-stack.js'
 import { ReplicatorStack } from './stacks/replicator-stack.js'
 import { UcanFirehoseStack } from './stacks/firehose-stack.js'
+import { IndexerStack } from './stacks/indexer-stack.js'
 import { RoundaboutStack } from './stacks/roundabout-stack.js'
 import { isPrBuild } from './stacks/config.js'
 
@@ -46,6 +47,7 @@ export default {
     app.stack(UcanInvocationStack)
     app.stack(BillingStack)
     app.stack(FilecoinStack)
+    app.stack(IndexerStack)
     app.stack(UploadApiStack)
     app.stack(ReplicatorStack)
     app.stack(UcanFirehoseStack)

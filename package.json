@@ -12,7 +12,7 @@
     "console": "sst console",
     "lint": "tsc && eslint '**/*.js'",
     "clean": "rm -rf dist node_modules package-lock.json ./*/{.cache,dist,node_modules}",
-    "test": "npm test -w billing -w upload-api -w carpark -w replicator -w roundabout -w filecoin",
+    "test": "npm test -w billing -w upload-api -w carpark -w replicator -w roundabout -w filecoin -w indexer",
     "test-integration": "ava --verbose --serial --timeout=660s --fail-fast test/*.test.js",
     "fetch-metrics-for-space": "npm run fetch-metrics-for-space -w tools",
     "follow-filecoin-receipt-chain": "npm run follow-filecoin-receipt-chain -w tools",
@@ -85,6 +85,7 @@
     },
     "rules": {
       "unicorn/prefer-number-properties": "off",
+      "unicorn/new-for-builtins": "off",
       "unicorn/no-null": "off",
       "unicorn/no-array-callback-reference": "off",
       "unicorn/no-array-for-each": "off",
@@ -94,6 +95,7 @@
       "unicorn/prefer-export-from": "off",
       "unicorn/prefer-object-from-entries": "off",
       "unicorn/prefer-set-has": "off",
+      "unicorn/prefer-spread": "off",
       "unicorn/catch-error-name": "off",
       "unicorn/explicit-length-check": "off",
       "unicorn/prefer-type-error": "off",
@@ -115,12 +117,13 @@
   "workspaces": [
     "billing",
     "carpark",
+    "filecoin",
+    "indexer",
     "replicator",
     "roundabout",
+    "tools",
     "ucan-invocation",
-    "upload-api",
-    "filecoin",
-    "tools"
+    "upload-api"
   ],
   "prettier": {
     "singleQuote": true,

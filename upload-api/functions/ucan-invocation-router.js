@@ -128,8 +128,8 @@ export async function ucanInvocationRouter(request) {
     carparkBucketEndpoint,
     carparkBucketAccessKeyId,
     carparkBucketSecretAccessKey,
-    blocksCarsPositionTableConfig,
-    multihashesQueueConfig,
+    blockAdvertisementPublisherQueueConfig,
+    blockIndexWriterQueueConfig,
   } = getLambdaEnv()
 
   if (request.body === undefined) {
@@ -206,7 +206,11 @@ export async function ucanInvocationRouter(request) {
     url: dealTrackerUrl
   })
 
-  const ipniService = createIPNIService(multihashesQueueConfig, blocksCarsPositionTableConfig, blobsStorage)
+  const ipniService = createIPNIService(
+    blockAdvertisementPublisherQueueConfig,
+    blockIndexWriterQueueConfig,
+    blobsStorage
+  )
 
   const claimsServicePrincipal = DID.parse(mustGetEnv('CONTENT_CLAIMS_DID'))
   const claimsServiceURL = new URL(mustGetEnv('CONTENT_CLAIMS_URL'))
@@ -362,13 +366,13 @@ function getLambdaEnv () {
     carparkBucketAccessKeyId: mustGetEnv('R2_ACCESS_KEY_ID'),
     carparkBucketSecretAccessKey: mustGetEnv('R2_SECRET_ACCESS_KEY'),
     // IPNI service
-    multihashesQueueConfig: {
-      url: new URL(mustGetEnv('MULTIHASHES_QUEUE_URL')),
-      region: mustGetEnv('INDEXER_REGION')
+    blockAdvertisementPublisherQueueConfig: {
+      url: new URL(mustGetEnv('BLOCK_ADVERT_PUBLISHER_QUEUE_URL')),
+      region: AWS_REGION
     },
-    blocksCarsPositionTableConfig: {
-      name: mustGetEnv('BLOCKS_CAR_POSITION_TABLE_NAME'),
-      region: mustGetEnv('INDEXER_REGION')
+    blockIndexWriterQueueConfig: {
+      url: new URL(mustGetEnv('BLOCK_INDEX_WRITER_QUEUE_URL')),
+      region: AWS_REGION
     },
     // set for testing
     dbEndpoint: process.env.DYNAMO_DB_ENDPOINT,

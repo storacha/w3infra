@@ -3,11 +3,8 @@ import {
   Config,
   Function,
   Queue,
-  Table,
   use
 } from 'sst/constructs'
-import * as sqs from 'aws-cdk-lib/aws-sqs'
-import * as dynamodb from 'aws-cdk-lib/aws-dynamodb'
 
 import { StartingPosition } from 'aws-cdk-lib/aws-lambda'
 import { UploadDbStack } from './upload-db-stack.js'
@@ -15,6 +12,7 @@ import { BillingDbStack } from './billing-db-stack.js'
 import { CarparkStack } from './carpark-stack.js'
 import { FilecoinStack } from './filecoin-stack.js'
 import { UcanInvocationStack } from './ucan-invocation-stack.js'
+import { IndexerStack } from './indexer-stack.js'
 
 import { getCustomDomain, getApiPackageJson, getGitInfo, setupSentry, getEnv, getEventSourceConfig, getServiceURL } from './config.js'
 
@@ -27,8 +25,6 @@ export function UploadApiStack({ stack, app }) {
     CONTENT_CLAIMS_DID,
     CONTENT_CLAIMS_URL,
     CONTENT_CLAIMS_PROOF,
-    EIPFS_MULTIHASHES_SQS_ARN,
-    EIPFS_BLOCKS_CAR_POSITION_TABLE_ARN
   } = getEnv()
 
   // Setup app monitoring with Sentry
@@ -40,36 +36,13 @@ export function UploadApiStack({ stack, app }) {
   const { invocationBucket, taskBucket, workflowBucket, ucanStream } = use(UcanInvocationStack)
   const { customerTable, spaceDiffTable, spaceSnapshotTable, stripeSecretKey } = use(BillingDbStack)
   const { pieceOfferQueue, filecoinSubmitQueue } = use(FilecoinStack)
-
-  // Blob protocol
-  // Elastic IPFS event for multihashes
-  const multihashesQueue = new Queue(stack, 'multihashes-topic-queue', {
-    cdk: {
-      queue: sqs.Queue.fromQueueArn(
-        stack,
-        'multihashes-topic',
-        EIPFS_MULTIHASHES_SQS_ARN
-      ),
-    },
-  })
-
-  const blocksCarPositionTable = new Table(stack, 'blocks-car-position-table', {
-    cdk: {
-      table: dynamodb.Table.fromTableArn(
-        stack,
-        'blocks-car-position',
-        EIPFS_BLOCKS_CAR_POSITION_TABLE_ARN
-      ),
-    },
-  })
+  const { blockAdvertPublisherQueue, blockIndexWriterQueue } = use(IndexerStack)
 
   // Setup API
   const customDomain = getCustomDomain(stack.stage, process.env.HOSTED_ZONE)
   const pkg = getApiPackageJson()
   const git = getGitInfo()
   const ucanInvocationPostbasicAuth = new Config.Secret(stack, 'UCAN_INVOCATION_POST_BASIC_AUTH')
-  // https://docs.aws.amazon.com/IAM/latest/UserGuide/reference-arns.html#arns-syntax
-  const indexerRegion = EIPFS_MULTIHASHES_SQS_ARN.split(':')[3]
 
   const api = new Api(stack, 'http-gateway', {
     customDomain,
@@ -99,8 +72,8 @@ export function UploadApiStack({ stack, app }) {
           ucanStream,
           pieceOfferQueue,
           filecoinSubmitQueue,
-          multihashesQueue,
-          blocksCarPositionTable,
+          blockAdvertPublisherQueue,
+          blockIndexWriterQueue,
         ],
         environment: {
           DID: process.env.UPLOAD_API_DID ?? '',
@@ -127,8 +100,8 @@ export function UploadApiStack({ stack, app }) {
           PIECE_TABLE_NAME: pieceTable.tableName,
           PIECE_OFFER_QUEUE_URL: pieceOfferQueue.queueUrl,
           FILECOIN_SUBMIT_QUEUE_URL: filecoinSubmitQueue.queueUrl,
-          MULTIHASHES_QUEUE_URL: multihashesQueue.queueUrl,
-          BLOCKS_CAR_POSITION_TABLE_NAME: blocksCarPositionTable.tableName,
+          BLOCK_ADVERT_PUBLISHER_QUEUE_URL: blockAdvertPublisherQueue.queueUrl,
+          BLOCK_INDEX_WRITER_QUEUE_URL: blockIndexWriterQueue.queueUrl,
           NAME: pkg.name,
           VERSION: pkg.version,
           COMMIT: git.commmit,
@@ -149,7 +122,6 @@ export function UploadApiStack({ stack, app }) {
           STRIPE_PUBLISHABLE_KEY: process.env.STRIPE_PUBLISHABLE_KEY ?? '',
           DEAL_TRACKER_DID: process.env.DEAL_TRACKER_DID ?? '',
           DEAL_TRACKER_URL: process.env.DEAL_TRACKER_URL ?? '',
-          INDEXER_REGION: indexerRegion,
           CONTENT_CLAIMS_DID,
           CONTENT_CLAIMS_URL,
           CONTENT_CLAIMS_PROOF

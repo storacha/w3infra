@@ -55,14 +55,18 @@ export async function setupNewClient (uploadServiceUrl, options = {}) {
   const client = await createNewClient(uploadServiceUrl)
   const timeoutMs = process.env.MAILSLURP_TIMEOUT ? parseInt(process.env.MAILSLURP_TIMEOUT) : 60_000
   const authorizePromise = client.login(email)
-  // click link in email
-  const latestEmail = await mailslurp.waitForLatestEmail(inboxId, timeoutMs)
-  const authLink = getAuthLinkFromEmail(latestEmail.body, uploadServiceUrl)
-  const res = await fetch(authLink, { method: 'POST' })
-  if (!res.ok) {
-    throw new Error('failed to authenticate by clickling on auth link from e-mail')
-  }
-  const account = await authorizePromise
+  const [account] = await Promise.all([
+    authorizePromise,
+    (async () => {
+      // click link in email
+      const latestEmail = await mailslurp.waitForLatestEmail(inboxId, timeoutMs)
+      const authLink = getAuthLinkFromEmail(latestEmail.body, uploadServiceUrl)
+      const res = await fetch(authLink, { method: 'POST' })
+      if (!res.ok) {
+        throw new Error('failed to authenticate by clickling on auth link from e-mail')
+      }
+    })()
+  ])
   if (!client.currentSpace()) {
     const space = await client.createSpace("test space")
     await account.provision(space.did())

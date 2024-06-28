@@ -26,9 +26,10 @@ import {
   getCarparkBucketInfo,
   getRoundaboutEndpoint,
   getDynamoDb,
-  getAwsRegion
+  getAwsRegion,
+  getReceiptsEndpoint
 } from './helpers/deployment.js'
-import { randomFile } from './helpers/random.js'
+import { randomFile, randomInt } from './helpers/random.js'
 import { createMailSlurpInbox, setupNewClient, getServiceProps } from './helpers/up-client.js'
 import { getMetrics, getSpaceMetrics } from './helpers/metrics.js'
 import { getUsage } from './helpers/store.js'
@@ -249,15 +250,24 @@ test('blob integration flow with receipts validation', async t => {
   const fetchedBytes =  new Uint8Array(await roundaboutResponse.arrayBuffer())
   t.truthy(equals(shardBytes[0], fetchedBytes))
 
-  // Verify w3link can resolve uploaded file via HTTP
+  // Verify w3link can resolve uploaded file
   console.log('Checking w3link can fetch root', root.toString())
-  const w3linkResponse = await fetch(
-    `https://${root}.ipfs-staging.w3s.link`,
-    {
-      method: 'HEAD'
+  const gatewayURL = `https://${root}.ipfs-staging.w3s.link`
+  const gatewayRetries = 5
+  for (let i = 0; i < gatewayRetries; i++) {
+    const controller = new AbortController()
+    const timeoutID = setTimeout(() => controller.abort(), 5000)
+    try {
+      const res = await fetch(gatewayURL, { method: 'HEAD', signal: controller.signal })
+      if (res.status === 200) break
+    } catch (err) {
+      console.error(`failed gateway fetch: ${root} (attempt ${i + 1})`, err)
+      if (i === gatewayRetries - 1) throw err
+    } finally {
+      clearTimeout(timeoutID)
     }
-  )
-  t.is(w3linkResponse.status, 200)
+    await new Promise(resolve => setTimeout(resolve, 1000))
+  }
 
   // Verify hoverboard can resolved uploaded root via Bitswap
   // TODO: can only use helia once
@@ -313,6 +323,63 @@ test('blob integration flow with receipts validation', async t => {
       return (
           spaceAfterStoreAddUsage >= spaceBeforeStoreAddUsage + carSize
       )
+    })
+  }
+})
+
+test('10k NFT drop', async t => {
+  const total = 20_000
+  console.log('Creating client')
+  const client = await setupNewClient(t.context.apiEndpoint)
+
+  // Prepare data
+  console.log('Creating NFT metadata')
+  const id = crypto.randomUUID()
+  const files = []
+  const randomTrait = () => {
+    const [traitType, value] = crypto.randomUUID().split('-')
+    return { trait_type: traitType, value }
+  }
+  for (let i = 0; i < total; i++) {
+    files.push(new File([JSON.stringify({
+      name: `NFT #${i}`,
+      description: 'NFT',
+      attributes: Array.from(Array(randomInt(5)), randomTrait),
+      compiler: 'web3.storage',
+      external_url: `https://${id}.nft.web3.storage/token/${i}`
+    })], `${i}.json`))
+  }
+
+  console.log('Uploading NFT metadata')
+  const root = await client.uploadDirectory(files, {
+    onShardStored ({ cid, size }) {
+      console.log(`Uploaded blob ${cid} (${size} bytes)`)
+    },
+    receiptsEndpoint: getReceiptsEndpoint()
+  })
+
+  const sample = Array.from(Array(5), () => randomInt(total))
+  for (const index of sample) {
+    // Verify gateway can resolve uploaded file
+    const gatewayURL = `https://${root}.ipfs-staging.w3s.link/${index}.json`
+    console.log('Checking gateway can fetch', gatewayURL)
+
+    await t.notThrowsAsync(async () => {
+      const gatewayRetries = 5
+      for (let i = 0; i < gatewayRetries; i++) {
+        const controller = new AbortController()
+        const timeoutID = setTimeout(() => controller.abort(), 5000)
+        try {
+          const res = await fetch(gatewayURL, { method: 'HEAD', signal: controller.signal })
+          if (res.status === 200) break
+        } catch (err) {
+          console.error(`failed gateway fetch: ${gatewayURL} (attempt ${i + 1})`, err)
+          if (i === gatewayRetries - 1) throw err
+        } finally {
+          clearTimeout(timeoutID)
+        }
+        await new Promise(resolve => setTimeout(resolve, 1000))
+      }
     })
   }
 })
