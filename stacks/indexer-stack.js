@@ -18,7 +18,7 @@ export function IndexerStack({ stack, app }) {
   const indexerRegion = EIPFS_MULTIHASHES_SQS_ARN.split(':')[3]
 
   // Elastic IPFS event for multihashes
-  const multihashesQueue = new Queue(stack, 'ep-multihashes-topic-queue', {
+  const multihashesQueue = new Queue(stack, 'eipfs-multihashes-topic-queue', {
     cdk: {
       queue: sqs.Queue.fromQueueArn(
         stack,
@@ -28,7 +28,7 @@ export function IndexerStack({ stack, app }) {
     },
   })
 
-  const blocksCarsPositionTable = new Table(stack, 'ep-blocks-cars-position-table', {
+  const blocksCarsPositionTable = new Table(stack, 'eipfs-blocks-cars-position-table', {
     cdk: {
       table: dynamodb.Table.fromTableArn(
         stack,
@@ -38,10 +38,10 @@ export function IndexerStack({ stack, app }) {
     },
   })
 
-  const blockAdvertPublisherQueue = new Queue(stack, 'block-advert-publisher-queue-v1', {
+  const blockAdvertPublisherQueue = new Queue(stack, 'block-advert-publisher-queue', {
     cdk: { queue: { visibilityTimeout: Duration.minutes(15) } }
   })
-  const blockAdvertPublisherDLQ = new Queue(stack, 'block-advert-publisher-dlq-v1', {
+  const blockAdvertPublisherDLQ = new Queue(stack, 'block-advert-publisher-dlq', {
     cdk: { queue: { retentionPeriod: Duration.days(14) } }
   })
   blockAdvertPublisherQueue.addConsumer(stack, {
@@ -62,10 +62,10 @@ export function IndexerStack({ stack, app }) {
     },
   })
 
-  const blockIndexWriterQueue = new Queue(stack, 'block-index-writer-queue-v1', {
+  const blockIndexWriterQueue = new Queue(stack, 'block-index-writer-queue', {
     cdk: { queue: { visibilityTimeout: Duration.minutes(15) } }
   })
-  const blockIndexWriterDLQ = new Queue(stack, 'block-index-writer-dlq-v1', {
+  const blockIndexWriterDLQ = new Queue(stack, 'block-index-writer-dlq', {
     cdk: { queue: { retentionPeriod: Duration.days(14) } }
   })
   blockIndexWriterQueue.addConsumer(stack, {

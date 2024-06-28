@@ -330,7 +330,7 @@ test('blob integration flow with receipts validation', async t => {
 test('10k NFT drop', async t => {
   const total = 20_000
   console.log('Creating client')
-  const client = await setupNewClient(t.context.apiEndpoint)
+  const { client } = await setupNewClient(t.context.apiEndpoint)
 
   // Prepare data
   console.log('Creating NFT metadata')
