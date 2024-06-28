@@ -38,10 +38,10 @@ export function IndexerStack({ stack, app }) {
     },
   })
 
-  const blockAdvertPublisherQueue = new Queue(stack, 'block-advert-publisher-queue', {
+  const blockAdvertPublisherQueue = new Queue(stack, 'block-advert-publisher-queue-v1', {
     cdk: { queue: { visibilityTimeout: Duration.minutes(15) } }
   })
-  const blockAdvertPublisherDLQ = new Queue(stack, 'block-advert-publisher-dlq', {
+  const blockAdvertPublisherDLQ = new Queue(stack, 'block-advert-publisher-dlq-v1', {
     cdk: { queue: { retentionPeriod: Duration.days(14) } }
   })
   blockAdvertPublisherQueue.addConsumer(stack, {
@@ -62,10 +62,10 @@ export function IndexerStack({ stack, app }) {
     },
   })
 
-  const blockIndexWriterQueue = new Queue(stack, 'block-index-writer-queue', {
+  const blockIndexWriterQueue = new Queue(stack, 'block-index-writer-queue-v1', {
     cdk: { queue: { visibilityTimeout: Duration.minutes(15) } }
   })
-  const blockIndexWriterDLQ = new Queue(stack, 'block-index-writer-dlq', {
+  const blockIndexWriterDLQ = new Queue(stack, 'block-index-writer-dlq-v1', {
     cdk: { queue: { retentionPeriod: Duration.days(14) } }
   })
   blockIndexWriterQueue.addConsumer(stack, {
