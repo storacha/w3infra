@@ -46,7 +46,7 @@ export function IndexerStack({ stack, app }) {
   })
   blockAdvertPublisherQueue.addConsumer(stack, {
     function: {
-      handler: 'ipni/functions/handle-block-advert-publish-message.main',
+      handler: 'indexer/functions/handle-block-advert-publish-message.main',
       environment : {
         MULTIHASHES_QUEUE_URL: multihashesQueue.queueUrl,
         INDEXER_REGION: indexerRegion
@@ -70,7 +70,7 @@ export function IndexerStack({ stack, app }) {
   })
   blockIndexWriterQueue.addConsumer(stack, {
     function: {
-      handler: 'ipni/functions/handle-block-index-writer-message.main',
+      handler: 'indexer/functions/handle-block-index-writer-message.main',
       environment : {
         BLOCKS_CAR_POSITION_TABLE_NAME: blocksCarsPositionTable.tableName,
         INDEXER_REGION: indexerRegion
