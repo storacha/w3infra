@@ -1,6 +1,7 @@
 import { GenericContainer as Container } from 'testcontainers'
 import { CreateTableCommand, DynamoDBClient } from '@aws-sdk/client-dynamodb'
 import { CreateQueueCommand, SQSClient } from '@aws-sdk/client-sqs'
+import { webcrypto } from 'one-webcrypto'
 
 /**
  * @template T
@@ -77,7 +78,7 @@ const toKeySchema = ({ partitionKey, sortKey }) => {
  * @param {string} [pfx]
  */
 export async function createTable (dynamo, tableProps, pfx = '') {
-  const name = pfx + crypto.randomUUID().split('-')[0]
+  const name = pfx + webcrypto.randomUUID().split('-')[0]
   console.log(`Creating DynamoDB table "${name}"...`)
 
   await dynamo.send(new CreateTableCommand({
@@ -109,7 +110,7 @@ export const createSQS = async (opts = {}) => {
  * @param {string} [pfx]
  */
 export async function createQueue (sqs, pfx = '') {
-  const name = pfx + crypto.randomUUID().split('-')[0]
+  const name = pfx + webcrypto.randomUUID().split('-')[0]
   console.log(`Creating SQS queue "${name}"...`)
   const res = await sqs.send(new CreateQueueCommand({ QueueName: name }))
   if (!res.QueueUrl) throw new Error('missing queue URL')

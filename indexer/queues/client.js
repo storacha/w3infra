@@ -1,5 +1,6 @@
 import { SQSClient, SendMessageBatchCommand } from '@aws-sdk/client-sqs'
 import retry from 'p-retry'
+import { webcrypto } from 'one-webcrypto'
 import { QueueOperationFailure } from './lib.js'
 
 /** The maximum size an SQS batch can be. */
@@ -28,7 +29,7 @@ export function createQueueBatchAdderClient (conf, context) {
       for (const message of messages) {
         const encoding = context.encode(message)
         if (encoding.error) return encoding
-        entries.push(({ Id: crypto.randomUUID(), MessageBody: encoding.ok }))
+        entries.push(({ Id: webcrypto.randomUUID(), MessageBody: encoding.ok }))
       }
 
       try {

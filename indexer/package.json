@@ -12,6 +12,7 @@
     "@ipld/dag-json": "^10.2.1",
     "@ucanto/interface": "^10.0.1",
     "multiformats": "^13.1.1",
+    "one-webcrypto": "^1.0.3",
     "p-map": "^7.0.2",
     "p-retry": "^6.2.0"
   },

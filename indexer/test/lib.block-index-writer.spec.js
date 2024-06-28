@@ -1,4 +1,5 @@
 import { sha256 } from 'multiformats/hashes/sha2'
+import { webcrypto } from 'one-webcrypto'
 import { writeBlockIndexEntries } from '../lib/block-index-writer.js'
 import { bindTestContext, createBlockIndexWriterTestContext } from './helpers/context.js'
 import { base58btc } from 'multiformats/bases/base58'
@@ -7,7 +8,7 @@ export const test = bindTestContext({
   'should write block indexes': async (/** @type {import('entail').assert} */ assert, ctx) => {
     const digests = await Promise.all(
       Array
-        .from(Array(3000), () => crypto.randomUUID())
+        .from(Array(3000), () => webcrypto.randomUUID())
         .map(s => sha256.digest(new TextEncoder().encode(s)))
     )
     const entries = digests.map(digest => {
