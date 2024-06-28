@@ -30,7 +30,7 @@ export const createTestIPNIService = async ({ sqs }, blobsStorage) => {
       async query (digest) {
         const collection = await collectQueueMessages(sqs, blockAdvertQueueURL)
         for (const m of collection) {
-          /** @type {import('../../../../ipni/types.js').PublishAdvertisementMessage} */
+          /** @type {import('../../../../indexer/types.js').PublishAdvertisementMessage} */
           const raw = dagJSON.parse(m)
           for (const entry of raw.entries) {
             messages.add(dagJSON.stringify(entry))

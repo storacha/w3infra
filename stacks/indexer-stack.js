@@ -1,14 +1,42 @@
-import { Queue, use } from 'sst/constructs'
+import { Queue, Table } from 'sst/constructs'
 import { Duration } from 'aws-cdk-lib'
-import { setupSentry } from './config.js'
-import { ElasticIpfsStack } from './eipfs-stack.js'
+import * as sqs from 'aws-cdk-lib/aws-sqs'
+import * as dynamodb from 'aws-cdk-lib/aws-dynamodb'
+import { getEnv, setupSentry } from './config.js'
   
 /** @param {import('sst/constructs').StackContext} properties */
-export function IpniStack({ stack, app }) {
+export function IndexerStack({ stack, app }) {
+  const {
+    EIPFS_MULTIHASHES_SQS_ARN,
+    EIPFS_BLOCKS_CAR_POSITION_TABLE_ARN
+  } = getEnv()
+
   // Setup app monitoring with Sentry
   setupSentry(app, stack)
 
-  const { multihashesQueue, blocksCarsPositionTable, indexerRegion } = use(ElasticIpfsStack)
+  // https://docs.aws.amazon.com/IAM/latest/UserGuide/reference-arns.html#arns-syntax
+  const indexerRegion = EIPFS_MULTIHASHES_SQS_ARN.split(':')[3]
+
+  // Elastic IPFS event for multihashes
+  const multihashesQueue = new Queue(stack, 'ep-multihashes-topic-queue', {
+    cdk: {
+      queue: sqs.Queue.fromQueueArn(
+        stack,
+        'multihashes-topic',
+        EIPFS_MULTIHASHES_SQS_ARN
+      ),
+    },
+  })
+
+  const blocksCarsPositionTable = new Table(stack, 'ep-blocks-cars-position-table', {
+    cdk: {
+      table: dynamodb.Table.fromTableArn(
+        stack,
+        'blocks-cars-position',
+        EIPFS_BLOCKS_CAR_POSITION_TABLE_ARN
+      ),
+    },
+  })
 
   const blockAdvertPublisherQueue = new Queue(stack, 'block-advert-publisher-queue', {
     cdk: { queue: { visibilityTimeout: Duration.minutes(15) } }

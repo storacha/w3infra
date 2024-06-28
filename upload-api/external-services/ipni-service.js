@@ -97,7 +97,7 @@ export class BlockAdvertisementPublisherQueue {
 
       await map(batches, (batch) => (
         retry(() => {
-          /** @type {import('../../ipni/types.js').PublishAdvertisementMessage} */
+          /** @type {import('../../indexer/types.js').PublishAdvertisementMessage} */
           const message = { entries: batch }
           const cmd = new SendMessageCommand({
             QueueUrl: this.#url.toString(),
@@ -172,7 +172,7 @@ export class BlockIndexWriterQueue {
           if (!batch.length) break
           requests.push(() => (
             retry(() => {
-              /** @type {import('../../ipni/types.js').BlockIndexQueueMessage} */
+              /** @type {import('../../indexer/types.js').BlockIndexQueueMessage} */
               const message = [location.toString(), batch]
               const cmd = new SendMessageCommand({
                 QueueUrl: this.#url.toString(),

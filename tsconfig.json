@@ -35,6 +35,6 @@
     "stripInternal": true,
     "resolveJsonModule": true,
   },
-  "include": [ "billing", "ipni", "upload-api", "stacks", "carpark", "replicator", "ucan-invocation", "filecoin", "tools" ],
+  "include": [ "billing", "indexer", "upload-api", "stacks", "carpark", "replicator", "ucan-invocation", "filecoin", "tools" ],
   "exclude": [ "billing/coverage" ]
 }

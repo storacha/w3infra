@@ -12,7 +12,7 @@ import { BillingDbStack } from './billing-db-stack.js'
 import { CarparkStack } from './carpark-stack.js'
 import { FilecoinStack } from './filecoin-stack.js'
 import { UcanInvocationStack } from './ucan-invocation-stack.js'
-import { IpniStack } from './ipni-stack.js'
+import { IndexerStack } from './indexer-stack.js'
 
 import { getCustomDomain, getApiPackageJson, getGitInfo, setupSentry, getEnv, getEventSourceConfig, getServiceURL } from './config.js'
 
@@ -36,7 +36,7 @@ export function UploadApiStack({ stack, app }) {
   const { invocationBucket, taskBucket, workflowBucket, ucanStream } = use(UcanInvocationStack)
   const { customerTable, spaceDiffTable, spaceSnapshotTable, stripeSecretKey } = use(BillingDbStack)
   const { pieceOfferQueue, filecoinSubmitQueue } = use(FilecoinStack)
-  const { blockAdvertPublisherQueue, blockIndexWriterQueue } = use(IpniStack)
+  const { blockAdvertPublisherQueue, blockIndexWriterQueue } = use(IndexerStack)
 
   // Setup API
   const customDomain = getCustomDomain(stack.stage, process.env.HOSTED_ZONE)
