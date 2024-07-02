@@ -37,6 +37,9 @@ export default {
         format: 'esm',
         sourcemap: true,
       },
+      tracing: app.stage === 'staging' || isPrBuild(app.stage)
+        ? 'active'
+        : 'disabled'
     })
 
     app.stack(BusStack)
