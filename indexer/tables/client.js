@@ -41,11 +41,7 @@ export const createStoreBatchPutterClient = (conf, context) => {
             requestItems = res.UnprocessedItems
             throw new Error('unprocessed items')
           }
-        }, {
-          retries: 3,
-          minTimeout: 100,
-          onFailedAttempt: console.warn
-        })
+        }, { onFailedAttempt: console.warn })
         return { ok: {} }
       } catch (/** @type {any} */ err) {
         console.error(err)
