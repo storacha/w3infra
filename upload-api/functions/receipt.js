@@ -2,7 +2,7 @@ import * as Sentry from '@sentry/serverless'
 import { parseLink } from '@ucanto/server'
 
 import * as Store from '../stores/agent/store.js'
-import { mustGetEnv } from './utils.js'
+import { mustGetEnv } from '../../lib/env.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -52,9 +52,10 @@ export async function receiptGet (event, options = implicitContext()) {
  * @returns {Store.Options}
  */
 export function implicitContext () {
+  const region = process.env.AWS_REGION || 'us-west-2'
   return {
-    connection: { address: {} },
-    region: process.env.AWS_REGION || 'us-west-2',
+    connection: { address: { region } },
+    region,
     buckets: {
       index: { name: mustGetEnv('INVOCATION_BUCKET_NAME') },
       message: { name: mustGetEnv('WORKFLOW_BUCKET_NAME') },

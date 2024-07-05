@@ -7,7 +7,7 @@ import { updateSpaceMetrics } from '../metrics.js'
 import { createMetricsTable } from '../stores/space-metrics.js'
 import { createCarStore } from '../buckets/car-store.js'
 import { createAllocationsStorage } from '../stores/allocations.js'
-import { mustGetEnv } from './utils.js'
+import { mustGetEnv } from '../../lib/env.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,

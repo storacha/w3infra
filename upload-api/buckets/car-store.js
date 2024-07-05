@@ -5,6 +5,7 @@ import {
 } from '@aws-sdk/client-s3'
 import { base64pad } from 'multiformats/bases/base64'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
+import { getS3Client } from '../../lib/aws/s3.js'
 
 /**
  * Abstraction layer with Factory to perform operations on bucket storing CAR files.
@@ -14,7 +15,7 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
  * @param {import('@aws-sdk/client-s3').ServiceInputTypes} [options]
  */
 export function createCarStore(region, bucketName, options) {
-  const s3 = new S3Client({
+  const s3 = getS3Client({
     region,
     ...options,
   })

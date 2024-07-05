@@ -2,6 +2,7 @@ import { Duration, RemovalPolicy } from 'aws-cdk-lib'
 import { createRequire } from 'module'
 import { StartingPosition } from 'aws-cdk-lib/aws-lambda'
 import git from 'git-rev-sync'
+import { mustGetEnv } from '../lib/env.js'
 
 /**
  * Get nicer bucket names
@@ -184,18 +185,4 @@ export function getEnv() {
     DISABLE_PIECE_CID_COMPUTE: process.env.DISABLE_PIECE_CID_COMPUTE ?? '',
     START_FILECOIN_METRICS_EPOCH_MS: process.env.START_FILECOIN_METRICS_EPOCH_MS ?? ''
   }
-}
-
-/**
- * 
- * @param {string} name 
- * @returns {string}
- */
-function mustGetEnv (name) {
-  if (!process.env[name]) {
-    throw new Error(`Missing env var: ${name}`)
-  }
-
-  // @ts-expect-error there will always be a string there, but typescript does not believe
-  return process.env[name]
 }

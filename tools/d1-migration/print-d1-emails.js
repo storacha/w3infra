@@ -1,5 +1,6 @@
 import * as DidMailto from '@web3-storage/did-mailto'
 import { exec as childProcessExec } from 'child_process'
+import { mustGetEnv } from '../../lib/env.js'
 
 /**
  * 
@@ -35,20 +36,6 @@ function getEnv () {
   return {
     STAGE: mustGetEnv('STAGE'),
   }
-}
-
-/**
- * 
- * @param {string} name 
- * @returns {string}
- */
-function mustGetEnv (name) {
-  const value = process.env[name]
-  if (!value) {
-    throw new Error(`Missing env var: ${name}`)
-  }
-
-  return value
 }
 
 export async function printD1ProvisionsEmails () {

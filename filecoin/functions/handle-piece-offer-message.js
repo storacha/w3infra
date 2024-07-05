@@ -8,7 +8,7 @@ import * as storefrontEvents from '@web3-storage/filecoin-api/storefront/events'
 
 import { decodeMessage } from '../queue/piece-offer-queue.js'
 import { getServiceConnection, getServiceSigner } from '../service.js'
-import { mustGetEnv } from './utils.js'
+import { mustGetEnv } from '../../lib/env.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,

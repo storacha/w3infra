@@ -21,6 +21,7 @@ import {
   NoDelegationFoundForGivenCidError,
   FailedToDecodeDelegationForGivenCidError
 } from '../errors.js'
+import { getDynamoClient } from '../../lib/aws/dynamo.js'
 
 // Feature flag for looking up delegations in the invocations in which
 // they were originally embeded.
@@ -48,7 +49,7 @@ const DELEGATIONS_FIND_DEFAULT_LIMIT = 1000
  * @param {string} [options.endpoint]
  */
 export function createDelegationsTable (region, tableName, { bucket, invocationBucket, workflowBucket }, options = {}) {
-  const dynamoDb = new DynamoDBClient({
+  const dynamoDb = getDynamoClient({
     region,
     endpoint: options.endpoint,
   })

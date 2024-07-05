@@ -3,6 +3,7 @@ import {
   QueryCommand
 } from '@aws-sdk/client-dynamodb'
 import { unmarshall } from '@aws-sdk/util-dynamodb'
+import { mustGetEnv } from '../lib/env.js'
 
 export async function fetchMetricsForSpaceCmd () {
   const {
@@ -56,20 +57,6 @@ function getEnv() {
     SPACE_DID: mustGetEnv('SPACE_DID'),
     TABLE_NAME: mustGetEnv('TABLE_NAME'),
   }
-}
-
-/**
- * 
- * @param {string} name 
- * @returns {string}
- */
-function mustGetEnv (name) {
-  const value = process.env[name]
-  if (!value) {
-    throw new Error(`Missing env var: ${name}`)
-  }
-
-  return value
 }
 
 /**

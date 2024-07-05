@@ -2,9 +2,10 @@ import * as Sentry from '@sentry/serverless'
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
 import * as dagJSON from '@ipld/dag-json'
 import * as Digest from 'multiformats/hashes/digest'
-import { mustGetEnv } from './lib.js'
 import { writeBlockIndexEntries } from '../lib/block-index-writer.js'
 import { createBlocksCarsPositionStore } from '../tables/blocks-cars-position.js'
+import { mustGetEnv } from '../../lib/env.js'
+import { getDynamoClient } from '../../lib/aws/dynamo.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -26,7 +27,7 @@ const handleBlockIndexWriterMessage = async (sqsEvent) => {
   const entries = decodeMessage(sqsEvent.Records[0].body)
   const tableName = mustGetEnv('BLOCKS_CAR_POSITION_TABLE_NAME')
   const region = mustGetEnv('INDEXER_REGION')
-  const client = new DynamoDBClient({ region })
+  const client = getDynamoClient({ region })
   const blocksCarsPositionStore = createBlocksCarsPositionStore(client, { tableName })
 
   const { ok, error } = await writeBlockIndexEntries({ blocksCarsPositionStore }, entries)

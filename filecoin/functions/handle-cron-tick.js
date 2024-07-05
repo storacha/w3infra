@@ -9,7 +9,7 @@ import { createPieceTable } from '../store/piece.js'
 import { createTaskStore } from '../store/task.js'
 import { createReceiptStore } from '../store/receipt.js'
 import { getServiceSigner } from '../service.js'
-import { mustGetEnv } from './utils.js'
+import { mustGetEnv } from '../../lib/env.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,

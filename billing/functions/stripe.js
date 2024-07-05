@@ -1,9 +1,10 @@
 import * as Sentry from '@sentry/serverless'
 import { Config } from 'sst/node/config'
 import Stripe from 'stripe'
-import { expect, mustGetEnv } from './lib.js'
+import { expect } from './lib.js'
 import { createCustomerStore } from '../tables/customer.js'
 import { handleCustomerSubscriptionCreated } from '../utils/stripe.js'
+import { mustGetEnv } from '../../lib/env.js'
 
 /**
  * @typedef {import('../lib/api.js').AccountID} AccountID

@@ -111,6 +111,7 @@ function createAuthorizeContext () {
     store: {
       connection: {
         address: {
+          region: AWS_REGION
         },
       },
       region: AWS_REGION,

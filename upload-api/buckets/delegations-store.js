@@ -5,6 +5,7 @@ import {
 } from '@aws-sdk/client-s3'
 import pRetry from 'p-retry'
 import { base32 } from 'multiformats/bases/base32'
+import { getS3Client } from '../../lib/aws/s3.js'
 
 /** @typedef {import('multiformats/cid').CID} CID */
 
@@ -17,7 +18,7 @@ import { base32 } from 'multiformats/bases/base32'
  * @param {string} bucketName
  */
 export function createDelegationsStore(endpoint, accessKeyId, secretAccessKey, bucketName){
-  const s3Client = new S3Client({
+  const s3Client = getS3Client({
     region: 'auto',
     endpoint,
     credentials: {

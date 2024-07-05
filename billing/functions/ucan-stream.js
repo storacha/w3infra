@@ -3,8 +3,9 @@ import { toString, fromString } from 'uint8arrays'
 import * as Link from 'multiformats/link'
 import { createSpaceDiffStore } from '../tables/space-diff.js'
 import { createConsumerStore } from '../tables/consumer.js'
-import { expect, mustGetEnv } from './lib.js'
+import { expect } from './lib.js'
 import { findSpaceUsageDeltas, storeSpaceUsageDelta } from '../lib/ucan-stream.js'
+import { mustGetEnv } from '../../lib/env.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,

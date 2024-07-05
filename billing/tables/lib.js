@@ -36,14 +36,3 @@ export class RecordNotFound extends Failure {
     return { ...super.toJSON(), key: this.key }
   }
 }
-
-/** @type {Record<string, import('@aws-sdk/client-dynamodb').DynamoDBClient>} */
-const dynamoClients = {}
-
-/** @param {string} region */
-export function getDynamoClient (region) {
-  if (!dynamoClients[region]) {
-    dynamoClients[region] = new DynamoDBClient({ region })
-  }
-  return dynamoClients[region]
-}

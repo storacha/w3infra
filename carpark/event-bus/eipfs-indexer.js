@@ -1,5 +1,7 @@
 import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs'
 import * as Sentry from '@sentry/serverless'
+import { mustGetEnv } from '../../lib/env.js'
+import { getSQSClient } from '../../lib/aws/sqs.js'
 
 // https://github.com/elastic-ipfs/indexer-lambda
 const SQS_INDEXER_QUEUE_REGION = 'us-west-2'
@@ -32,7 +34,7 @@ export async function eipfsHandler(event, client, queueUrl) {
  * @param {import('./source').EventBridgeEvent} event 
  */
 async function messageHandler (event) {
-  const sqsClient = new SQSClient({
+  const sqsClient = getSQSClient({
     region: SQS_INDEXER_QUEUE_REGION,
   })
 
@@ -48,18 +50,4 @@ function getEnv() {
   return {
     EIPFS_INDEXER_SQS_URL: mustGetEnv('EIPFS_INDEXER_SQS_URL'),
   }
-}
-
-/**
- * 
- * @param {string} name 
- * @returns {string}
- */
-function mustGetEnv (name) {
-  if (!process.env[name]) {
-    throw new Error(`Missing env var: ${name}`)
-  }
-
-  // @ts-expect-error there will always be a string there, but typescript does not believe
-  return process.env[name]
 }

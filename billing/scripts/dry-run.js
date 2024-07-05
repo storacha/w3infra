@@ -10,7 +10,7 @@ import all from 'p-all'
 import { startOfLastMonth, startOfMonth } from '../lib/util.js'
 import { calculateCost, createMemoryQueue, createMemoryStore } from './helpers.js'
 import { EndOfQueue } from '../test/helpers/queue.js'
-import { expect, mustGetEnv } from '../functions/lib.js'
+import { expect } from '../functions/lib.js'
 import * as BillingCron from '../lib/billing-cron.js'
 import * as CustomerBillingQueue from '../lib/customer-billing-queue.js'
 import * as SpaceBillingQueue from '../lib/space-billing-queue.js'
@@ -21,6 +21,7 @@ import { createSpaceDiffStore } from '../tables/space-diff.js'
 import { createSpaceSnapshotStore } from '../tables/space-snapshot.js'
 import * as Usage from '../data/usage.js'
 import * as SpaceSnapshot from '../data/space-snapshot.js'
+import { mustGetEnv } from '../../lib/env.js'
 
 /** @typedef {import('../lib/api.js').Usage & import('../lib/api.js').SpaceSnapshot} UsageAndSnapshot */
 

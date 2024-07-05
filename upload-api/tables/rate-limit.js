@@ -4,6 +4,7 @@ import {
 } from '@aws-sdk/client-dynamodb'
 import { marshall, unmarshall } from '@aws-sdk/util-dynamodb'
 import { nanoid } from 'nanoid'
+import { getDynamoClient } from '../../lib/aws/dynamo.js'
 
 /**
  * Abstraction layer to handle operations on Store Table.
@@ -14,7 +15,7 @@ import { nanoid } from 'nanoid'
  * @param {string} [options.endpoint]
  */
 export function createRateLimitTable (region, tableName, options = {}) {
-  const dynamoDb = new DynamoDBClient({
+  const dynamoDb = getDynamoClient({
     region,
     endpoint: options.endpoint,
   })

@@ -1,10 +1,10 @@
 import * as Sentry from '@sentry/serverless'
-import { S3Client } from '@aws-sdk/client-s3'
 import { CID } from 'multiformats/cid'
 
 import { getSigner, contentLocationResolver } from '../index.js'
 import { findEquivalentCids, asPieceCidV1, asPieceCidV2 } from '../piece.js'
 import { getEnv, parseQueryStringParameters } from '../utils.js'
+import { getS3Client } from '../../lib/aws/s3.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -30,7 +30,7 @@ export async function redirectGet(request) {
 
   const locateContent = contentLocationResolver({ 
     bucket: getEnv().BUCKET_NAME,
-    s3Client: getS3Client(),
+    s3Client: getBucketClient(),
     expiresIn
   })
 
@@ -92,7 +92,7 @@ async function resolvePiece (cid, locateContent) {
  * @param {import('aws-lambda').APIGatewayProxyEventV2} request
  */
 export async function redirectKeyGet(request) {
-  const s3Client = getS3Client()
+  const s3Client = getBucketClient()
 
   let key, expiresIn, bucketName
   try {
@@ -144,7 +144,7 @@ function redirectTo (url) {
   }
 }
 
-function getS3Client(){
+function getBucketClient () {
   const {
     BUCKET_ENDPOINT,
     BUCKET_REGION,
@@ -152,7 +152,7 @@ function getS3Client(){
     BUCKET_SECRET_ACCESS_KEY,
   } = getEnv()
 
-  return new S3Client({
+  return getS3Client({
     region: BUCKET_REGION,
     endpoint: BUCKET_ENDPOINT,
     credentials: {

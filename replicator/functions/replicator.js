@@ -1,8 +1,9 @@
-import { S3Client } from '@aws-sdk/client-s3'
 import * as Sentry from '@sentry/serverless'
 
 import { replicate } from '../index.js'
 import parseSqsEvent from '../utils/parse-sqs-event.js'
+import { mustGetEnv } from '../../lib/env.js'
+import { getS3Client } from '../../lib/aws/s3.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -28,7 +29,7 @@ function replicatorHandler (event) {
     throw new Error('Invalid CAR file format')
   }
 
-  const destinationBucket = new S3Client({
+  const destinationBucket = getS3Client({
     region: 'auto',
     endpoint: REPLICATOR_ENDPOINT,
     credentials: {
@@ -37,7 +38,7 @@ function replicatorHandler (event) {
     },
   })
 
-  const originBucket = new S3Client({ region: record.bucketRegion })
+  const originBucket = getS3Client({ region: record.bucketRegion })
   return replicate({
     record,
     destinationBucket,
@@ -58,18 +59,4 @@ function getEnv() {
     REPLICATOR_SECRET_ACCESS_KEY: mustGetEnv('REPLICATOR_SECRET_ACCESS_KEY'),
     REPLICATOR_BUCKET_NAME: mustGetEnv('REPLICATOR_BUCKET_NAME')
   }
-}
-
-/**
- * 
- * @param {string} name 
- * @returns {string}
- */
-function mustGetEnv (name) {
-  if (!process.env[name]) {
-    throw new Error(`Missing env var: ${name}`)
-  }
-
-  // @ts-expect-error there will always be a string there, but typescript does not believe
-  return process.env[name]
 }

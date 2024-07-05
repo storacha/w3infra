@@ -1,4 +1,5 @@
 import { createPieceTable } from '../filecoin/store/piece.js'
+import { mustGetEnv } from '../lib/env.js'
 
 export async function getOldestPiecesPendingDeals () {
   const {
@@ -34,20 +35,6 @@ function getEnv() {
   return {
     ENV: mustGetEnv('ENV'),
   }
-}
-
-/**
- * 
- * @param {string} name 
- * @returns {string}
- */
-function mustGetEnv (name) {
-  const value = process.env[name]
-  if (!value) {
-    throw new Error(`Missing env var: ${name}`)
-  }
-
-  return value
 }
 
 /**

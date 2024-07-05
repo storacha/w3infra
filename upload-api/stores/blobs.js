@@ -10,6 +10,7 @@ import {
   GetObjectCommand,
 } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
+import { getS3Client } from '../../lib/aws/s3.js'
 
 /**
  * @typedef {import('@web3-storage/upload-api/types').BlobsStorage} BlobsStorage
@@ -39,7 +40,7 @@ const contentKey = (digest) => {
  * @param {import('@aws-sdk/client-s3').ServiceInputTypes} [options]
  */
 export function createBlobsStorage(region, bucketName, options) {
-  const s3 = new S3Client({
+  const s3 = getS3Client({
     region,
     ...options,
   })

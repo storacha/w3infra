@@ -9,6 +9,7 @@ import { parseLink } from '@ucanto/core'
 import { Failure } from '@ucanto/server'
 import { Schema } from '@ucanto/validator'
 import { marshall, unmarshall } from '@aws-sdk/util-dynamodb'
+import { getDynamoClient } from '../../lib/aws/dynamo.js'
 
 /**
  * @typedef {import('../types').ConsumerTable} ConsumerTable
@@ -24,7 +25,7 @@ import { marshall, unmarshall } from '@aws-sdk/util-dynamodb'
  * @param {string} [options.endpoint]
  */
 export function createConsumerTable (region, tableName, options = {}) {
-  const dynamoDb = new DynamoDBClient({
+  const dynamoDb = getDynamoClient({
     region,
     endpoint: options.endpoint,
   })

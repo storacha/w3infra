@@ -1,12 +1,13 @@
 import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs'
 import retry from 'p-retry'
-import { QueueOperationFailure, getSQSClient } from './lib.js'
+import { QueueOperationFailure } from './lib.js'
+import { getSQSClient } from '../../lib/aws/sqs.js'
 
 /** @param {{ region: string } | SQSClient} target */
 export const connectQueue = target =>
   target instanceof SQSClient
     ? target
-    : getSQSClient(target.region)
+    : getSQSClient(target)
 
 /**
  * @template T

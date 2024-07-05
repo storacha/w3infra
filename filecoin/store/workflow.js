@@ -2,6 +2,7 @@ import {
   S3Client,
   GetObjectCommand,
 } from '@aws-sdk/client-s3'
+import { getS3Client } from '../../lib/aws/s3.js'
 
 /**
  * Abstraction layer with Factory to perform operations on bucket storing
@@ -12,7 +13,7 @@ import {
  * @param {import('@aws-sdk/client-s3').ServiceInputTypes} [options]
  */
 export function createWorkflowStore(region, bucketName, options = {}) {
-  const s3client = new S3Client({
+  const s3client = getS3Client({
     region,
     ...options,
   })
