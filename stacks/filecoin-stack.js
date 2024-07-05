@@ -319,7 +319,7 @@ export function FilecoinStack({ stack, app }) {
     permissions: [adminMetricsTable, workflowBucket, invocationBucket],
     handler: 'filecoin/functions/metrics-aggregate-offer-and-accept-total.consumer',
     deadLetterQueue: metricsAggregateTotalDLQ.cdk.queue,
-    timeout: 3 * 60,
+    timeout: 10 * 60,
   })
 
   ucanStream.addConsumers(stack, {
