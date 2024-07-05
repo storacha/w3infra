@@ -2,9 +2,7 @@ import { base64pad } from 'multiformats/bases/base64'
 import { base58btc } from 'multiformats/bases/base58'
 import { BlobNotFound } from '@web3-storage/upload-api/blob'
 import { ok, error } from '@ucanto/server'
-
 import {
-  S3Client,
   HeadObjectCommand,
   PutObjectCommand,
   GetObjectCommand,
@@ -51,7 +49,7 @@ export function createBlobsStorage(region, bucketName, options) {
  * This is quite similar with buckets/car-store with few modifications given new key schema
  * and multihash instead of Link.
  *
- * @param {S3Client} s3
+ * @param {import('@aws-sdk/client-s3').S3Client} s3
  * @param {string} bucketName
  * @returns {BlobsStorage & BlobRetriever}
  */

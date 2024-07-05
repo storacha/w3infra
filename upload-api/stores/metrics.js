@@ -1,7 +1,4 @@
-import {
-  DynamoDBClient,
-  TransactWriteItemsCommand,
-} from '@aws-sdk/client-dynamodb'
+import { TransactWriteItemsCommand } from '@aws-sdk/client-dynamodb'
 import { marshall } from '@aws-sdk/util-dynamodb'
 import { getDynamoClient } from '../../lib/aws/dynamo.js'
 
@@ -23,7 +20,7 @@ export function createMetricsTable (region, tableName, options = {}) {
 }
 
 /**
- * @param {DynamoDBClient} dynamoDb
+ * @param {import('@aws-sdk/client-dynamodb').DynamoDBClient} dynamoDb
  * @param {string} tableName
  * @returns {import('../types').MetricsStore}
  */

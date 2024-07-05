@@ -1,6 +1,7 @@
 import {
   DeleteItemCommand,
-  DynamoDBClient, PutItemCommand, QueryCommand,
+  PutItemCommand,
+  QueryCommand,
 } from '@aws-sdk/client-dynamodb'
 import { marshall, unmarshall } from '@aws-sdk/util-dynamodb'
 import { nanoid } from 'nanoid'
@@ -24,7 +25,7 @@ export function createRateLimitTable (region, tableName, options = {}) {
 }
 
 /**
- * @param {DynamoDBClient} dynamoDb
+ * @param {import('@aws-sdk/client-dynamodb').DynamoDBClient} dynamoDb
  * @param {string} tableName
  * @returns {import('@web3-storage/upload-api').RateLimitsStorage}
  */

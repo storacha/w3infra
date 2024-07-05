@@ -1,5 +1,4 @@
 import {
-  DynamoDBClient,
   PutItemCommand,
   DescribeTableCommand,
   QueryCommand,
@@ -47,7 +46,7 @@ export class ConflictError extends Failure {
 
 /**
  * 
- * @param {DynamoDBClient} dynamoDb
+ * @param {import('@aws-sdk/client-dynamodb').DynamoDBClient} dynamoDb
  * @param {string} tableName 
  * @param {import('@ucanto/interface').DID} consumer 
  * @returns {Promise<import('@web3-storage/upload-api').ProviderDID[]>}
@@ -74,7 +73,7 @@ async function getStorageProviders (dynamoDb, tableName, consumer) {
 }
 
 /**
- * @param {DynamoDBClient} dynamoDb
+ * @param {import('@aws-sdk/client-dynamodb').DynamoDBClient} dynamoDb
  * @param {string} tableName
  * @returns {ConsumerTable}
  */

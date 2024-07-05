@@ -1,5 +1,4 @@
 import {
-  DynamoDBClient,
   GetItemCommand,
   PutItemCommand,
   DeleteItemCommand,
@@ -37,7 +36,7 @@ export function createStoreTable(region, tableName, options = {}) {
 }
 
 /**
- * @param {DynamoDBClient} dynamoDb
+ * @param {import('@aws-sdk/client-dynamodb').DynamoDBClient} dynamoDb
  * @param {string} tableName
  * @returns {StoreTable}
  */

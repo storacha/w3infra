@@ -1,4 +1,4 @@
-import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs'
+import { SendMessageCommand } from '@aws-sdk/client-sqs'
 import * as dagJSON from '@ipld/dag-json'
 import retry from 'p-retry'
 import map from 'p-map'
@@ -74,7 +74,7 @@ export class BlockAdvertisementPublisherQueue {
 
   /**
    * @param {object} config
-   * @param {SQSClient} config.client
+   * @param {import('@aws-sdk/client-sqs').SQSClient} config.client
    * @param {URL} config.url
    */
   constructor (config) {
@@ -148,7 +148,7 @@ export class BlockIndexWriterQueue {
 
   /**
    * @param {object} config
-   * @param {SQSClient} config.client
+   * @param {import('@aws-sdk/client-sqs').SQSClient} config.client
    * @param {URL} config.url
    */
   constructor (config) {

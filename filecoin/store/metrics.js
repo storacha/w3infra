@@ -1,5 +1,4 @@
 import {
-  DynamoDBClient,
   TransactWriteItemsCommand,
   UpdateItemCommand
 } from '@aws-sdk/client-dynamodb'
@@ -24,7 +23,7 @@ export function createFilecoinMetricsTable (region, tableName, options = {}) {
 }
 
 /**
- * @param {DynamoDBClient} dynamoDb
+ * @param {import('@aws-sdk/client-dynamodb').DynamoDBClient} dynamoDb
  * @param {string} tableName
  * @returns {import('../types').FilecoinMetricsStore}
  */

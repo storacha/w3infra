@@ -1,6 +1,5 @@
 import { base32 } from 'multiformats/bases/base32'
 import {
-  DynamoDBClient,
   QueryCommand,
   BatchWriteItemCommand,
   DescribeTableCommand,
@@ -58,7 +57,7 @@ export function createDelegationsTable (region, tableName, { bucket, invocationB
 }
 
 /**
- * @param {DynamoDBClient} dynamoDb
+ * @param {import('@aws-sdk/client-dynamodb').DynamoDBClient} dynamoDb
  * @param {string} tableName
  * @param {object} deps
  * @param {import('../types').DelegationsBucket} deps.bucket

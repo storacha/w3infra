@@ -1,5 +1,4 @@
 import { Failure } from '@ucanto/server'
-import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
 
 export class StoreOperationFailure extends Failure {
   /**

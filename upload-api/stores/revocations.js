@@ -1,6 +1,5 @@
 import {
   BatchGetItemCommand,
-  DynamoDBClient,
   PutItemCommand,
   UpdateItemCommand
 } from '@aws-sdk/client-dynamodb'
@@ -32,7 +31,7 @@ export function createRevocationsTable (region, tableName, options = {}) {
 const staticRevocationKeys = new Set(Object.keys(revocationTableProps?.fields || {}))
 
 /**
- * @param {DynamoDBClient} dynamoDb
+ * @param {import('@aws-sdk/client-dynamodb').DynamoDBClient} dynamoDb
  * @param {string} tableName
  * @returns {import('@web3-storage/upload-api').RevocationsStorage}
  */

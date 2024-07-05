@@ -1,7 +1,4 @@
-import {
-  S3Client,
-  GetObjectCommand,
-} from '@aws-sdk/client-s3'
+import { GetObjectCommand } from '@aws-sdk/client-s3'
 import { getS3Client } from '../../lib/aws/s3.js'
 
 /**
@@ -21,7 +18,7 @@ export function createWorkflowStore(region, bucketName, options = {}) {
 }
 
 /**
- * @param {S3Client} s3client
+ * @param {import('@aws-sdk/client-s3').S3Client} s3client
  * @param {string} bucketName
  * @returns {import('../types').WorkflowBucket}
  */

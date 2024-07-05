@@ -1,5 +1,4 @@
 import * as Sentry from '@sentry/serverless'
-import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
 import * as dagJSON from '@ipld/dag-json'
 import * as Digest from 'multiformats/hashes/digest'
 import { writeBlockIndexEntries } from '../lib/block-index-writer.js'

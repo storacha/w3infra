@@ -1,5 +1,4 @@
 import {
-  DynamoDBClient,
   PutItemCommand,
   GetItemCommand,
   UpdateItemCommand,
@@ -148,7 +147,7 @@ export function createPieceTable (region, tableName, options = {}) {
 }
 
 /**
- * @param {DynamoDBClient} dynamoDb
+ * @param {import('@aws-sdk/client-dynamodb').DynamoDBClient} dynamoDb
  * @param {string} tableName
  * @returns {import('@web3-storage/filecoin-api/storefront/api').PieceStore}
  */

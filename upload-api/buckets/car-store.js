@@ -1,8 +1,4 @@
-import {
-  S3Client,
-  HeadObjectCommand,
-  PutObjectCommand,
-} from '@aws-sdk/client-s3'
+import { HeadObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3'
 import { base64pad } from 'multiformats/bases/base64'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { getS3Client } from '../../lib/aws/s3.js'
@@ -23,8 +19,7 @@ export function createCarStore(region, bucketName, options) {
 }
 
 /**
- *
- * @param {S3Client} s3
+ * @param {import('@aws-sdk/client-s3').S3Client} s3
  * @param {string} bucketName
  * @returns {import('../types').CarStore}
  */

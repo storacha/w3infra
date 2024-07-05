@@ -1,4 +1,3 @@
-import { S3Client } from '@aws-sdk/client-s3'
 import { StoreOperationFailed } from '@web3-storage/filecoin-api/errors'
 import * as Store from '../../upload-api/stores/agent/store.js'
 import { getS3Client } from '../../lib/aws/s3.js'
@@ -21,7 +20,7 @@ export function createReceiptStore(region, invocationBucketName, workflowBucketN
 }
 
 /**
- * @param {S3Client} s3client
+ * @param {import('@aws-sdk/client-s3').S3Client} s3client
  * @param {string} invocationBucketName
  * @param {string} workflowBucketName
  * @returns {import('@web3-storage/filecoin-api/storefront/api').ReceiptStore}

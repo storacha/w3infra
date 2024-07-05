@@ -1,4 +1,4 @@
-import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs'
+import { SendMessageCommand } from '@aws-sdk/client-sqs'
 import * as Sentry from '@sentry/serverless'
 import { mustGetEnv } from '../../lib/env.js'
 import { getSQSClient } from '../../lib/aws/sqs.js'
@@ -14,7 +14,7 @@ Sentry.AWSLambda.init({
 
 /**
  * @param {import('./source').EventBridgeEvent} event 
- * @param {SQSClient} client
+ * @param {import('@aws-sdk/client-sqs').SQSClient} client
  * @param {string} queueUrl
  */
 export async function eipfsHandler(event, client, queueUrl) {

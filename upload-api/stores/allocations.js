@@ -1,5 +1,4 @@
 import {
-  DynamoDBClient,
   GetItemCommand,
   PutItemCommand,
   QueryCommand,
@@ -38,7 +37,7 @@ export const createAllocationsStorage = (region, tableName, options = {}) => {
 }
 
 /**
- * @param {DynamoDBClient} dynamoDb
+ * @param {import('@aws-sdk/client-dynamodb').DynamoDBClient} dynamoDb
  * @param {string} tableName
  * @returns {AllocationsStorage}
  */

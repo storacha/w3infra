@@ -1,5 +1,4 @@
 import {
-  S3Client,
   PutObjectCommand,
   GetObjectCommand,
   ListObjectsV2Command,
@@ -17,7 +16,7 @@ export { API }
 
 /**
  * @typedef {import('../../../lib/aws/s3.js').Address} Address
- * @typedef {S3Client} Channel
+ * @typedef {import('@aws-sdk/client-s3').S3Client} Channel
  *
  * @typedef {API.Variant<{
  *   channel: Channel

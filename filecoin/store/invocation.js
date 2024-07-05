@@ -1,4 +1,3 @@
-import { S3Client } from '@aws-sdk/client-s3'
 import { parseLink } from '@ucanto/core'
 import * as Store from '../../upload-api/stores/agent/store.js'
 import { getS3Client } from '../../lib/aws/s3.js'
@@ -20,7 +19,7 @@ export function createInvocationStore(region, bucketName, options = {}) {
 }
 
 /**
- * @param {S3Client} s3client
+ * @param {import('@aws-sdk/client-s3').S3Client} s3client
  * @param {string} bucketName
  * @returns {import('../types').InvocationBucket}
  */

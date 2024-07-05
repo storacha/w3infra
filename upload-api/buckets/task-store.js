@@ -1,7 +1,4 @@
-import {
-  S3Client,
-  PutObjectCommand,
-} from '@aws-sdk/client-s3'
+import { PutObjectCommand } from '@aws-sdk/client-s3'
 import pRetry from 'p-retry'
 import { getS3Client } from '../../lib/aws/s3.js'
 
@@ -22,7 +19,7 @@ export function createTaskStore(region, bucketName, options = {}) {
 }
 
 /**
- * @param {S3Client} s3client
+ * @param {import('@aws-sdk/client-s3').S3Client} s3client
  * @param {string} bucketName
  * @returns {import('../types').TaskBucket}
  */
