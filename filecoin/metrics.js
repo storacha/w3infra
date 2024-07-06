@@ -56,13 +56,16 @@ export async function updateAggregateOfferTotal (ucanInvocations, ctx) {
   // Get a Map of workflows that include aggregate offer receipts
   /** @type {Map<string, AggregateOfferInvocation>} */
   const workflowsWithAggregateOffers = getWorkflowsWithReceiptForCapability(ucanInvocations, AGGREGATE_OFFER, ctx)
+  console.log(`${workflowsWithAggregateOffers.size} aggregate offer workflows`)
 
   // From workflows that include aggregate offer receipts, try to get the block with Pieces included in Aggregate
   /** @type {AggregateOfferGet[]} */
   const aggregateOfferGets = (await Promise.all(
     Array.from(workflowsWithAggregateOffers.entries()).map(async ([carCid, aggregateOfferInvocation]) => {
+      console.log(`getting agent message for task: ${aggregateOfferInvocation.invocationCid}`)
       const agentMessage = await getAgentMessage(aggregateOfferInvocation.invocationCid, ctx)
       if (agentMessage.error) {
+        console.error('failed to get agent message', agentMessage.error)
         return [{
           error: agentMessage.error,
           ok: undefined
@@ -147,6 +150,7 @@ async function getAgentMessage (taskCid, ctx) {
       error: new NotFoundWorkflowError(`not invocation cid ${workflowCid} for workflow`)
     }
   }
+  console.log(`found task: ${taskCid} workflow: ${workflowCid}`)
 
   const agentMessageBytes = await ctx.workflowStore.get(workflowCid)
   if (!agentMessageBytes) {
