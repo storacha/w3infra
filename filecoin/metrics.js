@@ -59,7 +59,6 @@ export async function updateAggregateOfferTotal (ucanInvocations, ctx) {
   console.log(`${workflowsWithAggregateOffers.size} aggregate offer workflows`)
 
   // From workflows that include aggregate offer receipts, try to get the block with Pieces included in Aggregate
-  /** @type {AggregateOfferGet[]} */
   const aggregateOfferGets = (await Promise.all(
     Array.from(workflowsWithAggregateOffers.entries()).map(async ([carCid, aggregateOfferInvocation]) => {
       console.log(`getting agent message for task: ${aggregateOfferInvocation.invocationCid}`)
@@ -75,8 +74,7 @@ export async function updateAggregateOfferTotal (ucanInvocations, ctx) {
       console.log('update aggregate/offer total for worflow', carCid, aggregateOfferInvocation.invocationCid, 'with pieces', aggregateOfferInvocation.capabilities.map(aggregateOfferCap => aggregateOfferCap.nb.pieces.toString()))
       return Promise.all(aggregateOfferInvocation.capabilities.map(aggregateOfferCap => getOfferInfoBlock(aggregateOfferCap, agentMessage.ok)))
     })
-  // @ts-expect-error error types
-  )).flatMap(get => get)
+  )).flat()
   const aggregateOfferGetError = aggregateOfferGets.find(get => get.error)
   if (aggregateOfferGetError) {
     throw aggregateOfferGetError.error

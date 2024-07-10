@@ -1,5 +1,4 @@
 import * as Sentry from '@sentry/serverless'
-import { toString } from 'uint8arrays/to-string'
 import { fromString } from 'uint8arrays/from-string'
 import * as DAGJson from '@ipld/dag-json'
 
@@ -64,5 +63,5 @@ export const consumer = Sentry.AWSLambda.wrapHandler(handler)
  */
 function parseKinesisEvent (event) {
   const batch = event.Records.map(r => fromString(r.kinesis.data, 'base64'))
-  return batch.map(b => DAGJson.parse(toString(b, 'utf8')))
+  return batch.map(b => DAGJson.decode(b))
 }

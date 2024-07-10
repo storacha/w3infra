@@ -328,6 +328,7 @@ export function FilecoinStack({ stack, app }) {
       cdk: {
         eventSource: {
           ...(getEventSourceConfig(stack)),
+          batchSize: 1,
           parallelizationFactor: 10
         }
       }
