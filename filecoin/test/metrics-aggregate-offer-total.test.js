@@ -276,23 +276,17 @@ test('handles a batch of single invocation without aggregate/offer', async t => 
   const aggregateOfferTotal = await getItemFromTable(t.context.dynamoClient, tableName, {
     name: METRICS_NAMES.AGGREGATE_OFFER_TOTAL
   })
-  t.truthy(aggregateOfferTotal)
-  t.is(aggregateOfferTotal?.name, METRICS_NAMES.AGGREGATE_OFFER_TOTAL)
-  t.is(aggregateOfferTotal?.value, 0)
+  t.falsy(aggregateOfferTotal)
 
   const aggregateOfferPiecesTotal = await getItemFromTable(t.context.dynamoClient, tableName, {
     name: METRICS_NAMES.AGGREGATE_OFFER_PIECES_TOTAL
   })
-  t.truthy(aggregateOfferPiecesTotal)
-  t.is(aggregateOfferPiecesTotal?.name, METRICS_NAMES.AGGREGATE_OFFER_PIECES_TOTAL)
-  t.is(aggregateOfferPiecesTotal?.value, 0)
+  t.falsy(aggregateOfferPiecesTotal)
 
   const aggregateOfferPiecesSizeTotal = await getItemFromTable(t.context.dynamoClient, tableName, {
     name: METRICS_NAMES.AGGREGATE_OFFER_PIECES_SIZE_TOTAL
   })
-  t.truthy(aggregateOfferPiecesSizeTotal)
-  t.is(aggregateOfferPiecesSizeTotal?.name, METRICS_NAMES.AGGREGATE_OFFER_PIECES_SIZE_TOTAL)
-  t.is(aggregateOfferPiecesSizeTotal?.value, 0)
+  t.falsy(aggregateOfferPiecesSizeTotal)
 })
 
 test('skips invocation with aggregate/offer if before start epoch ms', async t => {
@@ -328,23 +322,17 @@ test('skips invocation with aggregate/offer if before start epoch ms', async t =
   const aggregateOfferTotal = await getItemFromTable(t.context.dynamoClient, tableName, {
     name: METRICS_NAMES.AGGREGATE_OFFER_TOTAL
   })
-  t.truthy(aggregateOfferTotal)
-  t.is(aggregateOfferTotal?.name, METRICS_NAMES.AGGREGATE_OFFER_TOTAL)
-  t.is(aggregateOfferTotal?.value, 0)
+  t.falsy(aggregateOfferTotal)
 
   const aggregateOfferPiecesTotal = await getItemFromTable(t.context.dynamoClient, tableName, {
     name: METRICS_NAMES.AGGREGATE_OFFER_PIECES_TOTAL
   })
-  t.truthy(aggregateOfferPiecesTotal)
-  t.is(aggregateOfferPiecesTotal?.name, METRICS_NAMES.AGGREGATE_OFFER_PIECES_TOTAL)
-  t.is(aggregateOfferPiecesTotal?.value, 0)
+  t.falsy(aggregateOfferPiecesTotal)
 
   const aggregateOfferPiecesSizeTotal = await getItemFromTable(t.context.dynamoClient, tableName, {
     name: METRICS_NAMES.AGGREGATE_OFFER_PIECES_SIZE_TOTAL
   })
-  t.truthy(aggregateOfferPiecesSizeTotal)
-  t.is(aggregateOfferPiecesSizeTotal?.name, METRICS_NAMES.AGGREGATE_OFFER_PIECES_SIZE_TOTAL)
-  t.is(aggregateOfferPiecesSizeTotal?.value, 0)
+  t.falsy(aggregateOfferPiecesSizeTotal)
 })
 
 /**
