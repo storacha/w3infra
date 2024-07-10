@@ -35,6 +35,7 @@ export async function updateAggregateAcceptTotal (ucanInvocations, ctx) {
     .filter(
       inv => inv.value.att.find(a => a.can === AGGREGATE_ACCEPT) && hasOkReceipt(inv)
     )
+  if (!aggregateAcceptInvocations.length) return
 
   await ctx.filecoinMetricsStore.incrementTotals({
     [METRICS_NAMES.AGGREGATE_ACCEPT_TOTAL]: aggregateAcceptInvocations.length
@@ -57,6 +58,7 @@ export async function updateAggregateOfferTotal (ucanInvocations, ctx) {
   /** @type {Map<string, AggregateOfferInvocation>} */
   const workflowsWithAggregateOffers = getWorkflowsWithReceiptForCapability(ucanInvocations, AGGREGATE_OFFER, ctx)
   console.log(`${workflowsWithAggregateOffers.size} aggregate offer workflows`)
+  if (!workflowsWithAggregateOffers.size) return
 
   // From workflows that include aggregate offer receipts, try to get the block with Pieces included in Aggregate
   const aggregateOfferGets = (await Promise.all(
