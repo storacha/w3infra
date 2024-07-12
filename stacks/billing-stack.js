@@ -1,5 +1,5 @@
 import { use, Cron, Queue, Function, Config, Api } from 'sst/constructs'
-import { StartingPosition } from 'aws-cdk-lib/aws-lambda'
+import { StartingPosition, FilterCriteria, FilterRule } from 'aws-cdk-lib/aws-lambda'
 import { Duration } from 'aws-cdk-lib'
 import { UcanInvocationStack } from './ucan-invocation-stack.js'
 import { BillingDbStack } from './billing-db-stack.js'
@@ -109,8 +109,14 @@ export function BillingStack ({ stack, app }) {
         eventSource: {
           batchSize: 1,
           startingPosition: StartingPosition.LATEST,
-          parallelizationFactor: 10
-        }
+          filters: [
+            FilterCriteria.filter({
+              data: {
+                type: FilterRule.isEqual('receipt')
+              }
+            })
+          ]
+        },
       }
     }
   })
