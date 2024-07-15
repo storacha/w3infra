@@ -1,6 +1,7 @@
 import * as Sentry from '@sentry/serverless'
 import { toString, fromString } from 'uint8arrays'
 import * as Link from 'multiformats/link'
+import { LRUCache } from 'lru-cache'
 import { createSpaceDiffStore } from '../tables/space-diff.js'
 import { createConsumerStore } from '../tables/consumer.js'
 import { expect } from './lib.js'
@@ -45,10 +46,9 @@ export const handler = Sentry.AWSLambda.wrapHandler(
     }
     console.log("Storing space usage delta", deltas[0])
     
-    const ctx = {
-      spaceDiffStore: createSpaceDiffStore({ region }, { tableName: spaceDiffTable }),
-      consumerStore: createConsumerStore({ region }, { tableName: consumerTable })
-    }
+    const consumerStore = createConsumerStore({ region }, { tableName: consumerTable })
+    const spaceDiffStore = createSpaceDiffStore({ region }, { tableName: spaceDiffTable })
+    const ctx = { spaceDiffStore, consumerStore: withConsumerListCache(consumerStore) }
     expect(
       await storeSpaceUsageDelta(deltas[0], ctx),
       `storing space usage delta for: ${deltas[0].resource}, cause: ${deltas[0].cause}`
@@ -84,4 +84,39 @@ const parseUcanStreamEvent = event => {
       throw new Error(`unknown message type: ${json.type}`)
     }
   })
+}
+
+/**
+ * This means that if a subscription for a space changes, there's a 5 minute
+ * (max) period where writes may be attributed to the previous subscription.
+ *
+ * This happens very infrequently, and DynamoDB is _already_ eventually
+ * consistent on read so we're just pushing out this delay a little more to
+ * be able to process data for spaces with frequent writes a lot quicker.
+ */
+const CONSUMER_LIST_CACHE_TTL = 1000 * 60 * 5
+const CONSUMER_LIST_CACHE_MAX = 10_000
+
+/**
+ * @param {import('../lib/api').ConsumerStore} consumerStore
+ * @returns {import('../lib/api').ConsumerStore}
+ */
+const withConsumerListCache = (consumerStore) => {
+  /** @type {LRUCache<string, Awaited<ReturnType<import('../lib/api').ConsumerStore['list']>>>} */
+  const cache = new LRUCache({
+    max: CONSUMER_LIST_CACHE_MAX,
+    ttl: CONSUMER_LIST_CACHE_TTL
+  })
+  return {
+    ...consumerStore,
+    async list (key, options) {
+      const cacheKeySuffix = options ? `?cursor=${options.cursor}&size=${options.size}` : ''
+      const cacheKey = `${key.consumer}${cacheKeySuffix}`
+      const cached = cache.get(cacheKey)
+      if (cached) return cached
+      const res = await consumerStore.list(key, options)
+      if (res.ok) cache.set(cacheKey, res)
+      return res
+    }
+  }
 }
