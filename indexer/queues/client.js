@@ -46,11 +46,7 @@ export function createQueueBatchAdderClient (conf, context) {
             throw new Error('failures in response')
           }
           return res
-        }, {
-          retries: 3,
-          minTimeout: 100,
-          onFailedAttempt: console.warn
-        })
+        }, { onFailedAttempt: console.warn })
       } catch (/** @type {any} */ err) {
         console.error(err)
         return { error: new QueueOperationFailure(err.message, { cause: err }) }

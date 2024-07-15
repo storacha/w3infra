@@ -45,7 +45,7 @@ export async function handleCronTick () {
     aggregatorId: DID.parse(aggregatorDid),
   }
 
-  const { error } = await storefrontEvents.handleCronTick(context)
+  const { ok, error } = await storefrontEvents.handleCronTick(context)
   if (error) {
     return {
       statusCode: 500,
@@ -53,9 +53,8 @@ export async function handleCronTick () {
     }
   }
 
-  return {
-    statusCode: 200,
-  }
+  console.log(`updated: ${ok?.updatedCount}, pending: ${ok?.pendingCount}`)
+  return { statusCode: 200 }
 }
 
 /**

@@ -194,12 +194,10 @@ test('handles a batch of single invocation without aggregate/accept', async t =>
     filecoinMetricsStore
   })
 
-  const aggregateOfferTotal = await getItemFromTable(t.context.dynamoClient, tableName, {
+  const aggregateAcceptTotal = await getItemFromTable(t.context.dynamoClient, tableName, {
     name: METRICS_NAMES.AGGREGATE_ACCEPT_TOTAL
   })
-  t.truthy(aggregateOfferTotal)
-  t.is(aggregateOfferTotal?.name, METRICS_NAMES.AGGREGATE_ACCEPT_TOTAL)
-  t.is(aggregateOfferTotal?.value, 0)
+  t.falsy(aggregateAcceptTotal)
 })
 
 test('handles a batch of single invocation with aggregate/accept without receipts', async t => {
@@ -248,12 +246,10 @@ test('handles a batch of single invocation with aggregate/accept without receipt
     filecoinMetricsStore
   })
 
-  const aggregateOfferTotal = await getItemFromTable(t.context.dynamoClient, tableName, {
+  const aggregateAcceptTotal = await getItemFromTable(t.context.dynamoClient, tableName, {
     name: METRICS_NAMES.AGGREGATE_ACCEPT_TOTAL
   })
-  t.truthy(aggregateOfferTotal)
-  t.is(aggregateOfferTotal?.name, METRICS_NAMES.AGGREGATE_ACCEPT_TOTAL)
-  t.is(aggregateOfferTotal?.value, 0)
+  t.falsy(aggregateAcceptTotal)
 })
 
 test('skips invocation with aggregate/accept if before start epoch ms', async t => {
@@ -303,12 +299,10 @@ test('skips invocation with aggregate/accept if before start epoch ms', async t 
     startEpochMs: Date.now() + 100
   })
 
-  const aggregateOfferTotal = await getItemFromTable(t.context.dynamoClient, tableName, {
+  const aggregateAcceptTotal = await getItemFromTable(t.context.dynamoClient, tableName, {
     name: METRICS_NAMES.AGGREGATE_ACCEPT_TOTAL
   })
-  t.truthy(aggregateOfferTotal)
-  t.is(aggregateOfferTotal?.name, METRICS_NAMES.AGGREGATE_ACCEPT_TOTAL)
-  t.is(aggregateOfferTotal?.value, 0)
+  t.falsy(aggregateAcceptTotal)
 })
 
 /**

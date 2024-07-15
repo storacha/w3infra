@@ -35,6 +35,7 @@ export async function updateAggregateAcceptTotal (ucanInvocations, ctx) {
     .filter(
       inv => inv.value.att.find(a => a.can === AGGREGATE_ACCEPT) && hasOkReceipt(inv)
     )
+  if (!aggregateAcceptInvocations.length) return
 
   await ctx.filecoinMetricsStore.incrementTotals({
     [METRICS_NAMES.AGGREGATE_ACCEPT_TOTAL]: aggregateAcceptInvocations.length
@@ -56,13 +57,16 @@ export async function updateAggregateOfferTotal (ucanInvocations, ctx) {
   // Get a Map of workflows that include aggregate offer receipts
   /** @type {Map<string, AggregateOfferInvocation>} */
   const workflowsWithAggregateOffers = getWorkflowsWithReceiptForCapability(ucanInvocations, AGGREGATE_OFFER, ctx)
+  console.log(`${workflowsWithAggregateOffers.size} aggregate offer workflows`)
+  if (!workflowsWithAggregateOffers.size) return
 
   // From workflows that include aggregate offer receipts, try to get the block with Pieces included in Aggregate
-  /** @type {AggregateOfferGet[]} */
   const aggregateOfferGets = (await Promise.all(
     Array.from(workflowsWithAggregateOffers.entries()).map(async ([carCid, aggregateOfferInvocation]) => {
+      console.log(`getting agent message for task: ${aggregateOfferInvocation.invocationCid}`)
       const agentMessage = await getAgentMessage(aggregateOfferInvocation.invocationCid, ctx)
       if (agentMessage.error) {
+        console.error('failed to get agent message', agentMessage.error)
         return [{
           error: agentMessage.error,
           ok: undefined
@@ -72,8 +76,7 @@ export async function updateAggregateOfferTotal (ucanInvocations, ctx) {
       console.log('update aggregate/offer total for worflow', carCid, aggregateOfferInvocation.invocationCid, 'with pieces', aggregateOfferInvocation.capabilities.map(aggregateOfferCap => aggregateOfferCap.nb.pieces.toString()))
       return Promise.all(aggregateOfferInvocation.capabilities.map(aggregateOfferCap => getOfferInfoBlock(aggregateOfferCap, agentMessage.ok)))
     })
-  // @ts-expect-error error types
-  )).flatMap(get => get)
+  )).flat()
   const aggregateOfferGetError = aggregateOfferGets.find(get => get.error)
   if (aggregateOfferGetError) {
     throw aggregateOfferGetError.error
@@ -147,6 +150,7 @@ async function getAgentMessage (taskCid, ctx) {
       error: new NotFoundWorkflowError(`not invocation cid ${workflowCid} for workflow`)
     }
   }
+  console.log(`found task: ${taskCid} workflow: ${workflowCid}`)
 
   const agentMessageBytes = await ctx.workflowStore.get(workflowCid)
   if (!agentMessageBytes) {

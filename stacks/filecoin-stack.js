@@ -319,6 +319,7 @@ export function FilecoinStack({ stack, app }) {
     permissions: [adminMetricsTable, workflowBucket, invocationBucket],
     handler: 'filecoin/functions/metrics-aggregate-offer-and-accept-total.consumer',
     deadLetterQueue: metricsAggregateTotalDLQ.cdk.queue,
+    timeout: 3 * 60,
   })
 
   ucanStream.addConsumers(stack, {
@@ -326,7 +327,8 @@ export function FilecoinStack({ stack, app }) {
       function: metricsAggregateTotalConsumer,
       cdk: {
         eventSource: {
-          ...(getEventSourceConfig(stack))
+          ...(getEventSourceConfig(stack)),
+          parallelizationFactor: 10
         }
       }
     }
