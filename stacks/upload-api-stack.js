@@ -6,7 +6,7 @@ import {
   use
 } from 'sst/constructs'
 
-import { StartingPosition } from 'aws-cdk-lib/aws-lambda'
+import { StartingPosition, FilterCriteria, FilterRule } from 'aws-cdk-lib/aws-lambda'
 import { UploadDbStack } from './upload-db-stack.js'
 import { BillingDbStack } from './billing-db-stack.js'
 import { CarparkStack } from './carpark-stack.js'
@@ -186,7 +186,14 @@ export function UploadApiStack({ stack, app }) {
         eventSource: {
           ...(getEventSourceConfig(stack)),
           // Override where to begin consuming the stream to latest as we already are reading from this stream
-          startingPosition: StartingPosition.LATEST
+          startingPosition: StartingPosition.LATEST,
+          filters: [
+            FilterCriteria.filter({
+              data: {
+                type: FilterRule.isEqual('receipt')
+              }
+            })
+          ]
         }
       }
     },
@@ -196,7 +203,14 @@ export function UploadApiStack({ stack, app }) {
         eventSource: {
           ...(getEventSourceConfig(stack)),
           // Override where to begin consuming the stream to latest as we already are reading from this stream
-          startingPosition: StartingPosition.LATEST
+          startingPosition: StartingPosition.LATEST,
+          filters: [
+            FilterCriteria.filter({
+              data: {
+                type: FilterRule.isEqual('receipt')
+              }
+            })
+          ]
         }
       }
     },
