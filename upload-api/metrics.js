@@ -56,7 +56,7 @@ export async function updateAdminMetrics (ucanInvocations, ctx) {
     const digest = Digest.decode(digestBytes)
 
     // @ts-expect-error space string type different
-    const blob = await ctx.allocationsStorage.get(space, Digest.decode(digest))
+    const blob = await ctx.allocationsStorage.get(space, digest)
     r.nb.size = blob.ok?.blob.size
     return r
   }))
