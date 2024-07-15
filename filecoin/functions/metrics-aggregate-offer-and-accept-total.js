@@ -28,23 +28,23 @@ async function handler(event) {
     startEpochMs
   } = getLambdaEnv()
 
-  try {
-    await updateAggregateOfferTotal(ucanInvocations, {
-      filecoinMetricsStore: createFilecoinMetricsTable(AWS_REGION, metricsTableName),
-      workflowStore: createWorkflowStore(AWS_REGION, workflowBucketName),
-      invocationStore: createInvocationStore(AWS_REGION, invocationBucketName),
+  const filecoinMetricsStore = createFilecoinMetricsTable(AWS_REGION, metricsTableName)
+  const workflowStore = createWorkflowStore(AWS_REGION, workflowBucketName)
+  const invocationStore = createInvocationStore(AWS_REGION, invocationBucketName)
+
+  await Promise.all([
+    updateAggregateOfferTotal(ucanInvocations, {
+      filecoinMetricsStore,
+      workflowStore,
+      invocationStore,
+      startEpochMs
+    }),
+    updateAggregateAcceptTotal(ucanInvocations, {
+      filecoinMetricsStore,
+      workflowStore,
       startEpochMs
     })
-  } catch (err) {
-    console.error('failed to update aggregate offer total', err)
-    throw new Error('failed to update aggregate offer total', { cause: err })
-  }
-
-  await updateAggregateAcceptTotal(ucanInvocations, {
-    filecoinMetricsStore: createFilecoinMetricsTable(AWS_REGION, metricsTableName),
-    workflowStore: createWorkflowStore(AWS_REGION, workflowBucketName),
-    startEpochMs
-  })
+  ])
 }
 
 function getLambdaEnv () {
