@@ -15,6 +15,7 @@
     "@ucanto/server": "^10.0.0",
     "@web3-storage/capabilities": "^17.1.1",
     "big.js": "^6.2.1",
+    "lru-cache": "^11.0.0",
     "multiformats": "^13.1.0",
     "p-retry": "^6.2.0",
     "stripe": "^14.2.0",
