@@ -284,8 +284,10 @@ test('handles a batch of invocations with upload-api tracking capabilities', asy
     },
   ]
 
-  // @ts-expect-error
-  await updateAdminMetrics(invocations, {
+  // simulate invocation serialization & deserialization as done by agent store:
+  // ../stores/agent/stream.js
+  const serdeInvocations = JSON.parse(JSON.stringify(invocations))
+  await updateAdminMetrics(serdeInvocations, {
     metricsStore: adminMetricsStore,
     carStore,
     allocationsStorage

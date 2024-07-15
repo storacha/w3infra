@@ -286,8 +286,10 @@ test('handles a batch of invocations with upload-api tracking capabilities', asy
     },
   ]
 
-  // @ts-expect-error
-  await updateSpaceMetrics(invocations, {
+  // simulate invocation serialization & deserialization as done by agent store:
+  // ../stores/agent/stream.js
+  const serdeInvocations = JSON.parse(JSON.stringify(invocations))
+  await updateSpaceMetrics(serdeInvocations, {
     metricsStore: spaceMetricsStore,
     carStore,
     allocationsStorage
