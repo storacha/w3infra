@@ -114,7 +114,7 @@ const withConsumerListCache = (consumerStore) => {
       const cached = cache.get(cacheKey)
       if (cached) return cached
       const res = await consumerStore.list(key, options)
-      if (res.ok) cache.set(key.consumer, res)
+      if (res.ok) cache.set(cacheKey, res)
       return res
     }
   }
