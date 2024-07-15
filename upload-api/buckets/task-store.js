@@ -1,8 +1,6 @@
-import {
-  S3Client,
-  PutObjectCommand,
-} from '@aws-sdk/client-s3'
+import { PutObjectCommand } from '@aws-sdk/client-s3'
 import pRetry from 'p-retry'
+import { getS3Client } from '../../lib/aws/s3.js'
 
 /**
  * Abstraction layer with Factory to perform operations on bucket storing
@@ -13,7 +11,7 @@ import pRetry from 'p-retry'
  * @param {import('@aws-sdk/client-s3').ServiceInputTypes} [options]
  */
 export function createTaskStore(region, bucketName, options = {}) {
-  const s3client = new S3Client({
+  const s3client = getS3Client({
     region,
     ...options,
   })
@@ -21,7 +19,7 @@ export function createTaskStore(region, bucketName, options = {}) {
 }
 
 /**
- * @param {S3Client} s3client
+ * @param {import('@aws-sdk/client-s3').S3Client} s3client
  * @param {string} bucketName
  * @returns {import('../types').TaskBucket}
  */

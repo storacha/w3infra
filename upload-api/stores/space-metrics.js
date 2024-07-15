@@ -1,8 +1,6 @@
-import {
-  DynamoDBClient,
-  TransactWriteItemsCommand,
-} from '@aws-sdk/client-dynamodb'
+import { TransactWriteItemsCommand } from '@aws-sdk/client-dynamodb'
 import { marshall } from '@aws-sdk/util-dynamodb'
+import { getDynamoClient } from '../../lib/aws/dynamo.js'
 
 /**
  * Abstraction layer to handle operations on metrics table.
@@ -13,7 +11,7 @@ import { marshall } from '@aws-sdk/util-dynamodb'
  * @param {string} [options.endpoint]
  */
 export function createMetricsTable (region, tableName, options = {}) {
-  const dynamoDb = new DynamoDBClient({
+  const dynamoDb = getDynamoClient({
     region,
     endpoint: options.endpoint,
   })
@@ -22,7 +20,7 @@ export function createMetricsTable (region, tableName, options = {}) {
 }
 
 /**
- * @param {DynamoDBClient} dynamoDb
+ * @param {import('@aws-sdk/client-dynamodb').DynamoDBClient} dynamoDb
  * @param {string} tableName
  * @returns {import('../types').SpaceMetricsStore}
  */

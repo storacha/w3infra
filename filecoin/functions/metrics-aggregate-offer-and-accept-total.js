@@ -6,7 +6,7 @@ import { updateAggregateOfferTotal, updateAggregateAcceptTotal } from '../metric
 import { createWorkflowStore } from '../store/workflow.js'
 import { createInvocationStore } from '../store/invocation.js'
 import { createFilecoinMetricsTable } from '../store/metrics.js'
-import { mustGetEnv } from './utils.js'
+import { mustGetEnv } from '../../lib/env.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,

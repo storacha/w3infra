@@ -2,6 +2,7 @@ import { SQSClient, SendMessageBatchCommand } from '@aws-sdk/client-sqs'
 import retry from 'p-retry'
 import { webcrypto } from 'one-webcrypto'
 import { QueueOperationFailure } from './lib.js'
+import { getSQSClient } from '../../lib/aws/sqs.js'
 
 /** The maximum size an SQS batch can be. */
 export const MAX_BATCH_SIZE = 10
@@ -10,7 +11,7 @@ export const MAX_BATCH_SIZE = 10
 export const connectQueue = target =>
   target instanceof SQSClient
     ? target
-    : new SQSClient(target)
+    : getSQSClient(target)
 
 /**
  * @template T

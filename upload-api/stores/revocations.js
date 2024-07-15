@@ -1,12 +1,12 @@
 import {
   BatchGetItemCommand,
-  DynamoDBClient,
   PutItemCommand,
   UpdateItemCommand
 } from '@aws-sdk/client-dynamodb'
 import { marshall, unmarshall } from '@aws-sdk/util-dynamodb'
 import { parseLink } from '@ucanto/core'
 import { revocationTableProps } from '../tables/index.js'
+import { getDynamoClient } from '../../lib/aws/dynamo.js'
 
 /** @typedef {import('@ucanto/interface').UCANLink} UCANLink */
 /** @typedef {import('@ucanto/interface').DID} DID */
@@ -20,7 +20,7 @@ import { revocationTableProps } from '../tables/index.js'
  * @param {string} [options.endpoint]
  */
 export function createRevocationsTable (region, tableName, options = {}) {
-  const dynamoDb = new DynamoDBClient({
+  const dynamoDb = getDynamoClient({
     region,
     endpoint: options.endpoint,
   })
@@ -31,7 +31,7 @@ export function createRevocationsTable (region, tableName, options = {}) {
 const staticRevocationKeys = new Set(Object.keys(revocationTableProps?.fields || {}))
 
 /**
- * @param {DynamoDBClient} dynamoDb
+ * @param {import('@aws-sdk/client-dynamodb').DynamoDBClient} dynamoDb
  * @param {string} tableName
  * @returns {import('@web3-storage/upload-api').RevocationsStorage}
  */

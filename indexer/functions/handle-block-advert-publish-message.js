@@ -1,10 +1,10 @@
 import * as Sentry from '@sentry/serverless'
-import { SQSClient } from '@aws-sdk/client-sqs'
 import * as dagJSON from '@ipld/dag-json'
 import * as Digest from 'multiformats/hashes/digest'
-import { mustGetEnv } from './lib.js'
 import { publishBlockAdvertisement } from '../lib/block-advert-publisher.js'
 import { createMultihashesQueue } from '../queues/multihashes.js'
+import { mustGetEnv } from '../../lib/env.js'
+import { getSQSClient } from '../../lib/aws/sqs.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -26,7 +26,7 @@ const handleBlockAdvertPublishMessage = async (sqsEvent) => {
   const advert = decodeMessage(sqsEvent.Records[0].body)
   const url = new URL(mustGetEnv('MULTIHASHES_QUEUE_URL'))
   const region = mustGetEnv('INDEXER_REGION')
-  const client = new SQSClient({ region })
+  const client = getSQSClient({ region })
   const multihashesQueue = createMultihashesQueue(client, { url })
 
   const { ok, error } = await publishBlockAdvertisement({ multihashesQueue }, advert)

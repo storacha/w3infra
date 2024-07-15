@@ -1,5 +1,4 @@
 import {
-  DynamoDBClient,
   UpdateItemCommand,
   GetItemCommand,
   DeleteItemCommand,
@@ -8,6 +7,7 @@ import {
 import { marshall, unmarshall } from '@aws-sdk/util-dynamodb'
 import { CID } from 'multiformats/cid'
 import { RecordNotFound } from './lib.js'
+import { getDynamoClient } from '../../lib/aws/dynamo.js'
 
 /**
  * @typedef {import('@web3-storage/upload-api').UploadTable} UploadTable
@@ -25,7 +25,7 @@ import { RecordNotFound } from './lib.js'
  * @returns {UploadTable}
  */
 export function createUploadTable(region, tableName, options = {}) {
-  const dynamoDb = new DynamoDBClient({
+  const dynamoDb = getDynamoClient({
     region,
     endpoint: options.endpoint,
   })
@@ -33,7 +33,7 @@ export function createUploadTable(region, tableName, options = {}) {
 }
 
 /**
- * @param {DynamoDBClient} dynamoDb
+ * @param {import('@aws-sdk/client-dynamodb').DynamoDBClient} dynamoDb
  * @param {string} tableName
  * @returns {UploadTable}
  */

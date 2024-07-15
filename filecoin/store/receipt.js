@@ -1,6 +1,6 @@
-import { S3Client } from '@aws-sdk/client-s3'
 import { StoreOperationFailed } from '@web3-storage/filecoin-api/errors'
 import * as Store from '../../upload-api/stores/agent/store.js'
+import { getS3Client } from '../../lib/aws/s3.js'
 
 /**
  * Abstraction layer with Factory to perform operations on bucket storing
@@ -12,7 +12,7 @@ import * as Store from '../../upload-api/stores/agent/store.js'
  * @param {import('@aws-sdk/client-s3').ServiceInputTypes} [options]
  */
 export function createReceiptStore(region, invocationBucketName, workflowBucketName, options = {}) {
-  const s3client = new S3Client({
+  const s3client = getS3Client({
     region,
     ...options,
   })
@@ -20,7 +20,7 @@ export function createReceiptStore(region, invocationBucketName, workflowBucketN
 }
 
 /**
- * @param {S3Client} s3client
+ * @param {import('@aws-sdk/client-s3').S3Client} s3client
  * @param {string} invocationBucketName
  * @param {string} workflowBucketName
  * @returns {import('@web3-storage/filecoin-api/storefront/api').ReceiptStore}

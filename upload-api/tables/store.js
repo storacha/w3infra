@@ -1,5 +1,4 @@
 import {
-  DynamoDBClient,
   GetItemCommand,
   PutItemCommand,
   DeleteItemCommand,
@@ -9,6 +8,7 @@ import { marshall, unmarshall } from '@aws-sdk/util-dynamodb'
 import { CID } from 'multiformats/cid'
 import * as Link from 'multiformats/link'
 import { RecordKeyConflict, RecordNotFound } from './lib.js'
+import { getDynamoClient } from '../../lib/aws/dynamo.js'
 
 /**
  * @typedef {import('@web3-storage/upload-api').StoreTable} StoreTable
@@ -27,7 +27,7 @@ import { RecordKeyConflict, RecordNotFound } from './lib.js'
  * @returns {StoreTable}
  */
 export function createStoreTable(region, tableName, options = {}) {
-  const dynamoDb = new DynamoDBClient({
+  const dynamoDb = getDynamoClient({
     region,
     endpoint: options.endpoint,
   })
@@ -36,7 +36,7 @@ export function createStoreTable(region, tableName, options = {}) {
 }
 
 /**
- * @param {DynamoDBClient} dynamoDb
+ * @param {import('@aws-sdk/client-dynamodb').DynamoDBClient} dynamoDb
  * @param {string} tableName
  * @returns {StoreTable}
  */

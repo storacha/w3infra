@@ -1,5 +1,4 @@
 import * as Sentry from '@sentry/serverless'
-import { S3Client } from '@aws-sdk/client-s3'
 import { Config } from 'sst/node/config'
 import { Storefront } from '@web3-storage/filecoin-client'
 import * as Delegation from '@ucanto/core/delegation'
@@ -8,7 +7,8 @@ import * as DID from '@ipld/dag-ucan/did'
 
 import { computePieceCid } from '../index.js'
 import { getServiceConnection, getServiceSigner } from '../service.js'
-import { mustGetEnv } from './utils.js'
+import { mustGetEnv } from '../../lib/env.js'
+import { getS3Client } from '../../lib/aws/s3.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -68,7 +68,7 @@ async function computeHandler (event) {
     throw new Error('Unexpected sqs record format')
   }
 
-  const s3Client = new S3Client({ region: record.bucketRegion })
+  const s3Client = getS3Client({ region: record.bucketRegion })
 
   // Compute piece for record
   const { error, ok } = await computePieceCid({

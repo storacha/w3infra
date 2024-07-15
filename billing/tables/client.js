@@ -1,13 +1,14 @@
 import { DynamoDBClient, GetItemCommand, PutItemCommand, QueryCommand, ScanCommand } from '@aws-sdk/client-dynamodb'
 import { marshall, unmarshall, convertToAttr } from '@aws-sdk/util-dynamodb'
 import retry from 'p-retry'
-import { RecordNotFound, StoreOperationFailure, getDynamoClient } from './lib.js'
+import { RecordNotFound, StoreOperationFailure } from './lib.js'
+import { getDynamoClient } from '../../lib/aws/dynamo.js'
 
 /** @param {{ region: string } | DynamoDBClient} target */
 export const connectTable = target =>
   target instanceof DynamoDBClient
     ? target
-    : getDynamoClient(target.region)
+    : getDynamoClient(target)
 
 /**
  * @template T

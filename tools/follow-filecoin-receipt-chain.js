@@ -6,6 +6,7 @@ import { Piece } from '@web3-storage/data-segment'
 import { getServiceSigner } from '../filecoin/service.js'
 import { createPieceTable } from '../filecoin/store/piece.js'
 import { createReceiptStore as createFilecoinReceiptStore } from '../filecoin/store/receipt.js'
+import { mustGetEnv } from '../lib/env.js'
 
 export async function followFilecoinReceiptChain () {
   const {
@@ -118,20 +119,6 @@ function getEnv() {
     PIECE_CID: mustGetEnv('PIECE_CID'),
     PRIVATE_KEY: mustGetEnv('PRIVATE_KEY'),
   }
-}
-
-/**
- * 
- * @param {string} name 
- * @returns {string}
- */
-function mustGetEnv (name) {
-  const value = process.env[name]
-  if (!value) {
-    throw new Error(`Missing env var: ${name}`)
-  }
-
-  return value
 }
 
 /**

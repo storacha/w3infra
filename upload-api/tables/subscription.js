@@ -1,12 +1,12 @@
 import {
   DescribeTableCommand,
-  DynamoDBClient,
   GetItemCommand,
   PutItemCommand,
   QueryCommand,
 } from '@aws-sdk/client-dynamodb'
 import { Failure } from '@ucanto/server'
 import { marshall, unmarshall } from '@aws-sdk/util-dynamodb'
+import { getDynamoClient } from '../../lib/aws/dynamo.js'
 
 /**
  * @typedef {import('../types').SubscriptionTable} SubscriptionTable
@@ -33,7 +33,7 @@ export class ConflictError extends Failure {
  * @param {string} [options.endpoint]
  */
 export function createSubscriptionTable (region, tableName, options = {}) {
-  const dynamoDb = new DynamoDBClient({
+  const dynamoDb = getDynamoClient({
     region,
     endpoint: options.endpoint,
   })
@@ -42,7 +42,7 @@ export function createSubscriptionTable (region, tableName, options = {}) {
 }
 
 /**
- * @param {DynamoDBClient} dynamoDb
+ * @param {import('@aws-sdk/client-dynamodb').DynamoDBClient} dynamoDb
  * @param {string} tableName
  * @returns {SubscriptionTable}
  */

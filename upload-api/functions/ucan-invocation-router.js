@@ -31,7 +31,6 @@ import { createSubscriptionTable } from '../tables/subscription.js'
 import { createConsumerTable } from '../tables/consumer.js'
 import { createRateLimitTable } from '../tables/rate-limit.js'
 import { createSpaceMetricsTable } from '../tables/space-metrics.js'
-import { mustGetEnv } from './utils.js'
 import { createRevocationsTable } from '../stores/revocations.js'
 import { usePlansStore } from '../stores/plans.js'
 import { createCustomerStore } from '@web3-storage/w3infra-billing/tables/customer.js'
@@ -41,6 +40,7 @@ import { useUsageStore } from '../stores/usage.js'
 import { createStripeBillingProvider } from '../billing.js'
 import { createIPNIService } from '../external-services/ipni-service.js'
 import * as UploadAPI from '@web3-storage/upload-api'
+import { mustGetEnv } from '../../lib/env.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -146,6 +146,7 @@ export async function ucanInvocationRouter(request) {
     store: {
       connection: {
         address: {
+          region: AWS_REGION
         },
       },
       region: AWS_REGION,

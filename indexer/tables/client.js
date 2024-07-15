@@ -2,6 +2,7 @@ import { BatchWriteItemCommand, DynamoDBClient } from '@aws-sdk/client-dynamodb'
 import { marshall } from '@aws-sdk/util-dynamodb'
 import retry from 'p-retry'
 import { StoreOperationFailure } from './lib.js'
+import { getDynamoClient } from '../../lib/aws/dynamo.js'
 
 /** The maximum size a DynamoDB batch can be. */
 export const MAX_BATCH_SIZE = 25
@@ -10,7 +11,7 @@ export const MAX_BATCH_SIZE = 25
 export const connectTable = target =>
   target instanceof DynamoDBClient
     ? target
-    : new DynamoDBClient(target)
+    : getDynamoClient(target)
 
 /**
  * @template T

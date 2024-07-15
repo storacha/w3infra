@@ -7,6 +7,7 @@ import {
 import { CBOR } from '@ucanto/server'
 
 import { exec as childProcessExec } from 'child_process'
+import { mustGetEnv } from '../../lib/env.js'
 
 /**
  * 
@@ -219,20 +220,6 @@ function getEnv () {
     SUBSCRIPTIONS_TABLE_NAME: process.env.SUBSCRIPTIONS_TABLE_NAME ?? 'subscriptions',
     CONSUMERS_TABLE_NAME: process.env.CONSUMERS_TABLE_NAME ?? 'consumers',
   }
-}
-
-/**
- * 
- * @param {string} name 
- * @returns {string}
- */
-function mustGetEnv (name) {
-  const value = process.env[name]
-  if (!value) {
-    throw new Error(`Missing env var: ${name}`)
-  }
-
-  return value
 }
 
 /**

@@ -1,10 +1,11 @@
 import * as Sentry from '@sentry/serverless'
-import { expect, mustGetEnv } from './lib.js'
+import { expect } from './lib.js'
 import * as BillingInstruction from '../data/customer-billing-instruction.js'
 import { createSubscriptionStore } from '../tables/subscription.js'
 import { createConsumerStore } from '../tables/consumer.js'
 import { createSpaceBillingQueue } from '../queues/space.js'
 import { enqueueSpaceBillingInstructions } from '../lib/customer-billing-queue.js'
+import { mustGetEnv } from '../../lib/env.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,

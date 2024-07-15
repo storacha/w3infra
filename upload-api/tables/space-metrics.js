@@ -1,9 +1,7 @@
-import {
-  DynamoDBClient,
-  GetItemCommand,
-} from '@aws-sdk/client-dynamodb'
+import { GetItemCommand } from '@aws-sdk/client-dynamodb'
 import { marshall, unmarshall } from '@aws-sdk/util-dynamodb'
 import { METRICS_NAMES } from '../constants.js'
+import { getDynamoClient } from '../../lib/aws/dynamo.js'
 
 
 /**
@@ -15,7 +13,7 @@ import { METRICS_NAMES } from '../constants.js'
  * @param {string} [options.endpoint]
  */
 export function createSpaceMetricsTable(region, tableName, options = {}) {
-  const dynamoDb = new DynamoDBClient({
+  const dynamoDb = getDynamoClient({
     region,
     endpoint: options.endpoint
   })
@@ -24,7 +22,7 @@ export function createSpaceMetricsTable(region, tableName, options = {}) {
 }
 
 /**
- * @param {DynamoDBClient} dynamoDb
+ * @param {import('@aws-sdk/client-dynamodb').DynamoDBClient} dynamoDb
  * @param {string} tableName
  * @returns {import('../types').SpaceMetricsTable}
  */

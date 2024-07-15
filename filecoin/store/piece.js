@@ -1,5 +1,4 @@
 import {
-  DynamoDBClient,
   PutItemCommand,
   GetItemCommand,
   UpdateItemCommand,
@@ -9,6 +8,7 @@ import { marshall, unmarshall } from '@aws-sdk/util-dynamodb'
 import { parseLink } from '@ucanto/server'
 
 import { StoreOperationFailed, RecordNotFound } from '@web3-storage/filecoin-api/errors'
+import { getDynamoClient } from '../../lib/aws/dynamo.js'
 
 /**
  * @typedef {'submitted' | 'accepted' | 'invalid'} PieceStatus
@@ -138,7 +138,7 @@ const encodeQueryProps = (recordKey) => {
  * @returns {import('@web3-storage/filecoin-api/storefront/api').PieceStore}
  */
 export function createPieceTable (region, tableName, options = {}) {
-  const dynamoDb = new DynamoDBClient({
+  const dynamoDb = getDynamoClient({
     region,
     endpoint: options.endpoint
   })
@@ -147,7 +147,7 @@ export function createPieceTable (region, tableName, options = {}) {
 }
 
 /**
- * @param {DynamoDBClient} dynamoDb
+ * @param {import('@aws-sdk/client-dynamodb').DynamoDBClient} dynamoDb
  * @param {string} tableName
  * @returns {import('@web3-storage/filecoin-api/storefront/api').PieceStore}
  */

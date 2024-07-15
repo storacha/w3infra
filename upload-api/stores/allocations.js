@@ -1,5 +1,4 @@
 import {
-  DynamoDBClient,
   GetItemCommand,
   PutItemCommand,
   QueryCommand,
@@ -9,6 +8,7 @@ import { marshall, unmarshall } from '@aws-sdk/util-dynamodb'
 import { RecordKeyConflict, RecordNotFound, StorageOperationFailed } from '@web3-storage/upload-api/errors'
 import { base58btc } from 'multiformats/bases/base58'
 import * as Link from 'multiformats/link'
+import { getDynamoClient } from '../../lib/aws/dynamo.js'
 
 /**
  * @typedef {import('@web3-storage/upload-api/types').AllocationsStorage} AllocationsStorage
@@ -28,7 +28,7 @@ import * as Link from 'multiformats/link'
  * @returns {AllocationsStorage}
  */
 export const createAllocationsStorage = (region, tableName, options = {}) => {
-  const dynamoDb = new DynamoDBClient({
+  const dynamoDb = getDynamoClient({
     region,
     endpoint: options.endpoint,
   })
@@ -37,7 +37,7 @@ export const createAllocationsStorage = (region, tableName, options = {}) => {
 }
 
 /**
- * @param {DynamoDBClient} dynamoDb
+ * @param {import('@aws-sdk/client-dynamodb').DynamoDBClient} dynamoDb
  * @param {string} tableName
  * @returns {AllocationsStorage}
  */

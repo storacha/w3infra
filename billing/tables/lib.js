@@ -1,5 +1,4 @@
 import { Failure } from '@ucanto/server'
-import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
 
 export class StoreOperationFailure extends Failure {
   /**
@@ -35,15 +34,4 @@ export class RecordNotFound extends Failure {
   toJSON () {
     return { ...super.toJSON(), key: this.key }
   }
-}
-
-/** @type {Record<string, import('@aws-sdk/client-dynamodb').DynamoDBClient>} */
-const dynamoClients = {}
-
-/** @param {string} region */
-export function getDynamoClient (region) {
-  if (!dynamoClients[region]) {
-    dynamoClients[region] = new DynamoDBClient({ region })
-  }
-  return dynamoClients[region]
 }

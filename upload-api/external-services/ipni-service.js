@@ -1,9 +1,10 @@
-import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs'
+import { SendMessageCommand } from '@aws-sdk/client-sqs'
 import * as dagJSON from '@ipld/dag-json'
 import retry from 'p-retry'
 import map from 'p-map'
 import Queue from 'p-queue'
 import { ok, error } from '@ucanto/server'
+import { getSQSClient } from '../../lib/aws/sqs.js'
 
 /**
  * @typedef {Map<import('multiformats').MultihashDigest, [offset: number, length: number]>} Slices
@@ -18,11 +19,11 @@ const CONCURRENCY = 10
  */
 export const createIPNIService = (blockAdvertisementPublisherQueueConfig, blockIndexWriterQueueConfig, blobsStorage) => {
   const blockAdvertPublisherQueue = new BlockAdvertisementPublisherQueue({
-    client: new SQSClient(blockAdvertisementPublisherQueueConfig),
+    client: getSQSClient(blockAdvertisementPublisherQueueConfig),
     url: blockAdvertisementPublisherQueueConfig.url
   })
   const blockIndexWriterQueue = new BlockIndexWriterQueue({
-    client: new SQSClient(blockIndexWriterQueueConfig),
+    client: getSQSClient(blockIndexWriterQueueConfig),
     url: blockIndexWriterQueueConfig.url
   })
   return useIPNIService(blockAdvertPublisherQueue, blockIndexWriterQueue, blobsStorage)
@@ -73,7 +74,7 @@ export class BlockAdvertisementPublisherQueue {
 
   /**
    * @param {object} config
-   * @param {SQSClient} config.client
+   * @param {import('@aws-sdk/client-sqs').SQSClient} config.client
    * @param {URL} config.url
    */
   constructor (config) {
@@ -147,7 +148,7 @@ export class BlockIndexWriterQueue {
 
   /**
    * @param {object} config
-   * @param {SQSClient} config.client
+   * @param {import('@aws-sdk/client-sqs').SQSClient} config.client
    * @param {URL} config.url
    */
   constructor (config) {

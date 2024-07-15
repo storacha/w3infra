@@ -1,5 +1,4 @@
 import {
-  S3Client,
   PutObjectCommand,
   GetObjectCommand,
   ListObjectsV2Command,
@@ -11,12 +10,13 @@ import {
 import * as CAR from '@ucanto/transport/car'
 import { Invocation, parseLink, Receipt } from '@ucanto/core'
 import * as API from '../../types.js'
+import { getS3Client } from '../../../lib/aws/s3.js'
 
 export { API }
 
 /**
- * @typedef {import('@aws-sdk/client-s3').S3ClientConfig} Address
- * @typedef {S3Client} Channel
+ * @typedef {import('../../../lib/aws/s3.js').Address} Address
+ * @typedef {import('@aws-sdk/client-s3').S3Client} Channel
  *
  * @typedef {API.Variant<{
  *   channel: Channel
@@ -43,7 +43,7 @@ export { API }
  * @returns {Store}
  */
 export const open = ({ connection, region, buckets }) => ({
-  channel: connection.channel ?? new S3Client({ ...connection.address, region }),
+  channel: connection.channel ?? getS3Client({ ...connection.address, region }),
   region,
   buckets,
 })

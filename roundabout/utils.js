@@ -1,3 +1,4 @@
+import { mustGetEnv } from '../lib/env.js'
 import { CAR_CODE } from './constants.js'
 
 // Per https://developers.cloudflare.com/r2/api/s3/presigned-urls/
@@ -45,17 +46,6 @@ export function getEnv() {
     BUCKET_SECRET_ACCESS_KEY: mustGetEnv('BUCKET_SECRET_ACCESS_KEY'),
     BUCKET_NAME: mustGetEnv('BUCKET_NAME')
   }
-}
-
-/**
- * 
- * @param {string} name 
- * @returns {string}
- */
-function mustGetEnv (name) {
-  const value = process.env[name]
-  if (!value) throw new Error(`Missing env var: ${name}`)
-  return value
 }
 
 /**
