@@ -50,7 +50,10 @@ export async function updateAdminMetrics (ucanInvocations, ctx) {
   // Append size for `blob/remove` receipts
   const blobRemoveReceipts = await Promise.all((receipts.get(BLOB_REMOVE) || []).map(async r => {
     const space = r.with
-    const { digest } = r.nb
+    // UCAN stream uses `JSON.stringify()` to encode data. This encodes
+    // Uint8Array as an object e.g. `{"0":252,"1":127,"2":250,"3":220,"4":68}`
+    const digestBytes = new Uint8Array(Object.assign([], r.nb.digest))
+    const digest = Digest.decode(digestBytes)
 
     // @ts-expect-error space string type different
     const blob = await ctx.allocationsStorage.get(space, Digest.decode(digest))
@@ -107,10 +110,13 @@ export async function updateSpaceMetrics (ucanInvocations, ctx) {
   // Append size for `blob/remove` receipts
   const blobRemoveReceipts = await Promise.all((receipts.get(BLOB_REMOVE) || []).map(async r => {
     const space = r.with
-    const { digest } = r.nb
+    // UCAN stream uses `JSON.stringify()` to encode data. This encodes
+    // Uint8Array as an object e.g. `{"0":252,"1":127,"2":250,"3":220,"4":68}`
+    const digestBytes = new Uint8Array(Object.assign([], r.nb.digest))
+    const digest = Digest.decode(digestBytes)
 
     // @ts-expect-error space string type different
-    const blob = await ctx.allocationsStorage.get(space, Digest.decode(digest))
+    const blob = await ctx.allocationsStorage.get(space, digest)
     r.nb.size = blob.ok?.blob.size
     return r
   }))
