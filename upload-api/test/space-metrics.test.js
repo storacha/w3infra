@@ -81,8 +81,10 @@ test('handles a batch of single invocation with blob/add', async t => {
     ts: Date.now()
   }]
 
-  // @ts-expect-error
-  await updateSpaceMetrics(invocations, {
+  // simulate invocation serialization & deserialization as done by agent store:
+  // ../stores/agent/stream.js
+  const serdeInvocations = JSON.parse(JSON.stringify(invocations))
+  await updateSpaceMetrics(serdeInvocations, {
     metricsStore: spaceMetricsStore,
     carStore,
     allocationsStorage
@@ -123,8 +125,10 @@ test('handles batch of single invocations with multiple blob/add attributes', as
     ts: Date.now()
   }]
 
-  // @ts-expect-error
-  await updateSpaceMetrics(invocations, {
+  // simulate invocation serialization & deserialization as done by agent store:
+  // ../stores/agent/stream.js
+  const serdeInvocations = JSON.parse(JSON.stringify(invocations))
+  await updateSpaceMetrics(serdeInvocations, {
     metricsStore: spaceMetricsStore,
     carStore,
     allocationsStorage
@@ -167,8 +171,10 @@ test('handles a batch of single invocation with blob/add without receipt', async
     ts: Date.now()
   }]
 
-  // @ts-expect-error
-  await updateSpaceMetrics(invocations, {
+  // simulate invocation serialization & deserialization as done by agent store:
+  // ../stores/agent/stream.js
+  const serdeInvocations = JSON.parse(JSON.stringify(invocations))
+  await updateSpaceMetrics(serdeInvocations, {
     metricsStore: spaceMetricsStore,
     carStore,
     allocationsStorage
