@@ -234,8 +234,11 @@ test('w3filecoin integration flow', async t => {
     await waitForStoreOperationOkResult(
       async () => {
         // Trigger cron to update and issue receipts based on deals
-        const callDealerCronRes = await pRetry(() => fetch(`https://staging.dealer.web3.storage/cron`))
-        t.true(callDealerCronRes.ok)
+        await pRetry(async () => {
+          const url = 'https://staging.dealer.web3.storage/cron'
+          const res = await fetch(url)
+          if (!res.ok) throw new Error(`failed request to ${url}: ${res.status}`)
+        }, { onFailedAttempt: console.warn })
 
         return receiptStoreFilecoin.get(aggregateAcceptReceiptCid)
         // return agentStoreFilecoin.receipts.get(aggregateAcceptReceiptCid)
