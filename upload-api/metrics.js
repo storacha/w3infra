@@ -167,13 +167,12 @@ function normalizeCapsPerSpaceTotal (capabilities) {
 function normalizeCapsPerSpaceSize (capabilities) {
   const res = capabilities.reduce((acc, c) => {
     const existing = acc?.find((e) => c.with === e.space)
+    const size = c.nb?.size != null ? c.nb.size : c.nb?.blob?.size
+    if (!size) throw new Error('missing size')
     if (existing) {
-      existing.value += (c.nb?.size || c.nb?.blob?.size)
+      existing.value += size
     } else {
-      acc.push({
-        space: c.with,
-        value: (c.nb?.size || c.nb?.blob?.size)
-      })
+      acc.push({ space: c.with, value: size })
     }
     return acc
   }, /** @type {import('./types').SpaceMetricsItem[]} */ ([]))
