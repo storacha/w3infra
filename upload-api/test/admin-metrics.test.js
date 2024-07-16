@@ -270,24 +270,26 @@ test('handles a batch of invocations with upload-api tracking capabilities', asy
       ts: Date.now() + 2
     },
     // blob/remove
-    {
+    ...blobs.map((blob, i) => ({
       carCid: car.cid.toString(),
       value: {
-        att: blobs.map((blob) => BlobCapabilities.remove.create({
+        att: [BlobCapabilities.remove.create({
           with: spaceDid,
           nb: {
             digest: blob.digest,
           }
-        })),
+        })],
         aud: uploadService.did(),
         iss: alice.did()
       },
       type: Stream.defaults.receipt.type,
       out: {
-        ok: true
+        ok: {
+          size: blob.size
+        }
       },
-      ts: Date.now() + 3
-    },
+      ts: Date.now() + 3 + i
+    })),
   ]
 
   // simulate invocation serialization & deserialization as done by agent store:
