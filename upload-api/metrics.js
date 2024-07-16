@@ -1,4 +1,3 @@
-import * as Digest from 'multiformats/hashes/digest'
 import { hasOkReceipt } from './utils.js'
 
 import {
@@ -14,6 +13,8 @@ import {
 
 /**
  * @typedef {import('@ucanto/interface').Capability} Capability
+ * @typedef {import('@web3-storage/upload-api').StoreRemoveSuccess} StoreRemoveSuccess
+ * @typedef {import('@web3-storage/upload-api').BlobRemoveSuccess} BlobRemoveSuccess
  */
 
 /**
@@ -34,14 +35,17 @@ import {
  * @param {import('./types').MetricsCtx} ctx
  */
 export async function updateAdminMetrics (ucanInvocations, ctx) {
-  /**
-   * @type {Map<string, Capability[]>}
-   */
   const receipts = getReceiptPerCapability(ucanInvocations)
 
   // Append size for `store/remove` receipts
   const storeRemoveReceipts = await Promise.all((receipts.get(STORE_REMOVE) || []).map(async r => {
-    const size = await ctx.carStore.getSize(r.nb?.link)
+    const storeRemoveSuccess = /** @type {StoreRemoveSuccess} */ (r.out.ok)
+    let size = storeRemoveSuccess?.size
+
+    // old receipts may not have size
+    if (size == null) {
+      size = await ctx.carStore.getSize(r.nb?.link)
+    }
 
     r.nb.size = size
     return r
@@ -49,15 +53,8 @@ export async function updateAdminMetrics (ucanInvocations, ctx) {
 
   // Append size for `blob/remove` receipts
   const blobRemoveReceipts = await Promise.all((receipts.get(BLOB_REMOVE) || []).map(async r => {
-    const space = r.with
-    // UCAN stream uses `JSON.stringify()` to encode data. This encodes
-    // Uint8Array as an object e.g. `{"0":252,"1":127,"2":250,"3":220,"4":68}`
-    const digestBytes = new Uint8Array(Object.assign([], r.nb.digest))
-    const digest = Digest.decode(digestBytes)
-
-    // @ts-expect-error space string type different
-    const blob = await ctx.allocationsStorage.get(space, digest)
-    r.nb.size = blob.ok?.blob.size
+    const blobRemoveSuccess = /** @type {BlobRemoveSuccess} */ (r.out.ok)
+    r.nb.size = blobRemoveSuccess?.size
     return r
   }))
 
@@ -101,7 +98,13 @@ export async function updateSpaceMetrics (ucanInvocations, ctx) {
 
   // Append size for `store/remove` receipts
   const storeRemoveReceipts = await Promise.all((receipts.get(STORE_REMOVE) || []).map(async r => {
-    const size = await ctx.carStore.getSize(r.nb?.link)
+    const storeRemoveSuccess = /** @type {StoreRemoveSuccess} */ (r.out.ok)
+    let size = storeRemoveSuccess?.size
+
+    // old receipts may not have size
+    if (size == null) {
+      size = await ctx.carStore.getSize(r.nb?.link)
+    }
 
     r.nb.size = size
     return r
@@ -109,15 +112,8 @@ export async function updateSpaceMetrics (ucanInvocations, ctx) {
 
   // Append size for `blob/remove` receipts
   const blobRemoveReceipts = await Promise.all((receipts.get(BLOB_REMOVE) || []).map(async r => {
-    const space = r.with
-    // UCAN stream uses `JSON.stringify()` to encode data. This encodes
-    // Uint8Array as an object e.g. `{"0":252,"1":127,"2":250,"3":220,"4":68}`
-    const digestBytes = new Uint8Array(Object.assign([], r.nb.digest))
-    const digest = Digest.decode(digestBytes)
-
-    // @ts-expect-error space string type different
-    const blob = await ctx.allocationsStorage.get(space, digest)
-    r.nb.size = blob.ok?.blob.size
+    const blobRemoveSuccess = /** @type {BlobRemoveSuccess} */ (r.out.ok)
+    r.nb.size = blobRemoveSuccess?.size
     return r
   }))
 
@@ -184,6 +180,7 @@ function normalizeCapsPerSpaceSize (capabilities) {
  * Get a map of receipts per capability.
  *
  * @param {import('./types.js').UcanStreamInvocation[]} ucanInvocations
+ * @returns {Map<string, Array<Capability & { out: import('./types.js').ReceiptResult }>>}
  */
 function getReceiptPerCapability (ucanInvocations) {
   return ucanInvocations
@@ -196,7 +193,7 @@ function getReceiptPerCapability (ucanInvocations) {
         for (const invocation of workflowInvocations.value.att) {
           const current = acc.get(invocation.can) || []
           current.push(invocation)
-          acc.set(invocation.can, current.map(c => ({
+          acc.set(invocation.can, current.map((/** @type {Capability} */c) => ({
             ...c,
             out: workflowInvocations.out
           })))
@@ -204,6 +201,6 @@ function getReceiptPerCapability (ucanInvocations) {
 
         return acc
       },
-      /** @type {Map<string, Capability[]>} */ (new Map())
+      (new Map())
     )
 }
