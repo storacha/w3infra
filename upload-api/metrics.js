@@ -168,7 +168,7 @@ function normalizeCapsPerSpaceSize (capabilities) {
   const res = capabilities.reduce((acc, c) => {
     const existing = acc?.find((e) => c.with === e.space)
     const size = c.nb?.size != null ? c.nb.size : c.nb?.blob?.size
-    if (!size) throw new Error('missing size')
+    if (size == null) throw new Error('missing size')
     if (existing) {
       existing.value += size
     } else {
