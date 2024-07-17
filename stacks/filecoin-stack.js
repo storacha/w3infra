@@ -327,8 +327,7 @@ export function FilecoinStack({ stack, app }) {
       function: metricsAggregateTotalConsumer,
       cdk: {
         eventSource: {
-          ...(getEventSourceConfig(stack)),
-          parallelizationFactor: 10
+          ...(getEventSourceConfig(stack))
         }
       }
     }

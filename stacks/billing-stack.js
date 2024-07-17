@@ -115,7 +115,8 @@ export function BillingStack ({ stack, app }) {
                 type: FilterRule.isEqual('receipt')
               }
             })
-          ]
+          ],
+          parallelizationFactor: 2
         },
       }
     }
