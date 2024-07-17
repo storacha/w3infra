@@ -116,7 +116,7 @@ export function BillingStack ({ stack, app }) {
               }
             })
           ],
-          parallelizationFactor: 2
+          parallelizationFactor: 10
         },
       }
     }
