@@ -9,11 +9,6 @@ export { API }
 export const defaults = {
   workflow: { type: 'workflow' },
   receipt: { type: 'receipt' },
-
-  // https://docs.aws.amazon.com/streams/latest/dev/key-concepts.html
-  // A partition key is used to group data by shard within a stream.
-  // It is required, and now we are starting with one shard. We need to study best partition key
-  partitionKey: 'key',
 }
 
 /**
@@ -29,14 +24,12 @@ export const defaults = {
  * @typedef {object} Options
  * @property {Connection} connection
  * @property {string} name
- * @property {string} [partitionKey]
  * @property {{type:string}} [workflow]
  * @property {{type:string}} [receipt]
  *
  * @typedef {object} Stream
  * @property {Channel|null} channel
  * @property {string} name
- * @property {string} partitionKey
  * @property {{type:string}} workflow
  * @property {{type:string}} receipt
  */
@@ -45,7 +38,7 @@ export const defaults = {
  * @param {Options} options
  * @returns {Stream}
  */
-export const open = ({ connection, name, partitionKey, ...settings }) => ({
+export const open = ({ connection, name, ...settings }) => ({
   ...settings,
   channel: connection.address
     ? new Kinesis(connection.address)
@@ -53,7 +46,6 @@ export const open = ({ connection, name, partitionKey, ...settings }) => ({
   name,
   workflow: { ...defaults.workflow, ...settings.workflow },
   receipt: { ...defaults.receipt, ...settings.receipt },
-  partitionKey: partitionKey ?? defaults.partitionKey,
 })
 
 /**
@@ -110,10 +102,7 @@ export const assert = async (message, { stream, store }) => {
             type: stream.workflow.type,
           })
         ),
-        // https://docs.aws.amazon.com/streams/latest/dev/key-concepts.html
-        // A partition key is used to group data by shard within a stream.
-        // It is required, and now we are starting with one shard. We need to study best partition key
-        PartitionKey: stream.partitionKey,
+        PartitionKey: partitionKey(member),
       })
     }
 
@@ -158,10 +147,36 @@ export const assert = async (message, { stream, store }) => {
             type: stream.receipt.type,
           }, (_, value) => typeof value === "bigint" ? Number(value) : value )
         ),
-        PartitionKey: stream.partitionKey,
+        PartitionKey: partitionKey(member),
       })
     }
   }
 
   return records
 }
+
+/**
+ * Determines the partition key for the passed record. A partition key is used
+ * to group data by shard within a stream.
+ * 
+ * @see https://docs.aws.amazon.com/streams/latest/dev/key-concepts.html
+ *
+ * If the Kinesis stream is configured with a single shard (the state of things
+ * at time of writing) then this only effects stream consumers configured with
+ * `parallelizationFactor` > 1 and thus allows for consumers the process the
+ * entire stream sequentially as well as in parallel.
+ *
+ * > ...when using ParallelizationFactor more than one lambda can
+ * > process records from the same shard concurrently. The order is
+ * > maintained because records with the same partition key will not be
+ * > processed concurrently.
+ * >
+ * > https://stackoverflow.com/questions/71194144/parallelization-factor-aws-kinesis-data-streams-to-lambda
+ * 
+ * Here we use the task CID as a partition key, which at least orders
+ * invocations and receipts by a given task.
+ *
+ * @param {API.AgentMessageIndexRecord} record
+ */
+const partitionKey = record =>
+  (record.invocation ? record.invocation.task : record.receipt.task).toString()
