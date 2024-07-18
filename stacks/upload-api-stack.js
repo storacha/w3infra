@@ -185,6 +185,7 @@ export function UploadApiStack({ stack, app }) {
       cdk: {
         eventSource: {
           ...(getEventSourceConfig(stack)),
+          batchSize: 25,
           // Override where to begin consuming the stream to latest as we already are reading from this stream
           startingPosition: StartingPosition.LATEST,
           filters: [
@@ -202,6 +203,7 @@ export function UploadApiStack({ stack, app }) {
       cdk: {
         eventSource: {
           ...(getEventSourceConfig(stack)),
+          batchSize: 25,
           // Override where to begin consuming the stream to latest as we already are reading from this stream
           startingPosition: StartingPosition.LATEST,
           filters: [
