@@ -87,12 +87,13 @@ export const storeSpaceUsageDeltas = async (deltas, ctx) => {
         insertedAt: new Date()
       })
     }
-    return { ok: diffs }
+    return { ok: diffs, error: undefined }
   }))
 
   const spaceDiffs = []
   for (const res of spaceDiffResults) {
-    if (res.ok) spaceDiffs.push(...res.ok)
+    if (res.error) return res
+    spaceDiffs.push(...res.ok)
   }
 
   return ctx.spaceDiffStore.batchPut(spaceDiffs)
