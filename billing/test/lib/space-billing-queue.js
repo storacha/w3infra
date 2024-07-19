@@ -14,7 +14,7 @@ export const test = {
     const to = startOfMonth(now)
     const delta = 1024 * 1024 * 1024 // 1GiB
 
-    await ctx.spaceDiffStore.transactBatchPut([{
+    await ctx.spaceDiffStore.batchPut([{
       provider: consumer.provider,
       space: consumer.consumer,
       subscription: consumer.subscription,
@@ -75,7 +75,7 @@ export const test = {
       insertedAt: new Date()
     })
 
-    await ctx.spaceDiffStore.transactBatchPut([
+    await ctx.spaceDiffStore.batchPut([
       // add 1GiB
       {
         provider: consumer.provider,
@@ -158,7 +158,7 @@ export const test = {
       return yest
     }
 
-    await ctx.spaceDiffStore.transactBatchPut([{
+    await ctx.spaceDiffStore.batchPut([{
       provider: consumer.provider,
       space: consumer.consumer,
       subscription: consumer.subscription,

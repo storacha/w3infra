@@ -95,7 +95,7 @@ export const storeSpaceUsageDeltas = async (deltas, ctx) => {
     if (res.ok) spaceDiffs.push(...res.ok)
   }
 
-  return ctx.spaceDiffStore.transactBatchPut(spaceDiffs)
+  return ctx.spaceDiffStore.batchPut(spaceDiffs)
 }
 
 /**

@@ -1,4 +1,4 @@
-import { createStoreListerClient, createStoreTransactBatchPutterClient } from './client.js'
+import { createStoreBatchPutterClient, createStoreListerClient } from './client.js'
 import { validate, encode, lister, decode } from '../data/space-diff.js'
 
 /**
@@ -36,6 +36,6 @@ export const spaceDiffTableProps = {
  * @returns {import('../lib/api').SpaceDiffStore}
  */
 export const createSpaceDiffStore = (conf, { tableName }) => ({
-  ...createStoreTransactBatchPutterClient(conf, { tableName, validate, encode }),
+  ...createStoreBatchPutterClient(conf, { tableName, validate, encode }),
   ...createStoreListerClient(conf, { tableName, encodeKey: lister.encodeKey, decode })
 })

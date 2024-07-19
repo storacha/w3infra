@@ -107,7 +107,7 @@ export function BillingStack ({ stack, app }) {
       function: ucanStreamHandler,
       cdk: {
         eventSource: {
-          batchSize: 50,
+          batchSize: 25, // max dynamo BatchWriteItems size
           startingPosition: StartingPosition.LATEST,
           filters: [
             FilterCriteria.filter({

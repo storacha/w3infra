@@ -43,7 +43,7 @@ export interface SpaceDiffListKey {
 }
 
 export type SpaceDiffStore =
-  & StoreTransactBatchPutter<SpaceDiff>
+  & StoreBatchPutter<SpaceDiff>
   & StoreLister<SpaceDiffListKey, SpaceDiff>
 
 /** Captures size of a space at a given point in time. */
@@ -306,15 +306,17 @@ export interface StorePutter<T> {
 }
 
 /**
- * StoreTransactBatchPutter allows multiple items to be put in the store
- * transactionally, so that either all of them succeed, or all of them fail.
+ * StoreBatchPutter allows multiple items to be put in the store. Note: this is
+ * not transactional. A failure may mean 1 or more records succeeded to
+ * be written.
  */
-export interface StoreTransactBatchPutter<T> {
+export interface StoreBatchPutter<T> {
   /**
-   * Puts multiple items into the store by their key. Either all of them
-   * succeed, or all of them fail.
+   * Puts multiple items into the store by their key. Note: this is
+   * not transactional. A failure may mean 1 or more records succeeded to
+   * be written.
    */
-  transactBatchPut: (rec: Iterable<T>) => Promise<Result<Unit, InsufficientRecords|EncodeFailure|StoreOperationFailure|Failure>>
+  batchPut: (rec: Iterable<T>) => Promise<Result<Unit, InsufficientRecords|EncodeFailure|StoreOperationFailure|Failure>>
 }
 
 /** StoreGetter allows a single item to be retrieved by it's key. */
