@@ -1,7 +1,7 @@
-import { DynamoDBClient, GetItemCommand, PutItemCommand, QueryCommand, ScanCommand } from '@aws-sdk/client-dynamodb'
+import { BatchWriteItemCommand, DynamoDBClient, GetItemCommand, PutItemCommand, QueryCommand, ScanCommand } from '@aws-sdk/client-dynamodb'
 import { marshall, unmarshall, convertToAttr } from '@aws-sdk/util-dynamodb'
 import retry from 'p-retry'
-import { RecordNotFound, StoreOperationFailure } from './lib.js'
+import { InsufficientRecords, RecordNotFound, StoreOperationFailure } from './lib.js'
 import { getDynamoClient } from '../../lib/aws/dynamo.js'
 
 /** @param {{ region: string } | DynamoDBClient} target */
@@ -45,6 +45,53 @@ export const createStorePutterClient = (conf, context) => {
           minTimeout: 100,
           onFailedAttempt: console.warn
         })
+        return { ok: {} }
+      } catch (/** @type {any} */ err) {
+        console.error(err)
+        return { error: new StoreOperationFailure(err.message, { cause: err }) }
+      }
+    }
+  }
+}
+
+/**
+ * @template T
+ * @param {{ region: string } | import('@aws-sdk/client-dynamodb').DynamoDBClient} conf
+ * @param {object} context
+ * @param {string} context.tableName
+ * @param {import('../lib/api').Validator<T>} context.validate
+ * @param {import('../lib/api').Encoder<T, import('../types').StoreRecord>} context.encode
+ * @returns {import('../lib/api').StoreBatchPutter<T>}
+ */
+export const createStoreBatchPutterClient = (conf, context) => {
+  const client = connectTable(conf)
+  return {
+    batchPut: async (records) => {
+      /** @type {import('@aws-sdk/client-dynamodb').WriteRequest[]} */
+      const writeRequests = []
+      for (const record of records) {
+        const validation = context.validate(record)
+        if (validation.error) return validation
+
+        const encoding = context.encode(record)
+        if (encoding.error) return encoding
+        writeRequests.push(({ PutRequest: { Item: marshall(encoding.ok, { removeUndefinedValues: true }) } }))
+      }
+
+      if (!writeRequests.length) {
+        return { error: new InsufficientRecords('records must have length greater than or equal to 1') }
+      }
+
+      try {
+        let requestItems = { [context.tableName]: writeRequests }
+        await retry(async () => {
+          const cmd = new BatchWriteItemCommand({ RequestItems: requestItems })
+          const res = await client.send(cmd)
+          if (res.UnprocessedItems && Object.keys(res.UnprocessedItems).length) {
+            requestItems = res.UnprocessedItems
+            throw new Error('unprocessed items')
+          }
+        }, { onFailedAttempt: console.warn })
         return { ok: {} }
       } catch (/** @type {any} */ err) {
         console.error(err)
