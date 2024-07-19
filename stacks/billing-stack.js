@@ -108,6 +108,7 @@ export function BillingStack ({ stack, app }) {
       cdk: {
         eventSource: {
           batchSize: 25, // max dynamo BatchWriteItems size
+          bisectBatchOnError: true,
           startingPosition: StartingPosition.LATEST,
           filters: [
             FilterCriteria.filter({
