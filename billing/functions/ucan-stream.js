@@ -5,7 +5,7 @@ import { LRUCache } from 'lru-cache'
 import { createSpaceDiffStore } from '../tables/space-diff.js'
 import { createConsumerStore } from '../tables/consumer.js'
 import { expect } from './lib.js'
-import { findSpaceUsageDeltas, storeSpaceUsageDelta } from '../lib/ucan-stream.js'
+import { findSpaceUsageDeltas, storeSpaceUsageDeltas } from '../lib/ucan-stream.js'
 import { mustGetEnv } from '../../lib/env.js'
 
 Sentry.AWSLambda.init({
@@ -35,24 +35,17 @@ export const handler = Sentry.AWSLambda.wrapHandler(
     const region = customContext?.region ?? mustGetEnv('AWS_REGION')
   
     const messages = parseUcanStreamEvent(event)
-    if (!messages || messages.length > 1) {
-      throw new Error(`invalid batch size, expected: 1, actual: ${messages.length}`)
-    }
-
     const deltas = findSpaceUsageDeltas(messages)
     if (!deltas.length) {
       console.log("No messages found that contain space usage deltas", "capabilities", messages[0].value.att.map((att) => att.can), "resources", messages[0].value.att.map((att) => att.with) )
       return
     }
-    console.log("Storing space usage delta", deltas[0])
-    
+    console.log(`Storing ${deltas.length} space usage deltas`)
+
     const consumerStore = createConsumerStore({ region }, { tableName: consumerTable })
     const spaceDiffStore = createSpaceDiffStore({ region }, { tableName: spaceDiffTable })
     const ctx = { spaceDiffStore, consumerStore: withConsumerListCache(consumerStore) }
-    expect(
-      await storeSpaceUsageDelta(deltas[0], ctx),
-      `storing space usage delta for: ${deltas[0].resource}, cause: ${deltas[0].cause}`
-    )
+    expect(await storeSpaceUsageDeltas(deltas, ctx), 'storing space usage deltas')
   }
 )
 

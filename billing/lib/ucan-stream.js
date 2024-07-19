@@ -62,33 +62,40 @@ export const findSpaceUsageDeltas = messages => {
  * multiple calls to this function with the same data must not add _another_
  * record to the store.
  *
- * @param {import('./api.js').UsageDelta} delta
+ * @param {import('./api.js').UsageDelta[]} deltas
  * @param {{
  *   spaceDiffStore: import('./api').SpaceDiffStore
  *   consumerStore: import('./api').ConsumerStore
  * }} ctx
- * @returns {Promise<import('@ucanto/interface').Result<import('@ucanto/interface').Unit>>}
  */
-export const storeSpaceUsageDelta = async (delta, ctx) => {
-  const consumerList = await ctx.consumerStore.list({ consumer: delta.resource })
-  if (consumerList.error) return consumerList
+export const storeSpaceUsageDeltas = async (deltas, ctx) => {
+  const spaceDiffResults = await Promise.all(deltas.map(async delta => {
+    const consumerList = await ctx.consumerStore.list({ consumer: delta.resource })
+    if (consumerList.error) return consumerList
 
-  // There should only be one subscription per provider, but in theory you
-  // could have multiple providers for the same consumer (space).
-  for (const consumer of consumerList.ok.results) {
-    const spaceDiffPut = await ctx.spaceDiffStore.put({
-      provider: consumer.provider,
-      subscription: consumer.subscription,
-      space: delta.resource,
-      cause: delta.cause,
-      delta: delta.delta,
-      receiptAt: delta.receiptAt,
-      insertedAt: new Date()
-    })
-    if (spaceDiffPut.error) return spaceDiffPut
+    const diffs = []
+    // There should only be one subscription per provider, but in theory you
+    // could have multiple providers for the same consumer (space).
+    for (const consumer of consumerList.ok.results) {
+      diffs.push({
+        provider: consumer.provider,
+        subscription: consumer.subscription,
+        space: delta.resource,
+        cause: delta.cause,
+        delta: delta.delta,
+        receiptAt: delta.receiptAt,
+        insertedAt: new Date()
+      })
+    }
+    return { ok: diffs }
+  }))
+
+  const spaceDiffs = []
+  for (const res of spaceDiffResults) {
+    if (res.ok) spaceDiffs.push(...res.ok)
   }
 
-  return { ok: {} }
+  return ctx.spaceDiffStore.transactBatchPut(spaceDiffs)
 }
 
 /**

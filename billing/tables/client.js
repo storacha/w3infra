@@ -1,7 +1,7 @@
-import { DynamoDBClient, GetItemCommand, PutItemCommand, QueryCommand, ScanCommand } from '@aws-sdk/client-dynamodb'
+import { DynamoDBClient, GetItemCommand, PutItemCommand, QueryCommand, ScanCommand, TransactWriteItemsCommand } from '@aws-sdk/client-dynamodb'
 import { marshall, unmarshall, convertToAttr } from '@aws-sdk/util-dynamodb'
 import retry from 'p-retry'
-import { RecordNotFound, StoreOperationFailure } from './lib.js'
+import { InsufficientRecords, RecordNotFound, StoreOperationFailure } from './lib.js'
 import { getDynamoClient } from '../../lib/aws/dynamo.js'
 
 /** @param {{ region: string } | DynamoDBClient} target */
@@ -39,6 +39,62 @@ export const createStorePutterClient = (conf, context) => {
           const res = await client.send(cmd)
           if (res.$metadata.httpStatusCode !== 200) {
             throw new Error(`unexpected status putting item to table: ${res.$metadata.httpStatusCode}`)
+          }
+        }, {
+          retries: 3,
+          minTimeout: 100,
+          onFailedAttempt: console.warn
+        })
+        return { ok: {} }
+      } catch (/** @type {any} */ err) {
+        console.error(err)
+        return { error: new StoreOperationFailure(err.message, { cause: err }) }
+      }
+    }
+  }
+}
+
+/**
+ * @template T
+ * @param {{ region: string } | import('@aws-sdk/client-dynamodb').DynamoDBClient} conf
+ * @param {object} context
+ * @param {string} context.tableName
+ * @param {import('../lib/api').Validator<T>} context.validate
+ * @param {import('../lib/api').Encoder<T, import('../types').StoreRecord>} context.encode
+ * @returns {import('../lib/api').StoreTransactBatchPutter<T>}
+ */
+export const createStoreTransactBatchPutterClient = (conf, context) => {
+  const client = connectTable(conf)
+  return {
+    transactBatchPut: async (records) => {
+      /** @type {import('@aws-sdk/client-dynamodb').TransactWriteItem[]} */
+      const transactItems = []
+      for (const record of records) {
+        const validation = context.validate(record)
+        if (validation.error) return validation
+
+        const encoding = context.encode(validation.ok)
+        if (encoding.error) return encoding
+
+        transactItems.push({
+          Put: {
+            TableName: context.tableName,
+            Item: marshall(encoding.ok, { removeUndefinedValues: true })
+          }
+        })
+      }
+
+      if (!transactItems.length) {
+        return { error: new InsufficientRecords('records must have length greater than or equal to 1') }
+      }
+
+      const cmd = new TransactWriteItemsCommand({ TransactItems: transactItems })
+
+      try {
+        await retry(async () => {
+          const res = await client.send(cmd)
+          if (res.$metadata.httpStatusCode !== 200) {
+            throw new Error(`unexpected status transact batch put items to table: ${res.$metadata.httpStatusCode}`)
           }
         }, {
           retries: 3,

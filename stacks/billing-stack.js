@@ -107,7 +107,7 @@ export function BillingStack ({ stack, app }) {
       function: ucanStreamHandler,
       cdk: {
         eventSource: {
-          batchSize: 1,
+          batchSize: 50,
           startingPosition: StartingPosition.LATEST,
           filters: [
             FilterCriteria.filter({

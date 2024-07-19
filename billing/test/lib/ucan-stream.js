@@ -2,7 +2,7 @@ import { Schema } from '@ucanto/core'
 import * as ServiceBlobCaps from '@web3-storage/capabilities/web3.storage/blob'
 import * as BlobCaps from '@web3-storage/capabilities/blob'
 import * as StoreCaps from '@web3-storage/capabilities/store'
-import { findSpaceUsageDeltas, storeSpaceUsageDelta } from '../../lib/ucan-stream.js'
+import { findSpaceUsageDeltas, storeSpaceUsageDeltas } from '../../lib/ucan-stream.js'
 import { randomConsumer } from '../helpers/consumer.js'
 import { randomLink } from '../helpers/dag.js'
 import { randomDID, randomDIDKey } from '../helpers/did.js'
@@ -174,11 +174,8 @@ export const test = {
     }]
 
     const deltas = findSpaceUsageDeltas(receipts)
-
-    for (const d of deltas) {
-      const res = await storeSpaceUsageDelta(d, ctx)
-      assert.ok(res.ok)
-    }
+    const storeDeltasRes = await storeSpaceUsageDeltas(deltas, ctx)
+    assert.ok(storeDeltasRes.ok)
 
     const res = await ctx.spaceDiffStore.list({
       provider: consumer.provider,
@@ -230,11 +227,8 @@ export const test = {
     }]
 
     const deltas = findSpaceUsageDeltas(receipts)
-
-    for (const d of deltas) {
-      const res = await storeSpaceUsageDelta(d, ctx)
-      assert.ok(res.ok)
-    }
+    const storeDeltasRes = await storeSpaceUsageDeltas(deltas, ctx)
+    assert.equal(storeDeltasRes.error?.name, 'InsufficientRecords')
 
     const res = await ctx.spaceDiffStore.list({
       provider: consumer.provider,

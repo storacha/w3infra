@@ -14,7 +14,7 @@ export const test = {
     const to = startOfMonth(now)
     const delta = 1024 * 1024 * 1024 // 1GiB
 
-    await ctx.spaceDiffStore.put({
+    await ctx.spaceDiffStore.transactBatchPut([{
       provider: consumer.provider,
       space: consumer.consumer,
       subscription: consumer.subscription,
@@ -22,7 +22,7 @@ export const test = {
       delta,
       receiptAt: from,
       insertedAt: new Date()
-    })
+    }])
 
     /** @type {import('../../lib/api.js').SpaceBillingInstruction} */
     const instruction = {
@@ -75,28 +75,29 @@ export const test = {
       insertedAt: new Date()
     })
 
-    // add 1GiB
-    await ctx.spaceDiffStore.put({
-      provider: consumer.provider,
-      space: consumer.consumer,
-      subscription: consumer.subscription,
-      cause: randomLink(),
-      delta,
-      receiptAt: from,
-      insertedAt: new Date()
-    })
-
-    // remove 1GiB
-    await ctx.spaceDiffStore.put({
-      provider: consumer.provider,
-      space: consumer.consumer,
-      subscription: consumer.subscription,
-      cause: randomLink(),
-      delta: -delta,
-      // removed exactly half way through the month
-      receiptAt: new Date(from.getTime() + ((to.getTime() - from.getTime()) / 2)),
-      insertedAt: new Date()
-    })
+    await ctx.spaceDiffStore.transactBatchPut([
+      // add 1GiB
+      {
+        provider: consumer.provider,
+        space: consumer.consumer,
+        subscription: consumer.subscription,
+        cause: randomLink(),
+        delta,
+        receiptAt: from,
+        insertedAt: new Date()
+      },
+      // remove 1GiB
+      {
+        provider: consumer.provider,
+        space: consumer.consumer,
+        subscription: consumer.subscription,
+        cause: randomLink(),
+        delta: -delta,
+        // removed exactly half way through the month
+        receiptAt: new Date(from.getTime() + ((to.getTime() - from.getTime()) / 2)),
+        insertedAt: new Date()
+      }
+    ])
 
     /** @type {import('../../lib/api.js').SpaceBillingInstruction} */
     const instruction = {
@@ -157,7 +158,7 @@ export const test = {
       return yest
     }
 
-    await ctx.spaceDiffStore.put({
+    await ctx.spaceDiffStore.transactBatchPut([{
       provider: consumer.provider,
       space: consumer.consumer,
       subscription: consumer.subscription,
@@ -166,7 +167,7 @@ export const test = {
       // store/add 24h prior to end of billing
       receiptAt: yesterday(to),
       insertedAt: new Date()
-    })
+    }])
 
     /** @type {import('../../lib/api.js').SpaceBillingInstruction} */
     const instruction = {

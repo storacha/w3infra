@@ -35,3 +35,19 @@ export class RecordNotFound extends Failure {
     return { ...super.toJSON(), key: this.key }
   }
 }
+
+export class InsufficientRecords extends Failure {
+  /**
+   * @param {string} [message] Context for the message.
+   * @param {ErrorOptions} [options]
+   */
+  constructor (message, options) {
+    super(undefined, options)
+    this.name = /** @type {const} */ ('InsufficientRecords')
+    this.detail = message
+  }
+
+  describe () {
+    return this.detail ?? 'insufficient records were provided for the operation'
+  }
+}
