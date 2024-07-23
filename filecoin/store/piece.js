@@ -275,34 +275,41 @@ export function usePieceTable(dynamoDb, tableName) {
         )
       }
     },
-    query: async (search) => {
+    query: async function * (search) {
       const queryProps = encodeQueryProps(search)
       if (!queryProps) {
-        return {
+        yield {
           error: new StoreOperationFailed('no valid search parameters provided')
         }
+        return
       }
 
-      // @ts-ignore query props partial
-      const queryCmd = new QueryCommand({
-        TableName: tableName,
-        ...queryProps
-      })
+      /** @type {Record<string, import('@aws-sdk/client-dynamodb').AttributeValue>|undefined} */
+      let startKey
+      while (true) {
+        // @ts-ignore query props partial
+        const queryCmd = new QueryCommand({
+          TableName: tableName,
+          ...queryProps,
+          ExclusiveStartKey: startKey
+        })
 
-      let res
-      try {
-        res = await dynamoDb.send(queryCmd)
-      } catch (/** @type {any} */ error) {
-        return {
-          error: new StoreOperationFailed(error.message)
+        let res
+        try {
+          res = await dynamoDb.send(queryCmd)
+        } catch (/** @type {any} */ error) {
+          yield { error: new StoreOperationFailed(error.message) }
+          return
         }
-      }
 
-      // TODO: handle pulling the entire list
-      return {
-        ok: res.Items ? res.Items.map(item => decodeRecord(
-          /** @type {PieceStoreRecord} */ (unmarshall(item))
-        )) : []
+        yield {
+          ok: res.Items ? res.Items.map(item => decodeRecord(
+            /** @type {PieceStoreRecord} */ (unmarshall(item))
+          )) : []
+        }
+
+        startKey = res.LastEvaluatedKey
+        if (!startKey) break
       }
     }
   }
