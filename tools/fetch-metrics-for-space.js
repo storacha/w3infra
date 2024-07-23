@@ -1,24 +1,19 @@
-import {
-  DynamoDBClient,
-  QueryCommand
-} from '@aws-sdk/client-dynamodb'
+import { QueryCommand } from '@aws-sdk/client-dynamodb'
 import { unmarshall } from '@aws-sdk/util-dynamodb'
 import { mustGetEnv } from '../lib/env.js'
+import { getRegion, getStage } from './lib.js'
+import { getDynamoClient } from '../lib/aws/dynamo.js'
 
 export async function fetchMetricsForSpaceCmd () {
   const {
-    ENV,
     SPACE_DID,
     TABLE_NAME,
   } = getEnv()
+  const stage = getStage()
+  const region = getRegion(stage)
+  const dynamo = getDynamoClient({ region })
 
-  const { client, tableName } = getDynamoDb(
-    TABLE_NAME,
-    ENV,
-    getRegion(ENV)
-  )
-
-  const rows = await getAllTableRows(client, tableName, SPACE_DID)
+  const rows = await getAllTableRows(dynamo, TABLE_NAME, SPACE_DID)
   console.log(`Metrics found for provided space DID: ${rows.length}`)
   for (const row of rows) {
     console.log(`${row.name}: ${row.value}`)
@@ -53,37 +48,7 @@ export async function getAllTableRows (dynamo, tableName, space, options = {}) {
  */
 function getEnv() {
   return {
-    ENV: mustGetEnv('ENV'),
     SPACE_DID: mustGetEnv('SPACE_DID'),
     TABLE_NAME: mustGetEnv('TABLE_NAME'),
-  }
-}
-
-/**
- * @param {string} env
- */
-function getRegion (env) {
-  if (env === 'staging') {
-    return 'us-east-2'
-  }
-
-  return 'us-west-2'
-}
-
-/**
- * @param {string} tableName
- * @param {string} env
- * @param {string} region
- */
-function getDynamoDb (tableName, env, region) {
-  const endpoint = `https://dynamodb.${region}.amazonaws.com`
-
-  return {
-    client: new DynamoDBClient({
-      region,
-      endpoint
-    }),
-    tableName: `${env}-w3infra-${tableName}`,
-    endpoint
   }
 }
