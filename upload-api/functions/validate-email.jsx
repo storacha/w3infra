@@ -88,6 +88,7 @@ function createAuthorizeContext () {
     STRIPE_PRICING_TABLE_ID = '',
     STRIPE_PUBLISHABLE_KEY = '',
     UCAN_LOG_STREAM_NAME = '',
+    SST_STAGE = '',
     // set for testing
     DYNAMO_DB_ENDPOINT: dbEndpoint,
   } = process.env
@@ -111,7 +112,7 @@ function createAuthorizeContext () {
     store: {
       connection: {
         address: {
-          region: AWS_REGION
+          region: AWS_REGION,
         },
       },
       region: AWS_REGION,
@@ -129,7 +130,10 @@ function createAuthorizeContext () {
   return {
     // TODO: we should set URL from a different env var, doing this for now to avoid that refactor
     url: new URL(ACCESS_SERVICE_URL),
-    email: new Email({ token: POSTMARK_TOKEN }),
+    email: new Email({
+      token: POSTMARK_TOKEN,
+      environment: SST_STAGE === 'prod' ? undefined : SST_STAGE,
+    }),
     signer: getServiceSigner({ did: UPLOAD_API_DID, privateKey: PRIVATE_KEY }),
     delegationsStorage: createDelegationsTable(AWS_REGION, DELEGATION_TABLE_NAME, { bucket: delegationBucket, invocationBucket, workflowBucket }),
     revocationsStorage: createRevocationsTable(AWS_REGION, REVOCATION_TABLE_NAME),
@@ -159,7 +163,7 @@ export async function validateEmailPost (request) {
   if (authorizeResult.error) {
     console.error(authorizeResult.error)
     return toLambdaResponse(new HtmlResponse(
-      <ValidateEmailError msg={`Oops something went wrong: ${authorizeResult.error.message}`} />,
+      <ValidateEmailError msg={`Oops, something went wrong: ${authorizeResult.error.message}`} />,
       { status: 500 }
     ))
   }
