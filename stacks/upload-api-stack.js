@@ -39,119 +39,134 @@ export function UploadApiStack({ stack, app }) {
   const { blockAdvertPublisherQueue, blockIndexWriterQueue } = use(IndexerStack)
 
   // Setup API
-  const customDomain = getCustomDomain(stack.stage, process.env.HOSTED_ZONE)
+  const customDomainW3s = getCustomDomain(stack.stage, process.env.HOSTED_ZONE)
+  const customDomainStoracha = getCustomDomain(
+    stack.stage,
+    process.env.HOSTED_ZONE_STORACHA
+  )
   const pkg = getApiPackageJson()
   const git = getGitInfo()
   const ucanInvocationPostbasicAuth = new Config.Secret(stack, 'UCAN_INVOCATION_POST_BASIC_AUTH')
 
-  const api = new Api(stack, 'http-gateway', {
-    customDomain,
-    defaults: {
-      function: {
-        timeout: '60 seconds',
-        permissions: [
-          allocationTable,
-          storeTable,
-          uploadTable,
-          customerTable,
-          delegationTable,
-          revocationTable,
-          delegationBucket,
-          consumerTable,
-          subscriptionTable,
-          rateLimitTable,
-          adminMetricsTable,
-          spaceMetricsTable,
-          pieceTable,
-          spaceDiffTable,
-          spaceSnapshotTable,
-          carparkBucket,
-          invocationBucket,
-          taskBucket,
-          workflowBucket,
-          ucanStream,
-          pieceOfferQueue,
-          filecoinSubmitQueue,
-          blockAdvertPublisherQueue,
-          blockIndexWriterQueue,
-        ],
-        environment: {
-          DID: process.env.UPLOAD_API_DID ?? '',
-          AGGREGATOR_DID,
-          ALLOCATION_TABLE_NAME: allocationTable.tableName,
-          STORE_TABLE_NAME: storeTable.tableName,
-          STORE_BUCKET_NAME: carparkBucket.bucketName,
-          UPLOAD_TABLE_NAME: uploadTable.tableName,
-          CONSUMER_TABLE_NAME: consumerTable.tableName,
-          CUSTOMER_TABLE_NAME: customerTable.tableName,
-          SUBSCRIPTION_TABLE_NAME: subscriptionTable.tableName,
-          SPACE_METRICS_TABLE_NAME: spaceMetricsTable.tableName,
-          RATE_LIMIT_TABLE_NAME: rateLimitTable.tableName,
-          DELEGATION_TABLE_NAME: delegationTable.tableName,
-          REVOCATION_TABLE_NAME: revocationTable.tableName,
-          SPACE_DIFF_TABLE_NAME: spaceDiffTable.tableName,
-          SPACE_SNAPSHOT_TABLE_NAME: spaceSnapshotTable.tableName,
-          DELEGATION_BUCKET_NAME: delegationBucket.bucketName,
-          INVOCATION_BUCKET_NAME: invocationBucket.bucketName,
-          TASK_BUCKET_NAME: taskBucket.bucketName,
-          WORKFLOW_BUCKET_NAME: workflowBucket.bucketName,
-          UCAN_LOG_STREAM_NAME: ucanStream.streamName,
-          ADMIN_METRICS_TABLE_NAME: adminMetricsTable.tableName,
-          PIECE_TABLE_NAME: pieceTable.tableName,
-          PIECE_OFFER_QUEUE_URL: pieceOfferQueue.queueUrl,
-          FILECOIN_SUBMIT_QUEUE_URL: filecoinSubmitQueue.queueUrl,
-          BLOCK_ADVERT_PUBLISHER_QUEUE_URL: blockAdvertPublisherQueue.queueUrl,
-          BLOCK_INDEX_WRITER_QUEUE_URL: blockIndexWriterQueue.queueUrl,
-          NAME: pkg.name,
-          VERSION: pkg.version,
-          COMMIT: git.commmit,
-          STAGE: stack.stage,
-          ACCESS_SERVICE_URL: getServiceURL(stack, customDomain) ?? '',
-          UPLOAD_SERVICE_URL: getServiceURL(stack, customDomain) ?? '',
-          POSTMARK_TOKEN: process.env.POSTMARK_TOKEN ?? '',
-          PROVIDERS: process.env.PROVIDERS ?? '',
-          R2_ACCESS_KEY_ID: process.env.R2_ACCESS_KEY_ID ?? '',
-          R2_SECRET_ACCESS_KEY: process.env.R2_SECRET_ACCESS_KEY ?? '',
-          R2_REGION: process.env.R2_REGION ?? '',
-          R2_CARPARK_BUCKET_NAME: process.env.R2_CARPARK_BUCKET_NAME ?? '',
-          R2_DELEGATION_BUCKET_NAME: process.env.R2_DELEGATION_BUCKET_NAME ?? '',
-          R2_ENDPOINT: process.env.R2_ENDPOINT ?? '',
-          REQUIRE_PAYMENT_PLAN: process.env.REQUIRE_PAYMENT_PLAN ?? '',
-          UPLOAD_API_DID: process.env.UPLOAD_API_DID ?? '',
-          STRIPE_PRICING_TABLE_ID: process.env.STRIPE_PRICING_TABLE_ID ?? '',
-          STRIPE_PUBLISHABLE_KEY: process.env.STRIPE_PUBLISHABLE_KEY ?? '',
-          DEAL_TRACKER_DID: process.env.DEAL_TRACKER_DID ?? '',
-          DEAL_TRACKER_URL: process.env.DEAL_TRACKER_URL ?? '',
-          CONTENT_CLAIMS_DID,
-          CONTENT_CLAIMS_URL,
-          CONTENT_CLAIMS_PROOF
-        },
-        bind: [
-          privateKey,
-          ucanInvocationPostbasicAuth,
-          stripeSecretKey,
-          contentClaimsPrivateKey
-        ]
+  const [apiW3s, apiStoracha] = [
+    {
+      customDomain: customDomainW3s,
+      name: "http-gateway",
+    },
+    {
+      customDomain: customDomainStoracha,
+      name: "http-gateway-storacha",
+    },
+  ].map(({ customDomain, name }) => {
+    return new Api(stack, name, {
+      customDomain,
+      defaults: {
+        function: {
+          timeout: '60 seconds',
+          permissions: [
+            allocationTable,
+            storeTable,
+            uploadTable,
+            customerTable,
+            delegationTable,
+            revocationTable,
+            delegationBucket,
+            consumerTable,
+            subscriptionTable,
+            rateLimitTable,
+            adminMetricsTable,
+            spaceMetricsTable,
+            pieceTable,
+            spaceDiffTable,
+            spaceSnapshotTable,
+            carparkBucket,
+            invocationBucket,
+            taskBucket,
+            workflowBucket,
+            ucanStream,
+            pieceOfferQueue,
+            filecoinSubmitQueue,
+            blockAdvertPublisherQueue,
+            blockIndexWriterQueue,
+          ],
+          environment: {
+            DID: process.env.UPLOAD_API_DID ?? '',
+            AGGREGATOR_DID,
+            ALLOCATION_TABLE_NAME: allocationTable.tableName,
+            STORE_TABLE_NAME: storeTable.tableName,
+            STORE_BUCKET_NAME: carparkBucket.bucketName,
+            UPLOAD_TABLE_NAME: uploadTable.tableName,
+            CONSUMER_TABLE_NAME: consumerTable.tableName,
+            CUSTOMER_TABLE_NAME: customerTable.tableName,
+            SUBSCRIPTION_TABLE_NAME: subscriptionTable.tableName,
+            SPACE_METRICS_TABLE_NAME: spaceMetricsTable.tableName,
+            RATE_LIMIT_TABLE_NAME: rateLimitTable.tableName,
+            DELEGATION_TABLE_NAME: delegationTable.tableName,
+            REVOCATION_TABLE_NAME: revocationTable.tableName,
+            SPACE_DIFF_TABLE_NAME: spaceDiffTable.tableName,
+            SPACE_SNAPSHOT_TABLE_NAME: spaceSnapshotTable.tableName,
+            DELEGATION_BUCKET_NAME: delegationBucket.bucketName,
+            INVOCATION_BUCKET_NAME: invocationBucket.bucketName,
+            TASK_BUCKET_NAME: taskBucket.bucketName,
+            WORKFLOW_BUCKET_NAME: workflowBucket.bucketName,
+            UCAN_LOG_STREAM_NAME: ucanStream.streamName,
+            ADMIN_METRICS_TABLE_NAME: adminMetricsTable.tableName,
+            PIECE_TABLE_NAME: pieceTable.tableName,
+            PIECE_OFFER_QUEUE_URL: pieceOfferQueue.queueUrl,
+            FILECOIN_SUBMIT_QUEUE_URL: filecoinSubmitQueue.queueUrl,
+            BLOCK_ADVERT_PUBLISHER_QUEUE_URL: blockAdvertPublisherQueue.queueUrl,
+            BLOCK_INDEX_WRITER_QUEUE_URL: blockIndexWriterQueue.queueUrl,
+            NAME: pkg.name,
+            VERSION: pkg.version,
+            COMMIT: git.commmit,
+            STAGE: stack.stage,
+            ACCESS_SERVICE_URL: getServiceURL(stack, customDomain) ?? '',
+            UPLOAD_SERVICE_URL: getServiceURL(stack, customDomain) ?? '',
+            POSTMARK_TOKEN: process.env.POSTMARK_TOKEN ?? '',
+            PROVIDERS: process.env.PROVIDERS ?? '',
+            R2_ACCESS_KEY_ID: process.env.R2_ACCESS_KEY_ID ?? '',
+            R2_SECRET_ACCESS_KEY: process.env.R2_SECRET_ACCESS_KEY ?? '',
+            R2_REGION: process.env.R2_REGION ?? '',
+            R2_CARPARK_BUCKET_NAME: process.env.R2_CARPARK_BUCKET_NAME ?? '',
+            R2_DELEGATION_BUCKET_NAME: process.env.R2_DELEGATION_BUCKET_NAME ?? '',
+            R2_ENDPOINT: process.env.R2_ENDPOINT ?? '',
+            REQUIRE_PAYMENT_PLAN: process.env.REQUIRE_PAYMENT_PLAN ?? '',
+            UPLOAD_API_DID: process.env.UPLOAD_API_DID ?? '',
+            STRIPE_PRICING_TABLE_ID: process.env.STRIPE_PRICING_TABLE_ID ?? '',
+            STRIPE_PUBLISHABLE_KEY: process.env.STRIPE_PUBLISHABLE_KEY ?? '',
+            DEAL_TRACKER_DID: process.env.DEAL_TRACKER_DID ?? '',
+            DEAL_TRACKER_URL: process.env.DEAL_TRACKER_URL ?? '',
+            CONTENT_CLAIMS_DID,
+            CONTENT_CLAIMS_URL,
+            CONTENT_CLAIMS_PROOF
+          },
+          bind: [
+            privateKey,
+            ucanInvocationPostbasicAuth,
+            stripeSecretKey,
+            contentClaimsPrivateKey
+          ]
+        }
+      },
+      routes: {
+        'POST /':       'upload-api/functions/ucan-invocation-router.handler',
+        'POST /ucan':   'upload-api/functions/ucan.handler',
+        'POST /bridge': 'upload-api/functions/bridge.handler',
+        'GET /':        'upload-api/functions/get.home',
+        'GET /validate-email': 'upload-api/functions/validate-email.preValidateEmail',
+        'POST /validate-email': 'upload-api/functions/validate-email.validateEmail',
+        'GET /error':   'upload-api/functions/get.error',
+        'GET /version': 'upload-api/functions/get.version',
+        'GET /metrics': 'upload-api/functions/metrics.handler',
+        'GET /receipt/{taskCid}': 'upload-api/functions/receipt.handler',
+        'GET /storefront-cron': 'upload-api/functions/storefront-cron.handler',
+        // AWS API Gateway does not know trailing slash... and Grafana Agent puts trailing slash
+        'GET /metrics/{proxy+}': 'upload-api/functions/metrics.handler',
+      },
+      accessLog: {
+        format:'{"requestTime":"$context.requestTime","requestId":"$context.requestId","httpMethod":"$context.httpMethod","path":"$context.path","routeKey":"$context.routeKey","status":$context.status,"responseLatency":$context.responseLatency,"integrationRequestId":"$context.integration.requestId","integrationStatus":"$context.integration.status","integrationLatency":"$context.integration.latency","integrationServiceStatus":"$context.integration.integrationStatus","ip":"$context.identity.sourceIp","userAgent":"$context.identity.userAgent"}'
       }
-    },
-    routes: {
-      'POST /':       'upload-api/functions/ucan-invocation-router.handler',
-      'POST /ucan':   'upload-api/functions/ucan.handler',
-      'POST /bridge': 'upload-api/functions/bridge.handler',
-      'GET /':        'upload-api/functions/get.home',
-      'GET /validate-email': 'upload-api/functions/validate-email.preValidateEmail',
-      'POST /validate-email': 'upload-api/functions/validate-email.validateEmail',
-      'GET /error':   'upload-api/functions/get.error',
-      'GET /version': 'upload-api/functions/get.version',
-      'GET /metrics': 'upload-api/functions/metrics.handler',
-      'GET /receipt/{taskCid}': 'upload-api/functions/receipt.handler',
-      'GET /storefront-cron': 'upload-api/functions/storefront-cron.handler',
-      // AWS API Gateway does not know trailing slash... and Grafana Agent puts trailing slash
-      'GET /metrics/{proxy+}': 'upload-api/functions/metrics.handler',
-    },
-    accessLog: {
-      format:'{"requestTime":"$context.requestTime","requestId":"$context.requestId","httpMethod":"$context.httpMethod","path":"$context.path","routeKey":"$context.routeKey","status":$context.status,"responseLatency":$context.responseLatency,"integrationRequestId":"$context.integration.requestId","integrationStatus":"$context.integration.status","integrationLatency":"$context.integration.latency","integrationServiceStatus":"$context.integration.integrationStatus","ip":"$context.identity.sourceIp","userAgent":"$context.identity.userAgent"}'
-    }
+    })
   })
 
   // UCAN stream metrics for admin and space
@@ -219,7 +234,13 @@ export function UploadApiStack({ stack, app }) {
   })
 
   stack.addOutputs({
-    ApiEndpoint: api.url,
-    CustomDomain:  customDomain ? `https://${customDomain.domainName}` : 'Set HOSTED_ZONE in env to deploy to a custom domain'
+    ApiEndpoint: apiW3s.url,
+    CustomDomain: customDomainW3s
+      ? `https://${customDomainW3s.domainName}`
+      : 'Set HOSTED_ZONE in env to deploy to a custom domain',
+    ApiEndpointStoracha: apiStoracha.url,
+    CustomDomainStoracha: customDomainStoracha
+      ? `https://${customDomainStoracha.domainName}`
+      : 'Set HOSTED_ZONE_STORACHA in env to deploy to a custom domain for Storacha',
   })
 }
