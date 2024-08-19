@@ -21,7 +21,7 @@ import {
 /**
  * @param {import('sst/constructs').StackContext} properties
  */
-export function UcanFirehoseStack ({ stack, app }) {
+export function UcanFirehoseStack({ stack, app }) {
   // Setup app monitoring with Sentry
   setupSentry(app, stack)
 
@@ -34,10 +34,13 @@ export function UcanFirehoseStack ({ stack, app }) {
     cdk: {
       bucket: {
         ...getBucketConfig('stream-log-store', app.stage),
-        lifecycleRules: [{
-          enabled: true,
-          expiration: Duration.days(90)
-        }]
+        lifecycleRules: [
+          // disable this for now - maybe we do want lifecycle rules eventually but we DEFINITELY don't want to expire these logs!
+          // {
+          //   enabled: true,
+          //   expiration: Duration.days(90)
+          // }
+        ]
       }
     }
   })
@@ -304,7 +307,7 @@ export function UcanFirehoseStack ({ stack, app }) {
         columns: [
           { name: 'carcid', type: 'string' },
           // STRUCT here refers to the Apache Hive STRUCT datatype - see https://aws.amazon.com/blogs/big-data/create-tables-in-amazon-athena-from-nested-json-and-mappings-using-jsonserde/
-          { name: 'value', type: 'STRUCT<att:ARRAY<struct<can:STRING,with:STRING,nb:STRUCT<blob:STRUCT<size:BIGINT>>>>,iss:STRING,aud:STRING>' },
+          { name: 'value', type: 'STRUCT<att:ARRAY<struct<can:STRING,with:STRING,nb:STRUCT<blob:STRUCT<size:BIGINT,digest:STRING>>>>,iss:STRING,aud:STRING>' },
           { name: "out", type: "STRUCT<error:STRUCT<name:STRING>,ok:STRUCT<site:STRING>>" },
           { name: "ts", type: 'timestamp' }
         ],
