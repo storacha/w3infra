@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "test": "ava --node-arguments='--experimental-fetch' --verbose --timeout=60s --no-worker-threads --serial --fail-fast '**/*.test.js'",
-    "build:html": "esbuild ./html.jsx --bundle --loader:.svg=text --format=esm --outfile=./dist/html.js",
+    "build:html": "esbuild ./html-storacha/index.jsx ./html-w3s/index.jsx --bundle --loader:.svg=text --format=esm --outdir=./dist",
     "dev:html": "concurrently --names=Build,Server --prefix-colors=bgBlue.bold,bgMagenta.bold \"npm run build:html -- --watch\" \"nodemon --watch dist --watch test/helpers/validate-email-server.js test/helpers/validate-email-server.js\""
   },
   "dependencies": {

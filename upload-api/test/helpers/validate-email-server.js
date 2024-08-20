@@ -12,19 +12,23 @@ import http from 'node:http'
 import { render } from 'preact-render-to-string'
 import dotenv from 'dotenv'
 import { fileURLToPath } from 'node:url'
+
 // @ts-ignore exists only after your run `npm run build:html`
-import {
-  ValidateEmail,
-  PendingValidateEmail,
-  ValidateEmailError,
-  buildDocument,
-} from '../../dist/html.js'
+import * as htmlStoracha from '../../dist/html-storacha/index.js'
+// @ts-ignore exists only after your run `npm run build:html`
+import * as htmlW3s from '../../dist/html-w3s/index.js'
 
 dotenv.config({
   path: fileURLToPath(new URL('../../../.env.local', import.meta.url)),
 })
 
-const COMPONENTS = [ValidateEmail, PendingValidateEmail, ValidateEmailError]
+const HTMLS = { Storacha: htmlStoracha, 'web3.storage': htmlW3s }
+
+const COMPONENTS = /** @type { const } */ ([
+  'ValidateEmail',
+  'PendingValidateEmail',
+  'ValidateEmailError',
+])
 
 /**
  * Insert reload script into HTML
@@ -40,16 +44,23 @@ const insertReloadScript = (html) => {
 var app = express()
 app.set('port', process.env.PORT || 9000)
 
-const indexPage = `
+const indexPage = /* html */ `
   <!doctype html>
   <html>
     <body>
-      <h1>Components:</h1>
-      <ul>
-        ${COMPONENTS.map(
-          ({ name }) => `<li><a href="/${name}">${name}</a></li>`
-        ).join('')}
-      </ul>
+      ${Object.entries(HTMLS)
+        .map(
+          ([htmlName, _html]) => /* html */ `
+            <h1>${htmlName}:</h1>
+            <ul>
+              ${COMPONENTS.map(
+                (componentName) =>
+                  /* html */ `<li><a href="/${htmlName}/${componentName}">${componentName}</a></li>`
+              ).join('')}
+            </ul>
+          `
+        )
+        .join('')}
     </body>
   </html>
 `
@@ -65,10 +76,10 @@ app.get('/', function (req, res) {
 const randomString = (n) =>
   [...Array(n)].map(() => Math.random().toString(36)[2]).join('')
 
-COMPONENTS.forEach((Component) => {
-  app.get(`/${Component.name}`, function (req, res) {
-    const vnode = /** @type {any} */ (
-      Component({
+Object.entries(HTMLS).forEach(([htmlName, html]) => {
+  COMPONENTS.forEach((componentName) => {
+    app.get(`/${htmlName}/${componentName}`, function (req, res) {
+      const vnode = html[componentName]({
         ucan: randomString(1000),
         email: 'test@example.org',
         audience: `did:key:${randomString(400)}`,
@@ -76,15 +87,18 @@ COMPONENTS.forEach((Component) => {
         stripePublishableKey: process.env.STRIPE_PUBLISHABLE_KEY,
         msg: 'Missing delegation in the URL, or some such problem.',
         autoApprove: false,
+        qrcode: '<div>QR code goes here</div>',
       })
-    )
-    res.write(
-      buildDocument(render(vnode)).replace(
-        /<\/body>/,
-        '<script src="/reload/reload.js"></script></body>'
+      res.write(
+        html
+          .buildDocument(render(vnode))
+          .replace(
+            /<\/body>/,
+            '<script src="/reload/reload.js"></script></body>'
+          )
       )
-    )
-    res.end()
+      res.end()
+    })
   })
 })
 
