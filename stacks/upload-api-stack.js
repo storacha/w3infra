@@ -61,14 +61,16 @@ export function UploadApiStack({ stack, app }) {
 
   const [apiW3s, apiStoracha] = [
     {
-      customDomain: customDomainW3s,
       name: "http-gateway",
+      customDomain: customDomainW3s,
+      branding: 'web3.storage',
     },
     {
-      customDomain: customDomainStoracha,
       name: "http-gateway-storacha",
+      customDomain: customDomainStoracha,
+      branding: 'storacha',
     },
-  ].map(({ customDomain, name }) => {
+  ].map(({ customDomain, name, branding }) => {
     return new Api(stack, name, {
       customDomain,
       defaults: {
@@ -149,7 +151,8 @@ export function UploadApiStack({ stack, app }) {
             DEAL_TRACKER_URL: process.env.DEAL_TRACKER_URL ?? '',
             CONTENT_CLAIMS_DID,
             CONTENT_CLAIMS_URL,
-            CONTENT_CLAIMS_PROOF
+            CONTENT_CLAIMS_PROOF,
+            BRANDING: branding
           },
           bind: [
             privateKey,
