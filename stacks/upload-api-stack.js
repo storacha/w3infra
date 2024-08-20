@@ -20,6 +20,17 @@ import { getCustomDomain, getApiPackageJson, getGitInfo, setupSentry, getEnv, ge
  * @param {import('sst/constructs').StackContext} properties
  */
 export function UploadApiStack({ stack, app }) {
+  // For loading the Storacha logo
+  stack.setDefaultFunctionProps({
+    nodejs: {
+      esbuild: {
+        loader: {
+          '.svg': 'text',
+        }
+      }
+    }
+  });
+
   const {
     AGGREGATOR_DID,
     CONTENT_CLAIMS_DID,
