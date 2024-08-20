@@ -32,6 +32,7 @@ const COMPONENTS = /** @type { const } */ ([
 
 /**
  * Insert reload script into HTML
+ *
  * @param {string} html
  */
 const insertReloadScript = (html) => {
@@ -41,7 +42,7 @@ const insertReloadScript = (html) => {
   )
 }
 
-var app = express()
+const app = express()
 app.set('port', process.env.PORT || 9000)
 
 const indexPage = /* html */ `
@@ -71,6 +72,7 @@ app.get('/', function (req, res) {
 
 /**
  * Generate a random string
+ *
  * @param {number} n
  */
 const randomString = (n) =>
@@ -102,22 +104,18 @@ Object.entries(HTMLS).forEach(([htmlName, html]) => {
   })
 })
 
-var server = http.createServer(app)
+const server = http.createServer(app)
 
-reload(app)
-  .then(function (reloadReturned) {
-    // reloadReturned is documented in the returns API in the README
+try {
+  await reload(app)
 
-    // Reload started, start web server
-    server.listen(app.get('port'), function () {
-      console.log(
-        `Dev server listening at: http://localhost:${app.get('port')}/`
-      )
-    })
+  // Reload started, start web server
+  server.listen(app.get('port'), function () {
+    console.log(`Dev server listening at: http://localhost:${app.get('port')}/`)
   })
-  .catch(function (err) {
-    console.error(
-      'Reload could not start, could not start server/sample app',
-      err
-    )
-  })
+} catch (err) {
+  console.error(
+    'Reload could not start, could not start server/sample app',
+    err
+  )
+}
