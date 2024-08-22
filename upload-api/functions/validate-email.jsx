@@ -19,7 +19,7 @@ import { createRateLimitTable } from '../tables/rate-limit.js'
 import { createSpaceMetricsTable } from '../tables/space-metrics.js'
 import { createCustomerStore } from '@web3-storage/w3infra-billing/tables/customer'
 
-const html = process.env.BRANDING === 'web3.storage' ? htmlW3s : htmlStoracha
+const html = process.env.HOSTED_ZONE === 'up.web3.storage' ? htmlW3s : htmlStoracha
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,

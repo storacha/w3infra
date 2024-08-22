@@ -50,28 +50,17 @@ export function UploadApiStack({ stack, app }) {
   const { blockAdvertPublisherQueue, blockIndexWriterQueue } = use(IndexerStack)
 
   // Setup API
-  const customDomainW3s = getCustomDomain(stack.stage, process.env.HOSTED_ZONE)
-  const customDomainStoracha = getCustomDomain(
-    stack.stage,
-    process.env.HOSTED_ZONE_STORACHA
-  )
+  const customDomains = process.env.HOSTED_ZONES?.split(',').map(zone => getCustomDomain(stack.stage, zone))
   const pkg = getApiPackageJson()
   const git = getGitInfo()
   const ucanInvocationPostbasicAuth = new Config.Secret(stack, 'UCAN_INVOCATION_POST_BASIC_AUTH')
 
-  const [apiW3s, apiStoracha] = [
-    {
-      name: "http-gateway",
-      customDomain: customDomainW3s,
-      branding: 'web3.storage',
-    },
-    {
-      name: "http-gateway-storacha",
-      customDomain: customDomainStoracha,
-      branding: 'storacha',
-    },
-  ].map(({ customDomain, name, branding }) => {
-    return new Api(stack, name, {
+  const apis = (customDomains ?? [undefined]).map((customDomain) => {
+    const hostedZone = customDomain?.hostedZone
+    const apiId = [`http-gateway`, hostedZone?.replaceAll('.', '_')]
+      .filter(Boolean)
+      .join('-')
+    return new Api(stack, apiId, {
       customDomain,
       defaults: {
         function: {
@@ -152,7 +141,7 @@ export function UploadApiStack({ stack, app }) {
             CONTENT_CLAIMS_DID,
             CONTENT_CLAIMS_URL,
             CONTENT_CLAIMS_PROOF,
-            BRANDING: branding
+            HOSTED_ZONE: hostedZone ?? '',
           },
           bind: [
             privateKey,
@@ -180,7 +169,7 @@ export function UploadApiStack({ stack, app }) {
       accessLog: {
         format:'{"requestTime":"$context.requestTime","requestId":"$context.requestId","httpMethod":"$context.httpMethod","path":"$context.path","routeKey":"$context.routeKey","status":$context.status,"responseLatency":$context.responseLatency,"integrationRequestId":"$context.integration.requestId","integrationStatus":"$context.integration.status","integrationLatency":"$context.integration.latency","integrationServiceStatus":"$context.integration.integrationStatus","ip":"$context.identity.sourceIp","userAgent":"$context.identity.userAgent"}'
       }
-    })
+    });
   })
 
   // UCAN stream metrics for admin and space
@@ -248,13 +237,9 @@ export function UploadApiStack({ stack, app }) {
   })
 
   stack.addOutputs({
-    ApiEndpoint: apiW3s.url,
-    CustomDomain: customDomainW3s
-      ? `https://${customDomainW3s.domainName}`
-      : 'Set HOSTED_ZONE in env to deploy to a custom domain',
-    ApiEndpointStoracha: apiStoracha.url,
-    CustomDomainStoracha: customDomainStoracha
-      ? `https://${customDomainStoracha.domainName}`
-      : 'Set HOSTED_ZONE_STORACHA in env to deploy to a custom domain for Storacha',
+    ApiEndpoints: apis.map(api => api.url).join(','),
+    CustomDomains: customDomains
+      ? customDomains.map(customDomain => `https://${customDomain.domainName}`).join(',')
+      : 'Set HOSTED_ZONES in env to deploy to a custom domain',
   })
 }
