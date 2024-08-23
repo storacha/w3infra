@@ -140,7 +140,8 @@ export function BillingStack ({ stack, app }) {
       cdk: {
         eventSource: {
           batchSize: 1,
-          startingPosition: StartingPosition.LATEST
+          startingPosition: StartingPosition.LATEST,
+          retryAttempts: 10
         }
       },
       filters: [{ eventName: ['INSERT'] }],
