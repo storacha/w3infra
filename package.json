@@ -110,6 +110,15 @@
       "no-loop-func": "off",
       "no-warning-comments": "off",
       "jsdoc/check-indentation": "off",
+      "jsdoc/check-tag-names": [
+        "error",
+        {
+          "definedTags": [
+            "import",
+            "overload"
+          ]
+        }
+      ],
       "jsdoc/require-hyphen-before-param-description": "off",
       "react-hooks/rules-of-hooks": "off",
       "react/no-danger": "off"
