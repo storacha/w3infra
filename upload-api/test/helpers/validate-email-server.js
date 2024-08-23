@@ -13,10 +13,8 @@ import { render } from 'preact-render-to-string'
 import dotenv from 'dotenv'
 import { fileURLToPath } from 'node:url'
 
-// @ts-ignore exists only after your run `npm run build:html`
-import * as htmlStoracha from '../../dist/html-storacha/index.js'
-// @ts-ignore exists only after your run `npm run build:html`
-import * as htmlW3s from '../../dist/html-w3s/index.js'
+import * as htmlStoracha from '../../html-storacha/index.jsx'
+import * as htmlW3s from '../../html-w3s/index.jsx'
 
 dotenv.config({
   path: fileURLToPath(new URL('../../../.env.local', import.meta.url)),

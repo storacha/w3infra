@@ -4,8 +4,8 @@
   "type": "module",
   "scripts": {
     "test": "ava --node-arguments='--experimental-fetch' --verbose --timeout=60s --no-worker-threads --serial --fail-fast '**/*.test.js'",
-    "build:html": "esbuild ./html-storacha/index.jsx ./html-w3s/index.jsx --bundle --loader:.svg=text --format=esm --outdir=./dist",
-    "dev:html": "concurrently --names=Build,Server --prefix-colors=bgBlue.bold,bgMagenta.bold \"npm run build:html -- --watch\" \"nodemon --watch dist --watch test/helpers/validate-email-server.js test/helpers/validate-email-server.js\""
+    "build:html": "esbuild test/helpers/validate-email-server.js --bundle --platform=node --external:./../node_modules/* --loader:.svg=text --format=esm --outfile=./dist/validate-email-server.mjs",
+    "dev:html": "concurrently --names=Build,Server --prefix-colors=bgBlue.bold,bgMagenta.bold \"npm run build:html -- --watch\" \"nodemon --watch dist ./dist/validate-email-server.mjs\""
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.515.0",
