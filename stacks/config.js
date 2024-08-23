@@ -74,6 +74,12 @@ export function getBucketConfig(name, stage, version = 0){
  * Return the custom domain config for http api, or `undefined` if
  * {@link hostedZone} is not present.
  *
+ * @overload
+ * @param {string} stage
+ * @param {string | undefined} hostedZone
+ * @returns {ApiDomainProps | undefined}
+ */
+/**
  * @param {string} stage
  * @param {string | undefined} hostedZone
  * @returns {ApiDomainProps | undefined}
