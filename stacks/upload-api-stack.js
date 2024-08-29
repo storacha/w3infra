@@ -237,9 +237,9 @@ export function UploadApiStack({ stack, app }) {
   })
 
   stack.addOutputs({
-    ApiEndpoints: apis.map(api => api.url).join(','),
+    ApiEndpoints: JSON.stringify(apis.map(api => api.url)),
     CustomDomains: customDomains
-      ? customDomains.map(customDomain => `https://${customDomain.domainName}`).join(',')
+      ? JSON.stringify(customDomains.map(customDomain => `https://${customDomain.domainName}`))
       : 'Set HOSTED_ZONES in env to deploy to a custom domain',
   })
 }

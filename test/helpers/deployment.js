@@ -49,7 +49,7 @@ export const getApiEndpoint = () => {
 
   // Get Upload API endpoint
   const id = 'UploadApiStack'
-  return testEnv[`${getStackName()}-${id}`].ApiEndpoint
+  return JSON.parse(testEnv[`${getStackName()}-${id}`].ApiEndpoints)[0]
 }
 
 export const getRoundaboutEndpoint = () => {
@@ -71,21 +71,7 @@ export const getRoundaboutEndpoint = () => {
 }
 
 export const getReceiptsEndpoint = () => {
-  // CI/CD deployment
-  if (process.env.SEED_APP_NAME) {
-    const stage = getStage()
-    return `https://${stage}.up.web3.storage/receipt/`
-  }
-
-  const require = createRequire(import.meta.url)
-  const testEnv = require(path.join(
-    process.cwd(),
-    '.sst/outputs.json'
-  ))
-
-  // Get Upload API endpoint
-  const id = 'UploadApiStack'
-  return `${testEnv[`${getStackName()}-${id}`].ApiEndpoint}/receipt/`
+  return `${getApiEndpoint()}/receipt/`
 }
 
 export const getCarparkBucketInfo = () => {
