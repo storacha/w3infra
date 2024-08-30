@@ -1,10 +1,8 @@
 import { testFilecoin as test } from './helpers/context.js'
 import { fetch } from '@web-std/fetch'
 import pWaitFor from 'p-wait-for'
-import pRetry from 'p-retry'
 import * as CAR from '@ucanto/transport/car'
 import { Storefront } from '@web3-storage/filecoin-client'
-import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
 import * as Link from 'multiformats/link'
 import * as raw from 'multiformats/codecs/raw'
 import { base58btc } from 'multiformats/bases/base58'
@@ -24,7 +22,7 @@ import {
 import { createMailSlurpInbox, setupNewClient } from './helpers/up-client.js'
 import { getClientConfig } from './helpers/fil-client.js'
 import { randomFile } from './helpers/random.js'
-import { putTableItem, pollQueryTable } from './helpers/table.js'
+import { pollQueryTable } from './helpers/table.js'
 import { waitForStoreOperationOkResult } from './helpers/store.js'
 
 /**
@@ -147,6 +145,7 @@ test('w3filecoin integration flow', async t => {
     const workflowWithReceiptResponseAfterRedirect = await fetch(workflowLocation)
     // Get receipt from Message Archive
     const agentMessageBytes = new Uint8Array((await workflowWithReceiptResponseAfterRedirect.arrayBuffer()))
+    console.log(agentMessageBytes.length)
     const agentMessage = await CAR.request.decode({
       body: agentMessageBytes,
       headers: {},
@@ -175,7 +174,7 @@ test('w3filecoin integration flow', async t => {
         name: '',
       },
     })
-    const receiptStoreFilecoin = useReceiptStore(s3ClientFilecoin, 'invocation-store-staging-0', 'workflow-store-staging-0')
+    // const receiptStoreFilecoin = useReceiptStore(s3ClientFilecoin, 'invocation-store-staging-0', 'workflow-store-staging-0')
 
     // Await for `filecoin/submit` receipt
     console.log(`wait for filecoin/submit receipt ${filecoinSubmitReceiptCid.toString()} ...`)
@@ -189,62 +188,74 @@ test('w3filecoin integration flow', async t => {
     if (!pieceOfferReceiptCid) {
       throw new Error('filecoin/submit receipt has no effect for piece/offer')
     }
-    console.log(`wait for piece/offer receipt ${pieceOfferReceiptCid.toString()} ...`)
-    const receiptPieceOfferRes = await waitForStoreOperationOkResult(
-      () => receiptStoreFilecoin.get(pieceOfferReceiptCid),
-      (res) => Boolean(res.ok)
-    )
 
-    // Await for `piece/accept` receipt
-    const pieceAcceptReceiptCid = receiptPieceOfferRes.ok?.fx.join?.link()
-    if (!pieceAcceptReceiptCid) {
-      throw new Error('piece/offer receipt has no effect for piece/accept')
-    }
-    console.log(`wait for piece/accept receipt ${pieceAcceptReceiptCid.toString()} ...`)
-    const receiptPieceAcceptRes = await waitForStoreOperationOkResult(
-      () => receiptStoreFilecoin.get(pieceAcceptReceiptCid),
-      (res) => Boolean(res.ok)
-    )
 
-    // Await for `aggregate/offer` receipt
-    const aggregateOfferReceiptCid = receiptPieceAcceptRes.ok?.fx.join?.link()
-    if (!aggregateOfferReceiptCid) {
-      throw new Error('piece/accept receipt has no effect for aggregate/offer')
-    }
-    console.log(`wait for aggregate/offer receipt ${aggregateOfferReceiptCid.toString()} ...`)
-    const receiptAggregateOfferRes = await waitForStoreOperationOkResult(
-      () => receiptStoreFilecoin.get(aggregateOfferReceiptCid),
-      (res) => Boolean(res.ok)
-    )
+    // TODO: This code is disabled as it tests running, real, shared infrastructure
+    // that is maintained outside of this repo, and could fail for reasons unrelated
+    // to what's happening in this repo
+    // To the extent we want a kitchen-sink test, it should happen with
+    // infra deployed specifically for the test, with predictable performance
+    // Alternatively, if we're simply testing interactions with expected behavior
+    // for w3-filecoininfra, we should use a mocked version of the service with
+    // predictable responses. 
+    // This rest of this test is disabled until one of these solutions is put
+    // in place
 
-    // @ts-ignore no type for aggregate
-    const aggregate = receiptAggregateOfferRes.ok?.out.ok?.aggregate
+    // console.log(`wait for piece/offer receipt ${pieceOfferReceiptCid.toString()} ...`)
+    // await waitForStoreOperationOkResult(
+    //   () => receiptStoreFilecoin.get(pieceOfferReceiptCid),
+    //   (res) => Boolean(res.ok)
+    // )
+    // // Await for `piece/accept` receipt
+    // const pieceAcceptReceiptCid = receiptPieceOfferRes.ok?.fx.join?.link()
+    // if (!pieceAcceptReceiptCid) {
+    //   throw new Error('piece/offer receipt has no effect for piece/accept')
+    // }
+    // console.log(`wait for piece/accept receipt ${pieceAcceptReceiptCid.toString()} ...`)
+    // const receiptPieceAcceptRes = await waitForStoreOperationOkResult(
+    //   () => receiptStoreFilecoin.get(pieceAcceptReceiptCid),
+    //   (res) => Boolean(res.ok)
+    // )
 
-    // Put FAKE value in table to issue final receipt via cron?
-    const dealId = 1111
-    console.log(`put deal on deal tracker for aggregate ${aggregate}`)
-    await putDealToDealTracker(aggregate.toString(), dealId)
+    // // Await for `aggregate/offer` receipt
+    // const aggregateOfferReceiptCid = receiptPieceAcceptRes.ok?.fx.join?.link()
+    // if (!aggregateOfferReceiptCid) {
+    //   throw new Error('piece/accept receipt has no effect for aggregate/offer')
+    // }
+    // console.log(`wait for aggregate/offer receipt ${aggregateOfferReceiptCid.toString()} ...`)
+    // const receiptAggregateOfferRes = await waitForStoreOperationOkResult(
+    //   () => receiptStoreFilecoin.get(aggregateOfferReceiptCid),
+    //   (res) => Boolean(res.ok)
+    // )
 
-    // Await for `aggregate/accept` receipt
-    const aggregateAcceptReceiptCid = receiptAggregateOfferRes.ok?.fx.join?.link()
-    if (!aggregateAcceptReceiptCid) {
-      throw new Error('aggregate/offer receipt has no effect for aggregate/accept')
-    }
-    console.log(`wait for aggregate/accept receipt ${aggregateAcceptReceiptCid.toString()} ...`)
-    await waitForStoreOperationOkResult(
-      async () => {
-        // Trigger cron to update and issue receipts based on deals
-        await pRetry(async () => {
-          const url = 'https://staging.dealer.web3.storage/cron'
-          const res = await fetch(url)
-          if (!res.ok) throw new Error(`failed request to ${url}: ${res.status}`)
-        }, { onFailedAttempt: console.warn })
+    // // @ts-ignore no type for aggregate
+    // const aggregate = receiptAggregateOfferRes.ok?.out.ok?.aggregate
 
-        return receiptStoreFilecoin.get(aggregateAcceptReceiptCid)
-        // return agentStoreFilecoin.receipts.get(aggregateAcceptReceiptCid)
-      },
-      (res) => Boolean(res.ok)
-    )
+    // // Put FAKE value in table to issue final receipt via cron?
+    // const dealId = 1111
+    // console.log(`put deal on deal tracker for aggregate ${aggregate}`)
+    // await putDealToDealTracker(aggregate.toString(), dealId)
+
+    // // Await for `aggregate/accept` receipt
+    // const aggregateAcceptReceiptCid = receiptAggregateOfferRes.ok?.fx.join?.link()
+    // if (!aggregateAcceptReceiptCid) {
+    //   throw new Error('aggregate/offer receipt has no effect for aggregate/accept')
+    // }
+    // console.log(`wait for aggregate/accept receipt ${aggregateAcceptReceiptCid.toString()} ...`)
+    // await waitForStoreOperationOkResult(
+    //   async () => {
+    //     // Trigger cron to update and issue receipts based on deals
+    //     await pRetry(async () => {
+    //       const url = 'https://staging.dealer.web3.storage/cron'
+    //       const res = await fetch(url)
+    //       if (!res.ok) throw new Error(`failed request to ${url}: ${res.status}`)
+    //     }, { onFailedAttempt: console.warn })
+
+    //     return receiptStoreFilecoin.get(aggregateAcceptReceiptCid)
+    //     // return agentStoreFilecoin.receipts.get(aggregateAcceptReceiptCid)
+    //   },
+    //   (res) => Boolean(res.ok)
+    // )
   }))
 })
 
@@ -270,25 +281,25 @@ async function getPiecesByContent (t, content) {
   return item
 }
 
-/**
- * @param {string} piece 
- * @param {number} dealId 
- */
-async function putDealToDealTracker (piece, dealId) {
-  const region = 'us-east-2'
-  const endpoint = `https://dynamodb.${region}.amazonaws.com`
-  const tableName = 'staging-w3filecoin-deal-tracker-deal-store-v1'
-  const client = new DynamoDBClient({
-    region,
-    endpoint
-  })
-  const record = {
-    piece,
-    provider: 'f0001',
-    dealId,
-    expirationEpoch: Date.now() + 10e9,
-    insertedAt: (new Date()).toISOString(),
-    source: 'testing'
-  }
-  await putTableItem(client, tableName, record)
-}
+// /**
+//  * @param {string} piece 
+//  * @param {number} dealId 
+//  */
+// async function putDealToDealTracker (piece, dealId) {
+//   const region = 'us-east-2'
+//   const endpoint = `https://dynamodb.${region}.amazonaws.com`
+//   const tableName = 'staging-w3filecoin-deal-tracker-deal-store-v1'
+//   const client = new DynamoDBClient({
+//     region,
+//     endpoint
+//   })
+//   const record = {
+//     piece,
+//     provider: 'f0001',
+//     dealId,
+//     expirationEpoch: Date.now() + 10e9,
+//     insertedAt: (new Date()).toISOString(),
+//     source: 'testing'
+//   }
+//   await putTableItem(client, tableName, record)
+// }
