@@ -28,6 +28,7 @@ export async function redirectGet(request) {
     return { statusCode: 400, body: err.message }
   }
 
+  console.log("cid", cid)
   const locateContent = contentLocationResolver({ 
     bucket: getEnv().BUCKET_NAME,
     s3Client: getBucketClient(),
