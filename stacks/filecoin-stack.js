@@ -31,7 +31,7 @@ export function FilecoinStack({ stack, app }) {
     STOREFRONT_PROOF,
     START_FILECOIN_METRICS_EPOCH_MS
   } = getEnv()
-  const storefrontCustomDomain = getCustomDomain(stack.stage, process.env.HOSTED_ZONE)
+  const storefrontCustomDomain = getCustomDomain(stack.stage, process.env.HOSTED_ZONES?.split(",")[0])
 
   // Setup app monitoring with Sentry
   setupSentry(app, stack)

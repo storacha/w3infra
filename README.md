@@ -112,9 +112,9 @@ Please notice that appropriate environment variables must be set for the develop
 
 Ensure the following variables are set in the env when deploying
 
-#### `HOSTED_ZONE`
+#### `HOSTED_ZONES`
 
-The root domain to deploy the w3up API to. e.g `up.web3.storage`. The value should match a hosted zone configured in route53 that your aws account has access to.
+The root domain(s) to deploy the w3up API to. e.g `up.web3.storage`. The value should match a hosted zone configured in route53 that your aws account has access to. Multiple zones can be specified, in which case they are seperated by a comma, and this will cause deployment to each specified zone.
 
 #### `ROUNDABOUT_HOSTED_ZONE`
 
