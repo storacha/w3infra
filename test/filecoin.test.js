@@ -8,7 +8,6 @@ import * as raw from 'multiformats/codecs/raw'
 import { base58btc } from 'multiformats/bases/base58'
 
 import * as AgentStore from '../upload-api/stores/agent.js'
-import { useReceiptStore } from '../filecoin/store/receipt.js'
 
 import {
   getApiEndpoint,
@@ -40,7 +39,7 @@ test.before(t => {
 test('w3filecoin integration flow', async t => {
   const stage = getStage()
   const s3Client = getAwsBucketClient()
-  const s3ClientFilecoin = getAwsBucketClient('us-east-2')
+  // const s3ClientFilecoin = getAwsBucketClient('us-east-2')
   const inbox = await createMailSlurpInbox()
   const endpoint = t.context.apiEndpoint
 
