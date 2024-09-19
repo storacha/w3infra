@@ -55,9 +55,9 @@ export function UploadApiStack({ stack, app }) {
   const git = getGitInfo()
   const ucanInvocationPostbasicAuth = new Config.Secret(stack, 'UCAN_INVOCATION_POST_BASIC_AUTH')
 
-  const apis = (customDomains ?? [undefined]).map((customDomain) => {
+  const apis = (customDomains ?? [undefined]).map((customDomain, idx) => {
     const hostedZone = customDomain?.hostedZone
-    const apiId = [`http-gateway`, hostedZone?.replaceAll('.', '_')]
+    const apiId = [`http-gateway`, idx > 0 ? hostedZone?.replaceAll('.', '_') : '']
       .filter(Boolean)
       .join('-')
     return new Api(stack, apiId, {
