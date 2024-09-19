@@ -34,10 +34,13 @@ export function UcanFirehoseStack ({ stack, app }) {
     cdk: {
       bucket: {
         ...getBucketConfig('stream-log-store', app.stage),
-        lifecycleRules: [{
-          enabled: true,
-          expiration: Duration.days(90)
-        }]
+        lifecycleRules: [
+          // disable this for now - maybe we do want lifecycle rules eventually but we DEFINITELY don't want to expire these logs!
+          // {
+          //   enabled: true,
+          //   expiration: Duration.days(90)
+          // }
+        ]
       }
     }
   })
