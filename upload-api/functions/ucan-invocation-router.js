@@ -130,6 +130,7 @@ export async function ucanInvocationRouter(request) {
     carparkBucketSecretAccessKey,
     blockAdvertisementPublisherQueueConfig,
     blockIndexWriterQueueConfig,
+    sstStage
   } = getLambdaEnv()
 
   if (request.body === undefined) {
@@ -265,7 +266,7 @@ export async function ucanInvocationRouter(request) {
     signer: serviceSigner,
     // TODO: we should set URL from a different env var, doing this for now to avoid that refactor - tracking in https://github.com/web3-storage/w3infra/issues/209
     url: new URL(accessServiceURL),
-    email: new Email({ token: postmarkToken }),
+    email: new Email({ token: postmarkToken, environment: sstStage === 'prod' ? undefined : sstStage, }),
     agentStore,
     provisionsStorage,
     subscriptionsStorage,
@@ -375,6 +376,7 @@ function getLambdaEnv () {
       url: new URL(mustGetEnv('BLOCK_INDEX_WRITER_QUEUE_URL')),
       region: AWS_REGION
     },
+    sstStage: mustGetEnv('SST_STAGE'),
     // set for testing
     dbEndpoint: process.env.DYNAMO_DB_ENDPOINT,
   }

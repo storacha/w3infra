@@ -1,8 +1,5 @@
-/* eslint-disable jsdoc/check-tag-names */
-/** @jsx preact.h */
-/** @jsxFrag preact.Fragment */
+// @jsxImportSource preact
 import { render } from 'preact-render-to-string'
-import * as preact from 'preact'
 import { Response } from '@web-std/fetch'
 
 /**

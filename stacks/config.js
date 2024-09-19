@@ -1,3 +1,4 @@
+/** @import { ApiDomainProps, App, Stack } from 'sst/constructs' */
 import { Duration, RemovalPolicy } from 'aws-cdk-lib'
 import { createRequire } from 'module'
 import { StartingPosition } from 'aws-cdk-lib/aws-lambda'
@@ -55,10 +56,33 @@ export function getBucketConfig(name, stage, version = 0){
 
 /**
  * Return the custom domain config for http api
- * 
+ *
+ * @overload
+ * @param {string} stage
+ * @param {string} hostedZone
+ * @returns {ApiDomainProps}
+ */
+/**
+ * Return `undefined`, because {@link hostedZone} is not present.
+ *
+ * @overload
+ * @param {string} stage
+ * @param {undefined} hostedZone
+ * @returns {undefined}
+ */
+/**
+ * Return the custom domain config for http api, or `undefined` if
+ * {@link hostedZone} is not present.
+ *
+ * @overload
  * @param {string} stage
  * @param {string | undefined} hostedZone
- * @returns {{domainName: string, hostedZone: string} | undefined}
+ * @returns {ApiDomainProps | undefined}
+ */
+/**
+ * @param {string} stage
+ * @param {string | undefined} hostedZone
+ * @returns {ApiDomainProps | undefined}
  */
 export function getCustomDomain (stage, hostedZone) {
   // return no custom domain config if hostedZone not set
@@ -74,7 +98,7 @@ export function getCustomDomain (stage, hostedZone) {
 
 
 /**
- * @param {import('sst/constructs').Stack} stack
+ * @param {Stack} stack
  */
 export function getEventSourceConfig (stack) {
   if (stack.stage !== 'prod') {
@@ -103,7 +127,7 @@ export function getEventSourceConfig (stack) {
 }
 
 /**
- * @param {import('sst/constructs').Stack} stack
+ * @param {Stack} stack
  */
 export function getKinesisStreamConfig (stack) {
   if (stack.stage !== 'prod' && stack.stage !== 'staging') {
@@ -133,8 +157,8 @@ export function getGitInfo () {
 }
 
 /**
- * @param {import('sst/constructs').App} app
- * @param {import('sst/constructs').Stack} stack
+ * @param {App} app
+ * @param {Stack} stack
  */
 export function setupSentry (app, stack) {
   // Skip when locally
@@ -150,8 +174,8 @@ export function setupSentry (app, stack) {
 }
 
 /**
- * @param {import('sst/constructs').Stack} stack
- * @param  {{domainName: string, hostedZone: string} | undefined} customDomain
+ * @param {Stack} stack
+ * @param  {ApiDomainProps | undefined} customDomain
  */
 export function getServiceURL (stack, customDomain) {
   // in production we use the top level subdomain
