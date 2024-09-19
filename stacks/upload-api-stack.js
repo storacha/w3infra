@@ -57,6 +57,7 @@ export function UploadApiStack({ stack, app }) {
 
   const apis = (customDomains ?? [undefined]).map((customDomain, idx) => {
     const hostedZone = customDomain?.hostedZone
+    // the first customDomain will be web3.storage, and we don't want the apiId for that domain to have a second part, see PR of this change for context
     const apiId = [`http-gateway`, idx > 0 ? hostedZone?.replaceAll('.', '_') : '']
       .filter(Boolean)
       .join('-')
