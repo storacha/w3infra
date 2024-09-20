@@ -36,6 +36,7 @@ export function buildDocument(body) {
     }
 
     body {
+      color: black;
       background-color: var(--hot-red-light);
       font-family: 'Epilogue', sans-serif;
       max-width: 70rem;
