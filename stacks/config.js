@@ -178,16 +178,7 @@ export function setupSentry (app, stack) {
  * @param  {ApiDomainProps | undefined} customDomain
  */
 export function getServiceURL (stack, customDomain) {
-  // in production we use the top level subdomain
-  if (stack.stage === 'prod') {
-    return 'https://up.web3.storage'
-  // Derive from custom domain if there is one, which is used in staging, PR envs and dev envs
-  } else if (customDomain) {
-    return `https://${customDomain.domainName}`
-  // everywhere else we use something more estoteric - usually an AWS Lambda URL
-  } else {
-    return process.env.ACCESS_SERVICE_URL
-  }
+  return customDomain ? `https://${customDomain.domainName}` : process.env.ACCESS_SERVICE_URL
 }
 
 /**
