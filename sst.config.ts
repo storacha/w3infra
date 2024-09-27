@@ -13,6 +13,7 @@ import { ReplicatorStack } from './stacks/replicator-stack.js'
 import { UcanFirehoseStack } from './stacks/firehose-stack.js'
 import { IndexerStack } from './stacks/indexer-stack.js'
 import { RoundaboutStack } from './stacks/roundabout-stack.js'
+import { PSAStack } from './stacks/psa-stack.js'
 import { isPrBuild } from './stacks/config.js'
 
 export default {
@@ -42,6 +43,7 @@ export default {
         : 'disabled'
     })
 
+    app.stack(PSAStack)
     app.stack(BusStack)
     app.stack(UploadDbStack)
     app.stack(RoundaboutStack)

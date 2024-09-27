@@ -129,6 +129,7 @@
     "carpark",
     "filecoin",
     "indexer",
+    "psa",
     "replicator",
     "roundabout",
     "tools",

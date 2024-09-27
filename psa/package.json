@@ -1,0 +1,14 @@
+{
+  "name": "@web3-storage/w3infra-psa",
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "test": "echo 'TODO'"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.658.1",
+    "@aws-sdk/s3-request-presigner": "^3.658.1",
+    "multiformats": "^13.3.0",
+    "sst": "^2.43.7"
+  }
+}
