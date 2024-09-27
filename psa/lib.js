@@ -8,7 +8,7 @@ import { sha256 } from 'multiformats/hashes/sha2'
 /**
  * @typedef {import('multiformats').UnknownLink} UnknownLink
  * @typedef {{ name: string, region: string, toKey: (root: UnknownLink) => string }} Bucket
- * @typedef {{ name: string, region: string, key: string, size: number }} Location
+ * @typedef {{ bucket: Bucket, key: string, size: number }} Location
  */
 
 /**
@@ -28,7 +28,7 @@ export const locateCAR = async (buckets, root) => {
       const res = await client.send(cmd)
       const size = res.ContentLength
       if (size == null) throw new Error(`missing ContentLength: ${root}`)
-      return { name: bucket.name, region: bucket.region, key, size }
+      return { bucket, key, size }
     } catch (err) {
       if (err?.$metadata.httpStatusCode !== 404) {
         throw err
@@ -46,13 +46,13 @@ export const locateCAR = async (buckets, root) => {
  * @throws {NotFound}
  */
 export const getHash = async (buckets, root) => {
-  const bucket = await locateCAR(buckets, root)
-  if (!bucket) {
+  const location = await locateCAR(buckets, root)
+  if (!location) {
     throw new NotFound(`Not found: ${root}`)
   }
 
   const s3 = new S3Client({ region })
-  const cmd = new GetObjectCommand({ Bucket: bucket.name, Key: bucket.key })
+  const cmd = new GetObjectCommand({ Bucket: location.bucket.name, Key: location.key })
 
   const res = await s3.send(cmd)
   if (!res.Body) {
@@ -64,7 +64,7 @@ export const getHash = async (buckets, root) => {
     .pipeTo(new WritableStream({ write: chunk => { hash.update(chunk) } }))
 
   const digest = Digest.create(sha256.code, hash.digest())
-  return Link.create(CAR_CODEC, digest)
+  return { link: Link.create(CAR_CODEC, digest), size: location.size }
 }
 
 export const DownloadURLExpiration = 1000 * 60 * 60 * 24 // 1 day in seconds
@@ -78,13 +78,13 @@ export const DownloadURLExpiration = 1000 * 60 * 60 * 24 // 1 day in seconds
  * @throws {NotFound}
  */
 export const getDownloadURL = async (buckets, root) => {
-  const bucket = await locateCAR(buckets, root)
-  if (!bucket) {
+  const location = await locateCAR(buckets, root)
+  if (!location) {
     throw new NotFound(`Not found: ${root}`)
   }
 
-  const s3 = new S3Client({ region: bucket.region })
-  const cmd = new GetObjectCommand({ Bucket: bucket.name, Key: bucket.key })
+  const s3 = new S3Client({ region: location.bucket.region })
+  const cmd = new GetObjectCommand({ Bucket: location.bucket.name, Key: location.key })
   const url = await getSignedUrl(s3, cmd, { expiresIn: DownloadURLExpiration })
   return new URL(url)
 }

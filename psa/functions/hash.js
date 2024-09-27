@@ -15,8 +15,8 @@ export const handler = ApiHandler(async event => {
   }
 
   try {
-    const shard = await getHash(Config.buckets, root)
-    return okResponse({ root, shard })
+    const { link, size } = await getHash(Config.buckets, root)
+    return okResponse({ root, link, size })
   } catch (err) {
     return errorResponse(err.message, err instanceof NotFound ? 404 : 500)
   }
