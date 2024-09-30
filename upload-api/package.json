@@ -54,7 +54,7 @@
     "esbuild": "^0.23.1",
     "express": "^4.19.2",
     "nodemon": "^3.1.4",
-    "reload": "^3.2.2",
+    "reload": "^3.3.0",
     "testcontainers": "^10.7.1"
   },
   "ava": {

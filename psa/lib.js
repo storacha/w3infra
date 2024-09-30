@@ -1,11 +1,12 @@
 import crypto from 'node:crypto'
-import { HeadObjectCommand, GetObjectCommand, ListObjectsV2Command, S3Client } from '@aws-sdk/client-s3'
+import { HeadObjectCommand, GetObjectCommand, ListObjectsV2Command } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import * as Link from 'multiformats/link'
 import * as Digest from 'multiformats/hashes/digest'
 import { sha256 } from 'multiformats/hashes/sha2'
 
 /**
+ * @typedef {import('@aws-sdk/client-s3').S3Client} S3Client
  * @typedef {import('multiformats').UnknownLink} UnknownLink
  * @typedef {{ locator: Locator, hasher: Hasher }} Bucket
  * @typedef {{ root: UnknownLink, client: S3Client, bucket: string, key: string, size: number }} Location
@@ -129,6 +130,7 @@ class DudeWhereLocator {
 
 /**
  * A hasher that reads data from a location and hashes it.
+ *
  * @returns {Hasher}
  */
 export const createObjectHasher = () => new ObjectHasher()
@@ -155,6 +157,7 @@ class ObjectHasher {
 
 /**
  * A hasher that extracts the CAR hash from the key.
+ *
  * @returns {Hasher}
  */
 export const createHashEncodedInKeyHasher = () => new HashEncodedInKeyHasher()
@@ -179,7 +182,7 @@ export const DownloadURLExpiration = 1000 * 60 * 60 * 24 // 1 day in seconds
 /**
  * Get a signed download URL for the CAR file stored in one of the passed
  * buckets that contains the complete DAG for the given root CID.
- * 
+ *
  * @param {Bucket[]} buckets
  * @param {UnknownLink} root
  * @throws {NotFound}

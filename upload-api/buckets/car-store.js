@@ -8,7 +8,7 @@ import { getS3Client } from '../../lib/aws/s3.js'
  *
  * @param {string} region
  * @param {string} bucketName
- * @param {import('@aws-sdk/client-s3').ServiceInputTypes} [options]
+ * @param {Partial<import('../../lib/aws/s3.js').Address>} [options]
  */
 export function createCarStore(region, bucketName, options) {
   const s3 = getS3Client({

@@ -8,7 +8,7 @@ import anyTest from 'ava'
  *
  * @typedef {object} S3Context
  * @property {import('@aws-sdk/client-s3').S3Client} s3Client
- * @property {import('@aws-sdk/client-s3').ServiceInputTypes} s3Opts
+ * @property {import('../../../lib/aws/s3.js').Address} s3Opts
  *
  * @typedef {object} DynamoContext
  * @property {string} dbEndpoint

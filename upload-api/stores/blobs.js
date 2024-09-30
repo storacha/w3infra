@@ -35,7 +35,7 @@ const contentKey = (digest) => {
  *
  * @param {string} region
  * @param {string} bucketName
- * @param {import('@aws-sdk/client-s3').ServiceInputTypes} [options]
+ * @param {Partial<import('../../lib/aws/s3.js').Address>} [options]
  */
 export function createBlobsStorage(region, bucketName, options) {
   const s3 = getS3Client({

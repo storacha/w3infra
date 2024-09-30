@@ -1,9 +1,14 @@
-/** @import { ApiDomainProps, App, Stack } from 'sst/constructs' */
 import { Duration, RemovalPolicy } from 'aws-cdk-lib'
 import { createRequire } from 'module'
 import { StartingPosition } from 'aws-cdk-lib/aws-lambda'
 import git from 'git-rev-sync'
 import { mustGetEnv } from '../lib/env.js'
+
+/**
+ * @typedef {import('sst/constructs').ApiDomainProps} ApiDomainProps
+ * @typedef {import('sst/constructs').App} App
+ * @typedef {import('sst/constructs').Stack} Stack
+ */
 
 /**
  * Get nicer bucket names
