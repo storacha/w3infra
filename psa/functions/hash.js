@@ -9,15 +9,15 @@ export const handler = ApiHandler(async event => {
 
   let root
   try {
-    root = Link.parse(searchParams.get('root'))
-  } catch (err) {
+    root = Link.parse(searchParams.get('root') ?? '')
+  } catch {
     return errorResponse('Invalid "root" search parameter', 400)
   }
 
   try {
     const { link, size } = await getHash(Config.buckets, root)
     return okResponse({ root, link, size })
-  } catch (err) {
+  } catch (/** @type {any} */ err) {
     return errorResponse(err.message, err instanceof NotFound ? 404 : 500)
   }
 })
