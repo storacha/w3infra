@@ -9,10 +9,7 @@ export const buckets = [
     locator: createObjectLocator(
       new S3Client({ region: mustGetEnv('S3_DOTSTORAGE_0_BUCKET_REGION') }),
       mustGetEnv('S3_DOTSTORAGE_0_BUCKET_NAME'),
-      root => {
-        const s = root.toV1().toString(base32)
-        return `complete/${s}/${s}.car`
-      } 
+      root => `complete/${root.toV1().toString(base32)}.car`
     ),
     hasher: createObjectHasher()
   },
@@ -20,10 +17,7 @@ export const buckets = [
     locator: createObjectLocator(
       new S3Client({ region: mustGetEnv('S3_DOTSTORAGE_1_BUCKET_REGION') }),
       mustGetEnv('S3_DOTSTORAGE_1_BUCKET_NAME'),
-      root => {
-        const s = root.toV1().toString(base32)
-        return `complete/${s}/${s}.car`
-      } 
+      root => `complete/${root.toV1().toString(base32)}.car`
     ),
     hasher: createObjectHasher()
   },
