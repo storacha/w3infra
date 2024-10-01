@@ -181,7 +181,7 @@ class HashEncodedInKeyHasher {
   }
 }
 
-export const DownloadURLExpiration = 1000 * 60 * 60 * 24 // 1 day in seconds
+export const DownloadURLExpiration = 60 * 60 * 24 // 1 day in seconds
 
 /**
  * Get a signed download URL for the CAR file stored in one of the passed
