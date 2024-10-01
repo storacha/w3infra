@@ -6,6 +6,21 @@ import { mustGetEnv } from '../lib/env.js'
 /** @type {import('./lib.js').Bucket[]} */
 export const buckets = [
   {
+    locator: createDudeWhereLocator(
+      new S3Client({
+        endpoint: mustGetEnv('R2_ENDPOINT'),
+        credentials: {
+          accessKeyId: mustGetEnv('R2_ACCESS_KEY_ID'),
+          secretAccessKey: mustGetEnv('R2_SECRET_ACCESS_KEY'),
+        },
+        region: mustGetEnv('R2_REGION')
+      }),
+      mustGetEnv('R2_DUDEWHERE_BUCKET_NAME'),
+      mustGetEnv('R2_CARPARK_BUCKET_NAME')
+    ),
+    hasher: createHashEncodedInKeyHasher()
+  },
+  {
     locator: createObjectLocator(
       new S3Client({ region: mustGetEnv('S3_DOTSTORAGE_0_BUCKET_REGION') }),
       mustGetEnv('S3_DOTSTORAGE_0_BUCKET_NAME'),
@@ -28,20 +43,5 @@ export const buckets = [
       r => `pickup/${r}/${r}.root.car`
     ),
     hasher: createObjectHasher()
-  },
-  {
-    locator: createDudeWhereLocator(
-      new S3Client({
-        endpoint: mustGetEnv('R2_ENDPOINT'),
-        credentials: {
-          accessKeyId: mustGetEnv('R2_ACCESS_KEY_ID'),
-          secretAccessKey: mustGetEnv('R2_SECRET_ACCESS_KEY'),
-        },
-        region: mustGetEnv('R2_REGION')
-      }),
-      mustGetEnv('R2_DUDEWHERE_BUCKET_NAME'),
-      mustGetEnv('R2_CARPARK_BUCKET_NAME')
-    ),
-    hasher: createHashEncodedInKeyHasher()
   }
 ]
