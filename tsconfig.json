@@ -45,7 +45,8 @@
     "ucan-invocation",
     "filecoin",
     "tools",
-    "lib"
+    "lib",
+    "psa"
   ],
   "exclude": ["billing/coverage", "upload-api/dist"]
 }
