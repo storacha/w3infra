@@ -4,7 +4,6 @@
  */
 import { Function } from 'sst/constructs'
 import { Bucket } from 'aws-cdk-lib/aws-s3'
-import { getBucketName } from './config.js'
 
 /** @param {import('sst/constructs').StackContext} context */
 export function PSAStack ({ stack }) {
