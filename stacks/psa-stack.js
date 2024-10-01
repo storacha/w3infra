@@ -3,6 +3,8 @@
  * to CAR files the complete DAGs are stored in.
  */
 import { Function } from 'sst/constructs'
+import { Bucket } from 'aws-cdk-lib/aws-s3'
+import { getBucketName } from './config.js'
 
 /** @param {import('sst/constructs').StackContext} context */
 export function PSAStack ({ stack }) {
@@ -25,21 +27,30 @@ export function PSAStack ({ stack }) {
     }
   })
 
+  const buckets = []
+  if (process.env.S3_DOTSTORAGE_0_BUCKET_ARN) {
+    buckets.push(Bucket.fromBucketArn(stack, 'dotstorage-0', process.env.S3_DOTSTORAGE_0_BUCKET_ARN))
+  }
+  if (process.env.S3_DOTSTORAGE_1_BUCKET_ARN) {
+    buckets.push(Bucket.fromBucketArn(stack, 'dotstorage-1', process.env.S3_DOTSTORAGE_1_BUCKET_ARN))
+  }
+  if (process.env.S3_PICKUP_BUCKET_ARN) {
+    buckets.push(Bucket.fromBucketArn(stack, 'pickup', process.env.S3_PICKUP_BUCKET_ARN))
+  }
+
   const hashFunction = new Function(stack, 'hash', {
     handler: 'psa/functions/hash.handler',
     url: { cors: true, authorizer: 'none' },
     memorySize: '4 GB',
-    timeout: '15 minutes'
+    timeout: '15 minutes',
+    permissions: buckets
   })
-
-  hashFunction.attachPermissions(['s3:HeadObject', 's3:GetObject'])
 
   const downloadFunction = new Function(stack, 'download', {
     handler: 'psa/functions/download.handler',
-    url: { cors: true, authorizer: 'none' }
+    url: { cors: true, authorizer: 'none' },
+    permissions: buckets
   })
-
-  downloadFunction.attachPermissions(['s3:HeadObject', 's3:GetObject'])
 
   stack.addOutputs({
     hashFunctionURL: hashFunction.url,
