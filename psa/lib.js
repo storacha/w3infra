@@ -169,6 +169,7 @@ export const createHashEncodedInKeyHasher = () => new HashEncodedInKeyHasher()
 class HashEncodedInKeyHasher {
   /** @param {Location} location */
   async digest (location) {
+    console.log(`hashing ${location.key} in ${location.bucket}`)
     const filename = location.key.split('/').pop()
     if (!filename || !filename.endsWith('.car')) {
       throw new Error('unexpected key format')
