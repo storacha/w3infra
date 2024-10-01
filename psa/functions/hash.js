@@ -18,6 +18,7 @@ export const handler = ApiHandler(async event => {
     const { link, size } = await getHash(Config.buckets, root)
     return okResponse({ root, link, size })
   } catch (/** @type {any} */ err) {
+    if (!(err instanceof NotFound)) console.error(err)
     return errorResponse(err.message, err instanceof NotFound ? 404 : 500)
   }
 })

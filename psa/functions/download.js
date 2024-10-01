@@ -18,6 +18,7 @@ export const handler = ApiHandler(async event => {
     const url = await getDownloadURL(Config.buckets, root)
     return okResponse({ root, url })
   } catch (/** @type {any} */ err) {
+    if (!(err instanceof NotFound)) console.error(err)
     return errorResponse(err.message, err instanceof NotFound ? 404 : 500)
   }
 })

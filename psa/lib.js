@@ -61,6 +61,7 @@ class S3ObjectLocator {
 
   /** @param {UnknownLink} root */
   async locate (root) {
+    console.log(`locating ${root} in ${this.bucketName}`)
     const key = this.encodeKey(root)
     const cmd = new HeadObjectCommand({ Bucket: this.bucketName, Key: key })
     try {
@@ -102,6 +103,7 @@ class DudeWhereLocator {
 
   /** @param {UnknownLink} root */
   async locate (root) {
+    console.log(`locating ${root} in ${this.indexBucketName}`)
     const cmd = new ListObjectsV2Command({
       Bucket: this.indexBucketName,
       MaxKeys: 2,
@@ -139,6 +141,7 @@ export const createObjectHasher = () => new ObjectHasher()
 class ObjectHasher {
   /** @param {Location} location */
   async digest (location) {
+    console.log(`hashing ${location.key} in ${location.bucket}`)
     const cmd = new GetObjectCommand({ Bucket: location.bucket, Key: location.key })
 
     const res = await location.client.send(cmd)
