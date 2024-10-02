@@ -1,4 +1,5 @@
 // @jsxImportSource preact
+import * as preact from 'preact'
 import { render } from 'preact-render-to-string'
 import { Response } from '@web-std/fetch'
 
