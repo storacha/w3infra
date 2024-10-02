@@ -13,8 +13,10 @@ import { createConsumerTable } from '../tables/consumer.js'
 import { createRevocationsTable } from '../stores/revocations.js'
 import * as AgentStore from '../stores/agent.js'
 import { useProvisionStore } from '../stores/provisions.js'
-import * as htmlStoracha from '../html-storacha/index.js'
-import * as htmlW3s from '../html-w3s/index.js'
+// eslint-disable-next-line import/extensions
+import * as htmlStoracha from '../html-storacha'
+// eslint-disable-next-line import/extensions
+import * as htmlW3s from '../html-w3s'
 import { createRateLimitTable } from '../tables/rate-limit.js'
 import { createSpaceMetricsTable } from '../tables/space-metrics.js'
 import { createCustomerStore } from '@web3-storage/w3infra-billing/tables/customer'
