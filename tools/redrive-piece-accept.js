@@ -17,7 +17,8 @@ import { Aggregator } from '@web3-storage/filecoin-client'
 import { QueryCommand } from '@aws-sdk/client-dynamodb'
 import { Piece } from '@web3-storage/data-segment'
 import map from 'p-map'
-import retry, { AbortError } from 'p-retry'
+import retry from 'p-retry'
+import dotenv from 'dotenv'
 import { getServiceSigner } from '../filecoin/service.js'
 import { createPieceTable } from '../filecoin/store/piece.js'
 import { createReceiptStore } from '../filecoin/store/receipt.js'
@@ -25,6 +26,8 @@ import { getAggregatorServiceDID, getInclusionTableName, getInvocationBucketName
 import { mustGetEnv } from '../lib/env.js'
 import { getDynamoClient } from '../lib/aws/dynamo.js'
 import { unmarshall } from '@aws-sdk/util-dynamodb'
+
+dotenv.config({ path: ['.env', '../.env'] })
 
 /** @typedef {import('@web3-storage/upload-api').PieceLink} PieceLink */
 
