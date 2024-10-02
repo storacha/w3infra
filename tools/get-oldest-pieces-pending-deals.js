@@ -1,26 +1,37 @@
 import { createPieceTable } from '../filecoin/store/piece.js'
 import { getPieceTableName, getRegion, getStage } from './lib.js'
 
+const max = 10
+
 export async function getOldestPiecesPendingDeals () {
   const stage = getStage()
   const region = getRegion(stage)
   const pieceTableName = getPieceTableName(stage)
   const pieceStore = createPieceTable(region, pieceTableName)
 
-  // query submitted status pieces (they are orderd by oldest timestamp with sort key)
-  const submittedPieces = await pieceStore.query({
-    status: 'submitted',
-    
-  })
-  if (submittedPieces.error) {
-    return {
-      error: submittedPieces.error,
+  console.log(`${max} oldest pieces pending deals`)
+  let total = 0
+  let cursor
+  while (true) {
+    // query submitted status pieces (they are orderd by oldest timestamp with sort key)
+    const submittedPieces = await pieceStore.query({
+      status: 'submitted',
+    }, {
+      cursor,
+      size: 1000
+    })
+    if (submittedPieces.error) {
+      return {
+        error: submittedPieces.error,
+      }
     }
-  }
 
-  // List first 10 entries
-  console.log('10 oldest pieces pending deals')
-  for (const piece of submittedPieces.ok.results.slice(0, 10)) {
-    console.log(`${piece.piece.link()} at ${piece.insertedAt}`)
+    for (const piece of submittedPieces.ok.results) {
+      console.log(`${piece.piece.link()} at ${piece.insertedAt}`)
+      total++
+      if (total >= max) break
+    }
+    cursor = submittedPieces.ok.cursor
+    if (!cursor || total >= max) break
   }
 }
