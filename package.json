@@ -11,7 +11,7 @@
     "deploy": "sst deploy --outputs-file .test-env.json",
     "remove": "sst remove",
     "console": "sst console",
-    "lint": "tsc && eslint '**/*.js'",
+    "lint": "tsc && eslint '**/*.js' '**/*.jsx'",
     "clean": "rm -rf dist node_modules package-lock.json ./*/{.cache,dist,node_modules}",
     "test": "npm test -w billing -w upload-api -w carpark -w replicator -w roundabout -w filecoin -w indexer",
     "test-integration": "ava --verbose --serial --timeout=660s --fail-fast test/*.test.js",

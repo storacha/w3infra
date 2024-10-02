@@ -13,8 +13,8 @@ import { createConsumerTable } from '../tables/consumer.js'
 import { createRevocationsTable } from '../stores/revocations.js'
 import * as AgentStore from '../stores/agent.js'
 import { useProvisionStore } from '../stores/provisions.js'
-import * as htmlStoracha from '../html-storacha'
-import * as htmlW3s from '../html-w3s'
+import * as htmlStoracha from '../html-storacha/index.js'
+import * as htmlW3s from '../html-w3s/index.js'
 import { createRateLimitTable } from '../tables/rate-limit.js'
 import { createSpaceMetricsTable } from '../tables/space-metrics.js'
 import { createCustomerStore } from '@web3-storage/w3infra-billing/tables/customer'
@@ -52,7 +52,6 @@ export function toLambdaResponse(response) {
  * @param {import('aws-lambda').APIGatewayProxyEventV2} request
  */
 export async function validateEmailGet(request) {
-  request.requestContext.domainName
   if (!request.queryStringParameters?.ucan) {
     return toLambdaResponse(
       new html.HtmlResponse(
