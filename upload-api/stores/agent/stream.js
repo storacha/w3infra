@@ -115,9 +115,13 @@ export const assert = async (message, { stream, store }) => {
       // 🔬 Need to figure if there are consumers downstream that depend on
       // having invocation details in the stream record and whether we can
       // safely remove it because this additional IO which seems unnecessary.
-      const { ok: invocation } = await Store.getInvocation(store, task)
+      const result = await Store.getInvocation(store, task)
+      const { ok: invocation } = result
       if (!invocation) {
-        throw new NoInvocationFoundForGivenReceiptError()
+        console.error(result.error)
+        throw new NoInvocationFoundForGivenReceiptError(
+          `Could not find invocation with CID ${task.link().toString()} for receipt with CID: ${receipt.link().toString()}`
+        )
       }
 
       // log any likely JSON serialization errors in the receipt
