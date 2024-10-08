@@ -90,7 +90,7 @@ export interface CustomerKey {
   customer: CustomerDID
 }
 
-export interface CustomerListOptions extends Pageable {}
+export interface CustomerListOptions extends Pageable { }
 
 export type CustomerStore =
   & StoreGetter<CustomerKey, Customer>
@@ -132,6 +132,21 @@ export interface Usage {
 export interface UsageListKey { customer: CustomerDID, from: Date }
 
 export type UsageStore = StorePutter<Usage>
+
+
+/**
+ * The event that is emitted when egress traffic is detected.
+ */
+export interface EgressEvent {
+  customerId: string
+  resourceId: string
+  timestamp: Date
+}
+
+
+export interface EgressEventListKey { customerId: string, resourceId: string, from: Date }
+
+export type EgressEventStore = StorePutter<EgressEvent> & StoreLister<EgressEventListKey, EgressEvent>
 
 // Billing queues /////////////////////////////////////////////////////////////
 
@@ -188,7 +203,7 @@ export interface ConsumerListKey { consumer: ConsumerDID }
 
 export type ConsumerStore =
   & StoreGetter<ConsumerKey, Consumer>
-  & StoreLister<ConsumerListKey, Pick<Consumer, 'consumer'|'provider'|'subscription'>>
+  & StoreLister<ConsumerListKey, Pick<Consumer, 'consumer' | 'provider' | 'subscription'>>
 
 export interface Subscription {
   customer: CustomerDID
@@ -205,7 +220,7 @@ export interface SubscriptionListKey { customer: CustomerDID }
 
 export type SubscriptionStore =
   & StoreGetter<SubscriptionKey, Subscription>
-  & StoreLister<SubscriptionListKey, Pick<Subscription, 'customer'|'provider'|'subscription'|'cause'>>
+  & StoreLister<SubscriptionListKey, Pick<Subscription, 'customer' | 'provider' | 'subscription' | 'cause'>>
 
 // UCAN invocation ////////////////////////////////////////////////////////////
 
@@ -302,7 +317,7 @@ export interface InsufficientRecords extends Failure {
 /** StorePutter allows a single item to be put in the store by it's key. */
 export interface StorePutter<T> {
   /** Puts a single item into the store by it's key */
-  put: (rec: T) => Promise<Result<Unit, EncodeFailure|StoreOperationFailure|Failure>>
+  put: (rec: T) => Promise<Result<Unit, EncodeFailure | StoreOperationFailure | Failure>>
 }
 
 /**
@@ -316,23 +331,23 @@ export interface StoreBatchPutter<T> {
    * not transactional. A failure may mean 1 or more records succeeded to
    * be written.
    */
-  batchPut: (rec: Iterable<T>) => Promise<Result<Unit, InsufficientRecords|EncodeFailure|StoreOperationFailure|Failure>>
+  batchPut: (rec: Iterable<T>) => Promise<Result<Unit, InsufficientRecords | EncodeFailure | StoreOperationFailure | Failure>>
 }
 
 /** StoreGetter allows a single item to be retrieved by it's key. */
 export interface StoreGetter<K extends {}, V> {
   /** Gets a single item by it's key. */
-  get: (key: K) => Promise<Result<V, EncodeFailure|RecordNotFound<K>|DecodeFailure|StoreOperationFailure>>
+  get: (key: K) => Promise<Result<V, EncodeFailure | RecordNotFound<K> | DecodeFailure | StoreOperationFailure>>
 }
 
 /** StoreLister allows items in the store to be listed page by page. */
 export interface StoreLister<K extends {}, V> {
   /** Lists items in the store. */
-  list: (key: K, options?: Pageable) => Promise<Result<ListSuccess<V>, EncodeFailure|DecodeFailure|StoreOperationFailure>>
+  list: (key: K, options?: Pageable) => Promise<Result<ListSuccess<V>, EncodeFailure | DecodeFailure | StoreOperationFailure>>
 }
 
 /** QueueAdder allows messages to be added to the end of the queue. */
 export interface QueueAdder<T> {
   /** Adds a message to the end of the queue. */
-  add: (message: T) => Promise<Result<Unit, EncodeFailure|QueueOperationFailure|Failure>>
+  add: (message: T) => Promise<Result<Unit, EncodeFailure | QueueOperationFailure | Failure>>
 }
