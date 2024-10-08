@@ -1,9 +1,11 @@
 import * as Sentry from '@sentry/serverless'
+import { Config } from 'sst/node/config'
 import { expect } from './lib.js'
 import { createEgressEventStore } from '../tables/egress.js'
 import { decode } from '../data/egress.js'
 import { SQSClient, DeleteMessageCommand } from '@aws-sdk/client-sqs'
 import { mustGetEnv } from '../../lib/env.js'
+import Stripe from 'stripe'
 
 Sentry.AWSLambda.init({
     environment: process.env.SST_STAGE,
@@ -16,6 +18,7 @@ Sentry.AWSLambda.init({
  *   egressTable?: string
  *   queueUrl?: string
  *   region?: 'us-west-2'|'us-east-2'
+ *   stripeSecretKey?: string
  * }} CustomHandlerContext
  */
 
@@ -38,6 +41,10 @@ export const handler = Sentry.AWSLambda.wrapHandler(
         const queueUrl = customContext?.queueUrl ?? mustGetEnv('EGRESS_TRAFFIC_QUEUE_URL')
         const sqsClient = new SQSClient({ region })
         const egressEventStore = createEgressEventStore({ region }, { tableName: egressTable })
+        const stripeSecretKey = customContext?.stripeSecretKey ?? Config.STRIPE_SECRET_KEY
+
+        if (!stripeSecretKey) throw new Error('missing secret: STRIPE_SECRET_KEY')
+        const stripe = new Stripe(stripeSecretKey, { apiVersion: '2023-10-16' })
 
         for (const record of event.Records) {
             try {
@@ -48,6 +55,11 @@ export const handler = Sentry.AWSLambda.wrapHandler(
                 expect(
                     await egressEventStore.put(egressEvent),
                     `Failed to store egress event for customerId: ${egressEvent.customerId}, resourceId: ${egressEvent.resourceId}, timestamp: ${egressEvent.timestamp.toISOString()}`
+                )
+
+                expect(
+                    await sendRecordUsageToStripe(stripe, egressEvent),
+                    `Failed to send record usage to Stripe for customerId: ${egressEvent.customerId}, resourceId: ${egressEvent.resourceId}, timestamp: ${egressEvent.timestamp.toISOString()}`
                 )
 
                 /**
@@ -63,3 +75,32 @@ export const handler = Sentry.AWSLambda.wrapHandler(
             }
         }
     })
+
+/**
+ * Sends a record usage to Stripe for a given egress event.
+ * It uses the Stripe API v2023-10-16 to create a usage record for the given subscription item and quantity.
+ * The response is checked to ensure the usage record was created successfully.
+ * 
+ * @param {import('stripe').Stripe} stripe
+ * @param {import('../data/egress').EgressEvent} egressEvent
+ * @returns {Promise<import('@ucanto/interface').Result<boolean, Error>>}
+ */
+async function sendRecordUsageToStripe(stripe, egressEvent) {
+    const subscriptionItem = {
+        id: 'sub_123', // FIXME (fforbeck): 
+        // Where do we get this from?
+        // Should be in the event?
+        // Should we find it in the Stripe API using the customerId?
+    }
+    const response = await stripe.subscriptionItems.createUsageRecord(
+        subscriptionItem.id,
+        {
+            quantity: 1, // always 1 for each egress event
+            timestamp: egressEvent.timestamp.getTime()
+        }
+    )
+    if (response.object === 'usage_record') {
+        return { ok: true }
+    }
+    return { error: new Error('Failed to send record usage to Stripe') }
+}
