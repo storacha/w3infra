@@ -6,6 +6,7 @@ import { decode as decodeSpaceBillingInstruction } from '../../data/space-billin
 import { encode as encodeSubscription, validate as validateSubscription } from '../../data/subscription.js'
 import { encode as encodeConsumer, validate as validateConsumer } from '../../data/consumer.js'
 import { decode as decodeUsage, lister as usageLister } from '../../data/usage.js'
+import { encode as encodeEgressEvent, decodeStr as decodeEgressEvent, validate as validateEgressEvent } from '../../data/egress.js'
 import { createCustomerBillingQueue } from '../../queues/customer.js'
 import { createSpaceBillingQueue } from '../../queues/space.js'
 import { consumerTableProps, subscriptionTableProps } from '../../../upload-api/tables/index.js'
@@ -16,7 +17,9 @@ import { createSpaceDiffStore, spaceDiffTableProps } from '../../tables/space-di
 import { createSpaceSnapshotStore, spaceSnapshotTableProps } from '../../tables/space-snapshot.js'
 import { createUsageStore, usageTableProps } from '../../tables/usage.js'
 import { createQueueRemoverClient } from './queue.js'
-
+import { createEgressEventQueue } from '../../queues/egress.js'
+import { egressTableProps, createEgressEventStore } from '../../tables/egress.js'
+import { handler as createEgressTrafficHandler } from '../../functions/egress-traffic-handler.js'
 /**
  * @typedef {{
  *  dynamo: import('./aws').AWSService<import('@aws-sdk/client-dynamodb').DynamoDBClient>
@@ -135,6 +138,46 @@ export const createUCANStreamTestContext = async () => {
   }
 
   return { consumerStore, spaceDiffStore }
+}
+
+export const createEgressTrafficQueueTestContext = async () => {
+  await createAWSServices()
+
+  const egressTableName = await createTable(awsServices.dynamo.client, egressTableProps, 'egress-')
+  const store = createEgressEventStore(awsServices.dynamo.client, { tableName: egressTableName })
+  const egressEventStore = {
+    put: store.put,
+    list: store.list,
+  }
+
+  const egressQueueURL = new URL(await createQueue(awsServices.sqs.client, 'egress-traffic-'))
+  const egressQueue = {
+    add: createEgressEventQueue(awsServices.sqs.client, { url: egressQueueURL }).add,
+    remove: createQueueRemoverClient(awsServices.sqs.client, { url: egressQueueURL, decode: decodeEgressEvent }).remove,
+  }
+
+  return {
+    egressEventStore,
+    egressQueue,
+    egressHandler: createEgressTrafficHandler,
+    egressTable: egressTableName,
+    queueUrl: egressQueueURL,
+      accountId: (await awsServices.dynamo.client.config.credentials()).accountId,
+    callbackWaitsForEmptyEventLoop: true,
+    functionName: 'your-function-name',
+    functionVersion: 'your-function-version',
+    region: awsServices.dynamo.client.config.region,
+    invokedFunctionArn: `arn:aws:lambda:${awsServices.dynamo.client.config.region}:${awsServices.dynamo.client.config.credentials().accountId}:function:your-function-name`,
+    memoryLimitInMB: '128',
+    awsRequestId: 'your-request-id',
+    logGroupName: '/aws/lambda/your-function-name',
+    logStreamName: 'your-log-stream',
+    getRemainingTimeInMillis: () => 1000,
+    done: () => {},
+    fail: () => {},
+    succeed: () => {},
+    stripeSecretKey: "", // FIXME (fforbeck): how to get Stripe secret key in a test?
+  }
 }
 
 /**

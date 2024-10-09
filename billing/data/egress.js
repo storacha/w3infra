@@ -66,6 +66,13 @@ export const decode = input => {
     }
 }
 
+/** @type {import('../lib/api').Decoder<string, EgressEvent>} */
+export const decodeStr = input => {
+    const data = decode(JSON.parse(input))
+    if (data.error) throw data.error
+    return { ok: data.ok }
+}
+
 export const lister = {
     /** @type {import('../lib/api').Encoder<EgressEventListKey, EgressEventListStoreRecord>} */
     encodeKey: input => ({

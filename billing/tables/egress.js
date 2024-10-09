@@ -29,5 +29,5 @@ export const egressTableProps = {
  */
 export const createEgressEventStore = (conf, { tableName }) => ({
   ...createStorePutterClient(conf, { tableName, validate, encode }),
-    ...createStoreListerClient(conf, { tableName, encodeKey: lister.encodeKey, decode })
+  ...createStoreListerClient(conf, { tableName, encodeKey: lister.encodeKey, decode })
 })

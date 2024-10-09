@@ -74,6 +74,11 @@ export const handler = Sentry.AWSLambda.wrapHandler(
                 console.error('Error processing egress event:', error)
             }
         }
+
+        return {
+            statusCode: 200,
+            body: 'Egress events processed successfully'
+        }
     })
 
 /**
@@ -82,7 +87,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(
  * The response is checked to ensure the usage record was created successfully.
  * 
  * @param {import('stripe').Stripe} stripe
- * @param {import('../data/egress').EgressEvent} egressEvent
+ * @param {import('../data/egress.js').EgressEvent} egressEvent
  * @returns {Promise<import('@ucanto/interface').Result<boolean, Error>>}
  */
 async function sendRecordUsageToStripe(stripe, egressEvent) {
