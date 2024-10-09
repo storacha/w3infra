@@ -120,7 +120,7 @@ export const assert = async (message, { stream, store }) => {
       if (!invocation) {
         console.error(result.error)
         throw new NoInvocationFoundForGivenReceiptError(
-          `Could not find invocation with CID ${task.link().toString()} for receipt with CID: ${receipt.link().toString()}`
+          `Could not find invocation with CID ${task.link().toString()} for receipt with CID: ${receipt.link().toString()} in message: ${message.link().toString()}`
         )
       }
 
