@@ -1,4 +1,4 @@
-import { DID, Link, URI, LinkJSON, Result, Capabilities, Unit, Failure } from '@ucanto/interface'
+import { DID, Link, URI, LinkJSON, Result, Capabilities, Unit, Failure, UnknownLink } from '@ucanto/interface'
 
 // Billing stores /////////////////////////////////////////////////////////////
 
@@ -157,6 +157,25 @@ export interface CustomerBillingInstruction {
 }
 
 export type CustomerBillingQueue = QueueAdder<CustomerBillingInstruction>
+
+/**
+ * Captures details about egress traffic that should be billed for a given period
+ */
+export interface EgressTrafficData {
+  /** Customer DID (did:mailto:...). */ 
+  customer: CustomerDID
+  /** Resource that was served. */
+  resource: UnknownLink
+  /** Number of bytes that were served. */
+  bytes: bigint
+  /** Time the egress traffic was served at. */
+  servedAt: Date
+}
+
+/**
+ * Queue for egress traffic data.
+ */
+export type EgressTrafficQueue = QueueAdder<EgressTrafficData>
 
 /**
  * Captures details about a space that should be billed for a given customer in

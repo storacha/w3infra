@@ -41,6 +41,7 @@ import { createStripeBillingProvider } from '../billing.js'
 import { createIPNIService } from '../external-services/ipni-service.js'
 import * as UploadAPI from '@web3-storage/upload-api'
 import { mustGetEnv } from '../../lib/env.js'
+import { createEgressTrafficQueue } from '@web3-storage/w3infra-billing/queues/egress-traffic.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -120,6 +121,7 @@ export async function ucanInvocationRouter(request) {
     dealTrackerUrl,
     pieceOfferQueueUrl,
     filecoinSubmitQueueUrl,
+    egressTrafficQueueUrl,
     requirePaymentPlan,
     // set for testing
     dbEndpoint,
@@ -201,7 +203,8 @@ export async function ucanInvocationRouter(request) {
   const revocationsStorage = createRevocationsTable(AWS_REGION, revocationTableName)
   const spaceDiffStore = createSpaceDiffStore({ region: AWS_REGION }, { tableName: spaceDiffTableName })
   const spaceSnapshotStore = createSpaceSnapshotStore({ region: AWS_REGION }, { tableName: spaceSnapshotTableName })
-  const usageStorage = useUsageStore({ spaceDiffStore, spaceSnapshotStore })
+  const egressTrafficQueue = createEgressTrafficQueue({ region: AWS_REGION }, { url: new URL(egressTrafficQueueUrl) })
+  const usageStorage = useUsageStore({ spaceDiffStore, spaceSnapshotStore, egressTrafficQueue })
 
   const dealTrackerConnection = getServiceConnection({
     did: dealTrackerDid,
@@ -346,6 +349,7 @@ function getLambdaEnv () {
     spaceSnapshotTableName: mustGetEnv('SPACE_SNAPSHOT_TABLE_NAME'),
     pieceOfferQueueUrl: mustGetEnv('PIECE_OFFER_QUEUE_URL'),
     filecoinSubmitQueueUrl: mustGetEnv('FILECOIN_SUBMIT_QUEUE_URL'),
+    egressTrafficQueueUrl: mustGetEnv('EGRESS_TRAFFIC_QUEUE_URL'),
     r2DelegationBucketEndpoint: mustGetEnv('R2_ENDPOINT'),
     r2DelegationBucketAccessKeyId: mustGetEnv('R2_ACCESS_KEY_ID'),
     r2DelegationBucketSecretAccessKey: mustGetEnv('R2_SECRET_ACCESS_KEY'),
