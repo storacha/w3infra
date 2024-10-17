@@ -18,8 +18,12 @@ import {
   SpaceSnapshotStore,
   UsageStore,
   UsageListKey,
-  Usage
+  Usage,
+  EgressTrafficQueue,
+  EgressTrafficData
 } from '../../lib/api.js'
+import { Context, Handler, SQSEvent } from 'aws-lambda'
+import Stripe from 'stripe'
 
 export interface BillingCronTestContext {
   customerStore: CustomerStore & StorePutter<Customer>
@@ -47,12 +51,24 @@ export interface UCANStreamTestContext {
   consumerStore: ConsumerStore & StorePutter<Consumer>
 }
 
+
+export interface EgressTrafficTestContext extends Context {
+  egressTrafficQueue: EgressTrafficQueue & QueueRemover<EgressTrafficData>
+  egressTrafficQueueUrl: string
+  egressTrafficHandler: Handler<SQSEvent, { statusCode: number, body: string }>
+  accountId: string
+  region: string
+  stripeSecretKey: string
+  stripe: Stripe
+}
+
 export type TestContext =
   & BillingCronTestContext
   & CustomerBillingQueueTestContext
   & SpaceBillingQueueTestContext
   & StripeTestContext
   & UCANStreamTestContext
+  & EgressTrafficTestContext
 
 /** QueueRemover can remove items from the head of the queue. */
 export interface QueueRemover<T> {

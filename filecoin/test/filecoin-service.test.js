@@ -91,12 +91,15 @@ test.after(async t => {
 })
 
 for (const [title, unit] of Object.entries(filecoinApiTest.service.storefront)) {
-  const define = title.startsWith('only ')
+  let define;
+  if (title.startsWith('only ')) {
     // eslint-disable-next-line no-only-tests/no-only-tests
-    ? test.only
-    : title.startsWith('skip ')
-    ? test.skip
-    : test
+    define = test.only;
+  } else if (title.startsWith('skip ')) {
+    define = test.skip;
+  } else {
+    define = test;
+  }
 
   define(title, async (t) => {
     const queues = getQueues(t.context)
