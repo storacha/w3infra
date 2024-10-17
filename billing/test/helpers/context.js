@@ -1,3 +1,6 @@
+import dotenv from 'dotenv'
+import path from 'node:path'
+import Stripe from 'stripe'
 import { createDynamoDB, createSQS, createQueue, createTable } from './aws.js'
 import { createCustomerStore, customerTableProps } from '../../tables/customer.js'
 import { encode as encodeCustomer, validate as validateCustomer } from '../../data/customer.js'
@@ -6,6 +9,7 @@ import { decode as decodeSpaceBillingInstruction } from '../../data/space-billin
 import { encode as encodeSubscription, validate as validateSubscription } from '../../data/subscription.js'
 import { encode as encodeConsumer, validate as validateConsumer } from '../../data/consumer.js'
 import { decode as decodeUsage, lister as usageLister } from '../../data/usage.js'
+import { decodeStr as decodeEgressTrafficEvent } from '../../data/egress.js'
 import { createCustomerBillingQueue } from '../../queues/customer.js'
 import { createSpaceBillingQueue } from '../../queues/space.js'
 import { consumerTableProps, subscriptionTableProps } from '../../../upload-api/tables/index.js'
@@ -16,6 +20,10 @@ import { createSpaceDiffStore, spaceDiffTableProps } from '../../tables/space-di
 import { createSpaceSnapshotStore, spaceSnapshotTableProps } from '../../tables/space-snapshot.js'
 import { createUsageStore, usageTableProps } from '../../tables/usage.js'
 import { createQueueRemoverClient } from './queue.js'
+import { createEgressTrafficQueue } from '../../queues/egress-traffic.js'
+import { handler as createEgressTrafficHandler } from '../../functions/egress-traffic-handler.js'
+
+dotenv.config({ path: path.resolve('../.env.local'), override: true, debug: true })
 
 /**
  * @typedef {{
@@ -135,6 +143,57 @@ export const createUCANStreamTestContext = async () => {
   }
 
   return { consumerStore, spaceDiffStore }
+}
+
+/**
+ * @returns {Promise<import('../lib/api').EgressTrafficTestContext>}
+ */
+export const createEgressTrafficTestContext = async () => {
+  await createAWSServices()
+  const stripeSecretKey = process.env.STRIPE_TEST_SECRET_KEY
+  if (!stripeSecretKey) {
+    throw new Error('STRIPE_TEST_SECRET_KEY environment variable is not set')
+  }
+
+  const egressQueueURL = new URL(await createQueue(awsServices.sqs.client, 'egress-traffic-queue-'))
+  const egressTrafficQueue = {
+    add: createEgressTrafficQueue(awsServices.sqs.client, { url: egressQueueURL }).add,
+    remove: createQueueRemoverClient(awsServices.sqs.client, { url: egressQueueURL, decode: decodeEgressTrafficEvent }).remove,
+  }
+
+  const accountId = (await awsServices.sqs.client.config.credentials()).accountId
+  const region = await awsServices.sqs.client.config.region()
+
+  return {
+    egressTrafficQueue,
+    egressTrafficQueueUrl: egressQueueURL.toString(),
+    egressTrafficHandler: createEgressTrafficHandler,
+    accountId: accountId ?? '',
+    region: region ?? '',
+    stripeSecretKey,
+    stripe: new Stripe(stripeSecretKey, { apiVersion: '2023-10-16' }),
+    // Add mock properties for default Context
+    callbackWaitsForEmptyEventLoop: false,
+    functionName: 'egress-traffic-handler',
+    functionVersion: '1',
+    invokedFunctionArn: `arn:aws:lambda:${region}:${accountId}:function:egress-traffic-handler`,
+    memoryLimitInMB: '128',
+    awsRequestId: 'mockRequestId',
+    logGroupName: 'mockLogGroup',
+    logStreamName: 'mockLogStream',
+    identity: undefined,
+    clientContext: undefined,
+    getRemainingTimeInMillis: () => 30000, // mock implementation
+    done: () => {
+      console.log('Egress traffic handler done')
+    },
+    fail: () => {
+      console.log('Egress traffic handler fail')
+    },
+    succeed: () => {
+      console.log('Egress traffic handler succeed')
+    }
+  }
 }
 
 /**

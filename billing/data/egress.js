@@ -38,3 +38,14 @@ export const decode = input => {
         }
     }
 }
+
+/** @type {import('../lib/api').Decoder<string, import('../lib/api').EgressTrafficData>} */
+export const decodeStr = input => {
+    try {
+        return decode(JSON.parse(input))
+    } catch (/** @type {any} */ err) {
+        return {
+            error: new DecodeFailure(`decoding str egress traffic event: ${err.message}`, { cause: err })
+        }
+    }
+}

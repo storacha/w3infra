@@ -33,7 +33,6 @@ export const handler = Sentry.AWSLambda.wrapHandler(
      * @param {import('aws-lambda').SQSEvent} event
      * @param {import('aws-lambda').Context} context
      */
-
     async (event, context) => {
         /** @type {CustomHandlerContext|undefined} */
         const customContext = context?.clientContext?.Custom
@@ -82,10 +81,10 @@ export const handler = Sentry.AWSLambda.wrapHandler(
 /**
  * Finds the Stripe customer ID for the given customer and records the egress traffic data in the Stripe Billing Meter API.
  * 
- * @param {import('../lib/api.ts').CustomerStore} customerStore
+ * @param {import('../lib/api.js').CustomerStore} customerStore
  * @param {import('stripe').Stripe} stripe
  * @param {string} billingMeterName
- * @param {import('../lib/api.ts').EgressTrafficData} egressEventData
+ * @param {import('../lib/api.js').EgressTrafficData} egressEventData
  */
 async function recordEgress(customerStore, stripe, billingMeterName, egressEventData) {
     const response = await customerStore.get({ customer: egressEventData.customer })
