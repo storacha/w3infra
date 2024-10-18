@@ -25,7 +25,7 @@ Sentry.AWSLambda.init({
 
 /**
  * AWS Lambda handler to process egress events from the egress traffic queue.
- * Each event is a JSON object with `customer`, `resource`, `bytes` and `timestamp`.
+ * Each event is a JSON object with `customer`, `resource`, `bytes` and `se`.
  * The message is then deleted from the queue when successful.
  */
 export const handler = Sentry.AWSLambda.wrapHandler(
@@ -37,8 +37,6 @@ export const handler = Sentry.AWSLambda.wrapHandler(
         /** @type {CustomHandlerContext|undefined} */
         const customContext = context?.clientContext?.Custom
         const region = customContext?.region ?? mustGetEnv('AWS_REGION')
-        // const queueUrl = customContext?.egressTrafficQueueUrl ?? mustGetEnv('EGRESS_TRAFFIC_QUEUE_URL')
-        // const sqsClient = new SQSClient({ region })
         const customerTable = customContext?.customerTable ?? mustGetEnv('CUSTOMER_TABLE_NAME')
         const customerStore = customContext?.customerStore ?? createCustomerStore({ region }, { tableName: customerTable })
 
@@ -60,14 +58,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(
                     `Failed to send record usage to Stripe for customer: ${egressEvent.customer}, resource: ${egressEvent.resource}, servedAt: ${egressEvent.servedAt.toISOString()}`
                 )
 
-                /**
-                 * SQS requires explicit acknowledgment that a message has been successfully processed.
-                 * This is done by deleting the message from the queue using its ReceiptHandle
-                 */
-                // await sqsClient.send(new DeleteMessageCommand({
-                //     QueueUrl: queueUrl,
-                //     ReceiptHandle: record.receiptHandle
-                // }))
+                // TODO: delete the message from the queue?
             } catch (error) {
                 console.error('Error processing egress event:', error)
             }
@@ -111,6 +102,7 @@ async function recordEgress(customerStore, stripe, billingMeterEventName, egress
         }
     }
 
+    // TODO (fforbeck): implement some retry logic in case rate limiting errors
     /** @type {import('stripe').Stripe.Billing.MeterEvent} */
     const meterEvent = await stripe.billing.meterEvents.create({
         event_name: billingMeterEventName,

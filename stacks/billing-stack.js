@@ -179,5 +179,36 @@ export function BillingStack ({ stack, app }) {
     CustomDomain: customDomain ? `https://${customDomain.domainName}` : 'Set BILLING_HOSTED_ZONE in env to deploy to a custom domain'
   })
 
+  // Lambda that handles egress traffic tracking
+  const egressTrafficQueueHandler = new Function(stack, 'egress-traffic-queue-handler', {
+    permissions: [customerTable],
+    handler: 'billing/functions/egress-traffic-queue.handler',
+    timeout: '15 minutes',
+    bind: [stripeSecretKey],
+    environment: {
+      AWS_REGION: stack.region,
+      CUSTOMER_TABLE_NAME: customerTable.tableName,
+      // TODO (fforbeck): make this a config based on the env: local, staging, prod
+      STRIPE_BILLING_METER_EVENT_NAME: 'test-gateway-egress-traffic'
+    }
+  })
+
+  // Queue for egress traffic tracking
+  const egressTrafficDLQ = new Queue(stack, 'egress-traffic-dlq', {
+    cdk: { queue: { retentionPeriod: Duration.days(14) } }
+  })
+  const egressTrafficQueue = new Queue(stack, 'egress-traffic-queue', {
+    consumer: {
+      function: egressTrafficQueueHandler,
+      deadLetterQueue: egressTrafficDLQ.cdk.queue,
+      cdk: { eventSource: { batchSize: 1 } }
+    },
+    cdk: { queue: { visibilityTimeout: Duration.seconds(60) } }
+  })
+
+  stack.addOutputs({
+    EgressTrafficQueueURL: egressTrafficQueue.queueUrl
+  })
+
   return { billingCron }
 }
