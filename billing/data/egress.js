@@ -1,3 +1,4 @@
+import { Link } from '@ucanto/server'
 import { DecodeFailure, EncodeFailure, Schema } from './lib.js'
 
 export const egressSchema = Schema.struct({
@@ -13,7 +14,14 @@ export const validate = input => egressSchema.read(input)
 /** @type {import('../lib/api').Encoder<import('../lib/api').EgressTrafficData, string>} */
 export const encode = input => {
     try {
-        return { ok: JSON.stringify(input) }
+        return {
+            ok: JSON.stringify({
+                customer: input.customer.toString(),
+                resource: input.resource.toString(),
+                bytes: input.bytes.toString(),
+                servedAt: input.servedAt.toISOString(),
+            })
+        }
     } catch (/** @type {any} */ err) {
         return {
             error: new EncodeFailure(`encoding string egress event: ${err.message}`, { cause: err })
@@ -27,9 +35,9 @@ export const decode = input => {
         return {
             ok: {
                 customer: Schema.did({ method: 'mailto' }).from(input.customer),
-                resource: Schema.link().from(input.resourceId),
-                bytes: Schema.bigint().from(input.bytes),
-                servedAt: Schema.date().from(input.servedAt),
+                resource: Link.parse(/** @type {string} */(input.resource)),
+                bytes: BigInt(input.bytes),
+                servedAt: new Date(input.servedAt),
             }
         }
     } catch (/** @type {any} */ err) {

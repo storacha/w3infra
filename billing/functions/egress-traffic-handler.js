@@ -1,7 +1,6 @@
 import * as Sentry from '@sentry/serverless'
 import { expect } from './lib.js'
-import { decode } from '../data/egress.js'
-import { SQSClient, DeleteMessageCommand } from '@aws-sdk/client-sqs'
+import { decodeStr } from '../data/egress.js'
 import { mustGetEnv } from '../../lib/env.js'
 import { createCustomerStore } from '../tables/customer.js'
 import Stripe from 'stripe'
@@ -16,10 +15,11 @@ Sentry.AWSLambda.init({
 /**
  * @typedef {{
  *   region?: 'us-west-2'|'us-east-2'
- *   queueUrl?: string
+ *   egressTrafficQueueUrl?: string
  *   customerTable?: string
  *   billingMeterName?: string
  *   stripeSecretKey?: string
+ *   customerStore?: import('../lib/api').CustomerStore
  * }} CustomHandlerContext
  */
 
@@ -37,21 +37,23 @@ export const handler = Sentry.AWSLambda.wrapHandler(
         /** @type {CustomHandlerContext|undefined} */
         const customContext = context?.clientContext?.Custom
         const region = customContext?.region ?? mustGetEnv('AWS_REGION')
-        const queueUrl = customContext?.queueUrl ?? mustGetEnv('EGRESS_TRAFFIC_QUEUE_URL')
+        // const queueUrl = customContext?.egressTrafficQueueUrl ?? mustGetEnv('EGRESS_TRAFFIC_QUEUE_URL')
+        // const sqsClient = new SQSClient({ region })
         const customerTable = customContext?.customerTable ?? mustGetEnv('CUSTOMER_TABLE_NAME')
-        const sqsClient = new SQSClient({ region })
-        const customerStore = createCustomerStore({ region }, { tableName: customerTable })
-        const billingMeterName = customContext?.billingMeterName ?? 'gateway_egress_traffic'
-        const stripeSecretKey = customContext?.stripeSecretKey ?? Config.STRIPE_SECRET_KEY
+        const customerStore = customContext?.customerStore ?? createCustomerStore({ region }, { tableName: customerTable })
 
+        const stripeSecretKey = customContext?.stripeSecretKey ?? Config.STRIPE_SECRET_KEY
         if (!stripeSecretKey) throw new Error('missing secret: STRIPE_SECRET_KEY')
+
+        const billingMeterName = customContext?.billingMeterName ?? mustGetEnv('STRIPE_BILLING_METER_EVENT_NAME')
+        if (!billingMeterName) throw new Error('missing secret: STRIPE_BILLING_METER_EVENT_NAME')
+
         const stripe = new Stripe(stripeSecretKey, { apiVersion: '2023-10-16' })
 
         for (const record of event.Records) {
             try {
-                const messageBody = JSON.parse(record.body)
-                const decoded = decode(messageBody)
-                const egressEvent = expect(decoded, 'Failed to decode egress message')
+                const decoded = decodeStr(record.body)
+                const egressEvent = expect(decoded, 'Failed to decode egress event')
 
                 expect(
                     await recordEgress(customerStore, stripe, billingMeterName, egressEvent),
@@ -62,10 +64,10 @@ export const handler = Sentry.AWSLambda.wrapHandler(
                  * SQS requires explicit acknowledgment that a message has been successfully processed.
                  * This is done by deleting the message from the queue using its ReceiptHandle
                  */
-                await sqsClient.send(new DeleteMessageCommand({
-                    QueueUrl: queueUrl,
-                    ReceiptHandle: record.receiptHandle
-                }))
+                // await sqsClient.send(new DeleteMessageCommand({
+                //     QueueUrl: queueUrl,
+                //     ReceiptHandle: record.receiptHandle
+                // }))
             } catch (error) {
                 console.error('Error processing egress event:', error)
             }
@@ -83,10 +85,10 @@ export const handler = Sentry.AWSLambda.wrapHandler(
  * 
  * @param {import('../lib/api.js').CustomerStore} customerStore
  * @param {import('stripe').Stripe} stripe
- * @param {string} billingMeterName
+ * @param {string} billingMeterEventName
  * @param {import('../lib/api.js').EgressTrafficData} egressEventData
  */
-async function recordEgress(customerStore, stripe, billingMeterName, egressEventData) {
+async function recordEgress(customerStore, stripe, billingMeterEventName, egressEventData) {
     const response = await customerStore.get({ customer: egressEventData.customer })
     if (response.error) {
         return {
@@ -111,7 +113,7 @@ async function recordEgress(customerStore, stripe, billingMeterName, egressEvent
 
     /** @type {import('stripe').Stripe.Billing.MeterEvent} */
     const meterEvent = await stripe.billing.meterEvents.create({
-        event_name: billingMeterName,
+        event_name: billingMeterEventName,
         payload: {
             stripe_customer_id: stripeCustomerId,
             value: egressEventData.bytes.toString(),

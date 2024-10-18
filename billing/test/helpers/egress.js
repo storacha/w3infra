@@ -1,14 +1,13 @@
-import { randomDIDMailto } from './did.js'
 import { randomLink } from './dag.js'
 
 /**
- * @param {Partial<import('../../lib/api').EgressTrafficData>} [base]
- * @returns {Promise<import('../../lib/api').EgressTrafficData>}
+ * @param {import('../../lib/api').Customer} customer
+ * @returns {import('../../lib/api').EgressTrafficData}
  */
-export const randomEgressEvent = async (base = {}) => ({
-    customer: await randomDIDMailto(),
+export const randomEgressEvent = (customer) => ({
+    customer: customer.customer,
     resource: randomLink(),
     bytes: BigInt(Math.floor(Math.random() * 1000000)),
-    servedAt: new Date(),
-    ...base
+    // Random timestamp within the last 1 hour
+    servedAt: new Date(Date.now() - Math.floor(Math.random() * 60 * 60 * 1000)),
 })
