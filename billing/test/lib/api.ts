@@ -58,6 +58,10 @@ export interface EgressTrafficTestContext extends Context {
   egressTrafficHandler: Handler<SQSEvent, { statusCode: number, body: string }>
   accountId: string
   region: string
+  customerTable: string
+  customerStore: CustomerStore
+  billingMeterEventName: string
+  billingMeterId: string
   stripeSecretKey: string
   stripe: Stripe
 }
