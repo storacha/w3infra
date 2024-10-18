@@ -4,15 +4,16 @@ import { iterateSpaceDiffs } from '@web3-storage/w3infra-billing/lib/space-billi
  * @param {object} conf
  * @param {import('@web3-storage/w3infra-billing/lib/api').SpaceSnapshotStore} conf.spaceSnapshotStore
  * @param {import('@web3-storage/w3infra-billing/lib/api').SpaceDiffStore} conf.spaceDiffStore
+ * @param {import('@web3-storage/w3infra-billing/lib/api').EgressTrafficQueue} conf.egressTrafficQueue
  */
-export function useUsageStore ({ spaceSnapshotStore, spaceDiffStore }) {
+export function useUsageStore({ spaceSnapshotStore, spaceDiffStore, egressTrafficQueue }) {
   return {
     /**
      * @param {import('@web3-storage/upload-api').ProviderDID} provider
      * @param {import('@web3-storage/upload-api').SpaceDID} space
      * @param {{ from: Date, to: Date }} period
      */
-    async report (provider, space, period) {
+    async report(provider, space, period) {
       const snapResult = await spaceSnapshotStore.get({
         provider,
         space,
@@ -57,6 +58,29 @@ export function useUsageStore ({ spaceSnapshotStore, spaceDiffStore }) {
         events,
       }
       return { ok: report }
+    },
+
+    /**
+     * Handle egress traffic data and enqueues it, so the billing system can process it and update the Stripe Billing Meter API.
+     * 
+     * @param {import('@web3-storage/upload-api').AccountDID} customer
+     * @param {import('@web3-storage/upload-api').UnknownLink} resource
+     * @param {bigint} bytes
+     * @param {Date} servedAt
+     * @returns {Promise<import('@ucanto/interface').Result<import('@ucanto/interface').Unit, import('@ucanto/interface').Failure>>}
+     */
+    async record(customer, resource, bytes, servedAt) {
+      const record = {
+        customer,
+        resource,
+        bytes,
+        servedAt
+      }
+
+      const result = await egressTrafficQueue.add(record)
+      if (result.error) return result
+
+      return { ok: record }
     }
   }
 }
