@@ -186,7 +186,6 @@ export function BillingStack ({ stack, app }) {
     timeout: '15 minutes',
     bind: [stripeSecretKey],
     environment: {
-      AWS_REGION: stack.region,
       CUSTOMER_TABLE_NAME: customerTable.tableName,
       // TODO (fforbeck): make this a config based on the env: local, staging, prod
       STRIPE_BILLING_METER_EVENT_NAME: 'test-gateway-egress-traffic'
