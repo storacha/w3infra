@@ -20,7 +20,7 @@ import { createSpaceSnapshotStore, spaceSnapshotTableProps } from '../../tables/
 import { createUsageStore, usageTableProps } from '../../tables/usage.js'
 import { createQueueRemoverClient } from './queue.js'
 import { createEgressTrafficQueue } from '../../queues/egress-traffic.js'
-import { handler as createEgressTrafficHandler } from '../../functions/egress-traffic-handler.js'
+import { handler as createEgressTrafficHandler } from '../../functions/egress-traffic-queue.js'
 import Stripe from 'stripe'
 
 dotenv.config({ path: path.resolve('../.env.local'), override: true, debug: true })

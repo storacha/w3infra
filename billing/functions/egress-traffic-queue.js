@@ -21,7 +21,7 @@ Sentry.AWSLambda.init({
  *   customerTable?: string
  *   billingMeterName?: string
  *   stripeSecretKey?: string
- *   customerStore?: import('../lib/api').CustomerStore
+ *   customerStore?: import('../lib/api.js').CustomerStore
  * }} CustomHandlerContext
  */
 
@@ -80,7 +80,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(
  * @param {import('../lib/api.js').CustomerStore} customerStore
  * @param {import('stripe').Stripe} stripe
  * @param {string} billingMeterEventName
- * @param {import('../lib/api').EgressTrafficData} egressEventData
+ * @param {import('../lib/api.js').EgressTrafficData} egressEventData
  */
 async function recordEgress(customerStore, stripe, billingMeterEventName, egressEventData) {
   const response = await customerStore.get({ customer: egressEventData.customer })
