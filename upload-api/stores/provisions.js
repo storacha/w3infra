@@ -109,7 +109,8 @@ export function useProvisionStore (subscriptionTable, consumerTable, spaceMetric
           did: consumer,
           allocated,
           limit: 1_000_000_000, // set to an arbitrarily high number because we currently don't enforce any limits
-          subscription: consumerRecord.subscription
+          subscription: consumerRecord.subscription,
+          customer: consumerRecord.customer
         }
       }) : (
         { error: { name: 'ConsumerNotFound', message: `could not find ${consumer}` } }
