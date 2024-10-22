@@ -7,6 +7,9 @@ import * as DidMailto from '@web3-storage/did-mailto'
  */
 
 /**
+ * Converts a Stripe customer ID to an Account ID.
+ * e.g:
+ *   cus_1234567890 -> stripe:cus_1234567890
  * 
  * @param {string} stripeID 
  * @returns {AccountID}
@@ -14,6 +17,17 @@ import * as DidMailto from '@web3-storage/did-mailto'
 export function stripeIDToAccountID(stripeID) {
   return /** @type {AccountID} */(`stripe:${stripeID}`)
 }
+
+/**
+ * Converts an Account ID to a Stripe customer ID.
+ * e.g:
+ *   stripe:cus_1234567890 -> cus_1234567890
+ * 
+ * @param {AccountID} accountID 
+ * @returns {string}
+ */
+export const accountIDToStripeCustomerID = (accountID) => accountID.slice('stripe:'.length)
+
 
 /**
  *

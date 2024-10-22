@@ -6,4 +6,4 @@ import { encode, validate } from '../data/egress.js'
  * @param {{ url: URL }} context
  */
 export const createEgressTrafficQueue = (conf, { url }) =>
-    createQueueAdderClient(conf, { url, encode, validate })
+  createQueueAdderClient(conf, { url, encode, validate })
