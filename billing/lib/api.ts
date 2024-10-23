@@ -133,6 +133,11 @@ export interface UsageListKey { customer: CustomerDID, from: Date }
 
 export type UsageStore = StorePutter<Usage>
 
+/**
+ * Store for egress traffic data.
+ */
+export type EgressTrafficEventStore = StorePutter<EgressTrafficData> & StoreLister<EgressTrafficEventListKey, EgressTrafficData>
+
 // Billing queues /////////////////////////////////////////////////////////////
 
 /**
@@ -162,6 +167,8 @@ export type CustomerBillingQueue = QueueAdder<CustomerBillingInstruction>
  * Captures details about egress traffic that should be billed for a given period
  */
 export interface EgressTrafficData {
+  /** Space DID (did:key:...). */
+  space: ConsumerDID
   /** Customer DID (did:mailto:...). */ 
   customer: CustomerDID
   /** Resource that was served. */
@@ -170,12 +177,19 @@ export interface EgressTrafficData {
   bytes: bigint
   /** Time the egress traffic was served at. */
   servedAt: Date
+  /** UCAN invocation IDthat caused the egress traffic. */
+  cause: UnknownLink
 }
 
 /**
  * Queue for egress traffic data.
  */
 export type EgressTrafficQueue = QueueAdder<EgressTrafficData>
+
+/**
+ * List key for egress traffic data.
+ */
+export interface EgressTrafficEventListKey { space: ConsumerDID, customer: CustomerDID, from: Date }
 
 /**
  * Captures details about a space that should be billed for a given customer in

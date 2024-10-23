@@ -1,4 +1,4 @@
-import { encode } from '../../data/egress.js'
+import { encodeStr } from '../../data/egress.js'
 import { randomCustomer } from '../helpers/customer.js'
 import { randomDIDMailto } from '../helpers/did.js'
 import { randomEgressEvent } from '../helpers/egress.js'
@@ -34,7 +34,7 @@ export const test = {
       const events = await Promise.all(
         Array.from(
           { length: maxEvents },
-          () => randomEgressEvent(customer)
+          async () => await randomEgressEvent(customer)
         )
       )
 
@@ -49,7 +49,7 @@ export const test = {
       const sqsEventBatch = {
         Records: events.map(e => ({
           // @type {import('aws-lambda').SQSRecord}
-          body: encode(e).ok ?? '',
+          body: encodeStr(e).ok ?? '',
           messageId: Math.random().toString(),
           receiptHandle: Math.random().toString(),
           awsRegion: ctx.region,

@@ -63,18 +63,22 @@ export function useUsageStore({ spaceSnapshotStore, spaceDiffStore, egressTraffi
     /**
      * Handle egress traffic data and enqueues it, so the billing system can process it and update the Stripe Billing Meter API.
      * 
+     * @param {import('@web3-storage/upload-api').SpaceDID} space
      * @param {import('@web3-storage/upload-api').AccountDID} customer
      * @param {import('@web3-storage/upload-api').UnknownLink} resource
      * @param {bigint} bytes
      * @param {Date} servedAt
+     * @param {import('@web3-storage/upload-api').UnknownLink} cause
      * @returns {Promise<import('@ucanto/interface').Result<import('@ucanto/interface').Unit, import('@ucanto/interface').Failure>>}
      */
-    async record(customer, resource, bytes, servedAt) {
+    async record(space, customer, resource, bytes, servedAt, cause) {
       const record = {
+        space,
         customer,
         resource,
         bytes,
-        servedAt
+        servedAt,
+        cause
       }
 
       const result = await egressTrafficQueue.add(record)

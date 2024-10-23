@@ -8,7 +8,7 @@ import { decode as decodeSpaceBillingInstruction } from '../../data/space-billin
 import { encode as encodeSubscription, validate as validateSubscription } from '../../data/subscription.js'
 import { encode as encodeConsumer, validate as validateConsumer } from '../../data/consumer.js'
 import { decode as decodeUsage, lister as usageLister } from '../../data/usage.js'
-import { decodeStr as decodeEgressTrafficEvent } from '../../data/egress.js'
+import { decodeStr as decodeEgressTrafficEvent, validate as validateEgressTrafficEvent, encode as encodeEgressTrafficEvent } from '../../data/egress.js'
 import { createCustomerBillingQueue } from '../../queues/customer.js'
 import { createSpaceBillingQueue } from '../../queues/space.js'
 import { consumerTableProps, subscriptionTableProps } from '../../../upload-api/tables/index.js'
@@ -22,6 +22,7 @@ import { createQueueRemoverClient } from './queue.js'
 import { createEgressTrafficQueue } from '../../queues/egress-traffic.js'
 import { handler as createEgressTrafficHandler } from '../../functions/egress-traffic-queue.js'
 import Stripe from 'stripe'
+import { createEgressTrafficEventStore, egressTrafficTableProps } from '../../tables/egress-traffic.js'
 
 dotenv.config({ path: path.resolve('../.env.local'), override: true, debug: true })
 
@@ -190,6 +191,16 @@ export const createEgressTrafficTestContext = async () => {
     })
   }
 
+  const egressTrafficTable = await createTable(awsServices.dynamo.client, egressTrafficTableProps, 'egress-traffic-')
+  const egressTrafficEventStore = {
+    ...createEgressTrafficEventStore(awsServices.dynamo.client, { tableName: egressTrafficTable }),
+    ...createStorePutterClient(awsServices.dynamo.client, {
+      tableName: egressTrafficTable,
+      validate: validateEgressTrafficEvent, // assume test data is valid
+      encode: encodeEgressTrafficEvent
+    })
+  }
+
   const { stripe, stripeSecretKey, billingMeterEventName, billingMeterId } = createStripeService()
 
   // @ts-expect-error -- Don't need to initialize the full lambda context for testing
@@ -201,6 +212,8 @@ export const createEgressTrafficTestContext = async () => {
     region: region ?? '',
     customerTable,
     customerStore,
+    egressTrafficTable,
+    egressTrafficEventStore,
     billingMeterEventName,
     billingMeterId,
     stripeSecretKey,

@@ -64,3 +64,50 @@ export async function handleCustomerSubscriptionCreated(stripe, event, customerS
     })
   }
 }
+
+/**
+ * Records an egress traffic event in the Stripe Billing Meter API for the given customer account.
+ * 
+ * @param {import('stripe').Stripe} stripe
+ * @param {string} billingMeterEventName
+ * @param {import('../lib/api.js').EgressTrafficData} egressData
+ * @param {AccountID} customerAccount
+ */
+export async function recordBillingMeterEvent(stripe, billingMeterEventName, egressData, customerAccount) {
+  const stripeCustomerId = accountIDToStripeCustomerID(customerAccount)
+  /** @type {import('stripe').Stripe.Customer | import('stripe').Stripe.DeletedCustomer} */
+  const stripeCustomer = await stripe.customers.retrieve(stripeCustomerId)
+  if (stripeCustomer.deleted) {
+    return {
+      error: {
+        name: 'StripeCustomerNotFound',
+        message: `Customer ${stripeCustomerId} has been deleted from Stripe`,
+      }
+    }
+  }
+
+  /** @type {import('stripe').Stripe.Billing.MeterEvent} */
+  const meterEvent = await stripe.billing.meterEvents.create({
+    event_name: billingMeterEventName,
+    payload: {
+      stripe_customer_id: stripeCustomerId,
+      value: egressData.bytes.toString(),
+    },
+    timestamp: Math.floor(egressData.servedAt.getTime() / 1000),
+  },
+    {
+      idempotencyKey: `${egressData.servedAt.toISOString()}-${egressData.space}-${egressData.customer}-${egressData.resource}`
+    }
+  )
+
+  // Identifier is only set if the event was successfully created
+  if (meterEvent.identifier) {
+    return { ok: { meterEvent } }
+  }
+  return {
+    error: {
+      name: 'StripeBillingMeterEventCreationFailed',
+      message: `Error creating meter event for egress traffic in Stripe for customer ${egressData.customer} @ ${egressData.servedAt.toISOString()}`,
+    }
+  }
+}

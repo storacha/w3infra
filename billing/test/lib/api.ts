@@ -20,7 +20,8 @@ import {
   UsageListKey,
   Usage,
   EgressTrafficQueue,
-  EgressTrafficData
+  EgressTrafficData,
+  EgressTrafficEventStore
 } from '../../lib/api.js'
 import { Context, Handler, SQSEvent } from 'aws-lambda'
 import Stripe from 'stripe'
@@ -60,6 +61,8 @@ export interface EgressTrafficTestContext extends Context {
   region: string
   customerTable: string
   customerStore: CustomerStore
+  egressTrafficTable: string
+  egressTrafficEventStore: EgressTrafficEventStore
   billingMeterEventName: string
   billingMeterId: string
   stripeSecretKey: string
