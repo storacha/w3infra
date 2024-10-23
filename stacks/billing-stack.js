@@ -187,8 +187,8 @@ export function BillingStack ({ stack, app }) {
     bind: [stripeSecretKey],
     environment: {
       CUSTOMER_TABLE_NAME: customerTable.tableName,
-      // TODO (fforbeck): make this a config based on the env: local, staging, prod
-      STRIPE_BILLING_METER_EVENT_NAME: 'test-gateway-egress-traffic'
+      // Billing Meter Event Name for Stripe Test and Production APIs
+      STRIPE_BILLING_METER_EVENT_NAME: 'gateway-egress-traffic'
     }
   })
 
