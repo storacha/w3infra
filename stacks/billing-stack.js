@@ -17,6 +17,7 @@ export function BillingStack ({ stack, app }) {
     spaceSnapshotTable,
     spaceDiffTable,
     usageTable,
+    egressTrafficTable,
     stripeSecretKey
   } = use(BillingDbStack)
   const { subscriptionTable, consumerTable } = use(UploadDbStack)
@@ -187,6 +188,7 @@ export function BillingStack ({ stack, app }) {
     bind: [stripeSecretKey],
     environment: {
       CUSTOMER_TABLE_NAME: customerTable.tableName,
+      EGRESS_TRAFFIC_TABLE_NAME: egressTrafficTable.tableName,
       // Billing Meter Event Name for Stripe Test and Production APIs
       STRIPE_BILLING_METER_EVENT_NAME: 'gateway-egress-traffic'
     }
