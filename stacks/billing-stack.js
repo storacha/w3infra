@@ -182,7 +182,7 @@ export function BillingStack ({ stack, app }) {
 
   // Lambda that handles egress traffic tracking
   const egressTrafficQueueHandler = new Function(stack, 'egress-traffic-queue-handler', {
-    permissions: [customerTable],
+    permissions: [customerTable, egressTrafficTable],
     handler: 'billing/functions/egress-traffic-queue.handler',
     timeout: '15 minutes',
     bind: [stripeSecretKey],
