@@ -63,13 +63,13 @@ export function useUsageStore({ spaceSnapshotStore, spaceDiffStore, egressTraffi
     /**
      * Handle egress traffic data and enqueues it, so the billing system can process it and update the Stripe Billing Meter API.
      * 
-     * @param {import('@web3-storage/upload-api').SpaceDID} space
-     * @param {import('@web3-storage/upload-api').AccountDID} customer
-     * @param {import('@web3-storage/upload-api').UnknownLink} resource
-     * @param {bigint} bytes
-     * @param {Date} servedAt
-     * @param {import('@web3-storage/upload-api').UnknownLink} cause
-     * @returns {Promise<import('@ucanto/interface').Result<import('@ucanto/interface').Unit, import('@ucanto/interface').Failure>>}
+     * @param {import('@web3-storage/upload-api').SpaceDID} space - The space that the egress traffic is associated with.
+     * @param {import('@web3-storage/upload-api').AccountDID} customer - The customer that will be billed for the egress traffic.
+     * @param {import('@web3-storage/upload-api').UnknownLink} resource - The resource that was served.
+     * @param {number} bytes - The number of bytes that were served.
+     * @param {Date} servedAt - The date and time when the egress traffic was served.
+     * @param {import('@web3-storage/upload-api').UnknownLink} cause - The UCAN invocation ID that caused the egress traffic.
+     * @returns {Promise<import('@ucanto/interface').Result<import('@web3-storage/upload-api').EgressData, import('@ucanto/interface').Failure>>}
      */
     async record(space, customer, resource, bytes, servedAt, cause) {
       const record = {
@@ -84,7 +84,7 @@ export function useUsageStore({ spaceSnapshotStore, spaceDiffStore, egressTraffi
       const result = await egressTrafficQueue.add(record)
       if (result.error) return result
 
-      return { ok: record }
+      return { ok: { ...record, servedAt: servedAt.toISOString() } }
     }
   }
 }

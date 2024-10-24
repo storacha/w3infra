@@ -9,7 +9,7 @@ export const randomEgressEvent = async (customer) => ({
   space: await randomDID(),
   customer: customer.customer,
   resource: randomLink(),
-  bytes: BigInt(Math.floor(Math.random() * 1000000)),
+  bytes: Math.floor(Math.random() * 1000000),
   // Random timestamp within the last 1 hour
   servedAt: new Date(Date.now() - Math.floor(Math.random() * 60 * 60 * 1000)),
   cause: randomLink()

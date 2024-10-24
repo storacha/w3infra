@@ -174,7 +174,7 @@ export interface EgressTrafficData {
   /** Resource that was served. */
   resource: UnknownLink
   /** Number of bytes that were served. */
-  bytes: bigint
+  bytes: number
   /** Time the egress traffic was served at. */
   servedAt: Date
   /** UCAN invocation IDthat caused the egress traffic. */

@@ -56,7 +56,7 @@ export interface UCANStreamTestContext {
 export interface EgressTrafficTestContext extends Context {
   egressTrafficQueue: EgressTrafficQueue & QueueRemover<EgressTrafficData>
   egressTrafficQueueUrl: string
-  egressTrafficHandler: Handler<SQSEvent, { statusCode: number, body: string }>
+  egressTrafficHandler: Handler<SQSEvent, any>
   accountId: string
   region: string
   customerTable: string

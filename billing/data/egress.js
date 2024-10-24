@@ -10,7 +10,7 @@ export const egressSchema = Schema.struct({
   space: Schema.did({ method: 'key' }),
   customer: Schema.did({ method: 'mailto' }),
   resource: Schema.link(),
-  bytes: Schema.bigint(),
+  bytes: Schema.number(),
   servedAt: Schema.date(),
   cause: Schema.link(),
 })
@@ -26,7 +26,7 @@ export const encode = input => {
         space: input.space.toString(),
         customer: input.customer.toString(),
         resource: input.resource.toString(),
-        bytes: input.bytes.toString(),
+        bytes: Number(input.bytes),
         servedAt: input.servedAt.toISOString(),
         cause: input.cause.toString(),
       }
@@ -59,7 +59,7 @@ export const decode = input => {
         space: Schema.did({ method: 'key' }).from(input.space),
         customer: Schema.did({ method: 'mailto' }).from(input.customer),
         resource: Link.parse(/** @type {string} */(input.resource)),
-        bytes: BigInt(input.bytes),
+        bytes: Number(input.bytes),
         servedAt: new Date(input.servedAt),
         cause: Link.parse(/** @type {string} */(input.cause)),
       }
