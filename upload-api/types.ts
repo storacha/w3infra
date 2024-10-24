@@ -184,7 +184,7 @@ export interface ConsumerListRecord {
 
 export interface ConsumerTable {
   /** get a consumer record for a given provider */
-  get: (provider: ProviderDID, consumer: DIDKey) => Promise<{ subscription: string } | null>
+  get: (provider: ProviderDID, consumer: DIDKey) => Promise<{ subscription: string, customer: AccountDID } | null>
   /** get a consumer record for a given subscription */
   getBySubscription: (provider: ProviderDID, subscription: string) => Promise<{ consumer: DID } | null>
   /** add a consumer - a relationship between a provider, subscription and consumer */

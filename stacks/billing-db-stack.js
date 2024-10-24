@@ -3,6 +3,7 @@ import { customerTableProps } from '../billing/tables/customer.js'
 import { spaceDiffTableProps } from '../billing/tables/space-diff.js'
 import { spaceSnapshotTableProps } from '../billing/tables/space-snapshot.js'
 import { usageTableProps } from '../billing/tables/usage.js'
+import { egressTrafficTableProps } from '../billing/tables/egress-traffic.js'
 
 /**
  * @param {import('sst/constructs').StackContext} properties
@@ -15,15 +16,17 @@ export const BillingDbStack = ({ stack }) => {
     ...usageTableProps,
     stream: 'new_image'
   })
+  const egressTrafficTable = new Table(stack, 'egress-traffic', egressTrafficTableProps)
 
   stack.addOutputs({
     customerTableName: customerTable.tableName,
     spaceSnapshotTableName: spaceSnapshotTable.tableName,
     spaceDiffTableName: spaceDiffTable.tableName,
-    usageTable: usageTable.tableName
+    usageTable: usageTable.tableName,
+    egressTrafficTableName: egressTrafficTable.tableName
   })
 
   const stripeSecretKey = new Config.Secret(stack, 'STRIPE_SECRET_KEY')
 
-  return { customerTable, spaceSnapshotTable, spaceDiffTable, usageTable, stripeSecretKey }
+  return { customerTable, spaceSnapshotTable, spaceDiffTable, usageTable, egressTrafficTable, stripeSecretKey }
 }

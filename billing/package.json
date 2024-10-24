@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "test": "entail '**/*.spec.js'",
+    "test-only": "entail",
     "coverage": "c8 -r text -r html npm test"
   },
   "dependencies": {
@@ -13,7 +14,7 @@
     "@sentry/serverless": "^7.74.1",
     "@ucanto/interface": "^10.0.1",
     "@ucanto/server": "^10.0.0",
-    "@web3-storage/capabilities": "^17.1.1",
+    "@web3-storage/capabilities": "^17.4.0",
     "big.js": "^6.2.1",
     "lru-cache": "^11.0.0",
     "multiformats": "^13.1.0",

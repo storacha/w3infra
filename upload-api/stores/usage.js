@@ -4,15 +4,16 @@ import { iterateSpaceDiffs } from '@web3-storage/w3infra-billing/lib/space-billi
  * @param {object} conf
  * @param {import('@web3-storage/w3infra-billing/lib/api').SpaceSnapshotStore} conf.spaceSnapshotStore
  * @param {import('@web3-storage/w3infra-billing/lib/api').SpaceDiffStore} conf.spaceDiffStore
+ * @param {import('@web3-storage/w3infra-billing/lib/api').EgressTrafficQueue} conf.egressTrafficQueue
  */
-export function useUsageStore ({ spaceSnapshotStore, spaceDiffStore }) {
+export function useUsageStore({ spaceSnapshotStore, spaceDiffStore, egressTrafficQueue }) {
   return {
     /**
      * @param {import('@web3-storage/upload-api').ProviderDID} provider
      * @param {import('@web3-storage/upload-api').SpaceDID} space
      * @param {{ from: Date, to: Date }} period
      */
-    async report (provider, space, period) {
+    async report(provider, space, period) {
       const snapResult = await spaceSnapshotStore.get({
         provider,
         space,
@@ -57,6 +58,33 @@ export function useUsageStore ({ spaceSnapshotStore, spaceDiffStore }) {
         events,
       }
       return { ok: report }
+    },
+
+    /**
+     * Handle egress traffic data and enqueues it, so the billing system can process it and update the Stripe Billing Meter API.
+     * 
+     * @param {import('@web3-storage/upload-api').SpaceDID} space - The space that the egress traffic is associated with.
+     * @param {import('@web3-storage/upload-api').AccountDID} customer - The customer that will be billed for the egress traffic.
+     * @param {import('@web3-storage/upload-api').UnknownLink} resource - The resource that was served.
+     * @param {number} bytes - The number of bytes that were served.
+     * @param {Date} servedAt - The date and time when the egress traffic was served.
+     * @param {import('@web3-storage/upload-api').UnknownLink} cause - The UCAN invocation ID that caused the egress traffic.
+     * @returns {Promise<import('@ucanto/interface').Result<import('@web3-storage/upload-api').EgressData, import('@ucanto/interface').Failure>>}
+     */
+    async record(space, customer, resource, bytes, servedAt, cause) {
+      const record = {
+        space,
+        customer,
+        resource,
+        bytes,
+        servedAt,
+        cause
+      }
+
+      const result = await egressTrafficQueue.add(record)
+      if (result.error) return result
+
+      return { ok: { ...record, servedAt: servedAt.toISOString() } }
     }
   }
 }

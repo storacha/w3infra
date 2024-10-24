@@ -7,6 +7,9 @@ import * as DidMailto from '@web3-storage/did-mailto'
  */
 
 /**
+ * Converts a Stripe customer ID to an Account ID.
+ * e.g:
+ *   cus_1234567890 -> stripe:cus_1234567890
  * 
  * @param {string} stripeID 
  * @returns {AccountID}
@@ -14,6 +17,17 @@ import * as DidMailto from '@web3-storage/did-mailto'
 export function stripeIDToAccountID(stripeID) {
   return /** @type {AccountID} */(`stripe:${stripeID}`)
 }
+
+/**
+ * Converts an Account ID to a Stripe customer ID.
+ * e.g:
+ *   stripe:cus_1234567890 -> cus_1234567890
+ * 
+ * @param {AccountID} accountID 
+ * @returns {string}
+ */
+export const accountIDToStripeCustomerID = (accountID) => accountID.slice('stripe:'.length)
+
 
 /**
  *
@@ -48,5 +62,52 @@ export async function handleCustomerSubscriptionCreated(stripe, event, customerS
       insertedAt: new Date(),
       updatedAt: new Date()
     })
+  }
+}
+
+/**
+ * Records an egress traffic event in the Stripe Billing Meter API for the given customer account.
+ * 
+ * @param {import('stripe').Stripe} stripe
+ * @param {string} billingMeterEventName
+ * @param {import('../lib/api.js').EgressTrafficData} egressData
+ * @param {AccountID} customerAccount
+ */
+export async function recordBillingMeterEvent(stripe, billingMeterEventName, egressData, customerAccount) {
+  const stripeCustomerId = accountIDToStripeCustomerID(customerAccount)
+  /** @type {import('stripe').Stripe.Customer | import('stripe').Stripe.DeletedCustomer} */
+  const stripeCustomer = await stripe.customers.retrieve(stripeCustomerId)
+  if (stripeCustomer.deleted) {
+    return {
+      error: {
+        name: 'StripeCustomerNotFound',
+        message: `Customer ${stripeCustomerId} has been deleted from Stripe`,
+      }
+    }
+  }
+
+  /** @type {import('stripe').Stripe.Billing.MeterEvent} */
+  const meterEvent = await stripe.billing.meterEvents.create({
+    event_name: billingMeterEventName,
+    payload: {
+      stripe_customer_id: stripeCustomerId,
+      value: egressData.bytes.toString(),
+    },
+    timestamp: Math.floor(egressData.servedAt.getTime() / 1000),
+  },
+    {
+      idempotencyKey: `${egressData.servedAt.toISOString()}-${egressData.space}-${egressData.customer}-${egressData.resource}`
+    }
+  )
+
+  // Identifier is only set if the event was successfully created
+  if (meterEvent.identifier) {
+    return { ok: { meterEvent } }
+  }
+  return {
+    error: {
+      name: 'StripeBillingMeterEventCreationFailed',
+      message: `Error creating meter event for egress traffic in Stripe for customer ${egressData.customer} @ ${egressData.servedAt.toISOString()}`,
+    }
   }
 }
