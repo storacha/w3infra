@@ -211,5 +211,5 @@ export function BillingStack ({ stack, app }) {
     EgressTrafficQueueURL: egressTrafficQueue.queueUrl
   })
 
-  return { billingCron }
+  return { billingCron, egressTrafficQueue }
 }
