@@ -9,6 +9,7 @@ import {
 import { StartingPosition, FilterCriteria, FilterRule } from 'aws-cdk-lib/aws-lambda'
 import { UploadDbStack } from './upload-db-stack.js'
 import { BillingDbStack } from './billing-db-stack.js'
+import { BillingStack } from './billing-stack.js'
 import { CarparkStack } from './carpark-stack.js'
 import { FilecoinStack } from './filecoin-stack.js'
 import { UcanInvocationStack } from './ucan-invocation-stack.js'
@@ -45,9 +46,10 @@ export function UploadApiStack({ stack, app }) {
   const { carparkBucket } = use(CarparkStack)
   const { allocationTable, storeTable, uploadTable, delegationBucket, delegationTable, revocationTable, adminMetricsTable, spaceMetricsTable, consumerTable, subscriptionTable, rateLimitTable, pieceTable, privateKey, contentClaimsPrivateKey } = use(UploadDbStack)
   const { invocationBucket, taskBucket, workflowBucket, ucanStream } = use(UcanInvocationStack)
-  const { customerTable, spaceDiffTable, spaceSnapshotTable, stripeSecretKey } = use(BillingDbStack)
+  const { customerTable, spaceDiffTable, spaceSnapshotTable, egressTrafficTable, stripeSecretKey } = use(BillingDbStack)
   const { pieceOfferQueue, filecoinSubmitQueue } = use(FilecoinStack)
   const { blockAdvertPublisherQueue, blockIndexWriterQueue } = use(IndexerStack)
+  const { egressTrafficQueue } = use(BillingStack)
 
   // Setup API
   const customDomains = process.env.HOSTED_ZONES?.split(',').map(zone => getCustomDomain(stack.stage, zone))
@@ -82,6 +84,7 @@ export function UploadApiStack({ stack, app }) {
             pieceTable,
             spaceDiffTable,
             spaceSnapshotTable,
+            egressTrafficTable,
             carparkBucket,
             invocationBucket,
             taskBucket,
@@ -91,6 +94,7 @@ export function UploadApiStack({ stack, app }) {
             filecoinSubmitQueue,
             blockAdvertPublisherQueue,
             blockIndexWriterQueue,
+            egressTrafficQueue,
           ],
           environment: {
             DID: process.env.UPLOAD_API_DID ?? '',
@@ -119,6 +123,7 @@ export function UploadApiStack({ stack, app }) {
             FILECOIN_SUBMIT_QUEUE_URL: filecoinSubmitQueue.queueUrl,
             BLOCK_ADVERT_PUBLISHER_QUEUE_URL: blockAdvertPublisherQueue.queueUrl,
             BLOCK_INDEX_WRITER_QUEUE_URL: blockIndexWriterQueue.queueUrl,
+            EGRESS_TRAFFIC_QUEUE_URL: egressTrafficQueue.queueUrl,
             NAME: pkg.name,
             VERSION: pkg.version,
             COMMIT: git.commmit,

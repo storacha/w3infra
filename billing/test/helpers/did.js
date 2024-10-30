@@ -8,7 +8,7 @@ const randomDomain = () =>
   `${randomAlphas(randomInteger(1, 32))}.${tlds[randomInteger(0, tlds.length)]}`
 
 /** @returns {import("@ucanto/interface").DID<'mailto'>} */
-export const randomDIDMailto = () => 
+export const randomDIDMailto = () =>
   `did:mailto:${randomDomain()}:${randomAlphas(randomInteger(1, 16))}`
 
 /** @returns {Promise<import("@ucanto/interface").DID>} */

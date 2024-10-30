@@ -98,7 +98,8 @@ export function useConsumerTable (dynamoDb, tableName) {
       // provider/consumer pair, but I suspect we'll never get there
       const record = response.Items?.map(i => unmarshall(i)).find(i => i.provider === provider)
       return record ? {
-        subscription: record.subscription
+        subscription: record.subscription,
+        customer: record.customer
       } : null
     },
 

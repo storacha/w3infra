@@ -1,4 +1,7 @@
-import { handleCustomerSubscriptionCreated } from '../../utils/stripe.js'
+import { 
+  accountIDToStripeCustomerID, 
+  stripeIDToAccountID,
+  handleCustomerSubscriptionCreated } from '../../utils/stripe.js'
 import * as DidMailto from '@web3-storage/did-mailto'
 
 
@@ -44,5 +47,17 @@ export const test = {
     assert.ok(result.ok)
     const customerRecord = await ctx.customerStore.get({ customer })
     assert.equal(customerRecord.ok?.product, product)
+  },
+
+  'should convert an account ID to a stripe customer ID': (/** @type {import('entail').assert} */ assert) => {
+    const accountID = 'stripe:cus_1234567890'
+    const stripeCustomerId = accountIDToStripeCustomerID(accountID)
+    assert.equal(stripeCustomerId, 'cus_1234567890')
+  },
+
+  'should convert a stripe customer ID to an account ID': (/** @type {import('entail').assert} */ assert) => {
+    const stripeCustomerId = 'cus_1234567890'
+    const accountID = stripeIDToAccountID(stripeCustomerId)
+    assert.equal(accountID, 'stripe:cus_1234567890')
   }
 }

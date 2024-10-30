@@ -1,3 +1,5 @@
+import dotenv from 'dotenv'
+import path from 'node:path'
 import { createDynamoDB, createSQS, createQueue, createTable } from './aws.js'
 import { createCustomerStore, customerTableProps } from '../../tables/customer.js'
 import { encode as encodeCustomer, validate as validateCustomer } from '../../data/customer.js'
@@ -6,6 +8,7 @@ import { decode as decodeSpaceBillingInstruction } from '../../data/space-billin
 import { encode as encodeSubscription, validate as validateSubscription } from '../../data/subscription.js'
 import { encode as encodeConsumer, validate as validateConsumer } from '../../data/consumer.js'
 import { decode as decodeUsage, lister as usageLister } from '../../data/usage.js'
+import { decodeStr as decodeEgressTrafficEvent, validate as validateEgressTrafficEvent, encode as encodeEgressTrafficEvent } from '../../data/egress.js'
 import { createCustomerBillingQueue } from '../../queues/customer.js'
 import { createSpaceBillingQueue } from '../../queues/space.js'
 import { consumerTableProps, subscriptionTableProps } from '../../../upload-api/tables/index.js'
@@ -16,6 +19,12 @@ import { createSpaceDiffStore, spaceDiffTableProps } from '../../tables/space-di
 import { createSpaceSnapshotStore, spaceSnapshotTableProps } from '../../tables/space-snapshot.js'
 import { createUsageStore, usageTableProps } from '../../tables/usage.js'
 import { createQueueRemoverClient } from './queue.js'
+import { createEgressTrafficQueue } from '../../queues/egress-traffic.js'
+import { handler as createEgressTrafficHandler } from '../../functions/egress-traffic-queue.js'
+import Stripe from 'stripe'
+import { createEgressTrafficEventStore, egressTrafficTableProps } from '../../tables/egress-traffic.js'
+
+dotenv.config({ path: path.resolve('../.env.local'), override: true, debug: true })
 
 /**
  * @typedef {{
@@ -31,6 +40,26 @@ const createAWSServices = async () => {
     dynamo: await createDynamoDB(),
     sqs: await createSQS()
   }
+}
+
+/**
+ * @returns {{ stripe: Stripe, stripeSecretKey: string, billingMeterEventName: string, billingMeterId: string }}
+ */
+const createStripeService = () => {
+  const stripeSecretKey = process.env.STRIPE_TEST_SECRET_KEY
+  if (!stripeSecretKey) {
+    throw new Error('STRIPE_TEST_SECRET_KEY environment variable is not set')
+  }
+  const billingMeterEventName = process.env.STRIPE_BILLING_METER_EVENT_NAME
+  if (!billingMeterEventName) {
+    throw new Error('STRIPE_BILLING_METER_EVENT_NAME environment variable is not set')
+  }
+  const billingMeterId = process.env.STRIPE_BILLING_METER_ID
+  if (!billingMeterId) {
+    throw new Error('STRIPE_BILLING_METER_ID environment variable is not set')
+  }
+  const stripe = new Stripe(stripeSecretKey, { apiVersion: "2023-10-16" })
+  return { stripe, stripeSecretKey, billingMeterEventName, billingMeterId }
 }
 
 export const createBillingCronTestContext = async () => {
@@ -135,6 +164,61 @@ export const createUCANStreamTestContext = async () => {
   }
 
   return { consumerStore, spaceDiffStore }
+}
+
+/**
+ * @returns {Promise<import('../lib/api').EgressTrafficTestContext>}
+ */
+export const createEgressTrafficTestContext = async () => {
+  await createAWSServices()
+
+  const egressQueueURL = new URL(await createQueue(awsServices.sqs.client, 'egress-traffic-queue-'))
+  const egressTrafficQueue = {
+    add: createEgressTrafficQueue(awsServices.sqs.client, { url: egressQueueURL }).add,
+    remove: createQueueRemoverClient(awsServices.sqs.client, { url: egressQueueURL, decode: decodeEgressTrafficEvent }).remove,
+  }
+
+  const accountId = (await awsServices.sqs.client.config.credentials()).accountId
+  const region = 'us-west-2'
+
+  const customerTable = await createTable(awsServices.dynamo.client, customerTableProps, 'customer-')
+  const customerStore = {
+    ...createCustomerStore(awsServices.dynamo.client, { tableName: customerTable }),
+    ...createStorePutterClient(awsServices.dynamo.client, {
+      tableName: customerTable,
+      validate: validateCustomer, // assume test data is valid
+      encode: encodeCustomer
+    })
+  }
+
+  const egressTrafficTable = await createTable(awsServices.dynamo.client, egressTrafficTableProps, 'egress-traffic-')
+  const egressTrafficEventStore = {
+    ...createEgressTrafficEventStore(awsServices.dynamo.client, { tableName: egressTrafficTable }),
+    ...createStorePutterClient(awsServices.dynamo.client, {
+      tableName: egressTrafficTable,
+      validate: validateEgressTrafficEvent, // assume test data is valid
+      encode: encodeEgressTrafficEvent
+    })
+  }
+
+  const { stripe, stripeSecretKey, billingMeterEventName, billingMeterId } = createStripeService()
+
+  // @ts-expect-error -- Don't need to initialize the full lambda context for testing
+  return {
+    egressTrafficQueue,
+    egressTrafficQueueUrl: egressQueueURL.toString(),
+    egressTrafficHandler: createEgressTrafficHandler,
+    accountId: accountId ?? '',
+    region: region ?? '',
+    customerTable,
+    customerStore,
+    egressTrafficTable,
+    egressTrafficEventStore,
+    billingMeterEventName,
+    billingMeterId,
+    stripeSecretKey,
+    stripe,
+  }
 }
 
 /**

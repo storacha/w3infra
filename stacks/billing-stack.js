@@ -17,6 +17,7 @@ export function BillingStack ({ stack, app }) {
     spaceSnapshotTable,
     spaceDiffTable,
     usageTable,
+    egressTrafficTable,
     stripeSecretKey
   } = use(BillingDbStack)
   const { subscriptionTable, consumerTable } = use(UploadDbStack)
@@ -179,5 +180,36 @@ export function BillingStack ({ stack, app }) {
     CustomDomain: customDomain ? `https://${customDomain.domainName}` : 'Set BILLING_HOSTED_ZONE in env to deploy to a custom domain'
   })
 
-  return { billingCron }
+  // Lambda that handles egress traffic tracking
+  const egressTrafficQueueHandler = new Function(stack, 'egress-traffic-queue-handler', {
+    permissions: [customerTable, egressTrafficTable],
+    handler: 'billing/functions/egress-traffic-queue.handler',
+    timeout: '15 minutes',
+    bind: [stripeSecretKey],
+    environment: {
+      CUSTOMER_TABLE_NAME: customerTable.tableName,
+      EGRESS_TRAFFIC_TABLE_NAME: egressTrafficTable.tableName,
+      // Billing Meter Event Name for Stripe Test and Production APIs
+      STRIPE_BILLING_METER_EVENT_NAME: 'gateway-egress-traffic'
+    }
+  })
+
+  // Queue for egress traffic tracking
+  const egressTrafficDLQ = new Queue(stack, 'egress-traffic-dlq', {
+    cdk: { queue: { retentionPeriod: Duration.days(14) } }
+  })
+  const egressTrafficQueue = new Queue(stack, 'egress-traffic-queue', {
+    consumer: {
+      function: egressTrafficQueueHandler,
+      deadLetterQueue: egressTrafficDLQ.cdk.queue,
+      cdk: { eventSource: { batchSize: 1 } }
+    },
+    cdk: { queue: { visibilityTimeout: Duration.minutes(15) } }
+  })
+
+  stack.addOutputs({
+    EgressTrafficQueueURL: egressTrafficQueue.queueUrl
+  })
+
+  return { billingCron, egressTrafficQueue }
 }
