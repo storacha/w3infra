@@ -1,7 +1,7 @@
 import { Schema } from '@ucanto/core'
-import * as ServiceBlobCaps from '@web3-storage/capabilities/web3.storage/blob'
-import * as BlobCaps from '@web3-storage/capabilities/blob'
-import * as StoreCaps from '@web3-storage/capabilities/store'
+import * as ServiceBlobCaps from '@storacha/capabilities/blob'
+import * as BlobCaps from '@storacha/capabilities/space/blob'
+import * as StoreCaps from '@storacha/capabilities/store'
 import { findSpaceUsageDeltas, storeSpaceUsageDeltas } from '../../lib/ucan-stream.js'
 import { randomConsumer } from '../helpers/consumer.js'
 import { randomLink } from '../helpers/dag.js'
@@ -29,10 +29,10 @@ export const test = {
 
     /**
      * @type {import('../../lib/api.js').UcanReceiptMessage<[
-     *   | import('@web3-storage/capabilities/types').BlobAllocate
-     *   | import('@web3-storage/capabilities/types').BlobRemove
-     *   | import('@web3-storage/capabilities/types').StoreAdd
-     *   | import('@web3-storage/capabilities/types').StoreRemove
+     *   | import('@storacha/capabilities/types').BlobAllocate
+     *   | import('@storacha/capabilities/types').BlobRemove
+     *   | import('@storacha/capabilities/types').StoreAdd
+     *   | import('@storacha/capabilities/types').StoreRemove
      * ]>[]}
      */
     const receipts = [{
@@ -132,7 +132,7 @@ export const test = {
 
     const from = new Date()
 
-    /** @type {import('../../lib/api.js').UcanReceiptMessage<[import('@web3-storage/capabilities/types').StoreAdd]>[]} */
+    /** @type {import('../../lib/api.js').UcanReceiptMessage<[import('@storacha/capabilities/types').StoreAdd]>[]} */
     const receipts = [{
       type: 'receipt',
       carCid: randomLink(),
@@ -203,7 +203,7 @@ export const test = {
 
     const from = new Date()
 
-    /** @type {import('../../lib/api.js').UcanReceiptMessage<[import('@web3-storage/capabilities/types').StoreAdd]>[]} */
+    /** @type {import('../../lib/api.js').UcanReceiptMessage<[import('@storacha/capabilities/types').StoreAdd]>[]} */
     const receipts = [{
       type: 'receipt',
       carCid: randomLink(),

@@ -1,8 +1,7 @@
 import { Table, Bucket, Config } from 'sst/constructs'
 
 import {
-  allocationTableProps,
-  storeTableProps,
+  blobRegistryTableProps,
   uploadTableProps,
   consumerTableProps,
   subscriptionTableProps,
@@ -10,7 +9,8 @@ import {
   revocationTableProps,
   rateLimitTableProps,
   adminMetricsTableProps,
-  spaceMetricsTableProps
+  spaceMetricsTableProps,
+  storageProviderTableProps
 } from '../upload-api/tables/index.js'
 import {
   pieceTableProps
@@ -33,16 +33,12 @@ export function UploadDbStack({ stack, app }) {
   const contentClaimsPrivateKey = new Config.Secret(stack, 'CONTENT_CLAIMS_PRIVATE_KEY')
 
   /**
-   * The allocation table tracks allocated multihashes per space.
+   * The blob registry table contains information about blob registrations
+   * per space.
+   *
    * Used by the blob/* service capabilities.
    */
-  const allocationTable = new Table(stack, 'allocation', allocationTableProps)
-
-  /**
-   * This table takes a stored CAR and makes an entry in the store table
-   * Used by the store/* service capabilities.
-   */
-  const storeTable = new Table(stack, 'store', storeTableProps)
+  const blobRegistryTable = new Table(stack, 'blob-registry', blobRegistryTableProps)
 
   /**
    * This table maps stored CAR files (shards) to an upload root cid.
@@ -54,7 +50,7 @@ export function UploadDbStack({ stack, app }) {
    * This table takes a stored CAR and makes an entry in the piece table
    * Used by the filecoin/* service capabilities.
    */
-  const pieceTable = new Table(stack, 'piece-v2', {
+  const pieceTable = new Table(stack, 'piece', {
     ...pieceTableProps,
     // information that will be written to the stream
     stream: 'new_image',
@@ -105,9 +101,13 @@ export function UploadDbStack({ stack, app }) {
    */
   const spaceMetricsTable = new Table(stack, 'space-metrics', spaceMetricsTableProps)
 
+  /**
+   * This table tracks storage providers in the system.
+   */
+  const storageProviderTable = new Table(stack, 'storage-provider', storageProviderTableProps)
+
   return {
-    allocationTable,
-    storeTable,
+    blobRegistryTable,
     uploadTable,
     pieceTable,
     consumerTable,
@@ -118,6 +118,7 @@ export function UploadDbStack({ stack, app }) {
     revocationTable,
     adminMetricsTable,
     spaceMetricsTable,
+    storageProviderTable,
     privateKey,
     contentClaimsPrivateKey
   }

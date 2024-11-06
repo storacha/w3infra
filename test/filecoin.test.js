@@ -2,7 +2,7 @@ import { testFilecoin as test } from './helpers/context.js'
 import { fetch } from '@web-std/fetch'
 import pWaitFor from 'p-wait-for'
 import * as CAR from '@ucanto/transport/car'
-import { Storefront } from '@web3-storage/filecoin-client'
+import { Storefront } from '@storacha/filecoin-client'
 import * as Link from 'multiformats/link'
 import * as raw from 'multiformats/codecs/raw'
 import { base58btc } from 'multiformats/bases/base58'
@@ -25,14 +25,14 @@ import { pollQueryTable } from './helpers/table.js'
 import { waitForStoreOperationOkResult } from './helpers/store.js'
 
 /**
- * @typedef {import('@web3-storage/w3up-client/src/types.js').CARLink} CARLink
+ * @typedef {import('@storacha/client/src/types.js').CARLink} CARLink
  * @typedef {import('@web3-storage/data-segment').PieceLink} PieceLink
  */
 
 test.before(t => {
   t.context = {
     apiEndpoint: getApiEndpoint(),
-    pieceDynamo: getDynamoDb('piece-v2'),
+    pieceDynamo: getDynamoDb('piece'),
   }
 })
 
@@ -245,7 +245,7 @@ test('w3filecoin integration flow', async t => {
     //   async () => {
     //     // Trigger cron to update and issue receipts based on deals
     //     await pRetry(async () => {
-    //       const url = 'https://staging.dealer.web3.storage/cron'
+    //       const url = 'https://staging.dealer.storacha.network/cron'
     //       const res = await fetch(url)
     //       if (!res.ok) throw new Error(`failed request to ${url}: ${res.status}`)
     //     }, { onFailedAttempt: console.warn })

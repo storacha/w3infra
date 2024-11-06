@@ -194,7 +194,7 @@ export async function invokeAndExecuteTasks(
     proofs: [delegation]
   }))
   /**
-   * @type {import('@ucanto/interface').ConnectionView<import('@web3-storage/upload-api').Service>}
+   * @type {import('@ucanto/interface').ConnectionView<import('@storacha/upload-api').Service>}
    */
   const connection = connect({
     id: servicePrincipal,

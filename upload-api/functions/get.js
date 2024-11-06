@@ -9,7 +9,7 @@ Sentry.AWSLambda.init({
   tracesSampleRate: 1.0,
 })
 
-const repo = 'https://github.com/web3-storage/w3infra'
+const repo = 'https://github.com/storacha/upload-service-infra'
 
 /**
  * AWS HTTP Gateway handler for GET /version

@@ -9,7 +9,7 @@ import { base58btc } from 'multiformats/bases/base58'
 import { HeadObjectCommand } from '@aws-sdk/client-s3'
 import { PutItemCommand } from '@aws-sdk/client-dynamodb'
 import { marshall } from '@aws-sdk/util-dynamodb'
-import * as DidMailto from '@web3-storage/did-mailto'
+import * as DidMailto from '@storacha/did-mailto'
 
 import { METRICS_NAMES, SPACE_METRICS_NAMES } from '../upload-api/constants.js'
 
@@ -137,7 +137,7 @@ test('authorizations can be blocked by email or domain', async t => {
  * 10. Remove
  * 11. Verify metrics
  */
-test('w3infra store/upload integration flow', async t => {
+test('upload-service-infra store/upload integration flow', async t => {
   const stage = getStage()
   const writeTargetBucketName = process.env.R2_CARPARK_BUCKET_NAME
   if (!writeTargetBucketName) {

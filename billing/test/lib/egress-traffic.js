@@ -2,7 +2,7 @@ import { encodeStr } from '../../data/egress.js'
 import { randomCustomer } from '../helpers/customer.js'
 import { randomDIDMailto } from '../helpers/did.js'
 import { randomEgressEvent } from '../helpers/egress.js'
-import * as DidMailto from '@web3-storage/did-mailto'
+import * as DidMailto from '@storacha/did-mailto'
 
 /** @type {import('./api').TestSuite<import('./api').EgressTrafficTestContext>} */
 export const test = {

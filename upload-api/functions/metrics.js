@@ -3,9 +3,7 @@ import * as Prom from 'prom-client'
 
 import {
   METRICS_NAMES,
-  STORE_ADD,
   BLOB_ADD,
-  STORE_REMOVE,
   BLOB_REMOVE,
   UPLOAD_ADD,
   UPLOAD_REMOVE,
@@ -15,7 +13,7 @@ import {
   AGGREGATE_OFFER,
   AGGREGATE_ACCEPT,
   METRICS_NAMES as FILECOIN_METRIC_NAMES
-} from '@web3-storage/w3infra-filecoin/constants.js'
+} from '@storacha/upload-service-infra-filecoin/constants.js'
 
 import { createMetricsTable } from '../tables/metrics.js'
 
@@ -71,14 +69,10 @@ export async function recordMetrics (metrics, metricsTable) {
   const fetchedMetrics = await getMetrics(metricsTable)
 
   // invocations size
-  metrics.bytes.inc({ 'can': STORE_ADD }, fetchedMetrics[METRICS_NAMES.STORE_ADD_SIZE_TOTAL] || 0)
-  metrics.bytes.inc({ 'can': STORE_REMOVE }, fetchedMetrics[METRICS_NAMES.STORE_REMOVE_SIZE_TOTAL] || 0)
   metrics.bytes.inc({ 'can': BLOB_ADD }, fetchedMetrics[METRICS_NAMES.BLOB_ADD_SIZE_TOTAL] || 0)
   metrics.bytes.inc({ 'can': BLOB_REMOVE }, fetchedMetrics[METRICS_NAMES.BLOB_REMOVE_SIZE_TOTAL] || 0)
 
   // invocations count
-  metrics.invocations.inc({ 'can': STORE_ADD }, fetchedMetrics[METRICS_NAMES.STORE_ADD_TOTAL] || 0)
-  metrics.invocations.inc({ 'can': STORE_REMOVE }, fetchedMetrics[METRICS_NAMES.STORE_REMOVE_TOTAL] || 0)
   metrics.invocations.inc({ 'can': UPLOAD_ADD }, fetchedMetrics[METRICS_NAMES.UPLOAD_ADD_TOTAL] || 0)
   metrics.invocations.inc({ 'can': UPLOAD_REMOVE }, fetchedMetrics[METRICS_NAMES.UPLOAD_REMOVE_TOTAL] || 0)
   metrics.invocations.inc({ 'can': BLOB_ADD }, fetchedMetrics[METRICS_NAMES.BLOB_ADD_TOTAL] || 0)
@@ -101,7 +95,7 @@ export async function recordMetrics (metrics, metricsTable) {
  * @property {Prom.Counter<'can'>} aggregatedPiecesBytes
  */
 
-function createRegistry (ns = 'w3up', filecoinNs = 'w3filecoin') {
+function createRegistry (ns = 'upload', filecoinNs = 'filecoin') {
   const registry = new Prom.Registry()
   return {
     registry,

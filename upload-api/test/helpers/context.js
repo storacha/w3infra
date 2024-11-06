@@ -18,7 +18,7 @@ import anyTest from 'ava'
  * @property {string} spaceMetricsTableName
  * @property {import('../../types').CarStore} carStore
  * @property {string} carStoreBucketName
- * @property {import('@web3-storage/upload-api').AllocationsStorage} allocationsStorage
+ * @property {import('@storacha/upload-api').AllocationsStorage} allocationsStorage
  * @property {string} allocationsTableName
  *
  * @typedef {import("ava").TestFn<DynamoContext & S3Context & ServiceContext>} Test

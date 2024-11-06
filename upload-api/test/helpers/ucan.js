@@ -3,16 +3,16 @@ import * as CAR from '@ucanto/transport/car'
 import * as Signer from '@ucanto/principal/ed25519'
 import * as UcantoClient from '@ucanto/client'
 
-import { stringToDelegation } from '@web3-storage/access/encoding';
-import { connect, createServer } from '@web3-storage/upload-api';
-import { DebugEmail } from '@web3-storage/upload-api/test';
+import { stringToDelegation } from '@storacha/access/encoding';
+import { connect, createServer } from '@storacha/upload-api';
+import { DebugEmail } from '@storacha/upload-api/test';
 import { tableProps as claimsTableProps } from '@web3-storage/content-claims-infra/lib/store'
 import {
   createBucket,
   createTable
 } from '../helpers/resources.js';
 import { storeTableProps, uploadTableProps, allocationTableProps, consumerTableProps, delegationTableProps, subscriptionTableProps, rateLimitTableProps, revocationTableProps, spaceMetricsTableProps } from '../../tables/index.js';
-import { useAllocationsStorage } from '../../stores/allocations.js';
+import { useAllocationsStorage } from '../../stores/blob-registry.js';
 import { composeBlobStoragesWithOrderedHas } from '../../stores/blobs.js';
 import { composeCarStoresWithOrderedHas } from '../../buckets/car-store.js';
 import { useStoreTable } from '../../tables/store.js';
@@ -24,7 +24,7 @@ import { useDelegationsTable } from '../../tables/delegations.js';
 import { useRevocationsTable } from '../../stores/revocations.js';
 import { useDelegationsStore } from '../../buckets/delegations-store.js';
 import { useInvocationStore } from '../../buckets/invocation-store.js';
-import { useWorkflowStore } from '../../buckets/workflow-store.js';
+import { useAgentMessageStore } from '../../buckets/agent-message-store.js';
 import { useRateLimitTable } from '../../tables/rate-limit.js';
 import { useSpaceMetricsTable } from '../../tables/space-metrics.js';
 import { createCustomerStore, customerTableProps } from '../../../billing/tables/customer.js';
@@ -182,10 +182,10 @@ export const encodeAgentMessage = async (source) => {
 
 
 /**
- * @typedef {import('@web3-storage/upload-api').Assert} Assert
+ * @typedef {import('@storacha/upload-api').Assert} Assert
  * @typedef {(assert: Assert, context: TestContext) => unknown} Test
  * @typedef {Record<string, Test>} Tests
- * @typedef {import('@web3-storage/upload-api').UcantoServerTestContext} UploadAPITestContext
+ * @typedef {import('@storacha/upload-api').UcantoServerTestContext} UploadAPITestContext
  * @typedef {UploadAPITestContext & {
  * dynamo: import('@aws-sdk/client-dynamodb').DynamoDBClient
  * sqs: {
@@ -210,7 +210,7 @@ export const encodeAgentMessage = async (source) => {
  */
 export async function executionContextToUcantoTestServerContext(t) {
   const service = Signer.Signer.parse('MgCYWjE6vp0cn3amPan2xPO+f6EZ3I+KwuN1w2vx57vpJ9O0Bn4ci4jn8itwc121ujm7lDHkCW24LuKfZwIdmsifVysY=').withDID(
-    'did:web:test.web3.storage'
+    'did:web:test.storacha.network'
   );
   const { dynamo, sqs, s3, r2 } = t.context;
   const bucketName = await createBucket(s3)
@@ -275,7 +275,7 @@ export async function executionContextToUcantoTestServerContext(t) {
     : s3CarStoreBucket
 
   const signer = await Signer.Signer.generate();
-  const id = signer.withDID('did:web:test.web3.storage');
+  const id = signer.withDID('did:web:test.storacha.network');
   const aggregatorSigner = await Signer.Signer.generate();
 
   const revocationsStorage = useRevocationsTable(
@@ -288,7 +288,7 @@ export async function executionContextToUcantoTestServerContext(t) {
     {
       bucket: useDelegationsStore(s3, delegationsBucketName),
       invocationBucket: useInvocationStore(s3, invocationsBucketName),
-      workflowBucket: useWorkflowStore(s3, workflowBucketName),
+      workflowBucket: useAgentMessageStore(s3, workflowBucketName),
     }
   );
   const rateLimitsStorage = useRateLimitTable(
@@ -329,7 +329,7 @@ export async function executionContextToUcantoTestServerContext(t) {
     tableName: await createTable(dynamo, claimsTableProps)
   })
 
-  /** @type {import('@web3-storage/upload-api').UcantoServerContext} */
+  /** @type {import('@storacha/upload-api').UcantoServerContext} */
   const serviceContext = {
     id,
     signer: id,
@@ -413,7 +413,7 @@ export async function executionContextToUcantoTestServerContext(t) {
 
 /**
  * @param {URL} confirmationUrl
- * @returns {Promise<API.Invocation<import('@web3-storage/capabilities/types').AccessConfirm>>}
+ * @returns {Promise<API.Invocation<import('@storacha/capabilities/types').AccessConfirm>>}
  */
 export async function extractConfirmInvocation(confirmationUrl) {
   const delegation = stringToDelegation(
@@ -426,14 +426,14 @@ export async function extractConfirmInvocation(confirmationUrl) {
     throw new Error(`parsed unexpected delegation from confirmationUrl`)
   }
   const confirm =
-    /** @type {API.Invocation<import('@web3-storage/capabilities/types').AccessConfirm>} */ (
+    /** @type {API.Invocation<import('@storacha/capabilities/types').AccessConfirm>} */ (
       delegation
     )
   return confirm
 }
 
 /**
- * @param {API.ConnectionView<import('@web3-storage/access').Service>} connection
+ * @param {API.ConnectionView<import('@storacha/access').Service>} connection
  * @param {{ url: string|URL }} confirmation
  */
 export async function confirmConfirmationUrl(connection, confirmation) {

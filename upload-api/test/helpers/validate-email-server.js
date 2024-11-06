@@ -12,15 +12,13 @@ import http from 'node:http'
 import { render } from 'preact-render-to-string'
 import dotenv from 'dotenv'
 import { fileURLToPath } from 'node:url'
-
-import * as htmlStoracha from '../../html-storacha/index.jsx'
-import * as htmlW3s from '../../html-w3s/index.jsx'
+import * as html from '../../html/index.jsx'
 
 dotenv.config({
   path: fileURLToPath(new URL('../../../.env.local', import.meta.url)),
 })
 
-const HTMLS = { Storacha: htmlStoracha, 'web3.storage': htmlW3s }
+const HTMLS = { Storacha: html }
 
 const COMPONENTS = /** @type { const } */ ([
   'ValidateEmail',

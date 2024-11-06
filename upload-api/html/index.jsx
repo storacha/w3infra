@@ -233,7 +233,7 @@ export const ValidateEmail = ({
         <div class="box">
           <p>
             By registering with Storacha you agree to the Storacha{' '}
-            <a href="https://web3.storage/docs/terms/">Terms of Service</a>.
+            <a href="https://storacha.network/docs/terms/">Terms of Service</a>.
           </p>
         </div>
         <details class="box">

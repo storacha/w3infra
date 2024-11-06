@@ -1,7 +1,7 @@
 import fetch from '@web-std/fetch'
 
 /**
- * @typedef { import('@web3-storage/upload-api').ValidationEmailSend } ValidationEmailSend
+ * @typedef { import('@storacha/upload-api').ValidationEmailSend } ValidationEmailSend
  */
 
 /**
@@ -36,12 +36,12 @@ export class Email {
    */
   async sendValidation(opts) {
     const { hostname } = new URL(opts.url)
-    const emailParams = hostname.endsWith('web3.storage')
+    const emailParams = hostname.endsWith('storacha.network')
       ? {
-          From: this.sender || 'web3.storage <noreply@web3.storage>',
+          From: this.sender || 'storacha.network <noreply@storacha.network>',
           TemplateAlias: 'welcome',
           TemplateModel: {
-            product_url: 'https://web3.storage',
+            product_url: 'https://storacha.network',
             product_name: 'Web3 Storage',
             email: opts.to,
             action_url: opts.url,

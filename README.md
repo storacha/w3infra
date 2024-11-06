@@ -1,6 +1,6 @@
-# w3infra
+# Upload Service Infrastructure
 
-The Infra for [w3protocol].
+The infra for [upload service](https://github.com/storacha/upload-service).
 
 A [UCAN] based API to for storing CARs and registering uploads, built on [Ucanto] and [SST].
 
@@ -12,23 +12,20 @@ The repo contains the infra deployment code and the api implementation.
 
 ```
 ├── billing         - usage accounting and reporting to the payment system
-├── carpark         - lambda for announce new CARs in the carpark bucket
 ├── filecoin        - lambdas to get content into Filecoin deals
-├── indexer         - lambdas to connect w3up to E-IPFS
-├── replicator      - lambda to replicate buckets to R2
+├── roundabout      - redirects piece CIDs to signed URLs
 ├── stacks          - sst and aws cdk code to deploy all the things
-├── ucan-invocation - kinesis log data stream and its lambda consumers
 └── upload-api      - lambda & dynamoDB implementation of the upload-api http gateway
 ```
 
 To work on this codebase **you need**:
 
-- Node.js >= v16 (prod env is node v16)
+- Node.js >= v18 (prod env is node v18)
 - Install the deps with `npm i`
 
 You can then run the tests locally with `npm test`. 
 
-To try out a change submit a PR and you'll get temporary infra rolled out for you automatically at `https://<pr#>.up.web3.storage`.
+To try out a change submit a PR and you'll get temporary infra rolled out for you automatically at `https://<pr#>.upload.storacha.network`.
 
 [`sst`](https://sst.dev) is the framework we use to define what to deploy. Read the docs! https://sst.dev
 
@@ -36,7 +33,7 @@ To try out a change submit a PR and you'll get temporary infra rolled out for yo
 
 Deployments are managed by [seed.run]. 
 
-The `main` branch is deployed to https://staging.up.web3.storage and staging builds are promoted to prod manually via the UI at https://console.seed.run
+The `main` branch is deployed to https://staging.upload.storacha.network and staging builds are promoted to prod manually via the UI at https://console.seed.run
 
 ### Local dev
 
@@ -63,7 +60,7 @@ secrets using `sst secret set` (use `npm exec sst -- secret set` to do this in t
 `STRIPE_SECRET_KEY ` should be set to the "secret" API key found on the test mode API keys page: https://dashboard.stripe.com/test/apikeys
 
 To get a value for `STRIPE_ENDPOINT_SECRET` you'll need to create a webhook on https://dashboard.stripe.com/test/webhooks and point it at the Stripe webhook handler for your development server. You can get webhook handler URL by adding `/stripe` to the end of the 
-`w3infra-UploadApiStack` `ApiEndpoint` output after running `npm start` and letting it deploy. 
+`upload-service-infra-UploadApiStack` `ApiEndpoint` output after running `npm start` and letting it deploy. 
 The full value of `STRIPE_ENDPOINT_SECRET` will look something like `https://z1jsa5b24d.execute-api.us-west-2.amazonaws.com/stripe`.
 
 You can use the `stripe` CLI to trigger test events, like:
@@ -114,11 +111,11 @@ Ensure the following variables are set in the env when deploying
 
 #### `HOSTED_ZONES`
 
-The root domain(s) to deploy the w3up API to. e.g `up.web3.storage`. The value should match a hosted zone configured in route53 that your aws account has access to. Multiple zones can be specified, in which case they are seperated by a comma, and this will cause deployment to each specified zone.
+The root domain(s) to deploy the w3up API to. e.g `upload.storacha.network`. The value should match a hosted zone configured in route53 that your aws account has access to. Multiple zones can be specified, in which case they are seperated by a comma, and this will cause deployment to each specified zone.
 
 #### `ROUNDABOUT_HOSTED_ZONE`
 
-The domain to deploy the roundabout API to. e.g `roundabout.web3.storage`. The value should match a hosted zone configured in route53 that your aws account has access to.
+The domain to deploy the roundabout API to. e.g `roundabout.storacha.network`. The value should match a hosted zone configured in route53 that your aws account has access to.
 
 #### `ACCESS_SERVICE_URL`
 
@@ -150,7 +147,7 @@ URL of the filecoin deal tracker service.
 
 #### `UPLOAD_API_DID`
 
-[DID](https://www.w3.org/TR/did-core/) of the upload-api ucanto server. e.g. `did:web:up.web3.storage`. Optional: if omitted, a `did:key` will be derrived from `PRIVATE_KEY`
+[DID](https://www.w3.org/TR/did-core/) of the upload-api ucanto server. e.g. `did:web:upload.storacha.network`. Optional: if omitted, a `did:key` will be derrived from `PRIVATE_KEY`
 
 #### `R2_ACCESS_KEY_ID`
 
@@ -179,22 +176,6 @@ A comma-separated string of ServiceDIDs in use.
 #### `SENTRY_DSN`
 
 Data source name for Sentry application monitoring service.
-
-#### `EIPFS_INDEXER_SQS_ARN`
-
-AWS ARN for Elastic IPFS SQS indexer used to request Elastic IPFS to index given CAR files.
-
-#### `EIPFS_INDEXER_SQS_URL`
-
-AWS URL for Elastic IPFS SQS indexer used to request Elastic IPFS to index given CAR files.
-
-#### `EIPFS_MULTIHASHES_SQS_ARN`
-
-AWS ARN for Elastic IPFS SQS multihashes used to enqueue multihashes for indexed CAR files.
-
-#### `EIPFS_BLOCKS_CAR_POSITION_TABLE_ARN`
-
-AWS ARN for Elastic IPFS DynamoDB table used to store blocks and positions for indexed CAR files.
 
 #### `POSTMARK_TOKEN`
 
@@ -279,7 +260,7 @@ An endpoint for receiving signed Stripe webhooks.
 Returns version info for this api in JSON
 
 ```json
-{ "name": "@web3-storage/upload-api", "did": "did:foo:bar", "version": "3.0.0", "commit": "sha1", "branch": "main" }
+{ "name": "@storacha/upload-api", "did": "did:foo:bar", "version": "3.0.0", "commit": "sha1", "branch": "main" }
 ```
 
 ## UCAN Capabilities
@@ -321,11 +302,11 @@ Source: [api/service/upload/remove.js](api/service/store/remove.js)
 Use the JS [upload-client] to handle the details of content-addressing your files, encoding them into a CAR, and sending it to the service with a valid UCAN.
 
 ```js
-import { Agent } from '@web3-storage/access'
-import { store } from '@web3-storage/capabilities/store'
-import { upload } from '@web3-storage/capabilities/upload'
+import { Agent } from '@storacha/access'
+import { store } from '@storacha/capabilities/store'
+import { upload } from '@storacha/capabilities/upload'
 
-import { uploadFile } from '@web3-storage/upload-client'
+import { uploadFile } from '@storacha/upload-client'
 
 // holds your identity on this device
 const agent = await Agent.create()
@@ -347,4 +328,4 @@ const cid = await uploadFile({
 [Ucanto]: https://www.npmjs.com/package/ucanto
 [seed.run]: https://seed.run
 [w3protocol]: https://github.com/web3-storage/w3protocol
-[upload-client]: https://www.npmjs.com/package/@web3-storage/upload-client
+[upload-client]: https://www.npmjs.com/package/@storacha/upload-client

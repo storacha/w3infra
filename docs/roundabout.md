@@ -1,6 +1,6 @@
 # Roundabout
 
-> Roundabout allows the creation of short lived presigned URLs for content stored in web3.storage buckets (in R2). It can also get the HTTP request redirected to the given presigned URL.
+> Roundabout allows the creation of short lived presigned URLs for content stored in storacha.network buckets (in R2). It can also get the HTTP request redirected to the given presigned URL.
 
 ## HTTP API
 
@@ -8,13 +8,13 @@ The given API is currently public.
 
 ### `GET /{carCid}`
 
-Redirects to a presigned URL where the requested CAR file (by its CID) can be downloaded from. This will use web3.storage `carpark` as the location of the requested CARs. The request will return a `302 Redirect` to a created presigned URL.
+Redirects to a presigned URL where the requested CAR file (by its CID) can be downloaded from. This will use storacha.network `carpark` as the location of the requested CARs. The request will return a `302 Redirect` to a created presigned URL.
 
 It also supports a query parameter `expires` with the number of seconds this presigned URL should be valid for. You can set a value from one second to 7 days (604,800 seconds). By default the expiration is set for 3 days (259,200 seconds).
 
 ### `GET /key/{key}?bucket=bucket-name`
 
-Redirects to a presigned URL where the requested bucket value can be downloaded from by its key. Unlike `GET /{carCid}`, this endpoint takes a key and is compatible with any web3.storage account bucket. The request will return a `302 Redirect` to a created presigned URL.
+Redirects to a presigned URL where the requested bucket value can be downloaded from by its key. Unlike `GET /{carCid}`, this endpoint takes a key and is compatible with any storacha.network account bucket. The request will return a `302 Redirect` to a created presigned URL.
 
 It also supports a query parameter `expires` with the number of seconds this presigned URL should be valid for. You can set a value from one second to 7 days (604,800 seconds). By default the expiration is set for 3 days (259,200 seconds).
 
@@ -25,7 +25,7 @@ Note that there is a bucket list of accepted buckets.
 ### Download CAR file via CURL
 
 ```console
-curl -L -v https://roundabout.web3.storage/bagbaiera222226db4v4oli5fldqghzgbv5rqv3n4ykyfxk7shfr42bfnqwua --output bagbaiera222226db4v4oli5fldqghzgbv5rqv3n4ykyfxk7shfr42bfnqwua.car
+curl -L -v https://roundabout.storacha.network/bagbaiera222226db4v4oli5fldqghzgbv5rqv3n4ykyfxk7shfr42bfnqwua --output bagbaiera222226db4v4oli5fldqghzgbv5rqv3n4ykyfxk7shfr42bfnqwua.car
 ```
 
 ### Get presigned URL for CAR file via CURL
@@ -33,7 +33,7 @@ curl -L -v https://roundabout.web3.storage/bagbaiera222226db4v4oli5fldqghzgbv5rq
 For some use cases, just getting a presigned URL to use later might be needed. Therefore, it is also possible to rely on a HEAD request to get the presigned URL present in the `location` header of the response.
 
 ```console
-curl --head https://roundabout.web3.storage/bagbaiera222226db4v4oli5fldqghzgbv5rqv3n4ykyfxk7shfr42bfnqwua
+curl --head https://roundabout.storacha.network/bagbaiera222226db4v4oli5fldqghzgbv5rqv3n4ykyfxk7shfr42bfnqwua
 
 HTTP/2 302
 date: Wed, 21 Jun 2023 10:12:15 GMT
@@ -45,7 +45,7 @@ apigw-requestid: G3T3xg1LvHcEPxA=
 ### Get presigned URL for CAR file with custom expiration via CURL
 
 ```console
-curl --head https://roundabout.web3.storage/bagbaiera222226db4v4oli5fldqghzgbv5rqv3n4ykyfxk7shfr42bfnqwua?expires=900
+curl --head https://roundabout.storacha.network/bagbaiera222226db4v4oli5fldqghzgbv5rqv3n4ykyfxk7shfr42bfnqwua?expires=900
 
 HTTP/2 302
 date: Wed, 21 Jun 2023 10:12:15 GMT
@@ -57,5 +57,5 @@ apigw-requestid: G3T3xg1LvHcEPxA=
 ### Get presigned URL for file with key and custom bucket via CURL
 
 ```console
-curl -L https://roundabout.web3.storage/key/0000c19bd9cd7fa9c532eba81428eda0_baga6ea4seaqpohse35l4xucs5mtabgewpp4mgtle7yym7em6ouvhgjb7wc2pcmq.car?bucket\=dagcargo
+curl -L https://roundabout.storacha.network/key/0000c19bd9cd7fa9c532eba81428eda0_baga6ea4seaqpohse35l4xucs5mtabgewpp4mgtle7yym7em6ouvhgjb7wc2pcmq.car?bucket\=dagcargo
 ```

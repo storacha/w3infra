@@ -27,21 +27,29 @@ export function createSpaceMetricsTable(region, tableName, options = {}) {
  * @returns {import('../types').SpaceMetricsTable}
  */
 export function useSpaceMetricsTable(dynamoDb, tableName) {
+  /**
+   * @param {string} name
+   * @param {import('@storacha/access').SpaceDID} space
+   */
+  const getMetric = async (name, space) => {
+    const response = await dynamoDb.send(new GetItemCommand({
+      TableName: tableName,
+      Key: marshall({ space, name })
+    }))
+    return Number(response.Item ? unmarshall(response.Item).value : 0)
+  }
   return {
     /**
-     * Return the total amount of of storage a space has used.
+     * Return the total amount of storage a space has used.
      * 
      * @param {import('@ucanto/interface').DIDKey} consumer the space whose current allocation we should return
      */
     getAllocated: async (consumer) => {
-      const response = await dynamoDb.send(new GetItemCommand({
-        TableName: tableName,
-        Key: marshall({
-          space: consumer,
-          name:  METRICS_NAMES.STORE_ADD_SIZE_TOTAL
-        })
-      }))
-      return response.Item ? unmarshall(response.Item).value : 0
+      const [addedBytes, removedBytes] = await Promise.all([
+        getMetric(METRICS_NAMES.BLOB_ADD_SIZE_TOTAL, consumer),
+        getMetric(METRICS_NAMES.BLOB_REMOVE_SIZE_TOTAL, consumer)
+      ])
+      return Math.max(0, addedBytes - removedBytes)
     }
   }
 }

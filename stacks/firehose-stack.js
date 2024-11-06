@@ -201,7 +201,7 @@ export function UcanFirehoseStack ({ stack, app }) {
         "projection.day.interval": "1",
         "projection.day.interval.unit": "DAYS",
         "projection.op.type": "enum",
-        "projection.op.values": 'access_authorize,access_claim,access_delegate,access_session,admin_store_inspect,admin_upload_inspect,aggregate_accept,aggregate_offer,deal_info,consumer_get,consumer_has,customer_get,filecoin_accept,filecoin_info,filecoin_offer,filecoin_submit,piece_accept,piece_offer,provider_add,rate-limit_add,rate-limit_list,rate-limit_remove,space_info,store_add,store_remove,subscription_get,ucan_revoke,upload_add,upload_list,upload_remove,space_blob_add,web3.storage_blob_allocate,web3.storage_blob_accept,',
+        "projection.op.values": 'access_authorize,access_claim,access_delegate,access_session,admin_store_inspect,admin_upload_inspect,aggregate_accept,aggregate_offer,deal_info,consumer_get,consumer_has,customer_get,filecoin_accept,filecoin_info,filecoin_offer,filecoin_submit,piece_accept,piece_offer,provider_add,rate-limit_add,rate-limit_list,rate-limit_remove,space_info,store_add,store_remove,subscription_get,ucan_revoke,upload_add,upload_list,upload_remove,space_blob_add,blob_allocate,blob_accept,',
         "storage.location.template": `s3://${streamLogBucket.bucketName}/logs/receipt/\${op}/\${day}/`
       },
       storageDescriptor: {
@@ -349,10 +349,10 @@ export function UcanFirehoseStack ({ stack, app }) {
         "projection.day.range": "2023-01-01,NOW",
         "projection.day.interval": "1",
         "projection.day.interval.unit": "DAYS",
-        "storage.location.template": `s3://${streamLogBucket.bucketName}/logs/receipt/web3.storage_blob_allocate/\${day}/`
+        "storage.location.template": `s3://${streamLogBucket.bucketName}/logs/receipt/blob_allocate/\${day}/`
       },
       storageDescriptor: {
-        location: `s3://${streamLogBucket.bucketName}/logs/receipt/web3.storage_blob_allocate/`,
+        location: `s3://${streamLogBucket.bucketName}/logs/receipt/blob_allocate/`,
         columns: [
           { name: 'carcid', type: 'string' },
           // STRUCT here refers to the Apache Hive STRUCT datatype - see https://aws.amazon.com/blogs/big-data/create-tables-in-amazon-athena-from-nested-json-and-mappings-using-jsonserde/
@@ -399,10 +399,10 @@ export function UcanFirehoseStack ({ stack, app }) {
         "projection.day.range": "2023-01-01,NOW",
         "projection.day.interval": "1",
         "projection.day.interval.unit": "DAYS",
-        "storage.location.template": `s3://${streamLogBucket.bucketName}/logs/receipt/web3.storage_blob_accept/\${day}/`
+        "storage.location.template": `s3://${streamLogBucket.bucketName}/logs/receipt/blob_accept/\${day}/`
       },
       storageDescriptor: {
-        location: `s3://${streamLogBucket.bucketName}/logs/receipt/web3.storage_blob_accept/`,
+        location: `s3://${streamLogBucket.bucketName}/logs/receipt/blob_accept/`,
         columns: [
           { name: 'carcid', type: 'string' },
           // STRUCT here refers to the Apache Hive STRUCT datatype - see https://aws.amazon.com/blogs/big-data/create-tables-in-amazon-athena-from-nested-json-and-mappings-using-jsonserde/
@@ -1148,8 +1148,8 @@ INNER JOIN accepted_aggregates ON accepted_aggregates.cid = value.att[1].nb.aggr
     queryString: `SELECT 
   customer as account,
   consumer as space
-FROM "${dynamoDataCatalogDatabaseName}"."default"."${app.stage}-w3infra-subscription" AS sub 
-  LEFT JOIN "${dynamoDataCatalogDatabaseName}"."default"."${app.stage}-w3infra-consumer" AS space 
+FROM "${dynamoDataCatalogDatabaseName}"."default"."${app.stage}-upload-service-infra-subscription" AS sub 
+  LEFT JOIN "${dynamoDataCatalogDatabaseName}"."default"."${app.stage}-upload-service-infra-consumer" AS space 
   ON space.subscription = sub.subscription
 `
   })
@@ -1169,8 +1169,8 @@ FROM "${dynamoDataCatalogDatabaseName}"."default"."${app.stage}-w3infra-subscrip
 spaces AS (
   SELECT customer as account,
          consumer as did
-  FROM "${dynamoDataCatalogDatabaseName}"."default"."${app.stage}-w3infra-subscription" AS sub 
-  LEFT JOIN "${dynamoDataCatalogDatabaseName}"."default"."${app.stage}-w3infra-consumer" AS space 
+  FROM "${dynamoDataCatalogDatabaseName}"."default"."${app.stage}-upload-service-infra-subscription" AS sub 
+  LEFT JOIN "${dynamoDataCatalogDatabaseName}"."default"."${app.stage}-upload-service-infra-consumer" AS space 
   ON space.subscription = sub.subscription
 ), 
 uploads AS (

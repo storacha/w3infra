@@ -3,19 +3,14 @@
 # uncomment to try out deploying the w3up api under a custom domain (or more
 # than one). the value should match a hosted zone configured in route53 that
 # your aws account has access to.
-# HOSTED_ZONES=up.web3.storage,up.storacha.network
+# HOSTED_ZONES=upload.storacha.network
 
 # uncomment to try out deploying the roundabout api under a custom domain.
 # the value should match a hosted zone configured in route53 that your aws account has access to.
-# ROUNDABOUT_HOSTED_ZONE=roundabout.web3.storage
+# ROUNDABOUT_HOSTED_ZONE=roundabout.storacha.network
 
 # uncomment to set SENTRY_DSN
 # SENTRY_DSN = ''
-
-EIPFS_INDEXER_SQS_ARN = 'arn:aws:sqs:us-west-2:505595374361:staging-ep-indexer-topic'
-EIPFS_INDEXER_SQS_URL = 'https://sqs.us-west-2.amazonaws.com/505595374361/staging-ep-indexer-topic'
-EIPFS_MULTIHASHES_SQS_ARN = 'arn:aws:sqs:us-west-2:505595374361:staging-ep-multihashes-topic'
-EIPFS_BLOCKS_CAR_POSITION_TABLE_ARN = 'arn:aws:dynamodb:us-west-2:505595374361:table/staging-ep-v1-blocks-cars-position'
 
 PROVIDERS = ''
 UPLOAD_API_DID = ''

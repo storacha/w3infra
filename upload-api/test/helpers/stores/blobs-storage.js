@@ -6,7 +6,7 @@ import { useBlobsStorage } from '../../../stores/blobs.js'
 /**
  * @param {import('@aws-sdk/client-s3').S3Client} s3
  * @param {string} bucketName
- * @returns {Promise<import('@web3-storage/upload-api').UcantoServerTestContext['blobsStorage'] & import('@web3-storage/upload-api').BlobRetriever>}
+ * @returns {Promise<import('@storacha/upload-api').UcantoServerTestContext['blobsStorage'] & import('@storacha/upload-api').BlobRetriever>}
  */
 export const useTestBlobsStorage = async (s3, bucketName) => {
   const storage = useBlobsStorage(s3, bucketName)

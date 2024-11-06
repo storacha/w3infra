@@ -20,8 +20,8 @@ export function getServiceSigner(config) {
  * @returns 
  */
 export function getServiceConnection (config) {
-  const servicePrincipal = DID.parse(config.did) // 'did:web:filecoin.web3.storage'
-  const serviceURL = new URL(config.url) // 'https://filecoin.web3.storage'
+  const servicePrincipal = DID.parse(config.did) // 'did:web:filecoin.storacha.network'
+  const serviceURL = new URL(config.url) // 'https://filecoin.storacha.network'
 
   const serviceConnection = connect({
     id: servicePrincipal,

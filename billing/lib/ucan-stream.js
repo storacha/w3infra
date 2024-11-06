@@ -1,6 +1,6 @@
-import * as ServiceBlobCaps from '@web3-storage/capabilities/web3.storage/blob'
-import * as BlobCaps from '@web3-storage/capabilities/blob'
-import * as StoreCaps from '@web3-storage/capabilities/store'
+import * as ServiceBlobCaps from '@storacha/capabilities/blob'
+import * as BlobCaps from '@storacha/capabilities/space/blob'
+import * as StoreCaps from '@storacha/capabilities/store'
 
 /**
  * Filters UCAN stream messages that are receipts for invocations that alter
@@ -107,7 +107,7 @@ const isReceipt = m => m.type === 'receipt'
 
 /**
  * @param {import('@ucanto/interface').Result} r
- * @returns {r is { ok: import('@web3-storage/capabilities/types').BlobAllocateSuccess }}
+ * @returns {r is { ok: import('@storacha/capabilities/types').BlobAllocateSuccess }}
  */
 const isServiceBlobAllocateSuccess = r =>
   !r.error &&
@@ -118,7 +118,7 @@ const isServiceBlobAllocateSuccess = r =>
 
 /**
  * @param {import('@ucanto/interface').Result} r
- * @returns {r is { ok: import('@web3-storage/capabilities/types').BlobRemoveSuccess }}
+ * @returns {r is { ok: import('@storacha/capabilities/types').BlobRemoveSuccess }}
  */
 const isBlobRemoveSuccess = r =>
   !r.error &&
@@ -129,7 +129,7 @@ const isBlobRemoveSuccess = r =>
 
 /**
  * @param {import('@ucanto/interface').Result} r
- * @returns {r is { ok: import('@web3-storage/capabilities/types').StoreAddSuccess }}
+ * @returns {r is { ok: import('@storacha/capabilities/types').StoreAddSuccess }}
  */
 const isStoreAddSuccess = r =>
   !r.error &&
@@ -140,7 +140,7 @@ const isStoreAddSuccess = r =>
 
 /**
  * @param {import('@ucanto/interface').Result} r
- * @returns {r is { ok: import('@web3-storage/capabilities/types').StoreRemoveSuccess }}
+ * @returns {r is { ok: import('@storacha/capabilities/types').StoreRemoveSuccess }}
  */
 const isStoreRemoveSuccess = r =>
   !r.error &&
