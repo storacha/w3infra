@@ -8,7 +8,7 @@ import { Duration } from 'aws-cdk-lib'
 import { StartingPosition } from 'aws-cdk-lib/aws-lambda'
 import { UploadDbStack } from './upload-db-stack.js'
 import { UcanInvocationStack } from './ucan-invocation-stack.js'
-import { RoundaboutStack } from './roundabout-stack.js'
+// import { RoundaboutStack } from './roundabout-stack.js'
 import { setupSentry, getEnv, getCdkNames, getCustomDomain, getEventSourceConfig } from './config.js'
 import { Status } from '../filecoin/store/piece.js'
 
@@ -19,9 +19,9 @@ export function FilecoinStack({ stack, app }) {
   const {
     AGGREGATOR_DID,
     AGGREGATOR_URL,
-    CONTENT_CLAIMS_DID,
-    CONTENT_CLAIMS_URL,
-    CONTENT_CLAIMS_PROOF,
+    INDEXING_SERVICE_DID,
+    INDEXING_SERVICE_URL,
+    INDEXING_SERVICE_PROOF,
     UPLOAD_API_DID,
     STOREFRONT_PROOF,
     START_FILECOIN_METRICS_EPOCH_MS
@@ -32,10 +32,10 @@ export function FilecoinStack({ stack, app }) {
   setupSentry(app, stack)
 
   // Get store table reference
-  const { pieceTable, privateKey, contentClaimsPrivateKey, adminMetricsTable } = use(UploadDbStack)
+  const { pieceTable, privateKey, adminMetricsTable } = use(UploadDbStack)
   // Get UCAN store references
   const { agentMessageBucket, agentIndexBucket, ucanStream } = use(UcanInvocationStack)
-  const { roundaboutApiUrl } = use(RoundaboutStack)
+  // const { roundaboutApiUrl } = use(RoundaboutStack)
 
   /**
    * 1st processor queue - filecoin submit
@@ -57,7 +57,9 @@ export function FilecoinStack({ stack, app }) {
       handler: 'filecoin/functions/handle-filecoin-submit-message.main',
       environment : {
         PIECE_TABLE_NAME: pieceTable.tableName,
-        CONTENT_STORE_HTTP_ENDPOINT: roundaboutApiUrl
+        // FIXME: reinstate when roundabout is fixed up
+        CONTENT_STORE_HTTP_ENDPOINT: 'http://todo.roundabout.storacha.network'
+        // CONTENT_STORE_HTTP_ENDPOINT: roundaboutApiUrl
       },
       permissions: [pieceTable],
       // piece is computed in this lambda
@@ -141,14 +143,13 @@ export function FilecoinStack({ stack, app }) {
       function: {
         handler: 'filecoin/functions/handle-piece-insert-to-content-claim.main',
         environment: {
-          CONTENT_CLAIMS_DID,
-          CONTENT_CLAIMS_URL,
-          CONTENT_CLAIMS_PROOF,
+          INDEXING_SERVICE_DID,
+          INDEXING_SERVICE_URL,
+          INDEXING_SERVICE_PROOF,
         },
         timeout: 3 * 60,
         bind: [
-          privateKey,
-          contentClaimsPrivateKey
+          privateKey
         ]
       },
       deadLetterQueue: pieceTableHandleInserToClaimtDLQ.cdk.queue,

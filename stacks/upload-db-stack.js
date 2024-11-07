@@ -28,10 +28,6 @@ export function UploadDbStack({ stack, app }) {
   // Upload API private key
   const privateKey = new Config.Secret(stack, 'PRIVATE_KEY')
 
-  // Content claims private key
-  // TODO: we should look into creating a trust layer for content claims
-  const contentClaimsPrivateKey = new Config.Secret(stack, 'CONTENT_CLAIMS_PRIVATE_KEY')
-
   /**
    * The blob registry table contains information about blob registrations
    * per space.
@@ -120,6 +116,5 @@ export function UploadDbStack({ stack, app }) {
     spaceMetricsTable,
     storageProviderTable,
     privateKey,
-    contentClaimsPrivateKey
   }
 }

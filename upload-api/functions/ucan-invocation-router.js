@@ -1,6 +1,6 @@
 import { API } from '@ucanto/core'
 import * as Delegation from '@ucanto/core/delegation'
-import { base64pad } from 'multiformats/bases/base64'
+import { base64 } from 'multiformats/bases/base64'
 import * as Sentry from '@sentry/serverless'
 import * as DID from '@ipld/dag-ucan/did'
 import Stripe from 'stripe'
@@ -41,6 +41,7 @@ import { mustGetEnv } from '../../lib/env.js'
 import { createEgressTrafficQueue } from '@storacha/upload-service-infra-billing/queues/egress-traffic.js'
 import { create as createRoutingService } from '../external-services/router.js'
 import { create as createBlobRetriever } from '../external-services/blob-retriever.js'
+import { Link } from '@ucanto/validator'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -105,10 +106,7 @@ export async function ucanInvocationRouter(request) {
     spaceDiffTableName,
     spaceSnapshotTableName,
     storageProviderTableName,
-    r2DelegationBucketEndpoint,
-    r2DelegationBucketAccessKeyId,
-    r2DelegationBucketSecretAccessKey,
-    r2DelegationBucketName,
+    delegationBucketName,
     agentIndexBucketName,
     agentMessageBucketName,
     streamName,
@@ -133,8 +131,8 @@ export async function ucanInvocationRouter(request) {
     }
   }
 
-  const { UPLOAD_API_DID, CONTENT_CLAIMS_PROOF } = process.env
-  const { PRIVATE_KEY, STRIPE_SECRET_KEY, CONTENT_CLAIMS_PRIVATE_KEY } = Config
+  const { UPLOAD_API_DID } = process.env
+  const { PRIVATE_KEY, STRIPE_SECRET_KEY } = Config
   const serviceSigner = getServiceSigner({ did: UPLOAD_API_DID, privateKey: PRIVATE_KEY })
 
   const agentStore = AgentStore.open({
@@ -162,7 +160,7 @@ export async function ucanInvocationRouter(request) {
     admin: createAdminMetricsStore(AWS_REGION, adminMetricsTableName, options)
   }
   const blobRegistry = createBlobRegistry(AWS_REGION, blobRegistryTableName, metrics, options)
-  const delegationBucket = createDelegationsStore(r2DelegationBucketEndpoint, r2DelegationBucketAccessKeyId, r2DelegationBucketSecretAccessKey, r2DelegationBucketName)
+  const delegationBucket = createDelegationsStore(AWS_REGION, delegationBucketName)
   const subscriptionTable = createSubscriptionTable(AWS_REGION, subscriptionTableName, options)
   const consumerTable = createConsumerTable(AWS_REGION, consumerTableName, options)
   const customerStore = createCustomerStore({ region: AWS_REGION }, { tableName: customerTableName })
@@ -186,31 +184,27 @@ export async function ucanInvocationRouter(request) {
     url: dealTrackerUrl
   })
 
-  const claimsServicePrincipal = DID.parse(mustGetEnv('CONTENT_CLAIMS_DID'))
-  const claimsServiceURL = new URL(mustGetEnv('CONTENT_CLAIMS_URL'))
-  let claimsIssuer = getServiceSigner({ privateKey: CONTENT_CLAIMS_PRIVATE_KEY })
-  const claimsProofs = []
-  if (CONTENT_CLAIMS_PROOF) {
-    const proof = await Delegation.extract(base64pad.decode(CONTENT_CLAIMS_PROOF))
-    if (!proof.ok) throw new Error('failed to extract proof', { cause: proof.error })
-    claimsProofs.push(proof.ok)
-  } else {
-    // if no proofs, we must be using the service private key to sign
-    claimsIssuer = claimsIssuer.withDID(claimsServicePrincipal.did())
-  }
-  const claimsService = {
+  const indexingServicePrincipal = DID.parse(mustGetEnv('INDEXING_SERVICE_DID'))
+  const indexingServiceURL = new URL(mustGetEnv('INDEXING_SERVICE_URL'))
+  const indexingServiceProof = mustGetEnv('INDEXING_SERVICE_PROOF')
+
+  const cid = Link.parse(indexingServiceProof, base64)
+  const proof = await Delegation.extract(cid.multihash.digest)
+  if (!proof.ok) throw new Error('failed to extract proof', { cause: proof.error })
+
+  const indexingServiceConfig = {
     invocationConfig: {
-      issuer: claimsIssuer,
-      audience: claimsServicePrincipal,
-      with: claimsIssuer.did(),
-      proofs: claimsProofs
+      issuer: serviceSigner,
+      audience: indexingServicePrincipal,
+      with: indexingServicePrincipal.did(),
+      proofs: [proof.ok]
     },
     connection: getServiceConnection({
-      did: claimsServicePrincipal.did(),
-      url: claimsServiceURL.toString()
+      did: indexingServicePrincipal.did(),
+      url: indexingServiceURL.toString()
     })
   }
-  const indexingServiceClient = new IndexingServiceClient({ serviceURL: claimsServiceURL })
+  const indexingServiceClient = new IndexingServiceClient({ serviceURL: indexingServiceURL })
   const blobRetriever = createBlobRetriever(indexingServiceClient)
   const storageProviderTable = createStorageProviderTable(AWS_REGION, storageProviderTableName, options)
   const routingService = createRoutingService(storageProviderTable, serviceSigner)
@@ -248,7 +242,7 @@ export async function ucanInvocationRouter(request) {
     plansStorage,
     requirePaymentPlan,
     usageStorage,
-    claimsService
+    claimsService: indexingServiceConfig
   })
 
   const payload = fromLambdaRequest(request)
@@ -281,8 +275,6 @@ export const fromLambdaRequest = (request) => ({
 
 function getLambdaEnv () {
   return {
-    storeTableName: mustGetEnv('STORE_TABLE_NAME'),
-    storeBucketName: mustGetEnv('STORE_BUCKET_NAME'),
     uploadTableName: mustGetEnv('UPLOAD_TABLE_NAME'),
     blobRegistryTableName: mustGetEnv('BLOB_REGISTRY_TABLE_NAME'),
     consumerTableName: mustGetEnv('CONSUMER_TABLE_NAME'),
@@ -300,10 +292,7 @@ function getLambdaEnv () {
     pieceOfferQueueUrl: mustGetEnv('PIECE_OFFER_QUEUE_URL'),
     filecoinSubmitQueueUrl: mustGetEnv('FILECOIN_SUBMIT_QUEUE_URL'),
     egressTrafficQueueUrl: mustGetEnv('EGRESS_TRAFFIC_QUEUE_URL'),
-    r2DelegationBucketEndpoint: mustGetEnv('R2_ENDPOINT'),
-    r2DelegationBucketAccessKeyId: mustGetEnv('R2_ACCESS_KEY_ID'),
-    r2DelegationBucketSecretAccessKey: mustGetEnv('R2_SECRET_ACCESS_KEY'),
-    r2DelegationBucketName: mustGetEnv('R2_DELEGATION_BUCKET_NAME'),
+    delegationBucketName: mustGetEnv('DELEGATION_BUCKET_NAME'),
     agentIndexBucketName: mustGetEnv('AGENT_INDEX_BUCKET_NAME'),
     agentMessageBucketName: mustGetEnv('AGENT_MESSAGE_BUCKET_NAME'),
     streamName: mustGetEnv('UCAN_LOG_STREAM_NAME'),
@@ -315,20 +304,6 @@ function getLambdaEnv () {
     requirePaymentPlan: (process.env.REQUIRE_PAYMENT_PLAN === 'true'),
     dealTrackerDid: mustGetEnv('DEAL_TRACKER_DID'),
     dealTrackerUrl: mustGetEnv('DEAL_TRACKER_URL'),
-    // carpark bucket - CAR file bytes may be found here with keys like {cid}/{cid}.car
-    carparkBucketName: mustGetEnv('R2_CARPARK_BUCKET_NAME'),
-    carparkBucketEndpoint: mustGetEnv('R2_ENDPOINT'),
-    carparkBucketAccessKeyId: mustGetEnv('R2_ACCESS_KEY_ID'),
-    carparkBucketSecretAccessKey: mustGetEnv('R2_SECRET_ACCESS_KEY'),
-    // IPNI service
-    blockAdvertisementPublisherQueueConfig: {
-      url: new URL(mustGetEnv('BLOCK_ADVERT_PUBLISHER_QUEUE_URL')),
-      region: AWS_REGION
-    },
-    blockIndexWriterQueueConfig: {
-      url: new URL(mustGetEnv('BLOCK_INDEX_WRITER_QUEUE_URL')),
-      region: AWS_REGION
-    },
     sstStage: mustGetEnv('SST_STAGE'),
     // set for testing
     dbEndpoint: process.env.DYNAMO_DB_ENDPOINT,

@@ -72,10 +72,7 @@ function createAuthorizeContext() {
     REVOCATION_TABLE_NAME = '',
     RATE_LIMIT_TABLE_NAME = '',
     SPACE_METRICS_TABLE_NAME = '',
-    R2_ENDPOINT = '',
-    R2_ACCESS_KEY_ID = '',
-    R2_SECRET_ACCESS_KEY = '',
-    R2_DELEGATION_BUCKET_NAME = '',
+    DELEGATION_BUCKET_NAME = '',
     AGENT_INDEX_BUCKET_NAME = '',
     AGENT_MESSAGE_BUCKET_NAME = '',
     POSTMARK_TOKEN = '',
@@ -93,10 +90,8 @@ function createAuthorizeContext() {
   } = process.env
   const { PRIVATE_KEY } = Config
   const delegationBucket = createDelegationsStore(
-    R2_ENDPOINT,
-    R2_ACCESS_KEY_ID,
-    R2_SECRET_ACCESS_KEY,
-    R2_DELEGATION_BUCKET_NAME
+    AWS_REGION,
+    DELEGATION_BUCKET_NAME
   )
   const subscriptionTable = createSubscriptionTable(
     AWS_REGION,

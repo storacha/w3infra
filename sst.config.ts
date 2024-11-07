@@ -8,7 +8,7 @@ import { UploadDbStack } from './stacks/upload-db-stack.js'
 import { UcanInvocationStack } from './stacks/ucan-invocation-stack.js'
 import { FilecoinStack } from './stacks/filecoin-stack.js'
 import { UcanFirehoseStack } from './stacks/firehose-stack.js'
-import { RoundaboutStack } from './stacks/roundabout-stack.js'
+// import { RoundaboutStack } from './stacks/roundabout-stack.js'
 import { isPrBuild } from './stacks/config.js'
 
 export default {
@@ -39,7 +39,8 @@ export default {
     })
 
     app.stack(UploadDbStack)
-    app.stack(RoundaboutStack)
+    // FIXME: needs update to work with indexing service
+    // app.stack(RoundaboutStack)
     app.stack(BillingDbStack)
     app.stack(UcanInvocationStack)
     app.stack(BillingStack)

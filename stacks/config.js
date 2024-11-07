@@ -19,7 +19,7 @@ import { mustGetEnv } from '../lib/env.js'
  */
 export function getBucketName (name, stage, version = 0) {
   // e.g `carpark-prod-0` or `carpark-pr101-0`
-  return `${name}-${stage}-${version}`
+  return `${stage}-upload-service-infra-${name}-${version}`
 }
 
 /**
@@ -191,11 +191,11 @@ export function getEnv() {
     UPLOAD_API_DID: mustGetEnv('UPLOAD_API_DID'),
     AGGREGATOR_DID: mustGetEnv('AGGREGATOR_DID'),
     AGGREGATOR_URL: mustGetEnv('AGGREGATOR_URL'),
-    CONTENT_CLAIMS_DID: mustGetEnv('CONTENT_CLAIMS_DID'),
-    CONTENT_CLAIMS_URL: mustGetEnv('CONTENT_CLAIMS_URL'),
+    INDEXING_SERVICE_DID: mustGetEnv('INDEXING_SERVICE_DID'),
+    INDEXING_SERVICE_URL: mustGetEnv('INDEXING_SERVICE_URL'),
+    INDEXING_SERVICE_PROOF: mustGetEnv('INDEXING_SERVICE_PROOF'),
     // Not required
     STOREFRONT_PROOF: process.env.STOREFRONT_PROOF ?? '',
-    CONTENT_CLAIMS_PROOF: process.env.CONTENT_CLAIMS_PROOF ?? '',
     START_FILECOIN_METRICS_EPOCH_MS: process.env.START_FILECOIN_METRICS_EPOCH_MS ?? ''
   }
 }

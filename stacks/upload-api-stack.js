@@ -23,16 +23,16 @@ export function UploadApiStack({ stack, app }) {
 
   const {
     AGGREGATOR_DID,
-    CONTENT_CLAIMS_DID,
-    CONTENT_CLAIMS_URL,
-    CONTENT_CLAIMS_PROOF,
+    INDEXING_SERVICE_DID,
+    INDEXING_SERVICE_URL,
+    INDEXING_SERVICE_PROOF,
   } = getEnv()
 
   // Setup app monitoring with Sentry
   setupSentry(app, stack)
 
   // Get references to constructs created in other stacks
-  const { blobRegistryTable, uploadTable, delegationBucket, delegationTable, revocationTable, adminMetricsTable, spaceMetricsTable, consumerTable, subscriptionTable, storageProviderTable, rateLimitTable, pieceTable, privateKey, contentClaimsPrivateKey } = use(UploadDbStack)
+  const { blobRegistryTable, uploadTable, delegationBucket, delegationTable, revocationTable, adminMetricsTable, spaceMetricsTable, consumerTable, subscriptionTable, storageProviderTable, rateLimitTable, pieceTable, privateKey } = use(UploadDbStack)
   const { agentIndexBucket, agentMessageBucket, ucanStream } = use(UcanInvocationStack)
   const { customerTable, spaceDiffTable, spaceSnapshotTable, egressTrafficTable, stripeSecretKey } = use(BillingDbStack)
   const { pieceOfferQueue, filecoinSubmitQueue } = use(FilecoinStack)
@@ -60,8 +60,8 @@ export function UploadApiStack({ stack, app }) {
             uploadTable,
             customerTable,
             delegationTable,
-            revocationTable,
             delegationBucket,
+            revocationTable,
             consumerTable,
             subscriptionTable,
             rateLimitTable,
@@ -70,6 +70,7 @@ export function UploadApiStack({ stack, app }) {
             pieceTable,
             spaceDiffTable,
             spaceSnapshotTable,
+            storageProviderTable,
             egressTrafficTable,
             agentIndexBucket,
             agentMessageBucket,
@@ -110,28 +111,21 @@ export function UploadApiStack({ stack, app }) {
             UPLOAD_SERVICE_URL: getServiceURL(stack, customDomain) ?? '',
             POSTMARK_TOKEN: process.env.POSTMARK_TOKEN ?? '',
             PROVIDERS: process.env.PROVIDERS ?? '',
-            R2_ACCESS_KEY_ID: process.env.R2_ACCESS_KEY_ID ?? '',
-            R2_SECRET_ACCESS_KEY: process.env.R2_SECRET_ACCESS_KEY ?? '',
-            R2_REGION: process.env.R2_REGION ?? '',
-            R2_CARPARK_BUCKET_NAME: process.env.R2_CARPARK_BUCKET_NAME ?? '',
-            R2_DELEGATION_BUCKET_NAME: process.env.R2_DELEGATION_BUCKET_NAME ?? '',
-            R2_ENDPOINT: process.env.R2_ENDPOINT ?? '',
             REQUIRE_PAYMENT_PLAN: process.env.REQUIRE_PAYMENT_PLAN ?? '',
             UPLOAD_API_DID: process.env.UPLOAD_API_DID ?? '',
             STRIPE_PRICING_TABLE_ID: process.env.STRIPE_PRICING_TABLE_ID ?? '',
             STRIPE_PUBLISHABLE_KEY: process.env.STRIPE_PUBLISHABLE_KEY ?? '',
             DEAL_TRACKER_DID: process.env.DEAL_TRACKER_DID ?? '',
             DEAL_TRACKER_URL: process.env.DEAL_TRACKER_URL ?? '',
-            CONTENT_CLAIMS_DID,
-            CONTENT_CLAIMS_URL,
-            CONTENT_CLAIMS_PROOF,
+            INDEXING_SERVICE_DID,
+            INDEXING_SERVICE_URL,
+            INDEXING_SERVICE_PROOF,
             HOSTED_ZONE: hostedZone ?? '',
           },
           bind: [
             privateKey,
             ucanInvocationPostbasicAuth,
             stripeSecretKey,
-            contentClaimsPrivateKey
           ]
         }
       },

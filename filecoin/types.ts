@@ -130,9 +130,6 @@ declare module 'sst/node/config' {
   export interface SecretResources {
     PRIVATE_KEY: {
       value: string
-    },
-    CONTENT_CLAIMS_PRIVATE_KEY: {
-      value: string
     }
   }
 }
