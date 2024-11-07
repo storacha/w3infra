@@ -9,8 +9,8 @@ import { AGGREGATE_ACCEPT, AGGREGATE_OFFER, METRICS_NAMES } from './constants.js
 import { DecodeBlockOperationError, NotFoundWorkflowError } from './errors.js'
 
 /**
- * @typedef {import('@storacha/capabilities/types.js').AggregateOffer} AggregateOffer
- * @typedef {import('@storacha/capabilities/types.js').AggregateAccept} AggregateAccept
+ * @typedef {import('@storacha/capabilities/types').AggregateOffer} AggregateOffer
+ * @typedef {import('@storacha/capabilities/types').AggregateAccept} AggregateAccept
  * @typedef {import('@web3-storage/data-segment').PieceLink} PieceLink
  * @typedef {{ capabilities: AggregateOffer[], invocationCid: string }} AggregateOfferInvocation
  * @typedef {{ capabilities: AggregateAccept[], invocationCid: string }} AggregateAcceptInvocation
@@ -25,7 +25,7 @@ import { DecodeBlockOperationError, NotFoundWorkflowError } from './errors.js'
  * - AGGREGATE_ACCEPT_TOTAL: increment number of `aggregate/accept` success receipts
  * 
  * @param {import('@storacha/upload-service-infra-upload-api/types.js').UcanStreamInvocation[]} ucanInvocations
- * @param {import('./types').FilecoinMetricsCtx} ctx
+ * @param {import('./types.js').FilecoinMetricsCtx} ctx
  */
 export async function updateAggregateAcceptTotal (ucanInvocations, ctx) {
   const aggregateAcceptInvocations = ucanInvocations
@@ -51,7 +51,7 @@ export async function updateAggregateAcceptTotal (ucanInvocations, ctx) {
  * - AGGREGATE_OFFER_PIECES_SIZE_TOTAL: increment size of pieces included of `aggregate/offer` success receipts
  *
  * @param {import('@storacha/upload-service-infra-upload-api/types.js').UcanStreamInvocation[]} ucanInvocations
- * @param {import('./types').FilecoinAggregateOfferMetricsCtx} ctx
+ * @param {import('./types.js').FilecoinAggregateOfferMetricsCtx} ctx
  */
 export async function updateAggregateOfferTotal (ucanInvocations, ctx) {
   // Get a Map of workflows that include aggregate offer receipts
@@ -106,7 +106,7 @@ export async function updateAggregateOfferTotal (ucanInvocations, ctx) {
  *
  * @param {import('@storacha/upload-service-infra-upload-api/types.js').UcanStreamInvocation[]} ucanInvocations
  * @param {string} capability
- * @param {import('./types').FilecoinAggregateOfferMetricsCtx} ctx
+ * @param {import('./types.js').FilecoinAggregateOfferMetricsCtx} ctx
  */
 function getWorkflowsWithReceiptForCapability (ucanInvocations, capability, ctx) {
   return ucanInvocations
@@ -138,7 +138,7 @@ function getWorkflowsWithReceiptForCapability (ucanInvocations, capability, ctx)
 
 /**
  * @param {string} taskCid
- * @param {import('./types').FilecoinAggregateOfferMetricsCtx} ctx
+ * @param {import('./types.js').FilecoinAggregateOfferMetricsCtx} ctx
  */
 async function getAgentMessage (taskCid, ctx) {
   // TODO: When we distinct between TaskCid and InvocationCid, we also need to see this mapping.

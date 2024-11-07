@@ -162,15 +162,15 @@ export const useBlobRegistry = (dynamoDb, tableName, metrics) => ({
 
     const results =
       response.Items?.map((i) => toEntry(unmarshall(i))) ?? []
-    const firstLinkCID = results[0] ? base58btc.encode(results[0].blob.digest) : undefined
+    const firstDigest = results[0] ? base58btc.encode(results[0].blob.digest) : undefined
     // Get cursor of the item where list operation stopped (inclusive).
     // This value can be used to start a new operation to continue listing.
     const lastKey =
       response.LastEvaluatedKey && unmarshall(response.LastEvaluatedKey)
-    const lastLinkCID = lastKey ? lastKey.multihash : undefined
+    const lastDigest = lastKey ? lastKey.digest : undefined
 
-    const before = firstLinkCID
-    const after = lastLinkCID
+    const before = firstDigest
+    const after = lastDigest
 
     return {
       ok: {

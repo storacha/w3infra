@@ -23,7 +23,7 @@ const customerDID = /** @type {import('@storacha/did-mailto').DidMailto} */(
   `did:mailto:example.com:w3up-billing-test-${Date.now()}`
 )
 const email = toEmail(customerDID)
-const initialPlan = 'did:web:starter.plan.storacha.network'
+const initialPlan = 'did:web:storage.starter.plan.storacha.network'
 
 /**
  * 
@@ -133,7 +133,7 @@ test('stripe plan can be updated', async (t) => {
     t.deepEqual(initialPlan, initialStripePlan)
 
     // this is the actual code under test!
-    const updatedPlan = 'did:web:lite.plan.storacha.network'
+    const updatedPlan = 'did:web:storage.lite.plan.storacha.network'
     await billingProvider.setPlan(customerDID, updatedPlan)
 
     // use the stripe API to verify plan has been updated

@@ -4,11 +4,11 @@ import { randomDIDMailto } from '../helpers/did.js'
 import { randomEgressEvent } from '../helpers/egress.js'
 import * as DidMailto from '@storacha/did-mailto'
 
-/** @type {import('./api').TestSuite<import('./api').EgressTrafficTestContext>} */
+/** @type {import('./api.js').TestSuite<import('./api.js').EgressTrafficTestContext>} */
 export const test = {
   /**
    * @param {import('entail').assert} assert
-   * @param {import('./api').EgressTrafficTestContext} ctx
+   * @param {import('./api.js').EgressTrafficTestContext} ctx
    */
   'should process all the egress traffic events from the queue': async (assert, ctx) => {
     let stripeCustomerId;
@@ -30,7 +30,7 @@ export const test = {
 
       // 1. Add egress events to the queue to simulate egress traffic from the Freeway worker
       const maxEvents = 10
-      /** @type {import('../../lib/api').EgressTrafficData[]} */
+      /** @type {import('../../lib/api.js').EgressTrafficData[]} */
       const events = await Promise.all(
         Array.from(
           { length: maxEvents },

@@ -177,6 +177,28 @@ export interface CustomerTable {
   get: (customer: DID<'mailto'>) => Promise<Result<Customer, RecordNotFound<DID<'mailto'>>>>
 }
 
+export interface StorageProviderInput {
+  provider: DID
+  endpoint: URL
+  proof: Delegation
+  weight: number
+}
+
+export interface StorageProviderRecord {
+  provider: DID
+  endpoint: URL
+  proof: Delegation
+  weight: number
+  insertedAt: Date
+}
+
+export interface StorageProviderTable {
+  put (input: StorageProviderInput): Promise<void>
+  get (provider: DID): Promise<StorageProviderRecord|undefined>
+  del (provider: DID): Promise<void>
+  list (): Promise<DID[]>
+}
+
 export type SpaceService = Pick<Service, "space">
 
 export type UcanStreamInvocationType = 'workflow' | 'receipt'

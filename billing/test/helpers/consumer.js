@@ -4,8 +4,8 @@ import { randomDID } from './did.js'
 import { randomInteger } from './math.js'
 
 /**
- * @param {Partial<import('../../lib/api').Consumer>} [base]
- * @returns {Promise<import('../../lib/api').Consumer>}
+ * @param {Partial<import('../../lib/api.js').Consumer>} [base]
+ * @returns {Promise<import('../../lib/api.js').Consumer>}
  */
 export const randomConsumer = async (base = {}) => ({
   consumer: await randomDID(),

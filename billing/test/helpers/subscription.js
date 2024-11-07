@@ -4,8 +4,8 @@ import { randomDIDMailto } from './did.js'
 import { randomInteger } from './math.js'
 
 /**
- * @param {Partial<import('../../lib/api').Subscription>} [base]
- * @returns {Promise<import('../../lib/api').Subscription>}
+ * @param {Partial<import('../../lib/api.js').Subscription>} [base]
+ * @returns {Promise<import('../../lib/api.js').Subscription>}
  */
 export const randomSubscription = async (base = {}) => ({
   customer: randomDIDMailto(),

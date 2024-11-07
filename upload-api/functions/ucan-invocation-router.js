@@ -4,6 +4,7 @@ import { base64pad } from 'multiformats/bases/base64'
 import * as Sentry from '@sentry/serverless'
 import * as DID from '@ipld/dag-ucan/did'
 import Stripe from 'stripe'
+import { Client as IndexingServiceClient } from '@storacha/indexing-service-client'
 import { createUploadTable } from '../tables/upload.js'
 import { createPieceTable } from '../../filecoin/store/piece.js'
 import { createTaskStore as createFilecoinTaskStore } from '../../filecoin/store/task.js'
@@ -27,6 +28,7 @@ import { createRateLimitTable } from '../tables/rate-limit.js'
 import { createMetricsTable as createSpaceMetricsStore } from '../stores/space-metrics.js'
 import { createMetricsTable as createAdminMetricsStore } from '../stores/metrics.js'
 import { createSpaceMetricsTable } from '../tables/space-metrics.js'
+import { createStorageProviderTable } from '../tables/storage-provider.js'
 import { createRevocationsTable } from '../stores/revocations.js'
 import { usePlansStore } from '../stores/plans.js'
 import { createCustomerStore } from '@storacha/upload-service-infra-billing/tables/customer.js'
@@ -38,6 +40,7 @@ import * as UploadAPI from '@storacha/upload-api'
 import { mustGetEnv } from '../../lib/env.js'
 import { createEgressTrafficQueue } from '@storacha/upload-service-infra-billing/queues/egress-traffic.js'
 import { createRoutingService } from '../external-services/router.js'
+import { create as createBlobRetriever } from '../external-services/blob-retriever.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -48,7 +51,7 @@ Sentry.AWSLambda.init({
 export { API }
 
 /**
- * @typedef {import('../types').Receipt} Receipt
+ * @typedef {import('../types.js').Receipt} Receipt
  * @typedef {import('@ucanto/interface').Block<Receipt>} BlockReceipt
  * @typedef {object} ExecuteCtx
  * @property {import('@ucanto/interface').Signer} signer
@@ -207,13 +210,16 @@ export async function ucanInvocationRouter(request) {
       url: claimsServiceURL.toString()
     })
   }
-  const routingService = createRoutingService(AWS_REGION, storageProviderTableName, serviceSigner, options)
+  const indexingServiceClient = new IndexingServiceClient({ serviceURL: claimsServiceURL })
+  const blobRetriever = createBlobRetriever(indexingServiceClient)
+  const storageProviderTable = createStorageProviderTable(AWS_REGION, storageProviderTableName, options)
+  const routingService = createRoutingService(storageProviderTable, serviceSigner)
 
   const server = createUcantoServer(serviceSigner, {
     codec,
     router: routingService,
     registry: blobRegistry,
-    blobRetriever: blobsStorage,
+    blobRetriever,
     uploadTable: createUploadTable(AWS_REGION, uploadTableName, metrics, options),
     signer: serviceSigner,
     // TODO: we should set URL from a different env var, doing this for now to avoid that refactor - tracking in https://github.com/storacha/w3infra/issues/209

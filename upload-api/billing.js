@@ -34,10 +34,9 @@ export class BillingProviderUpdateError extends Failure {
 }
 
 /**
- * 
  * @param {import('stripe').Stripe} stripe
- * @param {import("@storacha/upload-service-infra-billing/lib/api").CustomerStore} customerStore
- * @returns {import("./types").BillingProvider}
+ * @param {import('../billing/lib/api.js').CustomerStore} customerStore
+ * @returns {import('./types.js').BillingProvider}
  */
 export function createStripeBillingProvider(stripe, customerStore) {
   return {

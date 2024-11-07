@@ -11,8 +11,8 @@ import { marshall, unmarshall } from '@aws-sdk/util-dynamodb'
 import { getDynamoClient } from '../../lib/aws/dynamo.js'
 
 /**
- * @typedef {import('../types').ConsumerTable} ConsumerTable
- * @typedef {import('../types').ConsumerInput} ConsumerInput
+ * @typedef {import('../types.js').ConsumerTable} ConsumerTable
+ * @typedef {import('../types.js').ConsumerInput} ConsumerInput
  */
 
 /**
