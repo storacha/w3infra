@@ -14,7 +14,7 @@ import {
 // eslint-disable-next-line no-unused-vars
 import * as Ucanto from '@ucanto/interface'
 import { Failure } from '@ucanto/server'
-import { Delegation, parseLink } from '@ucanto/core'
+import { parseLink } from '@ucanto/core'
 import { getDynamoClient } from '../../lib/aws/dynamo.js'
 
 const DELEGATIONS_FIND_DEFAULT_LIMIT = 1000
@@ -27,7 +27,7 @@ const DELEGATIONS_FIND_DEFAULT_LIMIT = 1000
  * @param {string} region
  * @param {string} tableName
  * @param {object} deps
- * @param {import('../types').DelegationsBucket} deps.bucket
+ * @param {import('../types.js').DelegationsBucket} deps.bucket
  * @param {object} [options]
  * @param {string} [options.endpoint]
  */
@@ -44,7 +44,7 @@ export function createDelegationsTable (region, tableName, { bucket }, options =
  * @param {import('@aws-sdk/client-dynamodb').DynamoDBClient} dynamoDb
  * @param {string} tableName
  * @param {object} deps
- * @param {import('../types').DelegationsBucket} deps.bucket
+ * @param {import('../types.js').DelegationsBucket} deps.bucket
  * @returns {import('@storacha/upload-api').DelegationsStorage}
  */
 export function useDelegationsTable (dynamoDb, tableName, { bucket }) {
@@ -139,7 +139,7 @@ export function useDelegationsTable (dynamoDb, tableName, { bucket }) {
 
 /**
  * 
- * @param {import('../types').DelegationsBucket} bucket
+ * @param {import('../types.js').DelegationsBucket} bucket
  * @param {Ucanto.Delegation<Ucanto.Tuple<Ucanto.Capability>>[]} delegations
  */
 async function writeDelegations (bucket, delegations) {
@@ -155,7 +155,7 @@ async function writeDelegations (bucket, delegations) {
 
 /**
  * 
- * @param {import('../types').DelegationsBucket} bucket
+ * @param {import('../types.js').DelegationsBucket} bucket
  * @param {Iterable<readonly [key: CID, value: Uint8Array ]>} entries
  */
 async function writeEntries (bucket, entries) {
@@ -178,7 +178,7 @@ function createDelegationItem (d, cause) {
 }
 
 /** 
- * @param {import('../types').DelegationsBucket} bucket
+ * @param {import('../types.js').DelegationsBucket} bucket
  * @param {Ucanto.Link} cid
  * @returns {Promise<Ucanto.Result<Ucanto.Delegation, Ucanto.Failure>>}
  */

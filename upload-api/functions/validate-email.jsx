@@ -11,11 +11,12 @@ import { createConsumerTable } from '../tables/consumer.js'
 import { createRevocationsTable } from '../stores/revocations.js'
 import * as AgentStore from '../stores/agent.js'
 import { useProvisionStore } from '../stores/provisions.js'
+// @ts-expect-error
 // eslint-disable-next-line import/extensions
 import * as html from '../html'
 import { createRateLimitTable } from '../tables/rate-limit.js'
 import { createSpaceMetricsTable } from '../tables/space-metrics.js'
-import { createCustomerStore } from '@storacha/upload-service-infra-billing/tables/customer'
+import { createCustomerStore } from '../../billing/tables/customer.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -24,7 +25,7 @@ Sentry.AWSLambda.init({
 })
 
 /**
- * @param {html.HtmlResponse} response
+ * @param {Response & { getStringBody: () => string }} response
  */
 export function toLambdaResponse(response) {
   const { status = 200, headers: responseHeaders, body } = response

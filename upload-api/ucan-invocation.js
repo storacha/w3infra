@@ -12,7 +12,7 @@ import {
 
 export const CONTENT_TYPE = CAR.contentType
 
-/** @typedef {import('./types').UcanLogCtx} UcanLogCtx */
+/** @typedef {import('./types.js').UcanLogCtx} UcanLogCtx */
 
 /**
  * @param {import('aws-lambda').APIGatewayProxyEventV2} request

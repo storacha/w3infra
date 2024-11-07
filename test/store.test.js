@@ -77,9 +77,9 @@ test('store protocol integration flow', async t => {
 
   // Encode file as Unixfs and perform store/add
   const blocksReadableStream = UnixFS.createFileEncoderStream(file)
-  /** @type {import('@storacha/upload-client/types').CARLink[]} */
+  /** @type {import('@storacha/upload-client/types.js').CARLink[]} */
   const shards = []
-  /** @type {import('@storacha/upload-client/types').AnyLink | undefined} */
+  /** @type {import('@storacha/upload-client/types.js').AnyLink | undefined} */
   let root
 
   await blocksReadableStream

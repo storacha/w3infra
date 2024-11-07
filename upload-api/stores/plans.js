@@ -1,6 +1,6 @@
 /**
  * 
- * @param {import("@storacha/upload-service-infra-billing/lib/api").CustomerStore} customerStore
+ * @param {import("../../billing/lib/api.js").CustomerStore} customerStore
  * @param {import('../types.js').BillingProvider} billingProvider
  * @returns {import("@storacha/upload-api").PlansStorage}
  */

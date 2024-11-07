@@ -4,7 +4,7 @@ import { PIECE_V1_CODE, PIECE_V1_MULTIHASH, PIECE_V2_MULTIHASH, RAW_CODE } from 
 
 /** 
  * @typedef {import('multiformats/cid').CID} CID
- * @typedef {import('@web3-storage/content-claims/client/api').Claim} Claim
+ * @typedef {import('@web3-storage/content-claims/client/api.js').Claim} Claim
  **/
 
 /**

@@ -5,7 +5,7 @@ const STREAM_TYPE = {
 
 /**
  * 
- * @param {import('./types').UcanStreamInvocation} ucanInvocation 
+ * @param {import('./types.js').UcanStreamInvocation} ucanInvocation 
  */
 export function hasOkReceipt (ucanInvocation) {
   return ucanInvocation.type === STREAM_TYPE.RECEIPT && Boolean(ucanInvocation.out?.ok)

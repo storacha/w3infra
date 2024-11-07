@@ -85,7 +85,6 @@ Object.entries(HTMLS).forEach(([htmlName, html]) => {
         stripePublishableKey: process.env.STRIPE_PUBLISHABLE_KEY,
         msg: 'Missing delegation in the URL, or some such problem.',
         autoApprove: false,
-        qrcode: '<div>QR code goes here</div>',
       })
       res.write(
         html

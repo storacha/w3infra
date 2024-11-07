@@ -1,8 +1,9 @@
-import * as API from '@storacha/upload-api'
 import { ok, error } from '@ucanto/core'
 import * as Delegation from '@ucanto/core/delegation'
 import { DecodeError, NetworkError } from '@storacha/indexing-service-client/errors'
 import * as QueryResult from '@storacha/indexing-service-client/query-result'
+
+/** @import * as API from '@storacha/upload-api' */
 
 /**
  * Currently just a compatibility layer over content claims.

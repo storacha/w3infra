@@ -39,7 +39,7 @@ import { createStripeBillingProvider } from '../billing.js'
 import * as UploadAPI from '@storacha/upload-api'
 import { mustGetEnv } from '../../lib/env.js'
 import { createEgressTrafficQueue } from '@storacha/upload-service-infra-billing/queues/egress-traffic.js'
-import { createRoutingService } from '../external-services/router.js'
+import { create as createRoutingService } from '../external-services/router.js'
 import { create as createBlobRetriever } from '../external-services/blob-retriever.js'
 
 Sentry.AWSLambda.init({

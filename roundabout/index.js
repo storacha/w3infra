@@ -7,7 +7,7 @@ import { RAW_CODE } from './constants.js'
 /**
  * @typedef {import('multiformats').CID} CID
  * @typedef {import('@aws-sdk/client-s3').S3Client} S3Client
- * @typedef {import('@aws-sdk/types').RequestPresigningArguments} RequestPresigningArguments
+ * @typedef {import('@aws-sdk/types.js').RequestPresigningArguments} RequestPresigningArguments
  */
 
 /**

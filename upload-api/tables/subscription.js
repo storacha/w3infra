@@ -9,8 +9,8 @@ import { marshall, unmarshall } from '@aws-sdk/util-dynamodb'
 import { getDynamoClient } from '../../lib/aws/dynamo.js'
 
 /**
- * @typedef {import('../types').SubscriptionTable} SubscriptionTable
- * @typedef {import('../types').SubscriptionInput} SubscriptionInput
+ * @typedef {import('../types.js').SubscriptionTable} SubscriptionTable
+ * @typedef {import('../types.js').SubscriptionInput} SubscriptionInput
  */
 
 export class ConflictError extends Failure {

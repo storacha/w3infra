@@ -14,7 +14,7 @@ import { delegate } from '@ucanto/core/delegation'
  */
 export const create = async (storageProviderTable, claimsService, serviceID) => {
   /** @type {import('@ucanto/interface').PrincipalResolver} */
-  let principalResolver = {}
+  const principalResolver = {}
   if (serviceID.did().startsWith('did:web')) {
     principalResolver.resolveDIDKey = (did) =>
       did === serviceID.did()

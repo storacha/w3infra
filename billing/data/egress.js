@@ -2,8 +2,8 @@ import { Link } from '@ucanto/server'
 import { DecodeFailure, EncodeFailure, Schema } from './lib.js'
 
 /**
- * @typedef { import('../types').InferStoreRecord<import('../lib/api').EgressTrafficData> } EgressTrafficStoreRecord
- * @typedef { import('../types').InferStoreRecord<import('../lib/api').EgressTrafficEventListKey> } EgressTrafficKeyStoreRecord
+ * @typedef { import('../types.js').InferStoreRecord<import('../lib/api.js').EgressTrafficData> } EgressTrafficStoreRecord
+ * @typedef { import('../types.js').InferStoreRecord<import('../lib/api.js').EgressTrafficEventListKey> } EgressTrafficKeyStoreRecord
  */
 
 export const egressSchema = Schema.struct({
@@ -15,10 +15,10 @@ export const egressSchema = Schema.struct({
   cause: Schema.link(),
 })
 
-/** @type {import('../lib/api').Validator<import('../lib/api').EgressTrafficData>} */
+/** @type {import('../lib/api.js').Validator<import('../lib/api.js').EgressTrafficData>} */
 export const validate = input => egressSchema.read(input)
 
-/** @type {import('../lib/api').Encoder<import('../lib/api').EgressTrafficData, EgressTrafficStoreRecord>} */
+/** @type {import('../lib/api.js').Encoder<import('../lib/api.js').EgressTrafficData, EgressTrafficStoreRecord>} */
 export const encode = input => {
   try {
     return {
@@ -38,7 +38,7 @@ export const encode = input => {
   }
 }
 
-/** @type {import('../lib/api').Encoder<import('../lib/api').EgressTrafficData, string>} */
+/** @type {import('../lib/api.js').Encoder<import('../lib/api.js').EgressTrafficData, string>} */
 export const encodeStr = input => {
   try {
     const data = encode(input)
@@ -51,7 +51,7 @@ export const encodeStr = input => {
   }
 }
 
-/** @type {import('../lib/api').Decoder<import('../types.js').StoreRecord, import('../lib/api').EgressTrafficData>} */
+/** @type {import('../lib/api.js').Decoder<import('../types.js').StoreRecord, import('../lib/api.js').EgressTrafficData>} */
 export const decode = input => {
   try {
     return {
@@ -71,7 +71,7 @@ export const decode = input => {
   }
 }
 
-/** @type {import('../lib/api').Decoder<string, import('../lib/api').EgressTrafficData>} */
+/** @type {import('../lib/api.js').Decoder<string, import('../lib/api.js').EgressTrafficData>} */
 export const decodeStr = input => {
   try {
     return decode(JSON.parse(input))
@@ -83,7 +83,7 @@ export const decodeStr = input => {
 }
 
 export const lister = {
-  /** @type {import('../lib/api').Encoder<import('../lib/api').EgressTrafficEventListKey, EgressTrafficKeyStoreRecord>} */
+  /** @type {import('../lib/api.js').Encoder<import('../lib/api.js').EgressTrafficEventListKey, EgressTrafficKeyStoreRecord>} */
   encodeKey: input => ({
     ok: {
       space: input.space.toString(),
@@ -91,7 +91,7 @@ export const lister = {
       from: input.from.toISOString()
     }
   }),
-  /** @type {import('../lib/api').Decoder<EgressTrafficKeyStoreRecord, import('../lib/api').EgressTrafficEventListKey>} */
+  /** @type {import('../lib/api.js').Decoder<EgressTrafficKeyStoreRecord, import('../lib/api.js').EgressTrafficEventListKey>} */
   decodeKey: input => {
     try {
       return {

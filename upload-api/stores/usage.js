@@ -2,9 +2,9 @@ import { iterateSpaceDiffs } from '@storacha/upload-service-infra-billing/lib/sp
 
 /**
  * @param {object} conf
- * @param {import('@storacha/upload-service-infra-billing/lib/api').SpaceSnapshotStore} conf.spaceSnapshotStore
- * @param {import('@storacha/upload-service-infra-billing/lib/api').SpaceDiffStore} conf.spaceDiffStore
- * @param {import('@storacha/upload-service-infra-billing/lib/api').EgressTrafficQueue} conf.egressTrafficQueue
+ * @param {import('@storacha/upload-service-infra-billing/lib/api.js').SpaceSnapshotStore} conf.spaceSnapshotStore
+ * @param {import('@storacha/upload-service-infra-billing/lib/api.js').SpaceDiffStore} conf.spaceDiffStore
+ * @param {import('@storacha/upload-service-infra-billing/lib/api.js').EgressTrafficQueue} conf.egressTrafficQueue
  */
 export function useUsageStore({ spaceSnapshotStore, spaceDiffStore, egressTrafficQueue }) {
   return {
