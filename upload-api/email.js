@@ -35,27 +35,15 @@ export class Email {
    * @param {ValidationEmailSend} opts
    */
   async sendValidation(opts) {
-    const { hostname } = new URL(opts.url)
-    const emailParams = hostname.endsWith('storacha.network')
-      ? {
-          From: this.sender || 'storacha.network <noreply@storacha.network>',
-          TemplateAlias: 'welcome',
-          TemplateModel: {
-            product_url: 'https://storacha.network',
-            product_name: 'Web3 Storage',
-            email: opts.to,
-            action_url: opts.url,
-          },
-        }
-      : {
-        From: this.sender || 'Storacha <noreply@storacha.network>',
-        TemplateAlias: 'welcome-storacha',
-          TemplateModel: {
-            email: opts.to,
-            action_url: opts.url,
-            environment_name: this.environment,
-          },
-        }
+    const emailParams = {
+      From: this.sender || 'Storacha <noreply@storacha.network>',
+      TemplateAlias: 'welcome-storacha',
+      TemplateModel: {
+        email: opts.to,
+        action_url: opts.url,
+        environment_name: this.environment,
+      },
+    }
 
     const rsp = await fetch('https://api.postmarkapp.com/email/withTemplate', {
       method: 'POST',
