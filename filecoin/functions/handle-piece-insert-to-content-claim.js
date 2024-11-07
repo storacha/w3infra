@@ -40,20 +40,18 @@ async function pieceCidReport (event) {
     did: indexingServiceDid,
     url: indexingServiceUrl
   })
-  let issuer = getServiceSigner({ privateKey })
   const cid = Link.parse(indexingServiceProof, base64)
   const proof = await Delegation.extract(cid.multihash.digest)
   if (!proof.ok) throw new Error('failed to extract proof', { cause: proof.error })
-  const proofs = [proof.ok]
 
   const context = {
     claimsService: {
       connection,
       invocationConfig: {
-        issuer: issuer,
+        issuer: getServiceSigner({ privateKey }),
         audience: connection.id,
         with: connection.id.did(),
-        proofs
+        proofs: [proof.ok]
       },
     },
   }
