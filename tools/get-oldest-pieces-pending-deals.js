@@ -53,8 +53,8 @@ function getRegion (env) {
  */
 function getPieceTableName (env) {
   if (env === 'staging') {
-    return 'staging-w3infra-piece-v2'
+    return 'staging-upload-service-infra-piece'
   }
 
-  return 'prod-w3infra-piece-v2'
+  return 'prod-upload-service-infra-piece'
 }

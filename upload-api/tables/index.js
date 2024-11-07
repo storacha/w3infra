@@ -1,29 +1,12 @@
 /** @typedef {import('sst/constructs').TableProps} TableProps */
 
 /** @type TableProps */
-export const storeTableProps = {
-  fields: {
-    space: 'string',        // `did:key:space`
-    link: 'string',         // `bagy...1`
-    size: 'number',         // `101`
-    origin: 'string',       // `bagy...0` (prev CAR CID. optional)
-    issuer: 'string',       // `did:key:agent` (issuer of ucan)
-    invocation: 'string',   // `baf...ucan` (CID of invcation UCAN)
-    insertedAt: 'string',   // `2022-12-24T...`
-  },
-  // space + link must be unique to satisfy index constraint
-  primaryIndex: { partitionKey: 'space', sortKey: 'link' },
-  globalIndexes: {
-    cid: { partitionKey: 'link', sortKey: 'space', projection: ['space', 'insertedAt'] }
-  }
-}
-
-/** @type TableProps */
 export const uploadTableProps = {
   fields: {
     space: 'string',        // `did:key:space`
     root: 'string',         // `baf...x`
-    shard: 'string',        // `bagy...1
+    shard: 'string',        // `bagy...1`
+    cause: 'string',        // `baf...ucan` (CID of invocation UCAN)
     insertedAt: 'string',   // `2022-12-24T...`
   },
   // space + root must be unique to satisfy index constraint
@@ -34,18 +17,18 @@ export const uploadTableProps = {
 }
 
 /** @type TableProps */
-export const allocationTableProps = {
+export const blobRegistryTableProps = {
   fields: {
-    space: 'string',        // `did:key:space`
-    multihash: 'string',         // `bagy...1`
-    size: 'number',         // `101`
-    invocation: 'string',   // `baf...ucan` (CID of invcation UCAN)
-    insertedAt: 'string',   // `2022-12-24T...`
+    space: 'string',      // `did:key:space`
+    digest: 'string',     // `zQm...`
+    size: 'number',       // `101`
+    cause: 'string',      // `baf...ucan` (CID of invocation UCAN)
+    insertedAt: 'string', // `2022-12-24T...`
   },
-  // space + link must be unique to satisfy index constraint
-  primaryIndex: { partitionKey: 'space', sortKey: 'multihash' },
+  // space + digest must be unique to satisfy index constraint
+  primaryIndex: { partitionKey: 'space', sortKey: 'digest' },
   globalIndexes: {
-    multihash: { partitionKey: 'multihash', sortKey: 'space', projection: ['space', 'insertedAt'] }
+    digest: { partitionKey: 'digest', sortKey: 'space' }
   }
 }
 
@@ -160,12 +143,21 @@ export const spaceMetricsTableProps = {
 }
 
 /** @type TableProps */
-export const blocksCarsPositionTableProps = {
+export const storageProviderTableProps = {
   fields: {
-    blockmultihash: 'string',
-    carpath: 'string',
-    offset: 'number',
-    length: 'number',
+    // DID of the stroage provider.
+    provider: 'string',
+    // Public URL that accepts UCAN invocations.
+    endpoint: 'string',
+    // Proof the upload service can invoke blob/allocate and blob/accept.
+    proof: 'string',
+    // Weight determines chance of selection relative to other providers.
+    weight: 'number',
+    // Date and time the record was created (ISO 8601)
+    insertedAt: 'string',
+    // Date and time the record was last updated (ISO 8601)
+    updatedAt: 'string',
   },
-  primaryIndex: { partitionKey: 'blockmultihash', sortKey: 'carpath' }
+  // space + digest must be unique to satisfy index constraint
+  primaryIndex: { partitionKey: 'provider' }
 }

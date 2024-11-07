@@ -2,8 +2,8 @@ import pRetry from 'p-retry'
 
 /**
  * @template T
- * @param {() => Promise<import('../../filecoin/types').Result<T>>} fn
- * @param {(res: import('../../filecoin/types').Result<T>) => boolean} verifyResFn
+ * @param {() => Promise<import('../../filecoin/types.js').Result<T>>} fn
+ * @param {(res: import('../../filecoin/types.js').Result<T>) => boolean} verifyResFn
  */
 export async function waitForStoreOperationOkResult (fn, verifyResFn) {
   return await pRetry(async () => {
@@ -25,8 +25,8 @@ export async function waitForStoreOperationOkResult (fn, verifyResFn) {
 
 /**
  * 
- * @param {import('@web3-storage/w3up-client').Client} client 
- * @param {import('@web3-storage/w3up-client/account').Account} account 
+ * @param {import('@storacha/client').Client} client 
+ * @param {import('@storacha/client/account').Account} account 
  */
 export async function getUsage(client, account) {
   /** @type {Record<`did:${string}:${string}`, number>} */

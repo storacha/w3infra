@@ -2,7 +2,7 @@ import {
   Api,
 } from 'sst/constructs'
 
-import { getCustomDomain, setupSentry } from './config.js'
+import { getCustomDomain, getEnv, setupSentry } from './config.js'
 
 /**
  * @param {import('sst/constructs').StackContext} properties
@@ -10,6 +10,8 @@ import { getCustomDomain, setupSentry } from './config.js'
 export function RoundaboutStack({ stack, app }) {
   // Setup app monitoring with Sentry
   setupSentry(app, stack)
+
+  const { INDEXING_SERVICE_URL } = getEnv()
 
   // Setup API
   const customDomain = getCustomDomain(stack.stage, process.env.ROUNDABOUT_HOSTED_ZONE)
@@ -19,11 +21,7 @@ export function RoundaboutStack({ stack, app }) {
     defaults: {
       function: {
         environment: {
-          BUCKET_ENDPOINT: process.env.R2_ENDPOINT ?? '',
-          BUCKET_REGION: process.env.R2_REGION ?? '',
-          BUCKET_NAME: process.env.R2_CARPARK_BUCKET_NAME ?? '',
-          BUCKET_ACCESS_KEY_ID: process.env.R2_ACCESS_KEY_ID ?? '',
-          BUCKET_SECRET_ACCESS_KEY: process.env.R2_SECRET_ACCESS_KEY ?? '',
+          INDEXING_SERVICE_URL,
         }
       }
     },

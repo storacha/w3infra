@@ -1,4 +1,4 @@
-import * as StorefrontCaps from '@web3-storage/capabilities/filecoin/storefront'
+import * as StorefrontCaps from '@storacha/capabilities/filecoin/storefront'
 
 import * as DID from '@ipld/dag-ucan/did'
 import { Piece } from '@web3-storage/data-segment'
@@ -17,8 +17,8 @@ export async function followFilecoinReceiptChain () {
 
   const AWS_REGION = getRegion(ENV)
   const pieceTableName = getPieceTableName(ENV)
-  const invocationBucketName = getInvocationBucketName(ENV)
-  const workflowBucketName = getWorkflowBucketName(ENV)
+  const invocationBucketName = getAgentIndexBucketName(ENV)
+  const workflowBucketName = getAgentMessageBucketName(ENV)
   const did = getDid(ENV)
 
   let id = getServiceSigner({
@@ -137,32 +137,32 @@ function getRegion (env) {
  */
 function getPieceTableName (env) {
   if (env === 'staging') {
-    return 'staging-w3infra-piece-v2'
+    return 'staging-upload-service-infra-piece'
   }
 
-  return 'prod-w3infra-piece-v2'
+  return 'prod-upload-service-infra-piece'
 }
 
 /**
  * @param {string} env
  */
-function getInvocationBucketName (env) {
+function getAgentIndexBucketName (env) {
   if (env === 'staging') {
-    return 'invocation-store-staging-0'
+    return 'agent-index-staging-0'
   }
 
-  return 'invocation-store-prod-0'
+  return 'agent-index-prod-0'
 }
 
 /**
  * @param {string} env
  */
-function getWorkflowBucketName (env) {
+function getAgentMessageBucketName (env) {
   if (env === 'staging') {
-    return 'workflow-store-staging-0'
+    return 'agent-message-staging-0'
   }
 
-  return 'workflow-store-prod-0'
+  return 'agent-message-prod-0'
 }
 
 /**
@@ -170,8 +170,8 @@ function getWorkflowBucketName (env) {
  */
 function getDid (env) {
   if (env === 'staging') {
-    return 'did:web:staging.web3.storage'
+    return 'did:web:staging.upload.storacha.network'
   }
 
-  return 'did:web:web3.storage'
+  return 'did:web:upload.storacha.network'
 }

@@ -8,29 +8,20 @@ import { getS3Client } from '../../lib/aws/s3.js'
 /**
  * Abstraction layer with Factory to perform operations on bucket.
  * 
- * @param {string} endpoint 
- * @param {string} accessKeyId 
- * @param {string} secretAccessKey 
+ * @param {string} region 
  * @param {string} bucketName
  */
-export function createDelegationsStore(endpoint, accessKeyId, secretAccessKey, bucketName){
-  const s3Client = getS3Client({
-    region: 'auto',
-    endpoint,
-    credentials: {
-      accessKeyId,
-      secretAccessKey,
-    },
-  })
+export function createDelegationsStore(region, bucketName){
+  const s3Client = getS3Client({ region })
   return useDelegationsStore(s3Client, bucketName)
 }
 
 /**
- * @param { CID} cid
+ * @param {CID} cid
  */
 function createDelegationsBucketKey (cid) {
   const key = /** @type {const} */ (
-    `/delegations/${cid.toString(base32)}.car`
+    `${cid.toString(base32)}/${cid.toString(base32)}.car`
   )
   return key
 }
@@ -38,7 +29,7 @@ function createDelegationsBucketKey (cid) {
 /**
  * @param {import('@aws-sdk/client-s3').S3Client} s3client
  * @param {string} bucketName
- * @returns {import('../types').DelegationsBucket}
+ * @returns {import('../types.js').DelegationsBucket}
  */
 export const useDelegationsStore = (s3client, bucketName) => {
   return {

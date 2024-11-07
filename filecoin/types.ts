@@ -4,7 +4,7 @@ import {
   Principal,
   Proof,
 } from '@ucanto/interface'
-import { PieceRecord, PieceRecordKey } from '@web3-storage/filecoin-api/storefront/api'
+import { PieceRecord, PieceRecordKey } from '@storacha/filecoin-api/storefront/api'
 
 export interface FilecoinMetricsStore {
   incrementTotal: (metricName: string, n: number) => Promise<void>
@@ -129,9 +129,6 @@ export type Variant<U extends Record<string, unknown>> = {
 declare module 'sst/node/config' {
   export interface SecretResources {
     PRIVATE_KEY: {
-      value: string
-    },
-    CONTENT_CLAIMS_PRIVATE_KEY: {
       value: string
     }
   }

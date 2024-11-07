@@ -1,6 +1,6 @@
-import * as ServiceBlobCaps from '@web3-storage/capabilities/web3.storage/blob'
-import * as BlobCaps from '@web3-storage/capabilities/blob'
-import * as StoreCaps from '@web3-storage/capabilities/store'
+import * as ServiceBlobCaps from '@storacha/capabilities/blob'
+import * as BlobCaps from '@storacha/capabilities/space/blob'
+import * as StoreCaps from '@storacha/capabilities/store'
 
 /**
  * Filters UCAN stream messages that are receipts for invocations that alter
@@ -64,8 +64,8 @@ export const findSpaceUsageDeltas = messages => {
  *
  * @param {import('./api.js').UsageDelta[]} deltas
  * @param {{
- *   spaceDiffStore: import('./api').SpaceDiffStore
- *   consumerStore: import('./api').ConsumerStore
+ *   spaceDiffStore: import('./api.js').SpaceDiffStore
+ *   consumerStore: import('./api.js').ConsumerStore
  * }} ctx
  */
 export const storeSpaceUsageDeltas = async (deltas, ctx) => {
@@ -100,14 +100,14 @@ export const storeSpaceUsageDeltas = async (deltas, ctx) => {
 }
 
 /**
- * @param {import('./api').UcanStreamMessage} m
- * @returns {m is import('./api').UcanReceiptMessage}
+ * @param {import('./api.js').UcanStreamMessage} m
+ * @returns {m is import('./api.js').UcanReceiptMessage}
  */
 const isReceipt = m => m.type === 'receipt'
 
 /**
  * @param {import('@ucanto/interface').Result} r
- * @returns {r is { ok: import('@web3-storage/capabilities/types').BlobAllocateSuccess }}
+ * @returns {r is { ok: import('@storacha/capabilities/types').BlobAllocateSuccess }}
  */
 const isServiceBlobAllocateSuccess = r =>
   !r.error &&
@@ -118,7 +118,7 @@ const isServiceBlobAllocateSuccess = r =>
 
 /**
  * @param {import('@ucanto/interface').Result} r
- * @returns {r is { ok: import('@web3-storage/capabilities/types').BlobRemoveSuccess }}
+ * @returns {r is { ok: import('@storacha/capabilities/types').SpaceBlobRemoveSuccess }}
  */
 const isBlobRemoveSuccess = r =>
   !r.error &&
@@ -129,7 +129,7 @@ const isBlobRemoveSuccess = r =>
 
 /**
  * @param {import('@ucanto/interface').Result} r
- * @returns {r is { ok: import('@web3-storage/capabilities/types').StoreAddSuccess }}
+ * @returns {r is { ok: import('@storacha/capabilities/types').StoreAddSuccess }}
  */
 const isStoreAddSuccess = r =>
   !r.error &&
@@ -140,7 +140,7 @@ const isStoreAddSuccess = r =>
 
 /**
  * @param {import('@ucanto/interface').Result} r
- * @returns {r is { ok: import('@web3-storage/capabilities/types').StoreRemoveSuccess }}
+ * @returns {r is { ok: import('@storacha/capabilities/types').StoreRemoveSuccess }}
  */
 const isStoreRemoveSuccess = r =>
   !r.error &&
@@ -151,8 +151,8 @@ const isStoreRemoveSuccess = r =>
 /**
  * @template {import('@ucanto/interface').Ability} Can
  * @template {import('@ucanto/interface').Unit} Caveats
- * @param {import('./api').UcanReceiptMessage} m
+ * @param {import('./api.js').UcanReceiptMessage} m
  * @param {import('@ucanto/interface').TheCapabilityParser<import('@ucanto/interface').CapabilityMatch<Can, import('@ucanto/interface').Resource, Caveats>>} cap
- * @returns {m is import('./api').UcanReceiptMessage<[import('@ucanto/interface').Capability<Can, import('@ucanto/interface').Resource, Caveats>]>}
+ * @returns {m is import('./api.js').UcanReceiptMessage<[import('@ucanto/interface').Capability<Can, import('@ucanto/interface').Resource, Caveats>]>}
  */
 const isReceiptForCapability = (m, cap) => m.value.att.some(c => c.can === cap.can)

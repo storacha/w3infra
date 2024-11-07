@@ -4,16 +4,12 @@ import {
   Queue,
   use,
 } from 'sst/constructs'
-import { Duration, aws_events as awsEvents } from 'aws-cdk-lib'
+import { Duration } from 'aws-cdk-lib'
 import { StartingPosition } from 'aws-cdk-lib/aws-lambda'
-
-import { BusStack } from './bus-stack.js'
-import { CarparkStack } from './carpark-stack.js'
 import { UploadDbStack } from './upload-db-stack.js'
 import { UcanInvocationStack } from './ucan-invocation-stack.js'
-import { RoundaboutStack } from './roundabout-stack.js'
+// import { RoundaboutStack } from './roundabout-stack.js'
 import { setupSentry, getEnv, getCdkNames, getCustomDomain, getEventSourceConfig } from './config.js'
-import { CARPARK_EVENT_BRIDGE_SOURCE_EVENT } from '../carpark/event-bus/source.js'
 import { Status } from '../filecoin/store/piece.js'
 
 /**
@@ -23,10 +19,9 @@ export function FilecoinStack({ stack, app }) {
   const {
     AGGREGATOR_DID,
     AGGREGATOR_URL,
-    CONTENT_CLAIMS_DID,
-    CONTENT_CLAIMS_URL,
-    CONTENT_CLAIMS_PROOF,
-    DISABLE_PIECE_CID_COMPUTE,
+    INDEXING_SERVICE_DID,
+    INDEXING_SERVICE_URL,
+    INDEXING_SERVICE_PROOF,
     UPLOAD_API_DID,
     STOREFRONT_PROOF,
     START_FILECOIN_METRICS_EPOCH_MS
@@ -36,15 +31,11 @@ export function FilecoinStack({ stack, app }) {
   // Setup app monitoring with Sentry
   setupSentry(app, stack)
 
-  // Get carpark reference
-  const { carparkBucket } = use(CarparkStack)
-  // Get eventBus reference
-  const { eventBus } = use(BusStack)
   // Get store table reference
-  const { pieceTable, privateKey, contentClaimsPrivateKey, adminMetricsTable } = use(UploadDbStack)
+  const { pieceTable, privateKey, adminMetricsTable } = use(UploadDbStack)
   // Get UCAN store references
-  const { workflowBucket, invocationBucket, ucanStream } = use(UcanInvocationStack)
-  const { roundaboutApiUrl } = use(RoundaboutStack)
+  const { agentMessageBucket, agentIndexBucket, ucanStream } = use(UcanInvocationStack)
+  // const { roundaboutApiUrl } = use(RoundaboutStack)
 
   /**
    * 1st processor queue - filecoin submit
@@ -66,7 +57,9 @@ export function FilecoinStack({ stack, app }) {
       handler: 'filecoin/functions/handle-filecoin-submit-message.main',
       environment : {
         PIECE_TABLE_NAME: pieceTable.tableName,
-        CONTENT_STORE_HTTP_ENDPOINT: roundaboutApiUrl
+        // FIXME: reinstate when roundabout is fixed up
+        CONTENT_STORE_HTTP_ENDPOINT: 'http://todo.roundabout.storacha.network'
+        // CONTENT_STORE_HTTP_ENDPOINT: roundaboutApiUrl
       },
       permissions: [pieceTable],
       // piece is computed in this lambda
@@ -123,14 +116,14 @@ export function FilecoinStack({ stack, app }) {
         environment : {
           DID: UPLOAD_API_DID,
           PIECE_TABLE_NAME: pieceTable.tableName,
-          WORKFLOW_BUCKET_NAME: workflowBucket.bucketName,
-          INVOCATION_BUCKET_NAME: invocationBucket.bucketName,
+          AGENT_MESSAGE_BUCKET_NAME: agentMessageBucket.bucketName,
+          AGENT_INDEX_BUCKET_NAME: agentIndexBucket.bucketName,
           AGGREGATOR_DID,
           PROOF: STOREFRONT_PROOF,
         },
         timeout: '6 minutes',
         bind: [privateKey],
-        permissions: [pieceTable, workflowBucket, invocationBucket],
+        permissions: [pieceTable, agentMessageBucket, agentIndexBucket],
       }
     }
   })
@@ -150,14 +143,13 @@ export function FilecoinStack({ stack, app }) {
       function: {
         handler: 'filecoin/functions/handle-piece-insert-to-content-claim.main',
         environment: {
-          CONTENT_CLAIMS_DID,
-          CONTENT_CLAIMS_URL,
-          CONTENT_CLAIMS_PROOF,
+          INDEXING_SERVICE_DID,
+          INDEXING_SERVICE_URL,
+          INDEXING_SERVICE_PROOF,
         },
         timeout: 3 * 60,
         bind: [
-          privateKey,
-          contentClaimsPrivateKey
+          privateKey
         ]
       },
       deadLetterQueue: pieceTableHandleInserToClaimtDLQ.cdk.queue,
@@ -239,84 +231,16 @@ export function FilecoinStack({ stack, app }) {
     }
   })
 
-  // piece-cid compute
-  // Shortcut from system that offers piece anyway on bucket event
-  const pieceCidComputeHandler = new Function(
-    stack,
-    'piece-cid-compute-handler',
-    {
-      environment : {
-        DISABLE_PIECE_CID_COMPUTE,
-        DID: UPLOAD_API_DID,
-        STOREFRONT_DID: UPLOAD_API_DID,
-        STOREFRONT_URL: storefrontCustomDomain?.domainName ? `https://${storefrontCustomDomain?.domainName}` : '',
-      },
-      bind: [
-        privateKey
-      ],
-      permissions: [pieceTable, carparkBucket],
-      timeout: '5 minutes',
-      handler: 'filecoin/functions/piece-cid-compute.handler',
-    },
-  )
-
-  const pieceCidComputeQueueDLQ = new Queue(stack, `piece-cid-compute-queue-dlq`, {
-    cdk: { queue: { retentionPeriod: Duration.days(14) } }
-   })
-  const pieceCidComputeQueue = new Queue(stack, 'piece-cid-compute-queue', {
-    consumer: {
-      function: pieceCidComputeHandler,
-      deadLetterQueue: pieceCidComputeQueueDLQ.cdk.queue,
-      cdk: {
-        eventSource: {
-          batchSize: 1,
-        },
-      }
-    },
-    cdk: {
-      queue: {
-        // Needs to be set as less or equal than consumer function
-        visibilityTimeout: Duration.seconds(15 * 60),
-      },
-    },
-  })
-
-  /** @type {import('sst/constructs').EventBusQueueTargetProps} */
-  const targetPieceCidComputeQueue = {
-    type: 'queue',
-    queue: pieceCidComputeQueue,
-    cdk: {
-      target: {
-        message: awsEvents.RuleTargetInput.fromObject({
-          bucketRegion: awsEvents.EventField.fromPath('$.detail.region'),
-          bucketName: awsEvents.EventField.fromPath('$.detail.bucketName'),
-          key: awsEvents.EventField.fromPath('$.detail.key')
-        }),
-      },
-    }
-  }
-
-  eventBus.addRules(stack, {
-    newCarToComputePiece: {
-      pattern: {
-        source: [CARPARK_EVENT_BRIDGE_SOURCE_EVENT],
-      },
-      targets: {
-        targetPieceCidComputeQueue
-      }
-    }
-  })
-
   // `aggregate/offer` + `aggregate-accept` metrics
   const metricsAggregateTotalDLQ = new Queue(stack, 'metrics-aggregate-total-dlq')
   const metricsAggregateTotalConsumer = new Function(stack, 'metrics-aggregate-total-consumer', {
     environment: {
       METRICS_TABLE_NAME: adminMetricsTable.tableName,
-      WORKFLOW_BUCKET_NAME: workflowBucket.bucketName,
-      INVOCATION_BUCKET_NAME: invocationBucket.bucketName,
+      AGENT_MESSAGE_BUCKET_NAME: agentMessageBucket.bucketName,
+      AGENT_INDEX_BUCKET_NAME: agentIndexBucket.bucketName,
       START_FILECOIN_METRICS_EPOCH_MS
     },
-    permissions: [adminMetricsTable, workflowBucket, invocationBucket],
+    permissions: [adminMetricsTable, agentMessageBucket, agentIndexBucket],
     handler: 'filecoin/functions/metrics-aggregate-offer-and-accept-total.consumer',
     deadLetterQueue: metricsAggregateTotalDLQ.cdk.queue,
     timeout: 3 * 60,

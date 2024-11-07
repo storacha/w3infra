@@ -83,7 +83,7 @@ function getDynamoDb (tableName, env, region) {
       region,
       endpoint
     }),
-    tableName: `${env}-w3infra-${tableName}`,
+    tableName: `${env}-upload-service-infra-${tableName}`,
     endpoint
   }
 }

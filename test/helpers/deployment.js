@@ -18,17 +18,8 @@ export function getStage () {
 
 export const getStackName = () => {
   const stage = getStage()
-  return `${stage}-w3infra`
+  return `${stage}-upload-service-infra`
 }
-
-export const getCloudflareBucketClient = () => new S3Client({
-  region: 'auto',
-  endpoint: process.env.R2_ENDPOINT || '',
-  credentials: {
-    accessKeyId: process.env.R2_ACCESS_KEY_ID || '',
-    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY || '',
-  },
-})
 
 export const getAwsBucketClient = (region = getAwsRegion()) => new S3Client({
   region
@@ -38,7 +29,7 @@ export const getApiEndpoint = () => {
   // CI/CD deployment
   if (process.env.SEED_APP_NAME) {
     const stage = getStage()
-    return `https://${stage}.up.web3.storage`
+    return `https://${stage}.upload.storacha.network`
   }
 
   const require = createRequire(import.meta.url)
@@ -56,7 +47,7 @@ export const getRoundaboutEndpoint = () => {
   // CI/CD deployment
   if (process.env.SEED_APP_NAME) {
     const stage = getStage()
-    return `https://${stage}.roundabout.web3.storage`
+    return `https://${stage}.roundabout.storacha.network`
   }
 
   const require = createRequire(import.meta.url)

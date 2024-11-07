@@ -9,17 +9,13 @@ import anyTest from 'ava'
  * @typedef {object} ServiceContext
  * @property {Signer} service
  * @typedef {object} GetMetricsContext
- * @property {import('../../types').MetricsTable} metricsTable
+ * @property {import('../../types.js').MetricsTable} metricsTable
  * @property {string} tableName
  * @typedef {object} MetricsContext
- * @property {import('../../types').MetricsStore} adminMetricsStore
+ * @property {import('../../types.js').MetricsStore} adminMetricsStore
  * @property {string} adminMetricsTableName
- * @property {import('../../types').SpaceMetricsStore} spaceMetricsStore
+ * @property {import('../../types.js').SpaceMetricsStore} spaceMetricsStore
  * @property {string} spaceMetricsTableName
- * @property {import('../../types').CarStore} carStore
- * @property {string} carStoreBucketName
- * @property {import('@web3-storage/upload-api').AllocationsStorage} allocationsStorage
- * @property {string} allocationsTableName
  *
  * @typedef {import("ava").TestFn<DynamoContext & S3Context & ServiceContext>} Test
  * @typedef {import("ava").TestFn<DynamoContext>} TestDynamo

@@ -3,7 +3,7 @@ import { DID, Delegation, Block, UCANLink, ByteView, ReceiptModel, DIDKey, Resul
 import { UnknownLink } from 'multiformats'
 import { CID } from 'multiformats/cid'
 import { Kinesis } from '@aws-sdk/client-kinesis'
-import { AccountDID, ProviderDID, Service, SpaceDID, CarStoreBucket, AllocationsStorage, PlanCreateAdminSessionSuccess, PlanCreateAdminSessionFailure, AgentStore } from '@web3-storage/upload-api'
+import { AccountDID, ProviderDID, Service, SpaceDID, BlobAPI, PlanCreateAdminSessionSuccess, PlanCreateAdminSessionFailure, AgentStore } from '@storacha/upload-api'
 
 export type {
   UnknownLink,
@@ -25,7 +25,7 @@ export type {
   Accessor,
   Variant,
   ReceiptLink
-} from '@web3-storage/upload-api'
+} from '@storacha/upload-api'
 
 export interface StoreOperationError extends Error {
   name: 'StoreOperationFailed'
@@ -41,25 +41,13 @@ export interface UcanStreamCtx {
   kinesisClient?: Kinesis
 }
 
-export interface WorkflowCtx extends UcanStreamCtx {
-  invocationBucket: InvocationBucket
-  workflowBucket: WorkflowBucket
-}
-
-export interface ReceiptBlockCtx extends UcanStreamCtx {
-  invocationBucket: InvocationBucket
-  taskBucket: TaskBucket
-  workflowBucket: WorkflowBucket
-}
-
 export interface MetricsStore {
   incrementTotals: (metricsToUpdate: Record<string, number>) => Promise<void>
 }
 
 export interface MetricsCtx {
   metricsStore: MetricsStore
-  carStore: CarStore
-  allocationsStorage: AllocationsStorage
+  blobRegistry: BlobAPI.Registry
 }
 
 export interface SpaceMetricsItem {
@@ -73,31 +61,6 @@ export interface SpaceMetricsStore {
 
 export interface SpaceMetricsCtx {
   metricsStore: SpaceMetricsStore
-  carStore: CarStore
-  allocationsStorage: AllocationsStorage
-}
-
-export interface CarStore extends CarStoreBucket {
-  getSize: (link: UnknownLink) => Promise<number>
-}
-
-export interface InvocationBucket {
-  putWorkflowLink: (cid: string, workflowCid: string) => Promise<void>
-  putReceipt: (cid: string, bytes: Uint8Array) => Promise<void>
-  putInLink: (cid: string, workflowCid: string) => Promise<void>
-  putOutLink: (cid: string, workflowCid: string) => Promise<void>
-  getInLink: (cid: string) => Promise<string|undefined>
-  getWorkflowLink: (cid: string) => Promise<string|undefined>
-}
-
-export interface TaskBucket {
-  putResult: (taskCid: string, bytes: Uint8Array) => Promise<void>
-  putInvocationLink: (taskCid: string, invocationCid: string) => Promise<void>
-}
-
-export interface WorkflowBucket {
-  put: (Cid: string, bytes: Uint8Array) => Promise<void>
-  get: (Cid: string) => Promise<Uint8Array|undefined>
 }
 
 export interface DelegationsBucket {
@@ -122,9 +85,6 @@ export interface SpaceMetricsTable {
   getAllocated: (consumer: DIDKey) => Promise<number>
 }
 
-/**
- * 
- */
 export interface SubscriptionInput {
   /** DID of the customer who maintains this subscription */
   customer: DID,
@@ -215,6 +175,28 @@ export interface Customer {
 export interface CustomerTable {
   /** get a customer record */
   get: (customer: DID<'mailto'>) => Promise<Result<Customer, RecordNotFound<DID<'mailto'>>>>
+}
+
+export interface StorageProviderInput {
+  provider: DID
+  endpoint: URL
+  proof: Delegation
+  weight: number
+}
+
+export interface StorageProviderRecord {
+  provider: DID
+  endpoint: URL
+  proof: Delegation
+  weight: number
+  insertedAt: Date
+}
+
+export interface StorageProviderTable {
+  put (input: StorageProviderInput): Promise<void>
+  get (provider: DID): Promise<StorageProviderRecord|undefined>
+  del (provider: DID): Promise<void>
+  list (): Promise<DID[]>
 }
 
 export type SpaceService = Pick<Service, "space">

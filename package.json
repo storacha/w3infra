@@ -1,5 +1,5 @@
 {
-  "name": "w3infra",
+  "name": "upload-service-infra",
   "version": "0.0.0",
   "private": true,
   "packageManager": "npm@10.8.2+sha256.c8c61ba0fa0ab3b5120efd5ba97fdaf0e0b495eef647a97c4413919eda0a878b",
@@ -13,11 +13,10 @@
     "console": "sst console",
     "lint": "tsc && eslint '**/*.js' '**/*.jsx'",
     "clean": "rm -rf dist node_modules package-lock.json ./*/{.cache,dist,node_modules}",
-    "test": "npm test -w billing -w upload-api -w carpark -w replicator -w roundabout -w filecoin -w indexer",
+    "test": "npm test -w billing -w upload-api -w roundabout -w filecoin",
     "test-integration": "ava --verbose --serial --timeout=660s --fail-fast test/*.test.js",
     "fetch-metrics-for-space": "npm run fetch-metrics-for-space -w tools",
-    "follow-filecoin-receipt-chain": "npm run follow-filecoin-receipt-chain -w tools",
-    "d1-dynamo-migration": "npm run d1-dynamo-migration -w tools"
+    "follow-filecoin-receipt-chain": "npm run follow-filecoin-receipt-chain -w tools"
   },
   "devDependencies": {
     "@chainsafe/libp2p-noise": "^15.0.0",
@@ -28,6 +27,13 @@
     "@libp2p/mplex": "^10.0.23",
     "@libp2p/websockets": "^8.0.23",
     "@multiformats/multiaddr": "^12.2.1",
+    "@storacha/access": "^0.0.0",
+    "@storacha/blob-index": "^0.0.0",
+    "@storacha/capabilities": "^1.0.0",
+    "@storacha/client": "^1.0.0",
+    "@storacha/filecoin-client": "^0.0.0",
+    "@storacha/upload-api": "^1.0.2",
+    "@storacha/upload-client": "^1.0.0",
     "@tsconfig/node16": "^1.0.3",
     "@types/git-rev-sync": "^2.0.0",
     "@ucanto/client": "^9.0.1",
@@ -38,14 +44,8 @@
     "@ucanto/validator": "^9.0.2",
     "@web-std/blob": "^3.0.4",
     "@web-std/fetch": "^4.1.0",
-    "@web3-storage/access": "^20.1.0",
-    "@web3-storage/blob-index": "^1.0.2",
-    "@web3-storage/capabilities": "^17.4.0",
     "@web3-storage/content-claims": "^5.1.0",
     "@web3-storage/data-segment": "5.1.0",
-    "@web3-storage/filecoin-client": "^3.3.3",
-    "@web3-storage/upload-client": "^17.1.0",
-    "@web3-storage/w3up-client": "^16.4.0",
     "ava": "^4.3.3",
     "chalk": "4.1.2",
     "constructs": "10.3.0",
@@ -64,7 +64,6 @@
   "dependencies": {
     "@ipld/dag-json": "^10.1.5",
     "@web-std/stream": "^1.0.3",
-    "@web3-storage/upload-api": "^18.0.2",
     "aws-cdk-lib": "2.142.1",
     "sst": "^2.40.3"
   },
@@ -127,14 +126,9 @@
   },
   "workspaces": [
     "billing",
-    "carpark",
     "filecoin",
-    "indexer",
-    "psa",
-    "replicator",
     "roundabout",
     "tools",
-    "ucan-invocation",
     "upload-api"
   ],
   "prettier": {

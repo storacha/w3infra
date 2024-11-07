@@ -13,7 +13,7 @@ export const spaceSnapshotTableProps = {
     /**
      * CSV Space DID and Provider DID.
      *
-     * e.g. did:key:z6Mksjp3Mbe7TnQbYK43NECF7TRuDGZu9xdzeLg379Dw66mF,did:web:web3.storage
+     * e.g. did:key:z6Mksjp3Mbe7TnQbYK43NECF7TRuDGZu9xdzeLg379Dw66mF,did:web:upload.storacha.network
      */
     space: 'string',
     /** Space storage provider DID. */
@@ -31,7 +31,7 @@ export const spaceSnapshotTableProps = {
 /**
  * @param {{ region: string } | import('@aws-sdk/client-dynamodb').DynamoDBClient} conf
  * @param {{ tableName: string }} context
- * @returns {import('../lib/api').SpaceSnapshotStore}
+ * @returns {import('../lib/api.js').SpaceSnapshotStore}
  */
 export const createSpaceSnapshotStore = (conf, { tableName }) => ({
   ...createStorePutterClient(conf, { tableName, validate, encode }),
