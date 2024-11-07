@@ -50,7 +50,7 @@ export default {
 
     // tags let us discover all the aws resource costs incurred by this app
     // see: https://docs.sst.dev/advanced/tagging-resources
-    Tags.of(app).add('Project', 'upload-service-infra')
+    Tags.of(app).add('Project', 'upload-service')
     Tags.of(app).add('Repository', 'https://github.com/storacha/upload-service-infra')
     Tags.of(app).add('Environment', `${app.stage}`)
     Tags.of(app).add('ManagedBy', 'SST')
