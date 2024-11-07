@@ -14,7 +14,7 @@ import { isPrBuild } from './stacks/config.js'
 export default {
   config(_input) {
     return {
-      name: 'upload-service-infra',
+      name: 'upload-service',
       region: 'us-west-2',
     }
   },

@@ -18,7 +18,7 @@ export function getStage () {
 
 export const getStackName = () => {
   const stage = getStage()
-  return `${stage}-upload-service-infra`
+  return `${stage}-upload`
 }
 
 export const getAwsBucketClient = (region = getAwsRegion()) => new S3Client({
@@ -63,30 +63,6 @@ export const getRoundaboutEndpoint = () => {
 
 export const getReceiptsEndpoint = () => {
   return `${getApiEndpoint()}/receipt/`
-}
-
-export const getCarparkBucketInfo = () => {
-  // CI/CD deployment
-  if (process.env.SEED_APP_NAME) {
-    const stage = getStage()
-    return {
-      Bucket: `carpark-${stage}-0`,
-      Region: 'us-east-2'
-    }
-  }
-
-  const require = createRequire(import.meta.url)
-  const testEnv = require(path.join(
-    process.cwd(),
-    '.sst/outputs.json'
-  ))
-
-  // Get Carpark metadata
-  const id = 'CarparkStack'
-  return {
-    Bucket: testEnv[`${getStackName()}-${id}`].BucketName,
-    Region: testEnv[`${getStackName()}-${id}`].Region,
-  }
 }
 
 export const getAwsRegion = () => {
