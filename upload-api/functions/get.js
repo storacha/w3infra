@@ -41,10 +41,8 @@ export const version = Sentry.AWSLambda.wrapHandler(versionGet)
 
 /**
  * AWS HTTP Gateway handler for GET /
- *
- * @param {import('aws-lambda').APIGatewayProxyEventV2} request
  */
-export async function homeGet(request) {
+export async function homeGet() {
   const { VERSION: version, STAGE: stage, UPLOAD_API_DID } = process.env
   const { PRIVATE_KEY } = Config
   const serviceSigner = getServiceSigner({ did: UPLOAD_API_DID, privateKey: PRIVATE_KEY })
@@ -56,7 +54,7 @@ export async function homeGet(request) {
     headers: {
       'Content-Type': 'text/plain; charset=utf-8',
     },
-    body: `⁂ upload-api v${version} ${env}\n- ${repo}\n- ${did}\n- ${publicKey}`,
+    body: `🔥 upload-service v${version} ${env}\n- ${repo}\n- ${did}\n- ${publicKey}`,
   }
 }
 
