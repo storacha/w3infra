@@ -39,7 +39,7 @@ export async function updateAggregateAcceptTotal (ucanInvocations, ctx) {
 
   await ctx.filecoinMetricsStore.incrementTotals({
     [METRICS_NAMES.AGGREGATE_ACCEPT_TOTAL]: aggregateAcceptInvocations.length
-    // TODO: time needed in receipt https://github.com/web3-storage/w3up/issues/970
+    // TODO: time needed in receipt https://github.com/storacha/w3up/issues/970
   })
 }
 
