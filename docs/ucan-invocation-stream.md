@@ -53,33 +53,3 @@ Consumers might need other infrastructure resources to track state based on the 
 The `admin-metrics` table has a partition key `name` with the metric name we keep track. With this, we can easily update and query each of the `admin` metrics we care about.
 
 In the context of `space-metrics` table, a partition key with `space` is used together with a sort key `name` with the metric name. This way, we are able to track and query each metric for a given space.
-
-### Delivery Firehose
-
-Each UCAN Invocation/receipt that goes through the stream is stored 
-in S3. We [partition log storage](https://github.com/storacha/upload-service-infra/blob/9def8df1ac3e0dda6e7aad710b1ec534af50af0a/stacks/firehose-stack.js#L163) by "type" (ie, `workflow` or `receipt`),
-"op" (ie, the UCAN's ability - `store/add`, `upload/remove`, etc) and "day"
-(a `%Y-%m-%d` formatted string). We designed partitioning this way to make it easy and efficient to 
-find logs for a particular operation on a particular date, which is used extensively
-by AWS Athena to make UCAN log queries efficient.
-
-For example, receipts of the `store/add` operation from January 1, 2024 are stored in:
-
-`/logs/receipt/store/add/2024-01-01`
-
-#### Glue
-
-We [use AWS Glue](https://github.com/storacha/upload-service-infra/blob/9def8df1ac3e0dda6e7aad710b1ec534af50af0a/stacks/firehose-stack.js#L171) to define "tables" that take advantage of the partitioning structure
-above. Glue allows us to define "columns" that map to either partition parameters or
-keys and nested keys in the JSON-formatted UCAN values themselves.
-
-#### Athena
-
-Athena uses the tables defined in Glue to execute SQL queries as map-reduce jobs over
-the parititioned UCAN logs in S3. We define a variety of useful default queries in 
-the [firehose stack](https://github.com/storacha/upload-service-infra/blob/9def8df1ac3e0dda6e7aad710b1ec534af50af0a/stacks/firehose-stack.js#L604) and often use the interactive query
-console in the AWS Athena console to run ad-hoc queries. 
-
-Athena queries are efficient as long as they are constrained to only search a relatively
-small number of `day`s. Queries that do not put constraints on the `day` partition key
-run the risk of loading and searching a large amount of data, and should be used carefully.

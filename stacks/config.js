@@ -19,7 +19,7 @@ import { mustGetEnv } from '../lib/env.js'
  */
 export function getBucketName (name, stage, version = 0) {
   // e.g `prod-upload-service-carpark-0` or `pr101-upload-service-carpark-0`
-  return `${stage}-upload-${name}-${version}`
+  return `${stage}-upload-${name}${version ? '-' + version : ''}`
 }
 
 /**
@@ -31,7 +31,7 @@ export function getBucketName (name, stage, version = 0) {
  */
 export function getCdkNames (name, stage, version = 0) {
   // e.g `prod-upload-service-ucan-stream-delivery-0`
-  return `${stage}-upload-${name}-${version}`
+  return `${stage}-upload-${name}${version ? '-' + version : ''}`
 }
 
 /**

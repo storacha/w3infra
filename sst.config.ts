@@ -7,7 +7,6 @@ import { UploadApiStack } from './stacks/upload-api-stack.js'
 import { UploadDbStack } from './stacks/upload-db-stack.js'
 import { UcanInvocationStack } from './stacks/ucan-invocation-stack.js'
 import { FilecoinStack } from './stacks/filecoin-stack.js'
-import { UcanFirehoseStack } from './stacks/firehose-stack.js'
 // import { RoundaboutStack } from './stacks/roundabout-stack.js'
 import { isPrBuild } from './stacks/config.js'
 
@@ -46,7 +45,6 @@ export default {
     app.stack(BillingStack)
     app.stack(FilecoinStack)
     app.stack(UploadApiStack)
-    app.stack(UcanFirehoseStack)
 
     // tags let us discover all the aws resource costs incurred by this app
     // see: https://docs.sst.dev/advanced/tagging-resources

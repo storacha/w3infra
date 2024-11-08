@@ -45,7 +45,7 @@ export function UcanInvocationStack({ stack, app }) {
   const agentIndexBucket = new Bucket(stack, 'agent-index', {
     cors: true,
     cdk: {
-      bucket: getBucketConfig('invocation-store', app.stage)
+      bucket: getBucketConfig('agent-index', app.stage)
     }
   })
 
