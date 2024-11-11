@@ -1,4 +1,4 @@
-import { API } from '@ucanto/core'
+import { API, error, ok } from '@ucanto/core'
 import * as Delegation from '@ucanto/core/delegation'
 import { base64pad } from 'multiformats/bases/base64'
 import * as Sentry from '@sentry/serverless'
@@ -42,6 +42,7 @@ import { createIPNIService } from '../external-services/ipni-service.js'
 import * as UploadAPI from '@web3-storage/upload-api'
 import { mustGetEnv } from '../../lib/env.js'
 import { createEgressTrafficQueue } from '@web3-storage/w3infra-billing/queues/egress-traffic.js'
+import * as UCantoValidator from '@ucanto/validator'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -82,6 +83,24 @@ const codec = Codec.inbound({
     [CAR.contentType]: CAR.response,
   },
 })
+
+/**
+ * Mapping of known WebDIDs to their corresponding DIDKeys for Production and Staging environments.
+ * This is used to resolve the DIDKey for known WebDIDs in the `resolveDIDKey` method.
+ * It is not a definitive solution, nor a exhaustive list, but rather a stop-gap measure
+ * to make it possible for the upload-api to work with Storacha services that use Web DIDs.
+ * 
+ * @type {Record<`did:web:${string}`, `did:key:${string}`>} 
+ */
+export const knownWebDIDs = {
+  // Production
+  'did:web:web3.storage': 'did:key:z6MkqdncRZ1wj8zxCTDUQ8CRT8NQWd63T7mZRvZUX8B7XDFi',
+  'did:web:w3s.link': 'did:key:z6Mkha3NLZ38QiZXsUHKRHecoumtha3LnbYEL21kXYBFXvo5',
+
+  // Staging
+  'did:web:staging.web3.storage': 'did:key:z6MkhcbEpJpEvNVDd3n5RurquVdqs5dPU16JDU5VZTDtFgnn',
+  'did:web:staging.w3s.link': 'did:key:z6MkqK1d4thaCEXSGZ6EchJw3tDPhQriwynWDuR55ayATMNf',
+}
 
 /**
  * AWS HTTP Gateway handler for POST / with ucan invocation router.
@@ -247,6 +266,14 @@ export async function ucanInvocationRouter(request) {
     allocationsStorage,
     blobsStorage,
     blobRetriever: blobsStorage,
+    // @ts-expect-error - TODO: it supports the resolveDIDKey method, but it is not typed, see https://github.com/storacha/ucanto/issues/359 for more details.
+    resolveDIDKey: (did) => {
+      const didKey = knownWebDIDs[did]
+      if (didKey) {
+        return ok(didKey)
+      }
+      return error(new UCantoValidator.DIDResolutionError(did))
+    },
     getServiceConnection: () => connection,
     // TODO: to be deprecated with `store/*` protocol
     storeTable: createStoreTable(AWS_REGION, storeTableName, {
