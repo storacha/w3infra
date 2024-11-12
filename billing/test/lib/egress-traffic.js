@@ -1,6 +1,7 @@
 import { encodeStr } from '../../data/egress.js'
 import { randomCustomer } from '../helpers/customer.js'
 import { randomEgressEvent } from '../helpers/egress.js'
+import retry from 'p-retry'
 import * as DidMailto from '@web3-storage/did-mailto'
 
 /** @type {import('./api').TestSuite<import('./api').EgressTrafficTestContext>} */
@@ -94,7 +95,7 @@ export const test = {
         // Convert to the end of the next hour
         const endTime = Math.floor((Date.now() + 3600000) / 3600000) * 3600
         console.log(`Checking for aggregated meter event for customer ${stripeCustomerId}, startTime: ${startTime}, endTime: ${endTime} ...`)
-        aggregatedMeterEvent = await retryWithExponentialBackoff(async () => {
+        aggregatedMeterEvent = await retry(async () => {
           const result = await ctx.stripe.billing.meters.listEventSummaries(
             ctx.billingMeterId,
             {
@@ -108,7 +109,15 @@ export const test = {
             return result
           }
           throw new Error('No aggregated meter event found yet')
-        }, maxRetries, delay)
+        }, {
+          retries: maxRetries,
+          minTimeout: delay,
+          factor: 2,
+          shouldRetry: err => (err instanceof Error && err.message === 'No aggregated meter event found yet'),
+          onFailedAttempt: err => {
+            console.log(`${err.message} - Attempt ${err.attemptNumber} failed. There are ${err.retriesLeft} retries left.`);
+          },
+        })
       } catch {
         assert.fail('No aggregated meter event found. Stripe probably did not process the events yet.')
       }
@@ -124,33 +133,6 @@ export const test = {
         const deletedCustomer = await ctx.stripe.customers.del(stripeCustomerId)
         assert.ok(deletedCustomer.deleted, 'Error deleting customer from stripe')
       }
-    }
-  }
-}
-
-/**
- * Retry a function with exponential backoff
- * 
- * @param {Function} fn - The function to retry
- * @param {number} maxRetries - Maximum number of retries
- * @param {number} initialDelay - Initial delay in milliseconds
- * @returns {Promise<any>} - The result of the function if successful
- */
-async function retryWithExponentialBackoff(fn, maxRetries, initialDelay) {
-  let attempt = 0
-  let delay = initialDelay
-
-  while (attempt < maxRetries) {
-    try {
-      return await fn()
-    } catch (error) {
-      if (attempt === maxRetries - 1) {
-        throw error
-      }
-      console.log(`Attempt #${attempt + 1} failed. Retrying in ${delay}ms...`)
-      await new Promise(resolve => setTimeout(resolve, delay))
-      delay *= 2 // Exponential backoff
-      attempt++
     }
   }
 }
