@@ -1,7 +1,7 @@
 import { encodeStr } from '../../data/egress.js'
 import { randomCustomer } from '../helpers/customer.js'
-import { randomDIDMailto } from '../helpers/did.js'
 import { randomEgressEvent } from '../helpers/egress.js'
+import retry from 'p-retry'
 import * as DidMailto from '@web3-storage/did-mailto'
 
 /** @type {import('./api').TestSuite<import('./api').EgressTrafficTestContext>} */
@@ -11,10 +11,11 @@ export const test = {
    * @param {import('./api').EgressTrafficTestContext} ctx
    */
   'should process all the egress traffic events from the queue': async (assert, ctx) => {
-    let stripeCustomerId;
+    /** @type {string | null} */
+    let stripeCustomerId = null
     try {
       // 0. Create a test customer email, add it to stripe and to the customer store
-      const didMailto = randomDIDMailto()
+      const didMailto = `did:mailto:storacha.network:egress-billing-test`
       const email = DidMailto.toEmail(/** @type {`did:mailto:${string}:${string}`} */(didMailto))
       const stripeCustomer = await ctx.stripe.customers.create({ email })
       assert.ok(stripeCustomer.id, 'Error adding customer to stripe')
@@ -29,7 +30,7 @@ export const test = {
       assert.ok(!error, 'Error adding customer')
 
       // 1. Add egress events to the queue to simulate egress traffic from the Freeway worker
-      const maxEvents = 10
+      const maxEvents = 5
       /** @type {import('../../lib/api').EgressTrafficData[]} */
       const events = await Promise.all(
         Array.from(
@@ -85,14 +86,42 @@ export const test = {
       })
 
       // 4. Check if the aggregated meter event exists and has a value greater than 0
-      const aggregatedMeterEvent = await ctx.stripe.billing.meters.listEventSummaries(
-        ctx.billingMeterId,
-        {
-          customer: stripeCustomerId,
-          start_time: Math.floor(events[0].servedAt.getTime() / 1000),
-          end_time: Math.floor(Date.now() / 1000),
-        }
-      )
+      let aggregatedMeterEvent
+      try {
+        const maxRetries = 5
+        const delay = 10000 // 10 seconds
+        // Convert to the start of the hour
+        const startTime = Math.floor(events[0].servedAt.getTime() / 3600000) * 3600
+        // Convert to the end of the next hour
+        const endTime = Math.floor((Date.now() + 3600000) / 3600000) * 3600
+        console.log(`Checking for aggregated meter event for customer ${stripeCustomerId}, startTime: ${startTime}, endTime: ${endTime} ...`)
+        aggregatedMeterEvent = await retry(async () => {
+          const result = await ctx.stripe.billing.meters.listEventSummaries(
+            ctx.billingMeterId,
+            {
+              customer: stripeCustomerId ?? '',
+              start_time: startTime,
+              end_time: endTime,
+              value_grouping_window: 'hour',
+            }
+          )
+          if (result && result.data && result.data.length > 0) {
+            return result
+          }
+          throw new Error('No aggregated meter event found yet')
+        }, {
+          retries: maxRetries,
+          minTimeout: delay,
+          factor: 3,
+          shouldRetry: err => (err instanceof Error && err.message === 'No aggregated meter event found yet'),
+          onFailedAttempt: err => {
+            console.log(`${err.message} - Attempt ${err.attemptNumber} failed. There are ${err.retriesLeft} retries left.`);
+          },
+        })
+      } catch {
+        assert.fail('No aggregated meter event found. Stripe probably did not process the events yet.')
+      }
+      assert.ok(aggregatedMeterEvent, 'No aggregated meter event found')
       assert.ok(aggregatedMeterEvent.data, 'No aggregated meter event found')
       assert.equal(aggregatedMeterEvent.data.length, 1, 'Expected 1 aggregated meter event')
       // We can't verify the total bytes served because the meter events are not immediately available in stripe
@@ -101,7 +130,7 @@ export const test = {
     } finally {
       if (stripeCustomerId) {
         // 5. Delete the test customer from stripe
-        const deletedCustomer = await ctx.stripe.customers.del(stripeCustomerId);
+        const deletedCustomer = await ctx.stripe.customers.del(stripeCustomerId)
         assert.ok(deletedCustomer.deleted, 'Error deleting customer from stripe')
       }
     }

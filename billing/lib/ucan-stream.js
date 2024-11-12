@@ -80,6 +80,7 @@ export const storeSpaceUsageDeltas = async (deltas, ctx) => {
       diffs.push({
         provider: consumer.provider,
         subscription: consumer.subscription,
+        customer: consumer.customer,
         space: delta.resource,
         cause: delta.cause,
         delta: delta.delta,

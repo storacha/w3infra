@@ -210,6 +210,7 @@ export interface Consumer {
   consumer: ConsumerDID
   provider: ProviderDID
   subscription: string
+  customer: CustomerDID
   /** This became a required field after 2023-07-10T23:12:38.000Z. */
   cause?: Link
   insertedAt: Date
@@ -221,7 +222,7 @@ export interface ConsumerListKey { consumer: ConsumerDID }
 
 export type ConsumerStore =
   & StoreGetter<ConsumerKey, Consumer>
-  & StoreLister<ConsumerListKey, Pick<Consumer, 'consumer'|'provider'|'subscription'>>
+  & StoreLister<ConsumerListKey, Pick<Consumer, 'consumer'|'provider'|'subscription'|'customer'>>
 
 export interface Subscription {
   customer: CustomerDID
