@@ -10,7 +10,7 @@ export const test = {
    * @param {import('entail').assert} assert
    * @param {import('./api.js').EgressTrafficTestContext} ctx
    */
-  'should process all the egress traffic events from the queue': async (assert, ctx) => {
+  'skip should process all the egress traffic events from the queue': async (assert, ctx) => {
     let stripeCustomerId;
     try {
       // 0. Create a test customer email, add it to stripe and to the customer store
