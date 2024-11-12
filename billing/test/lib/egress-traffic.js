@@ -10,7 +10,8 @@ export const test = {
    * @param {import('./api').EgressTrafficTestContext} ctx
    */
   'should process all the egress traffic events from the queue': async (assert, ctx) => {
-    let stripeCustomerId;
+    /** @type {string | null} */
+    let stripeCustomerId = null
     try {
       // 0. Create a test customer email, add it to stripe and to the customer store
       const didMailto = `did:mailto:storacha.network:egress-billing-test`
@@ -84,34 +85,32 @@ export const test = {
       })
 
       // 4. Check if the aggregated meter event exists and has a value greater than 0
-      const maxRetries = 5
-      const delay = 10000 // 10 seconds
-
-      // Convert to the start of the hour
-      const startTime = Math.floor(events[0].servedAt.getTime() / 3600000) * 3600
-      // Convert to the start of the next hour
-      const endTime = Math.floor((Date.now() + 3600000) / 3600000) * 3600
-      console.log(`Checking for aggregated meter event for customer ${stripeCustomerId}, startTime: ${startTime}, endTime: ${endTime} ...`)
       let aggregatedMeterEvent
-      for (let attempt = 0; attempt < maxRetries; attempt++) {
-        console.log(`Attempt #${attempt+1}`)
-        aggregatedMeterEvent = await ctx.stripe.billing.meters.listEventSummaries(
-          ctx.billingMeterId,
-          {
-            customer: stripeCustomerId,
-            start_time: startTime,
-            end_time: endTime,
-            value_grouping_window: 'hour',
+      try {
+        const maxRetries = 5
+        const delay = 10000 // 10 seconds
+        // Convert to the start of the hour
+        const startTime = Math.floor(events[0].servedAt.getTime() / 3600000) * 3600
+        // Convert to the end of the next hour
+        const endTime = Math.floor((Date.now() + 3600000) / 3600000) * 3600
+        console.log(`Checking for aggregated meter event for customer ${stripeCustomerId}, startTime: ${startTime}, endTime: ${endTime} ...`)
+        aggregatedMeterEvent = await retryWithExponentialBackoff(async () => {
+          const result = await ctx.stripe.billing.meters.listEventSummaries(
+            ctx.billingMeterId,
+            {
+              customer: stripeCustomerId ?? '',
+              start_time: startTime,
+              end_time: endTime,
+              value_grouping_window: 'hour',
+            }
+          )
+          if (result && result.data && result.data.length > 0) {
+            return result
           }
-        )
-
-        if (aggregatedMeterEvent.data && aggregatedMeterEvent.data.length > 0) {
-          break
-        }
-
-        if (attempt < maxRetries - 1) {
-          await new Promise(resolve => setTimeout(resolve, delay))
-        }
+          throw new Error('No aggregated meter event found yet')
+        }, maxRetries, delay)
+      } catch {
+        assert.fail('No aggregated meter event found. Stripe probably did not process the events yet.')
       }
       assert.ok(aggregatedMeterEvent, 'No aggregated meter event found')
       assert.ok(aggregatedMeterEvent.data, 'No aggregated meter event found')
@@ -120,11 +119,38 @@ export const test = {
       // and the test would fail intermittently
       assert.ok(aggregatedMeterEvent.data[0].aggregated_value > 0, 'Aggregated value is 0')
     } finally {
-      // if (stripeCustomerId) {
-      //   // 5. Delete the test customer from stripe
-      //   const deletedCustomer = await ctx.stripe.customers.del(stripeCustomerId);
-      //   assert.ok(deletedCustomer.deleted, 'Error deleting customer from stripe')
-      // }
+      if (stripeCustomerId) {
+        // 5. Delete the test customer from stripe
+        const deletedCustomer = await ctx.stripe.customers.del(stripeCustomerId)
+        assert.ok(deletedCustomer.deleted, 'Error deleting customer from stripe')
+      }
+    }
+  }
+}
+
+/**
+ * Retry a function with exponential backoff
+ * 
+ * @param {Function} fn - The function to retry
+ * @param {number} maxRetries - Maximum number of retries
+ * @param {number} initialDelay - Initial delay in milliseconds
+ * @returns {Promise<any>} - The result of the function if successful
+ */
+async function retryWithExponentialBackoff(fn, maxRetries, initialDelay) {
+  let attempt = 0
+  let delay = initialDelay
+
+  while (attempt < maxRetries) {
+    try {
+      return await fn()
+    } catch (error) {
+      if (attempt === maxRetries - 1) {
+        throw error
+      }
+      console.log(`Attempt #${attempt + 1} failed. Retrying in ${delay}ms...`)
+      await new Promise(resolve => setTimeout(resolve, delay))
+      delay *= 2 // Exponential backoff
+      attempt++
     }
   }
 }
