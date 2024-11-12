@@ -112,7 +112,7 @@ export const test = {
         }, {
           retries: maxRetries,
           minTimeout: delay,
-          factor: 2,
+          factor: 3,
           shouldRetry: err => (err instanceof Error && err.message === 'No aggregated meter event found yet'),
           onFailedAttempt: err => {
             console.log(`${err.message} - Attempt ${err.attemptNumber} failed. There are ${err.retriesLeft} retries left.`);
