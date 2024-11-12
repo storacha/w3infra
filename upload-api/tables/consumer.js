@@ -92,7 +92,8 @@ export function useConsumerTable (dynamoDb, tableName) {
         KeyConditionExpression: "consumer = :consumer",
         ExpressionAttributeValues: {
           ':consumer': { S: consumer },
-        }
+        },
+        ProjectionExpression: 'provider, subscription, customer'
       }))
       // we may need to worry about pagination in the future if we end up supporting many many subscriptions for a single
       // provider/consumer pair, but I suspect we'll never get there

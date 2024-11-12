@@ -96,7 +96,7 @@ export const consumerTableProps = {
   },
   primaryIndex: { partitionKey: 'subscription', sortKey: 'provider' },
   globalIndexes: {
-    consumer: { partitionKey: 'consumer', projection: ['provider', 'subscription'] },
+    consumer: { partitionKey: 'consumer', projection: ['provider', 'subscription', 'customer'] },
     provider: { partitionKey: 'provider', projection: ['consumer'] },
     customer: { partitionKey: 'customer', projection: ['consumer', 'provider', 'subscription', 'cause'] },
   }

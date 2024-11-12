@@ -9,13 +9,14 @@ import { DecodeFailure, EncodeFailure, Schema } from './lib.js'
  * @typedef {import('../types').InferStoreRecord<ConsumerKey>} ConsumerKeyStoreRecord
  * @typedef {import('../lib/api').ConsumerListKey} ConsumerListKey
  * @typedef {import('../types').InferStoreRecord<ConsumerListKey>} ConsumerListKeyStoreRecord
- * @typedef {Pick<Consumer, 'consumer'|'provider'|'subscription'>} ConsumerList
+ * @typedef {Pick<Consumer, 'consumer'|'provider'|'subscription'|'customer'>} ConsumerList
  */
 
 const schema = Schema.struct({
   consumer: Schema.did(),
   provider: Schema.did({ method: 'web' }),
   subscription: Schema.text(),
+  customer: Schema.did({ method: 'mailto' }),
   cause: Schema.link({ version: 1 }).optional(),
   insertedAt: Schema.date(),
   updatedAt: Schema.date().optional()
@@ -32,6 +33,7 @@ export const encode = input => {
         consumer: input.consumer,
         provider: input.provider,
         subscription: input.subscription,
+        customer: input.customer,
         cause: input.cause ? input.cause.toString() : undefined,
         insertedAt: input.insertedAt.toISOString(),
         updatedAt: input.updatedAt ? input.updatedAt.toISOString() : undefined
@@ -52,6 +54,7 @@ export const decode = input => {
         consumer: Schema.did().from(input.consumer),
         provider: Schema.did({ method: 'web' }).from(input.provider),
         subscription: /** @type {string} */ (input.subscription),
+        customer: Schema.did({ method: 'mailto' }).from(input.customer),
         cause: input.cause ? Link.parse(/** @type {string} */ (input.cause)) : undefined,
         insertedAt: new Date(input.insertedAt),
         updatedAt: input.updatedAt ? new Date(input.updatedAt) : undefined
@@ -83,7 +86,8 @@ export const lister = {
         ok: {
           consumer: Schema.did().from(input.consumer),
           provider: Schema.did({ method: 'web' }).from(input.provider),
-          subscription: String(input.subscription)
+          subscription: String(input.subscription),
+          customer: Schema.did({ method: 'mailto' }).from(input.customer)
         }
       }
     } catch (/** @type {any} */ err) {
