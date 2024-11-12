@@ -2,6 +2,7 @@ import { Schema } from '@ucanto/core'
 import * as ServiceBlobCaps from '@storacha/capabilities/blob'
 import * as BlobCaps from '@storacha/capabilities/space/blob'
 import * as StoreCaps from '@storacha/capabilities/store'
+import * as DID from '@ipld/dag-ucan/did'
 import { findSpaceUsageDeltas, storeSpaceUsageDeltas } from '../../lib/ucan-stream.js'
 import { randomConsumer } from '../helpers/consumer.js'
 import { randomLink } from '../helpers/dag.js'
@@ -49,7 +50,7 @@ export const test = {
               size: 138
             },
             cause: randomLink(),
-            space: await randomDIDKey()
+            space: DID.parse(await randomDIDKey())
           }
         }],
         aud: await randomDID(),
@@ -120,7 +121,7 @@ export const test = {
         d.cause.toString() === r.invocationCid.toString() &&
         // resource for blob allocate is found in the caveats
         (r.value.att[0].can === ServiceBlobCaps.allocate.can
-          ? d.resource === r.value.att[0].nb.space
+          ? d.resource === DID.decode(r.value.att[0].nb.space).did()
           : d.resource === r.value.att[0].with)
       )))
     }

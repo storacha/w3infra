@@ -1,6 +1,7 @@
 import * as ServiceBlobCaps from '@storacha/capabilities/blob'
 import * as BlobCaps from '@storacha/capabilities/space/blob'
 import * as StoreCaps from '@storacha/capabilities/store'
+import * as DID from '@ipld/dag-ucan/did'
 
 /**
  * Filters UCAN stream messages that are receipts for invocations that alter
@@ -20,7 +21,9 @@ export const findSpaceUsageDeltas = messages => {
     /** @type {number|undefined} */
     let size
     if (isReceiptForCapability(message, ServiceBlobCaps.allocate) && isServiceBlobAllocateSuccess(message.out)) {
-      resource = message.value.att[0].nb?.space
+      const spaceDigestBytes = message.value.att[0].nb?.space
+      if (!spaceDigestBytes) throw new Error('missing space in allocate caveats')
+      resource = DID.decode(spaceDigestBytes).did()
       size = message.out.ok.size
     } else if (isReceiptForCapability(message, BlobCaps.remove) && isBlobRemoveSuccess(message.out)) {
       resource = /** @type {import('@ucanto/interface').DID} */ (message.value.att[0].with)

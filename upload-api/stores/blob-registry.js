@@ -9,6 +9,7 @@ import { ok, error } from '@ucanto/core'
 import { EntryNotFound, EntryExists } from '@storacha/upload-api/blob'
 import { base58btc } from 'multiformats/bases/base58'
 import * as Link from 'multiformats/link'
+import * as Digest from 'multiformats/hashes/digest'
 import { getDynamoClient } from '../../lib/aws/dynamo.js'
 import { METRICS_NAMES, SPACE_METRICS_NAMES } from '../constants.js'
 
@@ -56,11 +57,11 @@ export const useBlobRegistry = (dynamoDb, tableName, metrics) => ({
     const raw = unmarshall(response.Item)
     return ok({
       blob: {
-        digest: base58btc.decode(raw.digest),
+        digest: Digest.decode(base58btc.decode(raw.digest)),
         size: raw.size
       },
       cause: Link.parse(raw.cause).toV1(),
-      insertedAt: raw.insertedAt
+      insertedAt: new Date(raw.insertedAt)
     })
   },
 
@@ -68,7 +69,7 @@ export const useBlobRegistry = (dynamoDb, tableName, metrics) => ({
   register: async ({ space, blob, cause }) => {
     const item = {
       space,
-      digest: base58btc.encode(blob.digest),
+      digest: base58btc.encode(blob.digest.bytes),
       size: blob.size,
       cause: cause.toString(),
       insertedAt: new Date().toISOString(),
@@ -162,7 +163,7 @@ export const useBlobRegistry = (dynamoDb, tableName, metrics) => ({
 
     const results =
       response.Items?.map((i) => toEntry(unmarshall(i))) ?? []
-    const firstDigest = results[0] ? base58btc.encode(results[0].blob.digest) : undefined
+    const firstDigest = results[0] ? base58btc.encode(results[0].blob.digest.bytes) : undefined
     // Get cursor of the item where list operation stopped (inclusive).
     // This value can be used to start a new operation to continue listing.
     const lastKey =
@@ -191,9 +192,9 @@ export const useBlobRegistry = (dynamoDb, tableName, metrics) => ({
  * @returns {BlobAPI.Entry}
  */
 export const toEntry = ({ digest, size, cause, insertedAt }) => ({
-  blob: { digest: base58btc.decode(digest), size },
+  blob: { digest: Digest.decode(base58btc.decode(digest)), size },
   cause: Link.parse(cause).toV1(),
-  insertedAt,
+  insertedAt: new Date(insertedAt),
 })
 
 /**
