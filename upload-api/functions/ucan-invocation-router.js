@@ -201,7 +201,7 @@ export async function ucanInvocationRouter(request) {
     },
     connection: getServiceConnection({
       did: indexingServicePrincipal.did(),
-      url: indexingServiceURL.toString()
+      url: new URL('/claims', indexingServiceURL).toString()
     })
   }
   const indexingServiceClient = new IndexingServiceClient({ serviceURL: indexingServiceURL })
