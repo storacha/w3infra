@@ -58,7 +58,7 @@ export const useStorageProviderTable = (dynamo, tableName) => ({
 
   /** @type {API.StorageProviderTable['list']} */
   async list () {
-    /** @type {import('@ucanto/interface').DID[]} */
+    /** @type {{ provider: import('@ucanto/interface').DID; weight: number }[]} */
     const ids = []
     /** @type {Record<string, import('@aws-sdk/client-dynamodb').AttributeValue>|undefined} */
     let cursor
@@ -66,12 +66,15 @@ export const useStorageProviderTable = (dynamo, tableName) => ({
       const cmd = new ScanCommand({
         TableName: tableName,
         ExclusiveStartKey: cursor,
-        AttributesToGet: ['provider']
+        AttributesToGet: ['provider', 'weight']
       })
       const res = await dynamo.send(cmd)
       for (const item of res.Items ?? []) {
         const raw = unmarshall(item)
-        ids.push(parse(raw.provider).did())
+        ids.push({
+          provider: parse(raw.provider).did(),
+          weight: raw.weight
+        })
       }
       cursor = res.LastEvaluatedKey
       if (!cursor) break

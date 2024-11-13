@@ -17,7 +17,7 @@ export const create = (storageProviderTable, serviceID) => ({
   selectStorageProvider: async () => {
     const ids = await storageProviderTable.list()
     if (!ids.length) return error(new CandidateUnavailableError())
-    const provider = parse(ids[getRandomInt(ids.length)])
+    const provider = parse(ids[getWeightedRandomInt(ids.map(id => id.weight))].provider)
     return ok(provider)
   },
   configureInvocation: async (provider, capability, options) => {
@@ -41,8 +41,23 @@ export const create = (storageProviderTable, serviceID) => ({
   },
 })
 
-/** @param {number} max */
-const getRandomInt = (max) => Math.floor(Math.random() * max)
+/**
+ * Generates a weighted random index based on the provided weights.
+ * @param {number[]} weights - An array of weights.
+ * @returns {number} - The index of the selected weight.
+ */
+const getWeightedRandomInt = (weights) => {
+  const totalWeight = weights.reduce((sum, weight) => sum + weight, 0)
+  let random = Math.random() * totalWeight
+
+  for (let i = 0; i < weights.length; i++) {
+    random -= weights[i]
+    if (random <= 0) {
+      return i
+    }
+  }
+  throw Error("did not find a weight - should never reach here")
+}
 
 export class ProofUnavailableError extends Failure {
   static name = /** @type {const} */ ('ProofUnavailable')

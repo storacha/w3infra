@@ -196,7 +196,7 @@ export interface StorageProviderTable {
   put (input: StorageProviderInput): Promise<void>
   get (provider: DID): Promise<StorageProviderRecord|undefined>
   del (provider: DID): Promise<void>
-  list (): Promise<DID[]>
+  list (): Promise<{ provider: DID, weight: number }[]>
 }
 
 export type SpaceService = Pick<Service, "space">
