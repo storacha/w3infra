@@ -88,7 +88,7 @@ export function useConsumerTable (dynamoDb, tableName) {
     get: async (provider, consumer) => {
       const response = await dynamoDb.send(new QueryCommand({
         TableName: tableName,
-        IndexName: 'consumer',
+        IndexName: 'consumerV2',
         KeyConditionExpression: "consumer = :consumer",
         ExpressionAttributeValues: {
           ':consumer': { S: consumer },
