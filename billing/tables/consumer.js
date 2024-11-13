@@ -8,5 +8,5 @@ import { encodeKey, decode, lister } from '../data/consumer.js'
  */
 export const createConsumerStore = (conf, { tableName }) => ({
   ...createStoreGetterClient(conf, { tableName, encodeKey, decode }),
-  ...createStoreListerClient(conf, { tableName, ...lister, indexName: 'consumer' })
+  ...createStoreListerClient(conf, { tableName, ...lister, indexName: 'consumerV2' })
 })
