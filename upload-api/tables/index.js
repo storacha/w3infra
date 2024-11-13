@@ -96,8 +96,7 @@ export const consumerTableProps = {
   },
   primaryIndex: { partitionKey: 'subscription', sortKey: 'provider' },
   globalIndexes: {
-    // Disabled the index so the SST can delete it from the table, and we can recreate it with the correct projected attributes
-    // consumer: { partitionKey: 'consumer', projection: ['provider', 'subscription', 'customer'] },
+    consumer: { partitionKey: 'consumer', projection: ['provider', 'subscription', 'customer'] },
     provider: { partitionKey: 'provider', projection: ['consumer'] },
     customer: { partitionKey: 'customer', projection: ['consumer', 'provider', 'subscription', 'cause'] },
   }
