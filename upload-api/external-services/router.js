@@ -43,6 +43,7 @@ export const create = (storageProviderTable, serviceID) => ({
 
 /**
  * Generates a weighted random index based on the provided weights.
+ * 
  * @param {number[]} weights - An array of weights.
  * @returns {number} - The index of the selected weight.
  */
@@ -56,7 +57,7 @@ const getWeightedRandomInt = (weights) => {
       return i
     }
   }
-  throw Error("did not find a weight - should never reach here")
+  throw new Error("did not find a weight - should never reach here")
 }
 
 export class ProofUnavailableError extends Failure {
