@@ -80,7 +80,6 @@ export const storeSpaceUsageDeltas = async (deltas, ctx) => {
       diffs.push({
         provider: consumer.provider,
         subscription: consumer.subscription,
-        customer: consumer.customer,
         space: delta.resource,
         cause: delta.cause,
         delta: delta.delta,
@@ -88,6 +87,7 @@ export const storeSpaceUsageDeltas = async (deltas, ctx) => {
         insertedAt: new Date()
       })
     }
+    console.log(`Total diffs found for ${delta.resource}: ${diffs.length}`)
     return { ok: diffs, error: undefined }
   }))
 
