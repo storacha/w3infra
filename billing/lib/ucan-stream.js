@@ -70,13 +70,19 @@ export const findSpaceUsageDeltas = messages => {
  */
 export const storeSpaceUsageDeltas = async (deltas, ctx) => {
   const spaceDiffResults = await Promise.all(deltas.map(async delta => {
+    console.log(`Processing delta for ${delta.resource}`)
     const consumerList = await ctx.consumerStore.list({ consumer: delta.resource })
-    if (consumerList.error) return consumerList
+    if (consumerList.error) {
+      console.error(`Error listing consumers for ${delta.resource}: ${consumerList.error}`)
+      return consumerList
+    }
 
     const diffs = []
     // There should only be one subscription per provider, but in theory you
     // could have multiple providers for the same consumer (space).
-    for (const consumer of consumerList.ok.results) {
+    const consumers = consumerList.ok.results
+    console.log(`Found ${consumers.length} consumers for ${delta.resource}`)
+    for (const consumer of consumers) {
       diffs.push({
         provider: consumer.provider,
         subscription: consumer.subscription,
@@ -93,10 +99,14 @@ export const storeSpaceUsageDeltas = async (deltas, ctx) => {
 
   const spaceDiffs = []
   for (const res of spaceDiffResults) {
-    if (res.error) return res
+    if (res.error) {
+      console.error(`Error while processing space diffs: ${res.error}`)
+      return res
+    }
     spaceDiffs.push(...res.ok)
   }
 
+  console.log(`Total space diffs to store: ${spaceDiffs.length}`)
   return ctx.spaceDiffStore.batchPut(spaceDiffs)
 }
 
