@@ -99,6 +99,8 @@ export const storeSpaceUsageDeltas = async (deltas, ctx) => {
     spaceDiffs.push(...res.ok)
   }
 
+  if (spaceDiffs.length === 0) return { ok: 'no space diffs to store', error: undefined }
+
   return ctx.spaceDiffStore.batchPut(spaceDiffs)
 }
 
