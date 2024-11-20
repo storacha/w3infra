@@ -14,9 +14,7 @@ const test = /** @type {TestFn} */ (anyTest)
 test.before(async t => {
   const dynamo = await createDynamodDb()
   const tableName = await createTable(dynamo, uploadTableProps)
-
   const uploadTable = useUploadTable(dynamo, tableName)
-
   Object.assign(t.context, { dynamo, uploadTable, tableName })
 })
 
