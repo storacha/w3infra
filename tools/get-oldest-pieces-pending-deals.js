@@ -1,7 +1,7 @@
 import { createPieceTable } from '../filecoin/store/piece.js'
 import { getPieceTableName, getRegion, getStage } from './lib.js'
 
-const max = 10
+const defaultMax = 10
 
 export async function getOldestPiecesPendingDeals () {
   const stage = getStage()
@@ -9,7 +9,10 @@ export async function getOldestPiecesPendingDeals () {
   const pieceTableName = getPieceTableName(stage)
   const pieceStore = createPieceTable(region, pieceTableName)
 
-  console.log(`${max} oldest pieces pending deals`)
+  let max = process.argv[3] ? parseInt(process.argv[3]) : defaultMax
+  max = isNaN(max) ? defaultMax : max
+
+  console.log(`${max.toLocaleString()} oldest pieces pending deals`)
   let total = 0
   let cursor
   while (true) {
@@ -18,7 +21,7 @@ export async function getOldestPiecesPendingDeals () {
       status: 'submitted',
     }, {
       cursor,
-      size: 1000
+      size: Math.min(max, 1000)
     })
     if (submittedPieces.error) {
       return {
@@ -34,4 +37,5 @@ export async function getOldestPiecesPendingDeals () {
     cursor = submittedPieces.ok.cursor
     if (!cursor || total >= max) break
   }
+  console.log(`Total: ${total}`)
 }

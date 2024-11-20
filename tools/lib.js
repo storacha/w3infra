@@ -24,6 +24,12 @@ export const getInclusionTableName = stage =>
     : 'prod-w3filecoin-aggregator-inclusion-store'
 
 /** @param {'staging'|'prod'} stage */
+export const getAggregatorPieceTableName = stage =>
+  stage === 'staging'
+    ? 'staging-w3filecoin-aggregator-piece-store'
+    : 'prod-w3filecoin-aggregator-piece-store'
+
+/** @param {'staging'|'prod'} stage */
 export const getInvocationBucketName = stage =>
   stage === 'staging' ? 'invocation-store-staging-0' : 'invocation-store-prod-0'
 

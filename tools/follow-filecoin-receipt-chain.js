@@ -1,17 +1,19 @@
 import * as StorefrontCaps from '@web3-storage/capabilities/filecoin/storefront'
-
 import * as DID from '@ipld/dag-ucan/did'
 import { Aggregate, Piece, Proof } from '@web3-storage/data-segment'
 import archy from 'archy'
-
+import dotenv from 'dotenv'
 import { getServiceSigner } from '../filecoin/service.js'
 import { createPieceTable } from '../filecoin/store/piece.js'
 import { createReceiptStore as createFilecoinReceiptStore } from '../filecoin/store/receipt.js'
 import { mustGetEnv } from '../lib/env.js'
 import { getInvocationBucketName, getPieceTableName, getRegion, getServiceDID, getStage, getWorkflowBucketName } from './lib.js'
 
-export async function followFilecoinReceiptChain () {
-  const { PIECE_CID, PRIVATE_KEY } = getEnv()
+dotenv.config({ path: ['.env', '../.env'] })
+
+/** @param {string} pieceCID */
+export async function followFilecoinReceiptChain (pieceCID) {
+  const PRIVATE_KEY = mustGetEnv('PRIVATE_KEY')
   const stage = getStage()
   const region = getRegion(stage)
   const pieceTableName = getPieceTableName(stage)
@@ -19,10 +21,10 @@ export async function followFilecoinReceiptChain () {
   const workflowBucketName = getWorkflowBucketName(stage)
   const did = DID.parse(getServiceDID(stage)).did()
   const id = getServiceSigner({ privateKey: PRIVATE_KEY }).withDID(did)
-  const pieceInfo = Piece.fromString(PIECE_CID)
+  const pieceInfo = Piece.fromString(pieceCID)
   const receiptStore = createFilecoinReceiptStore(region, invocationBucketName, workflowBucketName)
   const pieceStore = createPieceTable(region, pieceTableName)
-  
+
   // Get piece in store
   const getPiece = await pieceStore.get({ piece: pieceInfo.link })
   if (getPiece.error){
@@ -42,46 +44,66 @@ export async function followFilecoinReceiptChain () {
       expiration: Infinity,
     })
     .delegate()
-  
+
   console.log('filecoin/submit', filecoinSubmitInvocation.link())
-  
+
   // Get `filecoin/submit` receipt
   const filecoinSubmitReceiptGet = await receiptStore.get(filecoinSubmitInvocation.link())
   if (filecoinSubmitReceiptGet.error) throw new Error('could not find receipt')
   console.log('out:', filecoinSubmitReceiptGet.ok.out)
-  
+
+  if (filecoinSubmitReceiptGet.ok.out.error) {
+    throw new Error('receipt outcome error', { cause: filecoinSubmitReceiptGet.ok.out.error })
+  }
+
   if (!filecoinSubmitReceiptGet.ok.fx.join) throw new Error('receipt without effect')
   console.log('piece/offer', filecoinSubmitReceiptGet.ok.fx.join)
-  
+
   // Get `piece/offer` receipt
   const pieceOfferReceiptGet = await receiptStore.get(filecoinSubmitReceiptGet.ok.fx.join.link())
   if (pieceOfferReceiptGet.error) throw new Error('could not find receipt')
   console.log('out:', pieceOfferReceiptGet.ok.out)
-  
+
+  if (pieceOfferReceiptGet.ok.out.error) {
+    throw new Error('receipt outcome error', { cause: pieceOfferReceiptGet.ok.out.error })
+  }
+
   if (!pieceOfferReceiptGet.ok.fx.join) throw new Error('receipt without effect')
   console.log('piece/accept', pieceOfferReceiptGet.ok.fx.join)
-  
+
   // Get `piece/accept` receipt
   const pieceAcceptReceiptGet = await receiptStore.get(pieceOfferReceiptGet.ok.fx.join.link())
   if (pieceAcceptReceiptGet.error) throw new Error(`could not find receipt: ${pieceOfferReceiptGet.ok.fx.join.link()}`)
-  console.log('out:', pieceOfferReceiptGet.ok.out)
-  
+  console.log('out:', pieceAcceptReceiptGet.ok.out)
+
+  if (pieceAcceptReceiptGet.ok.out.error) {
+    throw new Error('receipt outcome error', { cause: pieceAcceptReceiptGet.ok.out.error })
+  }
+
   if (!pieceAcceptReceiptGet.ok.fx.join) throw new Error('receipt without effect')
   console.log('aggregate/offer', pieceAcceptReceiptGet.ok.fx.join)
-  
+
   // Get `aggregate/offer` receipt
   const aggregateOfferReceiptGet = await receiptStore.get(pieceAcceptReceiptGet.ok.fx.join.link())
   if (aggregateOfferReceiptGet.error) throw new Error('could not find receipt')
   console.log('out:', aggregateOfferReceiptGet.ok.out)
-  
+
+  if (aggregateOfferReceiptGet.ok.out.error) {
+    throw new Error('receipt outcome error', { cause: aggregateOfferReceiptGet.ok.out.error })
+  }
+
   if (!aggregateOfferReceiptGet.ok.fx.join) throw new Error('receipt without effect')
   console.log('aggregate/accept', aggregateOfferReceiptGet.ok.fx.join)
-  
+
   // Get `aggregate/accept` receipt
-  const aggregateAcceptReceiptGet = await receiptStore.get(pieceAcceptReceiptGet.ok.fx.join.link())
+  const aggregateAcceptReceiptGet = await receiptStore.get(aggregateOfferReceiptGet.ok.fx.join.link())
   if (aggregateAcceptReceiptGet.error) throw new Error('could not find receipt')
   console.log('out:', aggregateAcceptReceiptGet.ok.out)
-  
+
+  if (aggregateAcceptReceiptGet.ok.out.error) {
+    throw new Error('receipt outcome error', { cause: aggregateAcceptReceiptGet.ok.out.error })
+  }
+
   // Get `piece/accept` receipt
   const filecoinAcceptInvocation = await StorefrontCaps.filecoinAccept
     .invoke({
@@ -95,12 +117,16 @@ export async function followFilecoinReceiptChain () {
       expiration: Infinity,
     })
     .delegate()
-  
+
   console.log('filecoin/accept', filecoinAcceptInvocation.link())
-  
+
   const filecoinAcceptReceiptGet = await receiptStore.get(filecoinAcceptInvocation.link())
   if (filecoinAcceptReceiptGet.error) throw new Error('could not find receipt')
   console.log('out:', filecoinAcceptReceiptGet.ok.out)
+
+  if (filecoinAcceptReceiptGet.ok.out.error) {
+    throw new Error('receipt outcome error', { cause: filecoinAcceptReceiptGet.ok.out.error })
+  }
 
   const filecoinAcceptSuccess = 
     /** @type {import('@web3-storage/upload-api').FilecoinAcceptSuccess|undefined} */
@@ -119,21 +145,15 @@ export async function followFilecoinReceiptChain () {
   }
 }
 
-/**
- * Get Env validating it is set.
- */
-function getEnv() {
-  return {
-    PIECE_CID: mustGetEnv('PIECE_CID'),
-    PRIVATE_KEY: mustGetEnv('PRIVATE_KEY'),
-  }
-}
-
 const MAX_DEPTH = 63
 
 // Adapted from https://github.com/web3-storage/data-segment/blob/e9cdcbf76232e5b92ae1d13f6cf973ec9ab657ef/src/proof.js#L62-L86
 /**
- * @param {{ proof, piece, style: 'mini'|'midi'|'maxi' }} arg
+ * @param {{
+ *   proof: import('@web3-storage/data-segment').ProofData,
+ *   piece: import('@web3-storage/data-segment').PieceView,
+ *   style: 'mini'|'midi'|'maxi'
+ * }} arg
  * @returns 
  */
 function renderInclusionProof ({ proof, piece, style }) {

@@ -9,6 +9,7 @@ import { printD1ProvisionsEmails } from './d1-migration/print-d1-emails.js'
 import { verifyD1DynamoMigration } from './d1-migration/verify-d1-dynamo-migration.js'
 import { getOldestPiecesPendingDeals } from './get-oldest-pieces-pending-deals.js'
 import { redrivePieceAccept } from './redrive-piece-accept.js'
+import { runStorefrontCron } from './run-storefront-cron.js'
 
 const cli = sade('w3infra-cli')
 
@@ -23,12 +24,16 @@ cli
   .action(getOldestPiecesPendingDeals)
 
 cli
-  .command('follow-filecoin-receipt-chain', 'Follow filecoin receipt chain for a piece')
+  .command('follow-filecoin-receipt-chain <piece-cid>', 'Follow filecoin receipt chain for a piece')
   .action(followFilecoinReceiptChain)
 
 cli
   .command('redrive-piece-accept', 'Invoke piece/accept to generate missing receipt')
   .action(redrivePieceAccept)
+
+cli
+  .command('run-storefront-cron', 'Run the storefront cron job')
+  .action(runStorefrontCron)
 
 cli
   .command('d1-dynamo-migration', 'Run the D1 -> Dynamo migration')
