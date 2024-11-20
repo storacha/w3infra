@@ -31,8 +31,11 @@ export const sampleGet = async (event) => {
     samples.push(sample)
   }
 
-  const body = Buffer.from(dagJSON.encode(samples)).toString('base64')
-  return { statusCode: 200, body }
+  return {
+    statusCode: 200,
+    headers: { 'Content-Type': 'application/json' },
+    body: dagJSON.stringify(samples)
+  }
 }
 
 export const handler = Sentry.AWSLambda.wrapHandler((event) => sampleGet(event))
