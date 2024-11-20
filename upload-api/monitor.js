@@ -13,20 +13,14 @@ const SAMPLE_SIZE = 1
 
 const codes = [dagPBCode, rawCode]
 
-/** @param {number} max */
-const randomInt = max => Math.floor(Math.random() * max)
+const randomCodec = () => codes[Math.floor(Math.random() * codes.length)]
 
-const randomCodec = () => codes[randomInt(codes.length)]
+const randomDID = async () => (await ed25519.generate()).did()
 
 const randomLink = async () => {
   const bytes = webcrypto.getRandomValues(new Uint8Array(256))
   const digest = await sha256.digest(bytes)
   return Link.create(randomCodec(), digest)
-}
-
-const randomDID = async () => {
-  const signer = await ed25519.generate()
-  return signer.did()
 }
 
 /**
