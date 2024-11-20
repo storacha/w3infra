@@ -6,6 +6,7 @@ import { sha256 } from 'multiformats/hashes/sha2'
 import { ScanCommand } from '@aws-sdk/client-dynamodb'
 import { marshall, unmarshall } from '@aws-sdk/util-dynamodb'
 import * as ed25519 from '@ucanto/principal/ed25519'
+import { webcrypto } from 'one-webcrypto'
 
 const MAX_SAMPLE_SIZE = 10
 const SAMPLE_SIZE = 1
@@ -18,7 +19,8 @@ const randomInt = max => Math.floor(Math.random() * max)
 const randomCodec = () => codes[randomInt(codes.length)]
 
 const randomLink = async () => {
-  const digest = await sha256.digest(crypto.getRandomValues(new Uint8Array(256)))
+  const bytes = webcrypto.getRandomValues(new Uint8Array(256))
+  const digest = await sha256.digest(bytes)
   return Link.create(randomCodec(), digest)
 }
 

@@ -28,6 +28,7 @@
     "@web3-storage/upload-api": "^18.1.1",
     "multiformats": "^13.1.0",
     "nanoid": "^5.0.2",
+    "one-webcrypto": "^1.0.3",
     "p-map": "^7.0.2",
     "p-queue": "^8.0.1",
     "p-retry": "^6.2.0",
