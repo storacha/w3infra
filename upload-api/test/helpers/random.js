@@ -5,6 +5,7 @@ import * as Link from 'multiformats/link'
 import * as raw from 'multiformats/codecs/raw'
 import { sha256 } from 'multiformats/hashes/sha2'
 import * as CAR from '@ucanto/transport/car'
+import * as ed25519 from '@ucanto/principal/ed25519'
 
 /** @param {number} size */
 export async function randomBytes(size) {
@@ -54,4 +55,9 @@ export async function randomCAR(size) {
   const cid = await CAR.codec.link(new Uint8Array(await blob.arrayBuffer()))
 
   return Object.assign(blob, { cid, roots: [root] })
+}
+
+export const randomDID = async () => {
+  const signer = await ed25519.generate()
+  return signer.did()
 }
