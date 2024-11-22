@@ -9,7 +9,7 @@ import { getDynamoClient } from '../../lib/aws/dynamo.js'
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
   dsn: process.env.SENTRY_DSN,
-  tracesSampleRate: 1.0,
+  tracesSampleRate: 0,
 })
 
 /**

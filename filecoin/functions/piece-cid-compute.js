@@ -13,7 +13,7 @@ import { getS3Client } from '../../lib/aws/s3.js'
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
   dsn: process.env.SENTRY_DSN,
-  tracesSampleRate: 1.0,
+  tracesSampleRate: 0,
 })
 
 /**

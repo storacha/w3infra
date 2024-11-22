@@ -22,7 +22,7 @@ import { createMetricsTable } from '../tables/metrics.js'
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
   dsn: process.env.SENTRY_DSN,
-  tracesSampleRate: 1.0,
+  tracesSampleRate: 0,
 })
 
 const AWS_REGION = process.env.AWS_REGION || 'us-west-2'
