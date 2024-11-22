@@ -16,7 +16,7 @@ export const BillingDbStack = ({ stack }) => {
     ...usageTableProps,
     stream: 'new_image'
   })
-  const egressTrafficTable = new Table(stack, 'egress-traffic', egressTrafficTableProps)
+  const egressTrafficTable = new Table(stack, 'egress-traffic-events', egressTrafficTableProps)
 
   stack.addOutputs({
     customerTableName: customerTable.tableName,

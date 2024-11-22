@@ -60,21 +60,13 @@ export const handler = Sentry.AWSLambda.wrapHandler(
         const decoded = decodeStr(record.body)
         const egressData = expect(decoded, 'Failed to decode egress event')
 
-        const putResult = await egressTrafficEventStore.put(egressData)
-        if (putResult.error) throw putResult.error
+        const result = await egressTrafficEventStore.put(egressData)
+        expect(result, 'Failed to save egress event in database')
 
         const response = await customerStore.get({ customer: egressData.customer })
-        if (response.error) {
-          return {
-            error: {
-              name: 'CustomerNotFound',
-              message: `Error getting customer ${egressData.customer}`,
-              cause: response.error
-            }
-          }
-        }
-        const customerAccount = response.ok.account
+        if (response.error) throw response.error
 
+        const customerAccount = response.ok.account
         expect(
           await recordBillingMeterEvent(stripe, billingMeterName, egressData, customerAccount),
           `Failed to record egress event in Stripe API for customer: ${egressData.customer}, account: ${customerAccount}, bytes: ${egressData.bytes}, servedAt: ${egressData.servedAt.toISOString()}, resource: ${egressData.resource}`

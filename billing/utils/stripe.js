@@ -91,12 +91,14 @@ export async function recordBillingMeterEvent(stripe, billingMeterEventName, egr
     event_name: billingMeterEventName,
     payload: {
       stripe_customer_id: stripeCustomerId,
+      // Stripe expects the value to be a string
       value: egressData.bytes.toString(),
     },
+    // Stripe expects the timestamp to be in seconds
     timestamp: Math.floor(egressData.servedAt.getTime() / 1000),
   },
     {
-      idempotencyKey: `${egressData.servedAt.toISOString()}-${egressData.space}-${egressData.customer}-${egressData.resource}`
+      idempotencyKey: `${egressData.servedAt.toISOString()}-${egressData.space}-${egressData.customer}-${egressData.resource}-${egressData.cause}`
     }
   )
 
