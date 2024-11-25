@@ -6,7 +6,7 @@ import { notifyBus } from '../event-bus/source.js'
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
   dsn: process.env.SENTRY_DSN,
-  tracesSampleRate: 1.0,
+  tracesSampleRate: 0,
 })
 
 const EVENT_BUS_ARN = process.env.EVENT_BUS_ARN || ''

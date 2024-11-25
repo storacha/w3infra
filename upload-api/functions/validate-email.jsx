@@ -26,7 +26,7 @@ const html = process.env.HOSTED_ZONE === 'up.web3.storage' ? htmlW3s : htmlStora
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
   dsn: process.env.SENTRY_DSN,
-  tracesSampleRate: 1.0,
+  tracesSampleRate: 0,
 })
 
 /**
@@ -183,6 +183,7 @@ function createAuthorizeContext() {
  * @param {import('aws-lambda').APIGatewayProxyEventV2} request
  */
 export async function validateEmailPost(request) {
+  console.log("VALIDATING EMAIL")
   const encodedUcan = request.queryStringParameters?.ucan
   if (!encodedUcan) {
     return toLambdaResponse(
@@ -191,8 +192,14 @@ export async function validateEmailPost(request) {
       )
     )
   }
+  console.log("CREATING CONTEXT")
+
   const context = createAuthorizeContext()
+  console.log("AUTHORIZING")
+
   const authorizeResult = await authorize(encodedUcan, context)
+  console.log("AUTHORIZED", JSON.stringify(authorizeResult))
+
   if (authorizeResult.error) {
     console.error(authorizeResult.error)
     return toLambdaResponse(
@@ -208,16 +215,20 @@ export async function validateEmailPost(request) {
   }
 
   const { email, audience, ucan } = authorizeResult.ok
+  console.log("CHECKING PLAN")
 
   const planCheckResult = await context.customerStore.get({
     customer: DidMailto.fromEmail(email),
   })
   let stripePricingTableId
   let stripePublishableKey
+  console.log("CHECKED PLAN", JSON.stringify(planCheckResult))
+
   if (!planCheckResult.ok?.product) {
     stripePricingTableId = context.stripePricingTableId
     stripePublishableKey = context.stripePublishableKey
   }
+
 
   return toLambdaResponse(
     new html.HtmlResponse(
