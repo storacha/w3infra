@@ -82,7 +82,10 @@ export function useUsageStore({ spaceSnapshotStore, spaceDiffStore, egressTraffi
       }
 
       const result = await egressTrafficQueue.add(record)
-      if (result.error) return result
+      if (result.error) {
+        console.error('Error sending egress event to queue:', result.error)
+        return result
+      }
 
       return { ok: { ...record, servedAt: servedAt.toISOString() } }
     }

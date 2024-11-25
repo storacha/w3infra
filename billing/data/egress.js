@@ -2,8 +2,9 @@ import { Link } from '@ucanto/server'
 import { DecodeFailure, EncodeFailure, Schema } from './lib.js'
 
 /**
- * @typedef { import('../types').InferStoreRecord<import('../lib/api').EgressTrafficData> } EgressTrafficStoreRecord
- * @typedef { import('../types').InferStoreRecord<import('../lib/api').EgressTrafficEventListKey> } EgressTrafficKeyStoreRecord
+ * @typedef { import('../lib/api').EgressTrafficData } EgressTrafficData
+ * @typedef { import('../types').InferStoreRecord<EgressTrafficData> & { pk: string, sk: string } } EgressTrafficStoreRecord
+ * @typedef {{ pk: string, sk: string }} EgressTrafficKeyStoreRecord
  */
 
 export const egressSchema = Schema.struct({
@@ -15,14 +16,16 @@ export const egressSchema = Schema.struct({
   cause: Schema.link(),
 })
 
-/** @type {import('../lib/api').Validator<import('../lib/api').EgressTrafficData>} */
+/** @type {import('../lib/api').Validator<EgressTrafficData>} */
 export const validate = input => egressSchema.read(input)
 
-/** @type {import('../lib/api').Encoder<import('../lib/api').EgressTrafficData, EgressTrafficStoreRecord>} */
+/** @type {import('../lib/api').Encoder<EgressTrafficData, EgressTrafficStoreRecord>} */
 export const encode = input => {
   try {
     return {
       ok: {
+        pk: `${input.space.toString()}#${input.resource.toString()}`,
+        sk: `${input.servedAt.toISOString()}#${input.cause.toString()}`,
         space: input.space.toString(),
         customer: input.customer.toString(),
         resource: input.resource.toString(),
@@ -86,19 +89,21 @@ export const lister = {
   /** @type {import('../lib/api').Encoder<import('../lib/api').EgressTrafficEventListKey, EgressTrafficKeyStoreRecord>} */
   encodeKey: input => ({
     ok: {
-      space: input.space.toString(),
-      customer: input.customer.toString(),
-      from: input.from.toISOString()
+      pk: `${input.space.toString()}#${input.resource.toString()}`,
+      sk: `${input.servedAt.toISOString()}#${input.cause.toString()}`,
     }
   }),
   /** @type {import('../lib/api').Decoder<EgressTrafficKeyStoreRecord, import('../lib/api').EgressTrafficEventListKey>} */
   decodeKey: input => {
     try {
+      const [space, resource] = input.pk.split('#')
+      const [servedAt, cause] = input.sk.split('#')
       return {
         ok: {
-          space: Schema.did({ method: 'key' }).from(input.space),
-          customer: Schema.did({ method: 'mailto' }).from(input.customer),
-          from: new Date(input.from)
+          space: Schema.did({ method: 'key' }).from(space),
+          resource: Link.parse(resource),
+          servedAt: new Date(servedAt),
+          cause: Link.parse(cause),
         }
       }
     } catch (/** @type {any} */ err) {

@@ -189,7 +189,12 @@ export type EgressTrafficQueue = QueueAdder<EgressTrafficData>
 /**
  * List key for egress traffic data.
  */
-export interface EgressTrafficEventListKey { space: ConsumerDID, customer: CustomerDID, from: Date }
+export interface EgressTrafficEventListKey { 
+  space: ConsumerDID, 
+  resource: UnknownLink,
+  servedAt: Date
+  cause: UnknownLink,
+}
 
 /**
  * Captures details about a space that should be billed for a given customer in

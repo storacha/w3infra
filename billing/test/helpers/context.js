@@ -191,7 +191,7 @@ export const createEgressTrafficTestContext = async () => {
     })
   }
 
-  const egressTrafficTable = await createTable(awsServices.dynamo.client, egressTrafficTableProps, 'egress-traffic-')
+  const egressTrafficTable = await createTable(awsServices.dynamo.client, egressTrafficTableProps, 'egress-traffic-events-')
   const egressTrafficEventStore = {
     ...createEgressTrafficEventStore(awsServices.dynamo.client, { tableName: egressTrafficTable }),
     ...createStorePutterClient(awsServices.dynamo.client, {

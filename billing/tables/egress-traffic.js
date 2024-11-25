@@ -8,6 +8,10 @@ import { validate, encode, lister, decode } from '../data/egress.js'
  */
 export const egressTrafficTableProps = {
   fields: {
+    /** Composite key with format: "space#resource" */
+    pk: 'string',
+    /** Composite key with format: "servedAt#cause" */
+    sk: 'string',
     /** Space DID (did:key:...). */
     space: 'string',
     /** Customer DID (did:mailto:...). */
@@ -21,11 +25,11 @@ export const egressTrafficTableProps = {
     /** UCAN invocation ID that caused the egress traffic. */
     cause: 'string',
   },
-  primaryIndex: { partitionKey: 'space', sortKey: 'servedAt' },
+  primaryIndex: { partitionKey: 'pk', sortKey: 'sk' },
   globalIndexes: {
     customer: {
       partitionKey: 'customer',
-      sortKey: 'servedAt',
+      sortKey: 'sk',
       projection: ['space', 'resource', 'bytes', 'cause', 'servedAt']
     }
   }

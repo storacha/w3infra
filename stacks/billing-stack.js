@@ -202,7 +202,7 @@ export function BillingStack ({ stack, app }) {
     consumer: {
       function: egressTrafficQueueHandler,
       deadLetterQueue: egressTrafficDLQ.cdk.queue,
-      cdk: { eventSource: { batchSize: 1 } }
+      cdk: { eventSource: { batchSize: 10 } }
     },
     cdk: { queue: { visibilityTimeout: Duration.minutes(15) } }
   })
