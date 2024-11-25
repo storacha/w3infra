@@ -58,13 +58,13 @@ See: https://docs.sst.dev for more info on how things get deployed.
 #### Testing Stripe Integration
 
 To test the Stripe integration, set the `STRIPE_SECRET_KEY` and `STRIPE_ENDPOINT_SECRET`
-secrets using `sst secret set` (use `npm exec sst -- secret set` to do this in the root of this project). 
+secrets using `sst secrets set` (use `npm exec sst -- secrets set` to do this in the root of this project). 
 
 `STRIPE_SECRET_KEY ` should be set to the "secret" API key found on the test mode API keys page: https://dashboard.stripe.com/test/apikeys
 
 To get a value for `STRIPE_ENDPOINT_SECRET` you'll need to create a webhook on https://dashboard.stripe.com/test/webhooks and point it at the Stripe webhook handler for your development server. You can get webhook handler URL by adding `/stripe` to the end of the 
 `w3infra-UploadApiStack` `ApiEndpoint` output after running `npm start` and letting it deploy. 
-The full value of `STRIPE_ENDPOINT_SECRET` will look something like `https://z1jsa5b24d.execute-api.us-west-2.amazonaws.com/stripe`.
+The full value of `STRIPE_ENDPOINT_SECRET` will look something like `whsec_AEWftGyXzREfERw4nMyPDFVCerafe`.
 
 You can use the `stripe` CLI to trigger test events, like:
 
