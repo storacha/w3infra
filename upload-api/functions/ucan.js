@@ -6,7 +6,7 @@ import * as AgentStore from '../stores/agent.js'
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
   dsn: process.env.SENTRY_DSN,
-  tracesSampleRate: 0,
+  tracesSampleRate: 1,
 })
 
 const AWS_REGION = process.env.AWS_REGION || 'us-west-2'
