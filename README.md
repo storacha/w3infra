@@ -25,16 +25,17 @@ To work on this codebase **you need**:
 
 - Node.js >= v16 (prod env is node v16)
 - Install the deps with `npm i`
+- run your env `npx sst dev --no-deploy`
 
-You can then run the tests locally with `npm test`. 
+You can then run the tests locally with `npm test`.
 
 To try out a change submit a PR and you'll get temporary infra rolled out for you automatically at `https://<pr#>.up.web3.storage`.
 
 [`sst`](https://sst.dev) is the framework we use to define what to deploy. Read the docs! https://sst.dev
 
-## Deployment 
+## Deployment
 
-Deployments are managed by [seed.run]. 
+Deployments are managed by [seed.run].
 
 The `main` branch is deployed to https://staging.up.web3.storage and staging builds are promoted to prod manually via the UI at https://console.seed.run
 
@@ -57,14 +58,18 @@ See: https://docs.sst.dev for more info on how things get deployed.
 
 #### Testing Stripe Integration
 
+There are two possible ways to configure stripe for test, a legacy version that uses the same test environment with all the users, and the new sandbox implementation that allows a separate test environment.
+
+##### Stripe Test Legacy
+
 To test the Stripe integration, set the `STRIPE_SECRET_KEY` and `STRIPE_ENDPOINT_SECRET`
-secrets using `sst secrets set` (use `npm exec sst -- secrets set` to do this in the root of this project). 
+secrets using `sst secrets set` (use `npm exec sst -- secrets set` to do this in the root of this project).
 
 `STRIPE_SECRET_KEY ` should be set to the "secret" API key found on the test mode API keys page: https://dashboard.stripe.com/test/apikeys
 
-To get a value for `STRIPE_ENDPOINT_SECRET` you'll need to create a webhook on https://dashboard.stripe.com/test/webhooks and point it at the Stripe webhook handler for your development server. You can get webhook handler URL by adding `/stripe` to the end of the 
-`w3infra-UploadApiStack` `ApiEndpoint` output after running `npm start` and letting it deploy. 
-The full value of `STRIPE_ENDPOINT_SECRET` will look something like `whsec_AEWftGyXzREfERw4nMyPDFVCerafe`.
+To get a value for `STRIPE_ENDPOINT_SECRET` you'll need to create a webhook on https://dashboard.stripe.com/test/webhooks and point it at the Stripe webhook handler for your development server. You can get webhook handler URL by adding `/stripe` to the end of the
+`w3infra-BillingStack` `ApiEndpoint` output after running `npm start` and letting it deploy.
+The `STRIPE_ENDPOINT_SECRET` is the signing secret for your webhook and the full value will look something like `whsec_AEWftGyXzREfERw4nMyPDFVCerafe`. You can find it in the Stripe webhook dashboard.
 
 You can use the `stripe` CLI to trigger test events, like:
 
@@ -72,11 +77,42 @@ You can use the `stripe` CLI to trigger test events, like:
 stripe trigger checkout.session.completed
 ```
 
+##### Stripe Sandbox
+
+Setting up a sandbox is similar to the regular setup but includes a few additional steps for the pricing table configuration.
+
+1. **Create a Sandbox:** Start by creating a new sandbox in the Stripe interface.
+2. **Configure the Environment:** Follow the previous steps to set up the environment variables and the webhook.
+3. **Set Up Products:**
+   - Navigate to the **Product Catalog** page.
+   - Create three products with a **Recurring** pricing model.
+   - Configure each product's pricing model as follows:
+     - **Usage-based**
+     - **Per tier**
+     - **Graduated**
+   - Refer to the provided table to set the price values for each product.
+
+| Product  | First unit | Last unit | Per unit | Flat fee |
+| -------- | :--------: | --------: | -------: | -------: |
+| Starter  |     0      |         5 |     0.00 |     0.00 |
+|          |     6      |         ∞ |     0.15 |     0.00 |
+| Lite     |     0      |       100 |     0.00 |    10.00 |
+|          |    101     |         ∞ |     0.05 |     0.00 |
+| Business |     0      |      2000 |     0.00 |   100.00 |
+|          |    2001    |         ∞ |     0.03 |     0.00 |
+
+4. **Create the Pricing Table:**
+   - Go to the **Pricing Tables** section in the navigation bar.
+   - Create a new table using the three products you set up earlier.
+5. Set the new `STRIPE_PRICING_TABLE_ID` value using `npx sst secrets set`.
+
+Once these steps are complete, your sandbox should be ready to use.
+
 ## Package Tests
 
 To run per-package tests, first install Docker Desktop (https://www.docker.com/) and ensure it is running.
 
-Next, ensure the `AWS_REGION`, `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` environment variables are set in your terminal. They do 
+Next, ensure the `AWS_REGION`, `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` environment variables are set in your terminal. They do
 not need to be set to real values - the following works in `bash`-like shells:
 
 ```
@@ -279,7 +315,13 @@ An endpoint for receiving signed Stripe webhooks.
 Returns version info for this api in JSON
 
 ```json
-{ "name": "@web3-storage/upload-api", "did": "did:foo:bar", "version": "3.0.0", "commit": "sha1", "branch": "main" }
+{
+  "name": "@web3-storage/upload-api",
+  "did": "did:foo:bar",
+  "version": "3.0.0",
+  "commit": "sha1",
+  "branch": "main"
+}
 ```
 
 ## UCAN Capabilities
@@ -335,11 +377,14 @@ const file = new Blob(['Hello World!'])
 
 // the Content-Address for your file, derived client side before sending to the service.
 // Returns once your data is safely stored.
-const cid = await uploadFile({
-  issuer: agent.issuer,
-  with: agent.currentSpace(),
-  proofs: await agent.proofs([store, upload]),
-}, file)
+const cid = await uploadFile(
+  {
+    issuer: agent.issuer,
+    with: agent.currentSpace(),
+    proofs: await agent.proofs([store, upload]),
+  },
+  file
+)
 ```
 
 [SST]: https://sst.dev
