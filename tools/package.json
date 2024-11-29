@@ -12,7 +12,9 @@
     "d1-dynamo-migration": "node cli.js d1-dynamo-migration"
   },
   "license": "Apache-2.0 OR MIT",
-  "dependencies": {},
+  "dependencies": {
+    "@web3-storage/upload-api": "^18.1.4"
+  },
   "devDependencies": {
     "@aws-sdk/client-dynamodb": "^3.226.0",
     "@aws-sdk/util-dynamodb": "^3.226.0",
