@@ -138,6 +138,33 @@ export type UsageStore = StorePutter<Usage>
  */
 export type EgressTrafficEventStore = StorePutter<EgressTrafficData> & StoreLister<EgressTrafficEventListKey, EgressTrafficData>
 
+export interface Allocation {
+  /** Space DID (did:key:...). */
+  space: ConsumerDID
+  /** Represents a multihash digest which carries information about the hashing algorithm and an actual hash digest. */
+  multihash: string
+  /** UCAN invocation that caused the size change. */
+  cause: Link
+  /** Time the record was added to the database. */
+  insertedAt: Date
+  /** Number of bytes that were added to the space. */
+  size: bigint
+}
+
+export interface AllocationKey { multihash: string }
+export interface AllocationListKey { space: ConsumerDID}
+
+export type AllocationStore =
+  & StoreGetter<AllocationKey, Allocation>
+  & StoreLister<AllocationListKey, Allocation>
+
+export interface AllocationSnapshot {
+  [customerDID: CustomerDID] : {
+    spaceAllocations: Array<{[spaceDID: ConsumerDID]: bigint}>
+    totalAllocation: bigint
+  }
+}
+
 // Billing queues /////////////////////////////////////////////////////////////
 
 /**

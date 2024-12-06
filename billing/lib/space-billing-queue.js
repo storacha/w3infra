@@ -81,6 +81,41 @@ export const calculatePeriodUsage = async (instruction, ctx) => {
 }
 
 /**
+ * Calculates total allocation for the given space.
+ *
+ * @param {import('./api').SpaceBillingInstruction} instruction
+ * @param {{
+ *   allocationStore: import('./api').AllocationStore
+ * }} ctx
+ * @returns {Promise<import('@ucanto/interface').Result<{ size: bigint }>>}
+ */
+export const calculateSpaceAllocation = async (instruction, ctx) => {
+  console.log(`Calculating total allocation for: ${instruction.space}`)
+  console.log(`Provider: ${instruction.provider}`)
+  console.log(`Customer: ${instruction.customer}`)
+
+  /** @type {string|undefined} */
+  let cursor
+  let size = 0n
+  while(true){
+    const {ok: allocations, error} = await ctx.allocationStore.list({space: instruction.space}, {cursor, size: 100})
+
+    if (error) return { error }
+  
+    for (const allocation of allocations.results){
+      size += allocation.size
+    }
+
+    if (!allocations.cursor) break
+    cursor = allocations.cursor
+  }
+
+  console.log(`Total allocation for ${instruction.space}: ${size}`)
+  
+  return {ok: {size}}
+}
+
+/**
  * Stores a space usage record and space snapshot for the given space,
  * customer, and billing period.
  *
