@@ -194,6 +194,7 @@ export const PendingValidateEmail = ({ autoApprove }) => (
  * @param {string} props.audience
  * @param {string} [props.stripePricingTableId]
  * @param {string} [props.stripePublishableKey]
+ * @param {boolean} [props.isReferred]
  */
 export const ValidateEmail = ({
   ucan,
@@ -201,6 +202,7 @@ export const ValidateEmail = ({
   audience,
   stripePricingTableId,
   stripePublishableKey,
+  isReferred
 }) => {
   const showPricingTable = stripePricingTableId && stripePublishableKey
   return (
@@ -220,9 +222,24 @@ export const ValidateEmail = ({
         </div>
         {showPricingTable && (
           <div class="box">
-            <p>
-              In order to upload data you need to sign up for a billing plan:
-            </p>
+            {isReferred ? (
+              <>
+                <p>
+                  Congratulations! You are eligible for a free trial of our Lite or Business subscriptions. That means
+                  we won&apos;t charge you anything today.
+                  If you choose a Lite plan, you will get two months for free! If you choose Business, you will get one month for free!
+                  We do need you to provide a valid credit card before we can start your
+                  trial - pick a plan below and complete the checkout flow to get started!
+                </p>
+                <p>
+                  Please note that after your free trial ends, you will be charged 10 USD per month for Lite or 100 USD per month for Business tier.
+                </p>
+              </>
+            ) : (
+              <p>
+                In order to upload data you need to sign up for a billing plan:
+              </p>
+            )}
             <stripe-pricing-table
               pricing-table-id={stripePricingTableId}
               publishable-key={stripePublishableKey}
@@ -233,7 +250,7 @@ export const ValidateEmail = ({
         <div class="box">
           <p>
             By registering with Storacha you agree to the Storacha{' '}
-            <a href="https://web3.storage/docs/terms/">Terms of Service</a>.
+            <a href="https://docs.storacha.network/terms/">Terms of Service</a>.
           </p>
         </div>
         <details class="box">
