@@ -236,11 +236,7 @@ export async function validateEmailPost(request) {
 
   if (!planCheckResult.ok?.product) {
     stripePublishableKey = context.stripePublishableKey
-    if (isReferred) {
-      stripePricingTableId = context.stripeFreeTrialPricingTableId
-    } else {
-      stripePricingTableId = context.stripePricingTableId
-    }
+    stripePricingTableId = isReferred ? context.stripeFreeTrialPricingTableId : context.stripePricingTableId
   }
   return toLambdaResponse(
     new html.HtmlResponse(
