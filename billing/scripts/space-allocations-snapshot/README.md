@@ -15,9 +15,14 @@ Create your own `.env.local` file and fill in the relevant details:
 cp billing/scripts/space-allocations-snapshot/.env.template billing/scripts/space-allocations-snapshot/.env.local
 ```
 
-Run the allocation snapshot pipeline:
+You can run the allocation snapshot pipeline with the following optional arguments:
+
+- `from=yyyy-mm-dd`: Start date for the snapshot. Defaults to the Unix epoch (1970-01-01) if not provided.
+- `to=yyyy-mm-dd`: End date for the snapshot. Defaults to the first day of the next month if not provided.
+
+**Example Command:**
 
 ```sh
 cd billing/scripts/space-allocations-snapshot
-node index.js
+node index.js from=2024-11-01 to=2024-12-01
 ```
