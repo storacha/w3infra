@@ -47,6 +47,8 @@ STRIPE_FREE_TRIAL_PRICING_TABLE_ID = 'prctbl_1QHa8sF6A5ufQX5vJ8SUZUjq'
 STRIPE_PUBLISHABLE_KEY = 'pk_test_51LO87hF6A5ufQX5viNsPTbuErzfavdrEFoBuaJJPfoIhzQXdOUdefwL70YewaXA32ZrSRbK4U4fqebC7SVtyeNcz00qmgNgueC'
 # this is used in tests and should always be set to the test env secret key
 STRIPE_TEST_SECRET_KEY = ''
+STRIPE_BILLING_METER_ID = ''
+STRIPE_BILLING_METER_EVENT_NAME = ''
 
 # Feature flags
 REQUIRE_PAYMENT_PLAN = 'true'

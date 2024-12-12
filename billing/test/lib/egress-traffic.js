@@ -88,7 +88,7 @@ export const test = {
       // 4. Check if the aggregated meter event exists and has a value greater than 0
       let aggregatedMeterEvent
       try {
-        const maxRetries = 5
+        const maxRetries = 10
         const delay = 10000 // 10 seconds
         // Convert to the start of the hour
         const startTime = Math.floor(events[0].servedAt.getTime() / 3600000) * 3600
