@@ -152,7 +152,7 @@ export interface Allocation {
 }
 
 export interface AllocationKey { multihash: string }
-export interface AllocationListKey { space: ConsumerDID}
+export interface AllocationListKey { space: ConsumerDID, insertedAt?: Date}
 
 export type AllocationStore =
   & StoreGetter<AllocationKey, Allocation>
@@ -160,8 +160,12 @@ export type AllocationStore =
 
 export interface AllocationSnapshot {
   [customerDID: CustomerDID] : {
-    spaceAllocations: Array<{[spaceDID: ConsumerDID]: bigint}>
-    totalAllocation: bigint
+    spaceAllocations: Array<{[spaceDID: ConsumerDID]: {size: bigint, usage: bigint}}>
+    totalAllocation: bigint,
+    totalUsage: bigint,
+    product: string,
+    provider: ProviderDID
+    recordedAt: Date
   }
 }
 

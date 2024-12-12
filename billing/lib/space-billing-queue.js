@@ -1,6 +1,5 @@
 import Big from 'big.js'
-
-const GB = 1024 * 1024 * 1024
+import {GB} from './util.js'
 
 /**
  * @param {import('./api').SpaceDiffListKey & { to: Date }} params
@@ -81,41 +80,6 @@ export const calculatePeriodUsage = async (instruction, ctx) => {
 }
 
 /**
- * Calculates total allocation for the given space.
- *
- * @param {import('./api').SpaceBillingInstruction} instruction
- * @param {{
- *   allocationStore: import('./api').AllocationStore
- * }} ctx
- * @returns {Promise<import('@ucanto/interface').Result<{ size: bigint }>>}
- */
-export const calculateSpaceAllocation = async (instruction, ctx) => {
-  console.log(`Calculating total allocation for: ${instruction.space}`)
-  console.log(`Provider: ${instruction.provider}`)
-  console.log(`Customer: ${instruction.customer}`)
-
-  /** @type {string|undefined} */
-  let cursor
-  let size = 0n
-  while(true){
-    const {ok: allocations, error} = await ctx.allocationStore.list({space: instruction.space}, {cursor, size: 100})
-
-    if (error) return { error }
-  
-    for (const allocation of allocations.results){
-      size += allocation.size
-    }
-
-    if (!allocations.cursor) break
-    cursor = allocations.cursor
-  }
-
-  console.log(`Total allocation for ${instruction.space}: ${size}`)
-  
-  return {ok: {size}}
-}
-
-/**
  * Stores a space usage record and space snapshot for the given space,
  * customer, and billing period.
  *
@@ -151,4 +115,62 @@ export const storeSpaceUsage = async (instruction, { size, usage }, ctx) => {
   if (usagePut.error) return usagePut
 
   return { ok: {} }
+}
+
+/**
+ * Calculates the total allocation for the specified space.  
+ * Additionally, it estimates the usage for the space based on the allocation values.  
+ * Note: This value is approximate as it doesn’t account for deleted files.
+ *
+ * @param {import('./api').SpaceBillingInstruction} instruction
+ * @param {{
+ *   allocationStore: import('./api').AllocationStore
+ * }} ctx
+ * @returns {Promise<import('@ucanto/interface').Result<{ size: bigint , usage: bigint}>>}
+ */
+export const calculateSpaceAllocation = async (instruction, ctx) => {
+  console.log(`Calculating total allocation for: ${instruction.space}`)
+  console.log(`Provider: ${instruction.provider}`)
+  console.log(`Customer: ${instruction.customer}`)
+  console.log(`Period: ${instruction.from.toISOString()} - ${instruction.to.toISOString()}`)
+
+  /** @type {string|undefined} */
+  let cursor
+  let size = 0n
+  let usage = 0n
+  let done = false
+  while(true){
+    const {ok: allocations, error} = await ctx.allocationStore.list(
+      {space: instruction.space, insertedAt: instruction.from}, 
+      {cursor, size: 100}
+    )
+
+    if (error) return { error }
+  
+    for (const allocation of allocations.results){
+      /**
+       * NOTE: Currently, the query only retrieves items with 'insertedAt' values greater than 'instruction.from'.
+       * This limitation is due to the 'ComparisonOperator' being hardcoded in the 'createdStoreListerClient'.
+       * As a result, we need to programmatically filter out allocations with 'insertedAt' dates after 'to'. 
+       * A similar filtering process is also applied in the 'iterateSpaceDiffs' function.
+       * TODO: discuss the possibility of refactoring the 'createdStoreListerClient'.
+       */
+      if(allocation.insertedAt.getTime() > instruction.to.getTime()){
+        done = true
+        break
+      }
+      size += allocation.size
+      usage += allocation.size * BigInt(instruction.to.getTime() - allocation.insertedAt.getTime())
+    }
+
+    if (done || !allocations.cursor) break
+    cursor = allocations.cursor
+  }
+
+  console.log(`Total allocation for ${instruction.space}: ${size} bytes`)
+  const duration = instruction.to.getTime() - instruction.from.getTime()
+  const usageGB = new Big(usage.toString()).div(duration).div(GB).toFixed(2)
+  console.log(`Approximate space consumed ${usage} byte/ms (~${usageGB} GiB/month)`)
+  
+  return {ok: {size, usage}}
 }

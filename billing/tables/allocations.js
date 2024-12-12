@@ -20,6 +20,13 @@ export const allocationsTableProps = {
     size: 'number',
   },
   primaryIndex: { partitionKey: 'space', sortKey: 'multihash' },
+  globalIndexes: {
+    'space-insertedAt-index': {
+      partitionKey: 'space',
+      sortKey: 'insertedAt',
+      projection: ['multihash', 'cause', 'size'],
+    },
+  },
 }
 
 /**
@@ -29,5 +36,9 @@ export const allocationsTableProps = {
  */
 export const createAllocationStore = (conf, { tableName }) => ({
   ...createStoreGetterClient(conf, { tableName, encodeKey, decode }),
-  ...createStoreListerClient(conf, { tableName, ...lister }),
+  ...createStoreListerClient(conf, {
+    tableName,
+    indexName: 'space-insertedAt-index',
+    ...lister,
+  }),
 })

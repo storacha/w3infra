@@ -12,6 +12,7 @@ import {
   calculateCost,
   createMemoryQueue,
   createMemoryStore,
+  toDateString
 } from './helpers.js'
 import { EndOfQueue } from '../../test/helpers/queue.js'
 import { expect } from '../../functions/lib.js'
@@ -154,9 +155,6 @@ for (const usage of usages) {
   if (!snap) throw new Error(`missing snapshot: ${usage.space}`)
   usageSnapshots.push({ ...usage, ...snap })
 }
-
-/** @param {Date} d */
-const toDateString = (d) => d.toISOString().split('T')[0]
 
 await fs.promises.writeFile(
   `./usage-${toDateString(from)}-${toDateString(to)}.json`,

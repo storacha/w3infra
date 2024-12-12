@@ -7,7 +7,7 @@ import { DecodeFailure, EncodeFailure, Schema } from './lib.js'
  * @typedef {import('../lib/api').AllocationKey} AllocationKey
  * @typedef {import('../lib/api').AllocationListKey} AllocationListKey
  * @typedef {import('../types').InferStoreRecord<AllocationKey>} AllocationKeyStoreRecord
- * @typedef {{ space: string }} AllocationListStoreRecord
+ * @typedef {{ space: string, insertedAt?: string }} AllocationListStoreRecord
  * @typedef {import('../types').StoreRecord} StoreRecord
  */
 
@@ -69,10 +69,17 @@ export const decode = (input) => {
 
 export const lister = {
   /** @type {import('../lib/api').Encoder<AllocationListKey, AllocationListStoreRecord>} */
-  encodeKey: (input) => ({
-    ok: {
-      space: input.space.toString(),
-    },
-  }),
+  encodeKey: (input) => {
+    /** @type  AllocationListStoreRecord */
+    const conditions = { space: input.space.toString() }
+    if (input.insertedAt) {
+      conditions.insertedAt = input.insertedAt.toISOString()
+    }
+    return {
+      ok: {
+        ...conditions,
+      },
+    }
+  },
   decode,
 }

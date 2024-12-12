@@ -78,3 +78,6 @@ export const calculateCost = (product, usage, duration) => {
 
   return info.cost + quantity * GB * info.overage
 }
+
+/** @param {Date} d */
+export const toDateString = (d) => d.toISOString().split('T')[0]
