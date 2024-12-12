@@ -19,6 +19,7 @@ You can run the allocation snapshot pipeline with the following optional argumen
 
 - `from=yyyy-mm-dd`: Start date for the snapshot. Defaults to the Unix epoch (1970-01-01) if not provided.
 - `to=yyyy-mm-dd`: End date for the snapshot. Defaults to the first day of the next month if not provided.
+- `customer=did:mailto:agent`: DID of the user account. Defaults to get all customers.
 
 **Example Command:**
 

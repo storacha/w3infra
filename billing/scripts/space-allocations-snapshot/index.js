@@ -22,8 +22,10 @@ import * as BillingCron from '../../lib/billing-cron.js'
 import * as SpaceBillingQueue from '../../lib/space-billing-queue.js'
 import * as CustomerBillingQueue from '../../lib/customer-billing-queue.js'
 import { startOfMonth } from '../../lib/util.js'
+import { Schema } from '../../data/lib.js'
 
 /**
+ * @typedef {import('../../lib/api.js').CustomerDID} CustomerDID
  * @typedef {import('../../lib/api.js').AllocationSnapshot} AllocationSnapshot
  * @typedef {import('../../lib/api.js').SpaceBillingInstruction} SpaceBillingInstruction
  * @typedef {import('../../lib/api.js').CustomerBillingInstruction} CustomerBillingInstruction
@@ -72,25 +74,42 @@ const result = {}
  * Note: The allocations and stores retrieved have 'insertedAt' values greater than 'from' and less than or equal to 'to'.
  */
 const args = process.argv.slice(2)
-const { from, to } = parseArgs(args)
+const { from, to, customer } = parseArgs(args)
 
 async function main() {
-  console.log(`Getting all customers...`)
+  /** @type CustomerBillingInstruction[] */
+  let customerBillingInstructions = []
 
-  expect(
-    await BillingCron.enqueueCustomerBillingInstructions(
-      { from, to },
-      {
-        customerStore,
-        customerBillingQueue,
-      }
+  if (customer) {
+    console.log(`Getting customer...`)
+
+    const { ok: record, error } = await customerStore.get({ customer })
+    if (error) throw error
+
+    customerBillingInstructions.push({
+      customer: record.customer,
+      account: record.account,
+      product: record.product,
+      from,
+      to,
+    })
+  } else {
+    console.log(`Getting all customers...`)
+
+    expect(
+      await BillingCron.enqueueCustomerBillingInstructions(
+        { from, to },
+        {
+          customerStore,
+          customerBillingQueue,
+        }
+      )
     )
-  )
 
-  const customerBillingInstructions =
-    /** @type CustomerBillingInstruction[] */ (
+    customerBillingInstructions = /** @type CustomerBillingInstruction[] */ (
       await consumeQueue(customerBillingQueue)
     )
+  }
 
   console.log(`Getting all spaces...`)
 
@@ -179,18 +198,25 @@ function validateDateArg(value) {
 
 /**
  * @param {string[]} args - Array of arguments in the format 'from=yyyy-mm-dd' or 'to=yyyy-mm-dd'.
- * @returns {{ from: Date, to: Date }} - Object with parsed 'from' and 'to' dates.
+ * @returns {{ from: Date, to: Date, customer?: CustomerDID }} - Object with parsed 'from' and 'to' dates.
  * @throws {Error} If the arguments are invalid or improperly formatted.
  */
 function parseArgs(args) {
   const fromArg = args.find((e) => e.includes('from='))?.split('from=')[1]
   const toArg = args.find((e) => e.includes('to='))?.split('to=')[1]
+  const customer = /** @type CustomerDID */ (
+    args.find((e) => e.includes('customer='))?.split('customer=')[1]
+  )
 
   if (
     (fromArg && !validateDateArg(fromArg)) ||
     (toArg && !validateDateArg(toArg))
   ) {
     throw new Error('Expected argument in the format yyyy-mm-dd')
+  }
+
+  if (customer && Schema.did({ method: 'mailto' }).read(customer).error) {
+    throw new Error(`Invalid customer format: expected 'did:mailto:agent'.`)
   }
 
   const from = fromArg ? new Date(fromArg) : new Date('1970-01-01') // since all time
@@ -209,6 +235,7 @@ function parseArgs(args) {
   return {
     from,
     to,
+    customer,
   }
 }
 
