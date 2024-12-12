@@ -121,6 +121,7 @@ export const test = {
       } catch {
         assert.fail('No aggregated meter event found. Stripe probably did not process the events yet.')
       }
+      console.log(aggregatedMeterEvent)
       assert.ok(aggregatedMeterEvent, 'No aggregated meter event found')
       assert.ok(aggregatedMeterEvent.data, 'No aggregated meter event found')
       assert.equal(aggregatedMeterEvent.data.length, 1, 'Expected 1 aggregated meter event')
