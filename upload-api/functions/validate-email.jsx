@@ -11,6 +11,7 @@ import { createWorkflowStore } from '../buckets/workflow-store.js'
 import { createSubscriptionTable } from '../tables/subscription.js'
 import { createConsumerTable } from '../tables/consumer.js'
 import { createRevocationsTable } from '../stores/revocations.js'
+import { createReferralStore } from '../stores/referrals.js'
 import * as AgentStore from '../stores/agent.js'
 import { useProvisionStore } from '../stores/provisions.js'
 // eslint-disable-next-line import/extensions
@@ -90,7 +91,9 @@ function createAuthorizeContext() {
     UPLOAD_API_DID = '',
     PROVIDERS = '',
     STRIPE_PRICING_TABLE_ID = '',
+    STRIPE_FREE_TRIAL_PRICING_TABLE_ID = '',
     STRIPE_PUBLISHABLE_KEY = '',
+    REFERRALS_ENDPOINT = '',
     UCAN_LOG_STREAM_NAME = '',
     SST_STAGE = '',
     // set for testing
@@ -122,6 +125,7 @@ function createAuthorizeContext() {
     { region: AWS_REGION },
     { tableName: CUSTOMER_TABLE_NAME }
   )
+  const referralStore = createReferralStore({ endpoint: REFERRALS_ENDPOINT })
   const spaceMetricsTable = createSpaceMetricsTable(
     AWS_REGION,
     SPACE_METRICS_TABLE_NAME
@@ -171,8 +175,10 @@ function createAuthorizeContext() {
     ),
     rateLimitsStorage: createRateLimitTable(AWS_REGION, RATE_LIMIT_TABLE_NAME),
     customerStore,
+    referralStore,
     agentStore,
     stripePricingTableId: STRIPE_PRICING_TABLE_ID,
+    stripeFreeTrialPricingTableId: STRIPE_FREE_TRIAL_PRICING_TABLE_ID,
     stripePublishableKey: STRIPE_PUBLISHABLE_KEY,
   }
 }
@@ -183,7 +189,6 @@ function createAuthorizeContext() {
  * @param {import('aws-lambda').APIGatewayProxyEventV2} request
  */
 export async function validateEmailPost(request) {
-  console.log("VALIDATING EMAIL")
   const encodedUcan = request.queryStringParameters?.ucan
   if (!encodedUcan) {
     return toLambdaResponse(
@@ -192,13 +197,9 @@ export async function validateEmailPost(request) {
       )
     )
   }
-  console.log("CREATING CONTEXT")
-
   const context = createAuthorizeContext()
-  console.log("AUTHORIZING")
 
   const authorizeResult = await authorize(encodedUcan, context)
-  console.log("AUTHORIZED", JSON.stringify(authorizeResult))
 
   if (authorizeResult.error) {
     console.error(authorizeResult.error)
@@ -215,21 +216,28 @@ export async function validateEmailPost(request) {
   }
 
   const { email, audience, ucan } = authorizeResult.ok
-  console.log("CHECKING PLAN")
 
   const planCheckResult = await context.customerStore.get({
     customer: DidMailto.fromEmail(email),
   })
+  let isReferred = false
+  try {
+    // if we can find a referral code for this user, offer them a free trial
+    if ((await context.referralStore.getReferredBy(email)).refcode) {
+      isReferred = true
+    }
+  } catch (e){
+    // if we fail here, log the error and move on
+    console.warn('encountered an error checking the referrals service, please see the error logs for more information')
+    console.error(e)
+  }
   let stripePricingTableId
   let stripePublishableKey
-  console.log("CHECKED PLAN", JSON.stringify(planCheckResult))
 
   if (!planCheckResult.ok?.product) {
-    stripePricingTableId = context.stripePricingTableId
     stripePublishableKey = context.stripePublishableKey
+    stripePricingTableId = isReferred ? context.stripeFreeTrialPricingTableId : context.stripePricingTableId
   }
-
-
   return toLambdaResponse(
     new html.HtmlResponse(
       (
@@ -239,6 +247,7 @@ export async function validateEmailPost(request) {
           ucan={ucan}
           stripePricingTableId={stripePricingTableId}
           stripePublishableKey={stripePublishableKey}
+          isReferred={isReferred}
         />
       )
     )

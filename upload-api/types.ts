@@ -287,4 +287,12 @@ export interface BillingProvider {
   createAdminSession: (customer: AccountDID, returnURL: string) => Promise<Result<PlanCreateAdminSessionSuccess, PlanCreateAdminSessionFailure>>
 }
 
+export interface Referral {
+  refcode: string
+}
+
+export interface ReferralsStore {
+  getReferredBy: (email: string) => Promise<Referral>
+}
+
 export {}
