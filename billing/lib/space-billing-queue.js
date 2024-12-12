@@ -119,20 +119,29 @@ export const storeSpaceUsage = async (instruction, { size, usage }, ctx) => {
 
 /**
  * Calculates the total allocation for the specified space.  
- * Additionally, it estimates the usage for the space based on the allocation values.  
+ * Additionally, it estimates the usage for the space based on the allocation/store values.  
  * Note: This value is approximate as it doesn’t account for deleted files.
  *
+ * @typedef {import('./api').AllocationStore} AllocationStore
+ * @typedef {import('./api').StoreTableStore} StoreTableStore
+ * @typedef {{allocationStore: AllocationStore}} AllocationStoreCtx
+ * @typedef {{storeTableStore: StoreTableStore}} StoreTableStoreCtx
+ * 
+ * @param {"allocationStore" | "storeTableStore"} store
  * @param {import('./api').SpaceBillingInstruction} instruction
- * @param {{
- *   allocationStore: import('./api').AllocationStore
- * }} ctx
+ * @param { AllocationStoreCtx | StoreTableStoreCtx} ctx
  * @returns {Promise<import('@ucanto/interface').Result<{ size: bigint , usage: bigint}>>}
  */
-export const calculateSpaceAllocation = async (instruction, ctx) => {
+export const calculateSpaceAllocation = async (store, instruction, ctx) => {
   console.log(`Calculating total allocation for: ${instruction.space}`)
   console.log(`Provider: ${instruction.provider}`)
   console.log(`Customer: ${instruction.customer}`)
   console.log(`Period: ${instruction.from.toISOString()} - ${instruction.to.toISOString()}`)
+
+  /** @type AllocationStore | StoreTableStore */
+  const ctxStore = store === 'allocationStore' ? 
+  /** @type AllocationStoreCtx */ (ctx).allocationStore :
+  /** @type StoreTableStoreCtx */ (ctx).storeTableStore
 
   /** @type {string|undefined} */
   let cursor
@@ -140,7 +149,7 @@ export const calculateSpaceAllocation = async (instruction, ctx) => {
   let usage = 0n
   let done = false
   while(true){
-    const {ok: allocations, error} = await ctx.allocationStore.list(
+    const {ok: allocations, error} = await ctxStore.list(
       {space: instruction.space, insertedAt: instruction.from}, 
       {cursor, size: 100}
     )

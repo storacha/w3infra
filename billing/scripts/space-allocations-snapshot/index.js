@@ -48,6 +48,7 @@ const CUSTOMER_TABLE_NAME = mustGetEnv('CUSTOMER_TABLE_NAME')
 const SUBSCRIPTION_TABLE_NAME = mustGetEnv('SUBSCRIPTION_TABLE_NAME')
 const CONSUMER_TABLE_NAME = mustGetEnv('CONSUMER_TABLE_NAME')
 const ALLOCATIONS_TABLE_NAME = mustGetEnv('ALLOCATIONS_TABLE_NAME')
+const STORE_TABLE_NAME = mustGetEnv('STORE_TABLE_NAME')
 
 const customerStore = createCustomerStore(dynamo, {
   tableName: CUSTOMER_TABLE_NAME,
@@ -60,6 +61,9 @@ const consumerStore = createConsumerStore(dynamo, {
 })
 const allocationStore = createAllocationStore(dynamo, {
   tableName: ALLOCATIONS_TABLE_NAME,
+})
+const storeTableStore = createAllocationStore(dynamo, {
+  tableName: STORE_TABLE_NAME,
 })
 
 /** @type CustomerBillingQueue */
@@ -133,9 +137,20 @@ async function main() {
       await all(
         spaceBillingInstructions.map((instruction) => async () => {
           const spaceAllocation = expect(
-            await SpaceBillingQueue.calculateSpaceAllocation(instruction, {
-              allocationStore,
-            })
+            await SpaceBillingQueue.calculateSpaceAllocation(
+              'allocationStore',
+              instruction,
+              { allocationStore }
+            )
+          )
+
+          const storeAllocation = expect(
+            await SpaceBillingQueue.calculateSpaceAllocation(
+              'storeTableStore',
+              instruction,
+              // @ts-ignore TODO: fix this
+              { storeTableStore }
+            )
           )
 
           if (!result[instruction.customer]) {
@@ -149,14 +164,17 @@ async function main() {
             }
           }
 
+          const spaceSize = spaceAllocation.size + storeAllocation.size
+          const storeUsage = spaceAllocation.usage + spaceAllocation.usage
+
           result[instruction.customer].spaceAllocations.push({
             [instruction.space]: {
-              size: spaceAllocation.size,
-              usage: spaceAllocation.usage,
+              size: spaceSize,
+              usage: storeUsage,
             },
           })
-          result[instruction.customer].totalAllocation += spaceAllocation.size
-          result[instruction.customer].totalUsage += spaceAllocation.usage
+          result[instruction.customer].totalAllocation += spaceSize
+          result[instruction.customer].totalUsage += storeUsage
         }),
         { concurrency }
       )

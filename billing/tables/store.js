@@ -1,15 +1,14 @@
 import { createStoreGetterClient, createStoreListerClient } from './client.js'
-import { lister, decode, encodeKey } from '../data/allocations.js'
-import { allocationTableProps } from '../../upload-api/tables/index.js'
+import { lister, decode, encodeKey } from '../data/store.js'
+import { storeTableProps } from '../../upload-api/tables/index.js'
 
-export { allocationTableProps }
-
+export { storeTableProps }
 /**
  * @param {{ region: string } | import('@aws-sdk/client-dynamodb').DynamoDBClient} conf
  * @param {{ tableName: string }} context
- * @returns {import('../lib/api').AllocationStore}
+ * @returns {import('../lib/api.js').StoreTableStore}
  */
-export const createAllocationStore = (conf, { tableName }) => ({
+export const createStoreTableStore = (conf, { tableName }) => ({
   ...createStoreGetterClient(conf, { tableName, encodeKey, decode }),
   ...createStoreListerClient(conf, {
     tableName,

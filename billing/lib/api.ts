@@ -169,6 +169,26 @@ export interface AllocationSnapshot {
   }
 }
 
+export interface StoreTable {
+  /** Space DID (did:key:...). */
+  space: ConsumerDID
+  link: Link // TODO: should this be CARLink? how to validate using Schema?
+  /** UCAN invocation that caused the size change. */
+  invocation: Link
+  /** Time the record was added to the database. */
+  insertedAt: Date
+  /** Number of bytes that were added to the space. */
+  size: bigint
+  issuer?: DID
+}
+
+export interface StoreTableKey { link: string }
+export interface StoreTableListKey { space: ConsumerDID, insertedAt?: Date}
+
+export type StoreTableStore = 
+  & StoreGetter<StoreTableKey, StoreTable>
+  & StoreLister<StoreTableListKey, StoreTable>  
+
 // Billing queues /////////////////////////////////////////////////////////////
 
 /**
