@@ -80,7 +80,7 @@ const result = {}
 const args = process.argv.slice(2)
 const { from, to, customer } = parseArgs(args)
 
-async function main() {
+export async function main() {
   /** @type CustomerBillingInstruction[] */
   let customerBillingInstructions = []
 

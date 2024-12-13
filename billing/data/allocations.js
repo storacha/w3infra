@@ -3,6 +3,7 @@ import { DecodeFailure, EncodeFailure, Schema } from './lib.js'
 
 /**
  * @typedef {import('../lib/api').Allocation} Allocation
+ * @typedef {import('../lib/api').AllocationSpaceInsertedAtIndex} AllocationSpaceInsertedAtIndex
  * @typedef {import('../types').InferStoreRecord<Allocation>} AllocationStoreRecord
  * @typedef {import('../lib/api').AllocationKey} AllocationKey
  * @typedef {import('../lib/api').AllocationListKey} AllocationListKey
@@ -81,5 +82,22 @@ export const lister = {
       },
     }
   },
-  decode,
+  /** @type {import('../lib/api').Decoder<StoreRecord, AllocationSpaceInsertedAtIndex>} */
+  decode: (input) => {
+    try {
+      return {
+        ok: {
+          space: Schema.did().from(input.space),
+          insertedAt: new Date(input.insertedAt),
+          size: BigInt(input.size),
+        },
+      }
+    } catch (/** @type {any} */ err) {
+      return {
+        error: new DecodeFailure(`decoding allocation record: ${err.message}`, {
+          cause: err,
+        }),
+      }
+    }
+  },
 }

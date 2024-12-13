@@ -14,16 +14,7 @@ export const storeTableProps = {
   // space + link must be unique to satisfy index constraint
   primaryIndex: { partitionKey: 'space', sortKey: 'link' },
   globalIndexes: {
-    cid: { 
-      partitionKey: 'link', 
-      sortKey: 'space', 
-      projection: ['space', 'insertedAt'] 
-    },
-    'space-insertedAt-index': {
-      partitionKey: 'space',
-      sortKey: 'insertedAt',
-      projection: ['multihash', 'cause', 'size']
-    }
+    cid: { partitionKey: 'link', sortKey: 'space', projection: ['space', 'insertedAt'] }
   }
 }
 
@@ -45,30 +36,16 @@ export const uploadTableProps = {
 /** @type TableProps */
 export const allocationTableProps = {
   fields: {
-    /** Space DID (did:key:...). */
-    space: 'string',       
-     /** Represents a multihash digest which carries information about the hashing algorithm and an actual hash digest. */
+    space: 'string',        // `did:key:space`
     multihash: 'string',         // `bagy...1`
-     /** Number of bytes that were added to the space. */
-    size: 'number',   
-    /** CID of invcation UCAN */      
-    cause: 'string',
-     /** ISO timestamp we created the invoice. */
-    insertedAt: 'string',   
+    size: 'number',         // `101`
+    invocation: 'string',   // `baf...ucan` (CID of invcation UCAN)
+    insertedAt: 'string',   // `2022-12-24T...`
   },
   // space + link must be unique to satisfy index constraint
   primaryIndex: { partitionKey: 'space', sortKey: 'multihash' },
   globalIndexes: {
-    multihash: { 
-      partitionKey: 'multihash', 
-      sortKey: 'space', 
-      projection: ['space', 'insertedAt'] 
-    },
-    'space-insertedAt-index': {
-      partitionKey: 'space',
-      sortKey: 'insertedAt',
-      projection: ['multihash', 'cause', 'size']
-    }
+    multihash: { partitionKey: 'multihash', sortKey: 'space', projection: ['space', 'insertedAt'] }
   }
 }
 
