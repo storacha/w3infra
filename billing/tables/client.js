@@ -154,11 +154,7 @@ export const createStoreGetterClient = (conf, context) => {
  * @template {object} K
  * @template V
  * @param {{ region: string } | import('@aws-sdk/client-dynamodb').DynamoDBClient} conf
- * @param {object} context
- * @param {string} context.tableName
- * @param {import('../lib/api').Encoder<K, import('../types').StoreRecord>} context.encodeKey
- * @param {import('../lib/api').Decoder<import('../types').StoreRecord, V>} context.decode
- * @param {string} [context.indexName]
+ * @param {import('../lib/api').CreateStoreListerContext<K,V>} context
  * @returns {import('../lib/api').StoreLister<K, V>}
  */
 export const createStoreListerClient = (conf, context) => {
@@ -168,19 +164,25 @@ export const createStoreListerClient = (conf, context) => {
       const encoding = context.encodeKey(key)
       if (encoding.error) return encoding
 
-      /** @type {Record<string, import('@aws-sdk/client-dynamodb').Condition>|undefined} */
-      let conditions
-      for (const [k, v] of Object.entries(encoding.ok)) {
-        conditions = conditions ?? {}
-        conditions[k] = {
-          // Multiple conditions imply a sort key so must be GE in order to
+      /** @type {Record<string, import('@aws-sdk/client-dynamodb').Condition>} */
+      const conditions = {}
+      const conditionsInput = Object.entries(encoding.ok)
+      for (const [k, v] of conditionsInput) {
+        const comparisonOperator =
+          context.comparisonOperator?.[k] ||
+          // Default: Multiple conditions imply a sort key so must be GE in order to
           // list more than one item. Otherwise this would be a StoreGetter.
-          ComparisonOperator: Object.keys(conditions).length ? 'GE' : 'EQ',
-          AttributeValueList: [convertToAttr(v)]
+          (Object.keys(conditions).length ? 'GE' : 'EQ')
+
+        const attributeValueList = Array.isArray(v) ? v.map(v=>convertToAttr(v)) : [convertToAttr(v)]
+
+        conditions[k] = {
+          ComparisonOperator: comparisonOperator,
+          AttributeValueList: attributeValueList,
         }
       }
 
-      const cmd = conditions
+      const cmd = conditionsInput.length
         ? new QueryCommand({
           TableName: context.tableName,
           IndexName: context.indexName,

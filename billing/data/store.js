@@ -8,7 +8,7 @@ import { DecodeFailure, EncodeFailure, Schema } from './lib.js'
  * @typedef {import('../lib/api.js').StoreTableKey} StoreTableKey
  * @typedef {import('../lib/api.js').StoreTableListKey} StoreTableListKey
  * @typedef {import('../types.js').InferStoreRecord<StoreTableKey>} StoreTableKeyStoreRecord
- * @typedef {{ space: string, insertedAt?: string }} StoreTableListStoreRecord
+ * @typedef {{ space: string, insertedAt?: string[] }} StoreTableListStoreRecord
  * @typedef {import('../types.js').StoreRecord} StoreRecord
  */
 
@@ -72,12 +72,14 @@ export const decode = (input) => {
 }
 
 export const lister = {
+  /** @type Record<string, import('@aws-sdk/client-dynamodb').ComparisonOperator> */
+  comparisonOperator: { space: 'EQ', insertedAt: 'BETWEEN' },
   /** @type {import('../lib/api.js').Encoder<StoreTableListKey, StoreTableListStoreRecord>} */
   encodeKey: (input) => {
     /** @type  StoreTableListStoreRecord */
     const conditions = { space: input.space.toString() }
     if (input.insertedAt) {
-      conditions.insertedAt = input.insertedAt.toISOString()
+      conditions.insertedAt = input.insertedAt.map(value => value.toISOString())
     }
     return {
       ok: {

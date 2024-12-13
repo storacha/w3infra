@@ -147,10 +147,10 @@ export const calculateSpaceAllocation = async (store, instruction, ctx) => {
   let cursor
   let size = 0n
   let usage = 0n
-  let done = false
+  // let done = false
   while(true){
     const {ok: allocations, error} = await ctxStore.list(
-      {space: instruction.space, insertedAt: instruction.from}, 
+      {space: instruction.space, insertedAt: [instruction.from, instruction.to]}, // NOTE: insertedAt between from and to 
       {cursor, size: 100}
     )
 
@@ -158,21 +158,22 @@ export const calculateSpaceAllocation = async (store, instruction, ctx) => {
   
     for (const allocation of allocations.results){
       /**
-       * NOTE: Currently, the query only retrieves items with 'insertedAt' values greater than 'instruction.from'.
+       * NOTE: Currently, the query only retrieves items with 'insertedAt' values greater or equal than 'instruction.from'.
        * This limitation is due to the 'ComparisonOperator' being hardcoded in the 'createdStoreListerClient'.
        * As a result, we need to programmatically filter out allocations with 'insertedAt' dates after 'to'. 
        * A similar filtering process is also applied in the 'iterateSpaceDiffs' function.
        * TODO: discuss the possibility of refactoring the 'createdStoreListerClient'.
        */
-      if(allocation.insertedAt.getTime() > instruction.to.getTime()){
-        done = true
-        break
-      }
+      // if(allocation.insertedAt.getTime() > instruction.to.getTime()){
+      //   done = true
+      //   break
+      // }
       size += allocation.size
       usage += allocation.size * BigInt(instruction.to.getTime() - allocation.insertedAt.getTime())
     }
 
-    if (done || !allocations.cursor) break
+    // if (done || !allocations.cursor) break
+    if (!allocations.cursor) break
     cursor = allocations.cursor
   }
 

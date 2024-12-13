@@ -156,7 +156,7 @@ export interface Allocation {
 
 export type AllocationSpaceInsertedAtIndex = Omit< Allocation, "multihash" | "cause" >
 export interface AllocationKey { multihash: string }
-export interface AllocationListKey { space: ConsumerDID, insertedAt?: Date}
+export interface AllocationListKey { space: ConsumerDID, insertedAt?: [Date] | [Date, Date] }
 
 export type AllocationStore =
   & StoreGetter<AllocationKey, Allocation>
@@ -188,7 +188,7 @@ export interface StoreTable {
 
 export type StoreTableSpaceInsertedAtIndex = Omit< StoreTable, "invocation" | "link" | "issuer" >
 export interface StoreTableKey { link: string }
-export interface StoreTableListKey { space: ConsumerDID, insertedAt?: Date}
+export interface StoreTableListKey { space: ConsumerDID, insertedAt?: [Date] | [Date, Date] }
 
 export type StoreTableStore = 
   & StoreGetter<StoreTableKey, StoreTable>
@@ -431,9 +431,11 @@ export interface QueueAdder<T> {
   /** Adds a message to the end of the queue. */
   add: (message: T) => Promise<Result<Unit, EncodeFailure|QueueOperationFailure|Failure>>
 }
+
+export type QueryStoreRecord = Record<string, string|number|string[]>
 export interface CreateStoreListerContext<K,V> {
   tableName: string
-  encodeKey: Encoder<K, StoreRecord>
+  encodeKey: Encoder<K, StoreRecord> | Encoder<K, QueryStoreRecord>
   decode: Decoder<StoreRecord, V>
   indexName?: string
   comparisonOperator?: Record<string, ComparisonOperator>
