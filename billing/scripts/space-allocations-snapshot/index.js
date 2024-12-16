@@ -330,7 +330,7 @@ async function exportSnapshotToCSV() {
 
   await writeToCsvFile(
     `./snapshot-${toDateString(from)}_${toDateString(to)}.csv`,
-    ['Provider', 'Space', 'Size', 'recordedAt', 'insertedAt'],
+    ['provider', 'space', 'size', 'recordedAt', 'insertedAt'],
     snapshot
   )
 }
