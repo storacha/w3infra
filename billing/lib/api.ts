@@ -1,6 +1,4 @@
 import { DID, Link, URI, LinkJSON, Result, Capabilities, Unit, Failure, UnknownLink } from '@ucanto/interface'
-import { ComparisonOperator } from '@aws-sdk/client-dynamodb'
-
 import { StoreRecord } from '../types'
 
 // Billing stores /////////////////////////////////////////////////////////////
@@ -156,11 +154,14 @@ export interface Allocation {
 
 export type AllocationSpaceInsertedAtIndex = Omit< Allocation, "multihash" | "cause" >
 export interface AllocationKey { multihash: string }
-export interface AllocationListKey { space: ConsumerDID, insertedAt?: [Date] | [Date, Date] }
+export interface AllocationListKey { space: ConsumerDID, insertedAt?: Date }
 
 export type AllocationStore =
   & StoreGetter<AllocationKey, Allocation>
   & StoreLister<AllocationListKey, AllocationSpaceInsertedAtIndex>
+  & {
+    listBetween: (space: DID, from: Date, to: Date, options?: Pageable) => Promise<Result<ListSuccess<AllocationSpaceInsertedAtIndex>, EncodeFailure|DecodeFailure|StoreOperationFailure>>
+  }
 
 export interface AllocationSnapshot {
   [customerDID: CustomerDID] : {
@@ -188,11 +189,14 @@ export interface StoreTable {
 
 export type StoreTableSpaceInsertedAtIndex = Omit< StoreTable, "invocation" | "link" | "issuer" >
 export interface StoreTableKey { link: string }
-export interface StoreTableListKey { space: ConsumerDID, insertedAt?: [Date] | [Date, Date] }
+export interface StoreTableListKey { space: ConsumerDID, insertedAt?: Date }
 
 export type StoreTableStore = 
   & StoreGetter<StoreTableKey, StoreTable>
   & StoreLister<StoreTableListKey, StoreTableSpaceInsertedAtIndex>  
+  & {
+    listBetween: (space: DID, from: Date, to: Date, options?: Pageable) => Promise<Result<ListSuccess<StoreTableSpaceInsertedAtIndex>, EncodeFailure|DecodeFailure|StoreOperationFailure>>
+  }
 
 // Billing queues /////////////////////////////////////////////////////////////
 
@@ -431,12 +435,9 @@ export interface QueueAdder<T> {
   /** Adds a message to the end of the queue. */
   add: (message: T) => Promise<Result<Unit, EncodeFailure|QueueOperationFailure|Failure>>
 }
-
-export type QueryStoreRecord = Record<string, string|number|string[]>
 export interface CreateStoreListerContext<K,V> {
   tableName: string
-  encodeKey: Encoder<K, StoreRecord> | Encoder<K, QueryStoreRecord>
+  encodeKey: Encoder<K, StoreRecord>
   decode: Decoder<StoreRecord, V>
   indexName?: string
-  comparisonOperator?: Record<string, ComparisonOperator>
 }

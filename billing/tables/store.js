@@ -1,5 +1,6 @@
 import { createStoreGetterClient, createStoreListerClient } from './client.js'
 import { lister, decode, encodeKey } from '../data/store.js'
+import { listBetweenWithConfig } from './allocations.js'
 
 /**
  * @type {import('sst/constructs').TableProps}
@@ -29,6 +30,9 @@ export const storeTableProps = {
     },
   },
 }
+
+const indexName = 'space-insertedAt-index'
+
 /**
  * @param {{ region: string } | import('@aws-sdk/client-dynamodb').DynamoDBClient} conf
  * @param {{ tableName: string }} context
@@ -38,7 +42,12 @@ export const createStoreTableStore = (conf, { tableName }) => ({
   ...createStoreGetterClient(conf, { tableName, encodeKey, decode }),
   ...createStoreListerClient(conf, {
     tableName,
-    indexName: 'space-insertedAt-index',
+    indexName,
     ...lister,
   }),
+  listBetween: (space, from, to, options) =>
+    listBetweenWithConfig(
+      { conf, tableName, indexName, decode: lister.decode },
+      { space, from, to, options }
+    ),
 })

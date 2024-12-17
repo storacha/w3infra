@@ -164,25 +164,19 @@ export const createStoreListerClient = (conf, context) => {
       const encoding = context.encodeKey(key)
       if (encoding.error) return encoding
 
-      /** @type {Record<string, import('@aws-sdk/client-dynamodb').Condition>} */
-      const conditions = {}
-      const conditionsInput = Object.entries(encoding.ok)
-      for (const [k, v] of conditionsInput) {
-        const comparisonOperator =
-          context.comparisonOperator?.[k] ||
-          // Default: Multiple conditions imply a sort key so must be GE in order to
-          // list more than one item. Otherwise this would be a StoreGetter.
-          (Object.keys(conditions).length ? 'GE' : 'EQ')
-
-        const attributeValueList = Array.isArray(v) ? v.map(v=>convertToAttr(v)) : [convertToAttr(v)]
-
+      /** @type {Record<string, import('@aws-sdk/client-dynamodb').Condition>|undefined} */
+      let conditions
+      for (const [k, v] of Object.entries(encoding.ok)) {
+        conditions = conditions ?? {}
         conditions[k] = {
-          ComparisonOperator: comparisonOperator,
-          AttributeValueList: attributeValueList,
+          // Multiple conditions imply a sort key so must be GE in order to
+          // list more than one item. Otherwise this would be a StoreGetter.
+          ComparisonOperator: Object.keys(conditions).length ? 'GE' : 'EQ',
+          AttributeValueList: [convertToAttr(v)]
         }
       }
 
-      const cmd = conditionsInput.length
+      const cmd = conditions
         ? new QueryCommand({
           TableName: context.tableName,
           IndexName: context.indexName,
