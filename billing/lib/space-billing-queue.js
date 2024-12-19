@@ -1,6 +1,5 @@
 import Big from 'big.js'
-
-const GB = 1024 * 1024 * 1024
+import {GB} from './util.js'
 
 /**
  * @param {import('./api').SpaceDiffListKey & { to: Date }} params
@@ -116,4 +115,61 @@ export const storeSpaceUsage = async (instruction, { size, usage }, ctx) => {
   if (usagePut.error) return usagePut
 
   return { ok: {} }
+}
+
+/**
+ * Calculates the total allocation for the specified space.  
+ * Additionally, it estimates the usage for the space based on the allocation/store values.  
+ * Note: This value is approximate as it doesn’t account for deleted files.
+ *
+ * @typedef {import('./api').AllocationStore} AllocationStore
+ * @typedef {import('./api').StoreTableStore} StoreTableStore
+ * @typedef {{allocationStore: AllocationStore}} AllocationStoreCtx
+ * @typedef {{storeTableStore: StoreTableStore}} StoreTableStoreCtx
+ * 
+ * @param {"allocationStore" | "storeTableStore"} store
+ * @param {import('./api').SpaceBillingInstruction} instruction
+ * @param { AllocationStoreCtx | StoreTableStoreCtx} ctx
+ * @returns {Promise<import('@ucanto/interface').Result<{ size: bigint , usage: bigint}>>}
+ */
+export const calculateSpaceAllocation = async (store, instruction, ctx) => {
+  console.log(`Calculating total allocation for: ${instruction.space}`)
+  console.log(`Provider: ${instruction.provider}`)
+  console.log(`Customer: ${instruction.customer}`)
+  console.log(`Period: ${instruction.from.toISOString()} - ${instruction.to.toISOString()}`)
+
+  /** @type AllocationStore | StoreTableStore */
+  const ctxStore = store === 'allocationStore' ? 
+  /** @type AllocationStoreCtx */ (ctx).allocationStore :
+  /** @type StoreTableStoreCtx */ (ctx).storeTableStore
+
+  /** @type {string|undefined} */
+  let cursor
+  let size = 0n
+  let usage = 0n
+  while(true){
+    const {ok: allocations, error} = await ctxStore.listBetween(
+      instruction.space, 
+      instruction.from, 
+      instruction.to,
+      {cursor, size: 100}
+    )
+
+    if (error) return { error }
+  
+    for (const allocation of allocations.results){
+      size += allocation.size
+      usage += allocation.size * BigInt(instruction.to.getTime() - allocation.insertedAt.getTime())
+    }
+
+    if (!allocations.cursor) break
+    cursor = allocations.cursor
+  }
+
+  console.log(`Total allocation for ${instruction.space}: ${size} bytes`)
+  const duration = instruction.to.getTime() - instruction.from.getTime()
+  const usageGB = new Big(usage.toString()).div(duration).div(GB).toFixed(2)
+  console.log(`Approximate space consumed ${usage} byte/ms (~${usageGB} GiB/month)`)
+  
+  return {ok: {size, usage}}
 }
