@@ -1,10 +1,10 @@
 import Big from 'big.js'
-import { StoreOperationFailure } from '../tables/lib.js'
-import { EndOfQueue } from '../test/helpers/queue.js'
+import { StoreOperationFailure } from '../../tables/lib.js'
+import { EndOfQueue } from '../../test/helpers/queue.js'
 
 /**
  * @template T
- * @returns {import('../lib/api.js').QueueAdder<T> & import('../test/lib/api.js').QueueRemover<T>}
+ * @returns {import('../../lib/api.js').QueueAdder<T> & import('../../test/lib/api.js').QueueRemover<T>}
  */
 export const createMemoryQueue = () => {
   /** @type {T[]} */
@@ -23,7 +23,7 @@ export const createMemoryQueue = () => {
 
 /**
  * @template T
- * @returns {import('../lib/api.js').StorePutter<T> & import('../lib/api.js').StoreLister<any, T> & import('../lib/api.js').StoreGetter<any, T>}
+ * @returns {import('../../lib/api.js').StorePutter<T> & import('../../lib/api.js').StoreLister<any, T> & import('../../lib/api.js').StoreGetter<any, T>}
  */
 export const createMemoryStore = () => {
   /** @type {T[]} */
@@ -64,3 +64,6 @@ export const calculateCost = (product, usage, duration) => {
 
   return info.cost + (quantity * GB * info.overage)
 }
+
+/** @param {Date} d */
+export const toDateString = (d) => d.toISOString().split('T')[0]

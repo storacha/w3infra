@@ -154,11 +154,7 @@ export const createStoreGetterClient = (conf, context) => {
  * @template {object} K
  * @template V
  * @param {{ region: string } | import('@aws-sdk/client-dynamodb').DynamoDBClient} conf
- * @param {object} context
- * @param {string} context.tableName
- * @param {import('../lib/api').Encoder<K, import('../types').StoreRecord>} context.encodeKey
- * @param {import('../lib/api').Decoder<import('../types').StoreRecord, V>} context.decode
- * @param {string} [context.indexName]
+ * @param {import('../lib/api').CreateStoreListerContext<K,V>} context
  * @returns {import('../lib/api').StoreLister<K, V>}
  */
 export const createStoreListerClient = (conf, context) => {

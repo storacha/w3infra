@@ -1,3 +1,5 @@
+export const GB = 1024 * 1024 * 1024
+
 /** @param {string|number|Date} now */
 export const startOfMonth = (now) => {
   const d = new Date(now)

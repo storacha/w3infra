@@ -1,4 +1,5 @@
 import { DID, Link, URI, LinkJSON, Result, Capabilities, Unit, Failure, UnknownLink } from '@ucanto/interface'
+import { StoreRecord } from '../types'
 
 // Billing stores /////////////////////////////////////////////////////////////
 
@@ -137,6 +138,65 @@ export type UsageStore = StorePutter<Usage>
  * Store for egress traffic data.
  */
 export type EgressTrafficEventStore = StorePutter<EgressTrafficData> & StoreLister<EgressTrafficEventListKey, EgressTrafficData>
+
+export interface Allocation {
+  /** Space DID (did:key:...). */
+  space: ConsumerDID
+  /** Represents a multihash digest which carries information about the hashing algorithm and an actual hash digest. */
+  multihash: string
+  /** UCAN invocation that caused the size change. */
+  cause: Link
+  /** Time the record was added to the database. */
+  insertedAt: Date
+  /** Number of bytes that were added to the space. */
+  size: bigint
+}
+
+export type AllocationSpaceInsertedAtIndex = Omit< Allocation, "multihash" | "cause" >
+export interface AllocationKey { multihash: string }
+export interface AllocationListKey { space: ConsumerDID, insertedAt?: Date }
+
+export type AllocationStore =
+  & StoreGetter<AllocationKey, Allocation>
+  & StoreLister<AllocationListKey, AllocationSpaceInsertedAtIndex>
+  & {
+    listBetween: (space: DID, from: Date, to: Date, options?: Pageable) => Promise<Result<ListSuccess<AllocationSpaceInsertedAtIndex>, EncodeFailure|DecodeFailure|StoreOperationFailure>>
+  }
+
+export interface AllocationSnapshot {
+  [customerDID: CustomerDID] : {
+    spaceAllocations: Array<{[spaceDID: ConsumerDID]: {size: bigint, usage: bigint}}>
+    totalAllocation: bigint,
+    totalUsage: bigint,
+    product: string,
+    provider: ProviderDID
+    recordedAt: Date
+  }
+}
+
+export interface StoreTable {
+  /** Space DID (did:key:...). */
+  space: ConsumerDID
+  link: Link // TODO: should this be CARLink? how to validate using Schema?
+  /** UCAN invocation that caused the size change. */
+  invocation: Link
+  /** Time the record was added to the database. */
+  insertedAt: Date
+  /** Number of bytes that were added to the space. */
+  size: bigint
+  issuer?: DID
+}
+
+export type StoreTableSpaceInsertedAtIndex = Omit< StoreTable, "invocation" | "link" | "issuer" >
+export interface StoreTableKey { link: string }
+export interface StoreTableListKey { space: ConsumerDID, insertedAt?: Date }
+
+export type StoreTableStore = 
+  & StoreGetter<StoreTableKey, StoreTable>
+  & StoreLister<StoreTableListKey, StoreTableSpaceInsertedAtIndex>  
+  & {
+    listBetween: (space: DID, from: Date, to: Date, options?: Pageable) => Promise<Result<ListSuccess<StoreTableSpaceInsertedAtIndex>, EncodeFailure|DecodeFailure|StoreOperationFailure>>
+  }
 
 // Billing queues /////////////////////////////////////////////////////////////
 
@@ -374,4 +434,10 @@ export interface StoreLister<K extends {}, V> {
 export interface QueueAdder<T> {
   /** Adds a message to the end of the queue. */
   add: (message: T) => Promise<Result<Unit, EncodeFailure|QueueOperationFailure|Failure>>
+}
+export interface CreateStoreListerContext<K,V> {
+  tableName: string
+  encodeKey: Encoder<K, StoreRecord>
+  decode: Decoder<StoreRecord, V>
+  indexName?: string
 }
