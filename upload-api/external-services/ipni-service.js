@@ -15,7 +15,7 @@ const CONCURRENCY = 10
 /**
  * @param {{ url: URL, region: string }} blockAdvertisementPublisherQueueConfig 
  * @param {{ url: URL, region: string }} blockIndexWriterQueueConfig
- * @param {import('@web3-storage/upload-api').BlobsStorage} blobsStorage
+ * @param {import('@storacha/upload-api').BlobsStorage} blobsStorage
  */
 export const createIPNIService = (blockAdvertisementPublisherQueueConfig, blockIndexWriterQueueConfig, blobsStorage) => {
   const blockAdvertPublisherQueue = new BlockAdvertisementPublisherQueue({
@@ -32,11 +32,11 @@ export const createIPNIService = (blockAdvertisementPublisherQueueConfig, blockI
 /**
  * @param {BlockAdvertisementPublisherQueue} blockAdvertPublisherQueue
  * @param {BlockIndexWriterQueue} blockIndexWriterQueue
- * @param {import('@web3-storage/upload-api').BlobsStorage} blobsStorage
- * @returns {import('@web3-storage/upload-api').IPNIService}
+ * @param {import('@storacha/upload-api').BlobsStorage} blobsStorage
+ * @returns {import('@storacha/upload-api').IPNIService}
  */
 export const useIPNIService = (blockAdvertPublisherQueue, blockIndexWriterQueue, blobsStorage) => ({
-  /** @param {import('@web3-storage/upload-api').ShardedDAGIndex} index */
+  /** @param {import('@storacha/upload-api').ShardedDAGIndex} index */
   async publish (index) {
     /** @type {import('multiformats').MultihashDigest[]} */
     const entries = []

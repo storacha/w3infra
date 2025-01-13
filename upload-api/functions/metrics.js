@@ -15,7 +15,7 @@ import {
   AGGREGATE_OFFER,
   AGGREGATE_ACCEPT,
   METRICS_NAMES as FILECOIN_METRIC_NAMES
-} from '@web3-storage/w3infra-filecoin/constants.js'
+} from '@storacha/upload-service-infra-filecoin/constants.js'
 
 import { createMetricsTable } from '../tables/metrics.js'
 

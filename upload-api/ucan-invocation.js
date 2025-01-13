@@ -1,6 +1,6 @@
 import * as CAR from '@ucanto/transport/car'
 import * as Link from 'multiformats/link'
-import { AgentMessage } from '@web3-storage/upload-api'
+import { AgentMessage } from '@storacha/upload-api'
 
 import {
   BadBodyError,
@@ -117,6 +117,6 @@ export const replaceAllLinkValues = (value) => {
  * @param {Link} link
  */
 export const toJSON = (link) =>
-  /** @type {import('@web3-storage/upload-api').LinkJSON<Link>} */ ({
+  /** @type {import('@storacha/upload-api').LinkJSON<Link>} */ ({
     '/': link.toString(),
   })

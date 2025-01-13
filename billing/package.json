@@ -1,5 +1,5 @@
 {
-  "name": "@web3-storage/w3infra-billing",
+  "name": "@storacha/upload-service-infra-billing",
   "version": "0.0.0",
   "type": "module",
   "scripts": {
@@ -14,7 +14,6 @@
     "@sentry/serverless": "^7.74.1",
     "@ucanto/interface": "^10.0.1",
     "@ucanto/server": "^10.0.0",
-    "@web3-storage/capabilities": "^17.4.1",
     "big.js": "^6.2.1",
     "lru-cache": "^11.0.0",
     "multiformats": "^13.1.0",

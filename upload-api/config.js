@@ -24,10 +24,10 @@ export function getServiceSigner(config) {
  * Given a string, parse into provider ServiceDIDs. 
  * 
  * @param {string} serviceDids a comma-separated string of ServiceDIDs
- * @returns {import('@web3-storage/upload-api').ServiceDID[]}
+ * @returns {import('@storacha/upload-api').ServiceDID[]}
  */
 export function parseServiceDids(serviceDids) {
-  return /** @type {import('@web3-storage/upload-api').ServiceDID[]} */(
+  return /** @type {import('@storacha/upload-api').ServiceDID[]} */(
     serviceDids.split(',').map(s => {
       const did = DID.parse(s.trim()).did()
       if (!did.startsWith('did:web:')) {

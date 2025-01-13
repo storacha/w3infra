@@ -1,4 +1,4 @@
-import * as StorefrontCaps from '@web3-storage/capabilities/filecoin/storefront'
+import * as StorefrontCaps from '@storacha/capabilities/filecoin/storefront'
 
 import * as DID from '@ipld/dag-ucan/did'
 import { Piece } from '@web3-storage/data-segment'

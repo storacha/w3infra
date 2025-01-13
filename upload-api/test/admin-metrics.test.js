@@ -1,7 +1,7 @@
 import { testMetrics as test } from './helpers/context.js'
 
-import * as BlobCapabilities from '@web3-storage/capabilities/blob'
-import * as UploadCapabilities from '@web3-storage/capabilities/upload'
+import * as BlobCapabilities from '@storacha/capabilities/blob'
+import * as UploadCapabilities from '@storacha/capabilities/upload'
 import * as Signer from '@ucanto/principal/ed25519'
 import { adminMetricsTableProps, allocationTableProps } from '../tables/index.js'
 import { METRICS_NAMES } from '../constants.js'

@@ -3,9 +3,9 @@ import * as CAR from '@ucanto/transport/car'
 import * as Signer from '@ucanto/principal/ed25519'
 import * as UcantoClient from '@ucanto/client'
 
-import { stringToDelegation } from '@web3-storage/access/encoding';
-import { connect, createServer } from '@web3-storage/upload-api';
-import { DebugEmail } from '@web3-storage/upload-api/test';
+import { stringToDelegation } from '@storacha/access/encoding';
+import { connect, createServer } from '@storacha/upload-api';
+import { DebugEmail } from '@storacha/upload-api/test';
 import { tableProps as claimsTableProps } from '@web3-storage/content-claims-infra/lib/store'
 import {
   createBucket,
@@ -182,10 +182,10 @@ export const encodeAgentMessage = async (source) => {
 
 
 /**
- * @typedef {import('@web3-storage/upload-api').Assert} Assert
+ * @typedef {import('@storacha/upload-api').Assert} Assert
  * @typedef {(assert: Assert, context: TestContext) => unknown} Test
  * @typedef {Record<string, Test>} Tests
- * @typedef {import('@web3-storage/upload-api').UcantoServerTestContext} UploadAPITestContext
+ * @typedef {import('@storacha/upload-api').UcantoServerTestContext} UploadAPITestContext
  * @typedef {UploadAPITestContext & {
  * dynamo: import('@aws-sdk/client-dynamodb').DynamoDBClient
  * sqs: {
@@ -329,7 +329,7 @@ export async function executionContextToUcantoTestServerContext(t) {
     tableName: await createTable(dynamo, claimsTableProps)
   })
 
-  /** @type {import('@web3-storage/upload-api').UcantoServerContext} */
+  /** @type {import('@storacha/upload-api').UcantoServerContext} */
   const serviceContext = {
     id,
     signer: id,
@@ -413,7 +413,7 @@ export async function executionContextToUcantoTestServerContext(t) {
 
 /**
  * @param {URL} confirmationUrl
- * @returns {Promise<API.Invocation<import('@web3-storage/capabilities/types').AccessConfirm>>}
+ * @returns {Promise<API.Invocation<import('@storacha/capabilities/types').AccessConfirm>>}
  */
 export async function extractConfirmInvocation(confirmationUrl) {
   const delegation = stringToDelegation(
@@ -426,14 +426,14 @@ export async function extractConfirmInvocation(confirmationUrl) {
     throw new Error(`parsed unexpected delegation from confirmationUrl`)
   }
   const confirm =
-    /** @type {API.Invocation<import('@web3-storage/capabilities/types').AccessConfirm>} */ (
+    /** @type {API.Invocation<import('@storacha/capabilities/types').AccessConfirm>} */ (
       delegation
     )
   return confirm
 }
 
 /**
- * @param {API.ConnectionView<import('@web3-storage/access').Service>} connection
+ * @param {API.ConnectionView<import('@storacha/access').Service>} connection
  * @param {{ url: string|URL }} confirmation
  */
 export async function confirmConfirmationUrl(connection, confirmation) {

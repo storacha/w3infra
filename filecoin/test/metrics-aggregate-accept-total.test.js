@@ -2,9 +2,9 @@ import { testConsumerWithBucket as test } from './helpers/context.js'
 
 import { CBOR } from '@ucanto/core'
 import * as Signer from '@ucanto/principal/ed25519'
-import * as DealerCapabilities from '@web3-storage/capabilities/filecoin/dealer'
-import * as StoreCapabilities from '@web3-storage/capabilities/store'
-import { randomAggregate } from '@web3-storage/filecoin-api/test'
+import * as DealerCapabilities from '@storacha/capabilities/filecoin/dealer'
+import * as StoreCapabilities from '@storacha/capabilities/store'
+import { randomAggregate } from '@storacha/filecoin-api/test'
 
 import { updateAggregateAcceptTotal } from '../metrics.js'
 import { METRICS_NAMES, STREAM_TYPE } from '../constants.js'

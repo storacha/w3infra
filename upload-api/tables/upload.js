@@ -10,9 +10,9 @@ import { RecordNotFound } from './lib.js'
 import { getDynamoClient } from '../../lib/aws/dynamo.js'
 
 /**
- * @typedef {import('@web3-storage/upload-api').UploadTable} UploadTable
- * @typedef {import('@web3-storage/upload-api').UploadAddSuccess} UploadAddResult
- * @typedef {import('@web3-storage/upload-api').UploadListItem} UploadListItem
+ * @typedef {import('@storacha/upload-api').UploadTable} UploadTable
+ * @typedef {import('@storacha/upload-api').UploadAddSuccess} UploadAddResult
+ * @typedef {import('@storacha/upload-api').UploadListItem} UploadListItem
  */
 
 /**
@@ -43,7 +43,7 @@ export function useUploadTable(dynamoDb, tableName) {
      * Fetch a single upload
      *
      * @param {import('@ucanto/interface').DID} space
-     * @param {import('@web3-storage/upload-api').UnknownLink} root
+     * @param {import('@storacha/upload-api').UnknownLink} root
      * @returns {ReturnType<UploadTable['get']>}
      */
     get: async (space, root) => {
@@ -65,7 +65,7 @@ export function useUploadTable(dynamoDb, tableName) {
      * Check if the given data CID is bound to a space DID
      *
      * @param {import('@ucanto/interface').DID} space
-     * @param {import('@web3-storage/upload-api').UnknownLink} root
+     * @param {import('@storacha/upload-api').UnknownLink} root
      * @returns {ReturnType<UploadTable['exists']>}
      */
     exists: async (space, root) => {
@@ -88,7 +88,7 @@ export function useUploadTable(dynamoDb, tableName) {
     /**
      * Link a root data CID to a car CID shard in a space DID.
      *
-     * @typedef {import('@web3-storage/upload-api').UploadAddInput} UploadAddInput
+     * @typedef {import('@storacha/upload-api').UploadAddInput} UploadAddInput
      *
      * @param {UploadAddInput} item
      * @returns {ReturnType<UploadTable['upsert']>}
@@ -140,7 +140,7 @@ export function useUploadTable(dynamoDb, tableName) {
      * Remove an upload from an account
      *
      * @param {import('@ucanto/interface').DID} space
-     * @param {import('@web3-storage/upload-api').UnknownLink} root
+     * @param {import('@storacha/upload-api').UnknownLink} root
      * @returns {ReturnType<UploadTable['remove']>}
      */
     remove: async (space, root) => {
@@ -173,7 +173,7 @@ export function useUploadTable(dynamoDb, tableName) {
      * List all CARs bound to an account
      *
      * @param {string} space
-     * @param {import('@web3-storage/upload-api').ListOptions} [options]
+     * @param {import('@storacha/upload-api').ListOptions} [options]
      * @returns {ReturnType<UploadTable['list']>}
      */
     list: async (space, options = {}) => {
@@ -224,7 +224,7 @@ export function useUploadTable(dynamoDb, tableName) {
     /**
      * Get information about a CID.
      * 
-     * @param {import('@web3-storage/upload-api').UnknownLink} link
+     * @param {import('@storacha/upload-api').UnknownLink} link
      * @returns {ReturnType<UploadTable['inspect']>}
      */
     inspect: async (link) => {
@@ -260,7 +260,7 @@ export function useUploadTable(dynamoDb, tableName) {
 export function toUploadAddResult({ root, shards }) {
   return {
     root: CID.parse(root),
-    shards: (shards ? [...shards] : []).map((s) => /** @type {import('@web3-storage/upload-api').CARLink} */ (CID.parse(s))),
+    shards: (shards ? [...shards] : []).map((s) => /** @type {import('@storacha/upload-api').CARLink} */ (CID.parse(s))),
   }
 }
 

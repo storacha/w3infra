@@ -13,8 +13,8 @@ import {
 
 /**
  * @typedef {import('@ucanto/interface').Capability} Capability
- * @typedef {import('@web3-storage/upload-api').StoreRemoveSuccess} StoreRemoveSuccess
- * @typedef {import('@web3-storage/upload-api').BlobRemoveSuccess} BlobRemoveSuccess
+ * @typedef {import('@storacha/upload-api').StoreRemoveSuccess} StoreRemoveSuccess
+ * @typedef {import('@storacha/upload-api').BlobRemoveSuccess} BlobRemoveSuccess
  */
 
 /**

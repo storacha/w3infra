@@ -5,9 +5,9 @@ import * as DAGJson from '@ipld/dag-json'
 
 import { CBOR, CAR } from '@ucanto/core'
 import * as Signer from '@ucanto/principal/ed25519'
-import * as DealerCapabilities from '@web3-storage/capabilities/filecoin/dealer'
-import * as StoreCapabilities from '@web3-storage/capabilities/store'
-import { randomAggregate } from '@web3-storage/filecoin-api/test'
+import * as DealerCapabilities from '@storacha/capabilities/filecoin/dealer'
+import * as StoreCapabilities from '@storacha/capabilities/store'
+import { randomAggregate } from '@storacha/filecoin-api/test'
 import { PutObjectCommand } from '@aws-sdk/client-s3'
 import { Piece } from '@web3-storage/data-segment'
 

@@ -2,13 +2,13 @@ import { connect } from '@ucanto/client'
 import { CAR, HTTP } from '@ucanto/transport'
 import * as DID from '@ipld/dag-ucan/did'
 import * as Signer from '@ucanto/principal/ed25519'
-import { AgentData } from '@web3-storage/access/agent'
-import { Client } from '@web3-storage/w3up-client'
+import { AgentData } from '@storacha/access/agent'
+import { Client } from '@storacha/client'
 import { MailSlurp } from "mailslurp-client"
 import { fileURLToPath } from 'node:url'
 import dotenv from 'dotenv'
 
-import * as BlobCapabilities from '@web3-storage/capabilities/blob'
+import * as BlobCapabilities from '@storacha/capabilities/blob'
 
 dotenv.config({ path: fileURLToPath(new URL('../../.env', import.meta.url)) })
 

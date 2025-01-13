@@ -3,11 +3,11 @@ import { error, ok } from '@ucanto/server'
 import { useIPNIService, BlockAdvertisementPublisherQueue, BlockIndexWriterQueue } from '../../../external-services/ipni-service.js'
 import { createQueue } from '../../helpers/resources.js'
 import { collectQueueMessages } from '../queue.js'
-import { RecordNotFound } from '@web3-storage/upload-api/errors'
+import { RecordNotFound } from '@storacha/upload-api/errors'
 
 /**
  * @param {{ sqs: import('@aws-sdk/client-sqs').SQSClient }} config
- * @param {import('@web3-storage/upload-api').BlobsStorage} blobsStorage
+ * @param {import('@storacha/upload-api').BlobsStorage} blobsStorage
  */
 export const createTestIPNIService = async ({ sqs }, blobsStorage) => {
   const blockAdvertQueueURL = await createQueue(sqs, 'block-advert-publisher')

@@ -6,7 +6,7 @@ import { randomCID, randomDID } from './helpers/random.js'
 import * as Monitor from '../monitor.js'
 
 /**
- * @typedef {{ tableName: string, uploadTable: import('@web3-storage/upload-api').UploadTable }} Context
+ * @typedef {{ tableName: string, uploadTable: import('@storacha/upload-api').UploadTable }} Context
  * @typedef {import('ava').TestFn<import('./helpers/context.js').DynamoContext & Context>} TestFn
  */
 const test = /** @type {TestFn} */ (anyTest)

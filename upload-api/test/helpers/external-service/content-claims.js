@@ -1,5 +1,5 @@
 // eslint-disable-next-line no-unused-vars
-import * as API from '@web3-storage/upload-api/types'
+import * as API from '@storacha/upload-api/types'
 import { connect } from '@ucanto/client'
 import { ed25519 } from '@ucanto/principal'
 import { CAR, HTTP } from '@ucanto/transport'

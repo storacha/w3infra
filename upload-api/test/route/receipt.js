@@ -1,4 +1,4 @@
-import { Console } from "@web3-storage/capabilities"
+import { Console } from "@storacha/capabilities"
 import * as Receipt from "../../functions/receipt.js"
 import { GetObjectCommand } from '@aws-sdk/client-s3'
 import * as CAR from "@ucanto/transport/car"

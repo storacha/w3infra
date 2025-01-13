@@ -1,7 +1,7 @@
 import * as Sentry from '@sentry/serverless'
-import { authorize } from '@web3-storage/upload-api/validate'
+import { authorize } from '@storacha/upload-api/validate'
 import { Config } from 'sst/node/config'
-import * as DidMailto from '@web3-storage/did-mailto'
+import * as DidMailto from '@storacha/did-mailto'
 import { getServiceSigner, parseServiceDids } from '../config.js'
 import { Email } from '../email.js'
 import { createDelegationsTable } from '../tables/delegations.js'
@@ -20,9 +20,9 @@ import * as htmlStoracha from '../html-storacha'
 import * as htmlW3s from '../html-w3s'
 import { createRateLimitTable } from '../tables/rate-limit.js'
 import { createSpaceMetricsTable } from '../tables/space-metrics.js'
-import { createCustomerStore } from '@web3-storage/w3infra-billing/tables/customer'
+import { createCustomerStore } from '@storacha/upload-service-infra-billing/tables/customer'
 
-const html = process.env.HOSTED_ZONE === 'up.web3.storage' ? htmlW3s : htmlStoracha
+const html = process.env.HOSTED_ZONE === 'upload.storacha.network' ? htmlW3s : htmlStoracha
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,

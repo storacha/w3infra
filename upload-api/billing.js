@@ -1,5 +1,5 @@
 import { Failure } from '@ucanto/core'
-import { toEmail } from '@web3-storage/did-mailto'
+import { toEmail } from '@storacha/did-mailto'
 
 export class InvalidSubscriptionState extends Failure {
   /**
@@ -36,13 +36,13 @@ export class BillingProviderUpdateError extends Failure {
 /**
  * 
  * @param {import('stripe').Stripe} stripe
- * @param {import("@web3-storage/w3infra-billing/lib/api").CustomerStore} customerStore
+ * @param {import("@storacha/upload-service-infra-billing/lib/api").CustomerStore} customerStore
  * @returns {import("./types").BillingProvider}
  */
 export function createStripeBillingProvider(stripe, customerStore) {
   return {
     async hasCustomer(customer) {
-      const customersResponse = await stripe.customers.list({ email: toEmail(/** @type {import('@web3-storage/did-mailto').DidMailto} */(customer)) })
+      const customersResponse = await stripe.customers.list({ email: toEmail(/** @type {import('@storacha/did-mailto').DidMailto} */(customer)) })
       return { ok: (customersResponse.data.length > 0) }
     },
 
@@ -58,7 +58,7 @@ export function createStripeBillingProvider(stripe, customerStore) {
           { error: new InvalidSubscriptionState(`could not find Stripe price with lookup_key ${plan} - cannot set plan`) }
         )
 
-        const email = toEmail(/** @type {import('@web3-storage/did-mailto').DidMailto} */(customerDID))
+        const email = toEmail(/** @type {import('@storacha/did-mailto').DidMailto} */(customerDID))
         const customers = await stripe.customers.list({ email, expand: ['data.subscriptions'] })
         if (customers.data.length !== 1) return (
           { error: new InvalidSubscriptionState(`found ${customers.data.length} Stripe customer(s) with email ${email} - cannot set plan`) }

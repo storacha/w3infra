@@ -1,6 +1,6 @@
 import * as Sentry from '@sentry/serverless'
 import { Config } from 'sst/node/config'
-import * as storefrontEvents from '@web3-storage/filecoin-api/storefront/events'
+import * as storefrontEvents from '@storacha/filecoin-api/storefront/events'
 import * as DID from '@ipld/dag-ucan/did'
 import * as Delegation from '@ucanto/core/delegation'
 import { fromString } from 'uint8arrays/from-string'

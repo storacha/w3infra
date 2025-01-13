@@ -10,7 +10,7 @@ import { CID } from 'multiformats/cid'
 import {
   bytesToDelegations,
   delegationsToBytes
-} from '@web3-storage/access/encoding'
+} from '@storacha/access/encoding'
 // eslint-disable-next-line no-unused-vars
 import * as Ucanto from '@ucanto/interface'
 import { Failure } from '@ucanto/server'
@@ -63,7 +63,7 @@ export function createDelegationsTable (region, tableName, { bucket, invocationB
  * @param {import('../types').DelegationsBucket} deps.bucket
  * @param {import('../types').InvocationBucket} deps.invocationBucket
  * @param {import('../types').WorkflowBucket} deps.workflowBucket
- * @returns {import('@web3-storage/upload-api').DelegationsStorage}
+ * @returns {import('@storacha/upload-api').DelegationsStorage}
  */
 export function useDelegationsTable (dynamoDb, tableName, { bucket, invocationBucket, workflowBucket }) {
   return {

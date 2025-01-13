@@ -1,6 +1,6 @@
 import { base64pad } from 'multiformats/bases/base64'
 import { base58btc } from 'multiformats/bases/base58'
-import { BlobNotFound } from '@web3-storage/upload-api/blob'
+import { BlobNotFound } from '@storacha/upload-api/blob'
 import { ok, error } from '@ucanto/server'
 import {
   HeadObjectCommand,
@@ -11,8 +11,8 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { getS3Client } from '../../lib/aws/s3.js'
 
 /**
- * @typedef {import('@web3-storage/upload-api/types').BlobsStorage} BlobsStorage
- * @typedef {import('@web3-storage/upload-api').BlobRetriever} BlobRetriever
+ * @typedef {import('@storacha/upload-api/types').BlobsStorage} BlobsStorage
+ * @typedef {import('@storacha/upload-api').BlobRetriever} BlobRetriever
  * @typedef {import('@ucanto/interface').Failure} Failure
  * @typedef {import('@ucanto/interface').Result<boolean, Failure>} HasResult
  */

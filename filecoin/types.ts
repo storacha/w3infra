@@ -4,7 +4,7 @@ import {
   Principal,
   Proof,
 } from '@ucanto/interface'
-import { PieceRecord, PieceRecordKey } from '@web3-storage/filecoin-api/storefront/api'
+import { PieceRecord, PieceRecordKey } from '@storacha/filecoin-api/storefront/api'
 
 export interface FilecoinMetricsStore {
   incrementTotal: (metricName: string, n: number) => Promise<void>

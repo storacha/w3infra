@@ -26,7 +26,7 @@ export function createCarStore(region, bucketName, options) {
 export function useCarStore(s3, bucketName) {
   return {
     /**
-     * @param {import('@web3-storage/upload-api').UnknownLink} link
+     * @param {import('@storacha/upload-api').UnknownLink} link
      */
     has: async (link) => {
       const cmd = new HeadObjectCommand({
@@ -49,7 +49,7 @@ export function useCarStore(s3, bucketName) {
      * Create a presigned s3 url allowing the recipient to upload
      * only the CAR that matches the provided Link
      *
-     * @param {import('@web3-storage/upload-api').UnknownLink} link
+     * @param {import('@storacha/upload-api').UnknownLink} link
      * @param {number} size
      */
     createUploadUrl: async (link, size) => {
@@ -105,7 +105,7 @@ export function useCarStore(s3, bucketName) {
  * store#createUploadUrl is from first store.
  * store#has will check stores in order until 0-1 `true` are found.
  * 
- * @template {import('@web3-storage/upload-api').CarStoreBucket} T
+ * @template {import('@storacha/upload-api').CarStoreBucket} T
  * @param {T} carStore
  * @param {T[]} moreCarStores
  */
@@ -140,7 +140,7 @@ function composeSome(...hasFunctions) {
  * car store backed by a simple map. useful for testing.
  * 
  * @param {Map<import('multiformats').UnknownLink, any>} map
- * @returns {import('@web3-storage/upload-api').CarStoreBucket}
+ * @returns {import('@storacha/upload-api').CarStoreBucket}
  */
 export function createMapCarStore(map=new Map) {
   return {

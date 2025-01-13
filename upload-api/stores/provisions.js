@@ -7,7 +7,7 @@ import { CBOR, Failure } from '@ucanto/server'
  * uses a CID generated from `consumer` which ensures a space
  * can be provisioned at most once.
  * 
- * @param {import('@web3-storage/upload-api').Provision} item 
+ * @param {import('@storacha/upload-api').Provision} item 
  * @returns string
  */
 export const createProvisionSubscriptionId = async ({ customer, consumer }) =>
@@ -18,7 +18,7 @@ export const createProvisionSubscriptionId = async ({ customer, consumer }) =>
  * @param {import('../types').ConsumerTable} consumerTable
  * @param {import('../types').SpaceMetricsTable} spaceMetricsTable
  * @param {import('@ucanto/interface').DID<'web'>[]} services
- * @returns {import('@web3-storage/upload-api').ProvisionsStorage}
+ * @returns {import('@storacha/upload-api').ProvisionsStorage}
  */
 export function useProvisionStore (subscriptionTable, consumerTable, spaceMetricsTable, services) {
   return {
@@ -123,9 +123,9 @@ export function useProvisionStore (subscriptionTable, consumerTable, spaceMetric
         consumerTable.getBySubscription(provider, subscription)
       ])
       if (subscriptionRecord) {
-        /** @type {import('@web3-storage/upload-api/dist/src/types/provisions').Subscription} */
+        /** @type {import('@storacha/upload-api/dist/src/types/provisions').Subscription} */
         const result = {
-          customer: /** @type {import('@web3-storage/upload-api').AccountDID} */(subscriptionRecord.customer)
+          customer: /** @type {import('@storacha/upload-api').AccountDID} */(subscriptionRecord.customer)
         }
         if (consumerRecord) {
           result.consumer = /** @type {import('@ucanto/interface').DIDKey} */(consumerRecord.consumer)

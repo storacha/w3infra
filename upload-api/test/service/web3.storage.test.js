@@ -1,5 +1,5 @@
 /* eslint-disable no-loop-func, no-nested-ternary, no-only-tests/no-only-tests */
-import { Web3Storage } from '@web3-storage/upload-api/test'
+import { Web3Storage } from '@storacha/upload-api/test'
 import { test } from '../helpers/context.js'
 import {
   createS3,

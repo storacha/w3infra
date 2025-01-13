@@ -1,6 +1,6 @@
-import * as ServiceBlobCaps from '@web3-storage/capabilities/web3.storage/blob'
-import * as BlobCaps from '@web3-storage/capabilities/blob'
-import * as StoreCaps from '@web3-storage/capabilities/store'
+import * as ServiceBlobCaps from '@storacha/capabilities/web3.storage/blob'
+import * as SpaceBlobCaps from '@storacha/capabilities/space/blob'
+import * as StoreCaps from '@storacha/capabilities/store'
 
 /**
  * Filters UCAN stream messages that are receipts for invocations that alter
@@ -22,7 +22,7 @@ export const findSpaceUsageDeltas = messages => {
     if (isReceiptForCapability(message, ServiceBlobCaps.allocate) && isServiceBlobAllocateSuccess(message.out)) {
       resource = message.value.att[0].nb?.space
       size = message.out.ok.size
-    } else if (isReceiptForCapability(message, BlobCaps.remove) && isBlobRemoveSuccess(message.out)) {
+    } else if (isReceiptForCapability(message, SpaceBlobCaps.remove) && isSpaceBlobRemoveSuccess(message.out)) {
       resource = /** @type {import('@ucanto/interface').DID} */ (message.value.att[0].with)
       size = -message.out.ok.size
     // TODO: remove me LEGACY store/add
@@ -118,7 +118,7 @@ const isReceipt = m => m.type === 'receipt'
 
 /**
  * @param {import('@ucanto/interface').Result} r
- * @returns {r is { ok: import('@web3-storage/capabilities/types').BlobAllocateSuccess }}
+ * @returns {r is { ok: import('@storacha/capabilities/types').BlobAllocateSuccess }}
  */
 const isServiceBlobAllocateSuccess = r =>
   !r.error &&
@@ -129,9 +129,9 @@ const isServiceBlobAllocateSuccess = r =>
 
 /**
  * @param {import('@ucanto/interface').Result} r
- * @returns {r is { ok: import('@web3-storage/capabilities/types').BlobRemoveSuccess }}
+ * @returns {r is { ok: import('@storacha/capabilities/types').SpaceBlobRemoveSuccess }}
  */
-const isBlobRemoveSuccess = r =>
+const isSpaceBlobRemoveSuccess = r =>
   !r.error &&
   r.ok != null &&
   typeof r.ok === 'object' &&
@@ -140,7 +140,7 @@ const isBlobRemoveSuccess = r =>
 
 /**
  * @param {import('@ucanto/interface').Result} r
- * @returns {r is { ok: import('@web3-storage/capabilities/types').StoreAddSuccess }}
+ * @returns {r is { ok: import('@storacha/capabilities/types').StoreAddSuccess }}
  */
 const isStoreAddSuccess = r =>
   !r.error &&
@@ -151,7 +151,7 @@ const isStoreAddSuccess = r =>
 
 /**
  * @param {import('@ucanto/interface').Result} r
- * @returns {r is { ok: import('@web3-storage/capabilities/types').StoreRemoveSuccess }}
+ * @returns {r is { ok: import('@storacha/capabilities/types').StoreRemoveSuccess }}
  */
 const isStoreRemoveSuccess = r =>
   !r.error &&

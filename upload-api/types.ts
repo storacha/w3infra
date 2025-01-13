@@ -3,7 +3,7 @@ import { DID, Delegation, Block, UCANLink, ByteView, ReceiptModel, DIDKey, Resul
 import { UnknownLink } from 'multiformats'
 import { CID } from 'multiformats/cid'
 import { Kinesis } from '@aws-sdk/client-kinesis'
-import { AccountDID, ProviderDID, Service, SpaceDID, CarStoreBucket, AllocationsStorage, PlanCreateAdminSessionSuccess, PlanCreateAdminSessionFailure, AgentStore } from '@web3-storage/upload-api'
+import { AccountDID, ProviderDID, Service, SpaceDID, CarStoreBucket, AllocationsStorage, PlanCreateAdminSessionSuccess, PlanCreateAdminSessionFailure, AgentStore } from '@storacha/upload-api'
 
 export type {
   UnknownLink,
@@ -25,7 +25,7 @@ export type {
   Accessor,
   Variant,
   ReceiptLink
-} from '@web3-storage/upload-api'
+} from '@storacha/upload-api'
 
 export interface StoreOperationError extends Error {
   name: 'StoreOperationFailed'

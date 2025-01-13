@@ -5,17 +5,17 @@ import {
   DeleteItemCommand,
 } from '@aws-sdk/client-dynamodb'
 import { marshall, unmarshall } from '@aws-sdk/util-dynamodb'
-import { RecordKeyConflict, RecordNotFound, StorageOperationFailed } from '@web3-storage/upload-api/errors'
+import { RecordKeyConflict, RecordNotFound, StorageOperationFailed } from '@storacha/upload-api/errors'
 import { base58btc } from 'multiformats/bases/base58'
 import * as Link from 'multiformats/link'
 import { getDynamoClient } from '../../lib/aws/dynamo.js'
 
 /**
- * @typedef {import('@web3-storage/upload-api/types').AllocationsStorage} AllocationsStorage
- * @typedef {import('@web3-storage/upload-api/types').BlobAddInput} BlobAddInput
- * @typedef {import('@web3-storage/upload-api/types').BlobListItem} BlobListItem
- * @typedef {import('@web3-storage/upload-api/types').ListOptions} ListOptions
- * @typedef {import('@web3-storage/upload-api/types').DID} DID
+ * @typedef {import('@storacha/upload-api/types').AllocationsStorage} AllocationsStorage
+ * @typedef {import('@storacha/upload-api/types').BlobAddInput} BlobAddInput
+ * @typedef {import('@storacha/upload-api/types').BlobListItem} BlobListItem
+ * @typedef {import('@storacha/upload-api/types').ListOptions} ListOptions
+ * @typedef {import('@storacha/upload-api/types').DID} DID
  */
 
 /**
@@ -47,7 +47,7 @@ export function useAllocationsStorage(dynamoDb, tableName) {
      * Check if the given link CID is bound to the uploader account
      *
      * @param {import('@ucanto/interface').DID} space
-     * @param {import('@web3-storage/upload-api').MultihashDigest} digest
+     * @param {import('@storacha/upload-api').MultihashDigest} digest
      * @returns {ReturnType<AllocationsStorage['exists']>}
      */
     exists: async (space, digest) => {
@@ -66,8 +66,8 @@ export function useAllocationsStorage(dynamoDb, tableName) {
       }
     },
     /**
-     * @param {import('@web3-storage/upload-api').DID} space
-     * @param {import('@web3-storage/upload-api').MultihashDigest} digest
+     * @param {import('@storacha/upload-api').DID} space
+     * @param {import('@storacha/upload-api').MultihashDigest} digest
      * @returns {ReturnType<AllocationsStorage['get']>}
      */
     async get(space, digest) {
@@ -128,8 +128,8 @@ export function useAllocationsStorage(dynamoDb, tableName) {
       return { ok: { blob } }
     },
     /**
-     * @param {import('@web3-storage/upload-api').DID} space
-     * @param {import('@web3-storage/upload-api').MultihashDigest} digest
+     * @param {import('@storacha/upload-api').DID} space
+     * @param {import('@storacha/upload-api').MultihashDigest} digest
      * @returns {ReturnType<AllocationsStorage['remove']>}
      */
     async remove(space, digest) {
@@ -169,7 +169,7 @@ export function useAllocationsStorage(dynamoDb, tableName) {
      * List all CARs bound to an account
      *
      * @param {import('@ucanto/interface').DID} space
-     * @param {import('@web3-storage/upload-api').ListOptions} [options]
+     * @param {import('@storacha/upload-api').ListOptions} [options]
      * @returns {ReturnType<AllocationsStorage['list']>}
      */
     list: async (space, options = {}) => {
@@ -236,8 +236,8 @@ export function toBlobListResult({ multihash, size, insertedAt }) {
 }
 
 /**
- * @param {import('@web3-storage/upload-api').DID} space
- * @param {import('@web3-storage/upload-api').MultihashDigest} digest
+ * @param {import('@storacha/upload-api').DID} space
+ * @param {import('@storacha/upload-api').MultihashDigest} digest
  */
 const getKey = (space, digest) => {
   const multihash58btc = base58btc.encode(digest.bytes)

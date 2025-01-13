@@ -82,7 +82,7 @@ export function useSubscriptionTable (dynamoDb, tableName) {
     /**
      * Get a subscription by ID.
      * 
-     * @param {import('@web3-storage/upload-api').ProviderDID} provider 
+     * @param {import('@storacha/upload-api').ProviderDID} provider 
      * @param {string} subscription 
      * @returns 
      */
