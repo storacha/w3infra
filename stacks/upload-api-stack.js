@@ -177,6 +177,12 @@ export function UploadApiStack({ stack, app }) {
       },
       accessLog: {
         format:'{"requestTime":"$context.requestTime","requestId":"$context.requestId","httpMethod":"$context.httpMethod","path":"$context.path","routeKey":"$context.routeKey","status":$context.status,"responseLatency":$context.responseLatency,"integrationRequestId":"$context.integration.requestId","integrationStatus":"$context.integration.status","integrationLatency":"$context.integration.latency","integrationServiceStatus":"$context.integration.integrationStatus","ip":"$context.identity.sourceIp","userAgent":"$context.identity.userAgent"}'
+      },
+      cors: {
+        allowHeaders: ['*'],
+        allowMethods: ['ANY'],
+        allowOrigins: ['*'],
+        maxAge: '1 day'
       }
     });
   })
