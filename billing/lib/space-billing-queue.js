@@ -63,7 +63,7 @@ export const calculatePeriodUsage = async (instruction, ctx) => {
   let size = snap?.size ?? 0n
   let usage = size * BigInt(instruction.to.getTime() - instruction.from.getTime())
 
-  console.log(`Total size is ${size} bytes @ ${instruction.from.toISOString()}`)
+  console.log(`Total size of ${instruction.space} is ${size} bytes @ ${instruction.from.toISOString()}`)
 
   for await (const page of iterateSpaceDiffs(instruction, ctx)) {
     if (page.error) return page
@@ -74,7 +74,8 @@ export const calculatePeriodUsage = async (instruction, ctx) => {
     }
   }
 
-  console.log(`Total size is ${size} bytes @ ${instruction.to.toISOString()}`)
+  console.log(`Total size of ${instruction.space} is ${size} bytes @ ${instruction.to.toISOString()}`)
+  console.log(`Total usage of ${instruction.space} is ${usage} bytes @ ${instruction.to.toISOString()}`)
 
   return { ok: { size, usage } }
 }
