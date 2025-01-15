@@ -228,7 +228,7 @@ export const test = {
 
     const deltas = findSpaceUsageDeltas(receipts)
     const storeDeltasRes = await storeSpaceUsageDeltas(deltas, ctx)
-    assert.equal(storeDeltasRes.error?.name, 'InsufficientRecords')
+    assert.equal(storeDeltasRes.ok, 'no space diffs to store')
 
     const res = await ctx.spaceDiffStore.list({
       provider: consumer.provider,

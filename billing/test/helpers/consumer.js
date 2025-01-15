@@ -10,7 +10,7 @@ import { randomInteger } from './math.js'
  */
 export const randomConsumer = async (base = {}) => ({
   consumer: await randomDID(),
-  provider: Schema.did({ method: 'web' }).from(['did:web:web3.storage', 'did:web:nft.storage'][randomInteger(0, 2)]),
+  provider: Schema.did({ method: 'web' }).from(['did:web:upload.storacha.network', 'did:web:web3.storage', 'did:web:nft.storage'][randomInteger(0, 2)]),
   subscription: randomLink().toString(),
   customer: randomCustomer().customer,
   cause: randomLink(),

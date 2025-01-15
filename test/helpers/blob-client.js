@@ -1,5 +1,5 @@
+import * as SpaceBlobCapabilities from '@storacha/capabilities/space/blob'
 import * as BlobCapabilities from '@storacha/capabilities/blob'
-import * as W3sBlobCapabilities from '@storacha/capabilities/web3.storage/blob'
 import * as HTTPCapabilities from '@storacha/capabilities/http'
 import * as UCANCapabilities from '@storacha/capabilities/ucan'
 import { Receipt } from '@ucanto/core'
@@ -13,13 +13,13 @@ import pRetry from 'p-retry'
 
 /**
  * @typedef {import('@ucanto/interface').Failure} Failure
- * @typedef {import('@storacha/capabilities/types').BlobAddSuccess} BlobAddSuccess
- * @typedef {import('@storacha/capabilities/types').BlobAddFailure} BlobAddFailure
+ * @typedef {import('@storacha/capabilities/types').SpaceBlobAddSuccess} SpaceBlobAddSuccess
+ * @typedef {import('@storacha/capabilities/types').SpaceBlobAddFailure} SpaceBlobAddFailure
  * @typedef {import('@storacha/capabilities/types').BlobAllocateSuccess} BlobAllocateSuccess
  * @typedef {import('@storacha/capabilities/types').BlobAllocateFailure} BlobAllocateFailure
  * @typedef {import('@storacha/capabilities/types').BlobAcceptSuccess} BlobAcceptSuccess
  * @typedef {import('@storacha/capabilities/types').BlobAcceptFailure} BlobAcceptFailure
- * @typedef {import('@ucanto/interface').Receipt<BlobAddSuccess, BlobAddFailure> } BlobAddReceipt
+ * @typedef {import('@ucanto/interface').Receipt<SpaceBlobAddSuccess, SpaceBlobAddFailure> } SpaceBlobAddReceipt
  * @typedef {import('@ucanto/interface').Receipt<BlobAllocateSuccess, BlobAllocateFailure> } BlobAllocateReceipt
  * @typedef {import('@ucanto/interface').Receipt<BlobAcceptSuccess, BlobAcceptFailure> } BlobAcceptReceipt
  * @typedef {import('@ucanto/interface').Receipt<{}, Failure> } HTTPPutReceipt
@@ -36,7 +36,7 @@ export async function add(
   const size = data.byteLength
 
   const conn = options.connection
-  const blobAddInvocation = BlobCapabilities.add
+  const blobAddInvocation = SpaceBlobCapabilities.add
     .invoke({
       issuer,
       /* c8 ignore next */
@@ -50,15 +50,15 @@ export async function add(
       },
       proofs,
     })
-  const blobAddresult = await blobAddInvocation.execute(conn)
-  if (!blobAddresult.out.ok) {
-    throw new Error(`failed ${BlobCapabilities.add.can} invocation`, {
-      cause: blobAddresult.out.error,
+  const blobAddResult = await blobAddInvocation.execute(conn)
+  if (!blobAddResult.out.ok) {
+    throw new Error(`failed ${SpaceBlobCapabilities.add.can} invocation`, {
+      cause: blobAddResult.out.error,
     })
   }
 
   // Alocate if there is an address to allocate
-  const next = parseBlobAddReceiptNext(blobAddresult)
+  const next = parseBlobAddReceiptNext(blobAddResult)
   /** @type {import('@storacha/capabilities/types').BlobAddress} */
   // @ts-expect-error receipt type is unknown
   const address = next.allocate.receipt.out.ok.address
@@ -158,7 +158,7 @@ export function parseBlobAddReceiptNext(receipt) {
   // @ts-expect-error read only effect
   const forkInvocations = receipt.fx.fork
   const allocateTask = forkInvocations.find(
-    (fork) => fork.capabilities[0].can === W3sBlobCapabilities.allocate.can
+    (fork) => fork.capabilities[0].can === BlobCapabilities.allocate.can
   )
   const concludefxs = forkInvocations.filter(
     (fork) => fork.capabilities[0].can === UCANCapabilities.conclude.can
@@ -167,7 +167,7 @@ export function parseBlobAddReceiptNext(receipt) {
     (fork) => fork.capabilities[0].can === HTTPCapabilities.put.can
   )
   const acceptTask = forkInvocations.find(
-    (fork) => fork.capabilities[0].can === W3sBlobCapabilities.accept.can
+    (fork) => fork.capabilities[0].can === BlobCapabilities.accept.can
   )
   if (!allocateTask || !concludefxs.length || !putTask || !acceptTask) {
     throw new Error('mandatory effects not received')

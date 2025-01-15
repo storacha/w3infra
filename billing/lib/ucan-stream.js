@@ -1,6 +1,7 @@
-import * as ServiceBlobCaps from '@storacha/capabilities/web3.storage/blob'
+import * as BlobCaps from '@storacha/capabilities/blob'
 import * as SpaceBlobCaps from '@storacha/capabilities/space/blob'
 import * as StoreCaps from '@storacha/capabilities/store'
+import * as DID from '@ipld/dag-ucan/did'
 
 /**
  * Filters UCAN stream messages that are receipts for invocations that alter
@@ -19,8 +20,10 @@ export const findSpaceUsageDeltas = messages => {
     let resource
     /** @type {number|undefined} */
     let size
-    if (isReceiptForCapability(message, ServiceBlobCaps.allocate) && isServiceBlobAllocateSuccess(message.out)) {
-      resource = message.value.att[0].nb?.space
+    if (isReceiptForCapability(message, BlobCaps.allocate) && isBlobAllocateSuccess(message.out)) {
+      const spaceDigestBytes = message.value.att[0].nb?.space
+      if (!spaceDigestBytes) throw new Error('missing space in allocate caveats')
+      resource = DID.decode(spaceDigestBytes).did()
       size = message.out.ok.size
     } else if (isReceiptForCapability(message, SpaceBlobCaps.remove) && isSpaceBlobRemoveSuccess(message.out)) {
       resource = /** @type {import('@ucanto/interface').DID} */ (message.value.att[0].with)
@@ -106,6 +109,10 @@ export const storeSpaceUsageDeltas = async (deltas, ctx) => {
     spaceDiffs.push(...res.ok)
   }
 
+  if (spaceDiffs.length === 0) {
+    return { ok: 'no space diffs to store', error: undefined }
+  }
+
   console.log(`Total space diffs to store: ${spaceDiffs.length}`)
   return ctx.spaceDiffStore.batchPut(spaceDiffs)
 }
@@ -120,7 +127,7 @@ const isReceipt = m => m.type === 'receipt'
  * @param {import('@ucanto/interface').Result} r
  * @returns {r is { ok: import('@storacha/capabilities/types').BlobAllocateSuccess }}
  */
-const isServiceBlobAllocateSuccess = r =>
+const isBlobAllocateSuccess = r =>
   !r.error &&
   r.ok != null &&
   typeof r.ok === 'object' &&

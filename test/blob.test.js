@@ -345,8 +345,8 @@ test('10k NFT drop', async t => {
       name: `NFT #${i}`,
       description: 'NFT',
       attributes: Array.from(Array(randomInt(5)), randomTrait),
-      compiler: 'web3.storage',
-      external_url: `https://${id}.nft.web3.storage/token/${i}`
+      compiler: 'storacha.network',
+      external_url: `https://${id}.nft.storacha.network/token/${i}`
     })], `${i}.json`))
   }
 

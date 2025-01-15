@@ -3,7 +3,8 @@ import { DID, Delegation, Block, UCANLink, ByteView, ReceiptModel, DIDKey, Resul
 import { UnknownLink } from 'multiformats'
 import { CID } from 'multiformats/cid'
 import { Kinesis } from '@aws-sdk/client-kinesis'
-import { AccountDID, ProviderDID, Service, SpaceDID, CarStoreBucket, AllocationsStorage, PlanCreateAdminSessionSuccess, PlanCreateAdminSessionFailure, AgentStore } from '@storacha/upload-api'
+import { CarStoreBucket, AllocationsStorage } from '@web3-storage/upload-api' // TODO: is CarStoreBucket needed?
+import { AccountDID, ProviderDID, Service, SpaceDID, PlanCreateAdminSessionSuccess, PlanCreateAdminSessionFailure, AgentStore } from '@storacha/upload-api'
 
 export type {
   UnknownLink,
@@ -215,6 +216,28 @@ export interface Customer {
 export interface CustomerTable {
   /** get a customer record */
   get: (customer: DID<'mailto'>) => Promise<Result<Customer, RecordNotFound<DID<'mailto'>>>>
+}
+
+export interface StorageProviderInput {
+  provider: DID
+  endpoint: URL
+  proof: Delegation
+  weight: number
+}
+
+export interface StorageProviderRecord {
+  provider: DID
+  endpoint: URL
+  proof: Delegation
+  weight: number
+  insertedAt: Date
+}
+
+export interface StorageProviderTable {
+  put (input: StorageProviderInput): Promise<void>
+  get (provider: DID): Promise<StorageProviderRecord|undefined>
+  del (provider: DID): Promise<void>
+  list (): Promise<{ provider: DID, weight: number }[]>
 }
 
 export type SpaceService = Pick<Service, "space">

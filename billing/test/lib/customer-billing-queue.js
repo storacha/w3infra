@@ -9,7 +9,7 @@ import { randomSubscription } from '../helpers/subscription.js'
 export const test = {
   'should queue all spaces for a customer': async (/** @type {import('entail').assert} */ assert, ctx) => {
     const customer = randomCustomer()
-    const provider = 'did:web:web3.storage'
+    const provider = 'did:web:upload.storacha.network'
 
     const consumers = await Promise.all([
       randomConsumer({ provider }),

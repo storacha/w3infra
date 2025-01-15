@@ -168,13 +168,17 @@ DID of the filecoin aggregator service.
 
 URL of the filecoin aggregator service.
 
-#### `CONTENT_CLAIMS_DID`
+#### `INDEXING_SERVICE_DID`
 
-DID of the [content claims service](https://github.com/web3-storage/content-claims).
+DID of the [indexing service](https://github.com/storacha/indexing-service).
 
-#### `CONTENT_CLAIMS_URL`
+#### `INDEXING_SERVICE_URL`
 
-URL of the [content claims service](https://github.com/web3-storage/content-claims).
+URL of the [indexing service](https://github.com/storacha/indexing-service).
+
+#### `INDEXING_SERVICE_PROOF`
+
+Proof that the upload service can publish claims to the [indexing service](https://github.com/storacha/indexing-service).
 
 #### `DEAL_TRACKER_DID`
 
@@ -253,7 +257,7 @@ To set a fallback value for `staging` or an ephmeral PR build use [`sst secrets 
 
 ```sh
 # set `PRIVATE_KEY` for any stage in us-east-2
-$ npx sst secrets set-fallback --region us-east-2 PRIVATE_KEY "MgCZG7...="
+$ npx sst secrets set --fallback --region us-east-2 PRIVATE_KEY "MgCZG7...="
 ```
 
 **Note**: The fallback value can only be inherited by stages deployed in the same AWS account and region.

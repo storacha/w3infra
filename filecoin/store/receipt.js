@@ -7,31 +7,31 @@ import { getS3Client } from '../../lib/aws/s3.js'
  * handled receipts.
  *
  * @param {string} region
- * @param {string} invocationBucketName
- * @param {string} workflowBucketName
+ * @param {string} agentIndexBucketName
+ * @param {string} agentMessageBucketName
  * @param {import('@aws-sdk/client-s3').ServiceInputTypes} [options]
  */
-export function createReceiptStore(region, invocationBucketName, workflowBucketName, options = {}) {
+export function createReceiptStore(region, agentIndexBucketName, agentMessageBucketName, options = {}) {
   const s3client = getS3Client({
     region,
     ...options,
   })
-  return useReceiptStore(s3client, invocationBucketName, workflowBucketName)
+  return useReceiptStore(s3client, agentIndexBucketName, agentMessageBucketName)
 }
 
 /**
  * @param {import('@aws-sdk/client-s3').S3Client} s3client
- * @param {string} invocationBucketName
- * @param {string} workflowBucketName
+ * @param {string} agentIndexBucketName
+ * @param {string} agentMessageBucketName
  * @returns {import('@storacha/filecoin-api/storefront/api').ReceiptStore}
  */
-export const useReceiptStore = (s3client, invocationBucketName, workflowBucketName) => {
+export const useReceiptStore = (s3client, agentIndexBucketName, agentMessageBucketName) => {
   const store = Store.open({
     connection: { channel: s3client },
     region: typeof s3client.config.region === 'string' ? s3client.config.region : 'us-west-2',
     buckets: {
-      index: { name: invocationBucketName },
-      message: { name: workflowBucketName },
+      index: { name: agentIndexBucketName },
+      message: { name: agentMessageBucketName },
     }
   })
   
