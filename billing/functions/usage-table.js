@@ -54,6 +54,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(
 const parseUsageInsertEvent = event => {
   const records = []
   for (const r of event.Records) {
+    console.log(`processing usage record: ${JSON.stringify(r)}`)
     if (r.eventName !== 'INSERT') continue
     if (!r.dynamodb) continue
     if (!r.dynamodb.NewImage) throw new Error('missing "NEW_IMAGE" in stream event')
