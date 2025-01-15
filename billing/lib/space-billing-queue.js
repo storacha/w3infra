@@ -75,7 +75,6 @@ export const calculatePeriodUsage = async (instruction, ctx) => {
   }
 
   console.log(`Total size of ${instruction.space} is ${size} bytes @ ${instruction.to.toISOString()}`)
-  console.log(`Total usage of ${instruction.space} is ${usage} bytes @ ${instruction.to.toISOString()}`)
 
   return { ok: { size, usage } }
 }
@@ -107,7 +106,7 @@ export const storeSpaceUsage = async (instruction, { size, usage }, ctx) => {
   if (snapPut.error) return snapPut
 
   const duration = instruction.to.getTime() - instruction.from.getTime()
-  console.log(`Space consumed ${usage} byte/ms (~${new Big(usage.toString()).div(duration).div(GB).toFixed(2)} GiB/month)`)
+  console.log(`Space consumed by ${instruction.space} is ${usage} byte/ms (~${new Big(usage.toString()).div(duration).div(GB).toFixed(2)} GiB/month)`)
   const usagePut = await ctx.usageStore.put({
     ...instruction,
     usage,
