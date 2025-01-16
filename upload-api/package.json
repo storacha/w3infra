@@ -18,6 +18,7 @@
     "@storacha/access": "^1.0.0",
     "@storacha/capabilities": "^1.2.0",
     "@storacha/did-mailto": "^1.0.1",
+    "@storacha/indexing-service-client": "^2.0.0",
     "@storacha/upload-api": "^1.2.0",
     "@ucanto/client": "^9.0.1",
     "@ucanto/core": "^10.0.1",

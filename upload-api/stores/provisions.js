@@ -14,9 +14,9 @@ export const createProvisionSubscriptionId = async ({ customer, consumer }) =>
   (await CBOR.write({ consumer })).cid.toString()
 
 /**
- * @param {import('../types').SubscriptionTable} subscriptionTable
- * @param {import('../types').ConsumerTable} consumerTable
- * @param {import('../types').SpaceMetricsTable} spaceMetricsTable
+ * @param {import('../types.js').SubscriptionTable} subscriptionTable
+ * @param {import('../types.js').ConsumerTable} consumerTable
+ * @param {import('../types.js').SpaceMetricsTable} spaceMetricsTable
  * @param {import('@ucanto/interface').DID<'web'>[]} services
  * @returns {import('@storacha/upload-api').ProvisionsStorage}
  */

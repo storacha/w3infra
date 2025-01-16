@@ -15,9 +15,9 @@ import { getDynamoClient } from '../../lib/aws/dynamo.js'
  * @typedef {import('@storacha/filecoin-api/storefront/api').PieceRecord} PieceRecord
  * @typedef {import('@storacha/filecoin-api/storefront/api').PieceRecordKey} PieceRecordKey
  * @typedef {{ status: PieceStatus }} PieceRecordQuery
- * @typedef {import('../types').PieceStoreRecord} PieceStoreRecord
- * @typedef {import('../types').PieceStoreRecordKey} PieceStoreRecordKey
- * @typedef {import('../types').PieceStoreRecordStatus} PieceStoreRecordStatus
+ * @typedef {import('../types.js').PieceStoreRecord} PieceStoreRecord
+ * @typedef {import('../types.js').PieceStoreRecordKey} PieceStoreRecordKey
+ * @typedef {import('../types.js').PieceStoreRecordStatus} PieceStoreRecordStatus
  */
 
 /**

@@ -41,9 +41,9 @@ const DELEGATIONS_FIND_DEFAULT_LIMIT = 1000
  * @param {string} region
  * @param {string} tableName
  * @param {object} deps
- * @param {import('../types').DelegationsBucket} deps.bucket
- * @param {import('../types').InvocationBucket} deps.invocationBucket
- * @param {import('../types').WorkflowBucket} deps.workflowBucket
+ * @param {import('../types.js').DelegationsBucket} deps.bucket
+ * @param {import('../types.js').InvocationBucket} deps.invocationBucket
+ * @param {import('../types.js').WorkflowBucket} deps.workflowBucket
  * @param {object} [options]
  * @param {string} [options.endpoint]
  */
@@ -60,9 +60,9 @@ export function createDelegationsTable (region, tableName, { bucket, invocationB
  * @param {import('@aws-sdk/client-dynamodb').DynamoDBClient} dynamoDb
  * @param {string} tableName
  * @param {object} deps
- * @param {import('../types').DelegationsBucket} deps.bucket
- * @param {import('../types').InvocationBucket} deps.invocationBucket
- * @param {import('../types').WorkflowBucket} deps.workflowBucket
+ * @param {import('../types.js').DelegationsBucket} deps.bucket
+ * @param {import('../types.js').InvocationBucket} deps.invocationBucket
+ * @param {import('../types.js').WorkflowBucket} deps.workflowBucket
  * @returns {import('@storacha/upload-api').DelegationsStorage}
  */
 export function useDelegationsTable (dynamoDb, tableName, { bucket, invocationBucket, workflowBucket }) {
@@ -173,7 +173,7 @@ export function useDelegationsTable (dynamoDb, tableName, { bucket, invocationBu
 
 /**
  * 
- * @param {import('../types').DelegationsBucket} bucket
+ * @param {import('../types.js').DelegationsBucket} bucket
  * @param {Ucanto.Delegation<Ucanto.Tuple<Ucanto.Capability>>[]} delegations
  */
 async function writeDelegations (bucket, delegations) {
@@ -189,7 +189,7 @@ async function writeDelegations (bucket, delegations) {
 
 /**
  * 
- * @param {import('../types').DelegationsBucket} bucket
+ * @param {import('../types.js').DelegationsBucket} bucket
  * @param {Iterable<readonly [key: CID, value: Uint8Array ]>} entries
  */
 async function writeEntries (bucket, entries) {
@@ -212,7 +212,7 @@ function createDelegationItem (d, cause) {
 }
 
 /** 
- * @param {import('../types').DelegationsBucket} bucket
+ * @param {import('../types.js').DelegationsBucket} bucket
  * @param {Ucanto.Link} cid
  * @returns {Promise<Ucanto.Result<Ucanto.Delegation, Ucanto.Failure>>}
  */
@@ -232,8 +232,8 @@ async function cidToDelegation (bucket, cid) {
 /** 
  * @typedef {NoInvocationFoundForGivenCidError | NoDelegationFoundForGivenCidError | FailedToDecodeDelegationForGivenCidError} FindDelegationError
  * @param {object} opts
- * @param {import('../types').InvocationBucket} opts.invocationBucket
- * @param {import('../types').WorkflowBucket} opts.workflowBucket
+ * @param {import('../types.js').InvocationBucket} opts.invocationBucket
+ * @param {import('../types.js').WorkflowBucket} opts.workflowBucket
  * @param {Ucanto.UCANLink} opts.invocationCid
  * @param {Ucanto.Link} opts.delegationCid
  * @returns {Promise<Ucanto.Result<Ucanto.Delegation, FindDelegationError>>}

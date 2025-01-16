@@ -24,7 +24,7 @@ export function createSpaceMetricsTable(region, tableName, options = {}) {
 /**
  * @param {import('@aws-sdk/client-dynamodb').DynamoDBClient} dynamoDb
  * @param {string} tableName
- * @returns {import('../types').SpaceMetricsTable}
+ * @returns {import('../types.js').SpaceMetricsTable}
  */
 export function useSpaceMetricsTable(dynamoDb, tableName) {
   return {

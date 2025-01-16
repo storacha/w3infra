@@ -21,7 +21,7 @@ export function createCarStore(region, bucketName, options) {
 /**
  * @param {import('@aws-sdk/client-s3').S3Client} s3
  * @param {string} bucketName
- * @returns {import('../types').CarStore}
+ * @returns {import('../types.js').CarStore}
  */
 export function useCarStore(s3, bucketName) {
   return {

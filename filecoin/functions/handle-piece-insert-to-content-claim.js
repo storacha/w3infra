@@ -16,7 +16,7 @@ Sentry.AWSLambda.init({
 })
 
 /**
- * @typedef {import('../types').PieceStoreRecord} PieceStoreRecord
+ * @typedef {import('../types.js').PieceStoreRecord} PieceStoreRecord
  */
 
 /**

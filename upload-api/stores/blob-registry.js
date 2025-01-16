@@ -47,6 +47,7 @@ export const useBlobRegistry = (dynamoDb, tableName, metrics) => ({
     const cmd = new GetItemCommand({
       TableName: tableName,
       Key: key,
+      ConsistentRead: true,
     })
 
     const response = await dynamoDb.send(cmd)

@@ -53,7 +53,7 @@ Sentry.AWSLambda.init({
 export { API }
 
 /**
- * @typedef {import('../types').Receipt} Receipt
+ * @typedef {import('../types.js').Receipt} Receipt
  * @typedef {import('@ucanto/interface').Block<Receipt>} BlockReceipt
  * @typedef {object} ExecuteCtx
  * @property {import('@ucanto/interface').Signer} signer

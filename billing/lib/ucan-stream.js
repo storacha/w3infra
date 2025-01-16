@@ -67,8 +67,8 @@ export const findSpaceUsageDeltas = messages => {
  *
  * @param {import('./api.js').UsageDelta[]} deltas
  * @param {{
- *   spaceDiffStore: import('./api').SpaceDiffStore
- *   consumerStore: import('./api').ConsumerStore
+ *   spaceDiffStore: import('./api.js').SpaceDiffStore
+ *   consumerStore: import('./api.js').ConsumerStore
  * }} ctx
  */
 export const storeSpaceUsageDeltas = async (deltas, ctx) => {
@@ -118,8 +118,8 @@ export const storeSpaceUsageDeltas = async (deltas, ctx) => {
 }
 
 /**
- * @param {import('./api').UcanStreamMessage} m
- * @returns {m is import('./api').UcanReceiptMessage}
+ * @param {import('./api.js').UcanStreamMessage} m
+ * @returns {m is import('./api.js').UcanReceiptMessage}
  */
 const isReceipt = m => m.type === 'receipt'
 
@@ -169,8 +169,8 @@ const isStoreRemoveSuccess = r =>
 /**
  * @template {import('@ucanto/interface').Ability} Can
  * @template {import('@ucanto/interface').Unit} Caveats
- * @param {import('./api').UcanReceiptMessage} m
+ * @param {import('./api.js').UcanReceiptMessage} m
  * @param {import('@ucanto/interface').TheCapabilityParser<import('@ucanto/interface').CapabilityMatch<Can, import('@ucanto/interface').Resource, Caveats>>} cap
- * @returns {m is import('./api').UcanReceiptMessage<[import('@ucanto/interface').Capability<Can, import('@ucanto/interface').Resource, Caveats>]>}
+ * @returns {m is import('./api.js').UcanReceiptMessage<[import('@ucanto/interface').Capability<Can, import('@ucanto/interface').Resource, Caveats>]>}
  */
 const isReceiptForCapability = (m, cap) => m.value.att.some(c => c.can === cap.can)

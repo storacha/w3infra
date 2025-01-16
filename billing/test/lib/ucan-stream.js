@@ -7,7 +7,7 @@ import { randomConsumer } from '../helpers/consumer.js'
 import { randomLink } from '../helpers/dag.js'
 import { randomDID, randomDIDKey } from '../helpers/did.js'
 
-/** @type {import('./api').TestSuite<import('./api').UCANStreamTestContext>} */
+/** @type {import('./api.js').TestSuite<import('./api.js').UCANStreamTestContext>} */
 export const test = {
   'should filter UCANs': async (/** @type {import('entail').assert} */ assert, ctx) => {
     /** @type {import('../../lib/api.js').UcanStreamMessage[]} */

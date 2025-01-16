@@ -14,7 +14,7 @@ import {
 /**
  * @typedef {import('@ucanto/interface').Capability} Capability
  * @typedef {import('@storacha/upload-api').StoreRemoveSuccess} StoreRemoveSuccess
- * @typedef {import('@storacha/upload-api').BlobRemoveSuccess} BlobRemoveSuccess
+ * @typedef {import('@storacha/upload-api').SpaceBlobRemoveSuccess} SpaceBlobRemoveSuccess
  */
 
 /**
@@ -32,7 +32,7 @@ import {
  * - UPLOAD_REMOVE_TOTAL: increment number of `upload/remove` success receipts
  * 
  * @param {import('./types.js').UcanStreamInvocation[]} ucanInvocations
- * @param {import('./types').MetricsCtx} ctx
+ * @param {import('./types.js').MetricsCtx} ctx
  */
 export async function updateAdminMetrics (ucanInvocations, ctx) {
   const receipts = getReceiptPerCapability(ucanInvocations)
@@ -53,7 +53,7 @@ export async function updateAdminMetrics (ucanInvocations, ctx) {
 
   // Append size for `blob/remove` receipts
   const blobRemoveReceipts = await Promise.all((receipts.get(BLOB_REMOVE) || []).map(async r => {
-    const blobRemoveSuccess = /** @type {BlobRemoveSuccess} */ (r.out.ok)
+    const blobRemoveSuccess = /** @type {SpaceBlobRemoveSuccess} */ (r.out.ok)
     r.nb.size = blobRemoveSuccess?.size
     return r
   }))
@@ -91,7 +91,7 @@ export async function updateAdminMetrics (ucanInvocations, ctx) {
  * - UPLOAD_REMOVE_TOTAL: increment number of `upload/remove` success receipts for a space
  * 
  * @param {import('./types.js').UcanStreamInvocation[]} ucanInvocations
- * @param {import('./types').SpaceMetricsCtx} ctx
+ * @param {import('./types.js').SpaceMetricsCtx} ctx
  */
 export async function updateSpaceMetrics (ucanInvocations, ctx) {
   const receipts = getReceiptPerCapability(ucanInvocations)
@@ -112,7 +112,7 @@ export async function updateSpaceMetrics (ucanInvocations, ctx) {
 
   // Append size for `blob/remove` receipts
   const blobRemoveReceipts = await Promise.all((receipts.get(BLOB_REMOVE) || []).map(async r => {
-    const blobRemoveSuccess = /** @type {BlobRemoveSuccess} */ (r.out.ok)
+    const blobRemoveSuccess = /** @type {SpaceBlobRemoveSuccess} */ (r.out.ok)
     r.nb.size = blobRemoveSuccess?.size
     return r
   }))
@@ -149,7 +149,7 @@ function normalizeCapsPerSpaceTotal (capabilities) {
       })
     }
     return acc
-  }, /** @type {import('./types').SpaceMetricsItem[]} */ ([]))
+  }, /** @type {import('./types.js').SpaceMetricsItem[]} */ ([]))
 
   return res
 }
@@ -171,7 +171,7 @@ function normalizeCapsPerSpaceSize (capabilities) {
       acc.push({ space: c.with, value: size })
     }
     return acc
-  }, /** @type {import('./types').SpaceMetricsItem[]} */ ([]))
+  }, /** @type {import('./types.js').SpaceMetricsItem[]} */ ([]))
 
   return res
 }
@@ -180,7 +180,7 @@ function normalizeCapsPerSpaceSize (capabilities) {
  * Get a map of receipts per capability.
  *
  * @param {import('./types.js').UcanStreamInvocation[]} ucanInvocations
- * @returns {Map<string, Array<Capability & { out: import('./types.js').ReceiptResult }>>}
+ * @returns {Map<string, Array<Capability & { out: import('@ucanto/interface').Result }>>}
  */
 function getReceiptPerCapability (ucanInvocations) {
   return ucanInvocations

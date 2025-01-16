@@ -13,9 +13,10 @@ import { getSQSClient } from '../../lib/aws/sqs.js'
 const CONCURRENCY = 10
 
 /**
+ * @deprecated
  * @param {{ url: URL, region: string }} blockAdvertisementPublisherQueueConfig 
  * @param {{ url: URL, region: string }} blockIndexWriterQueueConfig
- * @param {import('@storacha/upload-api').BlobsStorage} blobsStorage
+ * @param {import('@web3-storage/upload-api').BlobsStorage} blobsStorage
  */
 export const createIPNIService = (blockAdvertisementPublisherQueueConfig, blockIndexWriterQueueConfig, blobsStorage) => {
   const blockAdvertPublisherQueue = new BlockAdvertisementPublisherQueue({
@@ -30,10 +31,11 @@ export const createIPNIService = (blockAdvertisementPublisherQueueConfig, blockI
 }
 
 /**
+ * @deprecated
  * @param {BlockAdvertisementPublisherQueue} blockAdvertPublisherQueue
  * @param {BlockIndexWriterQueue} blockIndexWriterQueue
- * @param {import('@storacha/upload-api').BlobsStorage} blobsStorage
- * @returns {import('@storacha/upload-api').IPNIService}
+ * @param {import('@web3-storage/upload-api').BlobsStorage} blobsStorage
+ * @returns {import('@web3-storage/upload-api').IPNIService}
  */
 export const useIPNIService = (blockAdvertPublisherQueue, blockIndexWriterQueue, blobsStorage) => ({
   /** @param {import('@storacha/upload-api').ShardedDAGIndex} index */

@@ -14,13 +14,15 @@ import { createRevocationsTable } from '../stores/revocations.js'
 import { createReferralStore } from '../stores/referrals.js'
 import * as AgentStore from '../stores/agent.js'
 import { useProvisionStore } from '../stores/provisions.js'
+// @ts-expect-error
 // eslint-disable-next-line import/extensions
 import * as htmlStoracha from '../html-storacha'
+// @ts-expect-error
 // eslint-disable-next-line import/extensions
 import * as htmlW3s from '../html-w3s'
 import { createRateLimitTable } from '../tables/rate-limit.js'
 import { createSpaceMetricsTable } from '../tables/space-metrics.js'
-import { createCustomerStore } from '@storacha/upload-service-infra-billing/tables/customer'
+import { createCustomerStore } from '../../billing/tables/customer.js'
 
 const html = process.env.HOSTED_ZONE === 'upload.storacha.network' ? htmlW3s : htmlStoracha
 
@@ -82,8 +84,8 @@ function createAuthorizeContext() {
     R2_ACCESS_KEY_ID = '',
     R2_SECRET_ACCESS_KEY = '',
     R2_DELEGATION_BUCKET_NAME = '',
-    INVOCATION_BUCKET_NAME = '',
-    WORKFLOW_BUCKET_NAME = '',
+    AGENT_INDEX_BUCKET_NAME = '',
+    AGENT_MESSAGE_BUCKET_NAME = '',
     POSTMARK_TOKEN = '',
     SUBSCRIPTION_TABLE_NAME = '',
     CONSUMER_TABLE_NAME = '',
@@ -102,9 +104,9 @@ function createAuthorizeContext() {
   const { PRIVATE_KEY } = Config
   const invocationBucket = createInvocationStore(
     AWS_REGION,
-    INVOCATION_BUCKET_NAME
+    AGENT_INDEX_BUCKET_NAME
   )
-  const workflowBucket = createWorkflowStore(AWS_REGION, WORKFLOW_BUCKET_NAME)
+  const workflowBucket = createWorkflowStore(AWS_REGION, AGENT_MESSAGE_BUCKET_NAME)
   const delegationBucket = createDelegationsStore(
     R2_ENDPOINT,
     R2_ACCESS_KEY_ID,
@@ -140,8 +142,8 @@ function createAuthorizeContext() {
       },
       region: AWS_REGION,
       buckets: {
-        message: { name: WORKFLOW_BUCKET_NAME },
-        index: { name: INVOCATION_BUCKET_NAME },
+        message: { name: AGENT_MESSAGE_BUCKET_NAME },
+        index: { name: AGENT_INDEX_BUCKET_NAME },
       },
     },
     stream: {
