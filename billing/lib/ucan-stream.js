@@ -19,9 +19,9 @@ export const findSpaceUsageDeltas = messages => {
     let resource
     /** @type {number|undefined} */
     let size
-    if (isReceiptForCapability(message, ServiceBlobCaps.allocate) && isServiceBlobAllocateSuccess(message.out)) {
+    if (isReceiptForCapability(message, ServiceBlobCaps.accept) && isServiceBlobAcceptSuccess(message.out)) {
       resource = message.value.att[0].nb?.space
-      size = message.out.ok.size
+      size = message.value.att[0].nb?.blob.size
     } else if (isReceiptForCapability(message, BlobCaps.remove) && isBlobRemoveSuccess(message.out)) {
       resource = /** @type {import('@ucanto/interface').DID} */ (message.value.att[0].with)
       size = -message.out.ok.size
@@ -82,6 +82,7 @@ export const storeSpaceUsageDeltas = async (deltas, ctx) => {
     // could have multiple providers for the same consumer (space).
     const consumers = consumerList.ok.results
     console.log(`Found ${consumers.length} consumers for ${delta.resource}`)
+    console.log(`agentMessage (cause): ${delta.cause}`)
     for (const consumer of consumers) {
       diffs.push({
         provider: consumer.provider,
@@ -118,14 +119,14 @@ const isReceipt = m => m.type === 'receipt'
 
 /**
  * @param {import('@ucanto/interface').Result} r
- * @returns {r is { ok: import('@web3-storage/capabilities/types').BlobAllocateSuccess }}
+ * @returns {r is { ok: import('@web3-storage/capabilities/types').BlobAcceptSuccess }}
  */
-const isServiceBlobAllocateSuccess = r =>
+const isServiceBlobAcceptSuccess = (r) =>
   !r.error &&
   r.ok != null &&
   typeof r.ok === 'object' &&
-  'size' in r.ok &&
-  (typeof r.ok.size === 'number')
+  'site' in r.ok &&
+  typeof r.ok.site === 'object'
 
 /**
  * @param {import('@ucanto/interface').Result} r
