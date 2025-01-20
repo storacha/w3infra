@@ -82,7 +82,6 @@ export const storeSpaceUsageDeltas = async (deltas, ctx) => {
     // could have multiple providers for the same consumer (space).
     const consumers = consumerList.ok.results
     console.log(`Found ${consumers.length} consumers for ${delta.resource}`)
-    console.log(`agentMessage (cause): ${delta.cause}`)
     for (const consumer of consumers) {
       diffs.push({
         provider: consumer.provider,
