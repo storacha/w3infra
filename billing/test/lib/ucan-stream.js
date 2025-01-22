@@ -29,7 +29,7 @@ export const test = {
 
     /**
      * @type {import('../../lib/api.js').UcanReceiptMessage<[
-     *   | import('@web3-storage/capabilities/types').BlobAllocate
+     *   | import('@web3-storage/capabilities/types').BlobAccept
      *   | import('@web3-storage/capabilities/types').BlobRemove
      *   | import('@web3-storage/capabilities/types').StoreAdd
      *   | import('@web3-storage/capabilities/types').StoreRemove
@@ -42,20 +42,25 @@ export const test = {
       value: {
         att: [{
           with: await randomDIDKey(),
-          can: ServiceBlobCaps.allocate.can,
+          can: ServiceBlobCaps.accept.can,
           nb: {
+            _put: {
+              "ucan/await": [
+                ".out.ok",
+                randomLink()
+              ]
+            },
             blob: {
               digest: randomLink().multihash.bytes,
               size: 138
             },
-            cause: randomLink(),
             space: await randomDIDKey()
           }
         }],
         aud: await randomDID(),
         cid: randomLink()
       },
-      out: { ok: { size: 138 } },
+      out: { ok: { site: randomLink() } },
       ts: new Date()
     }, {
       type: 'receipt',
@@ -118,8 +123,8 @@ export const test = {
     for (const r of receipts) {
       assert.ok(deltas.some(d => (
         d.cause.toString() === r.invocationCid.toString() &&
-        // resource for blob allocate is found in the caveats
-        (r.value.att[0].can === ServiceBlobCaps.allocate.can
+        // resource for blob accept is found in the caveats
+        (r.value.att[0].can === ServiceBlobCaps.accept.can
           ? d.resource === r.value.att[0].nb.space
           : d.resource === r.value.att[0].with)
       )))
