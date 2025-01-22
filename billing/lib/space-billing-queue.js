@@ -63,7 +63,7 @@ export const calculatePeriodUsage = async (instruction, ctx) => {
   let size = snap?.size ?? 0n
   let usage = size * BigInt(instruction.to.getTime() - instruction.from.getTime())
 
-  console.log(`Total size is ${size} bytes @ ${instruction.from.toISOString()}`)
+  console.log(`Total size of ${instruction.space} is ${size} bytes @ ${instruction.from.toISOString()}`)
 
   for await (const page of iterateSpaceDiffs(instruction, ctx)) {
     if (page.error) return page
@@ -74,7 +74,7 @@ export const calculatePeriodUsage = async (instruction, ctx) => {
     }
   }
 
-  console.log(`Total size is ${size} bytes @ ${instruction.to.toISOString()}`)
+  console.log(`Total size of ${instruction.space} is ${size} bytes @ ${instruction.to.toISOString()}`)
 
   return { ok: { size, usage } }
 }
@@ -106,7 +106,7 @@ export const storeSpaceUsage = async (instruction, { size, usage }, ctx) => {
   if (snapPut.error) return snapPut
 
   const duration = instruction.to.getTime() - instruction.from.getTime()
-  console.log(`Space consumed ${usage} byte/ms (~${new Big(usage.toString()).div(duration).div(GB).toFixed(2)} GiB/month)`)
+  console.log(`Space consumed by ${instruction.space} is ${usage} byte/ms (~${new Big(usage.toString()).div(duration).div(GB).toFixed(2)} GiB/month)`)
   const usagePut = await ctx.usageStore.put({
     ...instruction,
     usage,
