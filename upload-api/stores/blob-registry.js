@@ -47,7 +47,6 @@ export const useBlobRegistry = (dynamoDb, tableName, metrics) => ({
     const cmd = new GetItemCommand({
       TableName: tableName,
       Key: key,
-      ConsistentRead: true,
     })
 
     const response = await dynamoDb.send(cmd)
@@ -203,7 +202,167 @@ export const toEntry = ({ digest, size, cause, insertedAt }) => ({
  * @param {import('@storacha/upload-api').MultihashDigest} digest
  */
 const getKey = (space, digest) =>
-  marshall({
-    space,
-    digest: base58btc.encode(digest.bytes).toString(),
-  })
+  marshall({ space, digest: base58btc.encode(digest.bytes) })
+
+/**
+ * Wraps a blob registry with one that talks to the legacy allocations table.
+ *
+ * @deprecated
+ * @param {BlobAPI.Registry} registry
+ * @param {string} region
+ * @param {string} tableName
+ * @param {object} [options]
+ * @param {string} [options.endpoint]
+ * @returns {BlobAPI.Registry}
+ */
+export const createAllocationTableBlobRegistry = (registry, region, tableName, options = {}) => {
+  const dynamoDb = getDynamoClient({ region, endpoint: options.endpoint })
+  return useAllocationTableBlobRegistry(registry, dynamoDb, tableName)
+}
+
+/**
+ * @deprecated
+ * @param {BlobAPI.Registry} registry
+ * @param {import('@aws-sdk/client-dynamodb').DynamoDBClient} dynamoDb
+ * @param {string} tableName
+ * @returns {BlobAPI.Registry}
+ */
+export const useAllocationTableBlobRegistry = (registry, dynamoDb, tableName) => ({
+  /** @type {BlobAPI.Registry['find']} */
+  async find (space, digest) {
+    const key = getAllocationTableKey(space, digest)
+    const cmd = new GetItemCommand({
+      TableName: tableName,
+      Key: key,
+    })
+
+    const response = await dynamoDb.send(cmd)
+    if (!response.Item) {
+      return error(new EntryNotFound())
+    }
+
+    const raw = unmarshall(response.Item)
+    return ok({
+      blob: {
+        digest: Digest.decode(base58btc.decode(raw.multihash)),
+        size: raw.size
+      },
+      cause: Link.parse(raw.invocation).toV1(),
+      insertedAt: new Date(raw.insertedAt)
+    })
+  },
+
+  /** @type {BlobAPI.Registry['register']} */
+  register: async ({ space, blob, cause }) => {
+    const item = {
+      space,
+      multihash: base58btc.encode(blob.digest.bytes),
+      size: blob.size,
+      invocation: cause.toString(),
+      insertedAt: new Date().toISOString(),
+    }
+    const cmd = new PutItemCommand({
+      TableName: tableName,
+      Item: marshall(item, { removeUndefinedValues: true }),
+      ConditionExpression: 'attribute_not_exists(#S) AND attribute_not_exists(#M)',
+      ExpressionAttributeNames: { '#S': 'space', '#M': 'multihash' }
+    })
+
+    try {
+      await dynamoDb.send(cmd)
+      return registry.register({ space, blob, cause })
+    } catch (/** @type {any} */ err) {
+      if (err.name === 'ConditionalCheckFailedException') {
+        return error(new EntryExists())
+      }
+      return error(err)
+    }
+  },
+
+  /** @type {BlobAPI.Registry['deregister']} */
+  async deregister(space, digest) {
+    const key = getAllocationTableKey(space, digest)
+    const cmd = new DeleteItemCommand({
+      TableName: tableName,
+      Key: key,
+      ConditionExpression: 'attribute_exists(#S) AND attribute_exists(#M)',
+      ExpressionAttributeNames: { '#S': 'space', '#M': 'multihash' },
+      ReturnValues: 'ALL_OLD'
+    })
+
+    try {
+      const res = await dynamoDb.send(cmd)
+      if (!res.Attributes) {
+        throw new Error('missing return values')
+      }
+      return registry.deregister(space, digest)
+    } catch (/** @type {any} */ err) {
+      if (err.name === 'ConditionalCheckFailedException') {
+        return error(new EntryNotFound())
+      }
+      return error(err)
+    }
+  },
+
+  /** @type {BlobAPI.Registry['entries']} */
+  entries: async (space, options = {}) => {
+    const exclusiveStartKey = options.cursor
+      ? marshall({ space, multihash: options.cursor })
+      : undefined
+
+    const cmd = new QueryCommand({
+      TableName: tableName,
+      Limit: options.size || 20,
+      KeyConditions: {
+        space: {
+          ComparisonOperator: 'EQ',
+          AttributeValueList: [{ S: space }],
+        },
+      },
+      ExclusiveStartKey: exclusiveStartKey,
+      AttributesToGet: ['multihash', 'size', 'invocation', 'insertedAt'],
+    })
+    const response = await dynamoDb.send(cmd)
+
+    const results =
+      response.Items?.map((i) => allocationToEntry(unmarshall(i))) ?? []
+    const firstDigest = results[0] ? base58btc.encode(results[0].blob.digest.bytes) : undefined
+    // Get cursor of the item where list operation stopped (inclusive).
+    // This value can be used to start a new operation to continue listing.
+    const lastKey =
+      response.LastEvaluatedKey && unmarshall(response.LastEvaluatedKey)
+    const lastDigest = lastKey ? lastKey.multihash : undefined
+
+    const before = firstDigest
+    const after = lastDigest
+
+    return {
+      ok: {
+        size: results.length,
+        before,
+        after,
+        cursor: after,
+        results,
+      }
+    }
+  },
+})
+
+/**
+ * Upgrade from the db representation
+ *
+ * @param {Record<string, any>} item
+ * @returns {BlobAPI.Entry}
+ */
+export const allocationToEntry = ({ multihash, invocation, size, insertedAt }) => ({
+  blob: { digest: Digest.decode(base58btc.decode(multihash)), size },
+  cause: invocation ? Link.parse(invocation).toV1() : Link.parse('bafkqaaa'),
+  insertedAt: new Date(insertedAt),
+})
+
+/**
+ * @param {import('@storacha/upload-api').DID} space
+ * @param {import('@storacha/upload-api').MultihashDigest} digest
+ */
+const getAllocationTableKey = (space, digest) =>
+  marshall({ space, multihash: base58btc.encode(digest.bytes) })

@@ -1,12 +1,8 @@
 import { hasOkReceipt } from './utils.js'
 
 import {
-  BLOB_ADD,
   STORE_ADD,
-  BLOB_REMOVE,
   STORE_REMOVE,
-  UPLOAD_ADD,
-  UPLOAD_REMOVE,
   METRICS_NAMES,
   SPACE_METRICS_NAMES,
 } from './constants.js'
@@ -20,16 +16,10 @@ import {
 /**
  * Update total admin metrics for upload-api receipts.
  * Metrics:
- * - BLOB_ADD_TOTAL: increment number of `blob/add` success receipts
- * - BLOB_ADD_SIZE_TOTAL: increment size of `blob/add` success receipts
  * - STORE_ADD_TOTAL: increment number of `store/add` success receipts
  * - STORE_ADD_SIZE_TOTAL: increment size of `store/add` success receipts
- * - UPLOAD_ADD_TOTAL: increment number of `upload/add` success receipts
- * - BLOB_REMOVE_TOTAL: increment number of `blob/remove` success receipts
- * - BLOB_REMOVE_SIZE_TOTAL: increment size of `blob/remove` success receipts
  * - STORE_REMOVE_TOTAL: increment number of `store/remove` success receipts
  * - STORE_REMOVE_SIZE_TOTAL: increment size of `store/remove` success receipts
- * - UPLOAD_REMOVE_TOTAL: increment number of `upload/remove` success receipts
  * 
  * @param {import('./types.js').UcanStreamInvocation[]} ucanInvocations
  * @param {import('./types.js').MetricsCtx} ctx
@@ -51,32 +41,15 @@ export async function updateAdminMetrics (ucanInvocations, ctx) {
     return r
   }))
 
-  // Append size for `blob/remove` receipts
-  const blobRemoveReceipts = await Promise.all((receipts.get(BLOB_REMOVE) || []).map(async r => {
-    const blobRemoveSuccess = /** @type {SpaceBlobRemoveSuccess} */ (r.out.ok)
-    r.nb.size = blobRemoveSuccess?.size
-    return r
-  }))
-
   await ctx.metricsStore.incrementTotals({
-    [METRICS_NAMES.BLOB_ADD_TOTAL]: (receipts.get(BLOB_ADD) || []).length,
-    [METRICS_NAMES.BLOB_ADD_SIZE_TOTAL]: (receipts.get(BLOB_ADD) || []).reduce(
-      (acc, c) => acc + c.nb?.blob.size, 0
-    ),
     [METRICS_NAMES.STORE_ADD_TOTAL]: (receipts.get(STORE_ADD) || []).length,
     [METRICS_NAMES.STORE_ADD_SIZE_TOTAL]: (receipts.get(STORE_ADD) || []).reduce(
-      (acc, c) => acc + c.nb?.size, 0
-    ),
-    [METRICS_NAMES.UPLOAD_ADD_TOTAL]: (receipts.get(UPLOAD_ADD) || []).length,
-    [METRICS_NAMES.BLOB_REMOVE_TOTAL]: (receipts.get(BLOB_REMOVE) || []).length,
-    [METRICS_NAMES.BLOB_REMOVE_SIZE_TOTAL]: blobRemoveReceipts.reduce(
       (acc, c) => acc + c.nb?.size, 0
     ),
     [METRICS_NAMES.STORE_REMOVE_TOTAL]: (receipts.get(STORE_REMOVE) || []).length,
     [METRICS_NAMES.STORE_REMOVE_SIZE_TOTAL]: storeRemoveReceipts.reduce(
       (acc, c) => acc + c.nb?.size, 0
     ),
-    [METRICS_NAMES.UPLOAD_REMOVE_TOTAL]: (receipts.get(UPLOAD_REMOVE) || []).length,
   })
 }
 
@@ -85,10 +58,8 @@ export async function updateAdminMetrics (ucanInvocations, ctx) {
  * Metrics:
  * - STORE_ADD_TOTAL: increment number of `store/add` success receipts for a space
  * - STORE_ADD_SIZE_TOTAL: increment size of `store/add` success receipts for a space
- * - UPLOAD_ADD_TOTAL: increment number of `upload/add` success receipts for a space
  * - STORE_REMOVE_TOTAL: increment number of `store/remove` success receipts for a space
  * - STORE_REMOVE_SIZE_TOTAL: increment size of `store/remove` success receipts for a space
- * - UPLOAD_REMOVE_TOTAL: increment number of `upload/remove` success receipts for a space
  * 
  * @param {import('./types.js').UcanStreamInvocation[]} ucanInvocations
  * @param {import('./types.js').SpaceMetricsCtx} ctx
@@ -110,24 +81,11 @@ export async function updateSpaceMetrics (ucanInvocations, ctx) {
     return r
   }))
 
-  // Append size for `blob/remove` receipts
-  const blobRemoveReceipts = await Promise.all((receipts.get(BLOB_REMOVE) || []).map(async r => {
-    const blobRemoveSuccess = /** @type {SpaceBlobRemoveSuccess} */ (r.out.ok)
-    r.nb.size = blobRemoveSuccess?.size
-    return r
-  }))
-
   await ctx.metricsStore.incrementTotals({
-    [SPACE_METRICS_NAMES.BLOB_ADD_TOTAL]: normalizeCapsPerSpaceTotal(receipts.get(BLOB_ADD) || []),
-    [SPACE_METRICS_NAMES.BLOB_ADD_SIZE_TOTAL]: normalizeCapsPerSpaceSize(receipts.get(BLOB_ADD) || []),
     [SPACE_METRICS_NAMES.STORE_ADD_TOTAL]: normalizeCapsPerSpaceTotal(receipts.get(STORE_ADD) || []),
     [SPACE_METRICS_NAMES.STORE_ADD_SIZE_TOTAL]: normalizeCapsPerSpaceSize(receipts.get(STORE_ADD) || []),
-    [SPACE_METRICS_NAMES.UPLOAD_ADD_TOTAL]: normalizeCapsPerSpaceTotal(receipts.get(UPLOAD_ADD) || []),
-    [SPACE_METRICS_NAMES.BLOB_REMOVE_TOTAL]: normalizeCapsPerSpaceTotal(receipts.get(BLOB_REMOVE) || []),
-    [SPACE_METRICS_NAMES.BLOB_REMOVE_SIZE_TOTAL]: normalizeCapsPerSpaceSize(blobRemoveReceipts),
     [SPACE_METRICS_NAMES.STORE_REMOVE_TOTAL]: normalizeCapsPerSpaceTotal(receipts.get(STORE_REMOVE) || []),
     [SPACE_METRICS_NAMES.STORE_REMOVE_SIZE_TOTAL]: normalizeCapsPerSpaceSize(storeRemoveReceipts),
-    [SPACE_METRICS_NAMES.UPLOAD_REMOVE_TOTAL]: normalizeCapsPerSpaceTotal(receipts.get(UPLOAD_REMOVE) || []),
   })
 }
 

@@ -11,15 +11,16 @@ import { RecordKeyConflict, RecordNotFound } from './lib.js'
 import { getDynamoClient } from '../../lib/aws/dynamo.js'
 
 /**
- * @typedef {import('@storacha/upload-api').StoreTable} StoreTable
- * @typedef {import('@storacha/upload-api').StoreAddInput} StoreAddInput
- * @typedef {import('@storacha/upload-api').StoreAddOutput} StoreAddOutput
+ * @typedef {import('@web3-storage/upload-api').StoreTable} StoreTable
+ * @typedef {import('@web3-storage/upload-api').StoreAddInput} StoreAddInput
+ * @typedef {import('@web3-storage/upload-api').StoreAddOutput} StoreAddOutput
  * @typedef {import('@storacha/upload-api').StoreListItem} StoreListItem
  */
 
 /**
  * Abstraction layer to handle operations on Store Table.
  *
+ * @deprecated
  * @param {string} region
  * @param {string} tableName
  * @param {object} [options]
@@ -36,6 +37,7 @@ export function createStoreTable(region, tableName, options = {}) {
 }
 
 /**
+ * @deprecated
  * @param {import('@aws-sdk/client-dynamodb').DynamoDBClient} dynamoDb
  * @param {string} tableName
  * @returns {StoreTable}

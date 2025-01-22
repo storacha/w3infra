@@ -8,6 +8,7 @@ import { marshall, unmarshall } from '@aws-sdk/util-dynamodb'
 import { CID } from 'multiformats/cid'
 import { RecordNotFound } from './lib.js'
 import { getDynamoClient } from '../../lib/aws/dynamo.js'
+import { METRICS_NAMES, SPACE_METRICS_NAMES } from '../constants.js'
 
 /**
  * @typedef {import('@storacha/upload-api').UploadTable} UploadTable
@@ -20,24 +21,32 @@ import { getDynamoClient } from '../../lib/aws/dynamo.js'
  *
  * @param {string} region
  * @param {string} tableName
+ * @param {{
+ *   space: import('../types.js').SpaceMetricsStore
+ *   admin: import('../types.js').MetricsStore
+ * }} metrics
  * @param {object} [options]
  * @param {string} [options.endpoint]
  * @returns {UploadTable}
  */
-export function createUploadTable(region, tableName, options = {}) {
+export function createUploadTable(region, tableName, metrics, options = {}) {
   const dynamoDb = getDynamoClient({
     region,
     endpoint: options.endpoint,
   })
-  return useUploadTable(dynamoDb, tableName)
+  return useUploadTable(dynamoDb, tableName, metrics)
 }
 
 /**
  * @param {import('@aws-sdk/client-dynamodb').DynamoDBClient} dynamoDb
  * @param {string} tableName
+ * @param {{
+ *   space: import('../types.js').SpaceMetricsStore
+ *   admin: import('../types.js').MetricsStore
+ * }} metrics
  * @returns {UploadTable}
  */
-export function useUploadTable(dynamoDb, tableName) {
+export function useUploadTable(dynamoDb, tableName, metrics) {
   return {
     /**
      * Fetch a single upload
@@ -93,7 +102,7 @@ export function useUploadTable(dynamoDb, tableName) {
      * @param {UploadAddInput} item
      * @returns {ReturnType<UploadTable['upsert']>}
      */
-    upsert: async ({ space, root, shards = [], issuer, invocation }) => {
+    upsert: async ({ space, root, shards = [], issuer, cause }) => {
       const insertedAt = new Date().toISOString()
       const shardSet = new Set(shards.map((s) => s.toString()))
 
@@ -109,10 +118,11 @@ export function useUploadTable(dynamoDb, tableName) {
         ...(shardSet.size > 0 && {
           ':sh': { SS: [...shardSet] }, // SS is "String Set"
         }),
+        ':ca': { S: cause.toString() },
       }
 
       const shardExpression = shards.length ? 'ADD shards :sh' : ''
-      const UpdateExpression = `SET insertedAt=if_not_exists(insertedAt, :ia), updatedAt = :ua ${shardExpression}`
+      const UpdateExpression = `SET cause = :ca, insertedAt = if_not_exists(insertedAt, :ia), updatedAt = :ua ${shardExpression}`
 
       /**
        * upsert!
@@ -134,7 +144,20 @@ export function useUploadTable(dynamoDb, tableName) {
         throw new Error('Missing `Attributes` property on DynamoDB response')
       }
 
-      return { ok: toUploadAddResult(unmarshall(res.Attributes)) }
+      const raw = unmarshall(res.Attributes)
+      // if new, increment total
+      if (raw.insertedAt === raw.updatedAt) {
+        await Promise.all([
+          metrics.space.incrementTotals({
+            [SPACE_METRICS_NAMES.UPLOAD_ADD_TOTAL]: [{ space, value: 1 }]
+          }),
+          metrics.admin.incrementTotals({
+            [METRICS_NAMES.UPLOAD_ADD_TOTAL]: 1,
+          })
+        ])
+      }
+
+      return { ok: toUploadAddResult(raw) }
     },
     /**
      * Remove an upload from an account
@@ -161,6 +184,16 @@ export function useUploadTable(dynamoDb, tableName) {
           throw new Error('missing return values')
         }
         const raw = unmarshall(res.Attributes)
+
+        await Promise.all([
+          metrics.space.incrementTotals({
+            [SPACE_METRICS_NAMES.UPLOAD_REMOVE_TOTAL]: [{ space, value: -1 }]
+          }),
+          metrics.admin.incrementTotals({
+            [METRICS_NAMES.UPLOAD_REMOVE_TOTAL]: 1,
+          })
+        ])
+
         return { ok: toUploadAddResult(raw) }
       } catch (/** @type {any} */ err) {
         if (err.name === 'ConditionalCheckFailedException') {

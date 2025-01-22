@@ -9,8 +9,8 @@ import { AGGREGATE_ACCEPT, AGGREGATE_OFFER, METRICS_NAMES } from './constants.js
 import { DecodeBlockOperationError, NotFoundWorkflowError } from './errors.js'
 
 /**
- * @typedef {import('@storacha/capabilities/types.js').AggregateOffer} AggregateOffer
- * @typedef {import('@storacha/capabilities/types.js').AggregateAccept} AggregateAccept
+ * @typedef {import('@storacha/capabilities/types').AggregateOffer} AggregateOffer
+ * @typedef {import('@storacha/capabilities/types').AggregateAccept} AggregateAccept
  * @typedef {import('@web3-storage/data-segment').PieceLink} PieceLink
  * @typedef {{ capabilities: AggregateOffer[], invocationCid: string }} AggregateOfferInvocation
  * @typedef {{ capabilities: AggregateAccept[], invocationCid: string }} AggregateAcceptInvocation

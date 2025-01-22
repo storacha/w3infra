@@ -34,18 +34,19 @@ export class BillingProviderUpdateError extends Failure {
 }
 
 /**
- * 
  * @param {import('stripe').Stripe} stripe
- * @param {import("@storacha/upload-service-infra-billing/lib/api").CustomerStore} customerStore
- * @returns {import("./types").BillingProvider}
+ * @param {import('../billing/lib/api.js').CustomerStore} customerStore
+ * @returns {import('./types.js').BillingProvider}
  */
 export function createStripeBillingProvider(stripe, customerStore) {
   return {
+    /** @type {import('./types.js').BillingProvider['hasCustomer']} */
     async hasCustomer(customer) {
       const customersResponse = await stripe.customers.list({ email: toEmail(/** @type {import('@storacha/did-mailto').DidMailto} */(customer)) })
       return { ok: (customersResponse.data.length > 0) }
     },
 
+    /** @type {import('./types.js').BillingProvider['setPlan']} */
     async setPlan(customerDID, plan) {
       /** @type {import('stripe').Stripe.SubscriptionItem[] | undefined} */
       let subscriptionItems
@@ -87,6 +88,7 @@ export function createStripeBillingProvider(stripe, customerStore) {
       }
     },
 
+    /** @type {import('./types.js').BillingProvider['createAdminSession']} */
     async createAdminSession(account, returnURL) {
       const response = await customerStore.get({ customer: account })
       if (response.error) {

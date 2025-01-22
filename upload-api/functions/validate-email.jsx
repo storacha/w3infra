@@ -6,8 +6,6 @@ import { getServiceSigner, parseServiceDids } from '../config.js'
 import { Email } from '../email.js'
 import { createDelegationsTable } from '../tables/delegations.js'
 import { createDelegationsStore } from '../buckets/delegations-store.js'
-import { createInvocationStore } from '../buckets/invocation-store.js'
-import { createWorkflowStore } from '../buckets/workflow-store.js'
 import { createSubscriptionTable } from '../tables/subscription.js'
 import { createConsumerTable } from '../tables/consumer.js'
 import { createRevocationsTable } from '../stores/revocations.js'
@@ -33,7 +31,7 @@ Sentry.AWSLambda.init({
 })
 
 /**
- * @param {htmlStoracha.HtmlResponse} response
+ * @param {Response & { getStringBody: () => string }} response
  */
 export function toLambdaResponse(response) {
   const { status = 200, headers: responseHeaders, body } = response
@@ -102,11 +100,7 @@ function createAuthorizeContext() {
     DYNAMO_DB_ENDPOINT: dbEndpoint,
   } = process.env
   const { PRIVATE_KEY } = Config
-  const invocationBucket = createInvocationStore(
-    AWS_REGION,
-    AGENT_INDEX_BUCKET_NAME
-  )
-  const workflowBucket = createWorkflowStore(AWS_REGION, AGENT_MESSAGE_BUCKET_NAME)
+
   const delegationBucket = createDelegationsStore(
     R2_ENDPOINT,
     R2_ACCESS_KEY_ID,
@@ -163,7 +157,7 @@ function createAuthorizeContext() {
     delegationsStorage: createDelegationsTable(
       AWS_REGION,
       DELEGATION_TABLE_NAME,
-      { bucket: delegationBucket, invocationBucket, workflowBucket }
+      { bucket: delegationBucket }
     ),
     revocationsStorage: createRevocationsTable(
       AWS_REGION,

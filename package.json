@@ -65,8 +65,8 @@
     "@ipld/dag-json": "^10.1.5",
     "@storacha/upload-api": "^1.2.0",
     "@web-std/stream": "^1.0.3",
-    "aws-cdk-lib": "2.142.1",
-    "sst": "^2.40.3"
+    "aws-cdk-lib": "2.171.1",
+    "sst": "^2.47.0"
   },
   "simple-git-hooks": {
     "pre-commit": "npx lint-staged"

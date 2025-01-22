@@ -11,7 +11,7 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { getS3Client } from '../../lib/aws/s3.js'
 
 /**
- * @typedef {import('@storacha/upload-api/types').BlobsStorage} BlobsStorage
+ * @typedef {import('@web3-storage/upload-api/types').BlobsStorage} BlobsStorage
  * @typedef {import('@storacha/upload-api').BlobRetriever} BlobRetriever
  * @typedef {import('@ucanto/interface').Failure} Failure
  * @typedef {import('@ucanto/interface').Result<boolean, Failure>} HasResult
@@ -33,6 +33,7 @@ const contentKey = (digest) => {
 /**
  * Abstraction layer with Factory to perform operations on bucket storing Blobs.
  *
+ * @deprecated
  * @param {string} region
  * @param {string} bucketName
  * @param {Partial<import('../../lib/aws/s3.js').Address>} [options]
@@ -49,6 +50,7 @@ export function createBlobsStorage(region, bucketName, options) {
  * This is quite similar with buckets/car-store with few modifications given new key schema
  * and multihash instead of Link.
  *
+ * @deprecated
  * @param {import('@aws-sdk/client-s3').S3Client} s3
  * @param {string} bucketName
  * @returns {BlobsStorage & BlobRetriever}
@@ -138,9 +140,11 @@ export function useBlobsStorage(s3, bucketName) {
  * store#createUploadUrl is from first store.
  * store#has will check stores in order until 0-1 `true` are found.
  *
+ * @deprecated
  * @template {BlobsStorage} T
  * @param {T} blobStorage
  * @param {T[]} moreBlobStorages
+ * @returns {BlobsStorage}
  */
 export function composeBlobStoragesWithOrderedHas(blobStorage, ...moreBlobStorages) {
   return {

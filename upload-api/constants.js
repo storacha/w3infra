@@ -9,7 +9,7 @@ import {
 import {
   add as blobAdd,
   remove as blobRemove
-} from '@storacha/capabilities/blob'
+} from '@storacha/capabilities/space/blob'
 
 // UCAN protocol
 export const BLOB_ADD = blobAdd.can

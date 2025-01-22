@@ -2,8 +2,8 @@ import * as UCAN from '@ipld/dag-ucan'
 import { DID, Delegation, UCANLink, ByteView, DIDKey, Result, Failure, Unit } from '@ucanto/interface'
 import { UnknownLink } from 'multiformats'
 import { CID } from 'multiformats/cid'
-import { CarStoreBucket, AllocationsStorage } from '@web3-storage/upload-api' // TODO: is CarStoreBucket needed?
-import { AccountDID, ProviderDID, Service, SpaceDID, BlobAPI, PlanCreateAdminSessionSuccess, PlanCreateAdminSessionFailure, AgentStore } from '@storacha/upload-api'
+import { CarStoreBucket } from '@web3-storage/upload-api'
+import { AccountDID, ProviderDID, Service, SpaceDID, PlanCreateAdminSessionSuccess, PlanCreateAdminSessionFailure, AgentStore } from '@storacha/upload-api'
 
 export type {
   UnknownLink,
@@ -43,7 +43,6 @@ export interface MetricsStore {
 export interface MetricsCtx {
   metricsStore: MetricsStore
   carStore: CarStore
-  blobRegistry: BlobAPI.Registry
 }
 
 export interface SpaceMetricsItem {
@@ -58,7 +57,6 @@ export interface SpaceMetricsStore {
 export interface SpaceMetricsCtx {
   metricsStore: SpaceMetricsStore
   carStore: CarStore
-  allocationsStorage: AllocationsStorage
 }
 
 export interface CarStore extends CarStoreBucket {

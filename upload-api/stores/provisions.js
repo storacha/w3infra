@@ -123,7 +123,7 @@ export function useProvisionStore (subscriptionTable, consumerTable, spaceMetric
         consumerTable.getBySubscription(provider, subscription)
       ])
       if (subscriptionRecord) {
-        /** @type {import('@storacha/upload-api/dist/src/types/provisions').Subscription} */
+        /** @type {import('@storacha/upload-api').Subscription} */
         const result = {
           customer: /** @type {import('@storacha/upload-api').AccountDID} */(subscriptionRecord.customer)
         }

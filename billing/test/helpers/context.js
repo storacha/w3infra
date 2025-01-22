@@ -28,8 +28,8 @@ dotenv.config({ path: path.resolve('../.env.local'), override: true, debug: true
 
 /**
  * @typedef {{
- *  dynamo: import('./aws').AWSService<import('@aws-sdk/client-dynamodb').DynamoDBClient>
- *  sqs: import('./aws').AWSService<import('@aws-sdk/client-sqs').SQSClient>
+ *  dynamo: import('./aws.js').AWSService<import('@aws-sdk/client-dynamodb').DynamoDBClient>
+ *  sqs: import('./aws.js').AWSService<import('@aws-sdk/client-sqs').SQSClient>
  * }} AWSServices
  */
 
