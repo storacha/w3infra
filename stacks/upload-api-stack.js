@@ -13,7 +13,6 @@ import { BillingStack } from './billing-stack.js'
 import { CarparkStack } from './carpark-stack.js'
 import { FilecoinStack } from './filecoin-stack.js'
 import { UcanInvocationStack } from './ucan-invocation-stack.js'
-import { IndexerStack } from './indexer-stack.js'
 
 import { getCustomDomain, getApiPackageJson, getGitInfo, setupSentry, getEnv, getEventSourceConfig, getServiceURL } from './config.js'
 
@@ -48,7 +47,6 @@ export function UploadApiStack({ stack, app }) {
   const { agentIndexBucket, agentMessageBucket, ucanStream } = use(UcanInvocationStack)
   const { customerTable, spaceDiffTable, spaceSnapshotTable, egressTrafficTable, stripeSecretKey } = use(BillingDbStack)
   const { pieceOfferQueue, filecoinSubmitQueue } = use(FilecoinStack)
-  const { blockAdvertPublisherQueue, blockIndexWriterQueue } = use(IndexerStack)
   const { egressTrafficQueue } = use(BillingStack)
 
   // Setup API
@@ -93,8 +91,6 @@ export function UploadApiStack({ stack, app }) {
             ucanStream,
             pieceOfferQueue,
             filecoinSubmitQueue,
-            blockAdvertPublisherQueue,
-            blockIndexWriterQueue,
             egressTrafficQueue,
           ],
           environment: {
@@ -123,8 +119,6 @@ export function UploadApiStack({ stack, app }) {
             PIECE_TABLE_NAME: pieceTable.tableName,
             PIECE_OFFER_QUEUE_URL: pieceOfferQueue.queueUrl,
             FILECOIN_SUBMIT_QUEUE_URL: filecoinSubmitQueue.queueUrl,
-            BLOCK_ADVERT_PUBLISHER_QUEUE_URL: blockAdvertPublisherQueue.queueUrl,
-            BLOCK_INDEX_WRITER_QUEUE_URL: blockIndexWriterQueue.queueUrl,
             EGRESS_TRAFFIC_QUEUE_URL: egressTrafficQueue.queueUrl,
             NAME: pkg.name,
             VERSION: pkg.version,

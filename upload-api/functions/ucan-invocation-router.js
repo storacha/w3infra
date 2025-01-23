@@ -2,7 +2,7 @@ import { Config } from 'sst/node/config'
 import { API, error, ok } from '@ucanto/core'
 import * as Delegation from '@ucanto/core/delegation'
 import { CAR, Legacy, Codec } from '@ucanto/transport'
-import { DIDResolutionError } from '@ucanto/validator'
+import { DIDResolutionError, Schema } from '@ucanto/validator'
 import * as Link from 'multiformats/link'
 import { base64 } from 'multiformats/bases/base64'
 import * as Sentry from '@sentry/serverless'
@@ -22,7 +22,6 @@ import { getServiceSigner, parseServiceDids, getServiceConnection } from '../con
 import { createUcantoServer } from '../service.js'
 import { Email } from '../email.js'
 import * as AgentStore from '../stores/agent.js'
-import { createBlobsStorage, composeBlobStoragesWithOrderedHas } from '../stores/blobs.js'
 import { createAllocationTableBlobRegistry, createBlobRegistry } from '../stores/blob-registry.js'
 import { useProvisionStore } from '../stores/provisions.js'
 import { useSubscriptionsStore } from '../stores/subscriptions.js'
@@ -42,7 +41,6 @@ import { createSpaceDiffStore } from '@storacha/upload-service-infra-billing/tab
 import { createSpaceSnapshotStore } from '@storacha/upload-service-infra-billing/tables/space-snapshot.js'
 import { useUsageStore } from '../stores/usage.js'
 import { createStripeBillingProvider } from '../billing.js'
-import { createIPNIService } from '../external-services/ipni-service.js'
 import { mustGetEnv } from '../../lib/env.js'
 import { createEgressTrafficQueue } from '@storacha/upload-service-infra-billing/queues/egress-traffic.js'
 import { create as createRoutingService } from '../external-services/router.js'
@@ -98,12 +96,12 @@ const codec = Codec.inbound({
  */
 export const knownWebDIDs = {
   // Production
-  'did:web:upload.storacha.network': 'did:key:z6MkqdncRZ1wj8zxCTDUQ8CRT8NQWd63T7mZRvZUX8B7XDFi',
+  'did:web:up.storacha.network': 'did:key:z6MkqdncRZ1wj8zxCTDUQ8CRT8NQWd63T7mZRvZUX8B7XDFi',
   'did:web:web3.storage': 'did:key:z6MkqdncRZ1wj8zxCTDUQ8CRT8NQWd63T7mZRvZUX8B7XDFi', // legacy
   'did:web:w3s.link': 'did:key:z6Mkha3NLZ38QiZXsUHKRHecoumtha3LnbYEL21kXYBFXvo5',
 
   // Staging
-  'did:web:staging.upload.storacha.network': 'did:key:z6MkhcbEpJpEvNVDd3n5RurquVdqs5dPU16JDU5VZTDtFgnn',
+  'did:web:staging.up.storacha.network': 'did:key:z6MkhcbEpJpEvNVDd3n5RurquVdqs5dPU16JDU5VZTDtFgnn',
   'did:web:staging.web3.storage': 'did:key:z6MkhcbEpJpEvNVDd3n5RurquVdqs5dPU16JDU5VZTDtFgnn', // legacy
   'did:web:staging.w3s.link': 'did:key:z6MkqK1d4thaCEXSGZ6EchJw3tDPhQriwynWDuR55ayATMNf',
 }
@@ -158,8 +156,6 @@ export async function ucanInvocationRouter(request) {
     carparkBucketEndpoint,
     carparkBucketAccessKeyId,
     carparkBucketSecretAccessKey,
-    blockAdvertisementPublisherQueueConfig,
-    blockIndexWriterQueueConfig,
     sstStage
   } = getLambdaEnv()
 
@@ -198,17 +194,6 @@ export async function ucanInvocationRouter(request) {
     },
   })
 
-  const blobsStorage = composeBlobStoragesWithOrderedHas(
-    createBlobsStorage(R2_REGION, carparkBucketName, {
-      endpoint: carparkBucketEndpoint,
-      credentials: {
-        accessKeyId: carparkBucketAccessKeyId,
-        secretAccessKey: carparkBucketSecretAccessKey,
-      }, 
-    }),
-    createBlobsStorage(AWS_REGION, storeBucketName),
-  )
-
   const blobRegistry = createBlobRegistry(AWS_REGION, blobRegistryTableName, metrics, options)
   const allocationBlobRegistry = createAllocationTableBlobRegistry(blobRegistry, AWS_REGION, allocationTableName, options)
   const delegationBucket = createDelegationsStore(r2DelegationBucketEndpoint, r2DelegationBucketAccessKeyId, r2DelegationBucketSecretAccessKey, r2DelegationBucketName)
@@ -234,12 +219,6 @@ export async function ucanInvocationRouter(request) {
     did: dealTrackerDid,
     url: dealTrackerUrl
   })
-
-  const ipniService = createIPNIService(
-    blockAdvertisementPublisherQueueConfig,
-    blockIndexWriterQueueConfig,
-    blobsStorage
-  )
 
   const indexingServicePrincipal = DID.parse(mustGetEnv('INDEXING_SERVICE_DID'))
   const indexingServiceURL = new URL(mustGetEnv('INDEXING_SERVICE_URL'))
@@ -271,12 +250,10 @@ export async function ucanInvocationRouter(request) {
     router: routingService,
     registry: allocationBlobRegistry,
     blobRetriever,
-    // @ts-expect-error - TODO: remove when https://github.com/storacha/ucanto/pull/364 merged/released.
-    resolveDIDKey: (did) => {
-      const didKey = knownWebDIDs[did]
-      return didKey ? ok(didKey) : error(new DIDResolutionError(did))
-    },
-    getServiceConnection: () => connection,
+    resolveDIDKey: (did) =>
+      Schema.did({ method: 'web' }).is(did) && knownWebDIDs[did]
+        ? ok(knownWebDIDs[did])
+        : error(new DIDResolutionError(did)),
     // TODO: to be deprecated with `store/*` protocol
     storeTable: createStoreTable(AWS_REGION, storeTableName, {
       endpoint: dbEndpoint,
@@ -320,13 +297,7 @@ export async function ucanInvocationRouter(request) {
     plansStorage,
     requirePaymentPlan,
     usageStorage,
-    ipniService,
     claimsService: indexingServiceConfig
-  })
-
-  const connection = UploadAPI.connect({
-    id: serviceSigner,
-    channel: server,
   })
 
   const payload = fromLambdaRequest(request)
@@ -399,15 +370,6 @@ function getLambdaEnv () {
     carparkBucketEndpoint: mustGetEnv('R2_ENDPOINT'),
     carparkBucketAccessKeyId: mustGetEnv('R2_ACCESS_KEY_ID'),
     carparkBucketSecretAccessKey: mustGetEnv('R2_SECRET_ACCESS_KEY'),
-    // IPNI service
-    blockAdvertisementPublisherQueueConfig: {
-      url: new URL(mustGetEnv('BLOCK_ADVERT_PUBLISHER_QUEUE_URL')),
-      region: AWS_REGION
-    },
-    blockIndexWriterQueueConfig: {
-      url: new URL(mustGetEnv('BLOCK_INDEX_WRITER_QUEUE_URL')),
-      region: AWS_REGION
-    },
     sstStage: mustGetEnv('SST_STAGE'),
     // set for testing
     dbEndpoint: process.env.DYNAMO_DB_ENDPOINT,
