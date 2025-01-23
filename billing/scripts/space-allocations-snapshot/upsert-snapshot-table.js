@@ -66,7 +66,7 @@ export async function main() {
   const snapshots = await readCsvInput(filename)
   console.log(`writing ${snapshots.length} snapshots to ${STORACHA_ENV}'s ${SPACE_SNAPSHOT_TABLE_NAME} dynamo table`)
   for (let i = 0; i < snapshots.length; i += 100) {
-    let batch = [];
+    const batch = [];
     for (let j = i; j < i + 100 && j < snapshots.length; j++) {
       batch.push(snapshots[j]);
     }
