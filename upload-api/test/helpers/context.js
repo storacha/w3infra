@@ -11,21 +11,11 @@ import anyTest from 'ava'
  * @typedef {object} GetMetricsContext
  * @property {import('../../types.js').MetricsTable} metricsTable
  * @property {string} tableName
- * @typedef {object} MetricsContext
- * @property {import('../../types.js').MetricsStore} adminMetricsStore
- * @property {string} adminMetricsTableName
- * @property {import('../../types.js').SpaceMetricsStore} spaceMetricsStore
- * @property {string} spaceMetricsTableName
- * @property {import('../../types.js').CarStore} carStore
- * @property {string} carStoreBucketName
- * @property {import('@storacha/upload-api').AllocationsStorage} allocationsStorage
- * @property {string} allocationsTableName
  *
  * @typedef {import("ava").TestFn<DynamoContext & S3Context & ServiceContext>} Test
  * @typedef {import("ava").TestFn<DynamoContext>} TestDynamo
  * @typedef {import("ava").TestFn<S3Context>} TestS3
  * @typedef {import("ava").TestFn<DynamoContext & GetMetricsContext>} TestGetMetrics
- * @typedef {import("ava").TestFn<DynamoContext & S3Context & MetricsContext>} TestMetrics
  * @typedef {import("ava").TestFn<ServiceContext>} TestService
  */
 
@@ -40,9 +30,6 @@ export const test = /** @type {Test} */ (anyTest)
 
 // eslint-disable-next-line unicorn/prefer-export-from
 export const testGetMetrics = /** @type {TestGetMetrics} */ (anyTest)
-
-// eslint-disable-next-line unicorn/prefer-export-from
-export const testMetrics = /** @type {TestMetrics} */ (anyTest)
 
 // eslint-disable-next-line unicorn/prefer-export-from
 export const service = /** @type {TestService} */ (anyTest)
