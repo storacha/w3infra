@@ -61,7 +61,9 @@ export const allocationTableProps = {
   // space + link must be unique to satisfy index constraint
   primaryIndex: { partitionKey: 'space', sortKey: 'multihash' },
   globalIndexes: {
-    multihash: { partitionKey: 'multihash', sortKey: 'space', projection: ['space', 'insertedAt'] }
+    multihash: { partitionKey: 'multihash', sortKey: 'space', projection: ['space', 'insertedAt'] },
+    // Temporary index to allow migration to blob registry
+    insertedAt: { partitionKey: 'insertedAt', sortKey: 'space', projection: 'all' },
   }
 }
 

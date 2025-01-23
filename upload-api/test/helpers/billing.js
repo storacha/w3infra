@@ -1,5 +1,5 @@
 /**
- * @returns {import("../../types").BillingProvider}
+ * @returns {import('../../types.js').BillingProvider}
  */
 export function createTestBillingProvider() {
   /**
