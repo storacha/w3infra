@@ -105,22 +105,22 @@ export const assert = async (message, { stream, store }) => {
   for (const member of message.index) {
     if (member.invocation) {
       const { task, invocation, message } = member.invocation
+      const data = JSON.stringify({
+        // This is bad naming but not worth a breaking change
+        carCid: message.toString(),
+        task: task.toString(),
+        value: {
+          att: invocation.capabilities,
+          aud: invocation.audience.did(),
+          iss: invocation.issuer.did(),
+          cid: invocation.cid.toString(),
+        },
+        ts: Date.now(),
+        type: stream.workflow.type,
+      })
+
       records.push({
-        Data: UTF8.fromString(
-          JSON.stringify({
-            // This is bad naming but not worth a breaking change
-            carCid: message.toString(),
-            task: task.toString(),
-            value: {
-              att: invocation.capabilities,
-              aud: invocation.audience.did(),
-              iss: invocation.issuer.did(),
-              cid: invocation.cid.toString(),
-            },
-            ts: Date.now(),
-            type: stream.workflow.type,
-          })
-        ),
+        Data: UTF8.fromString(data),
         PartitionKey: partitionKey(member),
       })
     }
@@ -145,24 +145,26 @@ export const assert = async (message, { stream, store }) => {
         console.warn("receipt will not serialize to JSON", "receipt", receipt.out, "error", error)
       }
 
+      const data = JSON.stringify(
+        {
+          carCid: message.toString(),
+          invocationCid: invocation.cid.toString(),
+          task: task.toString(),
+          value: {
+            att: invocation.capabilities,
+            aud: invocation.audience.did(),
+            iss: invocation.issuer.did(),
+            cid: invocation.cid.toString(),
+          },
+          out: receipt.out,
+          ts: Date.now(),
+          type: stream.receipt.type,
+        },
+        (_, value) => (typeof value === 'bigint' ? Number(value) : value)
+      )
+
       records.push({
-        Data: UTF8.fromString(
-          JSON.stringify({
-            // This is bad naming but not worth a breaking change
-            carCid: message.toString(),
-            invocationCid: invocation.cid.toString(),
-            task: task.toString(),
-            value: {
-              att: invocation.capabilities,
-              aud: invocation.audience.did(),
-              iss: invocation.issuer.did(),
-              cid: invocation.cid.toString(),
-            },
-            out: receipt.out,
-            ts: Date.now(),
-            type: stream.receipt.type,
-          }, (_, value) => typeof value === "bigint" ? Number(value) : value )
-        ),
+        Data: UTF8.fromString(data),
         PartitionKey: partitionKey(member),
       })
     }

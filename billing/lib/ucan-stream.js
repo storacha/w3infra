@@ -20,11 +20,9 @@ export const findSpaceUsageDeltas = messages => {
     let resource
     /** @type {number|undefined} */
     let size
-    if (isReceiptForCapability(message, BlobCaps.allocate) && isBlobAllocateSuccess(message.out)) {
-      const spaceDigestBytes = message.value.att[0].nb?.space
-      if (!spaceDigestBytes) throw new Error('missing space in allocate caveats')
-      resource = DID.decode(spaceDigestBytes).did()
-      size = message.out.ok.size
+    if (isReceiptForCapability(message, BlobCaps.accept) && isBlobAcceptSuccess(message.out)) {
+      resource = DID.decode(message.value.att[0].nb?.space ?? new Uint8Array()).did()
+      size = message.value.att[0].nb?.blob.size
     } else if (isReceiptForCapability(message, SpaceBlobCaps.remove) && isSpaceBlobRemoveSuccess(message.out)) {
       resource = /** @type {import('@ucanto/interface').DID} */ (message.value.att[0].with)
       size = -message.out.ok.size
@@ -125,14 +123,14 @@ const isReceipt = m => m.type === 'receipt'
 
 /**
  * @param {import('@ucanto/interface').Result} r
- * @returns {r is { ok: import('@storacha/capabilities/types').BlobAllocateSuccess }}
+ * @returns {r is { ok: import('@web3-storage/capabilities/types').BlobAcceptSuccess }}
  */
-const isBlobAllocateSuccess = r =>
+const isBlobAcceptSuccess = (r) =>
   !r.error &&
   r.ok != null &&
   typeof r.ok === 'object' &&
-  'size' in r.ok &&
-  (typeof r.ok.size === 'number')
+  'site' in r.ok &&
+  typeof r.ok.site === 'object'
 
 /**
  * @param {import('@ucanto/interface').Result} r

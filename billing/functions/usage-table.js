@@ -28,7 +28,9 @@ export const handler = Sentry.AWSLambda.wrapHandler(
     if (!stripeSecretKey) throw new Error('missing secret: STRIPE_SECRET_KEY')
 
     const records = parseUsageInsertEvent(event)
-    if (!records.length) return
+    if (!records.length) {
+      throw new Error(`found no records in usage insert event: ${JSON.stringify(event)}`)
+    }
 
     if (records.length > 1) {
       throw new Error(`invalid batch size, expected: 1, actual: ${records.length}`)
@@ -52,6 +54,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(
 const parseUsageInsertEvent = event => {
   const records = []
   for (const r of event.Records) {
+    console.log(`processing usage record: ${JSON.stringify(r)}`)
     if (r.eventName !== 'INSERT') continue
     if (!r.dynamodb) continue
     if (!r.dynamodb.NewImage) throw new Error('missing "NEW_IMAGE" in stream event')
