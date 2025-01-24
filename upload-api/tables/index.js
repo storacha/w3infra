@@ -40,6 +40,7 @@ export const uploadTableProps = {
     space: 'string',        // `did:key:space`
     root: 'string',         // `baf...x`
     shard: 'string',        // `bagy...1
+    cause: 'string',        // `baf...ucan` (CID of invocation UCAN)
     insertedAt: 'string',   // `2022-12-24T...`
   },
   // space + root must be unique to satisfy index constraint

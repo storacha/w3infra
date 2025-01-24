@@ -4,7 +4,7 @@ import { GetObjectCommand } from '@aws-sdk/client-s3'
 import * as CAR from "@ucanto/transport/car"
 
 /**
- * @type {import('../helpers/ucan').Tests}
+ * @type {import('../helpers/ucan.js').Tests}
  */
 export const test = {
   'test receipt endpoint': async (assert, context) => {
