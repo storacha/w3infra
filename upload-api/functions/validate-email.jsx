@@ -22,7 +22,7 @@ import { createRateLimitTable } from '../tables/rate-limit.js'
 import { createSpaceMetricsTable } from '../tables/space-metrics.js'
 import { createCustomerStore } from '../../billing/tables/customer.js'
 
-const html = process.env.HOSTED_ZONE === 'upload.storacha.network' ? htmlW3s : htmlStoracha
+const html = process.env.HOSTED_ZONE === 'up.web3.storage' ? htmlW3s : htmlStoracha
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,

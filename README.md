@@ -29,7 +29,7 @@ To work on this codebase **you need**:
 
 You can then run the tests locally with `npm test`.
 
-To try out a change submit a PR and you'll get temporary infra rolled out for you automatically at `https://<pr#>.upload.storacha.network`.
+To try out a change submit a PR and you'll get temporary infra rolled out for you automatically at `https://<pr#>.up.storacha.network`.
 
 [`sst`](https://sst.dev) is the framework we use to define what to deploy. Read the docs! https://sst.dev
 
@@ -37,7 +37,7 @@ To try out a change submit a PR and you'll get temporary infra rolled out for yo
 
 Deployments are managed by [seed.run].
 
-The `main` branch is deployed to https://staging.upload.storacha.network and staging builds are promoted to prod manually via the UI at https://console.seed.run
+The `main` branch is deployed to https://staging.up.storacha.network and staging builds are promoted to prod manually via the UI at https://console.seed.run
 
 ### Local dev
 
@@ -150,7 +150,7 @@ Ensure the following variables are set in the env when deploying
 
 #### `HOSTED_ZONES`
 
-The root domain(s) to deploy the w3up API to. e.g `upload.storacha.network`. The value should match a hosted zone configured in route53 that your aws account has access to. Multiple zones can be specified, in which case they are seperated by a comma, and this will cause deployment to each specified zone.
+The root domain(s) to deploy the w3up API to. e.g `up.storacha.network`. The value should match a hosted zone configured in route53 that your aws account has access to. Multiple zones can be specified, in which case they are seperated by a comma, and this will cause deployment to each specified zone.
 
 #### `ROUNDABOUT_HOSTED_ZONE`
 
@@ -190,7 +190,7 @@ URL of the filecoin deal tracker service.
 
 #### `UPLOAD_API_DID`
 
-[DID](https://www.w3.org/TR/did-core/) of the upload-api ucanto server. e.g. `did:web:upload.storacha.network`. Optional: if omitted, a `did:key` will be derrived from `PRIVATE_KEY`
+[DID](https://www.w3.org/TR/did-core/) of the upload-api ucanto server. e.g. `did:web:up.storacha.network`. Optional: if omitted, a `did:key` will be derrived from `PRIVATE_KEY`
 
 #### `R2_ACCESS_KEY_ID`
 

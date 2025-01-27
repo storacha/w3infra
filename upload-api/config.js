@@ -44,8 +44,8 @@ export function parseServiceDids(serviceDids) {
  * @returns 
  */
 export function getServiceConnection (config) {
-  const servicePrincipal = DID.parse(config.did) // 'did:web:upload.storacha.network'
-  const serviceURL = new URL(config.url) // 'https://upload.storacha.network'
+  const servicePrincipal = DID.parse(config.did) // 'did:web:up.storacha.network'
+  const serviceURL = new URL(config.url) // 'https://up.storacha.network'
 
   const serviceConnection = connect({
     id: servicePrincipal,

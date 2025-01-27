@@ -101,7 +101,7 @@ export function getServiceProps (client, serviceUrl, capability) {
       proofs: client.agent.proofs(
         [BlobCapabilities.add.can].map((can) => ({ can, with: resource }))
       ),
-      audience: DID.parse('did:web:staging.upload.storacha.network')
+      audience: DID.parse('did:web:staging.up.storacha.network')
     }
   }
 }
@@ -111,7 +111,7 @@ export function getServiceProps (client, serviceUrl, capability) {
  */
 function getAccessServiceConnection(serviceUrl) {
   const accessServiceURL = new URL(serviceUrl)
-  const accessServicePrincipal = DID.parse('did:web:staging.upload.storacha.network')
+  const accessServicePrincipal = DID.parse('did:web:staging.up.storacha.network')
 
   return connect({
     id: accessServicePrincipal,
@@ -128,7 +128,7 @@ function getAccessServiceConnection(serviceUrl) {
  */
 function getUploadServiceConnection(serviceUrl) {
   const uploadServiceURL = new URL(serviceUrl)
-  const uploadServicePrincipal = DID.parse('did:web:staging.upload.storacha.network')
+  const uploadServicePrincipal = DID.parse('did:web:staging.up.storacha.network')
 
   return connect({
     id: uploadServicePrincipal,

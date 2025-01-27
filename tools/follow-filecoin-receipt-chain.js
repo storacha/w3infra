@@ -170,8 +170,8 @@ function getAgentMessageBucketName (env) {
  */
 function getDid (env) {
   if (env === 'staging') {
-    return 'did:web:staging.upload.storacha.network'
+    return 'did:web:staging.up.storacha.network'
   }
 
-  return 'did:web:upload.storacha.network'
+  return 'did:web:up.storacha.network'
 }
