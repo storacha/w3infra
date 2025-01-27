@@ -14,7 +14,7 @@ import {
 // eslint-disable-next-line no-unused-vars
 import * as Ucanto from '@ucanto/interface'
 import { Failure } from '@ucanto/server'
-import { Delegation, parseLink } from '@ucanto/core'
+import { parseLink } from '@ucanto/core'
 import { getDynamoClient } from '../../lib/aws/dynamo.js'
 
 // Feature flag for looking up delegations in the invocations in which
