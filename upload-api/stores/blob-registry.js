@@ -11,7 +11,7 @@ import * as Digest from 'multiformats/hashes/digest'
 import { base58btc } from 'multiformats/bases/base58'
 import { marshall, unmarshall } from '@aws-sdk/util-dynamodb'
 import { EntryNotFound, EntryExists } from '@storacha/upload-api/blob'
-import { createConsumerStore } from '@storacha/upload-service-infra-billing/tables/consumer.js'
+// import { createConsumerStore } from '@storacha/upload-service-infra-billing/tables/consumer.js'
 
 import { getDynamoClient } from '../../lib/aws/dynamo.js'
 import { METRICS_NAMES, SPACE_METRICS_NAMES } from '../constants.js'
@@ -31,9 +31,22 @@ import { METRICS_NAMES, SPACE_METRICS_NAMES } from '../constants.js'
  * @param {string} [options.endpoint]
  * @returns {BlobAPI.Registry}
  */
-export const createBlobRegistry = (region, blobRegistryTableName, spaceDiffTableName, consumerTableName, metrics, options = {}) => {
+export const createBlobRegistry = (
+  region,
+  blobRegistryTableName,
+  spaceDiffTableName,
+  consumerTableName,
+  metrics,
+  options = {}
+) => {
   const dynamoDb = getDynamoClient({ region, endpoint: options.endpoint })
-  return useBlobRegistry(dynamoDb, blobRegistryTableName, spaceDiffTableName, consumerTableName, metrics)
+  return useBlobRegistry(
+    dynamoDb,
+    blobRegistryTableName,
+    spaceDiffTableName,
+    consumerTableName,
+    metrics
+  )
 }
 
 /**
@@ -47,7 +60,13 @@ export const createBlobRegistry = (region, blobRegistryTableName, spaceDiffTable
  * }} metrics
  * @returns {BlobAPI.Registry}
  */
-export const useBlobRegistry = (dynamoDb, blobRegistryTableName, spaceDiffTableName, consumerTableName, metrics) => {
+export const useBlobRegistry = (
+  dynamoDb,
+  blobRegistryTableName,
+  spaceDiffTableName,
+  consumerTableName,
+  metrics
+) => {
   /**
    * @typedef {object} DeltaInfo
    * @property {import('@storacha/upload-api').DID} space - The space DID that changed size
@@ -57,12 +76,48 @@ export const useBlobRegistry = (dynamoDb, blobRegistryTableName, spaceDiffTableN
    * @property {string} insertedAt - The ISO 8601 timestamp indicating when the entry was inserted.
    */
 
-   const buildSpaceDiffs = async ( /** @type DeltaInfo */ deltaInfo) => {
-    const consumerStore = createConsumerStore(
-      { region: dynamoDb.config.region.toString() },
-      { tableName: consumerTableName }
-    )
-    const consumerList = await consumerStore.list({ consumer: deltaInfo.space })
+  const buildSpaceDiffs = async (/** @type DeltaInfo */ deltaInfo) => {
+    // TODO: Remove this and replace with the createConsumerStore, consumerStore.list
+    const consumerStoreList = async (/** @type string */space) => {
+      let res
+      try{
+        res = await dynamoDb.send(new QueryCommand({
+          TableName: consumerTableName,
+          IndexName: 'consumerV2',
+          KeyConditions:{
+              consumer: {
+                ComparisonOperator: "EQ",
+                AttributeValueList: [
+                  {
+                    S: space,
+                  },
+                ]
+              }
+            }
+        }))
+        
+        if (res.$metadata.httpStatusCode !== 200) {
+          throw new Error(
+            `unexpected status listing table content: ${res.$metadata.httpStatusCode}`
+          )
+        }
+      } catch(/** @type {any} */ err){
+        return { error: err}
+      }
+      const results = []
+      for (const item of res.Items ?? []) {
+        const consumer = unmarshall(item)
+        results.push(consumer)
+      }
+      return {ok: {results}}
+    }
+    const consumerList = await consumerStoreList(deltaInfo.space)
+
+    // const consumerStore = createConsumerStore(
+    //   { region: await dynamoDb.config.region() },
+    //   { tableName: consumerTableName }
+    // )
+    // const consumerList = await consumerStore.list({ consumer: deltaInfo.space })
     if (consumerList.error) {
       console.error(
         `Error listing consumers for ${deltaInfo.space}: ${consumerList.error}`
@@ -73,22 +128,26 @@ export const useBlobRegistry = (dynamoDb, blobRegistryTableName, spaceDiffTableN
     const diffs = []
     // There should only be one subscription per provider, but in theory you
     // could have multiple providers for the same consumer (space).
-    const consumers = consumerList.ok.results
+    const consumers = /** @type Record<string, any>[] */ (consumerList.ok?.results)
     console.log(`Found ${consumers.length} consumers for space ${deltaInfo.space}`)
     for (const consumer of consumers) {
       diffs.push({
+        pk:`${consumer.provider}#${deltaInfo.space}`, 
+        sk:`${deltaInfo.receiptAt}#${deltaInfo.cause}`,
         provider: consumer.provider,
         subscription: consumer.subscription,
-        ...deltaInfo,
+        ...deltaInfo
       })
     }
-    console.log(`Total diffs found for space ${deltaInfo.space}: ${diffs.length}`)
-    return {ok: diffs, error: undefined}
+    console.log(
+      `Total diffs found for space ${deltaInfo.space}: ${diffs.length}`
+    )
+    return { ok: diffs, error: undefined }
   }
 
   return {
     /** @type {BlobAPI.Registry['find']} */
-    async find (space, digest) {
+    async find(space, digest) {
       const key = getKey(space, digest)
       const cmd = new GetItemCommand({
         TableName: blobRegistryTableName,
@@ -104,10 +163,10 @@ export const useBlobRegistry = (dynamoDb, blobRegistryTableName, spaceDiffTableN
       return ok({
         blob: {
           digest: Digest.decode(base58btc.decode(raw.digest)),
-          size: raw.size
+          size: raw.size,
         },
         cause: Link.parse(raw.cause).toV1(),
-        insertedAt: new Date(raw.insertedAt)
+        insertedAt: new Date(raw.insertedAt),
       })
     },
 
@@ -122,7 +181,7 @@ export const useBlobRegistry = (dynamoDb, blobRegistryTableName, spaceDiffTableN
         digest: base58btc.encode(blob.digest.bytes),
         size: blob.size,
         cause: cause.toString(),
-        insertedAt: dateNow,
+        insertedAt: dateNow
       }
 
       transactWriteItems.push({
@@ -131,36 +190,33 @@ export const useBlobRegistry = (dynamoDb, blobRegistryTableName, spaceDiffTableN
           Item: marshall(blobItem, { removeUndefinedValues: true }),
           ConditionExpression:
             'attribute_not_exists(#S) AND attribute_not_exists(#D)',
-          ExpressionAttributeNames: { '#S': 'space', '#D': 'digest' },
-        },
+          ExpressionAttributeNames: { '#S': 'space', '#D': 'digest' }
+        }
       })
 
       console.log(`Processing delta for space ${space}`)
 
-      // TODO: remove
-      console.log('region:')
-      console.log(typeof dynamoDb.config.region)
-      console.log(dynamoDb.config.region)
-
       const spaceDiffResults = await buildSpaceDiffs({
-          space,
-          cause: cause.toString(),
-          delta: blob.size,
-          receiptAt: dateNow, // TODO: What exactly is the receipt timestamp? Previously, it was generated when the receipt was sent to the stream.
-          insertedAt: dateNow,
+        space,
+        cause: cause.toString(),
+        delta: blob.size,
+        receiptAt: dateNow, // TODO: What exactly is the receipt timestamp? Previously, it was generated when the receipt was sent to the stream.
+        insertedAt: dateNow
       })
 
       try {
-        if(spaceDiffResults.error){
-          throw new Error(`Error while processing space diffs: ${spaceDiffResults.error}`)
+        if (spaceDiffResults.error) {
+          throw new Error(
+            `Error while processing space diffs: ${spaceDiffResults.error}`
+          )
         }
 
         for (const diffItem of spaceDiffResults.ok) {
           transactWriteItems.push({
             Put: {
               TableName: spaceDiffTableName,
-              Item: marshall(diffItem, { removeUndefinedValues: true }),
-            },
+              Item: marshall(diffItem, { removeUndefinedValues: true })
+            }
           })
         }
 
@@ -168,19 +224,16 @@ export const useBlobRegistry = (dynamoDb, blobRegistryTableName, spaceDiffTableN
           TransactItems: transactWriteItems,
         })
 
-        const response = await dynamoDb.send(transactWriteCommand)
-        console.log(response) // TODO: remove
+        await dynamoDb.send(transactWriteCommand)
         await Promise.all([
           metrics.space.incrementTotals({
             [SPACE_METRICS_NAMES.BLOB_ADD_TOTAL]: [{ space, value: 1 }],
-            [SPACE_METRICS_NAMES.BLOB_ADD_SIZE_TOTAL]: [
-              { space, value: blob.size },
-            ],
+            [SPACE_METRICS_NAMES.BLOB_ADD_SIZE_TOTAL]: [{ space, value: blob.size }]
           }),
           metrics.admin.incrementTotals({
             [METRICS_NAMES.BLOB_ADD_TOTAL]: 1,
-            [METRICS_NAMES.BLOB_ADD_SIZE_TOTAL]: blob.size,
-          }),
+            [METRICS_NAMES.BLOB_ADD_SIZE_TOTAL]: blob.size
+          })
         ])
       } catch (/** @type {any} */ err) {
         if (err.name === 'ConditionalCheckFailedException') {
@@ -193,17 +246,17 @@ export const useBlobRegistry = (dynamoDb, blobRegistryTableName, spaceDiffTableN
 
     /** @type {BlobAPI.Registry['deregister']} */
     async deregister(space, digest) {
-      try{
+      try {
         /** @type {import('@aws-sdk/client-dynamodb').TransactWriteItem[]} */
         const transactWriteItems = []
         const key = getKey(space, digest)
 
         const getItemCmd = new GetItemCommand({
           TableName: blobRegistryTableName,
-          Key: key,
-        });
-        
-        const itemToDelete = await dynamoDb.send(getItemCmd);
+          Key: key
+        })
+
+        const itemToDelete = await dynamoDb.send(getItemCmd)
 
         if (!itemToDelete.Item) {
           throw new Error('Item does not exist!')
@@ -216,23 +269,24 @@ export const useBlobRegistry = (dynamoDb, blobRegistryTableName, spaceDiffTableN
           Delete: {
             TableName: blobRegistryTableName,
             Key: key,
-            ConditionExpression: 'attribute_exists(#S) AND attribute_exists(#D)',
-            ExpressionAttributeNames: { '#S': 'space', '#D': 'digest' },
+            ConditionExpression:
+              'attribute_exists(#S) AND attribute_exists(#D)',
+            ExpressionAttributeNames: { '#S': 'space', '#D': 'digest' }
           }
         })
-      
+
         console.log(`Processing delta for space ${space}`)
 
         const dateNow = new Date().toISOString()
         const spaceDiffResults = await buildSpaceDiffs({
-            space,
-            cause: cause.toString(), // TODO: where to get this from?
-            delta: blobSize,
-            receiptAt: dateNow,
-            insertedAt: dateNow,
+          space,
+          cause: 'bafyreieq5fati3q3ecreq4lxaeumdyumfgaqnxemrsgo23plsnpkvjaaaa', // FIXME: where to get this from?
+          delta: blobSize,
+          receiptAt: dateNow,
+          insertedAt: dateNow
         })
 
-        if(spaceDiffResults.error){
+        if (spaceDiffResults.error) {
           throw new Error(`Error while processing space diffs: ${spaceDiffResults.error}`)
         }
 
@@ -249,8 +303,7 @@ export const useBlobRegistry = (dynamoDb, blobRegistryTableName, spaceDiffTableN
           TransactItems: transactWriteItems,
         })
 
-        const response = await dynamoDb.send(transactWriteCommand)
-        console.log(response) // TODO: remove
+        await dynamoDb.send(transactWriteCommand)
         await Promise.all([
           metrics.space.incrementTotals({
             [SPACE_METRICS_NAMES.BLOB_REMOVE_TOTAL]: [{ space, value: 1 }],
