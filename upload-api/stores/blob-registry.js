@@ -245,7 +245,7 @@ export const useBlobRegistry = (
     },
 
     /** @type {BlobAPI.Registry['deregister']} */
-    async deregister(space, digest) {
+    async deregister({space, digest, cause}) {
       try {
         /** @type {import('@aws-sdk/client-dynamodb').TransactWriteItem[]} */
         const transactWriteItems = []
@@ -280,7 +280,7 @@ export const useBlobRegistry = (
         const dateNow = new Date().toISOString()
         const spaceDiffResults = await buildSpaceDiffs({
           space,
-          cause: 'bafyreieq5fati3q3ecreq4lxaeumdyumfgaqnxemrsgo23plsnpkvjaaaa', // FIXME: where to get this from?
+          cause: cause.toString(),
           delta: blobSize,
           receiptAt: dateNow,
           insertedAt: dateNow
@@ -463,7 +463,7 @@ export const useAllocationTableBlobRegistry = (registry, dynamoDb, tableName) =>
   },
 
   /** @type {BlobAPI.Registry['deregister']} */
-  async deregister(space, digest) {
+  async deregister({space, digest, cause}) {
     const key = getAllocationTableKey(space, digest)
     const cmd = new DeleteItemCommand({
       TableName: tableName,
@@ -478,7 +478,7 @@ export const useAllocationTableBlobRegistry = (registry, dynamoDb, tableName) =>
       if (!res.Attributes) {
         throw new Error('missing return values')
       }
-      return registry.deregister(space, digest)
+      return registry.deregister({space, digest, cause})
     } catch (/** @type {any} */ err) {
       if (err.name === 'ConditionalCheckFailedException') {
         return error(new EntryNotFound())
