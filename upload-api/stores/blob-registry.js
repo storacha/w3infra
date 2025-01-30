@@ -11,7 +11,7 @@ import * as Digest from 'multiformats/hashes/digest'
 import { base58btc } from 'multiformats/bases/base58'
 import { marshall, unmarshall } from '@aws-sdk/util-dynamodb'
 import { EntryNotFound, EntryExists } from '@storacha/upload-api/blob'
-// import { createConsumerStore } from '@storacha/upload-service-infra-billing/tables/consumer.js'
+import { createConsumerStore } from '@storacha/upload-service-infra-billing/tables/consumer.js'
 
 import { getDynamoClient } from '../../lib/aws/dynamo.js'
 import { METRICS_NAMES, SPACE_METRICS_NAMES } from '../constants.js'
@@ -77,47 +77,11 @@ export const useBlobRegistry = (
    */
 
   const buildSpaceDiffs = async (/** @type DeltaInfo */ deltaInfo) => {
-    // TODO: Remove this and replace with the createConsumerStore, consumerStore.list
-    const consumerStoreList = async (/** @type string */space) => {
-      let res
-      try{
-        res = await dynamoDb.send(new QueryCommand({
-          TableName: consumerTableName,
-          IndexName: 'consumerV2',
-          KeyConditions:{
-              consumer: {
-                ComparisonOperator: "EQ",
-                AttributeValueList: [
-                  {
-                    S: space,
-                  },
-                ]
-              }
-            }
-        }))
-        
-        if (res.$metadata.httpStatusCode !== 200) {
-          throw new Error(
-            `unexpected status listing table content: ${res.$metadata.httpStatusCode}`
-          )
-        }
-      } catch(/** @type {any} */ err){
-        return { error: err}
-      }
-      const results = []
-      for (const item of res.Items ?? []) {
-        const consumer = unmarshall(item)
-        results.push(consumer)
-      }
-      return {ok: {results}}
-    }
-    const consumerList = await consumerStoreList(deltaInfo.space)
-
-    // const consumerStore = createConsumerStore(
-    //   { region: await dynamoDb.config.region() },
-    //   { tableName: consumerTableName }
-    // )
-    // const consumerList = await consumerStore.list({ consumer: deltaInfo.space })
+    const consumerStore = createConsumerStore(
+      dynamoDb,
+      { tableName: consumerTableName }
+    )
+    const consumerList = await consumerStore.list({ consumer: deltaInfo.space })
     if (consumerList.error) {
       console.error(
         `Error listing consumers for ${deltaInfo.space}: ${consumerList.error}`
@@ -211,7 +175,7 @@ export const useBlobRegistry = (
           )
         }
 
-        for (const diffItem of spaceDiffResults.ok) {
+        for (const diffItem of spaceDiffResults.ok ?? []) {
           transactWriteItems.push({
             Put: {
               TableName: spaceDiffTableName,
@@ -290,7 +254,7 @@ export const useBlobRegistry = (
           throw new Error(`Error while processing space diffs: ${spaceDiffResults.error}`)
         }
 
-        for (const diffItem of spaceDiffResults.ok) {
+        for (const diffItem of spaceDiffResults.ok ?? []) {
           transactWriteItems.push({
             Put: {
               TableName: spaceDiffTableName,
