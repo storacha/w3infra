@@ -31,6 +31,7 @@ export default {
 
     app.setDefaultFunctionProps({
       runtime: 'nodejs20.x',
+      architecture: 'arm_64',
       environment: {
         NODE_OPTIONS: '--enable-source-maps',
       },
