@@ -7,8 +7,7 @@ import { Client } from '@storacha/client'
 import { MailSlurp } from "mailslurp-client"
 import { fileURLToPath } from 'node:url'
 import dotenv from 'dotenv'
-
-import * as BlobCapabilities from '@storacha/capabilities/blob'
+import * as SpaceBlobCapabilities from '@storacha/capabilities/space/blob'
 
 dotenv.config({ path: fileURLToPath(new URL('../../.env', import.meta.url)) })
 
@@ -99,7 +98,7 @@ export function getServiceProps (client, serviceUrl, capability) {
       issuer: client.agent.issuer,
       with: resource,
       proofs: client.agent.proofs(
-        [BlobCapabilities.add.can].map((can) => ({ can, with: resource }))
+        [SpaceBlobCapabilities.add.can].map((can) => ({ can, with: resource }))
       ),
       audience: DID.parse('did:web:staging.up.storacha.network')
     }
