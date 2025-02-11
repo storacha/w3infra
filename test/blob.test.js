@@ -3,7 +3,7 @@ import { testBlob as test } from './helpers/context.js'
 import pWaitFor from 'p-wait-for'
 // import { unixfs } from '@helia/unixfs'
 // import { multiaddr } from '@multiformats/multiaddr'
-import * as BlobCapabilities from '@storacha/capabilities/blob'
+import * as SpaceBlobCapabilities from '@storacha/capabilities/space/blob'
 import { base58btc } from 'multiformats/bases/base58'
 import * as Link from 'multiformats/link'
 import { equals } from 'multiformats/bytes'
@@ -72,7 +72,7 @@ test('blob integration flow with receipts validation', async t => {
 
   const inbox = await createMailSlurpInbox()
   const { client, account } = await setupNewClient(t.context.apiEndpoint, { inbox })
-  const serviceProps = getServiceProps(client, t.context.apiEndpoint, BlobCapabilities.add.can)
+  const serviceProps = getServiceProps(client, t.context.apiEndpoint, SpaceBlobCapabilities.add.can)
   const spaceDid = client.currentSpace()?.did()
   if (!spaceDid) {
     throw new Error('Testing space DID must be set')
