@@ -92,7 +92,7 @@ export function FilecoinStack({ stack, app }) {
     function: {
       handler: 'filecoin/functions/handle-piece-offer-message.main',
       environment: {
-        DID: UPLOAD_API_DID,
+        DID: STOREFRONT_PROOF ? UPLOAD_API_DID : AGGREGATOR_DID,
         AGGREGATOR_DID,
         AGGREGATOR_URL,
         PROOF: STOREFRONT_PROOF,
@@ -120,7 +120,7 @@ export function FilecoinStack({ stack, app }) {
       function: {
         handler: 'filecoin/functions/handle-cron-tick.main',
         environment : {
-          DID: UPLOAD_API_DID,
+          DID: STOREFRONT_PROOF ? UPLOAD_API_DID : AGGREGATOR_DID,
           PIECE_TABLE_NAME: pieceTable.tableName,
           AGENT_MESSAGE_BUCKET_NAME: agentMessageBucket.bucketName,
           AGENT_INDEX_BUCKET_NAME: agentIndexBucket.bucketName,
@@ -177,7 +177,6 @@ export function FilecoinStack({ stack, app }) {
       function: {
         handler: 'filecoin/functions/handle-piece-insert-to-filecoin-submit.main',
         environment: {
-          DID: UPLOAD_API_DID,
           STOREFRONT_DID: UPLOAD_API_DID,
           STOREFRONT_URL: storefrontCustomDomain?.domainName ? `https://${storefrontCustomDomain?.domainName}` : '',
         },
@@ -205,7 +204,6 @@ export function FilecoinStack({ stack, app }) {
       function: {
         handler: 'filecoin/functions/handle-piece-status-update.main',
         environment: {
-          DID: UPLOAD_API_DID,
           STOREFRONT_DID: UPLOAD_API_DID,
           STOREFRONT_URL: storefrontCustomDomain?.domainName ? `https://${storefrontCustomDomain?.domainName}` : '',
         },
@@ -245,7 +243,6 @@ export function FilecoinStack({ stack, app }) {
     {
       environment : {
         DISABLE_PIECE_CID_COMPUTE,
-        DID: UPLOAD_API_DID,
         STOREFRONT_DID: UPLOAD_API_DID,
         STOREFRONT_URL: storefrontCustomDomain?.domainName ? `https://${storefrontCustomDomain?.domainName}` : '',
       },

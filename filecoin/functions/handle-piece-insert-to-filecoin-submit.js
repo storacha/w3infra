@@ -46,7 +46,7 @@ async function handlePieceInsertToFilecoinSubmit (event) {
 
   // Create context
   const { PRIVATE_KEY: privateKey } = Config
-  const { storefrontDid, storefrontUrl, did, storefrontProof } = getEnv()
+  const { storefrontDid, storefrontUrl, storefrontProof } = getEnv()
   let storefrontSigner = getServiceSigner({
     privateKey
   })
@@ -61,7 +61,7 @@ async function handlePieceInsertToFilecoinSubmit (event) {
     storefrontServiceProofs.push(proof.ok)
   } else {
     // if no proofs, we must be using the service private key to sign
-    storefrontSigner = storefrontSigner.withDID(DID.parse(did).did())
+    storefrontSigner = storefrontSigner.withDID(DID.parse(storefrontDid).did())
   }
   const context = {
     storefrontService: {

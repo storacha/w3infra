@@ -289,9 +289,9 @@ export async function ucanInvocationRouter(request) {
     dealTrackerService: {
       connection: dealTrackerConnection,
       invocationConfig: {
-        issuer: serviceSigner,
+        issuer: getServiceSigner({ privateKey: PRIVATE_KEY, did: dealTrackerDid }),
         audience: dealTrackerConnection.id,
-        with: serviceSigner.did()
+        with: dealTrackerConnection.id.did()
       }
     },
     plansStorage,

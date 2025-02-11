@@ -24,7 +24,7 @@ Sentry.AWSLambda.init({
  */
 async function computeHandler (event) {
   const { PRIVATE_KEY: privateKey } = Config
-  const { storefrontDid, storefrontUrl, did, storefrontProof, disablePieceCidCompute } = getEnv()
+  const { storefrontDid, storefrontUrl, storefrontProof, disablePieceCidCompute } = getEnv()
 
   if (disablePieceCidCompute) {
     const body = 'piece cid computation is disabled'
@@ -50,7 +50,7 @@ async function computeHandler (event) {
     storefrontServiceProofs.push(proof.ok)
   } else {
     // if no proofs, we must be using the service private key to sign
-    storefrontSigner = storefrontSigner.withDID(DID.parse(did).did())
+    storefrontSigner = storefrontSigner.withDID(DID.parse(storefrontDid).did())
   }
   const storefrontService = {
     connection,
@@ -111,7 +111,6 @@ export const handler = Sentry.AWSLambda.wrapHandler(computeHandler)
  */
 function getEnv () {
   return {
-    did: mustGetEnv('DID'),
     storefrontDid: mustGetEnv('STOREFRONT_DID'),
     storefrontUrl: mustGetEnv('STOREFRONT_URL'),
     storefrontProof: process.env.PROOF,

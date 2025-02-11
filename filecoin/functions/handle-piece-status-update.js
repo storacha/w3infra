@@ -46,7 +46,7 @@ async function handlePieceStatusUpdate (event) {
 
   // Create context
   const { PRIVATE_KEY: privateKey } = Config
-  const { storefrontDid, storefrontUrl, did, storefrontProof } = getEnv()
+  const { storefrontDid, storefrontUrl, storefrontProof } = getEnv()
   let storefrontSigner = getServiceSigner({
     privateKey
   })
@@ -61,7 +61,7 @@ async function handlePieceStatusUpdate (event) {
     storefrontProofs.push(proof.ok)
   } else {
     // if no proofs, we must be using the service private key to sign
-    storefrontSigner = storefrontSigner.withDID(DID.parse(did).did())
+    storefrontSigner = storefrontSigner.withDID(DID.parse(storefrontDid).did())
   }
   const context = {
     storefrontService: {
@@ -94,7 +94,6 @@ async function handlePieceStatusUpdate (event) {
  */
 function getEnv () {
   return {
-    did: mustGetEnv('DID'),
     storefrontDid: mustGetEnv('STOREFRONT_DID'),
     storefrontUrl: mustGetEnv('STOREFRONT_URL'),
     storefrontProof: process.env.PROOF,
