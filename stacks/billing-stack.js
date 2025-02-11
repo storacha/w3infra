@@ -1,5 +1,5 @@
 import { use, Cron, Queue, Function, Config, Api } from 'sst/constructs'
-import { StartingPosition, FilterCriteria, FilterRule } from 'aws-cdk-lib/aws-lambda'
+import { StartingPosition } from 'aws-cdk-lib/aws-lambda'
 import { SqsDlq } from 'aws-cdk-lib/aws-lambda-event-sources'
 import { Duration } from 'aws-cdk-lib'
 import { BillingDbStack } from './billing-db-stack.js'
