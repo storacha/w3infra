@@ -224,16 +224,22 @@ export async function ucanInvocationRouter(request) {
   const indexingServicePrincipal = DID.parse(mustGetEnv('INDEXING_SERVICE_DID'))
   const indexingServiceURL = new URL(mustGetEnv('INDEXING_SERVICE_URL'))
 
-  const cid = Link.parse(INDEXING_SERVICE_PROOF, base64)
-  const proof = await Delegation.extract(cid.multihash.digest)
-  if (!proof.ok) throw new Error('failed to extract proof', { cause: proof.error })
+  let indexingServiceProof
+  try {
+    const cid = Link.parse(INDEXING_SERVICE_PROOF, base64)
+    const proof = await Delegation.extract(cid.multihash.digest)
+    if (!proof.ok) throw proof.error
+    indexingServiceProof = proof.ok
+  } catch (err) {
+    throw new Error('parsing indexing service proof', { cause: err })
+  }
 
   const indexingServiceConfig = {
     invocationConfig: {
       issuer: serviceSigner,
       audience: indexingServicePrincipal,
       with: indexingServicePrincipal.did(),
-      proofs: [proof.ok]
+      proofs: [indexingServiceProof]
     },
     connection: getServiceConnection({
       did: indexingServicePrincipal.did(),
