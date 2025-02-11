@@ -1,5 +1,6 @@
 import { use, Cron, Queue, Function, Config, Api } from 'sst/constructs'
-import { StartingPosition } from 'aws-cdk-lib/aws-lambda'
+import { StartingPosition, FilterCriteria, FilterRule } from 'aws-cdk-lib/aws-lambda'
+import { SqsDlq } from 'aws-cdk-lib/aws-lambda-event-sources'
 import { Duration } from 'aws-cdk-lib'
 import { BillingDbStack } from './billing-db-stack.js'
 import { UploadDbStack } from './upload-db-stack.js'
@@ -108,11 +109,11 @@ export function BillingStack ({ stack, app }) {
         eventSource: {
           batchSize: 1,
           startingPosition: StartingPosition.LATEST,
-          retryAttempts: 10
+          retryAttempts: 10,
+          onFailure: new SqsDlq(usageTableDLQ.cdk.queue)
         }
       },
       filters: [{ eventName: ['INSERT'] }],
-      deadLetterQueue: usageTableDLQ.cdk.queue
     }
   })
 
