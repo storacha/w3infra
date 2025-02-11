@@ -15,6 +15,7 @@ The repo contains the infra deployment code and the api implementation.
 ├── carpark         - lambda for announce new CARs in the carpark bucket
 ├── filecoin        - lambdas to get content into Filecoin deals
 ├── indexer         - lambdas to connect w3up to E-IPFS
+├── psa             - lambdas to support migrating Pinning Service API data
 ├── replicator      - lambda to replicate buckets to R2
 ├── stacks          - sst and aws cdk code to deploy all the things
 ├── ucan-invocation - kinesis log data stream and its lambda consumers
