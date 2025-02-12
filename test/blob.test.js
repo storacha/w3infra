@@ -178,9 +178,6 @@ test('blob integration flow with receipts validation', async t => {
     throw err
   }
 
-  console.log('Uploaded new file', root.toString())
-  console.log('Uploaded new Index', indexLink.toString())
-
   // Get bucket clients
   const s3Client = getAwsBucketClient()
   const r2Client = getCloudflareBucketClient()
