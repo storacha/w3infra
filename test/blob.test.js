@@ -33,10 +33,12 @@ import { randomFile, randomInt } from './helpers/random.js'
 import { createMailSlurpInbox, setupNewClient, getServiceProps } from './helpers/up-client.js'
 import { getMetrics, getSpaceMetrics } from './helpers/metrics.js'
 import { getUsage } from './helpers/store.js'
+import { addStorageProvider } from './helpers/storage-provider.js'
 
 // import { createNode } from './helpers/helia.js'
 
-test.before(t => {
+test.before(async t => {
+  await addStorageProvider(getDynamoDb('storage-provider'))
   t.context = {
     apiEndpoint: getApiEndpoint(),
     roundaboutEndpoint: getRoundaboutEndpoint(),

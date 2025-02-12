@@ -62,3 +62,8 @@ REFERRALS_ENDPOINT = 'https://staging.referrals.storacha.network'
 # Optional - custom principal resolution mappings
 # JSON encoded mapping of did:web to did:key
 PRINCIPAL_MAPPING = '{"did:web:example.com":"did:key:z6MktkCXwNmpqejQxYd7JHPcw7d4Srjct7sX74VLfKqsPyAw"}'
+
+# Optional - custom storage provider to use in integration tests
+INTEGRATION_TESTS_STORAGE_PROVIDER_DID=
+INTEGRATION_TESTS_STORAGE_PROVIDER_ENDPOINT=
+INTEGRATION_TESTS_STORAGE_PROVIDER_PROOF=
