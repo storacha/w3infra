@@ -52,6 +52,7 @@ export async function add(
     })
   const blobAddResult = await blobAddInvocation.execute(conn)
   if (!blobAddResult.out.ok) {
+    console.error(blobAddResult.out.error)
     throw new Error(`failed ${SpaceBlobCapabilities.add.can} invocation`, {
       cause: blobAddResult.out.error,
     })
@@ -138,6 +139,7 @@ export async function add(
   )
   const ucanConclude = await httpPutConcludeInvocation.execute(conn)
   if (!ucanConclude.out.ok) {
+    console.error(ucanConclude.out.error)
     throw new Error('invocation failed', { cause: ucanConclude.out.error })
   }
 
@@ -170,6 +172,7 @@ export function parseBlobAddReceiptNext(receipt) {
     (fork) => fork.capabilities[0].can === BlobCapabilities.accept.can
   )
   if (!allocateTask || !concludefxs.length || !putTask || !acceptTask) {
+    console.error({ allocateTask: allocateTask?.cid, concludefxs: concludefxs[0]?.cid, putTask: putTask?.cid, acceptTask: acceptTask?.cid })
     throw new Error('mandatory effects not received')
   }
 
@@ -192,7 +195,7 @@ export function parseBlobAddReceiptNext(receipt) {
   )
 
   if (!allocateReceipt) {
-    throw new Error('mandatory effects not received')
+    throw new Error(`receipt not found for allocate task: ${allocateTask.cid}`)
   }
 
   return {
