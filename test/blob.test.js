@@ -150,6 +150,8 @@ test('blob integration flow with receipts validation', async t => {
   if (multihash === undefined) throw new Error('missing multihash')
   t.is(shards.length, 1)
 
+  console.log(`Added blob ${base58btc.encode(multihash.bytes)}, root: ${root}`)
+
   // Add the index with `index/add`
   const index = ShardedDAGIndex.create(root)
   for (const [i, shard] of shards.entries()) {
@@ -163,6 +165,8 @@ test('blob integration flow with receipts validation', async t => {
   // Store the index in the space
   const resIndex = await Blob.add(serviceProps.conf, indexBytes.ok, { connection: serviceProps.connection })
   const indexLink = Link.create(carCodec.code, resIndex.multihash)
+
+  console.log(`Added index ${indexLink} (${base58btc.encode(resIndex.multihash.bytes)})`)
 
   try {
     // Register the index with the service
