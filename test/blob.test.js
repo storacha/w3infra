@@ -164,10 +164,15 @@ test('blob integration flow with receipts validation', async t => {
   const resIndex = await Blob.add(serviceProps.conf, indexBytes.ok, { connection: serviceProps.connection })
   const indexLink = Link.create(carCodec.code, resIndex.multihash)
 
-  // Register the index with the service
-  await Index.add(serviceProps.conf, indexLink, { connection: serviceProps.connection })
-  // Register an upload with the service
-  await Upload.add(serviceProps.conf, root, shards, { connection: serviceProps.connection })
+  try {
+    // Register the index with the service
+    await Index.add(serviceProps.conf, indexLink, { connection: serviceProps.connection })
+    // Register an upload with the service
+    await Upload.add(serviceProps.conf, root, shards, { connection: serviceProps.connection })
+  } catch (err) {
+    console.error(err, err.cause)
+    throw err
+  }
 
   console.log('Uploaded new file', root.toString())
   console.log('Uploaded new Index', indexLink.toString())
