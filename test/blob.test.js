@@ -3,16 +3,16 @@ import { testBlob as test } from './helpers/context.js'
 import pWaitFor from 'p-wait-for'
 // import { unixfs } from '@helia/unixfs'
 // import { multiaddr } from '@multiformats/multiaddr'
-import * as BlobCapabilities from '@web3-storage/capabilities/blob'
+import * as SpaceBlobCapabilities from '@storacha/capabilities/space/blob'
 import { base58btc } from 'multiformats/bases/base58'
 import * as Link from 'multiformats/link'
 import { equals } from 'multiformats/bytes'
 import { code as RAW_CODE } from 'multiformats/codecs/raw'
 import { HeadObjectCommand } from '@aws-sdk/client-s3'
 import { Assert } from '@web3-storage/content-claims/capability'
-import { ShardingStream, UnixFS, Upload, Index } from '@web3-storage/upload-client'
+import { ShardingStream, UnixFS, Upload, Index } from '@storacha/upload-client'
 import { codec as carCodec } from '@ucanto/transport/car'
-import { ShardedDAGIndex } from '@web3-storage/blob-index'
+import { ShardedDAGIndex } from '@storacha/blob-index'
 import * as AgentStore from '../upload-api/stores/agent.js'
 
 import { METRICS_NAMES, SPACE_METRICS_NAMES } from '../upload-api/constants.js'
@@ -33,10 +33,12 @@ import { randomFile, randomInt } from './helpers/random.js'
 import { createMailSlurpInbox, setupNewClient, getServiceProps } from './helpers/up-client.js'
 import { getMetrics, getSpaceMetrics } from './helpers/metrics.js'
 import { getUsage } from './helpers/store.js'
+import { addStorageProvider } from './helpers/storage-provider.js'
 
 // import { createNode } from './helpers/helia.js'
 
-test.before(t => {
+test.before(async t => {
+  await addStorageProvider(getDynamoDb('storage-provider'))
   t.context = {
     apiEndpoint: getApiEndpoint(),
     roundaboutEndpoint: getRoundaboutEndpoint(),
@@ -72,7 +74,7 @@ test('blob integration flow with receipts validation', async t => {
 
   const inbox = await createMailSlurpInbox()
   const { client, account } = await setupNewClient(t.context.apiEndpoint, { inbox })
-  const serviceProps = getServiceProps(client, t.context.apiEndpoint, BlobCapabilities.add.can)
+  const serviceProps = getServiceProps(client, t.context.apiEndpoint, SpaceBlobCapabilities.add.can)
   const spaceDid = client.currentSpace()?.did()
   if (!spaceDid) {
     throw new Error('Testing space DID must be set')
@@ -96,13 +98,13 @@ test('blob integration flow with receipts validation', async t => {
   
   // Encode file as Unixfs and perform store/add
   const blocksReadableStream = UnixFS.createFileEncoderStream(file)
-  /** @type {import('@web3-storage/upload-client/types').CARLink[]} */
+  /** @type {import('@storacha/upload-client/types').CARLink[]} */
   const shards = []
   /** @type {Uint8Array[]} */
   const shardBytes = []
-  /** @type {Array<Map<import('@web3-storage/upload-client/types').SliceDigest, import('@web3-storage/upload-client/types').Position>>} */
+  /** @type {Array<Map<import('@storacha/upload-client/types').SliceDigest, import('@storacha/upload-client/types').Position>>} */
   const shardIndexes = []
-  /** @type {import('@web3-storage/upload-client/types').AnyLink | undefined} */
+  /** @type {import('@storacha/upload-client/types').AnyLink | undefined} */
   let root
 
   /** @type {import('multiformats/hashes/digest').Digest<18, number> | undefined} */
@@ -148,6 +150,8 @@ test('blob integration flow with receipts validation', async t => {
   if (multihash === undefined) throw new Error('missing multihash')
   t.is(shards.length, 1)
 
+  console.log(`Added blob ${base58btc.encode(multihash.bytes)}, root: ${root}`)
+
   // Add the index with `index/add`
   const index = ShardedDAGIndex.create(root)
   for (const [i, shard] of shards.entries()) {
@@ -162,13 +166,17 @@ test('blob integration flow with receipts validation', async t => {
   const resIndex = await Blob.add(serviceProps.conf, indexBytes.ok, { connection: serviceProps.connection })
   const indexLink = Link.create(carCodec.code, resIndex.multihash)
 
-  // Register the index with the service
-  await Index.add(serviceProps.conf, indexLink, { connection: serviceProps.connection })
-  // Register an upload with the service
-  await Upload.add(serviceProps.conf, root, shards, { connection: serviceProps.connection })
+  console.log(`Added index ${indexLink} (${base58btc.encode(resIndex.multihash.bytes)})`)
 
-  console.log('Uploaded new file', root.toString())
-  console.log('Uploaded new Index', indexLink.toString())
+  try {
+    // Register the index with the service
+    await Index.add(serviceProps.conf, indexLink, { connection: serviceProps.connection })
+    // Register an upload with the service
+    await Upload.add(serviceProps.conf, root, shards, { connection: serviceProps.connection })
+  } catch (err) {
+    console.error(err, err.cause)
+    throw err
+  }
 
   // Get bucket clients
   const s3Client = getAwsBucketClient()
@@ -345,8 +353,8 @@ test('10k NFT drop', async t => {
       name: `NFT #${i}`,
       description: 'NFT',
       attributes: Array.from(Array(randomInt(5)), randomTrait),
-      compiler: 'web3.storage',
-      external_url: `https://${id}.nft.web3.storage/token/${i}`
+      compiler: 'storacha.network',
+      external_url: `https://${id}.nft.storacha.network/token/${i}`
     })], `${i}.json`))
   }
 

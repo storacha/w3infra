@@ -3,7 +3,7 @@
 # uncomment to try out deploying the w3up api under a custom domain (or more
 # than one). the value should match a hosted zone configured in route53 that
 # your aws account has access to.
-# HOSTED_ZONES=up.web3.storage,up.storacha.network
+# HOSTED_ZONES=up.storacha.network,up.web3.storage
 
 # uncomment to try out deploying the roundabout api under a custom domain.
 # the value should match a hosted zone configured in route53 that your aws account has access to.
@@ -19,12 +19,16 @@ EIPFS_BLOCKS_CAR_POSITION_TABLE_ARN = 'arn:aws:dynamodb:us-west-2:505595374361:t
 
 PROVIDERS = ''
 UPLOAD_API_DID = ''
+UPLOAD_API_ALIAS = ''
 ACCESS_SERVICE_URL = ''
 AGGREGATOR_DID = ''
 AGGREGATOR_URL = ''
 DEAL_TRACKER_DID = ''
 DEAL_TRACKER_URL = ''
 UCAN_INVOCATION_POST_BASIC_AUTH =''
+
+INDEXING_SERVICE_DID = ''
+INDEXING_SERVICE_URL = ''
 
 POSTMARK_TOKEN = ''
 R2_ACCESS_KEY_ID = ''
@@ -54,5 +58,13 @@ STRIPE_BILLING_METER_EVENT_NAME = ''
 REQUIRE_PAYMENT_PLAN = 'true'
 
 # Referrals
-
 REFERRALS_ENDPOINT = 'https://staging.referrals.storacha.network'
+
+# Optional - custom principal resolution mappings
+# JSON encoded mapping of did:web to did:key
+PRINCIPAL_MAPPING = '{"did:web:example.com":"did:key:z6MktkCXwNmpqejQxYd7JHPcw7d4Srjct7sX74VLfKqsPyAw"}'
+
+# Optional - custom storage provider to use in integration tests
+INTEGRATION_TESTS_STORAGE_PROVIDER_DID=
+INTEGRATION_TESTS_STORAGE_PROVIDER_ENDPOINT=
+INTEGRATION_TESTS_STORAGE_PROVIDER_PROOF=
