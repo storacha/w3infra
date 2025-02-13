@@ -135,6 +135,7 @@ export function UploadApiStack({ stack, app }) {
             R2_ENDPOINT: process.env.R2_ENDPOINT ?? '',
             REQUIRE_PAYMENT_PLAN: process.env.REQUIRE_PAYMENT_PLAN ?? '',
             UPLOAD_API_DID: process.env.UPLOAD_API_DID ?? '',
+            UPLOAD_API_ALIAS: process.env.UPLOAD_API_ALIAS ?? '',
             STRIPE_PRICING_TABLE_ID: process.env.STRIPE_PRICING_TABLE_ID ?? '',
             STRIPE_FREE_TRIAL_PRICING_TABLE_ID: process.env.STRIPE_FREE_TRIAL_PRICING_TABLE_ID ?? '',
             STRIPE_PUBLISHABLE_KEY: process.env.STRIPE_PUBLISHABLE_KEY ?? '',

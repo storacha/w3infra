@@ -189,6 +189,14 @@ URL of the filecoin deal tracker service.
 
 [DID](https://www.w3.org/TR/did-core/) of the upload-api ucanto server. e.g. `did:web:up.storacha.network`. Optional: if omitted, a `did:key` will be derrived from `PRIVATE_KEY`
 
+#### `UPLOAD_API_ALIAS`
+
+CSV of other DID(s) the upload-api is known by. i.e. other values that received invocation `audience` may have.
+
+Also enables the service to accept attestations issued by these DIDs.
+
+Note: should not include UPLOAD_API_DID.
+
 #### `R2_ACCESS_KEY_ID`
 
 Access key for S3 like cloud object storage to replicate content into.

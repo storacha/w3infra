@@ -10,6 +10,7 @@ import * as DID from '@ipld/dag-ucan/did'
 import Stripe from 'stripe'
 import { Client as IndexingServiceClient } from '@storacha/indexing-service-client'
 import * as UploadAPI from '@storacha/upload-api'
+import * as UCANCaps from '@storacha/capabilities/ucan'
 import { composeCarStoresWithOrderedHas, createCarStore } from '../buckets/car-store.js'
 import { createStoreTable } from '../tables/store.js'
 import { createUploadTable } from '../tables/upload.js'
@@ -166,7 +167,7 @@ export async function ucanInvocationRouter(request) {
     }
   }
 
-  const { UPLOAD_API_DID } = process.env
+  const { UPLOAD_API_DID, UPLOAD_API_ALIAS } = process.env
   const { PRIVATE_KEY, STRIPE_SECRET_KEY, INDEXING_SERVICE_PROOF } = Config
   const serviceSigner = getServiceSigner({ did: UPLOAD_API_DID, privateKey: PRIVATE_KEY })
 
@@ -251,8 +252,30 @@ export async function ucanInvocationRouter(request) {
   const storageProviderTable = createStorageProviderTable(AWS_REGION, storageProviderTableName, options)
   const routingService = createRoutingService(storageProviderTable, serviceSigner)
 
+  
+  let audience // accept invocations addressed to any alias
+  const proofs = [] // accept attestations issued by any alias
+  if (UPLOAD_API_ALIAS) {
+    const aliases = new Set(UPLOAD_API_ALIAS.split(',').map(s => s.trim()).filter(s => s !== serviceSigner.did()))
+    for (const did of aliases) {
+      proofs.push(await Delegation.delegate({
+        issuer: serviceSigner,
+        audience: DID.parse(did),
+        capabilities: [{ can: UCANCaps.attest.can, with: serviceSigner.did() }]
+      }))
+    }
+    const audiences = new Set([serviceSigner.did(), ...aliases])
+    const audSchemas = [...audiences].map(did => Schema.literal(did))
+    if (audSchemas.length > 1) {
+      audience = Schema.union([audSchemas[0], ...audSchemas.slice(1)])
+    }
+  }
+
   const server = createUcantoServer(serviceSigner, {
     codec,
+    // @ts-expect-error needs update of upload-api
+    audience,
+    proofs,
     router: routingService,
     registry: allocationBlobRegistry,
     blobRetriever,
