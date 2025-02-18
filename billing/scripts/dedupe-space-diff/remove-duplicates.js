@@ -23,12 +23,26 @@ const BATCH_SIZE = 25
 const MAX_RETRIES = 3
 const concurrency = 5
 const dynamo = new DynamoDBClient()
+const FAILED_ITEMS_FILE = `failed_items_${(new Date()).getTime()}.json`
 
 /**
  * @param {number} ms - Delay in milliseconds
  * @returns {Promise<void>}
  */
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+
+
+/**
+ * @param {ItemKey[]} failedItems - Array of items that failed to be deleted.
+ */
+const writeFailedItemsToFile = (failedItems) => {
+  try {
+    fs.writeFileSync(FAILED_ITEMS_FILE, JSON.stringify(failedItems, null, 2));
+    console.log(`Failed items written to ${FAILED_ITEMS_FILE}`);
+  } catch (err) {
+    console.log('Failed to write failed items to file', err);
+  }
+};
 
 /**
  *
@@ -37,6 +51,7 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
  * @param {number} [params.retryCount=0] - The number of retry attempts.
  * @param {number} [params.delay=100] - The delay between retries in milliseconds.
  * @param {Object} [params.logContext={}] - Additional logging context.
+ * @param {ItemKey[]} params.failedItems - Array to collect failed items.
  * @returns {Promise<void>} A promise that resolves when the batch is processed.
  */
 async function processBatch({
@@ -44,6 +59,7 @@ async function processBatch({
   retryCount = 0,
   delay = 100,
   logContext = {},
+  failedItems = []
 }) {
   const deleteRequests = items.map((item) => ({
     DeleteRequest: {
@@ -82,26 +98,30 @@ async function processBatch({
           retryCount: retryCount + 1,
           delay: delay * 2, // Increase delay exponentially
           logContext,
+          failedItems
         })
       } else {
         console.error(
           `Max retries reached. Some items could not be processed: ${unprocessedItems}`,
           logContext
         )
+        failedItems.push(...unprocessedItems);
       }
     } else {
       console.log(`Successfully deleted the entire batch!`, logContext)
     }
   } catch (err) {
     console.error('Failed to delete batch!', logContext, err)
+    failedItems.push(...items);
   }
 }
 
 /**
  * @param {string} filePath
+ * @param {ItemKey[]} failedItems 
  * @returns {Promise<void>}
  */
-async function processFile(filePath) {
+async function processFile(filePath, failedItems) {
   let reader = await parquetjs.ParquetReader.openFile(filePath)
   let cursor = reader.getCursor()
 
@@ -113,21 +133,23 @@ async function processFile(filePath) {
   let totalRecords = 0;
   let totalBatches = 0;
   let record = null
-
+  
   while ((record = /** @type {ItemKey | null} */ (await cursor.next()))) {
     batch.push(record)
     totalRecords++;
 
     if (batch.length == BATCH_SIZE) {
       const copyBatch = batch.slice()
-      tasks.push(() => processBatch({ items: copyBatch, logContext: {...logContext, batchNumber: totalBatches + 1 }}))
+      const batchNumber = totalBatches + 1
+      tasks.push(() => processBatch({ items: copyBatch, logContext: {...logContext, batchNumber, totalBatches }, failedItems}))
       batch = []
       totalBatches++;
     }
   }
 
   if (batch.length > 0) {
-    tasks.push(() => processBatch({ items: batch, logContext: {...logContext, batchNumber: totalBatches + 1 } }))
+    const batchNumber = totalBatches + 1
+    tasks.push(() => processBatch({ items: batch, logContext: {...logContext, batchNumber, totalBatches }, failedItems}))
     totalBatches++;
   }
 
@@ -151,6 +173,8 @@ export async function main() {
     throw new Error('No relevant files found in the folder.')
   }
 
+  /** @type {ItemKey[]} */
+  const failedItems = []
   let fileNumber = 0
   await all(
     files.map((file) => async () => {
@@ -159,10 +183,16 @@ export async function main() {
       console.log(
         `\nProcessing file ${fileNumber}/${files.length}: ${filePath}`
       )
-      await processFile(filePath)
+      await processFile(filePath, failedItems)
     }),
     { concurrency }
   )
+
+   // Write failed items to file after processing the file
+   if (failedItems.length > 0) {
+    console.log(`Found ${failedItems.length} failed items.`)
+    writeFailedItemsToFile(failedItems);
+  }
 
   console.log('All files processed successfully.')
 }
