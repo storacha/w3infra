@@ -39,7 +39,12 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
  * @param {Object} [params.logContext={}] - Additional logging context.
  * @returns {Promise<void>} A promise that resolves when the batch is processed.
  */
-async function processBatch({ items, retryCount = 0, delay = 100, logContext = {}}) {
+async function processBatch({
+  items,
+  retryCount = 0,
+  delay = 100,
+  logContext = {},
+}) {
   const deleteRequests = items.map((item) => ({
     DeleteRequest: {
       Key: marshall(item),
@@ -55,7 +60,10 @@ async function processBatch({ items, retryCount = 0, delay = 100, logContext = {
   try {
     const response = await dynamo.send(batchDeleteCommand)
 
-    if (response.UnprocessedItems && response.UnprocessedItems[SPACE_DIFF_TABLE_NAME]) {
+    if (
+      response.UnprocessedItems &&
+      response.UnprocessedItems[SPACE_DIFF_TABLE_NAME]
+    ) {
       const unprocessedItems = /** @type {ItemKey[]} */ (
         response.UnprocessedItems[SPACE_DIFF_TABLE_NAME].map((item) =>
           unmarshall(
@@ -64,22 +72,24 @@ async function processBatch({ items, retryCount = 0, delay = 100, logContext = {
         )
       )
       if (retryCount < MAX_RETRIES) {
-        console.log(`Retrying ${unprocessedItems.length} unprocessed items...`, logContext)
+        console.log(
+          `Retrying ${unprocessedItems.length} unprocessed items...`,
+          logContext
+        )
         await sleep(delay)
         return processBatch({
           items: unprocessedItems,
           retryCount: retryCount + 1,
           delay: delay * 2, // Increase delay exponentially
-          logContext
-        }
-        )
+          logContext,
+        })
       } else {
         console.error(
           `Max retries reached. Some items could not be processed: ${unprocessedItems}`,
-           logContext
+          logContext
         )
       }
-    }else{
+    } else {
       console.log(`Successfully deleted the entire batch!`, logContext)
     }
   } catch (err) {
@@ -100,23 +110,31 @@ async function processFile(filePath) {
   /** @type {(() => Promise<void>)[]} */
   const tasks = []
   const logContext = { file: filePath }
-
+  let totalRecords = 0;
+  let totalBatches = 0;
   let record = null
+
   while ((record = /** @type {ItemKey | null} */ (await cursor.next()))) {
     batch.push(record)
+    totalRecords++;
+
     if (batch.length == BATCH_SIZE) {
       const copyBatch = batch.slice()
-      tasks.push(() => processBatch({ items: copyBatch, logContext }))
+      tasks.push(() => processBatch({ items: copyBatch, logContext: {...logContext, batchNumber: totalBatches + 1 }}))
       batch = []
+      totalBatches++;
     }
   }
+
   if (batch.length > 0) {
-    tasks.push(() => processBatch({ items: batch, logContext }))
+    tasks.push(() => processBatch({ items: batch, logContext: {...logContext, batchNumber: totalBatches + 1 } }))
+    totalBatches++;
   }
 
+  console.log(`Processing ${totalRecords} records in ${totalBatches} batches...`, logContext)
   await all(tasks, { concurrency })
-
   await reader.close()
+  console.log(`Finished processing file: ${filePath}`, logContext)
 }
 
 export async function main() {
@@ -145,6 +163,8 @@ export async function main() {
     }),
     { concurrency }
   )
+
+  console.log('All files processed successfully.')
 }
 
 try {
