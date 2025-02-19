@@ -40,3 +40,9 @@ node remove-duplicates.js dedupe_output
 Arguments:
 
 - `localFolderPath`: The local directory containing the downloaded files.
+
+## Learnings from This Task
+
+Using AWS Glue to identify duplicates was a great decision. Leveraging PySpark’s power, we efficiently processed large datasets and quickly identified duplicates with minimal effort. However, while Glue was highly effective for detection, it turned out to be less ideal for deletion.
+
+Initially, we assumed Glue would also be a good fit for deleting records from DynamoDB. However, due to DynamoDB's batch write limitation of 25 items per request, we had to process over 200,000 batches. This required constantly loading items into the worker’s memory, significantly slowing down the operation. This overhead made the deletion process inefficient compared to a simpler approach using a direct AWS SDK script.

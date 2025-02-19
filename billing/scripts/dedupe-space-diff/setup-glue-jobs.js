@@ -13,7 +13,6 @@ const config = {
   scriptsBucketName: mustGetEnv('SCRIPTS_BUCKET_NAME'),
   dynamoExportBucketName: mustGetEnv('DYNAMO_EXPORT_BUCKET_NAME'),
   exportDataPath: mustGetEnv('EXPORT_DATA_PATH'),
-  dynamoTableName: mustGetEnv('DYNAMO_TABLE_NAME'),
 }
 
 const glue = new GlueClient({ region: config.region })
@@ -79,22 +78,12 @@ async function createJob(name, scriptKey, defaultArguments) {
 async function main() {
   console.log('🚀 Starting deployment...')
 
-  await Promise.all([
-    uploadScript('./glue-jobs/dedupe-space-diff.py', 'dedupe-space-diff.py'),
-    uploadScript('./glue-jobs/delete-from-dynamo.py', 'delete-from-dynamo.py'),
-  ])
+  await uploadScript('./glue-jobs/dedupe-space-diff.py', 'dedupe-space-diff.py'),
 
-  // Create Glue jobs
+  // Create Glue job
   await createJob('dedupe-space-diff-table', 'dedupe-space-diff.py', {
     '--S3_INPUT_PATH': `s3://${config.dynamoExportBucketName}/${config.exportDataPath}`,
     '--S3_OUTPUT_PATH': `s3://${config.dynamoExportBucketName}/dedupe_output/`,
-  })
-
-  await createJob('delete-from-dynamo', 'delete-from-dynamo.py', {
-    '--AWS_REGION': config.region,
-    '--DYNAMODB_TABLE_NAME': config.dynamoTableName,
-    '--S3_INPUT_PATH': `s3://${config.dynamoExportBucketName}/dedupe_output/`,
-    '--S3_FAILED_ITEMS_PATH': `s3://${config.dynamoExportBucketName}/failed_delete_requests/`,
   })
 
   console.log('🎉 Deployment complete!')
