@@ -44,11 +44,11 @@ const TB = 1024 * GB
 
 /** @type {Record<string, { cost: number, overage: number, included: number }>} */
 const productInfo = {
+  'did:web:trial.storacha.network': { cost: 0, overage: 0 / GB, included: 100 * MB },
   'did:web:starter.web3.storage': { cost: 0, overage: 0.15 / GB, included: 5 * GB },
   'did:web:lite.web3.storage': { cost: 10, overage: 0.05 / GB, included: 100 * GB },
   'did:web:business.web3.storage': { cost: 100, overage: 0.03 / GB, included: 2 * TB },
   'did:web:free.web3.storage': { cost: 0, overage: 0 / GB, included: 0 },
-  'did:web:trial.storacha.network': { cost: 0, overage: 0 / GB, included: 100 * MB }
 }
 
 /**

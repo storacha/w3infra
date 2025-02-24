@@ -150,6 +150,8 @@ export function UploadApiStack({ stack, app }) {
             CONTENT_CLAIMS_URL,
             CONTENT_CLAIMS_PROOF,
             HOSTED_ZONE: hostedZone ?? '',
+            GITHUB_CLIENT_ID: process.env.GITHUB_CLIENT_ID ?? '',
+            GITHUB_CLIENT_SECRET: process.env.GITHUB_CLIENT_SECRET ?? '',
           },
           bind: [
             privateKey,
