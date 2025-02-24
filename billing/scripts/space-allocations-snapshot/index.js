@@ -92,13 +92,15 @@ export async function main() {
     const { ok: record, error } = await customerStore.get({ customer })
     if (error) throw error
 
-    customerBillingInstructions.push({
-      customer: record.customer,
-      account: record.account,
-      product: record.product,
-      from,
-      to,
-    })
+    if (record.account) {
+      customerBillingInstructions.push({
+        customer: record.customer,
+        account: record.account,
+        product: record.product,
+        from,
+        to,
+      })
+    }
   } else {
     console.log(`Getting all customers...`)
 

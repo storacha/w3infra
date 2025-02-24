@@ -14,6 +14,10 @@ export const test = {
       customers.push(customer)
     }
 
+    const noAccountCustomer = randomCustomer({ account: undefined })
+    const { error } = await ctx.customerStore.put(noAccountCustomer)
+    assert.ok(!error)
+
     const now = new Date()
     const period = { from: startOfLastMonth(now), to: startOfMonth(now) }
     const handled = await enqueueCustomerBillingInstructions(period, ctx)
@@ -32,5 +36,8 @@ export const test = {
     for (const c of customers) {
       assert.ok(collected.ok.some(cbi => cbi.customer === c.customer))
     }
+
+    // ensure we didn't get a billing instruction for customer with no account
+    assert.ok(collected.ok.every(cbi => cbi.customer !== noAccountCustomer.customer))
   }
 }

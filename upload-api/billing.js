@@ -98,6 +98,14 @@ export function createStripeBillingProvider(stripe, customerStore) {
           }
         }
       }
+      if (!response.ok.account) {
+        return {
+          error: {
+            name: 'CustomerNotFound',
+            message: 'Customer account not set'
+          }
+        }
+      }
       const customer = response.ok.account.slice('stripe:'.length)
       const session = await stripe.billingPortal.sessions.create({
         customer,

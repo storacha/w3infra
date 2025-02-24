@@ -174,6 +174,7 @@ export function UploadApiStack({ stack, app }) {
         // AWS API Gateway does not know trailing slash... and Grafana Agent puts trailing slash
         'GET /metrics/{proxy+}': 'upload-api/functions/metrics.handler',
         'GET /sample': 'upload-api/functions/sample.handler',
+        'GET /oauth/callback': 'upload-api/functions/oauth-callback.handler',
       },
       accessLog: {
         format:'{"requestTime":"$context.requestTime","requestId":"$context.requestId","httpMethod":"$context.httpMethod","path":"$context.path","routeKey":"$context.routeKey","status":$context.status,"responseLatency":$context.responseLatency,"integrationRequestId":"$context.integration.requestId","integrationStatus":"$context.integration.status","integrationLatency":"$context.integration.latency","integrationServiceStatus":"$context.integration.integrationStatus","ip":"$context.identity.sourceIp","userAgent":"$context.identity.userAgent"}'

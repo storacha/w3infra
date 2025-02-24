@@ -43,6 +43,7 @@
     "@babel/core": "^7.23.3",
     "@babel/preset-react": "^7.23.3",
     "@ipld/car": "^5.2.6",
+    "@octokit/types": "^13.8.0",
     "@types/aws-lambda": "^8.10.108",
     "@types/reload": "^3.2.3",
     "@web3-storage/content-claims-infra": "^1.2.1",
