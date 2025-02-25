@@ -58,13 +58,13 @@ export const oauthCallbackGet = async (request, context) => {
   const code = request.queryStringParameters?.code
   if (!code) {
     console.error('missing code in query params')
-    return { statusCode: 400 }
+    return { statusCode: 400, body: 'missing code in query params' }
   }
 
   const extractRes = await Delegation.extract(base64url.decode(request.queryStringParameters?.state ?? ''))
   if (extractRes.error) {
     console.error('decoding access/authorize delegation', extractRes.error)
-    return { statusCode: 400 }
+    return { statusCode: 400, body: 'failed to decode access/authorize delegation' }
   }
 
   const authRequest =
@@ -79,13 +79,13 @@ export const oauthCallbackGet = async (request, context) => {
   })
   if (accessRes.error) {
     console.error('validating access/authorize delegation', accessRes.error)
-    return { statusCode: 400 }
+    return { statusCode: 400, body: 'failed to validate access/authorize delegation' }
   }
 
   const accessTokenRes = await github.getOAuthAccessToken({ code })
   if (!accessTokenRes.ok) {
     console.error(accessTokenRes.error)
-    return { statusCode: 400 }
+    return { statusCode: 400, body: 'failed to get OAuth access token' }
   }
   const accessToken = accessTokenRes.ok.access_token
 
@@ -95,11 +95,11 @@ export const oauthCallbackGet = async (request, context) => {
   ])
   if (!userRes.ok) {
     console.error(userRes.error)
-    return { statusCode: 500 }
+    return { statusCode: 500, body: 'failed to get user profile' }
   }
   if (!userEmailsRes.ok) {
     console.error(userEmailsRes.error)
-    return { statusCode: 500 }
+    return { statusCode: 500, body: 'failed to get user emails' }
   }
 
   const user = userRes.ok
@@ -107,7 +107,7 @@ export const oauthCallbackGet = async (request, context) => {
   const primary = emails.find(e => e.primary && e.verified)
   if (!primary) {
     console.error('missing primary verified email', emails)
-    return { statusCode: 400 }
+    return { statusCode: 400, body: 'missing primary verified email' }
   }
 
   // record the auth request and issue a receipt
@@ -132,7 +132,7 @@ export const oauthCallbackGet = async (request, context) => {
   })
   if (messageWriteRes.error) {
     console.error(messageWriteRes.error)
-    return { statusCode: 500 }
+    return { statusCode: 500, body: 'failed to write access/authorize invocation and receipt' }
   }
 
   const customer = DidMailto.fromString(primary.email)
@@ -161,20 +161,25 @@ export const oauthCallbackGet = async (request, context) => {
 
   if (!confirmRes.out.ok) {
     console.error('executing access/confirm', confirmRes.out.error)
-    return { statusCode: 500 }
+    return { statusCode: 500, body: 'failed to execute access/confirm invocation' }
   }
-  
+
   const customerGetRes = await customerStore.get({ customer })
   if (customerGetRes.ok) {
-    return { statusCode: 200 }
+    return {
+      statusCode: 200,
+      headers: { 'Context-Type': 'text/html' },
+      body: Buffer.from(getResponseHTML()).toString('base64'),
+      isBase64Encoded: true,
+    }
   }
   if (customerGetRes.error.name !== 'RecordNotFound') {
     console.error(`getting customer: ${customer}`, customerGetRes.error)
-    return { statusCode: 500 }
+    return { statusCode: 500, body: 'failed to fetch customer record' }
   }
   if (new Date(user.created_at).getTime() > Date.now() - MIN_ACCOUNT_AGE) {
     console.error(`account too young: ${user.login}`)
-    return { statusCode: 400 }
+    return { statusCode: 400, body: 'account too young' }
   }
 
   // add a customer with a trial product
@@ -186,7 +191,7 @@ export const oauthCallbackGet = async (request, context) => {
   })
   if (!customerPutRes.ok) {
     console.error(`putting customer: ${customer}`, customerPutRes.error)
-    return { statusCode: 500 }
+    return { statusCode: 500, body: 'failed to put customer' }
   }
 
   return {
