@@ -51,7 +51,7 @@ export const decode = input => {
         customer: Schema.did({ method: 'mailto' }).from(input.customer),
         account: input.account ? Schema.uri({ protocol: 'stripe:' }).from(input.account) : undefined,
         product: /** @type {string} */ (input.product),
-        details: input.details ? /** @type {string} */ (input.details) : undefined,
+        details: input.details ? Schema.text().from(input.details) : undefined,
         insertedAt: new Date(input.insertedAt),
         updatedAt: input.updatedAt ? new Date(input.updatedAt) : undefined
       }
