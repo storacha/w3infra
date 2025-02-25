@@ -62,7 +62,6 @@ export function useCarStore(s3, bucketName) {
       })
       const expiresIn = 60 * 60 * 24 // 1 day
       const url = new URL(
-        // @ts-expect-error aws broke the types
         await getSignedUrl(s3, cmd, {
           expiresIn,
           unhoistableHeaders: new Set(['x-amz-checksum-sha256']),
