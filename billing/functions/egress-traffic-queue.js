@@ -67,10 +67,12 @@ export const handler = Sentry.AWSLambda.wrapHandler(
         if (response.error) throw response.error
 
         const customerAccount = response.ok.account
-        expect(
-          await recordBillingMeterEvent(stripe, billingMeterName, egressData, customerAccount),
-          `Failed to record egress event in Stripe API for customer: ${egressData.customer}, account: ${customerAccount}, bytes: ${egressData.bytes}, servedAt: ${egressData.servedAt.toISOString()}, resource: ${egressData.resource}`
-        )
+        if (customerAccount) {
+          expect(
+            await recordBillingMeterEvent(stripe, billingMeterName, egressData, customerAccount),
+            `Failed to record egress event in Stripe API for customer: ${egressData.customer}, account: ${customerAccount}, bytes: ${egressData.bytes}, servedAt: ${egressData.servedAt.toISOString()}, resource: ${egressData.resource}`
+          )
+        }
       } catch (error) {
         console.error('Error processing egress event:', error)
         batchItemFailures.push({ itemIdentifier: record.messageId })

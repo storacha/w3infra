@@ -56,3 +56,7 @@ REQUIRE_PAYMENT_PLAN = 'true'
 # Referrals
 
 REFERRALS_ENDPOINT = 'https://staging.referrals.storacha.network'
+
+# GitHub OAuth (optional)
+GITHUB_CLIENT_ID = ''
+GITHUB_CLIENT_SECRET = ''

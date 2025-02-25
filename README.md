@@ -240,6 +240,14 @@ Postmark API token, which is used by the email verification system to send email
 
 API token for [Mailslurp](https://www.mailslurp.com/), which is used in [integration tests](./test/integration.test.js). To invalidate or refresh tokens, head to the [Mailslurp dashboard](https://app.mailslurp.com/dashboard/).
 
+#### `GITHUB_CLIENT_ID`
+
+GitHub OAuth client ID, for login via OAuth. This is optional, but necessary if you want to login with GitHub.
+
+#### `GITHUB_CLIENT_SECRET`
+
+GitHub OAuth client secret, for login via OAuth. This is optional, but necessary if you want to login with GitHub.
+
 ### Secrets
 
 Set production secrets in aws SSM via [`sst secrets`](https://docs.sst.dev/config#sst-secrets). The region must be set to the one you deploy that stage to

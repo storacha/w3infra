@@ -23,6 +23,8 @@ export const enqueueCustomerBillingInstructions = async (period, ctx) => {
     if (customerList.error) return customerList
 
     for (const c of customerList.ok.results) {
+      if (!c.account) continue
+
       console.log(`Adding customer billing instruction for: ${c.customer}`)
       const queueAdd = await ctx.customerBillingQueue.add({
         customer: c.customer,
