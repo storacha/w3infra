@@ -6,8 +6,8 @@
     "test": "ava --verbose --timeout=60s --fail-fast **/*.test.js"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "3.750.0",
-    "@aws-sdk/s3-request-presigner": "3.750.0",
+    "@aws-sdk/client-s3": "3.563.0",
+    "@aws-sdk/s3-request-presigner": "3.563.0",
     "@sentry/serverless": "^7.74.1",
     "@web3-storage/content-claims": "^5.2.0",
     "multiformats": "^13.3.2",

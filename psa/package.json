@@ -6,8 +6,8 @@
     "test": "entail test/*.spec.js"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "3.750.0",
-    "@aws-sdk/s3-request-presigner": "3.750.0",
+    "@aws-sdk/client-s3": "3.563.0",
+    "@aws-sdk/s3-request-presigner": "3.563.0",
     "multiformats": "^13.3.0",
     "sst": "^2.43.7"
   },

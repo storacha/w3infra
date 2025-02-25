@@ -23,15 +23,14 @@ export const customerTableProps = {
     account: 'string',
     /** Unique identifier of the product a.k.a tier. */
     product: 'string',
+    /** Misc customer details */
+    details: 'string',
     /** ISO timestamp record was inserted. */
     insertedAt: 'string',
     /** ISO timestamp record was updated. */
     updatedAt: 'string'
   },
-  primaryIndex: { partitionKey: 'customer' },
-  globalIndexes: {
-    account: { partitionKey: 'account', projection: ['customer'] }
-  }
+  primaryIndex: { partitionKey: 'customer' }
 }
 
 /**

@@ -16,9 +16,7 @@ export async function getOldestPiecesPendingDeals () {
     
   })
   if (submittedPieces.error) {
-    return {
-      error: submittedPieces.error,
-    }
+    throw submittedPieces.error
   }
 
   // List first 10 entries

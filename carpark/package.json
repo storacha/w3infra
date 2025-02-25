@@ -6,12 +6,12 @@
     "test": "ava --verbose --timeout=60s --fail-fast **/*.test.js"
   },
   "dependencies": {
-    "@aws-sdk/client-eventbridge": "3.750.0",
-    "@aws-sdk/client-sqs": "3.750.0",
+    "@aws-sdk/client-eventbridge": "3.563.0",
+    "@aws-sdk/client-sqs": "3.563.0",
     "@sentry/serverless": "^7.74.1"
   },
   "devDependencies": {
-    "@aws-sdk/client-s3": "3.750.0",
+    "@aws-sdk/client-s3": "3.563.0",
     "constructs": "*",
     "ava": "^4.3.3",
     "nanoid": "^4.0.0",

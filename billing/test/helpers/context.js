@@ -178,6 +178,7 @@ export const createEgressTrafficTestContext = async () => {
     remove: createQueueRemoverClient(awsServices.sqs.client, { url: egressQueueURL, decode: decodeEgressTrafficEvent }).remove,
   }
 
+  // @ts-expect-error
   const accountId = (await awsServices.sqs.client.config.credentials()).accountId
   const region = 'us-west-2'
 

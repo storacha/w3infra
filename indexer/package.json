@@ -6,9 +6,9 @@
     "test": "entail '**/*.spec.js'"
   },
   "dependencies": {
-    "@aws-sdk/client-dynamodb": "^3.602.0",
-    "@aws-sdk/client-sqs": "^3.600.0",
-    "@aws-sdk/util-dynamodb": "^3.602.0",
+    "@aws-sdk/client-dynamodb": "3.563.0",
+    "@aws-sdk/client-sqs": "3.563.0",
+    "@aws-sdk/util-dynamodb": "3.563.0",
     "@ipld/dag-json": "^10.2.1",
     "@ucanto/interface": "^10.2.0",
     "multiformats": "^13.1.1",
