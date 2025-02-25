@@ -189,7 +189,12 @@ export const oauthCallbackGet = async (request, context) => {
     return { statusCode: 500 }
   }
 
-  return { statusCode: 200 }
+  return {
+    statusCode: 200,
+    headers: { 'Context-Type': 'text/html' },
+    body: Buffer.from(getResponseHTML()).toString('base64'),
+    isBase64Encoded: true,
+  }
 }
 
 export const handler = Sentry.AWSLambda.wrapHandler((event) => oauthCallbackGet(event))
@@ -316,3 +321,21 @@ class GitHubClient {
     }
   }
 }
+
+const getResponseHTML = () => `
+<!doctype html>
+<html lang="en">
+  <head>
+    <title>Authorized - Storacha Network</title>
+  </head>
+  <body style="font-family:sans-serif;color:#000">
+    <div style="height:100vh;display:flex;align-items:center;justify-content:center">
+      <div style="text-align:center">
+        <img src="https://w3s.link/ipfs/bafybeihinjwsn3kgjrlpdada4xingozsni3boywlscxspc5knatftauety/storacha-bug.svg" alt="Storacha - Decentralized Hot Storage Layer on Filecoin">
+        <h1 style="font-weight:normal">Authorization Successful</h1>
+        <p>You may now close this window.</p>
+      </div>
+    </div>
+  </body>
+</html>
+`.trim()
