@@ -135,7 +135,7 @@ export const oauthCallbackGet = async (request, context) => {
     return { statusCode: 500, body: 'failed to write access/authorize invocation and receipt' }
   }
 
-  const customer = DidMailto.fromString(primary.email)
+  const customer = DidMailto.fromEmail(/** @type {`${string}@${string}`} */ (primary.email))
   const confirmRes = await Access.confirm
     .invoke({
       issuer: serviceSigner,
