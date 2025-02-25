@@ -107,6 +107,7 @@ export function useBlobsStorage(s3, bucketName) {
         ContentLength: size,
       })
       const url = new URL(
+        // @ts-expect-error aws broke the types
         await getSignedUrl(s3, cmd, {
           expiresIn,
           unhoistableHeaders: new Set(['x-amz-checksum-sha256']),

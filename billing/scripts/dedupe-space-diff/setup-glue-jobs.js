@@ -78,7 +78,7 @@ async function createJob(name, scriptKey, defaultArguments) {
 async function main() {
   console.log('🚀 Starting deployment...')
 
-  await uploadScript('./glue-jobs/dedupe-space-diff.py', 'dedupe-space-diff.py'),
+  await uploadScript('./glue-jobs/dedupe-space-diff.py', 'dedupe-space-diff.py')
 
   // Create Glue job
   await createJob('dedupe-space-diff-table', 'dedupe-space-diff.py', {

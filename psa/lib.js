@@ -197,6 +197,7 @@ export const getDownloadURL = async (buckets, root) => {
     if (!location) continue
 
     const cmd = new GetObjectCommand({ Bucket: location.bucket, Key: location.key })
+    // @ts-expect-error aws broke the types
     const url = await getSignedUrl(location.client, cmd, { expiresIn: DownloadURLExpiration })
     return new URL(url)
   }

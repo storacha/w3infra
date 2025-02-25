@@ -8,11 +8,11 @@
     "coverage": "c8 -r text -r html npm test"
   },
   "dependencies": {
-    "@aws-sdk/client-dynamodb": "^3.515.0",
-    "@aws-sdk/client-glue": "^3.515.0",
-    "@aws-sdk/client-s3": "^3.515.0",
-    "@aws-sdk/client-sqs": "^3.515.0",
-    "@aws-sdk/util-dynamodb": "^3.515.0",
+    "@aws-sdk/client-dynamodb": "3.750.0",
+    "@aws-sdk/client-glue": "3.750.0",
+    "@aws-sdk/client-s3": "3.750.0",
+    "@aws-sdk/client-sqs": "3.750.0",
+    "@aws-sdk/util-dynamodb": "3.750.0",
     "@dsnp/parquetjs": "^1.8.5",
     "@sentry/serverless": "^7.74.1",
     "@ucanto/interface": "^10.0.1",

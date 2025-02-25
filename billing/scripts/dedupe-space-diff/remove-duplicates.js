@@ -23,7 +23,7 @@ const BATCH_SIZE = 25
 const MAX_RETRIES = 3
 const concurrency = 5
 const dynamo = new DynamoDBClient()
-const FAILED_ITEMS_FILE = `failed_items_${(new Date()).getTime()}.json`
+const FAILED_ITEMS_FILE = `failed_items_${Date.now()}.json`
 
 /**
  * @param {number} ms - Delay in milliseconds
@@ -45,12 +45,11 @@ const writeFailedItemsToFile = (failedItems) => {
 };
 
 /**
- *
- * @param {Object} params - The parameters for batch processing.
+ * @param {object} params - The parameters for batch processing.
  * @param {ItemKey[]} params.items - The items to process.
  * @param {number} [params.retryCount=0] - The number of retry attempts.
  * @param {number} [params.delay=100] - The delay between retries in milliseconds.
- * @param {Object} [params.logContext={}] - Additional logging context.
+ * @param {object} [params.logContext={}] - Additional logging context.
  * @param {ItemKey[]} params.failedItems - Array to collect failed items.
  * @returns {Promise<void>} A promise that resolves when the batch is processed.
  */
@@ -122,8 +121,8 @@ async function processBatch({
  * @returns {Promise<void>}
  */
 async function processFile(filePath, failedItems) {
-  let reader = await parquetjs.ParquetReader.openFile(filePath)
-  let cursor = reader.getCursor()
+  const reader = await parquetjs.ParquetReader.openFile(filePath)
+  const cursor = reader.getCursor()
 
   /** @type {ItemKey[]} */
   let batch = []

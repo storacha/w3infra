@@ -8,11 +8,11 @@
     "dev:html": "concurrently --names=Build,Server --prefix-colors=bgBlue.bold,bgMagenta.bold \"npm run build:html -- --watch\" \"nodemon --watch dist ./dist/validate-email-server.mjs\""
   },
   "dependencies": {
-    "@aws-sdk/client-dynamodb": "^3.515.0",
-    "@aws-sdk/client-kinesis": "^3.515.0",
-    "@aws-sdk/client-s3": "^3.515.0",
-    "@aws-sdk/s3-request-presigner": "^3.515.0",
-    "@aws-sdk/util-dynamodb": "^3.515.0",
+    "@aws-sdk/client-dynamodb": "3.750.0",
+    "@aws-sdk/client-kinesis": "3.750.0",
+    "@aws-sdk/client-s3": "3.750.0",
+    "@aws-sdk/s3-request-presigner": "3.750.0",
+    "@aws-sdk/util-dynamodb": "3.750.0",
     "@ipld/dag-ucan": "^3.0.1",
     "@sentry/serverless": "^7.74.1",
     "@ucanto/client": "^9.0.1",

@@ -6,9 +6,9 @@
     "test": "ava --serial --no-worker-threads --verbose --timeout=60s --fail-fast **/*.test.js"
   },
   "dependencies": {
-    "@aws-sdk/client-dynamodb": "^3.515.0",
-    "@aws-sdk/client-s3": "^3.515.0",
-    "@aws-sdk/client-sqs": "^3.515.0",
+    "@aws-sdk/client-dynamodb": "3.750.0",
+    "@aws-sdk/client-s3": "3.750.0",
+    "@aws-sdk/client-sqs": "3.750.0",
     "@ipld/car": "^5.2.6",
     "@sentry/serverless": "^7.74.1",
     "@ucanto/client": "^9.0.1",
