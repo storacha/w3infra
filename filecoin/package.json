@@ -16,13 +16,13 @@
     "@ucanto/interface": "^10.0.1",
     "@ucanto/principal": "^9.0.1",
     "@ucanto/transport": "^9.1.1",
-    "@web3-storage/data-segment": "^5.1.0",
+    "@web3-storage/data-segment": "^5.3.0",
     "@web3-storage/filecoin-api": "^7.2.0",
     "@web3-storage/filecoin-client": "^3.3.3",
     "fr32-sha2-256-trunc254-padded-binary-tree-multihash": "^3.3.0",
     "multiformats": "^13.1.0",
     "p-retry": "^6.2.0",
-    "uint8arrays": "4.0.6"
+    "uint8arrays": "^5.1.0"
   },
   "devDependencies": {
     "@web-std/blob": "3.0.5",

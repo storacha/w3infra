@@ -57,5 +57,5 @@ export function createClaimsClientForEnv (env = process.env.SST_STAGE) {
   if (env === 'prod') {
     return read
   }
-  return (cid, opts) => read(cid, { serviceURL: 'https://staging.claims.web3.storage', ...opts })
+  return (cid, opts) => read(cid.multihash, { serviceURL: 'https://staging.claims.web3.storage', ...opts })
 }
