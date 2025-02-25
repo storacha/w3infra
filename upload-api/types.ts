@@ -267,6 +267,9 @@ declare module 'sst/node/config' {
     },
     STRIPE_SECRET_KEY: {
       value: string
+    },
+    GITHUB_CLIENT_SECRET: {
+      value: string
     }
   }
 }

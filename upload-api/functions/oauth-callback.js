@@ -230,7 +230,7 @@ const getContext = (customContext) => {
 
   const github = new GitHubClient({
     clientID: mustGetEnv('GITHUB_CLIENT_ID'),
-    clientSecret: mustGetEnv('GITHUB_CLIENT_SECRET')
+    clientSecret: Config.GITHUB_CLIENT_SECRET
   })
 
   const customerStore = createCustomerStore({ region }, { tableName: mustGetEnv('CUSTOMER_TABLE_NAME') })

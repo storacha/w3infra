@@ -244,10 +244,6 @@ API token for [Mailslurp](https://www.mailslurp.com/), which is used in [integra
 
 GitHub OAuth client ID, for login via OAuth. This is optional, but necessary if you want to login with GitHub.
 
-#### `GITHUB_CLIENT_SECRET`
-
-GitHub OAuth client secret, for login via OAuth. This is optional, but necessary if you want to login with GitHub.
-
 ### Secrets
 
 Set production secrets in aws SSM via [`sst secrets`](https://docs.sst.dev/config#sst-secrets). The region must be set to the one you deploy that stage to
@@ -261,7 +257,7 @@ To set a fallback value for `staging` or an ephmeral PR build use [`sst secrets 
 
 ```sh
 # set `PRIVATE_KEY` for any stage in us-east-2
-$ npx sst secrets set-fallback --region us-east-2 PRIVATE_KEY "MgCZG7...="
+$ npx sst secrets set --fallback --region us-east-2 PRIVATE_KEY "MgCZG7...="
 ```
 
 **note** The fallback value can only be inherited by stages deployed in the same AWS account and region.
@@ -301,6 +297,10 @@ _Example:_ `MgCZG7EvaA...1pX9as=`
 #### `STRIPE_SECRET_KEY`
 
 Stripe API key for reporting per customer usage.
+
+#### `GITHUB_CLIENT_SECRET`
+
+GitHub OAuth client secret, for login via OAuth. This is optional, but necessary if you want to login with GitHub.
 
 ## HTTP API
 

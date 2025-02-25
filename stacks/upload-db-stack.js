@@ -32,6 +32,8 @@ export function UploadDbStack({ stack, app }) {
   // TODO: we should look into creating a trust layer for content claims
   const contentClaimsPrivateKey = new Config.Secret(stack, 'CONTENT_CLAIMS_PRIVATE_KEY')
 
+  const githubClientSecret = new Config.Secret(stack, 'GITHUB_CLIENT_SECRET')
+
   /**
    * The allocation table tracks allocated multihashes per space.
    * Used by the blob/* service capabilities.
@@ -119,6 +121,7 @@ export function UploadDbStack({ stack, app }) {
     adminMetricsTable,
     spaceMetricsTable,
     privateKey,
-    contentClaimsPrivateKey
+    contentClaimsPrivateKey,
+    githubClientSecret
   }
 }

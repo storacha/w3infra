@@ -44,7 +44,7 @@ export function UploadApiStack({ stack, app }) {
 
   // Get references to constructs created in other stacks
   const { carparkBucket } = use(CarparkStack)
-  const { allocationTable, storeTable, uploadTable, delegationBucket, delegationTable, revocationTable, adminMetricsTable, spaceMetricsTable, consumerTable, subscriptionTable, rateLimitTable, pieceTable, privateKey, contentClaimsPrivateKey } = use(UploadDbStack)
+  const { allocationTable, storeTable, uploadTable, delegationBucket, delegationTable, revocationTable, adminMetricsTable, spaceMetricsTable, consumerTable, subscriptionTable, rateLimitTable, pieceTable, privateKey, contentClaimsPrivateKey, githubClientSecret } = use(UploadDbStack)
   const { invocationBucket, taskBucket, workflowBucket, ucanStream } = use(UcanInvocationStack)
   const { customerTable, spaceDiffTable, spaceSnapshotTable, egressTrafficTable, stripeSecretKey } = use(BillingDbStack)
   const { pieceOfferQueue, filecoinSubmitQueue } = use(FilecoinStack)
@@ -150,14 +150,14 @@ export function UploadApiStack({ stack, app }) {
             CONTENT_CLAIMS_URL,
             CONTENT_CLAIMS_PROOF,
             HOSTED_ZONE: hostedZone ?? '',
-            GITHUB_CLIENT_ID: process.env.GITHUB_CLIENT_ID ?? '',
-            GITHUB_CLIENT_SECRET: process.env.GITHUB_CLIENT_SECRET ?? '',
+            GITHUB_CLIENT_ID: process.env.GITHUB_CLIENT_ID ?? ''
           },
           bind: [
             privateKey,
             ucanInvocationPostbasicAuth,
             stripeSecretKey,
-            contentClaimsPrivateKey
+            contentClaimsPrivateKey,
+            githubClientSecret
           ]
         }
       },
