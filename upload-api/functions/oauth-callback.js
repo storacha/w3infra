@@ -168,7 +168,7 @@ export const oauthCallbackGet = async (request, context) => {
   if (customerGetRes.ok) {
     return {
       statusCode: 200,
-      headers: { 'Context-Type': 'text/html' },
+      headers: { 'Content-Type': 'text/html' },
       body: Buffer.from(getResponseHTML()).toString('base64'),
       isBase64Encoded: true,
     }
@@ -196,7 +196,7 @@ export const oauthCallbackGet = async (request, context) => {
 
   return {
     statusCode: 200,
-    headers: { 'Context-Type': 'text/html' },
+    headers: { 'Content-Type': 'text/html' },
     body: Buffer.from(getResponseHTML()).toString('base64'),
     isBase64Encoded: true,
   }
