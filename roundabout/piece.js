@@ -55,7 +55,7 @@ export async function findEquivalentCids (piece, fetchClaims = createClaimsClien
 /** @param {'prod' | *} env */
 export function createClaimsClientForEnv (env = process.env.SST_STAGE) {
   if (env === 'prod') {
-    return read
+    return cid => read(cid.multihash)
   }
   return (cid, opts) => read(cid.multihash, { serviceURL: 'https://staging.claims.web3.storage', ...opts })
 }
