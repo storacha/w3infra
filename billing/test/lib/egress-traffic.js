@@ -4,6 +4,16 @@ import { randomEgressEvent } from '../helpers/egress.js'
 import retry from 'p-retry'
 import * as DidMailto from '@storacha/did-mailto'
 
+/**
+ * @param {Date} base
+ * @param {number} [delta]
+ */
+const startOfHour = (base, delta = 0) => {
+  const d = new Date(base.getTime())
+  d.setHours(base.getHours() + delta, 0, 0, 0)
+  return d
+}
+
 /** @type {import('./api.js').TestSuite<import('./api.js').EgressTrafficTestContext>} */
 export const test = {
   /**
@@ -91,9 +101,9 @@ export const test = {
         const maxRetries = 5
         const delay = 10000 // 10 seconds
         // Convert to the start of the hour
-        const startTime = Math.floor(events[0].servedAt.getTime() / 3600000) * 3600
+        const startTime = Math.floor(startOfHour(events[0].servedAt).getTime() / 1000)
         // Convert to the end of the next hour
-        const endTime = Math.floor((Date.now() + 3600000) / 3600000) * 3600
+        const endTime = Math.floor(startOfHour(events[0].servedAt, 1).getTime() / 1000)
         console.log(`Checking for aggregated meter event for customer ${stripeCustomerId}, startTime: ${startTime}, endTime: ${endTime} ...`)
         aggregatedMeterEvent = await retry(async () => {
           const result = await ctx.stripe.billing.meters.listEventSummaries(
