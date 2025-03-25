@@ -57,7 +57,7 @@ test('findEquivalentCids', async t => {
 })
 
 // FIXME: relies on staging service and existing data on staging service
-test('findEquivalentCids from content-claims api', async t => {
+test.skip('findEquivalentCids from content-claims api', async t => {
   const pieceCid = CID.parse('bafkzcibbai3tdo4zvruj6zxo6wlt4suu3imi6to4vzmaojh4n475mdp5jcbtg')
   const carCid = CID.parse('bagbaieratdhefxxpkhkae2ovil2tcs7pfr2grvabvvoykful7k2maeepox3q')
   const carSet = await findEquivalentCids(pieceCid)

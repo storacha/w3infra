@@ -51,8 +51,9 @@ export async function findEquivalentCids (piece, indexingService = createIndexin
     if (claim.type !== 'assert/equals') {
       continue
     }
-    // an equivalence claim may have the pieceCid as the content cid _or_ the equals cid
-    // so if content equals piece, we can grab the piece, otherwise content.
+    // an equivalence claim may have the pieceCid as the content cid _or_ the
+    // equals cid so if content equals piece, we can grab the equals, otherwise
+    // content.
     let equivalentCid
     if ('digest' in claim.content) {
       equivalentCid = equals(piece.multihash.bytes, claim.content.digest)
