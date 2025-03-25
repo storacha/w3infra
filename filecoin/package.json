@@ -12,7 +12,7 @@
     "@ipld/car": "^5.2.6",
     "@ipld/dag-json": "^10.2.3",
     "@sentry/serverless": "^7.74.1",
-    "@storacha/filecoin-api": "^1.1.5",
+    "@storacha/filecoin-api": "^1.1.6",
     "@storacha/filecoin-client": "^1.0.1",
     "@ucanto/client": "^9.0.1",
     "@ucanto/core": "^10.3.1",
