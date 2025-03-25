@@ -4,6 +4,7 @@ import * as Raw from 'multiformats/codecs/raw'
 import { sha256 } from 'multiformats/hashes/sha2'
 import * as Digest from 'multiformats/hashes/digest'
 import { Piece, MIN_PAYLOAD_SIZE } from '@web3-storage/data-segment'
+import { decodeDelegation } from '@web3-storage/content-claims/client'
 import { Client } from '@storacha/indexing-service-client'
 import * as QueryResult from '@storacha/indexing-service-client/query-result'
 import { asCarCid } from '../utils.js'
@@ -18,11 +19,13 @@ import * as ed25519 from '@ucanto/principal/ed25519'
  */
 const claim = async (can, nb) => {
   const signer = await ed25519.generate()
-  return Delegation.delegate({
-    issuer: signer,
-    audience: signer,
-    capabilities: [{ can, with: signer.did(), nb }]
-  })
+  return decodeDelegation(
+    Delegation.delegate({
+      issuer: signer,
+      audience: signer,
+      capabilities: [{ can, with: signer.did(), nb }]
+    })
+  )
 }
 
 test('findEquivalentCids', async t => {
