@@ -40,7 +40,7 @@ test('findEquivalentCids', async t => {
           await claim('assert/equals', { content: pieceCid, equals: carCid }), // yes! is equivalent carCid
           await claim('assert/equals', { content: carCid, equals: pieceCid }), // no: is duplicate
           await claim('assert/equals', { content: pieceCid, equals: rawCid }), // yes! pieceCId mapped to rawCid
-          await claim('assert/location', { content: pieceCid, location: `ipfs://${carCid}` }), // no: is not equals claim
+          await claim('assert/location', { content: pieceCid, location: [`ipfs://${carCid}`] }), // no: is not equals claim
         ]
       })
       t.assert(result.ok)
