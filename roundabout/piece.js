@@ -1,4 +1,6 @@
 import { Client } from '@storacha/indexing-service-client'
+import * as Digest from 'multiformats/hashes/digest'
+import { CID } from 'multiformats/cid'
 import { equals } from 'multiformats/bytes'
 import { PIECE_V1_CODE, PIECE_V1_MULTIHASH, PIECE_V2_MULTIHASH, RAW_CODE } from './constants.js'
 
@@ -7,7 +9,6 @@ import { PIECE_V1_CODE, PIECE_V1_MULTIHASH, PIECE_V2_MULTIHASH, RAW_CODE } from 
  */
 
 /** 
- * @typedef {import('multiformats/cid').CID} CID
  * @typedef {import('@web3-storage/content-claims/client/api').Claim} Claim
  **/
 
@@ -47,38 +48,25 @@ export async function findEquivalentCids (piece, indexingService = createIndexin
   if (res.error) throw new Error('failed to query claims', { cause: res.error })
 
   for (const claim of res.ok.claims.values()) {
-    if (!isEqualsClaim(claim)) {
+    if (claim.type !== 'assert/equals') {
       continue
     }
-    const cap = claim.capabilities[0]
-    const contentDigest = cap.nb.content.multihash ?? new Uint8Array()
     // an equivalence claim may have the pieceCid as the content cid _or_ the equals cid
-    // so if content does not equal piece, we can grab the content. Otherwise equals
-    const equivalentCid = equals(piece.multihash.bytes, contentDigest.bytes) ? cap.nb.equals : cap.nb.content
+    // so if content equals piece, we can grab the piece, otherwise content.
+    let equivalentCid
+    if ('digest' in claim.content) {
+      equivalentCid = equals(piece.multihash.bytes, claim.content.digest)
+        ? claim.equals
+        // no IPLD information, use raw I guess...
+        : CID.createV1(RAW_CODE, Digest.decode(claim.content.digest))
+    } else {
+      equivalentCid = equals(piece.multihash.bytes, claim.content.multihash.bytes)
+        ? claim.equals
+        : claim.content
+    }
     cids.set(equivalentCid.toString(), equivalentCid)
   }
   return new Set(cids.values())
-}
-
-/**
- * @param {import('@ucanto/core').Delegation} claim
- * @returns {claim is Delegation<[Capability<'assert/equals', Resource, { content: UnknownLink, equals: UnknownLink }>]>}
- */
-const isEqualsClaim = claim => {
-  const cap = claim.capabilities[0]
-  if (!cap) {
-    return false
-  }
-  if (cap.can !== 'assert/equals') {
-    return false
-  }
-  if (cap.nb == null || typeof cap.nb != 'object') {
-    return false
-  }
-  if (!('content' in cap.nb) || !('equals' in cap.nb)) {
-    return false
-  }
-  return true
 }
 
 /** @param {'prod' | string} env */
