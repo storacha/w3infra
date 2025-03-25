@@ -20,7 +20,7 @@ import * as ed25519 from '@ucanto/principal/ed25519'
 const claim = async (can, nb) => {
   const signer = await ed25519.generate()
   return decodeDelegation(
-    Delegation.delegate({
+    await Delegation.delegate({
       issuer: signer,
       audience: signer,
       capabilities: [{ can, with: signer.did(), nb }]
