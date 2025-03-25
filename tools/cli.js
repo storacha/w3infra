@@ -1,13 +1,15 @@
 #!/usr/bin/env node
 
 import sade from 'sade'
-
+import dotenv from 'dotenv'
 import { fetchMetricsForSpaceCmd } from './fetch-metrics-for-space.js'
 import { followFilecoinReceiptChain } from './follow-filecoin-receipt-chain.js'
 import { migrateFromD1ToDynamo } from './d1-migration/add-to-dynamo.js'
 import { printD1ProvisionsEmails } from './d1-migration/print-d1-emails.js'
 import { verifyD1DynamoMigration } from './d1-migration/verify-d1-dynamo-migration.js'
 import { getOldestPiecesPendingDeals } from './get-oldest-pieces-pending-deals.js'
+
+dotenv.config({ path: ['.env', '../.env'] })
 
 const cli = sade('w3infra-cli')
 

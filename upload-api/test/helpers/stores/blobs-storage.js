@@ -4,9 +4,10 @@ import { ok } from '@ucanto/server'
 import { useBlobsStorage } from '../../../stores/blobs.js'
 
 /**
+ * @deprecated
  * @param {import('@aws-sdk/client-s3').S3Client} s3
  * @param {string} bucketName
- * @returns {Promise<import('@web3-storage/upload-api').UcantoServerTestContext['blobsStorage'] & import('@web3-storage/upload-api').BlobRetriever>}
+ * @returns {Promise<import('@storacha/upload-api').UcantoServerTestContext['blobsStorage']>}
  */
 export const useTestBlobsStorage = async (s3, bucketName) => {
   const storage = useBlobsStorage(s3, bucketName)

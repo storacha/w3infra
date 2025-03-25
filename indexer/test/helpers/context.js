@@ -1,10 +1,8 @@
 import { base58btc } from 'multiformats/bases/base58'
 import * as Digest from 'multiformats/hashes/digest'
-import { createDynamoDB, createSQS, createQueue, createTable } from './aws.js'
+import { createSQS, createQueue } from './aws.js'
 import { createQueueRemoverClient } from './queue.js'
 import { createMultihashesQueue } from '../../queues/multihashes.js'
-import { blocksCarsPositionTableProps, createBlocksCarsPositionStore } from '../../tables/blocks-cars-position.js'
-import { createStoreListerClient } from '../helpers/table.js'
 
 /**
  * @typedef {{
@@ -17,8 +15,7 @@ import { createStoreListerClient } from '../helpers/table.js'
 let awsServices
 const createAWSServices = async () => {
   awsServices = awsServices ?? {
-    sqs: await createSQS(),
-    dynamo: await createDynamoDB()
+    sqs: await createSQS()
   }
 }
 
@@ -36,32 +33,6 @@ export const createBlockAdvertPublisherTestContext = async () => {
   }
 
   return { multihashesQueue }
-}
-
-export const createBlockIndexWriterTestContext = async () => {
-  await createAWSServices()
-
-  const blocksCarsPositionTableName = await createTable(awsServices.dynamo.client, blocksCarsPositionTableProps, 'blocks-cars-position-')
-  const blocksCarsPositionStore = {
-    ...createBlocksCarsPositionStore(awsServices.dynamo.client, {
-      tableName: blocksCarsPositionTableName
-    }),
-    ...createStoreListerClient(awsServices.dynamo.client, {
-      tableName: blocksCarsPositionTableName,
-      /** @type {import('../../lib/api.js').Encoder<import('multiformats').MultihashDigest, { blockmultihash: string }>} */
-      encodeKey: digest => ({ ok: { blockmultihash: base58btc.encode(digest.bytes) } }),
-      /** @type {import('../lib/api.js').Decoder<import('../../types.js').StoreRecord, import('../../lib/api.js').Location>} */
-      decode: record => ({
-        ok: {
-          digest: Digest.decode(base58btc.decode(String(record.blockmultihash))),
-          location: new URL(String(record.carpath)),
-          range: [Number(record.offset), Number(record.length)]
-        }
-      })
-    })
-  }
-
-  return { blocksCarsPositionStore }
 }
 
 /**

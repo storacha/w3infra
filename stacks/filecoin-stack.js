@@ -23,9 +23,8 @@ export function FilecoinStack({ stack, app }) {
   const {
     AGGREGATOR_DID,
     AGGREGATOR_URL,
-    CONTENT_CLAIMS_DID,
-    CONTENT_CLAIMS_URL,
-    CONTENT_CLAIMS_PROOF,
+    INDEXING_SERVICE_DID,
+    INDEXING_SERVICE_URL,
     DISABLE_PIECE_CID_COMPUTE,
     UPLOAD_API_DID,
     STOREFRONT_PROOF,
@@ -41,9 +40,9 @@ export function FilecoinStack({ stack, app }) {
   // Get eventBus reference
   const { eventBus } = use(BusStack)
   // Get store table reference
-  const { pieceTable, privateKey, contentClaimsPrivateKey, adminMetricsTable } = use(UploadDbStack)
+  const { pieceTable, privateKey, adminMetricsTable, indexingServiceProof } = use(UploadDbStack)
   // Get UCAN store references
-  const { workflowBucket, invocationBucket, ucanStream } = use(UcanInvocationStack)
+  const { agentMessageBucket, agentIndexBucket, ucanStream } = use(UcanInvocationStack)
   const { roundaboutApiUrl } = use(RoundaboutStack)
 
   /**
@@ -93,7 +92,7 @@ export function FilecoinStack({ stack, app }) {
     function: {
       handler: 'filecoin/functions/handle-piece-offer-message.main',
       environment: {
-        DID: UPLOAD_API_DID,
+        DID: STOREFRONT_PROOF ? UPLOAD_API_DID : AGGREGATOR_DID,
         AGGREGATOR_DID,
         AGGREGATOR_URL,
         PROOF: STOREFRONT_PROOF,
@@ -121,16 +120,16 @@ export function FilecoinStack({ stack, app }) {
       function: {
         handler: 'filecoin/functions/handle-cron-tick.main',
         environment : {
-          DID: UPLOAD_API_DID,
+          DID: STOREFRONT_PROOF ? UPLOAD_API_DID : AGGREGATOR_DID,
           PIECE_TABLE_NAME: pieceTable.tableName,
-          WORKFLOW_BUCKET_NAME: workflowBucket.bucketName,
-          INVOCATION_BUCKET_NAME: invocationBucket.bucketName,
+          AGENT_MESSAGE_BUCKET_NAME: agentMessageBucket.bucketName,
+          AGENT_INDEX_BUCKET_NAME: agentIndexBucket.bucketName,
           AGGREGATOR_DID,
           PROOF: STOREFRONT_PROOF,
         },
         timeout: '6 minutes',
         bind: [privateKey],
-        permissions: [pieceTable, workflowBucket, invocationBucket],
+        permissions: [pieceTable, agentMessageBucket, agentIndexBucket],
       }
     }
   })
@@ -150,14 +149,13 @@ export function FilecoinStack({ stack, app }) {
       function: {
         handler: 'filecoin/functions/handle-piece-insert-to-content-claim.main',
         environment: {
-          CONTENT_CLAIMS_DID,
-          CONTENT_CLAIMS_URL,
-          CONTENT_CLAIMS_PROOF,
+          INDEXING_SERVICE_DID,
+          INDEXING_SERVICE_URL,
         },
         timeout: 3 * 60,
         bind: [
           privateKey,
-          contentClaimsPrivateKey
+          indexingServiceProof
         ]
       },
       deadLetterQueue: pieceTableHandleInserToClaimtDLQ.cdk.queue,
@@ -179,7 +177,6 @@ export function FilecoinStack({ stack, app }) {
       function: {
         handler: 'filecoin/functions/handle-piece-insert-to-filecoin-submit.main',
         environment: {
-          DID: UPLOAD_API_DID,
           STOREFRONT_DID: UPLOAD_API_DID,
           STOREFRONT_URL: storefrontCustomDomain?.domainName ? `https://${storefrontCustomDomain?.domainName}` : '',
         },
@@ -207,7 +204,6 @@ export function FilecoinStack({ stack, app }) {
       function: {
         handler: 'filecoin/functions/handle-piece-status-update.main',
         environment: {
-          DID: UPLOAD_API_DID,
           STOREFRONT_DID: UPLOAD_API_DID,
           STOREFRONT_URL: storefrontCustomDomain?.domainName ? `https://${storefrontCustomDomain?.domainName}` : '',
         },
@@ -247,7 +243,6 @@ export function FilecoinStack({ stack, app }) {
     {
       environment : {
         DISABLE_PIECE_CID_COMPUTE,
-        DID: UPLOAD_API_DID,
         STOREFRONT_DID: UPLOAD_API_DID,
         STOREFRONT_URL: storefrontCustomDomain?.domainName ? `https://${storefrontCustomDomain?.domainName}` : '',
       },
@@ -312,11 +307,11 @@ export function FilecoinStack({ stack, app }) {
   const metricsAggregateTotalConsumer = new Function(stack, 'metrics-aggregate-total-consumer', {
     environment: {
       METRICS_TABLE_NAME: adminMetricsTable.tableName,
-      WORKFLOW_BUCKET_NAME: workflowBucket.bucketName,
-      INVOCATION_BUCKET_NAME: invocationBucket.bucketName,
+      AGENT_MESSAGE_BUCKET_NAME: agentMessageBucket.bucketName,
+      AGENT_INDEX_BUCKET_NAME: agentIndexBucket.bucketName,
       START_FILECOIN_METRICS_EPOCH_MS
     },
-    permissions: [adminMetricsTable, workflowBucket, invocationBucket],
+    permissions: [adminMetricsTable, agentMessageBucket, agentIndexBucket],
     handler: 'filecoin/functions/metrics-aggregate-offer-and-accept-total.consumer',
     deadLetterQueue: metricsAggregateTotalDLQ.cdk.queue,
     timeout: 3 * 60,

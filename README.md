@@ -1,10 +1,10 @@
-# w3infra
+# upload-service-infra
 
-The Infra for [w3protocol].
+The Infra for [upload-service].
 
 A [UCAN] based API to for storing CARs and registering uploads, built on [Ucanto] and [SST].
 
-The server-side implementation of the capabilities defined in [w3protocol].
+The server-side implementation of the capabilities defined in [upload-service].
 
 ## Getting Started
 
@@ -15,6 +15,7 @@ The repo contains the infra deployment code and the api implementation.
 ├── carpark         - lambda for announce new CARs in the carpark bucket
 ├── filecoin        - lambdas to get content into Filecoin deals
 ├── indexer         - lambdas to connect w3up to E-IPFS
+├── psa             - lambdas to support migrating Pinning Service API data
 ├── replicator      - lambda to replicate buckets to R2
 ├── stacks          - sst and aws cdk code to deploy all the things
 ├── ucan-invocation - kinesis log data stream and its lambda consumers
@@ -29,7 +30,7 @@ To work on this codebase **you need**:
 
 You can then run the tests locally with `npm test`.
 
-To try out a change submit a PR and you'll get temporary infra rolled out for you automatically at `https://<pr#>.up.web3.storage`.
+To try out a change submit a PR and you'll get temporary infra rolled out for you automatically at `https://<pr#>.up.storacha.network`.
 
 [`sst`](https://sst.dev) is the framework we use to define what to deploy. Read the docs! https://sst.dev
 
@@ -37,7 +38,7 @@ To try out a change submit a PR and you'll get temporary infra rolled out for yo
 
 Deployments are managed by [seed.run].
 
-The `main` branch is deployed to https://staging.up.web3.storage and staging builds are promoted to prod manually via the UI at https://console.seed.run
+The `main` branch is deployed to https://staging.up.storacha.network and staging builds are promoted to prod manually via the UI at https://console.seed.run
 
 ### Local dev
 
@@ -150,7 +151,7 @@ Ensure the following variables are set in the env when deploying
 
 #### `HOSTED_ZONES`
 
-The root domain(s) to deploy the w3up API to. e.g `up.web3.storage`. The value should match a hosted zone configured in route53 that your aws account has access to. Multiple zones can be specified, in which case they are seperated by a comma, and this will cause deployment to each specified zone.
+The root domain(s) to deploy the w3up API to. e.g `up.storacha.network`. The value should match a hosted zone configured in route53 that your aws account has access to. Multiple zones can be specified, in which case they are seperated by a comma, and this will cause deployment to each specified zone.
 
 #### `ROUNDABOUT_HOSTED_ZONE`
 
@@ -168,13 +169,13 @@ DID of the filecoin aggregator service.
 
 URL of the filecoin aggregator service.
 
-#### `CONTENT_CLAIMS_DID`
+#### `INDEXING_SERVICE_DID`
 
-DID of the [content claims service](https://github.com/web3-storage/content-claims).
+DID of the [indexing service](https://github.com/storacha/indexing-service).
 
-#### `CONTENT_CLAIMS_URL`
+#### `INDEXING_SERVICE_URL`
 
-URL of the [content claims service](https://github.com/web3-storage/content-claims).
+URL of the [indexing service](https://github.com/storacha/indexing-service).
 
 #### `DEAL_TRACKER_DID`
 
@@ -186,7 +187,15 @@ URL of the filecoin deal tracker service.
 
 #### `UPLOAD_API_DID`
 
-[DID](https://www.w3.org/TR/did-core/) of the upload-api ucanto server. e.g. `did:web:up.web3.storage`. Optional: if omitted, a `did:key` will be derrived from `PRIVATE_KEY`
+[DID](https://www.w3.org/TR/did-core/) of the upload-api ucanto server. e.g. `did:web:up.storacha.network`. Optional: if omitted, a `did:key` will be derrived from `PRIVATE_KEY`
+
+#### `UPLOAD_API_ALIAS`
+
+CSV of other DID(s) the upload-api is known by. i.e. other values that received invocation `audience` may have.
+
+Also enables the service to accept attestations issued by these DIDs.
+
+Note: should not include UPLOAD_API_DID.
 
 #### `R2_ACCESS_KEY_ID`
 
@@ -208,6 +217,10 @@ Bucket name to replicate written CAR files.
 
 Bucket name where delegations are stored.
 
+#### `PRINCIPAL_MAPPING`
+
+Optional - custom principal resolution mappings. JSON encoded mapping of did:web to did:key.
+
 #### `PROVIDERS`
 
 A comma-separated string of ServiceDIDs in use.
@@ -226,11 +239,7 @@ AWS URL for Elastic IPFS SQS indexer used to request Elastic IPFS to index given
 
 #### `EIPFS_MULTIHASHES_SQS_ARN`
 
-AWS ARN for Elastic IPFS SQS multihashes used to enqueue multihashes for indexed CAR files.
-
-#### `EIPFS_BLOCKS_CAR_POSITION_TABLE_ARN`
-
-AWS ARN for Elastic IPFS DynamoDB table used to store blocks and positions for indexed CAR files.
+AWS ARN used to request Elastic IPFS to publish IPNI adverts for the given multihashes.
 
 #### `POSTMARK_TOKEN`
 
@@ -260,7 +269,7 @@ To set a fallback value for `staging` or an ephmeral PR build use [`sst secrets 
 $ npx sst secrets set --fallback --region us-east-2 PRIVATE_KEY "MgCZG7...="
 ```
 
-**note** The fallback value can only be inherited by stages deployed in the same AWS account and region.
+**Note**: The fallback value can only be inherited by stages deployed in the same AWS account and region.
 
 Confirm the secret value using [`sst secrets list`](https://docs.sst.dev/config#sst-secrets)
 
@@ -280,14 +289,6 @@ Generated by [@ucanto/principal `EdSigner`](https://github.com/web3-storage/ucan
 
 _Example:_ `MgCZG7EvaA...1pX9as=`
 
-#### `CONTENT_CLAIMS_PRIVATE_KEY`
-
-The `base64pad` [`multibase`](https://github.com/multiformats/multibase) encoded ED25519 keypair used as the signing key for [content-claims](https://github.com/web3-storage/content-claims).
-
-Generated by [@ucanto/principal `EdSigner`](https://github.com/web3-storage/ucanto) via [`ucan-key`](https://www.npmjs.com/package/ucan-key)
-
-_Example:_ `MgCZG7EvaA...1pX9as=`
-
 #### `UCAN_INVOCATION_POST_BASIC_AUTH`
 
 The HTTP Basic auth token for the UCAN Invocation entrypoint, where UCAN invocations can be stored and proxied to the UCAN Stream.
@@ -301,6 +302,10 @@ Stripe API key for reporting per customer usage.
 #### `GITHUB_CLIENT_SECRET`
 
 GitHub OAuth client secret, for login via OAuth. This is optional, but necessary if you want to login with GitHub.
+
+#### `INDEXING_SERVICE_PROOF`
+
+Proof that the upload service can publish claims to the [indexing service](https://github.com/storacha/indexing-service).
 
 ## HTTP API
 
@@ -324,7 +329,7 @@ Returns version info for this api in JSON
 
 ```json
 {
-  "name": "@web3-storage/upload-api",
+  "name": "@storacha/upload-api",
   "did": "did:foo:bar",
   "version": "3.0.0",
   "commit": "sha1",
@@ -332,72 +337,9 @@ Returns version info for this api in JSON
 }
 ```
 
-## UCAN Capabilities
-
-Implements `store/*` and `upload/*` capabilities defined in [w3protocol]
-
-### `store/add`
-
-Register a CAR CID to be stored. Returns an S3 compatible signed upload URL usable for that CAR.
-
-Source: [api/service/store/add.js](api/service/store/add.js)
-
-### `store/list`
-
-List the CAR CIDs for the issuer.
-
-Source: [api/service/store/list.js](api/service/store/list.js)
-
-### `store/remove`
-
-Remove a CAR by CAR CID.
-
-Source: [api/service/upoload/remove.js](api/service/store/remove.js)
-
-### `upload/add`
-
-Source: [api/service/upload/add.js](api/service/store/add.js)
-
-### `upload/list`
-
-Source: [api/service/upload/list.js](api/service/store/list.js)
-
-### `upload/remove`
-
-Source: [api/service/upload/remove.js](api/service/store/remove.js)
-
-## Examples
-
-Use the JS [upload-client] to handle the details of content-addressing your files, encoding them into a CAR, and sending it to the service with a valid UCAN.
-
-```js
-import { Agent } from '@web3-storage/access'
-import { store } from '@web3-storage/capabilities/store'
-import { upload } from '@web3-storage/capabilities/upload'
-
-import { uploadFile } from '@web3-storage/upload-client'
-
-// holds your identity on this device
-const agent = await Agent.create()
-
-// your upload... either from a <input type=file> or from a path on your fs using `files-from-path`
-const file = new Blob(['Hello World!'])
-
-// the Content-Address for your file, derived client side before sending to the service.
-// Returns once your data is safely stored.
-const cid = await uploadFile(
-  {
-    issuer: agent.issuer,
-    with: agent.currentSpace(),
-    proofs: await agent.proofs([store, upload]),
-  },
-  file
-)
-```
-
 [SST]: https://sst.dev
 [UCAN]: https://github.com/ucan-wg/spec/
 [Ucanto]: https://www.npmjs.com/package/ucanto
 [seed.run]: https://seed.run
-[w3protocol]: https://github.com/web3-storage/w3protocol
-[upload-client]: https://www.npmjs.com/package/@web3-storage/upload-client
+[upload-service]: https://github.com/storacha/upload-service
+[upload-client]: https://www.npmjs.com/package/@storacha/upload-client

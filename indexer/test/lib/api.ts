@@ -1,18 +1,13 @@
 import { Result, Failure } from '@ucanto/interface'
 import { MultihashDigest } from 'multiformats'
-import { QueueBatchAdder, StoreBatchPutter, Location, QueueOperationFailure, StoreOperationFailure, EncodeFailure } from '../../lib/api.js'
+import { QueueBatchAdder, QueueOperationFailure, StoreOperationFailure, EncodeFailure } from '../../lib/api.js'
 
 export interface BlockAdvertPublisherTestContext {
   multihashesQueue: QueueBatchAdder<MultihashDigest> & QueueRemover<MultihashDigest>
 }
 
-export interface BlockIndexWriterTestContext {
-  blocksCarsPositionStore: StoreBatchPutter<Location> & StoreLister<MultihashDigest, Location>
-}
-
 export type TestContext =
   & BlockAdvertPublisherTestContext
-  & BlockIndexWriterTestContext
 
 export type Decoder<I, O> = (input: I) => Result<O, DecodeFailure>
 

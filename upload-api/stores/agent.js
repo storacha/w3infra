@@ -70,8 +70,12 @@ class AgentMessageStore {
  * @template T
  * @implements {API.WriteError<T>}
  */
-class WriteError extends Error {
+export class WriteError extends Error {
   name = /** @type {const} */ ('WriteError')
+
+  /** @type {API.Writer<T>} */
+  #writer
+
   /**
    * @param {object} input
    * @param {Error} input.cause
@@ -82,7 +86,13 @@ class WriteError extends Error {
     super(`Write to store has failed: ${cause}`)
     this.cause = cause
     this.payload = payload
-    this.writer = writer
+    this.#writer = writer
+  }
+
+  // defined as getter so non-enumerable, and excluded from serialization by
+  // ucanto when returned as the error from an invocation handler.
+  get writer () {
+    return this.#writer
   }
 }
 
