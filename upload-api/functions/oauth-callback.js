@@ -5,9 +5,9 @@ import { Message, Delegation, Receipt, ok, error } from '@ucanto/core'
 import * as Transport from '@ucanto/transport/car'
 import * as Validator from '@ucanto/validator'
 import { Verifier } from '@ucanto/principal'
-import { AgentMessage } from '@web3-storage/upload-api'
-import * as Access from '@web3-storage/capabilities/access'
-import * as DidMailto from '@web3-storage/did-mailto'
+import { AgentMessage } from '@storacha/upload-api'
+import * as Access from '@storacha/capabilities/access'
+import * as DidMailto from '@storacha/did-mailto'
 import { mustGetEnv } from '../../lib/env.js'
 import { open as openAgentStore } from '../stores/agent.js'
 import { createCustomerStore } from '../../billing/tables/customer.js'
@@ -16,7 +16,7 @@ import { getServiceSigner, getServiceConnection } from '../config.js'
 /**
  * @import { Endpoints } from '@octokit/types'
  * @import { Signer, Result, ConnectionView } from '@ucanto/interface'
- * @import { AgentStore, Service } from '@web3-storage/upload-api'
+ * @import { AgentStore, Service } from '@storacha/upload-api'
  * @typedef {{
  *   getOAuthAccessToken: (params: { code: string }) => Promise<Result<{ access_token: string }>>
  *   getUser: (params: { accessToken: string }) => Promise<Result<Endpoints['GET /user']['response']['data']>>
@@ -68,7 +68,7 @@ export const oauthCallbackGet = async (request, context) => {
   }
 
   const authRequest =
-    /** @type {import('@ucanto/interface').Invocation<import('@web3-storage/upload-api').AccessAuthorize>} */
+    /** @type {import('@ucanto/interface').Invocation<import('@storacha/upload-api').AccessAuthorize>} */
     (extractRes.ok)
 
   const accessRes = await Validator.access(authRequest, {
