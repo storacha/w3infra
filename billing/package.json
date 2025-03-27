@@ -1,5 +1,5 @@
 {
-  "name": "@web3-storage/w3infra-billing",
+  "name": "@storacha/upload-service-infra-billing",
   "version": "0.0.0",
   "type": "module",
   "scripts": {
@@ -9,15 +9,14 @@
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "3.563.0",
-    "@aws-sdk/client-glue": "3.563.0",
-    "@aws-sdk/client-s3": "3.563.0",
     "@aws-sdk/client-sqs": "3.563.0",
     "@aws-sdk/util-dynamodb": "3.563.0",
-    "@dsnp/parquetjs": "^1.8.5",
+    "@ipld/dag-json": "^10.2.3",
+    "@ipld/dag-ucan": "^3.4.5",
     "@sentry/serverless": "^7.74.1",
+    "@storacha/capabilities": "^1.2.0",
     "@ucanto/interface": "^10.2.0",
     "@ucanto/server": "^10.2.0",
-    "@web3-storage/capabilities": "^18.1.0",
     "big.js": "^6.2.1",
     "lru-cache": "^11.0.0",
     "multiformats": "^13.1.0",
@@ -26,6 +25,8 @@
     "uint8arrays": "^5.1.0"
   },
   "devDependencies": {
+    "@aws-sdk/client-glue": "3.563.0",
+    "@dsnp/parquetjs": "^1.8.6",
     "@types/big.js": "^6.2.1",
     "aws-lambda": "^1.0.7",
     "c8": "^8.0.1",

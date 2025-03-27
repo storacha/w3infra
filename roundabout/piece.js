@@ -1,9 +1,14 @@
-import { read } from '@web3-storage/content-claims/client'
-
+import { Client } from '@storacha/indexing-service-client'
+import * as Digest from 'multiformats/hashes/digest'
+import { CID } from 'multiformats/cid'
+import { equals } from 'multiformats/bytes'
 import { PIECE_V1_CODE, PIECE_V1_MULTIHASH, PIECE_V2_MULTIHASH, RAW_CODE } from './constants.js'
 
+/**
+ * @import { Delegation, Capability, Resource, UnknownLink } from '@ucanto/interface'
+ */
+
 /** 
- * @typedef {import('multiformats/cid').CID} CID
  * @typedef {import('@web3-storage/content-claims/client/api').Claim} Claim
  **/
 
@@ -33,29 +38,39 @@ export function asPieceCidV1 (cid) {
  * Find the set of CIDs that are claimed to be equivalent to the Piece CID.
  * 
  * @param {CID} piece
- * @param {(CID) => Promise<Claim[]>} [fetchClaims] - returns content claims for a cid
+ * @param {Client} [indexingService] - returns content claims for a cid
  */
-export async function findEquivalentCids (piece, fetchClaims = createClaimsClientForEnv()) {
-  /** @type {Set<import('multiformats').UnknownLink>} */
-  const cids = new Set()
-  const claims = await fetchClaims(piece)
-  for (const claim of claims) {
-    // claims will include _all_ claims about this cid, so we filter to `equals`
+export async function findEquivalentCids (piece, indexingService = createIndexingServiceClient()) {
+  /** @type {Map<string, import('multiformats').UnknownLink>} */
+  const cids = new Map()
+
+  const res = await indexingService.queryClaims({ hashes: [piece.multihash] })
+  if (res.error) throw new Error('failed to query claims', { cause: res.error })
+
+  for (const claim of res.ok.claims.values()) {
     if (claim.type !== 'assert/equals') {
       continue
     }
-    // an equivalence claim may have the pieceCid as the content cid _or_ the equals cid
-    // so if content does not equal piece, we can grab the content. Otherwise equals
-    const equivalentCid = claim.content.equals(piece) ? claim.equals : claim.content
-    cids.add(equivalentCid)
+    // an equivalence claim may have the pieceCid as the content cid _or_ the
+    // equals cid so if content equals piece, we can grab the equals, otherwise
+    // content.
+    let equivalentCid
+    if ('digest' in claim.content) {
+      equivalentCid = equals(piece.multihash.bytes, claim.content.digest)
+        ? claim.equals
+        // no IPLD information, use raw I guess...
+        : CID.createV1(RAW_CODE, Digest.decode(claim.content.digest))
+    } else {
+      equivalentCid = equals(piece.multihash.bytes, claim.content.multihash.bytes)
+        ? claim.equals
+        : claim.content
+    }
+    cids.set(equivalentCid.toString(), equivalentCid)
   }
-  return cids
+  return new Set(cids.values())
 }
 
-/** @param {'prod' | *} env */
-export function createClaimsClientForEnv (env = process.env.SST_STAGE) {
-  if (env === 'prod') {
-    return cid => read(cid.multihash)
-  }
-  return (cid, opts) => read(cid.multihash, { serviceURL: 'https://staging.claims.web3.storage', ...opts })
+/** @param {'prod' | string} env */
+export function createIndexingServiceClient (env = process.env.SST_STAGE) {
+  return new Client(env === 'prod' ? {} : { serviceURL: 'https://staging.indexer.storacha.network' })
 }

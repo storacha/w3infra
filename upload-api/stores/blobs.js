@@ -1,18 +1,15 @@
 import { base64pad } from 'multiformats/bases/base64'
 import { base58btc } from 'multiformats/bases/base58'
-import { BlobNotFound } from '@web3-storage/upload-api/blob'
-import { ok, error } from '@ucanto/server'
+import { ok } from '@ucanto/server'
 import {
   HeadObjectCommand,
   PutObjectCommand,
-  GetObjectCommand,
 } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { getS3Client } from '../../lib/aws/s3.js'
 
 /**
- * @typedef {import('@web3-storage/upload-api/types').BlobsStorage} BlobsStorage
- * @typedef {import('@web3-storage/upload-api').BlobRetriever} BlobRetriever
+ * @typedef {import('@storacha/upload-api').LegacyBlobsStorage} LegacyBlobsStorage
  * @typedef {import('@ucanto/interface').Failure} Failure
  * @typedef {import('@ucanto/interface').Result<boolean, Failure>} HasResult
  */
@@ -33,6 +30,7 @@ const contentKey = (digest) => {
 /**
  * Abstraction layer with Factory to perform operations on bucket storing Blobs.
  *
+ * @deprecated
  * @param {string} region
  * @param {string} bucketName
  * @param {Partial<import('../../lib/aws/s3.js').Address>} [options]
@@ -49,9 +47,10 @@ export function createBlobsStorage(region, bucketName, options) {
  * This is quite similar with buckets/car-store with few modifications given new key schema
  * and multihash instead of Link.
  *
+ * @deprecated
  * @param {import('@aws-sdk/client-s3').S3Client} s3
  * @param {string} bucketName
- * @returns {BlobsStorage & BlobRetriever}
+ * @returns {LegacyBlobsStorage}
  */
 export function useBlobsStorage(s3, bucketName) {
   return {
@@ -73,21 +72,6 @@ export function useBlobsStorage(s3, bucketName) {
         throw new Error('Failed to check if car-store', { cause })
       }
       return { ok: true }
-    },
-
-    /** @param {import('multiformats').MultihashDigest} digest */
-    async stream (digest) {
-      const cmd = new GetObjectCommand({
-        Key: contentKey(digest),
-        Bucket: bucketName,
-      })
-      try {
-        const res = await s3.send(cmd)
-        if (!res.Body) throw new BlobNotFound(digest)
-        return ok(res.Body.transformToWebStream())
-      } catch (/** @type {any} */err) {
-        return error(err.$metadata?.httpStatusCode === 404 ? new BlobNotFound(digest) : err)
-      }
     },
 
     /**
@@ -138,9 +122,11 @@ export function useBlobsStorage(s3, bucketName) {
  * store#createUploadUrl is from first store.
  * store#has will check stores in order until 0-1 `true` are found.
  *
- * @template {BlobsStorage} T
+ * @deprecated
+ * @template {LegacyBlobsStorage} T
  * @param {T} blobStorage
  * @param {T[]} moreBlobStorages
+ * @returns {T}
  */
 export function composeBlobStoragesWithOrderedHas(blobStorage, ...moreBlobStorages) {
   return {

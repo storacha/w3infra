@@ -5,7 +5,7 @@ import * as Delegation from '@ucanto/core/delegation'
 import { fromString } from 'uint8arrays/from-string'
 import * as DID from '@ipld/dag-ucan/did'
 
-import * as storefrontEvents from '@web3-storage/filecoin-api/storefront/events'
+import * as storefrontEvents from '@storacha/filecoin-api/storefront/events'
 
 import { decodeRecord } from '../store/piece.js'
 import { getServiceConnection, getServiceSigner } from '../service.js'
@@ -18,7 +18,7 @@ Sentry.AWSLambda.init({
 })
 
 /**
- * @typedef {import('../types').PieceStoreRecord} PieceStoreRecord
+ * @typedef {import('../types.js').PieceStoreRecord} PieceStoreRecord
  */
 
 /**
@@ -46,7 +46,7 @@ async function handlePieceStatusUpdate (event) {
 
   // Create context
   const { PRIVATE_KEY: privateKey } = Config
-  const { storefrontDid, storefrontUrl, did, storefrontProof } = getEnv()
+  const { storefrontDid, storefrontUrl, storefrontProof } = getEnv()
   let storefrontSigner = getServiceSigner({
     privateKey
   })
@@ -61,7 +61,7 @@ async function handlePieceStatusUpdate (event) {
     storefrontProofs.push(proof.ok)
   } else {
     // if no proofs, we must be using the service private key to sign
-    storefrontSigner = storefrontSigner.withDID(DID.parse(did).did())
+    storefrontSigner = storefrontSigner.withDID(DID.parse(storefrontDid).did())
   }
   const context = {
     storefrontService: {
@@ -94,7 +94,6 @@ async function handlePieceStatusUpdate (event) {
  */
 function getEnv () {
   return {
-    did: mustGetEnv('DID'),
     storefrontDid: mustGetEnv('STOREFRONT_DID'),
     storefrontUrl: mustGetEnv('STOREFRONT_URL'),
     storefrontProof: process.env.PROOF,

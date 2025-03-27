@@ -1,5 +1,5 @@
 import { DID, Link, URI, LinkJSON, Result, Capabilities, Unit, Failure, UnknownLink } from '@ucanto/interface'
-import { StoreRecord } from '../types'
+import { StoreRecord } from '../types.js'
 
 // Billing stores /////////////////////////////////////////////////////////////
 
@@ -337,8 +337,6 @@ export interface UcanReceiptMessage<
 export interface UcanWorkflowMessage<C extends Capabilities = Capabilities> extends UcanMessage<C> {
   type: 'workflow'
 }
-
-export type UcanStreamMessage<C extends Capabilities = Capabilities> = UcanWorkflowMessage<C> | UcanReceiptMessage<C>
 
 // Utility ////////////////////////////////////////////////////////////////////
 

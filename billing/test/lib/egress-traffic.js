@@ -2,13 +2,23 @@ import { encodeStr } from '../../data/egress.js'
 import { randomCustomer } from '../helpers/customer.js'
 import { randomEgressEvent } from '../helpers/egress.js'
 import retry from 'p-retry'
-import * as DidMailto from '@web3-storage/did-mailto'
+import * as DidMailto from '@storacha/did-mailto'
 
-/** @type {import('./api').TestSuite<import('./api').EgressTrafficTestContext>} */
+/**
+ * @param {Date} base
+ * @param {number} [delta]
+ */
+const startOfHour = (base, delta = 0) => {
+  const d = new Date(base.getTime())
+  d.setHours(base.getHours() + delta, 0, 0, 0)
+  return d
+}
+
+/** @type {import('./api.js').TestSuite<import('./api.js').EgressTrafficTestContext>} */
 export const test = {
   /**
    * @param {import('entail').assert} assert
-   * @param {import('./api').EgressTrafficTestContext} ctx
+   * @param {import('./api.js').EgressTrafficTestContext} ctx
    */
   'should process all the egress traffic events from the queue': async (assert, ctx) => {
     /** @type {string | null} */
@@ -31,7 +41,7 @@ export const test = {
 
       // 1. Add egress events to the queue to simulate egress traffic from the Freeway worker
       const maxEvents = 5
-      /** @type {import('../../lib/api').EgressTrafficData[]} */
+      /** @type {import('../../lib/api.js').EgressTrafficData[]} */
       const events = await Promise.all(
         Array.from(
           { length: maxEvents },
@@ -91,9 +101,9 @@ export const test = {
         const maxRetries = 5
         const delay = 10000 // 10 seconds
         // Convert to the start of the hour
-        const startTime = Math.floor(events[0].servedAt.getTime() / 3600000) * 3600
+        const startTime = Math.floor(startOfHour(events[0].servedAt).getTime() / 1000)
         // Convert to the end of the next hour
-        const endTime = Math.floor((Date.now() + 3600000) / 3600000) * 3600
+        const endTime = Math.floor(startOfHour(events[0].servedAt, 1).getTime() / 1000)
         console.log(`Checking for aggregated meter event for customer ${stripeCustomerId}, startTime: ${startTime}, endTime: ${endTime} ...`)
         aggregatedMeterEvent = await retry(async () => {
           const result = await ctx.stripe.billing.meters.listEventSummaries(
