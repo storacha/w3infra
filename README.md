@@ -18,7 +18,6 @@ The repo contains the infra deployment code and the api implementation.
 ├── psa             - lambdas to support migrating Pinning Service API data
 ├── replicator      - lambda to replicate buckets to R2
 ├── stacks          - sst and aws cdk code to deploy all the things
-├── ucan-invocation - kinesis log data stream and its lambda consumers
 └── upload-api      - lambda & dynamoDB implementation of the upload-api http gateway
 ```
 
