@@ -1,4 +1,4 @@
 
 before_compile:
   - n 20.11.0
-  - npm ci
+  - pnpm i

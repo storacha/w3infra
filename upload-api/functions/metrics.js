@@ -13,7 +13,7 @@ import {
   AGGREGATE_OFFER,
   AGGREGATE_ACCEPT,
   METRICS_NAMES as FILECOIN_METRIC_NAMES
-} from '@storacha/upload-service-infra-filecoin/constants.js'
+} from '../../filecoin/constants.js'
 
 import { createMetricsTable } from '../tables/metrics.js'
 

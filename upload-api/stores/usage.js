@@ -1,10 +1,10 @@
-import { iterateSpaceDiffs } from '@storacha/upload-service-infra-billing/lib/space-billing-queue.js'
+import { iterateSpaceDiffs } from '../../billing/lib/space-billing-queue.js'
 
 /**
  * @param {object} conf
- * @param {import('@storacha/upload-service-infra-billing/lib/api.js').SpaceSnapshotStore} conf.spaceSnapshotStore
- * @param {import('@storacha/upload-service-infra-billing/lib/api.js').SpaceDiffStore} conf.spaceDiffStore
- * @param {import('@storacha/upload-service-infra-billing/lib/api.js').EgressTrafficQueue} conf.egressTrafficQueue
+ * @param {import('../../billing/lib/api.js').SpaceSnapshotStore} conf.spaceSnapshotStore
+ * @param {import('../../billing/lib/api.js').SpaceDiffStore} conf.spaceDiffStore
+ * @param {import('../../billing/lib/api.js').EgressTrafficQueue} conf.egressTrafficQueue
  */
 export function useUsageStore({ spaceSnapshotStore, spaceDiffStore, egressTrafficQueue }) {
   return {

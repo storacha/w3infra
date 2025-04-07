@@ -4,7 +4,7 @@ import * as Block from 'multiformats/block'
 import { sha256 } from 'multiformats/hashes/sha2'
 import { Piece } from '@web3-storage/data-segment'
 
-import { hasOkReceipt } from '@storacha/upload-service-infra-upload-api/utils.js'
+import { hasOkReceipt } from '../upload-api/utils.js'
 import { AGGREGATE_ACCEPT, AGGREGATE_OFFER, METRICS_NAMES } from './constants.js'
 import { DecodeBlockOperationError, NotFoundWorkflowError } from './errors.js'
 
@@ -24,7 +24,7 @@ import { DecodeBlockOperationError, NotFoundWorkflowError } from './errors.js'
  * Metrics:
  * - AGGREGATE_ACCEPT_TOTAL: increment number of `aggregate/accept` success receipts
  * 
- * @param {import('@storacha/upload-service-infra-upload-api/types.js').UcanStreamInvocation[]} ucanInvocations
+ * @param {import('../upload-api/types.js').UcanStreamInvocation[]} ucanInvocations
  * @param {import('./types.js').FilecoinMetricsCtx} ctx
  */
 export async function updateAggregateAcceptTotal (ucanInvocations, ctx) {
@@ -50,7 +50,7 @@ export async function updateAggregateAcceptTotal (ucanInvocations, ctx) {
  * - AGGREGATE_OFFER_PIECES_TOTAL: increment number of pieces included in `aggregate/offer` success receipts
  * - AGGREGATE_OFFER_PIECES_SIZE_TOTAL: increment size of pieces included of `aggregate/offer` success receipts
  *
- * @param {import('@storacha/upload-service-infra-upload-api/types.js').UcanStreamInvocation[]} ucanInvocations
+ * @param {import('../upload-api/types.js').UcanStreamInvocation[]} ucanInvocations
  * @param {import('./types.js').FilecoinAggregateOfferMetricsCtx} ctx
  */
 export async function updateAggregateOfferTotal (ucanInvocations, ctx) {
@@ -104,7 +104,7 @@ export async function updateAggregateOfferTotal (ucanInvocations, ctx) {
 /**
  * Get a map of workflows that include given capability.
  *
- * @param {import('@storacha/upload-service-infra-upload-api/types.js').UcanStreamInvocation[]} ucanInvocations
+ * @param {import('../upload-api/types.js').UcanStreamInvocation[]} ucanInvocations
  * @param {string} capability
  * @param {import('./types.js').FilecoinAggregateOfferMetricsCtx} ctx
  */

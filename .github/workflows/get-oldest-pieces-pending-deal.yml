@@ -20,13 +20,13 @@ jobs:
         env: ['staging', 'production']
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
         with:
-          registry-url: 'https://registry.npmjs.org'
           node-version: 20
-          cache: 'npm'
-      - run: npm ci
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
       - name: Run job
         env:
           DEBUG: '*'
