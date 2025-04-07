@@ -971,6 +971,9 @@ importers:
       sst:
         specifier: 'catalog:'
         version: 2.47.3(@aws-sdk/client-sso-oidc@3.699.0(@aws-sdk/client-sts@3.782.0(aws-crt@1.26.2))(aws-crt@1.26.2))(@jest/transform@29.7.0)(@jest/types@29.6.3)(aws-crt@1.26.2)(babel-jest@29.7.0(@babel/core@7.26.10))(encoding@0.1.13)(typescript@5.8.3)
+      stripe:
+        specifier: 'catalog:'
+        version: 14.25.0
       uint8arrays:
         specifier: 'catalog:'
         version: 5.1.0

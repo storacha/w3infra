@@ -44,6 +44,7 @@
     "preact-render-to-string": "catalog:",
     "prom-client": "catalog:",
     "sst": "catalog:",
+    "stripe": "catalog:",
     "uint8arrays": "catalog:"
   },
   "devDependencies": {
