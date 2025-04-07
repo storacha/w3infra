@@ -3,6 +3,7 @@ on:
   pull_request:
     branches:
       - main
+      - feat/switch-to-pnpm
   push:
     branches:
       - main
