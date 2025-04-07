@@ -91,8 +91,8 @@ catalogs:
       specifier: ^1.4.0
       version: 1.4.0
     '@storacha/client':
-      specifier: ^1.2.5
-      version: 1.2.5
+      specifier: ^1.2.6
+      version: 1.2.6
     '@storacha/did-mailto':
       specifier: ^1.0.1
       version: 1.0.2
@@ -371,7 +371,7 @@ importers:
         version: 1.4.0
       '@storacha/client':
         specifier: 'catalog:'
-        version: 1.2.5(encoding@0.1.13)
+        version: 1.2.6(encoding@0.1.13)
       '@storacha/filecoin-client':
         specifier: 'catalog:'
         version: 1.0.6
@@ -4160,8 +4160,8 @@ packages:
   '@storacha/capabilities@1.4.0':
     resolution: {integrity: sha512-bwJAYFUHWZV/2oeuu1JX5NhlRmaY2ClOCnz9do1V2Teaa4hg3folOvzygjX7F9xX+jLcTwtrE5oFXlqjuOhKXA==}
 
-  '@storacha/client@1.2.5':
-    resolution: {integrity: sha512-VJVoVHOl9vzatHxfc96vyF4rzv+NfyeFYnivkinhfQGjoKJ6RREUVJwFBhdiqUKXX3xgw8ycgCMLFAWhzIUt7w==}
+  '@storacha/client@1.2.6':
+    resolution: {integrity: sha512-8uB5dPwVBjtY3fg4ENBjLfyTBJy9jFY9w6NTBpvMPBoc40iKgNQq7tmFE7S/FqxMIkizh1UYRq7+uf/Y+7pqdg==}
     engines: {node: '>=18'}
 
   '@storacha/did-mailto@1.0.2':
@@ -16907,7 +16907,7 @@ snapshots:
       '@web3-storage/data-segment': 5.3.0
       uint8arrays: 5.1.0
 
-  '@storacha/client@1.2.5(encoding@0.1.13)':
+  '@storacha/client@1.2.6(encoding@0.1.13)':
     dependencies:
       '@ipld/dag-ucan': 3.4.5
       '@storacha/access': 1.1.1
