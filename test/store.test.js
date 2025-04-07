@@ -9,7 +9,6 @@ import { ShardingStream, UnixFS, Store, Upload } from '@storacha/upload-client'
 import { METRICS_NAMES, SPACE_METRICS_NAMES } from '../upload-api/constants.js'
 import {
   getStage,
-  getApiEndpoint,
   getRoundaboutEndpoint,
   getAwsBucketClient,
   getCloudflareBucketClient,

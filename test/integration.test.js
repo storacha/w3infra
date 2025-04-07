@@ -20,7 +20,7 @@ import {
   getReceiptsEndpoint,
   getDynamoDb
 } from './helpers/deployment.js'
-import { createNewClient, setupNewClient } from './helpers/up-client.js'
+import { createMailSlurpInbox, createNewClient, setupNewClient } from './helpers/up-client.js'
 import { randomFile } from './helpers/random.js'
 import { getMetrics, getSpaceMetrics } from './helpers/metrics.js'
 import { createNode } from './helpers/helia.js'
@@ -138,7 +138,8 @@ test('w3infra store/upload integration flow', async t => {
   if (!writeTargetBucketName) {
     throw new Error('no write target bucket name configure using ENV VAR `R2_CARPARK_BUCKET_NAME`')
   }
-  const { client } = await setupNewClient()
+  const inbox = await createMailSlurpInbox()
+  const { client } = await setupNewClient({ inbox })
   const spaceDid = client.currentSpace()?.did()
   if (!spaceDid) {
     throw new Error('Testing space DID must be set')

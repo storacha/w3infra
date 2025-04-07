@@ -133,7 +133,6 @@
     "replicator",
     "roundabout",
     "tools",
-    "ucan-invocation",
     "upload-api"
   ],
   "prettier": {
