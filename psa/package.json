@@ -8,11 +8,13 @@
   "dependencies": {
     "@aws-sdk/client-s3": "catalog:",
     "@aws-sdk/s3-request-presigner": "catalog:",
+    "aws-lambda": "catalog:",
     "multiformats": "catalog:",
     "sst": "catalog:"
   },
   "devDependencies": {
     "@ipld/car": "catalog:",
+    "@types/aws-lambda": "catalog:",
     "entail": "catalog:",
     "nanoid": "catalog:",
     "testcontainers": "catalog:"

@@ -727,6 +727,9 @@ importers:
       '@aws-sdk/s3-request-presigner':
         specifier: 'catalog:'
         version: 3.563.0
+      aws-lambda:
+        specifier: 'catalog:'
+        version: 1.0.7
       multiformats:
         specifier: 'catalog:'
         version: 13.3.2
@@ -737,6 +740,9 @@ importers:
       '@ipld/car':
         specifier: 'catalog:'
         version: 5.4.0
+      '@types/aws-lambda':
+        specifier: 'catalog:'
+        version: 8.10.148
       entail:
         specifier: 'catalog:'
         version: 2.2.1
