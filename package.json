@@ -23,6 +23,7 @@
     "@aws-sdk/client-dynamodb": "catalog:",
     "@aws-sdk/client-s3": "catalog:",
     "@aws-sdk/client-sqs": "catalog:",
+    "@aws-sdk/util-dynamodb": "catalog:",
     "@chainsafe/libp2p-noise": "catalog:",
     "@helia/unixfs": "catalog:",
     "@ipld/car": "catalog:",
