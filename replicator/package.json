@@ -6,17 +6,19 @@
     "test": "ava --verbose --timeout=60s --fail-fast **/*.test.js"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "3.563.0",
-    "@sentry/serverless": "^7.74.1"
+    "aws-lambda": "catalog:",
+    "@aws-sdk/client-s3": "catalog:",
+    "@sentry/serverless": "catalog:"
   },
   "devDependencies": {
-    "@ipld/car": "^5.2.6",
-    "@ipld/dag-pb": "^4.1.3",
-    "ava": "^4.3.3",
-    "multiformats": "^13.1.0",
-    "nanoid": "^4.0.0",
-    "p-retry": "^6.2.0",
-    "testcontainers": "^10.7.1",
-    "uint8arrays": "^5.1.0"
+    "@ipld/car": "catalog:",
+    "@ipld/dag-pb": "catalog:",
+    "@types/aws-lambda": "catalog:",
+    "ava": "catalog:",
+    "multiformats": "catalog:",
+    "nanoid": "catalog:",
+    "p-retry": "catalog:",
+    "testcontainers": "catalog:",
+    "uint8arrays": "catalog:"
   }
 }

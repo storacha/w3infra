@@ -11,7 +11,7 @@ import * as Digest from 'multiformats/hashes/digest'
 import { base58btc } from 'multiformats/bases/base58'
 import { marshall, unmarshall } from '@aws-sdk/util-dynamodb'
 import { EntryNotFound, EntryExists } from '@storacha/upload-api/blob'
-import { createConsumerStore } from '@storacha/upload-service-infra-billing/tables/consumer.js'
+import { createConsumerStore } from '../../billing/tables/consumer.js'
 
 import { getDynamoClient } from '../../lib/aws/dynamo.js'
 import { METRICS_NAMES, SPACE_METRICS_NAMES } from '../constants.js'

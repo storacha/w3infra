@@ -5,16 +5,16 @@ import dotenv from 'dotenv'
 
 import Stripe from 'stripe'
 import { fileURLToPath } from 'node:url'
-import { createCustomerStore, customerTableProps } from '@storacha/upload-service-infra-billing/tables/customer.js'
+import { createCustomerStore, customerTableProps } from '../../billing/tables/customer.js'
 import { createTable } from './helpers/resources.js'
-import { createDynamoDB } from '@storacha/upload-service-infra-billing/test/helpers/aws.js'
-import { stripeIDToAccountID } from '@storacha/upload-service-infra-billing/utils/stripe.js'
+import { createDynamoDB } from '../../billing/test/helpers/aws.js'
+import { stripeIDToAccountID } from '../../billing/utils/stripe.js'
 
 dotenv.config({ path: fileURLToPath(new URL('../../.env.local', import.meta.url)) })
 
 /**
  * @typedef {object} BillingContext
- * @property {import('@storacha/upload-service-infra-billing/lib/api.js').CustomerStore} BillingContext.customerStore
+ * @property {import('../../billing/lib/api.js').CustomerStore} BillingContext.customerStore
  * @property {Stripe} BillingContext.stripe
  * @property {import('../types.js').BillingProvider} BillingContext.billingProvider
  */
@@ -44,7 +44,7 @@ async function getCustomerPlanByEmail(stripe, email) {
  * 
  * @param {Stripe} stripe 
  * @param {string} email 
- * @param {import('@storacha/upload-service-infra-billing/lib/api.js').CustomerStore} customerStore
+ * @param {import('../../billing/lib/api.js').CustomerStore} customerStore
  * @returns {Promise<Stripe.Customer>}
  */
 async function setupCustomer(stripe, email, customerStore) {

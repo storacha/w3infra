@@ -9,7 +9,7 @@ import { randomAggregate } from '@storacha/filecoin-api/test'
 import { updateAggregateAcceptTotal } from '../metrics.js'
 import { METRICS_NAMES, STREAM_TYPE } from '../constants.js'
 
-import { adminMetricsTableProps } from '@storacha/upload-service-infra-upload-api/tables/index.js'
+import { adminMetricsTableProps } from '../../upload-api/tables/index.js'
 import { createFilecoinMetricsTable } from '../store/metrics.js'
 import { createWorkflowStore } from '../store/workflow.js'
 

@@ -3,6 +3,7 @@ on:
   pull_request:
     branches:
       - main
+      - fix/authorize-gateway
   push:
     branches:
       - main
@@ -11,15 +12,15 @@ jobs:
     name: Test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
         with:
-          registry-url: 'https://registry.npmjs.org'
-          node-version: 18
-          cache: 'npm'
-      - run: npm ci
-      - run: npm run lint
-      - run: npm test
+          node-version: 20
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm test
         env:
           AWS_REGION: 'us-west-2'
           AWS_ACCESS_KEY_ID: 'NOSUCH'
