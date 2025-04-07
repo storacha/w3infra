@@ -81,6 +81,7 @@ catalog:
   dotenv: ^16.4.5
   entail: ^2.1.2
   esbuild: ^0.23.1
+  eslint: ^8.57.0
   express: ^4.19.2
   fr32-sha2-256-trunc254-padded-binary-tree-multihash: ^3.3.0
   git-rev-sync: ^3.0.2

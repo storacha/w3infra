@@ -219,6 +219,9 @@ catalogs:
     esbuild:
       specifier: ^0.23.1
       version: 0.23.1
+    eslint:
+      specifier: ^8.57.0
+      version: 8.57.1
     express:
       specifier: ^4.19.2
       version: 4.21.2
@@ -423,6 +426,9 @@ importers:
       dotenv:
         specifier: 'catalog:'
         version: 16.4.7
+      eslint:
+        specifier: 'catalog:'
+        version: 8.57.1
       git-rev-sync:
         specifier: 'catalog:'
         version: 3.0.2

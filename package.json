@@ -55,6 +55,7 @@
     "ava": "catalog:",
     "chalk": "catalog:",
     "dotenv": "catalog:",
+    "eslint": "catalog:",
     "git-rev-sync": "catalog:",
     "hd-scripts": "catalog:",
     "helia": "catalog:",
