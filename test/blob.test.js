@@ -1,9 +1,8 @@
 import { testBlob as test } from './helpers/context.js'
-
 import pWaitFor from 'p-wait-for'
-// import { unixfs } from '@helia/unixfs'
-// import { multiaddr } from '@multiformats/multiaddr'
 import * as SpaceBlobCapabilities from '@storacha/capabilities/space/blob'
+import * as UploadCapabilities from '@storacha/capabilities/upload'
+import * as SpaceIndexCapabilities from '@storacha/capabilities/space/index'
 import { base58btc } from 'multiformats/bases/base58'
 import * as Link from 'multiformats/link'
 import { equals } from 'multiformats/bytes'
@@ -14,23 +13,19 @@ import { ShardingStream, UnixFS, Upload, Index } from '@storacha/upload-client'
 import { codec as carCodec } from '@ucanto/transport/car'
 import { ShardedDAGIndex } from '@storacha/blob-index'
 import * as AgentStore from '../upload-api/stores/agent.js'
-
 import { METRICS_NAMES, SPACE_METRICS_NAMES } from '../upload-api/constants.js'
-
 import * as Blob from './helpers/blob-client.js'
 import {
   getStage,
-  getApiEndpoint,
   getAwsBucketClient,
   getCloudflareBucketClient,
   getCarparkBucketInfo,
   getRoundaboutEndpoint,
   getDynamoDb,
   getAwsRegion,
-  getReceiptsEndpoint
 } from './helpers/deployment.js'
 import { randomFile, randomInt } from './helpers/random.js'
-import { createMailSlurpInbox, setupNewClient, getServiceProps } from './helpers/up-client.js'
+import { setupNewClient, getServiceProps } from './helpers/up-client.js'
 import { getMetrics, getSpaceMetrics } from './helpers/metrics.js'
 import { getUsage } from './helpers/store.js'
 import { addStorageProvider } from './helpers/storage-provider.js'
@@ -40,7 +35,6 @@ import { addStorageProvider } from './helpers/storage-provider.js'
 test.before(async t => {
   await addStorageProvider(getDynamoDb('storage-provider'))
   t.context = {
-    apiEndpoint: getApiEndpoint(),
     roundaboutEndpoint: getRoundaboutEndpoint(),
     metricsDynamo: getDynamoDb('admin-metrics'),
     spaceMetricsDynamo: getDynamoDb('space-metrics'),
@@ -72,9 +66,12 @@ test('blob integration flow with receipts validation', async t => {
     throw new Error('no write target bucket name configure using ENV VAR `R2_CARPARK_BUCKET_NAME`')
   }
 
-  const inbox = await createMailSlurpInbox()
-  const { client, account } = await setupNewClient(t.context.apiEndpoint, { inbox })
-  const serviceProps = getServiceProps(client, t.context.apiEndpoint, SpaceBlobCapabilities.add.can)
+  const { client, account } = await setupNewClient()
+  const serviceProps = getServiceProps(client, [
+    SpaceBlobCapabilities.add.can,
+    UploadCapabilities.add.can,
+    SpaceIndexCapabilities.add.can
+  ])
   const spaceDid = client.currentSpace()?.did()
   if (!spaceDid) {
     throw new Error('Testing space DID must be set')
@@ -338,7 +335,7 @@ test('blob integration flow with receipts validation', async t => {
 test('10k NFT drop', async t => {
   const total = 20_000
   console.log('Creating client')
-  const { client } = await setupNewClient(t.context.apiEndpoint)
+  const { client } = await setupNewClient()
 
   // Prepare data
   console.log('Creating NFT metadata')
@@ -362,8 +359,7 @@ test('10k NFT drop', async t => {
   const root = await client.uploadDirectory(files, {
     onShardStored ({ cid, size }) {
       console.log(`Uploaded blob ${cid} (${size} bytes)`)
-    },
-    receiptsEndpoint: getReceiptsEndpoint()
+    }
   })
 
   const sample = Array.from(Array(5), () => randomInt(total))

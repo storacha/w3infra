@@ -6,30 +6,20 @@ import { CBOR } from '@ucanto/core'
 import * as dagJSON from '@ipld/dag-json'
 import pWaitFor from 'p-wait-for'
 import { test } from './helpers/context.js'
-import {
-  getApiEndpoint,
-  getReceiptsEndpoint,
-  getDynamoDb
-} from './helpers/deployment.js'
+import { getDynamoDb, getApiEndpoint } from './helpers/deployment.js'
 import { randomFile } from './helpers/random.js'
-import { createMailSlurpInbox, setupNewClient } from './helpers/up-client.js'
+import { setupNewClient } from './helpers/up-client.js'
 
 test.before(t => {
   t.context = {
-    apiEndpoint: getApiEndpoint(),
     metricsDynamo: getDynamoDb('admin-metrics'),
     spaceMetricsDynamo: getDynamoDb('space-metrics'),
     rateLimitsDynamo: getDynamoDb('rate-limit')
   }
 })
 
-/**
- * 
- * @param {string} apiEndpoint 
- * @returns 
- */
-async function getServicePublicKey(apiEndpoint) {
-  const serviceInfoResponse = await fetch(`${apiEndpoint}/version`)
+async function getServicePublicKey() {
+  const serviceInfoResponse = await fetch(`${getApiEndpoint()}/version`)
   const { publicKey } = await serviceInfoResponse.json()
   return publicKey
 }
@@ -69,7 +59,7 @@ async function generateAuthHeaders(client, capabilities, expiration, password = 
  * @param {any} requestBody 
  */
 async function makeBridgeRequest(context, client, capabilities, expiration, requestBody) {
-  return fetch(`${context.apiEndpoint}/bridge`, {
+  return fetch(`${getApiEndpoint()}/bridge`, {
     method: 'POST',
     headers: {
       'content-type': 'application/json',
@@ -84,8 +74,7 @@ async function makeBridgeRequest(context, client, capabilities, expiration, requ
 }
 
 test('the bridge can make various types of requests', async t => {
-  const inbox = await createMailSlurpInbox()
-  const { client } = await setupNewClient(t.context.apiEndpoint, { inbox })
+  const { client } = await setupNewClient()
   const spaceDID = client.currentSpace()?.did()
   if (!spaceDID) {
     t.fail('client was set up but does not have a currentSpace - this is weird!')
@@ -115,9 +104,7 @@ test('the bridge can make various types of requests', async t => {
   // verify that uploading a file changes the upload/list response
   // upload a file and wait for it to show up
   const file = await randomFile(42)
-  const fileLink = await client.uploadFile(file, {
-    receiptsEndpoint: getReceiptsEndpoint()
-  })
+  const fileLink = await client.uploadFile(file)
   let secondReceipts
   await pWaitFor(async () => {
     const secondResponse = await makeBridgeRequest(
@@ -167,7 +154,7 @@ test('the bridge can make various types of requests', async t => {
   // has a did:web as it's `iss` field but local development environments
   // use the `did:web:staging` DID backed by different keys and therefore aren't
   // resolvable using the normal `did:web` resolution algorithm
-  const publicKey = await getServicePublicKey(t.context.apiEndpoint)
+  const publicKey = await getServicePublicKey()
   const verifier = ed25519.Verifier.parse(publicKey)
   const verification = await signature.verify(verifier, CBOR.encode(payload))
   if (verification.error) {

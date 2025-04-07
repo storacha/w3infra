@@ -71,3 +71,7 @@ PRINCIPAL_MAPPING = '{"did:web:example.com":"did:key:z6MktkCXwNmpqejQxYd7JHPcw7d
 INTEGRATION_TESTS_STORAGE_PROVIDER_DID = ''
 INTEGRATION_TESTS_STORAGE_PROVIDER_ENDPOINT = ''
 INTEGRATION_TESTS_STORAGE_PROVIDER_PROOF = ''
+
+# Optional - custom gateway to authorize in integration tests (defaults to staging)
+INTEGRATION_TESTS_GATEWAY_DID = ''
+INTEGRATION_TESTS_GATEWAY_ENDPOINT = ''
