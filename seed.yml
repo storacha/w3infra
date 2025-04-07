@@ -1,7 +1,7 @@
 check_code_change: pnpm
 
 before_compile:
-  - n 20.11.0
+  - n 20.19.0
   - npm i -g pnpm
 
 compile:
