@@ -1,22 +1,51 @@
-import { connect } from '@ucanto/client'
-import { CAR, HTTP } from '@ucanto/transport'
 import * as DID from '@ipld/dag-ucan/did'
 import * as Signer from '@ucanto/principal/ed25519'
 import { AgentData } from '@storacha/access/agent'
-import { Client } from '@storacha/client'
+import { Client, authorizeContentServe } from '@storacha/client'
+import { uploadServiceConnection, accessServiceConnection, gatewayServiceConnection, filecoinServiceConnection } from '@storacha/client/service'
 import { MailSlurp } from "mailslurp-client"
 import { fileURLToPath } from 'node:url'
 import dotenv from 'dotenv'
-import * as SpaceBlobCapabilities from '@storacha/capabilities/space/blob'
+import { getApiEndpoint } from './deployment.js'
+import { mustGetEnv } from '../../lib/env.js'
 
 dotenv.config({ path: fileURLToPath(new URL('../../.env', import.meta.url)) })
 
-/**
- * 
- * @param {string} email 
- * @param {string} accessServiceUrl
- */
-function getAuthLinkFromEmail (email, accessServiceUrl) {
+export const accessServiceURL = new URL(getApiEndpoint())
+export const accessServicePrincipal = DID.parse(mustGetEnv('UPLOAD_API_DID'))
+
+export const uploadServiceURL = new URL(getApiEndpoint())
+export const uploadServicePrincipal = DID.parse(mustGetEnv('UPLOAD_API_DID'))
+
+export const filecoinServiceURL = new URL(getApiEndpoint())
+export const filecoinServicePrincipal = DID.parse(mustGetEnv('UPLOAD_API_DID'))
+
+export const gatewayServiceURL = new URL(mustGetEnv('INTEGRATION_TESTS_GATEWAY_ENDPOINT'))
+export const gatewayServicePrincipal = DID.parse(mustGetEnv('INTEGRATION_TESTS_GATEWAY_DID'))
+
+export const serviceConf = {
+  upload: uploadServiceConnection({
+    id: uploadServicePrincipal,
+    url: uploadServiceURL
+  }),
+  access: accessServiceConnection({
+    id: accessServicePrincipal,
+    url: accessServiceURL
+  }),
+  filecoin: filecoinServiceConnection({
+    id: filecoinServicePrincipal,
+    url: filecoinServiceURL
+  }),
+  gateway: gatewayServiceConnection({
+    id: gatewayServicePrincipal,
+    url: gatewayServiceURL
+  })
+}
+
+export const receiptsEndpoint = new URL('/receipt/', uploadServiceURL)
+
+/** @param {string} email */
+function getAuthLinkFromEmail (email) {
   // forgive me for I have s̵i̵n̴n̴e̵d̴ ̸a̸n̵d̷ ̷p̶a̵r̵s̵e̸d̷ Ȟ̷̞T̷̢̈́M̸̼̿L̴̎ͅ ̵̗̍ẅ̵̝́ï̸ͅt̴̬̅ḫ̸̔ ̵͚̔ŗ̵͊e̸͍͐g̶̜͒ė̷͖x̴̱̌
   // TODO we should update the email and add an ID to this element to make this more robust - tracked in https://github.com/storacha/w3infra/issues/208
   const link = email.match(/<a href="([^"]*)".*Verify email address/)[1]
@@ -37,38 +66,62 @@ export async function createMailSlurpInbox() {
   }
 }
 
-export async function createNewClient(uploadServiceUrl) {
+export async function createNewClient() {
   const principal = await Signer.generate()
   const data = await AgentData.create({ principal })
-  return new Client(data, {
-    serviceConf: {
-      upload: getUploadServiceConnection(uploadServiceUrl),
-      access: getAccessServiceConnection(uploadServiceUrl)
-    },
-  })
+  return new Client(data, { serviceConf, receiptsEndpoint })
 }
 
-export async function setupNewClient (uploadServiceUrl, options = {}) {
-  // create an inbox
+export async function setupNewClient (options = {}) {
+  console.log('Setting up new client...')
+  console.log('Creating mailslurp inbox...')
   const { mailslurp, id: inboxId, email } = options.inbox || await createMailSlurpInbox()
-  const client = await createNewClient(uploadServiceUrl)
-  const timeoutMs = process.env.MAILSLURP_TIMEOUT ? parseInt(process.env.MAILSLURP_TIMEOUT) : 60_000
-  const authorizePromise = client.login(email)
-  const [account] = await Promise.all([
-    authorizePromise,
+  console.log(`  Email: ${email}`)
+  console.log(`  Inbox: ${inboxId}`)
+
+  console.log('Creating client instance...')
+  const client = await createNewClient()
+  console.log(`  Agent: ${client.did()}`)
+  console.log(`  Access Service: ${accessServicePrincipal.did()}`)
+  console.log(`    URL: ${accessServiceURL}`)
+  console.log(`  Upload Service: ${uploadServicePrincipal.did()}`)
+  console.log(`    URL: ${uploadServiceURL}`)
+  console.log(`  Filecoin Service: ${filecoinServicePrincipal.did()}`)
+  console.log(`    URL: ${filecoinServiceURL}`)
+
+  const [,account] = await Promise.all([
     (async () => {
-      // click link in email
+      console.log('Waiting for authorization email...')
+      const timeoutMs = process.env.MAILSLURP_TIMEOUT ? parseInt(process.env.MAILSLURP_TIMEOUT) : 60_000
       const latestEmail = await mailslurp.waitForLatestEmail(inboxId, timeoutMs)
-      const authLink = getAuthLinkFromEmail(latestEmail.body, uploadServiceUrl)
+      const authLink = getAuthLinkFromEmail(latestEmail.body)
+      console.log(`Clicking authorization link...`)
+      console.log(`  Link: ${authLink}`)
       const res = await fetch(authLink, { method: 'POST' })
       if (!res.ok) {
         throw new Error('failed to authenticate by clickling on auth link from e-mail')
       }
-    })()
+    })(),
+    (async () => {
+      // ensure mailslurp waitForLatestEmail request is sent first
+      await new Promise(resolve => setTimeout(resolve, 500))
+      console.log('Logging in...')
+      console.log(`  Email: ${email}`)
+      return client.login(email)
+    })(),
   ])
+
   if (!client.currentSpace()) {
+    console.log('Creating space...')
     const space = await client.createSpace("test space")
+    console.log(`  Space: ${space.did()}`)
+    console.log('Provisioning space...')
+    console.log(`  Account: ${account.did()}`)
     await account.provision(space.did())
+    console.log('Authorizing gateway...')
+    console.log(`  Gateway Service: ${gatewayServicePrincipal.did()}`)
+    console.log(`    URL: ${gatewayServiceURL}`)
+    await authorizeContentServe(client, space, serviceConf.gateway)
     await space.save()
   }
 
@@ -78,10 +131,9 @@ export async function setupNewClient (uploadServiceUrl, options = {}) {
 
 /**
  * @param {Client} client
- * @param {string} serviceUrl
- * @param {string} capability
+ * @param {string[]} caps
  */
-export function getServiceProps (client, serviceUrl, capability) {
+export function getServiceProps (client, caps) {
   // Get invocation config
   const resource = client.agent.currentSpace()
   if (!resource) {
@@ -90,51 +142,13 @@ export function getServiceProps (client, serviceUrl, capability) {
     )
   }
 
-  const connection = getUploadServiceConnection(serviceUrl)
-
   return {
-    connection,
+    connection: serviceConf.upload,
     conf: {
       issuer: client.agent.issuer,
       with: resource,
-      proofs: client.agent.proofs(
-        [SpaceBlobCapabilities.add.can].map((can) => ({ can, with: resource }))
-      ),
-      audience: DID.parse('did:web:staging.up.storacha.network')
+      proofs: client.agent.proofs(caps.map((can) => ({ can, with: resource }))),
+      audience: serviceConf.upload.id
     }
   }
-}
-
-/**
- * @param {string} serviceUrl
- */
-function getAccessServiceConnection(serviceUrl) {
-  const accessServiceURL = new URL(serviceUrl)
-  const accessServicePrincipal = DID.parse('did:web:staging.up.storacha.network')
-
-  return connect({
-    id: accessServicePrincipal,
-    codec: CAR.outbound,
-    channel: HTTP.open({
-      url: accessServiceURL,
-      method: 'POST'
-    }),
-  })
-}
-
-/**
- * @param {string} serviceUrl
- */
-function getUploadServiceConnection(serviceUrl) {
-  const uploadServiceURL = new URL(serviceUrl)
-  const uploadServicePrincipal = DID.parse('did:web:staging.up.storacha.network')
-
-  return connect({
-    id: uploadServicePrincipal,
-    codec: CAR.outbound,
-    channel: HTTP.open({
-      url: uploadServiceURL,
-      method: 'POST'
-    })
-  })
 }

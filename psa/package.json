@@ -6,14 +6,17 @@
     "test": "entail test/*.spec.js"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "3.563.0",
-    "@aws-sdk/s3-request-presigner": "3.563.0",
-    "multiformats": "^13.3.0",
-    "sst": "^2.43.7"
+    "@aws-sdk/client-s3": "catalog:",
+    "@aws-sdk/s3-request-presigner": "catalog:",
+    "aws-lambda": "catalog:",
+    "multiformats": "catalog:",
+    "sst": "catalog:"
   },
   "devDependencies": {
-    "@ipld/car": "^5.3.2",
-    "entail": "^2.1.2",
-    "nanoid": "^5.0.7"
+    "@ipld/car": "catalog:",
+    "@types/aws-lambda": "catalog:",
+    "entail": "catalog:",
+    "nanoid": "catalog:",
+    "testcontainers": "catalog:"
   }
 }

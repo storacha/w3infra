@@ -23,6 +23,7 @@ import { getServiceSigner, parseServiceDids, getServiceConnection } from '../con
 import { createUcantoServer } from '../service.js'
 import { Email } from '../email.js'
 import * as AgentStore from '../stores/agent.js'
+import { createBlobsStorage, composeBlobStoragesWithOrderedHas } from '../stores/blobs.js'
 import { createAllocationTableBlobRegistry, createBlobRegistry } from '../stores/blob-registry.js'
 import { useProvisionStore } from '../stores/provisions.js'
 import { useSubscriptionsStore } from '../stores/subscriptions.js'
@@ -37,14 +38,14 @@ import { createSpaceMetricsTable } from '../tables/space-metrics.js'
 import { createStorageProviderTable } from '../tables/storage-provider.js'
 import { createRevocationsTable } from '../stores/revocations.js'
 import { usePlansStore } from '../stores/plans.js'
-import { createCustomerStore } from '@storacha/upload-service-infra-billing/tables/customer.js'
-import { createSpaceDiffStore } from '@storacha/upload-service-infra-billing/tables/space-diff.js'
-import { createSpaceSnapshotStore } from '@storacha/upload-service-infra-billing/tables/space-snapshot.js'
+import { createCustomerStore } from '../../billing/tables/customer.js'
+import { createSpaceDiffStore } from '../../billing/tables/space-diff.js'
+import { createSpaceSnapshotStore } from '../../billing/tables/space-snapshot.js'
 import { useUsageStore } from '../stores/usage.js'
 import { createStripeBillingProvider } from '../billing.js'
 import { createIPNIService } from '../external-services/ipni-service.js'
 import { mustGetEnv } from '../../lib/env.js'
-import { createEgressTrafficQueue } from '@storacha/upload-service-infra-billing/queues/egress-traffic.js'
+import { createEgressTrafficQueue } from '../../billing/queues/egress-traffic.js'
 import { create as createRoutingService } from '../external-services/router.js'
 import { create as createBlobRetriever } from '../external-services/blob-retriever.js'
 
@@ -198,6 +199,17 @@ export async function ucanInvocationRouter(request) {
     },
   })
 
+  const blobsStorage = composeBlobStoragesWithOrderedHas(
+    createBlobsStorage(R2_REGION, carparkBucketName, {
+      endpoint: carparkBucketEndpoint,
+      credentials: {
+        accessKeyId: carparkBucketAccessKeyId,
+        secretAccessKey: carparkBucketSecretAccessKey,
+      }, 
+    }),
+    createBlobsStorage(AWS_REGION, storeBucketName),
+  )
+
   const blobRegistry = createBlobRegistry(AWS_REGION, blobRegistryTableName, spaceDiffTableName, consumerTableName, metrics, options)
   const allocationBlobRegistry = createAllocationTableBlobRegistry(blobRegistry, AWS_REGION, allocationTableName, options)
   const delegationBucket = createDelegationsStore(r2DelegationBucketEndpoint, r2DelegationBucketAccessKeyId, r2DelegationBucketSecretAccessKey, r2DelegationBucketName)
@@ -281,11 +293,13 @@ export async function ucanInvocationRouter(request) {
     proofs,
     router: routingService,
     registry: allocationBlobRegistry,
+    blobsStorage,
     blobRetriever,
     resolveDIDKey: (did) =>
       Schema.did({ method: 'web' }).is(did) && principalMapping[did]
         ? ok(principalMapping[did])
         : error(new DIDResolutionError(did)),
+    getServiceConnection: () => connection,
     // TODO: to be deprecated with `store/*` protocol
     storeTable: createStoreTable(AWS_REGION, storeTableName, {
       endpoint: dbEndpoint,
@@ -331,6 +345,11 @@ export async function ucanInvocationRouter(request) {
     usageStorage,
     ipniService,
     claimsService: indexingServiceConfig
+  })
+
+  const connection = UploadAPI.connect({
+    id: serviceSigner,
+    channel: server,
   })
 
   const payload = fromLambdaRequest(request)

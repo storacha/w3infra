@@ -207,7 +207,12 @@ export const encodeAgentMessage = async (source) => {
  * }
  * }} TestContext
  * 
- * @param {import('ava').ExecutionContext} t
+ * @param {import('ava').ExecutionContext<{
+ *   dynamo: import('@aws-sdk/client-dynamodb').DynamoDBClient
+ *   sqs: import('@aws-sdk/client-sqs').SQSClient
+ *   s3: import('@aws-sdk/client-s3').S3Client
+ *   r2: import('@aws-sdk/client-s3').S3Client
+ * }>} t
  * @returns {Promise<TestContext>}
  */
 export async function executionContextToUcantoTestServerContext(t) {
@@ -379,8 +384,8 @@ export async function executionContextToUcantoTestServerContext(t) {
     // filecoin/*
     aggregatorId: aggregatorSigner,
     pieceStore,
-    taskStore: createFilecoinTaskStore(s3, agentIndexBucketName, agentMessageBucketName),
-    receiptStore: createFilecoinReceiptStore(s3, agentIndexBucketName, agentMessageBucketName),
+    taskStore: createFilecoinTaskStore('us-west-2', agentIndexBucketName, agentMessageBucketName),
+    receiptStore: createFilecoinReceiptStore('us-west-2', agentIndexBucketName, agentMessageBucketName),
     // @ts-expect-error not tested here
     pieceOfferQueue: {},
     // @ts-expect-error not tested here

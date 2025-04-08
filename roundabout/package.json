@@ -6,20 +6,20 @@
     "test": "ava --verbose --timeout=60s --fail-fast **/*.test.js"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "3.563.0",
-    "@aws-sdk/s3-request-presigner": "3.563.0",
-    "@sentry/serverless": "^7.74.1",
-    "@storacha/indexing-service-client": "^2.0.0"
+    "@aws-sdk/client-s3": "catalog:",
+    "@aws-sdk/s3-request-presigner": "catalog:",
+    "@sentry/serverless": "catalog:",
+    "@storacha/indexing-service-client": "catalog:"
   },
   "devDependencies": {
-    "@ipld/car": "^5.1.1",
-    "@ipld/dag-pb": "^4.1.3",
-    "@ucanto/core": "^10.2.1",
-    "@web3-storage/data-segment": "^5.3.0",
-    "ava": "^4.3.3",
-    "multiformats": "^13.3.1",
-    "nanoid": "^4.0.0",
-    "p-retry": "^6.2.0",
-    "testcontainers": "^10.7.1"
+    "@ipld/car": "catalog:",
+    "@ipld/dag-pb": "catalog:",
+    "@ucanto/core": "catalog:",
+    "@web3-storage/data-segment": "catalog:",
+    "ava": "catalog:",
+    "multiformats": "catalog:",
+    "nanoid": "catalog:",
+    "p-retry": "catalog:",
+    "testcontainers": "catalog:"
   }
 }

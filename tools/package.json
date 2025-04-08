@@ -13,14 +13,17 @@
   },
   "license": "Apache-2.0 OR MIT",
   "dependencies": {
-    "@storacha/upload-api": "^1.3.9"
+    "@storacha/upload-api": "catalog:"
   },
   "devDependencies": {
-    "@aws-sdk/client-dynamodb": "3.563.0",
-    "@aws-sdk/util-dynamodb": "3.563.0",
-    "@ipld/dag-ucan": "^3.4.5",
-    "@storacha/capabilities": "^1.2.0",
-    "@web3-storage/data-segment": "^5.3.0",
-    "sade": "^1.8.1"
+    "@aws-sdk/client-dynamodb": "catalog:",
+    "@aws-sdk/util-dynamodb": "catalog:",
+    "@ipld/dag-ucan": "catalog:",
+    "@storacha/capabilities": "catalog:",
+    "@storacha/did-mailto": "catalog:",
+    "@ucanto/server": "catalog:",
+    "@web3-storage/data-segment": "catalog:",
+    "dotenv": "catalog:",
+    "sade": "catalog:"
   }
 }

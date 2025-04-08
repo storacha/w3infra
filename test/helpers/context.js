@@ -13,7 +13,6 @@ dotenv.config({
  * @property {string} tableName
  *
  * @typedef {object} Context
- * @property {string} apiEndpoint
  * @property {Dynamo} metricsDynamo
  * @property {Dynamo} spaceMetricsDynamo
  * @property {Dynamo} rateLimitsDynamo
@@ -24,16 +23,13 @@ dotenv.config({
  * 
  * @typedef {object} FilecoinContext
  * @property {Dynamo} pieceDynamo
- * @property {string} apiEndpoint
  * 
  * @typedef {object} BlobContext
- * @property {string} apiEndpoint
  * @property {string} roundaboutEndpoint
  * @property {Dynamo} metricsDynamo
  * @property {Dynamo} spaceMetricsDynamo
  * 
  * @typedef {object} StoreContext
- * @property {string} apiEndpoint
  * @property {Dynamo} rateLimitsDynamo
  * 
  * @typedef {object} MetricsContext

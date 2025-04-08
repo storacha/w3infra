@@ -6,19 +6,16 @@ import { PutItemCommand } from '@aws-sdk/client-dynamodb'
 import { marshall } from '@aws-sdk/util-dynamodb'
 import * as StoreCapabilities from '@storacha/capabilities/store'
 import { ShardingStream, UnixFS, Store, Upload } from '@storacha/upload-client'
-
 import { METRICS_NAMES, SPACE_METRICS_NAMES } from '../upload-api/constants.js'
-
 import {
   getStage,
-  getApiEndpoint,
   getRoundaboutEndpoint,
   getAwsBucketClient,
   getCloudflareBucketClient,
   getCarparkBucketInfo,
   getDynamoDb,
 } from './helpers/deployment.js'
-import { createMailSlurpInbox, setupNewClient, getServiceProps } from './helpers/up-client.js'
+import { setupNewClient, getServiceProps } from './helpers/up-client.js'
 import { randomFile } from './helpers/random.js'
 import { getMetrics, getSpaceMetrics } from './helpers/metrics.js'
 import { getUsage } from './helpers/store.js'
@@ -27,7 +24,6 @@ import { addStorageProvider } from './helpers/storage-provider.js'
 test.before(async t => {
   await addStorageProvider(getDynamoDb('storage-provider'))
   t.context = {
-    apiEndpoint: getApiEndpoint(),
     roundaboutEndpoint: getRoundaboutEndpoint(),
     metricsDynamo: getDynamoDb('admin-metrics'),
     spaceMetricsDynamo: getDynamoDb('space-metrics'),
@@ -52,9 +48,8 @@ test.before(async t => {
  */
 test('store protocol integration flow', async t => {
   const stage = getStage()
-  const inbox = await createMailSlurpInbox()
-  const { client, account } = await setupNewClient(t.context.apiEndpoint, { inbox })
-  const serviceProps = getServiceProps(client, t.context.apiEndpoint, StoreCapabilities.add.can)
+  const { client, account } = await setupNewClient()
+  const serviceProps = getServiceProps(client, [StoreCapabilities.add.can])
   const spaceDid = client.currentSpace()?.did()
   if (!spaceDid) {
     throw new Error('Testing space DID must be set')

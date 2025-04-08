@@ -6,19 +6,16 @@ import { Storefront } from '@storacha/filecoin-client'
 import * as Link from 'multiformats/link'
 import * as raw from 'multiformats/codecs/raw'
 import { base58btc } from 'multiformats/bases/base58'
-
 import * as AgentStore from '../upload-api/stores/agent.js'
-
 import {
   getApiEndpoint,
   getAwsBucketClient,
   getRoundaboutEndpoint,
-  getReceiptsEndpoint,
   getDynamoDb,
   getStage,
   getAwsRegion
 } from './helpers/deployment.js'
-import { createMailSlurpInbox, setupNewClient } from './helpers/up-client.js'
+import { setupNewClient } from './helpers/up-client.js'
 import { getClientConfig } from './helpers/fil-client.js'
 import { randomFile } from './helpers/random.js'
 import { pollQueryTable } from './helpers/table.js'
@@ -31,7 +28,6 @@ import { waitForStoreOperationOkResult } from './helpers/store.js'
 
 test.before(t => {
   t.context = {
-    apiEndpoint: getApiEndpoint(),
     pieceDynamo: getDynamoDb('piece-v2'),
   }
 })
@@ -40,14 +36,12 @@ test('w3filecoin integration flow', async t => {
   const stage = getStage()
   const s3Client = getAwsBucketClient()
   // const s3ClientFilecoin = getAwsBucketClient('us-east-2')
-  const inbox = await createMailSlurpInbox()
-  const endpoint = t.context.apiEndpoint
 
   // setup client connection config for w3filecoin pipeline entrypoint, i.e. API Storefront relies on
-  const { invocationConfig, connection } = await getClientConfig(new URL(endpoint))
+  const { invocationConfig, connection } = await getClientConfig(new URL(getApiEndpoint()))
 
   // setup w3up client
-  const { client } = await setupNewClient(endpoint, { inbox })
+  const { client } = await setupNewClient()
   const spaceDid = client.currentSpace()?.did()
   if (!spaceDid) {
     throw new Error('Testing space DID must be set')
@@ -71,8 +65,7 @@ test('w3filecoin integration flow', async t => {
             piece: meta.piece
           })
           console.log(`shard file written with {${meta.cid}, ${content}, ${meta.piece}}`)
-        },
-        receiptsEndpoint: getReceiptsEndpoint()
+        }
       })
       t.is(uploadFiles.length, 1)
       return uploadFiles[0]
@@ -130,7 +123,7 @@ test('w3filecoin integration flow', async t => {
     // Get receipt from endpoint
     const filecoinOfferInvCid = filecoinOfferRes.ran.link()
     const workflowWithReceiptResponse = await fetch(
-      `${t.context.apiEndpoint}/receipt/${filecoinOfferInvCid.toString()}`,
+      `${getApiEndpoint()}/receipt/${filecoinOfferInvCid.toString()}`,
       {
         redirect: 'manual'
       }

@@ -10,9 +10,7 @@ import { HeadObjectCommand } from '@aws-sdk/client-s3'
 import { PutItemCommand } from '@aws-sdk/client-dynamodb'
 import { marshall } from '@aws-sdk/util-dynamodb'
 import * as DidMailto from '@storacha/did-mailto'
-
 import { METRICS_NAMES, SPACE_METRICS_NAMES } from '../upload-api/constants.js'
-
 import { test } from './helpers/context.js'
 import {
   getStage,
@@ -29,7 +27,6 @@ import { createNode } from './helpers/helia.js'
 
 test.before(t => {
   t.context = {
-    apiEndpoint: getApiEndpoint(),
     roundaboutEndpoint: getRoundaboutEndpoint(),
     metricsDynamo: getDynamoDb('admin-metrics'),
     spaceMetricsDynamo: getDynamoDb('space-metrics'),
@@ -38,13 +35,13 @@ test.before(t => {
 })
 
 test('GET /', async t => {
-  const response = await fetch(t.context.apiEndpoint)
+  const response = await fetch(getApiEndpoint())
   t.is(response.status, 200)
 })
 
 test('GET /version', async t => {
   const stage = getStage()
-  const response = await fetch(`${t.context.apiEndpoint}/version`)
+  const response = await fetch(`${getApiEndpoint()}/version`)
   t.is(response.status, 200)
 
   const body = await response.json()
@@ -53,9 +50,7 @@ test('GET /version', async t => {
 })
 
 test('upload-api /metrics', async t => {
-  const apiEndpoint = getApiEndpoint()
-
-  const response = await fetch(`${apiEndpoint}/metrics`)
+  const response = await fetch(`${getApiEndpoint()}/metrics`)
   t.is(response.status, 200)
 
   const body = await response.text()
@@ -82,7 +77,7 @@ test('upload-api /metrics', async t => {
 })
 
 test('authorizations can be blocked by email or domain', async t => {
-  const client = await createNewClient(t.context.apiEndpoint)
+  const client = await createNewClient()
 
   // test email blocking
   await t.context.rateLimitsDynamo.client.send(new PutItemCommand({
@@ -144,7 +139,7 @@ test('w3infra store/upload integration flow', async t => {
     throw new Error('no write target bucket name configure using ENV VAR `R2_CARPARK_BUCKET_NAME`')
   }
   const inbox = await createMailSlurpInbox()
-  const { client } = await setupNewClient(t.context.apiEndpoint, { inbox })
+  const { client } = await setupNewClient({ inbox })
   const spaceDid = client.currentSpace()?.did()
   if (!spaceDid) {
     throw new Error('Testing space DID must be set')
