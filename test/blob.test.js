@@ -330,8 +330,8 @@ test('blob integration flow with receipts validation', async t => {
       })
     }
   } catch (err) {
-    console.error(err.message)
     console.error(err.stack)
+    console.error('[cause]:', err.cause)
     throw err
   }
 })

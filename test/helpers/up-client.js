@@ -88,10 +88,14 @@ export async function setupNewClient (options = {}) {
   console.log(`  Filecoin Service: ${filecoinServicePrincipal.did()}`)
   console.log(`    URL: ${filecoinServiceURL}`)
   const timeoutMs = process.env.MAILSLURP_TIMEOUT ? parseInt(process.env.MAILSLURP_TIMEOUT) : 60_000
-  console.log(`Logging in ${email}...`)
-  const authorizePromise = client.login(email)
   const [account] = await Promise.all([
-    authorizePromise,
+    (async () => {
+      // pause for mailslurp waitForLatestEmail request to be sent first
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      console.log('Logging in...')
+      console.log(`  Email: ${email}`)
+      return client.login(email)
+    })(),
     (async () => {
       console.log('Waiting for authorization email...')
       const latestEmail = await mailslurp.waitForLatestEmail(inboxId, timeoutMs)
