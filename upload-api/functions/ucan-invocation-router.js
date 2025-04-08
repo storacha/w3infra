@@ -23,6 +23,7 @@ import { getServiceSigner, parseServiceDids, getServiceConnection } from '../con
 import { createUcantoServer } from '../service.js'
 import { Email } from '../email.js'
 import * as AgentStore from '../stores/agent.js'
+import { createBlobsStorage, composeBlobStoragesWithOrderedHas } from '../stores/blobs.js'
 import { createAllocationTableBlobRegistry, createBlobRegistry } from '../stores/blob-registry.js'
 import { useProvisionStore } from '../stores/provisions.js'
 import { useSubscriptionsStore } from '../stores/subscriptions.js'
@@ -198,6 +199,17 @@ export async function ucanInvocationRouter(request) {
     },
   })
 
+  const blobsStorage = composeBlobStoragesWithOrderedHas(
+    createBlobsStorage(R2_REGION, carparkBucketName, {
+      endpoint: carparkBucketEndpoint,
+      credentials: {
+        accessKeyId: carparkBucketAccessKeyId,
+        secretAccessKey: carparkBucketSecretAccessKey,
+      }, 
+    }),
+    createBlobsStorage(AWS_REGION, storeBucketName),
+  )
+
   const blobRegistry = createBlobRegistry(AWS_REGION, blobRegistryTableName, spaceDiffTableName, consumerTableName, metrics, options)
   const allocationBlobRegistry = createAllocationTableBlobRegistry(blobRegistry, AWS_REGION, allocationTableName, options)
   const delegationBucket = createDelegationsStore(r2DelegationBucketEndpoint, r2DelegationBucketAccessKeyId, r2DelegationBucketSecretAccessKey, r2DelegationBucketName)
@@ -281,11 +293,13 @@ export async function ucanInvocationRouter(request) {
     proofs,
     router: routingService,
     registry: allocationBlobRegistry,
+    blobsStorage,
     blobRetriever,
     resolveDIDKey: (did) =>
       Schema.did({ method: 'web' }).is(did) && principalMapping[did]
         ? ok(principalMapping[did])
         : error(new DIDResolutionError(did)),
+    getServiceConnection: () => connection,
     // TODO: to be deprecated with `store/*` protocol
     storeTable: createStoreTable(AWS_REGION, storeTableName, {
       endpoint: dbEndpoint,
@@ -331,6 +345,11 @@ export async function ucanInvocationRouter(request) {
     usageStorage,
     ipniService,
     claimsService: indexingServiceConfig
+  })
+
+  const connection = UploadAPI.connect({
+    id: serviceSigner,
+    channel: server,
   })
 
   const payload = fromLambdaRequest(request)
