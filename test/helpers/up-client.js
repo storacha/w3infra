@@ -78,6 +78,7 @@ export async function setupNewClient (options = {}) {
   const { mailslurp, id: inboxId, email } = options.inbox || await createMailSlurpInbox()
   console.log(`  Email: ${email}`)
   console.log(`  Inbox: ${inboxId}`)
+
   console.log('Creating client instance...')
   const client = await createNewClient()
   console.log(`  Agent: ${client.did()}`)
@@ -87,17 +88,11 @@ export async function setupNewClient (options = {}) {
   console.log(`    URL: ${uploadServiceURL}`)
   console.log(`  Filecoin Service: ${filecoinServicePrincipal.did()}`)
   console.log(`    URL: ${filecoinServiceURL}`)
-  const timeoutMs = process.env.MAILSLURP_TIMEOUT ? parseInt(process.env.MAILSLURP_TIMEOUT) : 60_000
+
   const [account] = await Promise.all([
     (async () => {
-      // pause for mailslurp waitForLatestEmail request to be sent first
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      console.log('Logging in...')
-      console.log(`  Email: ${email}`)
-      return client.login(email)
-    })(),
-    (async () => {
       console.log('Waiting for authorization email...')
+      const timeoutMs = process.env.MAILSLURP_TIMEOUT ? parseInt(process.env.MAILSLURP_TIMEOUT) : 60_000
       const latestEmail = await mailslurp.waitForLatestEmail(inboxId, timeoutMs)
       const authLink = getAuthLinkFromEmail(latestEmail.body)
       console.log(`Clicking authorization link...`)
@@ -106,8 +101,16 @@ export async function setupNewClient (options = {}) {
       if (!res.ok) {
         throw new Error('failed to authenticate by clickling on auth link from e-mail')
       }
-    })()
+    })(),
+    (async () => {
+      // ensure mailslurp waitForLatestEmail request is sent first
+      await new Promise(resolve => setTimeout(resolve, 500))
+      console.log('Logging in...')
+      console.log(`  Email: ${email}`)
+      return client.login(email)
+    })(),
   ])
+
   if (!client.currentSpace()) {
     console.log('Creating space...')
     const space = await client.createSpace("test space")

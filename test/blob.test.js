@@ -337,57 +337,63 @@ test('blob integration flow with receipts validation', async t => {
 })
 
 test('10k NFT drop', async t => {
-  const total = 20_000
-  console.log('Creating client')
-  const { client } = await setupNewClient()
+  try {
+    const total = 20_000
+    console.log('Creating client')
+    const { client } = await setupNewClient()
 
-  // Prepare data
-  console.log('Creating NFT metadata')
-  const id = crypto.randomUUID()
-  const files = []
-  const randomTrait = () => {
-    const [traitType, value] = crypto.randomUUID().split('-')
-    return { trait_type: traitType, value }
-  }
-  for (let i = 0; i < total; i++) {
-    files.push(new File([JSON.stringify({
-      name: `NFT #${i}`,
-      description: 'NFT',
-      attributes: Array.from(Array(randomInt(5)), randomTrait),
-      compiler: 'storacha.network',
-      external_url: `https://${id}.nft.storacha.network/token/${i}`
-    })], `${i}.json`))
-  }
-
-  console.log('Uploading NFT metadata')
-  const root = await client.uploadDirectory(files, {
-    onShardStored ({ cid, size }) {
-      console.log(`Uploaded blob ${cid} (${size} bytes)`)
+    // Prepare data
+    console.log('Creating NFT metadata')
+    const id = crypto.randomUUID()
+    const files = []
+    const randomTrait = () => {
+      const [traitType, value] = crypto.randomUUID().split('-')
+      return { trait_type: traitType, value }
     }
-  })
+    for (let i = 0; i < total; i++) {
+      files.push(new File([JSON.stringify({
+        name: `NFT #${i}`,
+        description: 'NFT',
+        attributes: Array.from(Array(randomInt(5)), randomTrait),
+        compiler: 'storacha.network',
+        external_url: `https://${id}.nft.storacha.network/token/${i}`
+      })], `${i}.json`))
+    }
 
-  const sample = Array.from(Array(5), () => randomInt(total))
-  for (const index of sample) {
-    // Verify gateway can resolve uploaded file
-    const gatewayURL = `https://${root}.ipfs-staging.w3s.link/${index}.json`
-    console.log('Checking gateway can fetch', gatewayURL)
-
-    await t.notThrowsAsync(async () => {
-      const gatewayRetries = 5
-      for (let i = 0; i < gatewayRetries; i++) {
-        const controller = new AbortController()
-        const timeoutID = setTimeout(() => controller.abort(), 5000)
-        try {
-          const res = await fetch(gatewayURL, { method: 'HEAD', signal: controller.signal })
-          if (res.status === 200) break
-        } catch (err) {
-          console.error(`failed gateway fetch: ${gatewayURL} (attempt ${i + 1})`, err)
-          if (i === gatewayRetries - 1) throw err
-        } finally {
-          clearTimeout(timeoutID)
-        }
-        await new Promise(resolve => setTimeout(resolve, 1000))
+    console.log('Uploading NFT metadata')
+    const root = await client.uploadDirectory(files, {
+      onShardStored ({ cid, size }) {
+        console.log(`Uploaded blob ${cid} (${size} bytes)`)
       }
     })
+
+    const sample = Array.from(Array(5), () => randomInt(total))
+    for (const index of sample) {
+      // Verify gateway can resolve uploaded file
+      const gatewayURL = `https://${root}.ipfs-staging.w3s.link/${index}.json`
+      console.log('Checking gateway can fetch', gatewayURL)
+
+      await t.notThrowsAsync(async () => {
+        const gatewayRetries = 5
+        for (let i = 0; i < gatewayRetries; i++) {
+          const controller = new AbortController()
+          const timeoutID = setTimeout(() => controller.abort(), 5000)
+          try {
+            const res = await fetch(gatewayURL, { method: 'HEAD', signal: controller.signal })
+            if (res.status === 200) break
+          } catch (err) {
+            console.error(`failed gateway fetch: ${gatewayURL} (attempt ${i + 1})`, err)
+            if (i === gatewayRetries - 1) throw err
+          } finally {
+            clearTimeout(timeoutID)
+          }
+          await new Promise(resolve => setTimeout(resolve, 1000))
+        }
+      })
+    }
+  } catch (err) {
+    console.error(err.stack)
+    console.error('[cause]:', err.cause)
+    throw err
   }
 })
