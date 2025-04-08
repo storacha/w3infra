@@ -42,6 +42,8 @@ export const serviceConf = {
   })
 }
 
+export const receiptsEndpoint = new URL('/reciept/', uploadServiceURL)
+
 /** @param {string} email */
 function getAuthLinkFromEmail (email) {
   // forgive me for I have s̵i̵n̴n̴e̵d̴ ̸a̸n̵d̷ ̷p̶a̵r̵s̵e̸d̷ Ȟ̷̞T̷̢̈́M̸̼̿L̴̎ͅ ̵̗̍ẅ̵̝́ï̸ͅt̴̬̅ḫ̸̔ ̵͚̔ŗ̵͊e̸͍͐g̶̜͒ė̷͖x̴̱̌
@@ -67,7 +69,7 @@ export async function createMailSlurpInbox() {
 export async function createNewClient() {
   const principal = await Signer.generate()
   const data = await AgentData.create({ principal })
-  return new Client(data, { serviceConf })
+  return new Client(data, { serviceConf, receiptsEndpoint })
 }
 
 export async function setupNewClient (options = {}) {
