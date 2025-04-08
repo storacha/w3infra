@@ -30,8 +30,6 @@ import { getMetrics, getSpaceMetrics } from './helpers/metrics.js'
 import { getUsage } from './helpers/store.js'
 import { addStorageProvider } from './helpers/storage-provider.js'
 
-// import { createNode } from './helpers/helia.js'
-
 test.before(async t => {
   await addStorageProvider(getDynamoDb('storage-provider'))
   t.context = {
