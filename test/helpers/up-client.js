@@ -42,7 +42,7 @@ export const serviceConf = {
   })
 }
 
-export const receiptsEndpoint = new URL('/reciept/', uploadServiceURL)
+export const receiptsEndpoint = new URL('/receipt/', uploadServiceURL)
 
 /** @param {string} email */
 function getAuthLinkFromEmail (email) {
