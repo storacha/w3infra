@@ -58,275 +58,281 @@ test.before(async t => {
  * 11. Verify metrics
  */
 test('blob integration flow with receipts validation', async t => {
-  const stage = getStage()
-  const writeTargetBucketName = process.env.R2_CARPARK_BUCKET_NAME
-  if (!writeTargetBucketName) {
-    throw new Error('no write target bucket name configure using ENV VAR `R2_CARPARK_BUCKET_NAME`')
-  }
-
-  const { client, account } = await setupNewClient()
-  const serviceProps = getServiceProps(client, [
-    SpaceBlobCapabilities.add.can,
-    UploadCapabilities.add.can,
-    SpaceIndexCapabilities.add.can
-  ])
-  const spaceDid = client.currentSpace()?.did()
-  if (!spaceDid) {
-    throw new Error('Testing space DID must be set')
-  }
-
-  // Get space metrics before blob/add
-  const spaceBeforeBlobAddMetrics = await getSpaceMetrics(t, spaceDid, SPACE_METRICS_NAMES.BLOB_ADD_TOTAL)
-  const spaceBeforeBlobAddSizeMetrics = await getSpaceMetrics(t, spaceDid, SPACE_METRICS_NAMES.BLOB_ADD_SIZE_TOTAL)
-
-  // Get metrics before upload
-  const beforeOperationMetrics = await getMetrics(t)
-  const beforeBlobAddTotal = beforeOperationMetrics.find(row => row.name === METRICS_NAMES.BLOB_ADD_TOTAL)
-  const beforeBlobAddSizeTotal = beforeOperationMetrics.find(row => row.name === METRICS_NAMES.BLOB_ADD_SIZE_TOTAL)
-
-  const beforeOperationUsage = await getUsage(client, account)
-  const spaceBeforeStoreAddUsage = beforeOperationUsage[spaceDid]
-  
-  // Prepare data
-  console.log('Creating new File')
-  const file = await randomFile(100)
-  
-  // Encode file as Unixfs and perform store/add
-  const blocksReadableStream = UnixFS.createFileEncoderStream(file)
-  /** @type {import('@storacha/upload-client/types').CARLink[]} */
-  const shards = []
-  /** @type {Uint8Array[]} */
-  const shardBytes = []
-  /** @type {Array<Map<import('@storacha/upload-client/types').SliceDigest, import('@storacha/upload-client/types').Position>>} */
-  const shardIndexes = []
-  /** @type {import('@storacha/upload-client/types').AnyLink | undefined} */
-  let root
-
-  /** @type {import('multiformats/hashes/digest').Digest<18, number> | undefined} */
-  let multihash
-  /** @type {{ put: any, accept: { task: any }} | undefined} */
-  let next
-  await blocksReadableStream
-    .pipeThrough(new ShardingStream())
-    .pipeThrough(
-      new TransformStream({
-        async transform(car, controller) {
-          const bytes = new Uint8Array(await car.arrayBuffer())
-
-          // Add blob using custom client to be able to access receipts
-          // Given Blob client exported from client would only return multihash
-          const res = await Blob.add(serviceProps.conf, bytes, { connection: serviceProps.connection })
-          t.truthy(res)
-          t.truthy(res.multihash)
-          multihash = res.multihash
-          next = res.next
-
-          const cid = Link.create(carCodec.code, res.multihash)
-          const { version, roots, size, slices } = car
-          controller.enqueue({ version, roots, size, cid, slices, bytes })
-        }
-      })
-    )
-    .pipeTo(
-      new WritableStream({
-        write(meta) {
-          root = root || meta.roots[0]
-          shards.push(meta.cid)
-          shardBytes.push(meta.bytes)
-
-          // add the CAR shard itself to the slices
-          meta.slices.set(meta.cid.multihash, [0, meta.size])
-          shardIndexes.push(meta.slices)
-        },
-      })
-    )
-
-  if (root === undefined) throw new Error('missing root CID')
-  if (multihash === undefined) throw new Error('missing multihash')
-  t.is(shards.length, 1)
-
-  console.log(`Added blob ${base58btc.encode(multihash.bytes)}, root: ${root}`)
-
-  // Add the index with `index/add`
-  const index = ShardedDAGIndex.create(root)
-  for (const [i, shard] of shards.entries()) {
-    const slices = shardIndexes[i]
-    index.shards.set(shard.multihash, slices)
-  }
-  const indexBytes = await index.archive()
-  if (!indexBytes.ok) {
-    throw new Error('failed to archive DAG index', { cause: indexBytes.error })
-  }
-  // Store the index in the space
-  const resIndex = await Blob.add(serviceProps.conf, indexBytes.ok, { connection: serviceProps.connection })
-  const indexLink = Link.create(carCodec.code, resIndex.multihash)
-
-  console.log(`Added index ${indexLink} (${base58btc.encode(resIndex.multihash.bytes)})`)
-
   try {
-    // Register the index with the service
-    await Index.add(serviceProps.conf, indexLink, { connection: serviceProps.connection })
-    // Register an upload with the service
-    await Upload.add(serviceProps.conf, root, shards, { connection: serviceProps.connection })
-  } catch (err) {
-    console.error(err, err.cause)
-    throw err
-  }
+    const stage = getStage()
+    const writeTargetBucketName = process.env.R2_CARPARK_BUCKET_NAME
+    if (!writeTargetBucketName) {
+      throw new Error('no write target bucket name configure using ENV VAR `R2_CARPARK_BUCKET_NAME`')
+    }
 
-  // Get bucket clients
-  const s3Client = getAwsBucketClient()
-  const r2Client = getCloudflareBucketClient()
+    const { client, account } = await setupNewClient()
+    const serviceProps = getServiceProps(client, [
+      SpaceBlobCapabilities.add.can,
+      UploadCapabilities.add.can,
+      SpaceIndexCapabilities.add.can
+    ])
+    const spaceDid = client.currentSpace()?.did()
+    if (!spaceDid) {
+      throw new Error('Testing space DID must be set')
+    }
 
-  // Check blob exists in R2, but not S3
-  const encodedMultihash = base58btc.encode(multihash.bytes)
-  console.log('Checking blob stored in write target:', encodedMultihash)
-  const r2Request = await r2Client.send(
-    new HeadObjectCommand({
-      // Env var
-      Bucket: writeTargetBucketName,
-      Key: `${encodedMultihash}/${encodedMultihash}.blob`,
-    })
-  )
-  t.is(r2Request.$metadata.httpStatusCode, 200)
-  const carSize = r2Request.ContentLength
-  try {
-    await s3Client.send(
+    // Get space metrics before blob/add
+    const spaceBeforeBlobAddMetrics = await getSpaceMetrics(t, spaceDid, SPACE_METRICS_NAMES.BLOB_ADD_TOTAL)
+    const spaceBeforeBlobAddSizeMetrics = await getSpaceMetrics(t, spaceDid, SPACE_METRICS_NAMES.BLOB_ADD_SIZE_TOTAL)
+
+    // Get metrics before upload
+    const beforeOperationMetrics = await getMetrics(t)
+    const beforeBlobAddTotal = beforeOperationMetrics.find(row => row.name === METRICS_NAMES.BLOB_ADD_TOTAL)
+    const beforeBlobAddSizeTotal = beforeOperationMetrics.find(row => row.name === METRICS_NAMES.BLOB_ADD_SIZE_TOTAL)
+
+    const beforeOperationUsage = await getUsage(client, account)
+    const spaceBeforeStoreAddUsage = beforeOperationUsage[spaceDid]
+    
+    // Prepare data
+    console.log('Creating new File')
+    const file = await randomFile(100)
+    
+    // Encode file as Unixfs and perform store/add
+    const blocksReadableStream = UnixFS.createFileEncoderStream(file)
+    /** @type {import('@storacha/upload-client/types').CARLink[]} */
+    const shards = []
+    /** @type {Uint8Array[]} */
+    const shardBytes = []
+    /** @type {Array<Map<import('@storacha/upload-client/types').SliceDigest, import('@storacha/upload-client/types').Position>>} */
+    const shardIndexes = []
+    /** @type {import('@storacha/upload-client/types').AnyLink | undefined} */
+    let root
+
+    /** @type {import('multiformats/hashes/digest').Digest<18, number> | undefined} */
+    let multihash
+    /** @type {{ put: any, accept: { task: any }} | undefined} */
+    let next
+    await blocksReadableStream
+      .pipeThrough(new ShardingStream())
+      .pipeThrough(
+        new TransformStream({
+          async transform(car, controller) {
+            const bytes = new Uint8Array(await car.arrayBuffer())
+
+            // Add blob using custom client to be able to access receipts
+            // Given Blob client exported from client would only return multihash
+            const res = await Blob.add(serviceProps.conf, bytes, { connection: serviceProps.connection })
+            t.truthy(res)
+            t.truthy(res.multihash)
+            multihash = res.multihash
+            next = res.next
+
+            const cid = Link.create(carCodec.code, res.multihash)
+            const { version, roots, size, slices } = car
+            controller.enqueue({ version, roots, size, cid, slices, bytes })
+          }
+        })
+      )
+      .pipeTo(
+        new WritableStream({
+          write(meta) {
+            root = root || meta.roots[0]
+            shards.push(meta.cid)
+            shardBytes.push(meta.bytes)
+
+            // add the CAR shard itself to the slices
+            meta.slices.set(meta.cid.multihash, [0, meta.size])
+            shardIndexes.push(meta.slices)
+          },
+        })
+      )
+
+    if (root === undefined) throw new Error('missing root CID')
+    if (multihash === undefined) throw new Error('missing multihash')
+    t.is(shards.length, 1)
+
+    console.log(`Added blob ${base58btc.encode(multihash.bytes)}, root: ${root}`)
+
+    // Add the index with `index/add`
+    const index = ShardedDAGIndex.create(root)
+    for (const [i, shard] of shards.entries()) {
+      const slices = shardIndexes[i]
+      index.shards.set(shard.multihash, slices)
+    }
+    const indexBytes = await index.archive()
+    if (!indexBytes.ok) {
+      throw new Error('failed to archive DAG index', { cause: indexBytes.error })
+    }
+    // Store the index in the space
+    const resIndex = await Blob.add(serviceProps.conf, indexBytes.ok, { connection: serviceProps.connection })
+    const indexLink = Link.create(carCodec.code, resIndex.multihash)
+
+    console.log(`Added index ${indexLink} (${base58btc.encode(resIndex.multihash.bytes)})`)
+
+    try {
+      // Register the index with the service
+      await Index.add(serviceProps.conf, indexLink, { connection: serviceProps.connection })
+      // Register an upload with the service
+      await Upload.add(serviceProps.conf, root, shards, { connection: serviceProps.connection })
+    } catch (err) {
+      console.error(err, err.cause)
+      throw err
+    }
+
+    // Get bucket clients
+    const s3Client = getAwsBucketClient()
+    const r2Client = getCloudflareBucketClient()
+
+    // Check blob exists in R2, but not S3
+    const encodedMultihash = base58btc.encode(multihash.bytes)
+    console.log('Checking blob stored in write target:', encodedMultihash)
+    const r2Request = await r2Client.send(
       new HeadObjectCommand({
-        Bucket: (getCarparkBucketInfo()).Bucket,
+        // Env var
+        Bucket: writeTargetBucketName,
         Key: `${encodedMultihash}/${encodedMultihash}.blob`,
       })
     )
-  } catch (cause) {
-    t.is(cause?.$metadata?.httpStatusCode, 404)
-  }
-
-  // Check index exists in R2
-  const encodedIndexMultihash = base58btc.encode(resIndex.multihash.bytes)
-  console.log('Checking index stored in write target:', encodedIndexMultihash)
-  const r2IndexRequest = await r2Client.send(
-    new HeadObjectCommand({
-      // Env var
-      Bucket: writeTargetBucketName,
-      Key: `${encodedIndexMultihash}/${encodedIndexMultihash}.blob`,
-    })
-  )
-  t.is(r2IndexRequest.$metadata.httpStatusCode, 200)
-
-  // Check receipts were written
-  const agentStore = AgentStore.open({
-    store: {
-      region: getAwsRegion(),
-      connection: { channel: s3Client },
-      buckets: {
-        message: { name: `workflow-store-${stage}-0` },
-        index: { name: `invocation-store-${stage}-0` },
-      },
-    },
-    stream: {
-      connection: { disable: {} },
-      name: '',
-    },
-  })
-  const getPutTaskReceipt = await agentStore.receipts.get(next?.put.task.link())
-  t.truthy(getPutTaskReceipt.ok?.out.ok)
-  t.deepEqual(getPutTaskReceipt.ok?.out.ok, {})
-  const getAcceptTaskReceipt = await agentStore.receipts.get(next?.accept.task.link())
-  t.truthy(getAcceptTaskReceipt.ok?.out.ok)
-  t.truthy(getAcceptTaskReceipt.ok?.out.ok.site)
-
-  // Check delegation
-  const acceptForks = getAcceptTaskReceipt.ok?.fx.fork
-  if (!acceptForks) {
-    throw new Error('must have a fork')
-  }
-  t.is(acceptForks?.length, 1)
-  t.truthy(acceptForks?.find(f => f.capabilities[0].can === Assert.location.can))
-
-  // Read from Roundabout and check bytes can be read by raw CID
-  const rawCid = Link.create(RAW_CODE, multihash)
-  console.log('Checking Roundabout can fetch raw content:', rawCid.toString())
-  const roundaboutResponse = await fetch(
-    `${t.context.roundaboutEndpoint}/${rawCid.toString()}`
-  )
-  t.is(roundaboutResponse.status, 200)
-
-  const fetchedBytes =  new Uint8Array(await roundaboutResponse.arrayBuffer())
-  t.truthy(equals(shardBytes[0], fetchedBytes))
-
-  // Verify w3link can resolve uploaded file
-  console.log('Checking w3link can fetch root', root.toString())
-  const gatewayURL = `https://${root}.ipfs-staging.w3s.link`
-  const gatewayRetries = 5
-  for (let i = 0; i < gatewayRetries; i++) {
-    const controller = new AbortController()
-    const timeoutID = setTimeout(() => controller.abort(), 5000)
+    t.is(r2Request.$metadata.httpStatusCode, 200)
+    const carSize = r2Request.ContentLength
     try {
-      const res = await fetch(gatewayURL, { method: 'HEAD', signal: controller.signal })
-      if (res.status === 200) break
-    } catch (err) {
-      console.error(`failed gateway fetch: ${root} (attempt ${i + 1})`, err)
-      if (i === gatewayRetries - 1) throw err
-    } finally {
-      clearTimeout(timeoutID)
+      await s3Client.send(
+        new HeadObjectCommand({
+          Bucket: (getCarparkBucketInfo()).Bucket,
+          Key: `${encodedMultihash}/${encodedMultihash}.blob`,
+        })
+      )
+    } catch (cause) {
+      t.is(cause?.$metadata?.httpStatusCode, 404)
     }
-    await new Promise(resolve => setTimeout(resolve, 1000))
-  }
 
-  // Verify hoverboard can resolved uploaded root via Bitswap
-  // TODO: can only use helia once
-  // console.log('Checking Hoverboard can fetch root', root.toString())
-  // const helia = await createNode()
-  // const heliaFs = unixfs(helia)
-  // const hoverboardMultiaddr = multiaddr('/dns4/elastic-staging.dag.house/tcp/443/wss/p2p/Qmc5vg9zuLYvDR1wtYHCaxjBHenfCNautRwCjG3n5v5fbs')
-  // console.log(`Dialing ${hoverboardMultiaddr}`)
-  // await helia.libp2p.dial(hoverboardMultiaddr)
+    // Check index exists in R2
+    const encodedIndexMultihash = base58btc.encode(resIndex.multihash.bytes)
+    console.log('Checking index stored in write target:', encodedIndexMultihash)
+    const r2IndexRequest = await r2Client.send(
+      new HeadObjectCommand({
+        // Env var
+        Bucket: writeTargetBucketName,
+        Key: `${encodedIndexMultihash}/${encodedIndexMultihash}.blob`,
+      })
+    )
+    t.is(r2IndexRequest.$metadata.httpStatusCode, 200)
 
-  // // @ts-expect-error link different from CID
-  // const rootStat = await heliaFs.stat(root)
-  // t.truthy(rootStat)
-  // t.is(rootStat.type, 'raw')
+    // Check receipts were written
+    const agentStore = AgentStore.open({
+      store: {
+        region: getAwsRegion(),
+        connection: { channel: s3Client },
+        buckets: {
+          message: { name: `workflow-store-${stage}-0` },
+          index: { name: `invocation-store-${stage}-0` },
+        },
+      },
+      stream: {
+        connection: { disable: {} },
+        name: '',
+      },
+    })
+    const getPutTaskReceipt = await agentStore.receipts.get(next?.put.task.link())
+    t.truthy(getPutTaskReceipt.ok?.out.ok)
+    t.deepEqual(getPutTaskReceipt.ok?.out.ok, {})
+    const getAcceptTaskReceipt = await agentStore.receipts.get(next?.accept.task.link())
+    t.truthy(getAcceptTaskReceipt.ok?.out.ok)
+    t.truthy(getAcceptTaskReceipt.ok?.out.ok.site)
 
-  // Validate metrics
-  console.log('Checking metrics match work done')
-  // Check metrics were updated
-  if (beforeBlobAddSizeTotal && spaceBeforeBlobAddSizeMetrics) {
-    await pWaitFor(async () => {
-      const afterOperationMetrics = await getMetrics(t)
-      const afterBlobAddTotal = afterOperationMetrics.find(row => row.name === METRICS_NAMES.BLOB_ADD_TOTAL)
-      const afterBlobAddSizeTotal = afterOperationMetrics.find(row => row.name === METRICS_NAMES.BLOB_ADD_SIZE_TOTAL)
-      const spaceAfterBlobAddMetrics = await getSpaceMetrics(t, spaceDid, SPACE_METRICS_NAMES.BLOB_ADD_TOTAL)
-      const spaceAfterBlobAddSizeMetrics = await getSpaceMetrics(t, spaceDid, SPACE_METRICS_NAMES.BLOB_ADD_SIZE_TOTAL)
+    // Check delegation
+    const acceptForks = getAcceptTaskReceipt.ok?.fx.fork
+    if (!acceptForks) {
+      throw new Error('must have a fork')
+    }
+    t.is(acceptForks?.length, 1)
+    t.truthy(acceptForks?.find(f => f.capabilities[0].can === Assert.location.can))
 
-      // If staging accept more broad condition given multiple parallel tests can happen there
-      if (stage === 'staging') {
-        return (
-          afterBlobAddTotal?.value >= beforeBlobAddTotal?.value + 1 &&
-          afterBlobAddSizeTotal?.value >= beforeBlobAddSizeTotal.value + carSize &&
-          spaceAfterBlobAddMetrics?.value >= spaceBeforeBlobAddMetrics?.value + 1 &&
-          spaceAfterBlobAddSizeMetrics?.value >= spaceBeforeBlobAddSizeMetrics?.value + carSize
-        )
+    // Read from Roundabout and check bytes can be read by raw CID
+    const rawCid = Link.create(RAW_CODE, multihash)
+    console.log('Checking Roundabout can fetch raw content:', rawCid.toString())
+    const roundaboutResponse = await fetch(
+      `${t.context.roundaboutEndpoint}/${rawCid.toString()}`
+    )
+    t.is(roundaboutResponse.status, 200)
+
+    const fetchedBytes =  new Uint8Array(await roundaboutResponse.arrayBuffer())
+    t.truthy(equals(shardBytes[0], fetchedBytes))
+
+    // Verify w3link can resolve uploaded file
+    console.log('Checking w3link can fetch root', root.toString())
+    const gatewayURL = `https://${root}.ipfs-staging.w3s.link`
+    const gatewayRetries = 5
+    for (let i = 0; i < gatewayRetries; i++) {
+      const controller = new AbortController()
+      const timeoutID = setTimeout(() => controller.abort(), 5000)
+      try {
+        const res = await fetch(gatewayURL, { method: 'HEAD', signal: controller.signal })
+        if (res.status === 200) break
+      } catch (err) {
+        console.error(`failed gateway fetch: ${root} (attempt ${i + 1})`, err)
+        if (i === gatewayRetries - 1) throw err
+      } finally {
+        clearTimeout(timeoutID)
       }
+      await new Promise(resolve => setTimeout(resolve, 1000))
+    }
 
-      return (
-        afterBlobAddTotal?.value === beforeBlobAddTotal?.value + 1 &&
-        afterBlobAddSizeTotal?.value === beforeBlobAddSizeTotal.value + carSize &&
-        spaceAfterBlobAddMetrics?.value === spaceBeforeBlobAddMetrics?.value + 1 &&
-        spaceAfterBlobAddSizeMetrics?.value === spaceBeforeBlobAddSizeMetrics?.value + carSize
-      )
-    })
-  }
+    // Verify hoverboard can resolved uploaded root via Bitswap
+    // TODO: can only use helia once
+    // console.log('Checking Hoverboard can fetch root', root.toString())
+    // const helia = await createNode()
+    // const heliaFs = unixfs(helia)
+    // const hoverboardMultiaddr = multiaddr('/dns4/elastic-staging.dag.house/tcp/443/wss/p2p/Qmc5vg9zuLYvDR1wtYHCaxjBHenfCNautRwCjG3n5v5fbs')
+    // console.log(`Dialing ${hoverboardMultiaddr}`)
+    // await helia.libp2p.dial(hoverboardMultiaddr)
+
+    // // @ts-expect-error link different from CID
+    // const rootStat = await heliaFs.stat(root)
+    // t.truthy(rootStat)
+    // t.is(rootStat.type, 'raw')
+
+    // Validate metrics
+    console.log('Checking metrics match work done')
+    // Check metrics were updated
+    if (beforeBlobAddSizeTotal && spaceBeforeBlobAddSizeMetrics) {
+      await pWaitFor(async () => {
+        const afterOperationMetrics = await getMetrics(t)
+        const afterBlobAddTotal = afterOperationMetrics.find(row => row.name === METRICS_NAMES.BLOB_ADD_TOTAL)
+        const afterBlobAddSizeTotal = afterOperationMetrics.find(row => row.name === METRICS_NAMES.BLOB_ADD_SIZE_TOTAL)
+        const spaceAfterBlobAddMetrics = await getSpaceMetrics(t, spaceDid, SPACE_METRICS_NAMES.BLOB_ADD_TOTAL)
+        const spaceAfterBlobAddSizeMetrics = await getSpaceMetrics(t, spaceDid, SPACE_METRICS_NAMES.BLOB_ADD_SIZE_TOTAL)
+
+        // If staging accept more broad condition given multiple parallel tests can happen there
+        if (stage === 'staging') {
+          return (
+            afterBlobAddTotal?.value >= beforeBlobAddTotal?.value + 1 &&
+            afterBlobAddSizeTotal?.value >= beforeBlobAddSizeTotal.value + carSize &&
+            spaceAfterBlobAddMetrics?.value >= spaceBeforeBlobAddMetrics?.value + 1 &&
+            spaceAfterBlobAddSizeMetrics?.value >= spaceBeforeBlobAddSizeMetrics?.value + carSize
+          )
+        }
+
+        return (
+          afterBlobAddTotal?.value === beforeBlobAddTotal?.value + 1 &&
+          afterBlobAddSizeTotal?.value === beforeBlobAddSizeTotal.value + carSize &&
+          spaceAfterBlobAddMetrics?.value === spaceBeforeBlobAddMetrics?.value + 1 &&
+          spaceAfterBlobAddSizeMetrics?.value === spaceBeforeBlobAddSizeMetrics?.value + carSize
+        )
+      })
+    }
 
 
-  if (beforeOperationUsage) {
-    console.log("Checking usage matches work done")
-    await pWaitFor(async () => {
-      const afterOperationUsage = await getUsage(client, account)
-      const spaceAfterStoreAddUsage = afterOperationUsage[spaceDid]
-      // If staging accept more broad condition given multiple parallel tests can happen there
-      return (
-          spaceAfterStoreAddUsage >= spaceBeforeStoreAddUsage + carSize
-      )
-    })
+    if (beforeOperationUsage) {
+      console.log("Checking usage matches work done")
+      await pWaitFor(async () => {
+        const afterOperationUsage = await getUsage(client, account)
+        const spaceAfterStoreAddUsage = afterOperationUsage[spaceDid]
+        // If staging accept more broad condition given multiple parallel tests can happen there
+        return (
+            spaceAfterStoreAddUsage >= spaceBeforeStoreAddUsage + carSize
+        )
+      })
+    }
+  } catch (err) {
+    console.error(err.message)
+    console.error(err.stack)
+    throw err
   }
 })
 

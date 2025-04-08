@@ -73,17 +73,31 @@ export async function createNewClient() {
 }
 
 export async function setupNewClient (options = {}) {
-  // create an inbox
+  console.log('Setting up new client...')
+  console.log('Creating mailslurp inbox...')
   const { mailslurp, id: inboxId, email } = options.inbox || await createMailSlurpInbox()
+  console.log(`  Email: ${email}`)
+  console.log(`  Inbox: ${inboxId}`)
+  console.log('Creating client instance...')
   const client = await createNewClient()
+  console.log(`  Agent: ${client.did()}`)
+  console.log(`  Access Service: ${accessServicePrincipal.did()}`)
+  console.log(`    URL: ${accessServiceURL}`)
+  console.log(`  Upload Service: ${uploadServicePrincipal.did()}`)
+  console.log(`    URL: ${uploadServiceURL}`)
+  console.log(`  Filecoin Service: ${filecoinServicePrincipal.did()}`)
+  console.log(`    URL: ${filecoinServiceURL}`)
   const timeoutMs = process.env.MAILSLURP_TIMEOUT ? parseInt(process.env.MAILSLURP_TIMEOUT) : 60_000
+  console.log(`Logging in ${email}...`)
   const authorizePromise = client.login(email)
   const [account] = await Promise.all([
     authorizePromise,
     (async () => {
-      // click link in email
+      console.log('Waiting for authorization email...')
       const latestEmail = await mailslurp.waitForLatestEmail(inboxId, timeoutMs)
       const authLink = getAuthLinkFromEmail(latestEmail.body)
+      console.log(`Clicking authorization link...`)
+      console.log(`  Link: ${authLink}`)
       const res = await fetch(authLink, { method: 'POST' })
       if (!res.ok) {
         throw new Error('failed to authenticate by clickling on auth link from e-mail')
@@ -91,8 +105,15 @@ export async function setupNewClient (options = {}) {
     })()
   ])
   if (!client.currentSpace()) {
+    console.log('Creating space...')
     const space = await client.createSpace("test space")
+    console.log(`  Space: ${space.did()}`)
+    console.log('Provisioning space...')
+    console.log(`  Account: ${account.did()}`)
     await account.provision(space.did())
+    console.log('Authorizing gateway...')
+    console.log(`  Gateway Service: ${gatewayServicePrincipal.did()}`)
+    console.log(`    URL: ${gatewayServiceURL}`)
     await authorizeContentServe(client, space, serviceConf.gateway)
     await space.save()
   }
