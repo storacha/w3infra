@@ -89,7 +89,7 @@ export async function setupNewClient (options = {}) {
   console.log(`  Filecoin Service: ${filecoinServicePrincipal.did()}`)
   console.log(`    URL: ${filecoinServiceURL}`)
 
-  const [account] = await Promise.all([
+  const [,account] = await Promise.all([
     (async () => {
       console.log('Waiting for authorization email...')
       const timeoutMs = process.env.MAILSLURP_TIMEOUT ? parseInt(process.env.MAILSLURP_TIMEOUT) : 60_000
