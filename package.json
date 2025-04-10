@@ -69,6 +69,7 @@
   },
   "dependencies": {
     "aws-cdk-lib": "catalog:",
+    "jwt-decode": "^4.0.0",
     "sst": "catalog:"
   },
   "simple-git-hooks": {

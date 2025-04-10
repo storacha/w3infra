@@ -3,7 +3,7 @@ import { DID, Delegation, UCANLink, ByteView, DIDKey, Result, Failure, Unit } fr
 import { UnknownLink } from 'multiformats'
 import { CID } from 'multiformats/cid'
 import { CarStoreBucket } from '@web3-storage/upload-api'
-import { AccountDID, ProviderDID, Service, SpaceDID, PlanCreateAdminSessionSuccess, PlanCreateAdminSessionFailure, AgentStore } from '@storacha/upload-api'
+import { AccountDID, ProviderDID, Service, SpaceDID, PlanCreateAdminSessionSuccess, PlanCreateAdminSessionFailure, AgentStore, UnexpectedError } from '@storacha/upload-api'
 
 export type {
   UnknownLink,
@@ -253,6 +253,9 @@ declare module 'sst/node/config' {
     GITHUB_CLIENT_SECRET: {
       value: string
     },
+    HUMANODE_CLIENT_SECRET: {
+      value: string
+    },
     INDEXING_SERVICE_PROOF: {
       value: string
     }
@@ -283,4 +286,10 @@ export interface ReferralsStore {
   getReferredBy: (email: string) => Promise<Referral>
 }
 
+export interface HumanodeStore {
+  add: (sub: string) => Promise<Result<Unit, UnexpectedError>>
+  exists: (sub: string) => Promise<Result<boolean, UnexpectedError>>
+}
+
 export {}
+

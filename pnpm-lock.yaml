@@ -317,6 +317,9 @@ importers:
       aws-cdk-lib:
         specifier: 'catalog:'
         version: 2.171.1(constructs@10.3.0)
+      jwt-decode:
+        specifier: ^4.0.0
+        version: 4.0.0
       sst:
         specifier: 'catalog:'
         version: 2.47.3(@aws-sdk/client-sso-oidc@3.699.0(@aws-sdk/client-sts@3.699.0(aws-crt@1.26.2))(aws-crt@1.26.2))(@jest/transform@29.7.0)(@jest/types@29.6.3)(aws-crt@1.26.2)(babel-jest@29.7.0(@babel/core@7.26.10))(encoding@0.1.13)(typescript@5.8.3)
@@ -7406,6 +7409,10 @@ packages:
 
   just-extend@6.2.0:
     resolution: {integrity: sha512-cYofQu2Xpom82S6qD778jBDpwvvy39s1l/hrYij2u9AMdQcGRpaBu6kY4mVhuno5kJVi1DAz4aiphA2WI1/OAw==}
+
+  jwt-decode@4.0.0:
+    resolution: {integrity: sha512-+KJGIyHgkGuIq3IEBNftfhW/LfWhXUIY6OmyVWjliu5KH1y0fw7VQ8YndE2O4qZdMSd9SqbnC8GOcZEy0Om7sA==}
+    engines: {node: '>=18'}
 
   keyv@4.5.4:
     resolution: {integrity: sha512-oxVHkHR/EJf2CNXnWxRLW6mg7JyCCUcG0DtEGmL2ctUo1PNTin1PUil+r/+4r5MpVgC/fn1kjsx7mjSujKqIpw==}
@@ -21253,6 +21260,8 @@ snapshots:
   just-extend@4.2.1: {}
 
   just-extend@6.2.0: {}
+
+  jwt-decode@4.0.0: {}
 
   keyv@4.5.4:
     dependencies:
