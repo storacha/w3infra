@@ -43,7 +43,7 @@ export function UploadApiStack({ stack, app }) {
 
   // Get references to constructs created in other stacks
   const { carparkBucket } = use(CarparkStack)
-  const { allocationTable, blobRegistryTable, storeTable, uploadTable, delegationBucket, delegationTable, revocationTable, adminMetricsTable, spaceMetricsTable, consumerTable, subscriptionTable, storageProviderTable, rateLimitTable, pieceTable, privateKey, indexingServiceProof, githubClientSecret } = use(UploadDbStack)
+  const { allocationTable, blobRegistryTable, storeTable, uploadTable, delegationBucket, delegationTable, revocationTable, adminMetricsTable, spaceMetricsTable, consumerTable, subscriptionTable, storageProviderTable, rateLimitTable, pieceTable, privateKey, indexingServiceProof, githubClientSecret, humanodeClientSecret } = use(UploadDbStack)
   const { agentIndexBucket, agentMessageBucket, ucanStream } = use(UcanInvocationStack)
   const { customerTable, spaceDiffTable, spaceSnapshotTable, egressTrafficTable, stripeSecretKey } = use(BillingDbStack)
   const { pieceOfferQueue, filecoinSubmitQueue } = use(FilecoinStack)
@@ -151,12 +151,15 @@ export function UploadApiStack({ stack, app }) {
             HOSTED_ZONE: hostedZone ?? '',
             GITHUB_CLIENT_ID: process.env.GITHUB_CLIENT_ID ?? '',
             PRINCIPAL_MAPPING: process.env.PRINCIPAL_MAPPING ?? '',
+            HUMANODE_TOKEN_ENDPOINT: process.env.HUMANODE_TOKEN_ENDPOINT ?? '',
+            HUMANODE_CLIENT_ID: process.env.HUMANODE_CLIENT_ID ?? ''
           },
           bind: [
             privateKey,
             ucanInvocationPostbasicAuth,
             stripeSecretKey,
             githubClientSecret,
+            humanodeClientSecret,
             indexingServiceProof,
           ]
         }
@@ -177,6 +180,7 @@ export function UploadApiStack({ stack, app }) {
         'GET /metrics/{proxy+}': 'upload-api/functions/metrics.handler',
         'GET /sample': 'upload-api/functions/sample.handler',
         'GET /oauth/callback': 'upload-api/functions/oauth-callback.handler',
+        'GET /oauth/humanode/callback': 'upload-api/functions/oauth-humanode-callback.handler',
       },
       accessLog: {
         format:'{"requestTime":"$context.requestTime","requestId":"$context.requestId","httpMethod":"$context.httpMethod","path":"$context.path","routeKey":"$context.routeKey","status":$context.status,"responseLatency":$context.responseLatency,"integrationRequestId":"$context.integration.requestId","integrationStatus":"$context.integration.status","integrationLatency":"$context.integration.latency","integrationServiceStatus":"$context.integration.integrationStatus","ip":"$context.identity.sourceIp","userAgent":"$context.identity.userAgent"}'

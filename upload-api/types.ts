@@ -253,6 +253,9 @@ declare module 'sst/node/config' {
     GITHUB_CLIENT_SECRET: {
       value: string
     },
+    HUMANODE_CLIENT_SECRET: {
+      value: string
+    },
     INDEXING_SERVICE_PROOF: {
       value: string
     }
