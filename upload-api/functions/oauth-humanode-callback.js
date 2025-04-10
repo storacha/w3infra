@@ -54,7 +54,7 @@ export const oauthCallbackGet = async (request, context) => {
   const code = request.queryStringParameters?.code
   if (!code) {
     console.error('missing code in query params')
-    return { statusCode: 400, body: 'missing code in query params' }
+    return htmlResponse(400, getUnexpectedErrorResponseHTML('Query params are missing code'))
   }
 
   // fetch the auth token from Humanode
@@ -74,7 +74,7 @@ export const oauthCallbackGet = async (request, context) => {
   const humanodeId = humanodeIdToken.sub
   if (!humanodeId) {
     console.error("humanodeId is not undefined, this is very strange")
-    return { statusCode: 500, body: 'failed to get humanode ID' }
+    return htmlResponse(500, getUnexpectedErrorResponseHTML('Failed to get Humanode ID'))
   }
 
   const existsResponse = await humanodeStore.exists(humanodeId)
@@ -89,7 +89,7 @@ export const oauthCallbackGet = async (request, context) => {
   const extractRes = await Delegation.extract(base64url.decode(request.queryStringParameters?.state ?? ''))
   if (extractRes.error) {
     console.error('decoding access/authorize delegation', extractRes.error)
-    return { statusCode: 400, body: 'failed to decode access/authorize delegation' }
+    return htmlResponse(400, getUnexpectedErrorResponseHTML('Failed to decode access/authorization delegation.'))
   }
   const authRequest =
     /** @type {import('@ucanto/interface').Invocation<import('@storacha/upload-api').AccessAuthorize>} */
@@ -102,11 +102,12 @@ export const oauthCallbackGet = async (request, context) => {
   })
   if (accessRes.error) {
     console.error('validating access/authorize delegation', accessRes.error)
-    return { statusCode: 400, body: 'failed to validate access/authorize delegation' }
+
+    return htmlResponse(400, getUnexpectedErrorResponseHTML('Failed to validate access/authorization delegation.'))
   }
 
   if (!accessRes.ok.capability.nb.iss) {
-    return { statusCode: 400, body: 'account DID not included in authorize request' }
+    return htmlResponse(400, getUnexpectedErrorResponseHTML('Account DID not included in authorize request.'))
   }
 
   let customer
@@ -114,7 +115,7 @@ export const oauthCallbackGet = async (request, context) => {
     customer = DidMailto.fromString(accessRes.ok.capability.nb.iss)
   } catch (e) {
     console.error("error parsing did:mailto:", e)
-    return { statusCode: 400, body: 'nb.iss must be a valid did:mailto' }
+    return htmlResponse(400, getUnexpectedErrorResponseHTML('Invalid Account DID received.'))
   }
 
   // add a customer with a trial product
@@ -126,7 +127,7 @@ export const oauthCallbackGet = async (request, context) => {
   })
   if (!customerPutRes.ok) {
     console.error(`putting customer: ${customer}`, customerPutRes.error)
-    return { statusCode: 500, body: 'failed to put customer' }
+    return htmlResponse(500, getUnexpectedErrorResponseHTML('Failed to update customer store.'))
   }
 
   await humanodeStore.add(humanodeId)
