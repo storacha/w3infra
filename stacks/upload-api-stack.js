@@ -43,7 +43,7 @@ export function UploadApiStack({ stack, app }) {
 
   // Get references to constructs created in other stacks
   const { carparkBucket } = use(CarparkStack)
-  const { allocationTable, blobRegistryTable, storeTable, uploadTable, delegationBucket, delegationTable, revocationTable, adminMetricsTable, spaceMetricsTable, consumerTable, subscriptionTable, storageProviderTable, rateLimitTable, pieceTable, privateKey, indexingServiceProof, githubClientSecret, humanodeClientSecret } = use(UploadDbStack)
+  const { allocationTable, blobRegistryTable, humanodeTable, storeTable, uploadTable, delegationBucket, delegationTable, revocationTable, adminMetricsTable, spaceMetricsTable, consumerTable, subscriptionTable, storageProviderTable, rateLimitTable, pieceTable, privateKey, indexingServiceProof, githubClientSecret, humanodeClientSecret } = use(UploadDbStack)
   const { agentIndexBucket, agentMessageBucket, ucanStream } = use(UcanInvocationStack)
   const { customerTable, spaceDiffTable, spaceSnapshotTable, egressTrafficTable, stripeSecretKey } = use(BillingDbStack)
   const { pieceOfferQueue, filecoinSubmitQueue } = use(FilecoinStack)
@@ -70,6 +70,7 @@ export function UploadApiStack({ stack, app }) {
           permissions: [
             allocationTable, // legacy
             blobRegistryTable,
+            humanodeTable,
             storeTable, // legacy
             uploadTable,
             customerTable,
@@ -105,6 +106,7 @@ export function UploadApiStack({ stack, app }) {
             UPLOAD_TABLE_NAME: uploadTable.tableName,
             CONSUMER_TABLE_NAME: consumerTable.tableName,
             CUSTOMER_TABLE_NAME: customerTable.tableName,
+            HUMANODE_TABLE_NAME: humanodeTable.tableName,
             SUBSCRIPTION_TABLE_NAME: subscriptionTable.tableName,
             SPACE_METRICS_TABLE_NAME: spaceMetricsTable.tableName,
             ADMIN_METRICS_TABLE_NAME: adminMetricsTable.tableName,
