@@ -118,17 +118,16 @@ export const knownWebDIDs = {
  * @param {import('aws-lambda').APIGatewayProxyEventV2} request
  */
 export async function ucanInvocationRouter(request) {
-  // Capture X-Client custom header for analytics - ignore if not present
-  const clientId = request.headers['X-Client']
-  if (clientId) {
-    console.log(JSON.stringify({
-      message: 'Client request',
-      clientId,
-      requestId: request.requestContext?.requestId || 'unknown',
-      timestamp: new Date().toISOString()
-    }))
-  }
-  
+  // Capture X-Client custom header for analytics
+  const clientId = Object.entries(request.headers)
+  .find(([key]) => key.toLowerCase() === 'x-client')?.[1] ?? 'Storacha/?'
+  console.log(JSON.stringify({
+    message: 'Client request',
+    clientId,
+    requestId: request.requestContext?.requestId || 'unknown',
+    timestamp: new Date().toISOString()
+  }))
+
   const {
     storeTableName,
     storeBucketName,
@@ -216,7 +215,7 @@ export async function ucanInvocationRouter(request) {
       credentials: {
         accessKeyId: carparkBucketAccessKeyId,
         secretAccessKey: carparkBucketSecretAccessKey,
-      }, 
+      },
     }),
     createBlobsStorage(AWS_REGION, storeBucketName),
   )
@@ -278,7 +277,7 @@ export async function ucanInvocationRouter(request) {
   const storageProviderTable = createStorageProviderTable(AWS_REGION, storageProviderTableName, options)
   const routingService = createRoutingService(storageProviderTable, serviceSigner)
 
-  
+
   let audience // accept invocations addressed to any alias
   const proofs = [] // accept attestations issued by any alias
   if (UPLOAD_API_ALIAS) {
@@ -391,7 +390,7 @@ export const fromLambdaRequest = (request) => ({
   body: Buffer.from(request.body || '', 'base64'),
 })
 
-function getLambdaEnv () {
+function getLambdaEnv() {
   return {
     storeTableName: mustGetEnv('STORE_TABLE_NAME'),
     storeBucketName: mustGetEnv('STORE_BUCKET_NAME'),
