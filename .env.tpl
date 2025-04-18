@@ -61,3 +61,5 @@ REFERRALS_ENDPOINT = 'https://staging.referrals.storacha.network'
 # GitHub OAuth (optional)
 GITHUB_CLIENT_ID = ''
 GITHUB_CLIENT_SECRET = ''
+HUMANODE_TOKEN_ENDPOINT='https://auth.demo-storacha-2025-03-31.oauth2.humanode.io/oauth2/token'
+HUMANODE_CLIENT_ID='e9756297-b2d1-4bbe-a139-a9ad1cdc43ee'

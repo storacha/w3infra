@@ -3,7 +3,7 @@ import { DID, Delegation, Block, UCANLink, ByteView, ReceiptModel, DIDKey, Resul
 import { UnknownLink } from 'multiformats'
 import { CID } from 'multiformats/cid'
 import { Kinesis } from '@aws-sdk/client-kinesis'
-import { AccountDID, ProviderDID, Service, SpaceDID, CarStoreBucket, AllocationsStorage, PlanCreateAdminSessionSuccess, PlanCreateAdminSessionFailure, AgentStore } from '@web3-storage/upload-api'
+import { AccountDID, ProviderDID, Service, SpaceDID, CarStoreBucket, AllocationsStorage, PlanCreateAdminSessionSuccess, PlanCreateAdminSessionFailure, AgentStore, UnexpectedError } from '@web3-storage/upload-api'
 
 export type {
   UnknownLink,
@@ -270,6 +270,9 @@ declare module 'sst/node/config' {
     },
     GITHUB_CLIENT_SECRET: {
       value: string
+    },
+    HUMANODE_CLIENT_SECRET: {
+      value: string
     }
   }
 }
@@ -298,4 +301,10 @@ export interface ReferralsStore {
   getReferredBy: (email: string) => Promise<Referral>
 }
 
+export interface HumanodeStore {
+  add: (sub: string) => Promise<Result<Unit, UnexpectedError>>
+  exists: (sub: string) => Promise<Result<boolean, UnexpectedError>>
+}
+
 export {}
+

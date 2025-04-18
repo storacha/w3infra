@@ -44,7 +44,7 @@ export function UploadApiStack({ stack, app }) {
 
   // Get references to constructs created in other stacks
   const { carparkBucket } = use(CarparkStack)
-  const { allocationTable, storeTable, uploadTable, delegationBucket, delegationTable, revocationTable, adminMetricsTable, spaceMetricsTable, consumerTable, subscriptionTable, rateLimitTable, pieceTable, privateKey, contentClaimsPrivateKey, githubClientSecret } = use(UploadDbStack)
+  const { allocationTable, humanodeTable, storeTable, uploadTable, delegationBucket, delegationTable, revocationTable, adminMetricsTable, spaceMetricsTable, consumerTable, subscriptionTable, rateLimitTable, pieceTable, privateKey, contentClaimsPrivateKey, githubClientSecret, humanodeClientSecret } = use(UploadDbStack)
   const { invocationBucket, taskBucket, workflowBucket, ucanStream } = use(UcanInvocationStack)
   const { customerTable, spaceDiffTable, spaceSnapshotTable, egressTrafficTable, stripeSecretKey } = use(BillingDbStack)
   const { pieceOfferQueue, filecoinSubmitQueue } = use(FilecoinStack)
@@ -70,6 +70,7 @@ export function UploadApiStack({ stack, app }) {
           timeout: '60 seconds',
           permissions: [
             allocationTable,
+            humanodeTable,
             storeTable,
             uploadTable,
             customerTable,
@@ -105,6 +106,7 @@ export function UploadApiStack({ stack, app }) {
             UPLOAD_TABLE_NAME: uploadTable.tableName,
             CONSUMER_TABLE_NAME: consumerTable.tableName,
             CUSTOMER_TABLE_NAME: customerTable.tableName,
+            HUMANODE_TABLE_NAME: humanodeTable.tableName,
             SUBSCRIPTION_TABLE_NAME: subscriptionTable.tableName,
             SPACE_METRICS_TABLE_NAME: spaceMetricsTable.tableName,
             RATE_LIMIT_TABLE_NAME: rateLimitTable.tableName,
@@ -151,14 +153,17 @@ export function UploadApiStack({ stack, app }) {
             CONTENT_CLAIMS_URL,
             CONTENT_CLAIMS_PROOF,
             HOSTED_ZONE: hostedZone ?? '',
-            GITHUB_CLIENT_ID: process.env.GITHUB_CLIENT_ID ?? ''
+            GITHUB_CLIENT_ID: process.env.GITHUB_CLIENT_ID ?? '',
+            HUMANODE_TOKEN_ENDPOINT: process.env.HUMANODE_TOKEN_ENDPOINT ?? '',
+            HUMANODE_CLIENT_ID: process.env.HUMANODE_CLIENT_ID ?? ''
           },
           bind: [
             privateKey,
             ucanInvocationPostbasicAuth,
             stripeSecretKey,
             contentClaimsPrivateKey,
-            githubClientSecret
+            githubClientSecret,
+            humanodeClientSecret
           ]
         }
       },
@@ -178,6 +183,7 @@ export function UploadApiStack({ stack, app }) {
         'GET /metrics/{proxy+}': 'upload-api/functions/metrics.handler',
         'GET /sample': 'upload-api/functions/sample.handler',
         'GET /oauth/callback': 'upload-api/functions/oauth-callback.handler',
+        'GET /oauth/humanode/callback': 'upload-api/functions/oauth-humanode-callback.handler',
       },
       accessLog: {
         format:'{"requestTime":"$context.requestTime","requestId":"$context.requestId","httpMethod":"$context.httpMethod","path":"$context.path","routeKey":"$context.routeKey","status":$context.status,"responseLatency":$context.responseLatency,"integrationRequestId":"$context.integration.requestId","integrationStatus":"$context.integration.status","integrationLatency":"$context.integration.latency","integrationServiceStatus":"$context.integration.integrationStatus","ip":"$context.identity.sourceIp","userAgent":"$context.identity.userAgent"}'

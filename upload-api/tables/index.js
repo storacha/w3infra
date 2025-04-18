@@ -139,6 +139,18 @@ export const revocationTableProps = {
   primaryIndex: { partitionKey: 'revoke'}
 }
 
+/**
+ * 
+ * @type TableProps 
+ */
+export const humanodeTableProps = {
+  fields: {
+    // the humanode "subject" - `sub` matches the name it is given in the JWT we receive.
+    sub: 'string',
+  },
+  primaryIndex: { partitionKey: 'sub'}
+}
+
 /** @type TableProps */
 export const adminMetricsTableProps = {
   fields: {
