@@ -12,7 +12,8 @@ import {
   rateLimitTableProps,
   adminMetricsTableProps,
   spaceMetricsTableProps,
-  storageProviderTableProps
+  storageProviderTableProps,
+  humanodeTableProps
 } from '../upload-api/tables/index.js'
 import {
   pieceTableProps
@@ -34,6 +35,9 @@ export function UploadDbStack({ stack, app }) {
   const indexingServiceProof = new Config.Secret(stack, 'INDEXING_SERVICE_PROOF')
 
   const githubClientSecret = new Config.Secret(stack, 'GITHUB_CLIENT_SECRET')
+  const humanodeClientSecret = new Config.Secret(stack, 'HUMANODE_CLIENT_SECRET')
+
+  const humanodeTable = new Table(stack, 'humanode', humanodeTableProps)
 
   /**
    * The allocation table tracks allocated multihashes per space.
@@ -122,6 +126,7 @@ export function UploadDbStack({ stack, app }) {
   return {
     allocationTable,
     blobRegistryTable,
+    humanodeTable,
     storeTable,
     uploadTable,
     pieceTable,
@@ -136,6 +141,7 @@ export function UploadDbStack({ stack, app }) {
     storageProviderTable,
     privateKey,
     githubClientSecret,
+    humanodeClientSecret,
     indexingServiceProof,
   }
 }
