@@ -118,15 +118,19 @@ export const knownWebDIDs = {
  * @param {import('aws-lambda').APIGatewayProxyEventV2} request
  */
 export async function ucanInvocationRouter(request) {
-  // Capture X-Client custom header for analytics
-  const clientId = Object.entries(request.headers)
-  .find(([key]) => key.toLowerCase() === 'x-client')?.[1] ?? 'Storacha/?'
-  console.log(JSON.stringify({
-    message: 'Client request',
-    clientId,
-    requestId: request.requestContext?.requestId || 'unknown',
-    timestamp: new Date().toISOString()
-  }))
+  try {
+      // Capture X-Client custom header for analytics
+      const clientId = Object.entries(request.headers)
+      .find(([key]) => key.toLowerCase() === 'x-client')?.[1] ?? 'Storacha/?'
+      console.log(JSON.stringify({
+        message: 'Client request',
+        clientId,
+        requestId: request.requestContext?.requestId || 'unknown',
+          timestamp: new Date().toISOString()
+      }))
+  } catch (error) {
+    console.error(error)
+  }
 
   const {
     storeTableName,
