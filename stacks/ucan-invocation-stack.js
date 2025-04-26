@@ -1,6 +1,7 @@
 import {
   Bucket,
   KinesisStream,
+  Table,
 } from 'sst/constructs'
 import { PolicyStatement, StarPrincipal, Effect } from 'aws-cdk-lib/aws-iam'
 
@@ -9,6 +10,7 @@ import {
   getKinesisStreamConfig,
   setupSentry
 } from './config.js'
+import { agentIndexTableProps } from '../upload-api/tables/index.js'
 
 /**
  * @param {import('sst/constructs').StackContext} properties
@@ -41,13 +43,15 @@ export function UcanInvocationStack({ stack, app }) {
       resources: [agentMessageBucket.cdk.bucket.arnForObjects('*')],
     })
   )
-
+  
   const agentIndexBucket = new Bucket(stack, 'invocation-store', {
     cors: true,
     cdk: {
       bucket: getBucketConfig('invocation-store', app.stage, app.name)
     }
   })
+
+  const agentIndexTable = new Table(stack, 'invocation-table', agentIndexTableProps)
 
   // TODO: keep for historical content that we might want to process
   new Bucket(stack, 'ucan-store', {
@@ -80,6 +84,7 @@ export function UcanInvocationStack({ stack, app }) {
   })
 
   return {
+    agentIndexTable,
     agentIndexBucket,
     agentMessageBucket,
     ucanStream
