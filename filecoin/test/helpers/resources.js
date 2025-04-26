@@ -24,6 +24,7 @@ export async function createDynamodDb(opts = {}) {
       region,
       endpoint
     }),
+    region,
     endpoint,
     stop: () => dbContainer.stop(),
   }

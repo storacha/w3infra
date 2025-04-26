@@ -18,7 +18,7 @@ Sentry.AWSLambda.init({
 const AWS_REGION = process.env.AWS_REGION || 'us-west-2'
 
 export async function handleCronTick () {
-  const { did, pieceTableName, agentMessageBucketName, agentIndexBucketName, aggregatorDid } = getEnv()
+  const { did, pieceTableName, agentMessageBucketName, agentIndexBucketName, agentIndexTableName, aggregatorDid } = getEnv()
   const privateKey = Config.PRIVATE_KEY
 
   // AGGREGATOR_SERVICE_PROOF is only required in some environments
@@ -47,8 +47,8 @@ export async function handleCronTick () {
   // there is a proof, and the aggregator service DID web if we don't have one.
   const context = {
     pieceStore: createPieceTable(AWS_REGION, pieceTableName),
-    taskStore: createTaskStore(AWS_REGION, agentIndexBucketName, agentMessageBucketName),
-    receiptStore: createReceiptStore(AWS_REGION, agentIndexBucketName, agentMessageBucketName),
+    taskStore: createTaskStore(AWS_REGION, agentIndexTableName, agentIndexBucketName, agentMessageBucketName),
+    receiptStore: createReceiptStore(AWS_REGION, agentIndexTableName, agentIndexBucketName, agentMessageBucketName),
     aggregatorInvocationConfig: {
       issuer: aggregatorServiceProofs.length
         ? storefrontSigner
@@ -83,6 +83,7 @@ function getEnv () {
     pieceTableName: mustGetEnv('PIECE_TABLE_NAME'),
     agentMessageBucketName: mustGetEnv('AGENT_MESSAGE_BUCKET_NAME'),
     agentIndexBucketName: mustGetEnv('AGENT_INDEX_BUCKET_NAME'),
+    agentIndexTableName: mustGetEnv('AGENT_INDEX_TABLE_NAME'),
     aggregatorDid: mustGetEnv('AGGREGATOR_DID'),
   }
 }

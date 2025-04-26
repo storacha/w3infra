@@ -198,6 +198,7 @@ export async function ucanInvocationRouter(request) {
     r2DelegationBucketAccessKeyId,
     r2DelegationBucketSecretAccessKey,
     r2DelegationBucketName,
+    agentIndexTableName,
     agentIndexBucketName,
     agentMessageBucketName,
     streamName,
@@ -253,7 +254,12 @@ export async function ucanInvocationRouter(request) {
 
   const agentStore = AgentStore.open({
     store: {
-      connection: {
+      dynamoDBConnection: {
+        address: {
+          region: AWS_REGION
+        }
+      },
+      s3Connection: {
         address: {
           region: AWS_REGION,
         },
@@ -263,6 +269,9 @@ export async function ucanInvocationRouter(request) {
         message: { name: agentMessageBucketName },
         index: { name: agentIndexBucketName },
       },
+      tables: {
+        index: { name: agentIndexTableName }
+      }
     },
     stream: {
       connection: { address: {} },
@@ -608,11 +617,13 @@ export async function ucanInvocationRouter(request) {
     pieceStore: createPieceTable(AWS_REGION, pieceTableName),
     taskStore: createFilecoinTaskStore(
       AWS_REGION,
+      agentIndexTableName,
       agentIndexBucketName,
       agentMessageBucketName
     ),
     receiptStore: createFilecoinReceiptStore(
       AWS_REGION,
+      agentIndexTableName,
       agentIndexBucketName,
       agentMessageBucketName
     ),
@@ -719,6 +730,7 @@ function getLambdaEnv() {
     r2DelegationBucketAccessKeyId: process.env.R2_ACCESS_KEY_ID,
     r2DelegationBucketSecretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
     r2DelegationBucketName: process.env.R2_DELEGATION_BUCKET,
+    agentIndexTableName: mustGetEnv('AGENT_INDEX_TABLE'),
     agentIndexBucketName: mustGetEnv('AGENT_INDEX_BUCKET'),
     agentMessageBucketName: mustGetEnv('AGENT_MESSAGE_BUCKET'),
     streamName: mustGetEnv('UCAN_LOG_STREAM'),

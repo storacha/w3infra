@@ -4,6 +4,7 @@ import {
 } from '@aws-sdk/client-s3'
 import * as CAR from '@ucanto/transport/car'
 import { RecordNotFound, StorageOperationFailed } from '@storacha/upload-api/errors'
+import { GetItemCommand } from '@aws-sdk/client-dynamodb'
 
 /**
  * @param {string} messageCid 
@@ -53,13 +54,35 @@ export async function getAgentMessage (messageCid, { workflowBucketName, s3clien
 /**
  * @param {import('@ucanto/interface').UnknownLink} invocationCid 
  * @param {object} props
+ * @param {string} props.dynamoDBTableName
  * @param {string} props.invocationBucketName
  * @param {import('@aws-sdk/client-s3').S3Client} props.s3client
+ * @param {import('@aws-sdk/client-dynamodb').DynamoDB} props.dynamoDBClient
  * @param {'.out' | '.in'} props.endsWith
  */
-export async function getAgentMessageCidWithInvocation (invocationCid, { invocationBucketName, s3client, endsWith }) {
-  // Find agent message archive CID where this receipt was stored
+export async function getAgentMessageCidWithInvocation (invocationCid, { dynamoDBTableName, invocationBucketName, s3client, dynamoDBClient, endsWith }) {
   const encodedInvocationKeyPrefix = `${invocationCid.toString()}/`
+
+  // Find agent message archive CID where this receipt was stored
+  // attempt to read first from dynamo
+  const dynamoCommand = new GetItemCommand({
+    TableName: dynamoDBTableName,
+    Key: {
+      "task": {
+        S: encodedInvocationKeyPrefix
+      },
+      "kind": {
+        S: endsWith.slice(1)
+      }
+    },
+  })
+  const { Item }= await dynamoDBClient.send(dynamoCommand)
+
+  if (Item) {
+    // Reassemble index entry -- invocation is nullable to support migration of legacy entrys in S3
+    return { ok: Item.message.S }
+  }
+
   const listCmd = new ListObjectsV2Command({
     Bucket: invocationBucketName,
     Prefix: encodedInvocationKeyPrefix

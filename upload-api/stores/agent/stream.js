@@ -50,9 +50,9 @@ export const open = ({ connection, name, ...settings }) => ({
 
 /**
  *
- * @param {object} connection
- * @param {Store.Store} connection.store
- * @param {Stream} connection.stream
+ * @param {object} s3Connection
+ * @param {Store.Store} s3Connection.store
+ * @param {Stream} s3Connection.stream
  * @param {API.ParsedAgentMessage} message
  * @returns {Promise<API.Result<API.Unit, Error>>}
  */
