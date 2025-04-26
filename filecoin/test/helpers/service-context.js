@@ -18,6 +18,7 @@ import { TestContentStore } from './content-store.js'
 // queue clients
 import { createClient as createPieceOfferQueueClient } from '../../queue/piece-offer-queue.js'
 import { createClient as createFilecoinSubmitQueueClient } from '../../queue/filecoin-submit-queue.js'
+import { agentIndexTableProps } from '../../../upload-api/tables/index.js'
 
 /**
  * @param {import('./context.js').DynamoContext & import('./context.js').S3Context} ctx
@@ -25,6 +26,7 @@ import { createClient as createFilecoinSubmitQueueClient } from '../../queue/fil
 export async function getStores (ctx) {
   const { dynamoClient, s3Client } = ctx
   const pieceStore = await createDynamoTable(dynamoClient, pieceTableProps)
+  const invocationTableName = await createDynamoTable(dynamoClient, agentIndexTableProps)
   const [ invocationBucketName, workflowBucketName ] = await Promise.all([
     createBucket(s3Client),
     createBucket(s3Client),
@@ -33,8 +35,8 @@ export async function getStores (ctx) {
 
   return {
     pieceStore: createPieceStoreClient(dynamoClient, pieceStore),
-    taskStore: getTaskStoreClient(s3Client, invocationBucketName, workflowBucketName),
-    receiptStore: getReceiptStoreClient(s3Client, invocationBucketName, workflowBucketName),
+    taskStore: getTaskStoreClient(dynamoClient, s3Client, invocationTableName, invocationBucketName, workflowBucketName),
+    receiptStore: getReceiptStoreClient(dynamoClient, s3Client, invocationTableName, invocationBucketName, workflowBucketName),
     contentStore: testContentStore.contentStore,
     testContentStore
   }
@@ -55,13 +57,15 @@ export function getQueues (ctx) {
 }
 
 /**
+ * @param {import('@aws-sdk/client-dynamodb').DynamoDBClient} dynamoDBClient
  * @param {import('@aws-sdk/client-s3').S3Client} s3client
+ * @param {string} invocationTableName
  * @param {string} invocationBucketName
  * @param {string} workflowBucketName
  * @returns {import('@storacha/filecoin-api/storefront/api').TaskStore}
  */
-function getTaskStoreClient (s3client, invocationBucketName, workflowBucketName) {
-  const taskStore = createTaskStoreClient(s3client, invocationBucketName, workflowBucketName)
+function getTaskStoreClient (dynamoDBClient, s3client, invocationTableName, invocationBucketName, workflowBucketName) {
+  const taskStore = createTaskStoreClient(dynamoDBClient, s3client, invocationTableName, invocationBucketName, workflowBucketName)
 
   return {
     ...taskStore,
@@ -96,13 +100,15 @@ function getTaskStoreClient (s3client, invocationBucketName, workflowBucketName)
 }
 
 /**
+ * @param {import('@aws-sdk/client-dynamodb').DynamoDBClient} dynamoDBClient
  * @param {import('@aws-sdk/client-s3').S3Client} s3client
+ * @param {string} invocationTableName
  * @param {string} invocationBucketName
  * @param {string} workflowBucketName
  * @returns {import('@storacha/filecoin-api/storefront/api').ReceiptStore}
  */
-function getReceiptStoreClient (s3client, invocationBucketName, workflowBucketName) {
-  const receiptStore = createReceiptStoreClient(s3client, invocationBucketName, workflowBucketName)
+function getReceiptStoreClient (dynamoDBClient, s3client, invocationTableName, invocationBucketName, workflowBucketName) {
+  const receiptStore = createReceiptStoreClient(dynamoDBClient, s3client, invocationTableName, invocationBucketName, workflowBucketName)
 
   return {
     ...receiptStore,

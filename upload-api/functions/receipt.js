@@ -54,11 +54,15 @@ export async function receiptGet (event, options = implicitContext()) {
 export function implicitContext () {
   const region = process.env.AWS_REGION || 'us-west-2'
   return {
-    connection: { address: { region } },
+    dynamoDBConnection: { address: { region } },
+    s3Connection: { address: { region } },
     region,
     buckets: {
       index: { name: mustGetEnv('AGENT_INDEX_BUCKET_NAME') },
       message: { name: mustGetEnv('AGENT_MESSAGE_BUCKET_NAME') },
+    },
+    tables: {
+      index: { name: mustGetEnv('AGENT_INDEX_TABLE_NAME') }
     }
   }
 }

@@ -44,7 +44,7 @@ export function UploadApiStack({ stack, app }) {
   // Get references to constructs created in other stacks
   const { carparkBucket } = use(CarparkStack)
   const { allocationTable, blobRegistryTable, humanodeTable, storeTable, uploadTable, delegationBucket, delegationTable, revocationTable, adminMetricsTable, spaceMetricsTable, consumerTable, subscriptionTable, storageProviderTable, rateLimitTable, pieceTable, privateKey, indexingServiceProof, githubClientSecret, humanodeClientSecret } = use(UploadDbStack)
-  const { agentIndexBucket, agentMessageBucket, ucanStream } = use(UcanInvocationStack)
+  const { agentIndexTable, agentIndexBucket, agentMessageBucket, ucanStream } = use(UcanInvocationStack)
   const { customerTable, spaceDiffTable, spaceSnapshotTable, egressTrafficTable, stripeSecretKey } = use(BillingDbStack)
   const { pieceOfferQueue, filecoinSubmitQueue } = use(FilecoinStack)
   const { blockAdvertPublisherQueue } = use(IndexerStack)
@@ -88,6 +88,7 @@ export function UploadApiStack({ stack, app }) {
             storageProviderTable,
             egressTrafficTable,
             carparkBucket,
+            agentIndexTable,
             agentIndexBucket,
             agentMessageBucket,
             ucanStream,
@@ -117,6 +118,7 @@ export function UploadApiStack({ stack, app }) {
             SPACE_SNAPSHOT_TABLE_NAME: spaceSnapshotTable.tableName,
             STORAGE_PROVIDER_TABLE_NAME: storageProviderTable.tableName,
             DELEGATION_BUCKET_NAME: delegationBucket.bucketName,
+            AGENT_INDEX_TABLE_NAME: agentIndexTable.tableName,
             AGENT_INDEX_BUCKET_NAME: agentIndexBucket.bucketName,
             AGENT_MESSAGE_BUCKET_NAME: agentMessageBucket.bucketName,
             UCAN_LOG_STREAM_NAME: ucanStream.streamName,

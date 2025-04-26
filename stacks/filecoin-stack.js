@@ -42,7 +42,7 @@ export function FilecoinStack({ stack, app }) {
   // Get store table reference
   const { pieceTable, privateKey, adminMetricsTable, indexingServiceProof } = use(UploadDbStack)
   // Get UCAN store references
-  const { agentMessageBucket, agentIndexBucket, ucanStream } = use(UcanInvocationStack)
+  const { agentIndexTable, agentMessageBucket, agentIndexBucket, ucanStream } = use(UcanInvocationStack)
   const { roundaboutApiUrl } = use(RoundaboutStack)
 
   /**
@@ -122,6 +122,7 @@ export function FilecoinStack({ stack, app }) {
         environment : {
           DID: STOREFRONT_PROOF ? UPLOAD_API_DID : AGGREGATOR_DID,
           PIECE_TABLE_NAME: pieceTable.tableName,
+          AGENT_INDEX_TABLE_NAME: agentIndexTable.tableName,
           AGENT_MESSAGE_BUCKET_NAME: agentMessageBucket.bucketName,
           AGENT_INDEX_BUCKET_NAME: agentIndexBucket.bucketName,
           AGGREGATOR_DID,
@@ -129,7 +130,7 @@ export function FilecoinStack({ stack, app }) {
         },
         timeout: '6 minutes',
         bind: [privateKey],
-        permissions: [pieceTable, agentMessageBucket, agentIndexBucket],
+        permissions: [pieceTable, agentIndexTable, agentMessageBucket, agentIndexBucket],
       }
     }
   })
@@ -307,11 +308,12 @@ export function FilecoinStack({ stack, app }) {
   const metricsAggregateTotalConsumer = new Function(stack, 'metrics-aggregate-total-consumer', {
     environment: {
       METRICS_TABLE_NAME: adminMetricsTable.tableName,
+      AGENT_INDEX_TABLE_NAME: agentIndexTable.tableName,
       AGENT_MESSAGE_BUCKET_NAME: agentMessageBucket.bucketName,
       AGENT_INDEX_BUCKET_NAME: agentIndexBucket.bucketName,
       START_FILECOIN_METRICS_EPOCH_MS
     },
-    permissions: [adminMetricsTable, agentMessageBucket, agentIndexBucket],
+    permissions: [adminMetricsTable, agentIndexTable, agentMessageBucket, agentIndexBucket],
     handler: 'filecoin/functions/metrics-aggregate-offer-and-accept-total.consumer',
     deadLetterQueue: metricsAggregateTotalDLQ.cdk.queue,
     timeout: 3 * 60,
