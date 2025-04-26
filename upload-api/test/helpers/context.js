@@ -24,12 +24,16 @@ import anyTest from 'ava'
  * @typedef {import("ava").TestFn<DynamoContext & S3Context & R2Context & SQSContext & ServiceContext>} Test
  * @typedef {import("ava").TestFn<DynamoContext>} TestDynamo
  * @typedef {import("ava").TestFn<S3Context>} TestS3
+ * @typedef {import("ava").TestFn<S3Context & DynamoContext>} TestS3Dynamo
  * @typedef {import("ava").TestFn<DynamoContext & GetMetricsContext>} TestGetMetrics
  * @typedef {import("ava").TestFn<ServiceContext>} TestService
  */
 
 // eslint-disable-next-line unicorn/prefer-export-from
 export const s3 = /** @type {TestS3} */ (anyTest)
+
+// eslint-disable-next-line unicorn/prefer-export-from
+export const s3Dynamo = /** @type {TestS3Dynamo} */ (anyTest)
 
 // eslint-disable-next-line unicorn/prefer-export-from
 export const dynamo = /** @type {TestDynamo} */ (anyTest)

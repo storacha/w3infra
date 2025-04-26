@@ -1,4 +1,4 @@
-import { s3 as test } from './helpers/context.js'
+import { s3Dynamo as test } from './helpers/context.js'
 
 import * as AgentStore from '../stores/agent.js'
 import * as Stream from '../stores/agent/stream.js'
@@ -13,7 +13,7 @@ import { toString } from 'uint8arrays/to-string'
 // @ts-expect-error
 import lambdaUtils from 'aws-lambda-test-utils'
 
-import { createS3, createBucket } from './helpers/resources.js'
+import { createS3, createBucket, createDynamodDb } from './helpers/resources.js'
 import { randomCAR } from './helpers/random.js'
 import {
   createSpace,
@@ -28,6 +28,8 @@ import {
   processUcanLogRequest,
   replaceAllLinkValues
 } from '../ucan-invocation.js'
+import { createDynamoTable } from '../../filecoin/test/helpers/tables.js'
+import { agentIndexTableProps } from '../tables/index.js'
 
 /**
  * @typedef {API.IssuedInvocation} IssuedInvocation
@@ -38,8 +40,11 @@ test.before(async (t) => {
   const { client: s3 } = await createS3({
     port: 9000,
   })
-
+  const dynamo = await createDynamodDb({
+    port: 9001,
+  })
   t.context.s3 = s3
+  t.context.dynamo = dynamo
 })
 
 test('processes agent message as CAR with multiple invocations', async (t) => {
@@ -644,21 +649,27 @@ test('replace all link values as object and array', async (t) => {
 })
 
 /**
- * @param {{ s3: any; kinesis: any; streamName?: string }} ctx
+ * @param {{ dynamo: any, s3: any; kinesis: any; streamName?: string }} ctx
  */
 async function getStores(ctx) {
-  const { invocationBucketName, workflowBucketName } =
-    await prepareResources(ctx.s3)
+  const { invocationTableName, invocationBucketName, workflowBucketName } =
+    await prepareResources(ctx.dynamo, ctx.s3)
 
   const agentStore = AgentStore.open({
     store: {
-      connection: {
+      dynamoDBConnection: {
+        channel: ctx.dynamo
+      }, 
+      s3Connection: {
         channel: ctx.s3
       },
       region: 'us-west-2',
       buckets: {
         message: { name: workflowBucketName },
         index: { name: invocationBucketName }
+      },
+      tables: {
+        index: { name: invocationTableName }
       }
     },
     stream: {
@@ -672,15 +683,17 @@ async function getStores(ctx) {
   }
 }
 
-
 /**
+ * @param {import("@aws-sdk/client-dynamodb").DynamoDBClient} dynamoClient
  * @param {import("@aws-sdk/client-s3").S3Client} s3Client
  */
-async function prepareResources(s3Client) {
+async function prepareResources(dynamoClient, s3Client) {
+  const invocationTableName = await createDynamoTable(dynamoClient, agentIndexTableProps)
   const invocationBucketName = await createBucket(s3Client)
   const workflowBucketName = await createBucket(s3Client)
 
   return {
+    invocationTableName,
     invocationBucketName,
     workflowBucketName,
   }

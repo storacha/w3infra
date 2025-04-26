@@ -220,11 +220,15 @@ const getContext = (customContext) => {
 
   const agentStore = openAgentStore({
     store: {
-      connection: { address: { region } },
+      dynamoDBConnection: { address: { region } },
+      s3Connection: { address: { region } },
       region,
       buckets: {
         message: { name: mustGetEnv('AGENT_MESSAGE_BUCKET_NAME') },
         index: { name: mustGetEnv('AGENT_INDEX_BUCKET_NAME') },
+      },
+      tables: {
+        index: { name: mustGetEnv('INVOCATION_TABLE_NAME') },
       },
     },
     stream: {
