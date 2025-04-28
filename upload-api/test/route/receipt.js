@@ -33,7 +33,7 @@ export const test = {
         taskCid: log.link().toString()
       }
     }, {
-      connection: { channel: context.s3.channel },
+      s3Connection: { channel: context.s3.channel },
       region: `${context.s3.region}`,
       buckets: context.buckets
     })

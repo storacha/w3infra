@@ -154,6 +154,7 @@ export async function ucanInvocationRouter(request) {
     r2DelegationBucketAccessKeyId,
     r2DelegationBucketSecretAccessKey,
     r2DelegationBucketName,
+    agentIndexTableName,
     agentIndexBucketName,
     agentMessageBucketName,
     streamName,
@@ -196,7 +197,12 @@ export async function ucanInvocationRouter(request) {
 
   const agentStore = AgentStore.open({
     store: {
-      connection: {
+      dynamoDBConnection: {
+        address: {
+          region: AWS_REGION
+        }
+      },
+      s3Connection: {
         address: {
           region: AWS_REGION
         },
@@ -206,6 +212,9 @@ export async function ucanInvocationRouter(request) {
         message: { name: agentMessageBucketName },
         index: { name: agentIndexBucketName },
       },
+      tables: {
+        index: { name: agentIndexTableName }
+      }
     },
     stream: {
       connection: { address: {} },
@@ -342,8 +351,8 @@ export async function ucanInvocationRouter(request) {
     rateLimitsStorage,
     aggregatorId: DID.parse(aggregatorDid),
     pieceStore: createPieceTable(AWS_REGION, pieceTableName),
-    taskStore: createFilecoinTaskStore(AWS_REGION, agentIndexBucketName, agentMessageBucketName),
-    receiptStore: createFilecoinReceiptStore(AWS_REGION, agentIndexBucketName, agentMessageBucketName),
+    taskStore: createFilecoinTaskStore(AWS_REGION, agentIndexTableName, agentIndexBucketName, agentMessageBucketName),
+    receiptStore: createFilecoinReceiptStore(AWS_REGION, agentIndexTableName, agentIndexBucketName, agentMessageBucketName),
     pieceOfferQueue: createPieceOfferQueueClient({ region: AWS_REGION }, { queueUrl: pieceOfferQueueUrl }),
     filecoinSubmitQueue: createFilecoinSubmitQueueClient({ region: AWS_REGION }, { queueUrl: filecoinSubmitQueueUrl }),
     dealTrackerService: {
@@ -420,6 +429,7 @@ function getLambdaEnv() {
     r2DelegationBucketAccessKeyId: mustGetEnv('R2_ACCESS_KEY_ID'),
     r2DelegationBucketSecretAccessKey: mustGetEnv('R2_SECRET_ACCESS_KEY'),
     r2DelegationBucketName: mustGetEnv('R2_DELEGATION_BUCKET_NAME'),
+    agentIndexTableName: mustGetEnv('AGENT_INDEX_TABLE_NAME'),
     agentIndexBucketName: mustGetEnv('AGENT_INDEX_BUCKET_NAME'),
     agentMessageBucketName: mustGetEnv('AGENT_MESSAGE_BUCKET_NAME'),
     streamName: mustGetEnv('UCAN_LOG_STREAM_NAME'),

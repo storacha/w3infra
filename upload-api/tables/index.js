@@ -220,3 +220,15 @@ export const storageProviderTableProps = {
   },
   primaryIndex: { partitionKey: 'provider' }
 }
+
+
+/** @type TableProps */
+export const agentIndexTableProps = {
+  fields: {
+    task: 'string',
+    kind: 'string',
+    invocation: 'string',
+    message: 'string',
+  },
+  primaryIndex: { partitionKey: 'task', sortKey: 'kind' }
+}
