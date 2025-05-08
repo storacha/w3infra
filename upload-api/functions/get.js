@@ -76,7 +76,7 @@ export async function didDocumentGet() {
   const signer = getServiceSigner({ did: UPLOAD_API_DID, privateKey: PRIVATE_KEY })
   const webKey = signer.did()
   const publicKeyMultibase = signer.toDIDKey().replace('did:key:', '')
-  const publicKeys = [
+  const verificationMethod = [
     {
       id: `${webKey}#owner`,
       type: 'Ed25519VerificationKey2020',
@@ -103,9 +103,9 @@ export async function didDocumentGet() {
     body: JSON.stringify({
       '@context': 'https://w3id.org/did/v1',
       id: webKey,
-      publicKey: publicKeys,
-      assertionMethod: publicKeys.map(k => k.id),
-      authentication: publicKeys.map(k => k.id)
+      verificationMethod,
+      assertionMethod: verificationMethod.map(k => k.id),
+      authentication: verificationMethod.map(k => k.id)
     }, null, 2),
   }
 }
