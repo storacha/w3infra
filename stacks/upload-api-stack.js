@@ -175,6 +175,7 @@ export function UploadApiStack({ stack, app }) {
         'POST /validate-email': 'upload-api/functions/validate-email.validateEmail',
         'GET /error':   'upload-api/functions/get.error',
         'GET /version': 'upload-api/functions/get.version',
+        'GET /.well-known/did.json': 'upload-api/functions/get.didDocument',
         'GET /metrics': 'upload-api/functions/metrics.handler',
         'GET /receipt/{taskCid}': 'upload-api/functions/receipt.handler',
         'GET /storefront-cron': 'upload-api/functions/storefront-cron.handler',

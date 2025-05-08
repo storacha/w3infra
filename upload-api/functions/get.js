@@ -66,3 +66,48 @@ export async function errorGet() {
 }
 
 export const error = Sentry.AWSLambda.wrapHandler(errorGet)
+
+/**
+ * AWS HTTP Gateway handler for GET /.well-known/did.json
+ */
+export async function didDocumentGet() {
+  const { UPLOAD_API_DID, UPLOAD_API_ALIAS } = process.env
+  const { PRIVATE_KEY } = Config
+  const signer = getServiceSigner({ did: UPLOAD_API_DID, privateKey: PRIVATE_KEY })
+  const webKey = signer.did()
+  const publicKeyMultibase = signer.toDIDKey().replace('did:key:', '')
+  const publicKeys = [
+    {
+      id: `${webKey}#owner`,
+      type: 'Ed25519VerificationKey2020',
+      controller: webKey,
+      publicKeyMultibase
+    },
+    ...(UPLOAD_API_ALIAS ?? '')
+      .split(',')
+      .map(s => s.trim())
+      .filter(s => s && s !== webKey)
+      .map((aliasKey, i) => ({
+        id: `${aliasKey}#alias${i}`,
+        type: 'Ed25519VerificationKey2020',
+        controller: aliasKey,
+        publicKeyMultibase
+      }))
+  ]
+
+  return {
+    statusCode: 200,
+    headers: {
+      'Content-Type': `application/json`,
+    },
+    body: JSON.stringify({
+      '@context': 'https://w3id.org/did/v1',
+      id: webKey,
+      publicKey: publicKeys,
+      assertionMethod: publicKeys.map(k => k.id),
+      authentication: publicKeys.map(k => k.id)
+    }, null, 2),
+  }
+}
+
+export const didDocument = Sentry.AWSLambda.wrapHandler(didDocumentGet)
