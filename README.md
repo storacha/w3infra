@@ -196,6 +196,10 @@ Also enables the service to accept attestations issued by these DIDs.
 
 Note: should not include UPLOAD_API_DID.
 
+#### `UPLOAD_API_DEPRECATED_DIDS`
+
+Optional CSV list of DIDs (`did:key`) that the upload API used to use. Referenced in the DID document so that UCANs signed with older keys are still considered valid.
+
 #### `R2_ACCESS_KEY_ID`
 
 Access key for S3 like cloud object storage to replicate content into.

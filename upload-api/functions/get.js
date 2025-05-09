@@ -71,12 +71,12 @@ export const error = Sentry.AWSLambda.wrapHandler(errorGet)
  * AWS HTTP Gateway handler for GET /.well-known/did.json
  */
 export async function didDocumentGet() {
-  const { UPLOAD_API_DID, UPLOAD_API_ALIAS } = process.env
+  const { UPLOAD_API_DID, UPLOAD_API_ALIAS, UPLOAD_API_DEPRECATED_DIDS } = process.env
   const { PRIVATE_KEY } = Config
   const signer = getServiceSigner({ did: UPLOAD_API_DID, privateKey: PRIVATE_KEY })
   const webKey = signer.did()
   const publicKeyMultibase = signer.toDIDKey().replace('did:key:', '')
-  const verificationMethod = [
+  const verificationMethods = [
     {
       id: `${webKey}#owner`,
       type: 'Ed25519VerificationKey2020',
@@ -94,6 +94,16 @@ export async function didDocumentGet() {
         publicKeyMultibase
       }))
   ]
+  const deprecatedVerificationMethods =
+    (UPLOAD_API_DEPRECATED_DIDS ?? '')
+      .split(',')
+      .map(s => s.trim())
+      .map((deprecatedKey, i) => ({
+        id: `${webKey}#deprecated${i}`,
+        type: 'Ed25519VerificationKey2020',
+        controller: webKey,
+        publicKeyMultibase: deprecatedKey.replace('did:key:', '')
+      }))
 
   return {
     statusCode: 200,
@@ -103,9 +113,9 @@ export async function didDocumentGet() {
     body: JSON.stringify({
       '@context': 'https://w3id.org/did/v1',
       id: webKey,
-      verificationMethod,
-      assertionMethod: verificationMethod.map(k => k.id),
-      authentication: verificationMethod.map(k => k.id)
+      verificationMethod: [...verificationMethods, ...deprecatedVerificationMethods],
+      assertionMethod: verificationMethods.map(k => k.id),
+      authentication: verificationMethods.map(k => k.id)
     }, null, 2),
   }
 }
