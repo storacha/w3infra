@@ -98,6 +98,7 @@ export async function didDocumentGet() {
     (UPLOAD_API_DEPRECATED_DIDS ?? '')
       .split(',')
       .map(s => s.trim())
+      .filter(s => Boolean(s))
       .map((deprecatedKey, i) => ({
         id: `${webKey}#deprecated${i}`,
         type: 'Ed25519VerificationKey2020',
