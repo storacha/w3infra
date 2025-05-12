@@ -8,7 +8,7 @@ import { DebugEmail } from '@storacha/upload-api/test'
 import { confirmConfirmationUrl } from '@storacha/upload-api/test/utils'
 import { ClaimsService } from '@storacha/upload-api/test/external-service'
 import { createBucket, createTable } from '../helpers/resources.js'
-import { storeTableProps, uploadTableProps, allocationTableProps, consumerTableProps, delegationTableProps, subscriptionTableProps, rateLimitTableProps, revocationTableProps, spaceMetricsTableProps, storageProviderTableProps, blobRegistryTableProps, adminMetricsTableProps } from '../../tables/index.js'
+import { storeTableProps, uploadTableProps, allocationTableProps, consumerTableProps, delegationTableProps, subscriptionTableProps, rateLimitTableProps, revocationTableProps, spaceMetricsTableProps, storageProviderTableProps, blobRegistryTableProps, adminMetricsTableProps, agentIndexTableProps } from '../../tables/index.js'
 import { useBlobRegistry, useAllocationTableBlobRegistry } from '../../stores/blob-registry.js'
 import { composeCarStoresWithOrderedHas } from '../../buckets/car-store.js'
 import { composeBlobStoragesWithOrderedHas } from '../../stores/blobs.js'
@@ -41,6 +41,7 @@ import { create as createIndexingServiceClient } from './external-services/index
 import { createTestIPNIService } from './external-services/ipni-service.js'
 import { useStorageProviderTable } from '../../tables/storage-provider.js'
 import { spaceDiffTableProps } from '../../../billing/tables/space-diff.js'
+import { createDynamoTable } from '../../../filecoin/test/helpers/tables.js'
 
 export { API }
 
@@ -223,15 +224,20 @@ export async function executionContextToUcantoTestServerContext(t) {
   const delegationsBucketName = await createBucket(s3)
   const agentIndexBucketName = await createBucket(s3)
   const agentMessageBucketName = await createBucket(s3)
+  const agentIndexTableName = await createDynamoTable(dynamo, agentIndexTableProps)
 
   const agentStore = AgentStore.open({
     store: {
-      connection: { channel: s3 },
+      dynamoDBConnection: { channel: dynamo },
+      s3Connection: { channel: s3 },
       region: 'us-west-2',
       buckets: {
         message: { name: agentMessageBucketName },
         index: { name: agentIndexBucketName },
       },
+      tables: {
+        index: { name: agentIndexTableName }
+      }
     },
     stream: {
       connection: { disable: {} },
@@ -384,8 +390,8 @@ export async function executionContextToUcantoTestServerContext(t) {
     // filecoin/*
     aggregatorId: aggregatorSigner,
     pieceStore,
-    taskStore: createFilecoinTaskStore('us-west-2', agentIndexBucketName, agentMessageBucketName),
-    receiptStore: createFilecoinReceiptStore('us-west-2', agentIndexBucketName, agentMessageBucketName),
+    taskStore: createFilecoinTaskStore('us-west-2', agentIndexTableName, agentIndexBucketName, agentMessageBucketName),
+    receiptStore: createFilecoinReceiptStore('us-west-2', agentIndexTableName, agentIndexBucketName, agentMessageBucketName),
     // @ts-expect-error not tested here
     pieceOfferQueue: {},
     // @ts-expect-error not tested here

@@ -22,6 +22,7 @@ const AWS_REGION = process.env.AWS_REGION || 'us-west-2'
 async function handlerFn(request) {
   const {
     AGENT_INDEX_BUCKET_NAME: agentIndexBucketName = '',
+    AGENT_INDEX_TABLE_NAME: agentIndexTableName = '',
     AGENT_MESSAGE_BUCKET_NAME: agentMessageBucketName = '',
     UCAN_LOG_STREAM_NAME: streamName = '',
   } = process.env
@@ -30,7 +31,12 @@ async function handlerFn(request) {
 
   const agentStore = AgentStore.open({
     store: {
-      connection: {
+      dynamoDBConnection: {
+        address: {
+          region: AWS_REGION
+        },
+      },
+      s3Connection: {
         address: {
           region: AWS_REGION
         },
@@ -40,6 +46,9 @@ async function handlerFn(request) {
         message: { name: agentMessageBucketName },
         index: { name: agentIndexBucketName },
       },
+      tables: {
+        index: { name: agentIndexTableName }
+      }
     },
     stream: {
       connection: { address: {} },
