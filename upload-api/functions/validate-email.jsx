@@ -215,8 +215,13 @@ export async function validateEmailPost(request) {
     )
   }
 
-  const { email, audience, ucan, nb } = authorizeResult.ok
+  const { email, audience, ucan } = authorizeResult.ok
 
+  /**
+   * @type {import('@ucanto/interface').Fact[]}
+   */
+  // @ts-expect-error - TODO remove this expectation once we upgrade the dependency
+  const facts = authorizeResult.ok.facts
   const planCheckResult = await context.customerStore.get({
     customer: DidMailto.fromEmail(email),
   })
@@ -234,9 +239,12 @@ export async function validateEmailPost(request) {
   let stripePricingTableId
   let stripePublishableKey
 
+  // if one of the facts have an 'app' entry, return it
+  // if there are more than one this will potentially be nondeterministic
+  const app = facts.find(fact => fact.app)?.app
   if (!planCheckResult.ok?.product) {
     stripePublishableKey = context.stripePublishableKey
-    if (nb.app === 'bsky-backups') {
+    if (app === 'bsky-backups') {
       stripePricingTableId = context.stripeBlueskyPricingTableId
     } else if (isReferred) {
       stripePricingTableId = context.stripeFreeTrialPricingTableId 
