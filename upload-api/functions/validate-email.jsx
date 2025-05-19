@@ -92,6 +92,7 @@ function createAuthorizeContext() {
     PROVIDERS = '',
     STRIPE_PRICING_TABLE_ID = '',
     STRIPE_FREE_TRIAL_PRICING_TABLE_ID = '',
+    STRIPE_BLUESKY_PRICING_TABLE_ID = '',
     STRIPE_PUBLISHABLE_KEY = '',
     REFERRALS_ENDPOINT = '',
     UCAN_LOG_STREAM_NAME = '',
@@ -175,9 +176,12 @@ function createAuthorizeContext() {
     agentStore,
     stripePricingTableId: STRIPE_PRICING_TABLE_ID,
     stripeFreeTrialPricingTableId: STRIPE_FREE_TRIAL_PRICING_TABLE_ID,
+    stripeBlueskyPricingTableId: STRIPE_BLUESKY_PRICING_TABLE_ID,
     stripePublishableKey: STRIPE_PUBLISHABLE_KEY,
   }
 }
+
+
 
 /**
  * AWS HTTP Gateway handler for POST /validate-email
@@ -211,7 +215,7 @@ export async function validateEmailPost(request) {
     )
   }
 
-  const { email, audience, ucan } = authorizeResult.ok
+  const { email, audience, ucan, nb } = authorizeResult.ok
 
   const planCheckResult = await context.customerStore.get({
     customer: DidMailto.fromEmail(email),
@@ -232,7 +236,13 @@ export async function validateEmailPost(request) {
 
   if (!planCheckResult.ok?.product) {
     stripePublishableKey = context.stripePublishableKey
-    stripePricingTableId = isReferred ? context.stripeFreeTrialPricingTableId : context.stripePricingTableId
+    if (nb.app === 'bsky-backups') {
+      stripePricingTableId = context.stripeBlueskyPricingTableId
+    } else if (isReferred) {
+      stripePricingTableId = context.stripeFreeTrialPricingTableId 
+    } else {
+      stripePricingTableId = context.stripePricingTableId
+    }
   }
   return toLambdaResponse(
     new html.HtmlResponse(
