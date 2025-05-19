@@ -2,6 +2,7 @@ import * as Sentry from '@sentry/serverless'
 import { authorize } from '@web3-storage/upload-api/validate'
 import { Config } from 'sst/node/config'
 import * as DidMailto from '@web3-storage/did-mailto'
+import { AppName } from '@web3-storage/w3up-client/types'
 import { getServiceSigner, parseServiceDids } from '../config.js'
 import { Email } from '../email.js'
 import { createDelegationsTable } from '../tables/delegations.js'
@@ -92,6 +93,7 @@ function createAuthorizeContext() {
     PROVIDERS = '',
     STRIPE_PRICING_TABLE_ID = '',
     STRIPE_FREE_TRIAL_PRICING_TABLE_ID = '',
+    STRIPE_BLUESKY_PRICING_TABLE_ID = '',
     STRIPE_PUBLISHABLE_KEY = '',
     REFERRALS_ENDPOINT = '',
     UCAN_LOG_STREAM_NAME = '',
@@ -179,9 +181,12 @@ function createAuthorizeContext() {
     agentStore,
     stripePricingTableId: STRIPE_PRICING_TABLE_ID,
     stripeFreeTrialPricingTableId: STRIPE_FREE_TRIAL_PRICING_TABLE_ID,
+    stripeBlueskyPricingTableId: STRIPE_BLUESKY_PRICING_TABLE_ID,
     stripePublishableKey: STRIPE_PUBLISHABLE_KEY,
   }
 }
+
+
 
 /**
  * AWS HTTP Gateway handler for POST /validate-email
@@ -215,7 +220,7 @@ export async function validateEmailPost(request) {
     )
   }
 
-  const { email, audience, ucan } = authorizeResult.ok
+  const { email, audience, ucan, facts } = authorizeResult.ok
 
   const planCheckResult = await context.customerStore.get({
     customer: DidMailto.fromEmail(email),
@@ -234,9 +239,18 @@ export async function validateEmailPost(request) {
   let stripePricingTableId
   let stripePublishableKey
 
+  // if one of the facts have an 'app' entry, return it
+  // if there are more than one this will potentially be nondeterministic
+  const appName = facts.find(fact => fact.appName)?.appName
   if (!planCheckResult.ok?.product) {
     stripePublishableKey = context.stripePublishableKey
-    stripePricingTableId = isReferred ? context.stripeFreeTrialPricingTableId : context.stripePricingTableId
+    if (appName === AppName.BskyBackups) {
+      stripePricingTableId = context.stripeBlueskyPricingTableId
+    } else if (isReferred) {
+      stripePricingTableId = context.stripeFreeTrialPricingTableId 
+    } else {
+      stripePricingTableId = context.stripePricingTableId
+    }
   }
   return toLambdaResponse(
     new html.HtmlResponse(
