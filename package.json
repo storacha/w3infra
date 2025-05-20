@@ -70,7 +70,8 @@
   "dependencies": {
     "aws-cdk-lib": "catalog:",
     "jwt-decode": "^4.0.0",
-    "sst": "catalog:"
+    "sst": "catalog:",
+    "upload-api": "link:../upload-service/packages/upload-api"
   },
   "simple-git-hooks": {
     "pre-commit": "npx lint-staged"
@@ -133,5 +134,11 @@
     "singleQuote": true,
     "trailingComma": "es5",
     "semi": false
+  },
+  "pnpm": {
+    "overrides": {
+      "@storacha/upload-api": "link:../upload-service/packages/upload-api",
+      "@storacha/capabilities": "link:../upload-service/packages/capabilities"
+    }
   }
 }

@@ -36,6 +36,7 @@ import { createMetricsTable as createSpaceMetricsStore } from '../stores/space-m
 import { createMetricsTable as createAdminMetricsStore } from '../stores/metrics.js'
 import { createSpaceMetricsTable } from '../tables/space-metrics.js'
 import { createStorageProviderTable } from '../tables/storage-provider.js'
+import { createReplicaTable } from '../tables/replica.js'
 import { createRevocationsTable } from '../stores/revocations.js'
 import { usePlansStore } from '../stores/plans.js'
 import { createCustomerStore } from '../../billing/tables/customer.js'
@@ -150,6 +151,7 @@ export async function ucanInvocationRouter(request) {
     spaceDiffTableName,
     spaceSnapshotTableName,
     storageProviderTableName,
+    replicaTableName,
     r2DelegationBucketEndpoint,
     r2DelegationBucketAccessKeyId,
     r2DelegationBucketSecretAccessKey,
@@ -184,7 +186,7 @@ export async function ucanInvocationRouter(request) {
     }
   }
 
-  const { UPLOAD_API_DID, UPLOAD_API_ALIAS } = process.env
+  const { UPLOAD_API_DID, UPLOAD_API_ALIAS, MAX_REPLICAS } = process.env
   const { PRIVATE_KEY, STRIPE_SECRET_KEY, INDEXING_SERVICE_PROOF } = Config
   const serviceSigner = getServiceSigner({ did: UPLOAD_API_DID, privateKey: PRIVATE_KEY })
 
@@ -358,7 +360,9 @@ export async function ucanInvocationRouter(request) {
     requirePaymentPlan,
     usageStorage,
     ipniService,
-    claimsService: indexingServiceConfig
+    claimsService: indexingServiceConfig,
+    maxReplicas: MAX_REPLICAS ? parseInt(MAX_REPLICAS) : 2,
+    replicaStore: createReplicaTable(AWS_REGION, replicaTableName)
   })
 
   const connection = UploadAPI.connect({
@@ -413,6 +417,7 @@ function getLambdaEnv() {
     spaceDiffTableName: mustGetEnv('SPACE_DIFF_TABLE_NAME'),
     spaceSnapshotTableName: mustGetEnv('SPACE_SNAPSHOT_TABLE_NAME'),
     storageProviderTableName: mustGetEnv('STORAGE_PROVIDER_TABLE_NAME'),
+    replicaTableName: mustGetEnv('REPLICA_TABLE_NAME'),
     pieceOfferQueueUrl: mustGetEnv('PIECE_OFFER_QUEUE_URL'),
     filecoinSubmitQueueUrl: mustGetEnv('FILECOIN_SUBMIT_QUEUE_URL'),
     egressTrafficQueueUrl: mustGetEnv('EGRESS_TRAFFIC_QUEUE_URL'),
