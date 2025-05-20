@@ -2,6 +2,7 @@ import * as Sentry from '@sentry/serverless'
 import { authorize } from '@storacha/upload-api/validate'
 import { Config } from 'sst/node/config'
 import * as DidMailto from '@storacha/did-mailto'
+import { AppName } from '@storacha/client/types'
 import { getServiceSigner, parseServiceDids } from '../config.js'
 import { Email } from '../email.js'
 import { createDelegationsTable } from '../tables/delegations.js'
@@ -215,13 +216,8 @@ export async function validateEmailPost(request) {
     )
   }
 
-  const { email, audience, ucan } = authorizeResult.ok
+  const { email, audience, ucan, facts } = authorizeResult.ok
 
-  /**
-   * @type {import('@ucanto/interface').Fact[]}
-   */
-  // @ts-expect-error - TODO remove this expectation once we upgrade the dependency
-  const facts = authorizeResult.ok.facts
   const planCheckResult = await context.customerStore.get({
     customer: DidMailto.fromEmail(email),
   })
@@ -241,10 +237,10 @@ export async function validateEmailPost(request) {
 
   // if one of the facts have an 'app' entry, return it
   // if there are more than one this will potentially be nondeterministic
-  const app = facts.find(fact => fact.app)?.app
+  const appName = facts.find(fact => fact.appName)?.appName
   if (!planCheckResult.ok?.product) {
     stripePublishableKey = context.stripePublishableKey
-    if (app === 'bsky-backups') {
+    if (appName === AppName.BskyBackups) {
       stripePricingTableId = context.stripeBlueskyPricingTableId
     } else if (isReferred) {
       stripePricingTableId = context.stripeFreeTrialPricingTableId 
