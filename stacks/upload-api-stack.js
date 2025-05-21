@@ -152,7 +152,6 @@ export function UploadApiStack({ stack, app }) {
               SUBSCRIPTION_TABLE_NAME: subscriptionTable.tableName,
               UCAN_LOG_STREAM_NAME: ucanStream.streamName,
               UPLOAD_API_ALIAS: process.env.UPLOAD_API_ALIAS ?? '',
-              UPLOAD_API_DEPRECATED_DIDS: process.env.UPLOAD_API_DEPRECATED_DIDS ?? '',
               UPLOAD_API_DID: process.env.UPLOAD_API_DID ?? '',
               UPLOAD_SERVICE_URL: getServiceURL(stack, customDomain) ?? '',
               UPLOAD_TABLE_NAME: uploadTable.tableName,
