@@ -142,6 +142,7 @@ export function UploadApiStack({ stack, app }) {
             UPLOAD_API_DID: process.env.UPLOAD_API_DID ?? '',
             STRIPE_PRICING_TABLE_ID: process.env.STRIPE_PRICING_TABLE_ID ?? '',
             STRIPE_FREE_TRIAL_PRICING_TABLE_ID: process.env.STRIPE_FREE_TRIAL_PRICING_TABLE_ID ?? '',
+            STRIPE_BLUESKY_PRICING_TABLE_ID: process.env.STRIPE_BLUESKY_PRICING_TABLE_ID ?? '',
             STRIPE_PUBLISHABLE_KEY: process.env.STRIPE_PUBLISHABLE_KEY ?? '',
             DEAL_TRACKER_DID: process.env.DEAL_TRACKER_DID ?? '',
             DEAL_TRACKER_URL: process.env.DEAL_TRACKER_URL ?? '',
