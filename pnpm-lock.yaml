@@ -163,8 +163,8 @@ catalogs:
       specifier: ^1.0.3
       version: 1.0.3
     '@web3-storage/content-claims':
-      specifier: ^5.2.0
-      version: 5.2.0
+      specifier: ^5.2.1
+      version: 5.2.1
     '@web3-storage/content-claims-infra':
       specifier: ^1.2.1
       version: 1.2.2
@@ -416,7 +416,7 @@ importers:
         version: 4.2.1
       '@web3-storage/content-claims':
         specifier: 'catalog:'
-        version: 5.2.0
+        version: 5.2.1
       '@web3-storage/data-segment':
         specifier: 'catalog:'
         version: 5.3.0
@@ -16998,7 +16998,7 @@ snapshots:
       '@ucanto/interface': 10.3.0
       '@ucanto/server': 10.2.0
       '@ucanto/transport': 9.2.0
-      '@web3-storage/content-claims': 5.2.0
+      '@web3-storage/content-claims': 5.2.1
       '@web3-storage/data-segment': 5.3.0
       fr32-sha2-256-trunc254-padded-binary-tree-multihash: 3.3.0
       p-map: 6.0.0
@@ -17605,7 +17605,7 @@ snapshots:
       '@ucanto/principal': 9.0.2
       '@ucanto/server': 10.2.0
       '@ucanto/transport': 9.2.0
-      '@web3-storage/content-claims': 5.2.0
+      '@web3-storage/content-claims': 5.2.1
       cardex: 3.0.2
       carstream: 2.3.0
       multiformats: 13.3.2
@@ -17651,7 +17651,7 @@ snapshots:
       '@ucanto/server': 10.2.0
       '@ucanto/transport': 9.2.0
       '@web3-storage/capabilities': 18.1.0
-      '@web3-storage/content-claims': 5.2.0
+      '@web3-storage/content-claims': 5.2.1
       '@web3-storage/data-segment': 5.3.0
       fr32-sha2-256-trunc254-padded-binary-tree-multihash: 3.3.0
       p-map: 6.0.0
@@ -17673,7 +17673,7 @@ snapshots:
       '@web3-storage/access': 20.2.0
       '@web3-storage/blob-index': 1.0.5
       '@web3-storage/capabilities': 18.1.0
-      '@web3-storage/content-claims': 5.2.0
+      '@web3-storage/content-claims': 5.2.1
       '@web3-storage/did-mailto': 2.1.0
       '@web3-storage/filecoin-api': 8.0.0
       multiformats: 13.3.2
