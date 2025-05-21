@@ -13,7 +13,8 @@ import {
   adminMetricsTableProps,
   spaceMetricsTableProps,
   storageProviderTableProps,
-  humanodeTableProps
+  humanodeTableProps,
+  replicaTableProps
 } from '../upload-api/tables/index.js'
 import {
   pieceTableProps
@@ -123,6 +124,11 @@ export function UploadDbStack({ stack, app }) {
    */
   const storageProviderTable = new Table(stack, 'storage-provider', storageProviderTableProps)
 
+  /**
+   * This table tracks replicas in the system.
+   */
+  const replicaTable = new Table(stack, 'replica', replicaTableProps)
+
   return {
     allocationTable,
     blobRegistryTable,
@@ -139,6 +145,7 @@ export function UploadDbStack({ stack, app }) {
     adminMetricsTable,
     spaceMetricsTable,
     storageProviderTable,
+    replicaTable,
     privateKey,
     githubClientSecret,
     humanodeClientSecret,

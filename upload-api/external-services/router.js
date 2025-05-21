@@ -39,6 +39,24 @@ export const create = (storageProviderTable, serviceID) => ({
 
     return ok({ invocation, connection })
   },
+  selectReplicationProviders: async (primary, count, digest, size, options) => {
+    const exclude = options?.exclude ?? []
+    const providers = (await storageProviderTable.list())
+      .filter(p => p.provider !== primary.did())
+      .filter(p => !exclude.some(e => e.did() === p.provider))
+
+    if (providers.length < count) {
+      return error(new CandidateUnavailableError())
+    }
+
+    const selection = []
+    for (let i = 0; i < count; i++) {
+      const index = getWeightedRandomInt(providers.map(p => p.weight))
+      selection.push(parse(providers[index].provider))
+      providers.splice(index, 1)
+    }
+    return ok(selection)
+  }
 })
 
 /**

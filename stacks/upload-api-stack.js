@@ -43,7 +43,7 @@ export function UploadApiStack({ stack, app }) {
 
   // Get references to constructs created in other stacks
   const { carparkBucket } = use(CarparkStack)
-  const { allocationTable, blobRegistryTable, humanodeTable, storeTable, uploadTable, delegationBucket, delegationTable, revocationTable, adminMetricsTable, spaceMetricsTable, consumerTable, subscriptionTable, storageProviderTable, rateLimitTable, pieceTable, privateKey, indexingServiceProof, githubClientSecret, humanodeClientSecret } = use(UploadDbStack)
+  const { allocationTable, blobRegistryTable, humanodeTable, storeTable, uploadTable, delegationBucket, delegationTable, revocationTable, adminMetricsTable, spaceMetricsTable, consumerTable, subscriptionTable, storageProviderTable, replicaTable, rateLimitTable, pieceTable, privateKey, indexingServiceProof, githubClientSecret, humanodeClientSecret } = use(UploadDbStack)
   const { agentIndexBucket, agentMessageBucket, ucanStream } = use(UcanInvocationStack)
   const { customerTable, spaceDiffTable, spaceSnapshotTable, egressTrafficTable, stripeSecretKey } = use(BillingDbStack)
   const { pieceOfferQueue, filecoinSubmitQueue } = use(FilecoinStack)
@@ -86,6 +86,7 @@ export function UploadApiStack({ stack, app }) {
             spaceDiffTable,
             spaceSnapshotTable,
             storageProviderTable,
+            replicaTable,
             egressTrafficTable,
             carparkBucket,
             agentIndexBucket,
@@ -116,6 +117,7 @@ export function UploadApiStack({ stack, app }) {
             SPACE_DIFF_TABLE_NAME: spaceDiffTable.tableName,
             SPACE_SNAPSHOT_TABLE_NAME: spaceSnapshotTable.tableName,
             STORAGE_PROVIDER_TABLE_NAME: storageProviderTable.tableName,
+            REPLICA_TABLE_NAME: replicaTable.tableName,
             DELEGATION_BUCKET_NAME: delegationBucket.bucketName,
             AGENT_INDEX_BUCKET_NAME: agentIndexBucket.bucketName,
             AGENT_MESSAGE_BUCKET_NAME: agentMessageBucket.bucketName,

@@ -37,6 +37,8 @@ export const create = (storageProviderTable, serviceID) => {
       return result
     },
     configureInvocation: (provider, capability, options) =>
-      router.configureInvocation(provider, capability, options)
+      router.configureInvocation(provider, capability, options),
+    selectReplicationProviders: (primary, count, digest, size, options) =>
+      router.selectReplicationProviders(primary, count, digest, size, options)
   })
 }

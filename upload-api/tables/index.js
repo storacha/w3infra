@@ -220,3 +220,26 @@ export const storageProviderTableProps = {
   },
   primaryIndex: { partitionKey: 'provider' }
 }
+
+/** @type {TableProps} */
+export const replicaTableProps = {
+  fields: {
+    /** Composite key with format: "space#digest" */
+    pk: 'string',
+    /** DID of Space the blob is registered in. */
+    space: 'string',
+    /** Base58btc encoded multihash of the blob. */
+    digest: 'string',
+    /** DID of the replica node. */
+    provider: 'string',
+    /** Status of the replication (allocated/transferred/failed). */
+    status: 'string',
+    /** CID of `blob/replica/allocate` UCAN that allocated the replica space. */
+    cause: 'string',
+    /** Date and time the record was created (ISO 8601) */
+    insertedAt: 'string',
+    /** Date and time the record was last updated (ISO 8601) */
+    updatedAt: 'string',
+  },
+  primaryIndex: { partitionKey: 'pk', sortKey: 'provider' }
+}
