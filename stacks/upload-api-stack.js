@@ -67,126 +67,330 @@ export function UploadApiStack({ stack, app }) {
       defaults: {
         function: {
           timeout: '60 seconds',
-          permissions: [
-            allocationTable, // legacy
-            blobRegistryTable,
-            humanodeTable,
-            storeTable, // legacy
-            uploadTable,
-            customerTable,
-            delegationTable,
-            delegationBucket,
-            revocationTable,
-            consumerTable,
-            subscriptionTable,
-            rateLimitTable,
-            adminMetricsTable,
-            spaceMetricsTable,
-            pieceTable,
-            spaceDiffTable,
-            spaceSnapshotTable,
-            storageProviderTable,
-            replicaTable,
-            egressTrafficTable,
-            carparkBucket,
-            agentIndexBucket,
-            agentMessageBucket,
-            ucanStream,
-            pieceOfferQueue,
-            filecoinSubmitQueue,
-            blockAdvertPublisherQueue,
-            egressTrafficQueue,
-          ],
           environment: {
-            DID: process.env.UPLOAD_API_DID ?? '',
-            AGGREGATOR_DID,
-            ALLOCATION_TABLE_NAME: allocationTable.tableName,
-            BLOB_REGISTRY_TABLE_NAME: blobRegistryTable.tableName,
-            STORE_TABLE_NAME: storeTable.tableName,
-            STORE_BUCKET_NAME: carparkBucket.bucketName,
-            UPLOAD_TABLE_NAME: uploadTable.tableName,
-            CONSUMER_TABLE_NAME: consumerTable.tableName,
-            CUSTOMER_TABLE_NAME: customerTable.tableName,
-            HUMANODE_TABLE_NAME: humanodeTable.tableName,
-            SUBSCRIPTION_TABLE_NAME: subscriptionTable.tableName,
-            SPACE_METRICS_TABLE_NAME: spaceMetricsTable.tableName,
-            ADMIN_METRICS_TABLE_NAME: adminMetricsTable.tableName,
-            RATE_LIMIT_TABLE_NAME: rateLimitTable.tableName,
-            DELEGATION_TABLE_NAME: delegationTable.tableName,
-            REVOCATION_TABLE_NAME: revocationTable.tableName,
-            SPACE_DIFF_TABLE_NAME: spaceDiffTable.tableName,
-            SPACE_SNAPSHOT_TABLE_NAME: spaceSnapshotTable.tableName,
-            STORAGE_PROVIDER_TABLE_NAME: storageProviderTable.tableName,
-            REPLICA_TABLE_NAME: replicaTable.tableName,
-            DELEGATION_BUCKET_NAME: delegationBucket.bucketName,
-            AGENT_INDEX_BUCKET_NAME: agentIndexBucket.bucketName,
-            AGENT_MESSAGE_BUCKET_NAME: agentMessageBucket.bucketName,
-            UCAN_LOG_STREAM_NAME: ucanStream.streamName,
-            PIECE_TABLE_NAME: pieceTable.tableName,
-            PIECE_OFFER_QUEUE_URL: pieceOfferQueue.queueUrl,
-            FILECOIN_SUBMIT_QUEUE_URL: filecoinSubmitQueue.queueUrl,
-            BLOCK_ADVERT_PUBLISHER_QUEUE_URL: blockAdvertPublisherQueue.queueUrl,
-            EGRESS_TRAFFIC_QUEUE_URL: egressTrafficQueue.queueUrl,
             NAME: pkg.name,
             VERSION: pkg.version,
             COMMIT: git.commmit,
             STAGE: stack.stage,
-            ACCESS_SERVICE_URL: getServiceURL(stack, customDomain) ?? '',
-            UPLOAD_SERVICE_URL: getServiceURL(stack, customDomain) ?? '',
-            POSTMARK_TOKEN: process.env.POSTMARK_TOKEN ?? '',
-            PROVIDERS: process.env.PROVIDERS ?? '',
-            R2_ACCESS_KEY_ID: process.env.R2_ACCESS_KEY_ID ?? '',
-            R2_SECRET_ACCESS_KEY: process.env.R2_SECRET_ACCESS_KEY ?? '',
-            R2_REGION: process.env.R2_REGION ?? '',
-            R2_CARPARK_BUCKET_NAME: process.env.R2_CARPARK_BUCKET_NAME ?? '',
-            R2_DELEGATION_BUCKET_NAME: process.env.R2_DELEGATION_BUCKET_NAME ?? '',
-            R2_ENDPOINT: process.env.R2_ENDPOINT ?? '',
-            REQUIRE_PAYMENT_PLAN: process.env.REQUIRE_PAYMENT_PLAN ?? '',
-            UPLOAD_API_DID: process.env.UPLOAD_API_DID ?? '',
-            UPLOAD_API_ALIAS: process.env.UPLOAD_API_ALIAS ?? '',
-            UPLOAD_API_DEPRECATED_DIDS: process.env.UPLOAD_API_DEPRECATED_DIDS ?? '',
-            STRIPE_PRICING_TABLE_ID: process.env.STRIPE_PRICING_TABLE_ID ?? '',
-            STRIPE_FREE_TRIAL_PRICING_TABLE_ID: process.env.STRIPE_FREE_TRIAL_PRICING_TABLE_ID ?? '',
-            STRIPE_PUBLISHABLE_KEY: process.env.STRIPE_PUBLISHABLE_KEY ?? '',
-            DEAL_TRACKER_DID: process.env.DEAL_TRACKER_DID ?? '',
-            DEAL_TRACKER_URL: process.env.DEAL_TRACKER_URL ?? '',
-            REFERRALS_ENDPOINT: process.env.REFERRALS_ENDPOINT ?? '',
-            INDEXING_SERVICE_DID,
-            INDEXING_SERVICE_URL,
-            HOSTED_ZONE: hostedZone ?? '',
-            GITHUB_CLIENT_ID: process.env.GITHUB_CLIENT_ID ?? '',
-            PRINCIPAL_MAPPING: process.env.PRINCIPAL_MAPPING ?? '',
-            HUMANODE_TOKEN_ENDPOINT: process.env.HUMANODE_TOKEN_ENDPOINT ?? '',
-            HUMANODE_CLIENT_ID: process.env.HUMANODE_CLIENT_ID ?? ''
-          },
-          bind: [
-            privateKey,
-            ucanInvocationPostbasicAuth,
-            stripeSecretKey,
-            githubClientSecret,
-            humanodeClientSecret,
-            indexingServiceProof,
-          ]
+          }
         }
       },
       routes: {
-        'POST /':       'upload-api/functions/ucan-invocation-router.handler',
-        'POST /ucan':   'upload-api/functions/ucan.handler',
-        'POST /bridge': 'upload-api/functions/bridge.handler',
-        'GET /':        'upload-api/functions/get.home',
-        'GET /validate-email': 'upload-api/functions/validate-email.preValidateEmail',
-        'POST /validate-email': 'upload-api/functions/validate-email.validateEmail',
-        'GET /error':   'upload-api/functions/get.error',
-        'GET /version': 'upload-api/functions/get.version',
-        'GET /.well-known/did.json': 'upload-api/functions/get.didDocument',
-        'GET /metrics': 'upload-api/functions/metrics.handler',
-        'GET /receipt/{taskCid}': 'upload-api/functions/receipt.handler',
-        'GET /storefront-cron': 'upload-api/functions/storefront-cron.handler',
+        'POST /': {
+          function: {
+            handler: 'upload-api/functions/ucan-invocation-router.handler',
+            permissions: [
+              adminMetricsTable,
+              agentIndexBucket,
+              agentMessageBucket,
+              allocationTable, // legacy
+              blobRegistryTable,
+              blockAdvertPublisherQueue,
+              carparkBucket,
+              consumerTable,
+              customerTable,
+              delegationBucket,
+              delegationTable,
+              egressTrafficQueue,
+              egressTrafficTable,
+              filecoinSubmitQueue,
+              pieceOfferQueue,
+              pieceTable,
+              rateLimitTable,
+              replicaTable,
+              revocationTable,
+              spaceDiffTable,
+              spaceMetricsTable,
+              spaceSnapshotTable,
+              storeTable, // legacy
+              storageProviderTable,
+              subscriptionTable,
+              ucanStream,
+              uploadTable,
+            ],
+            environment: {
+              ACCESS_SERVICE_URL: getServiceURL(stack, customDomain) ?? '',
+              ADMIN_METRICS_TABLE_NAME: adminMetricsTable.tableName,
+              AGENT_INDEX_BUCKET_NAME: agentIndexBucket.bucketName,
+              AGENT_MESSAGE_BUCKET_NAME: agentMessageBucket.bucketName,
+              AGGREGATOR_DID,
+              ALLOCATION_TABLE_NAME: allocationTable.tableName,
+              BLOB_REGISTRY_TABLE_NAME: blobRegistryTable.tableName,
+              BLOCK_ADVERT_PUBLISHER_QUEUE_URL: blockAdvertPublisherQueue.queueUrl,
+              CONSUMER_TABLE_NAME: consumerTable.tableName,
+              CUSTOMER_TABLE_NAME: customerTable.tableName,
+              DEAL_TRACKER_DID: process.env.DEAL_TRACKER_DID ?? '',
+              DEAL_TRACKER_URL: process.env.DEAL_TRACKER_URL ?? '',
+              DELEGATION_BUCKET_NAME: delegationBucket.bucketName,
+              DELEGATION_TABLE_NAME: delegationTable.tableName,
+              DID: process.env.UPLOAD_API_DID ?? '',
+              EGRESS_TRAFFIC_QUEUE_URL: egressTrafficQueue.queueUrl,
+              FILECOIN_SUBMIT_QUEUE_URL: filecoinSubmitQueue.queueUrl,
+              INDEXING_SERVICE_DID,
+              INDEXING_SERVICE_URL,
+              PIECE_OFFER_QUEUE_URL: pieceOfferQueue.queueUrl,
+              PIECE_TABLE_NAME: pieceTable.tableName,
+              POSTMARK_TOKEN: process.env.POSTMARK_TOKEN ?? '',
+              PRINCIPAL_MAPPING: process.env.PRINCIPAL_MAPPING ?? '',
+              PROVIDERS: process.env.PROVIDERS ?? '',
+              R2_ACCESS_KEY_ID: process.env.R2_ACCESS_KEY_ID ?? '',
+              R2_CARPARK_BUCKET_NAME: process.env.R2_CARPARK_BUCKET_NAME ?? '',
+              R2_DELEGATION_BUCKET_NAME: process.env.R2_DELEGATION_BUCKET_NAME ?? '',
+              R2_ENDPOINT: process.env.R2_ENDPOINT ?? '',
+              R2_REGION: process.env.R2_REGION ?? '',
+              R2_SECRET_ACCESS_KEY: process.env.R2_SECRET_ACCESS_KEY ?? '',
+              RATE_LIMIT_TABLE_NAME: rateLimitTable.tableName,
+              REPLICA_TABLE_NAME: replicaTable.tableName,
+              REQUIRE_PAYMENT_PLAN: process.env.REQUIRE_PAYMENT_PLAN ?? '',
+              REVOCATION_TABLE_NAME: revocationTable.tableName,
+              SPACE_DIFF_TABLE_NAME: spaceDiffTable.tableName,
+              SPACE_METRICS_TABLE_NAME: spaceMetricsTable.tableName,
+              SPACE_SNAPSHOT_TABLE_NAME: spaceSnapshotTable.tableName,
+              STORAGE_PROVIDER_TABLE_NAME: storageProviderTable.tableName,
+              STORE_BUCKET_NAME: carparkBucket.bucketName,
+              STORE_TABLE_NAME: storeTable.tableName,
+              SUBSCRIPTION_TABLE_NAME: subscriptionTable.tableName,
+              UCAN_LOG_STREAM_NAME: ucanStream.streamName,
+              UPLOAD_API_ALIAS: process.env.UPLOAD_API_ALIAS ?? '',
+              UPLOAD_API_DID: process.env.UPLOAD_API_DID ?? '',
+              UPLOAD_SERVICE_URL: getServiceURL(stack, customDomain) ?? '',
+              UPLOAD_TABLE_NAME: uploadTable.tableName,
+            },
+            bind: [
+              indexingServiceProof,
+              privateKey,
+              stripeSecretKey,
+            ]
+          }
+        },
+        'POST /ucan': {
+          function: {
+            handler: 'upload-api/functions/ucan.handler',
+            permissions: [
+              agentIndexBucket,
+              agentMessageBucket,
+              ucanStream,
+            ],
+            environment: {
+              AGENT_INDEX_BUCKET_NAME: agentIndexBucket.bucketName,
+              AGENT_MESSAGE_BUCKET_NAME: agentMessageBucket.bucketName,
+              UCAN_LOG_STREAM_NAME: ucanStream.streamName,
+            },
+            bind: [
+              ucanInvocationPostbasicAuth
+            ]
+          }
+        },
+        'POST /bridge': {
+          function: {
+            handler: 'upload-api/functions/bridge.handler',
+            environment: {
+              ACCESS_SERVICE_URL: getServiceURL(stack, customDomain) ?? '',
+              UPLOAD_API_DID: process.env.UPLOAD_API_DID ?? '',
+            },
+          }
+        },
+        'GET /': {
+          function: {
+            handler: 'upload-api/functions/get.home',
+            environment: {
+              UPLOAD_API_DID: process.env.UPLOAD_API_DID ?? '',
+            },
+            bind: [
+              privateKey,
+            ]
+          }
+        },
+        'GET /validate-email': {
+          function: {
+            handler: 'upload-api/functions/validate-email.preValidateEmail',
+            environment: {
+              HOSTED_ZONE: hostedZone ?? '',
+            }
+          }
+        },
+        'POST /validate-email': {
+          function: {
+            handler: 'upload-api/functions/validate-email.validateEmail',
+            permissions: [
+              agentIndexBucket,
+              agentMessageBucket,
+              consumerTable,
+              customerTable,
+              delegationTable,
+              rateLimitTable,
+              revocationTable,
+              spaceMetricsTable,
+              subscriptionTable,
+              ucanStream,
+            ],
+            environment: {
+              ACCESS_SERVICE_URL: getServiceURL(stack, customDomain) ?? '',
+              AGENT_INDEX_BUCKET_NAME: agentIndexBucket.bucketName,
+              AGENT_MESSAGE_BUCKET_NAME: agentMessageBucket.bucketName,
+              CONSUMER_TABLE_NAME: consumerTable.tableName,
+              CUSTOMER_TABLE_NAME: customerTable.tableName,
+              DELEGATION_TABLE_NAME: delegationTable.tableName,
+              HOSTED_ZONE: hostedZone ?? '',
+              POSTMARK_TOKEN: process.env.POSTMARK_TOKEN ?? '',
+              PROVIDERS: process.env.PROVIDERS ?? '',
+              RATE_LIMIT_TABLE_NAME: rateLimitTable.tableName,
+              R2_ENDPOINT: process.env.R2_ENDPOINT ?? '',
+              R2_ACCESS_KEY_ID: process.env.R2_ACCESS_KEY_ID ?? '',
+              R2_SECRET_ACCESS_KEY: process.env.R2_SECRET_ACCESS_KEY ?? '',
+              R2_REGION: process.env.R2_REGION ?? '',
+              R2_DELEGATION_BUCKET_NAME: process.env.R2_DELEGATION_BUCKET_NAME ?? '',
+              REFERRALS_ENDPOINT: process.env.REFERRALS_ENDPOINT ?? '',
+              REVOCATION_TABLE_NAME: revocationTable.tableName,
+              SPACE_METRICS_TABLE_NAME: spaceMetricsTable.tableName,
+              STRIPE_FREE_TRIAL_PRICING_TABLE_ID: process.env.STRIPE_FREE_TRIAL_PRICING_TABLE_ID ?? '',
+              STRIPE_PRICING_TABLE_ID: process.env.STRIPE_PRICING_TABLE_ID ?? '',
+              STRIPE_PUBLISHABLE_KEY: process.env.STRIPE_PUBLISHABLE_KEY ?? '',
+              SUBSCRIPTION_TABLE_NAME: subscriptionTable.tableName,
+              UCAN_LOG_STREAM_NAME: ucanStream.streamName,
+              UPLOAD_API_DID: process.env.UPLOAD_API_DID ?? '',
+            },
+            bind: [
+              privateKey,
+            ]
+          }
+        },
+        'GET /error': 'upload-api/functions/get.error',
+        'GET /version': {
+          function: {
+            handler: 'upload-api/functions/get.version',
+            environment: {
+              UPLOAD_API_DID: process.env.UPLOAD_API_DID ?? '',
+            },
+            bind: [
+              privateKey,
+            ]
+          }
+        },
+        'GET /.well-known/did.json': {
+          function: {
+            handler: 'upload-api/functions/get.didDocument',
+            environment: {
+              UPLOAD_API_DID: process.env.UPLOAD_API_DID ?? '',
+              UPLOAD_API_ALIAS: process.env.UPLOAD_API_ALIAS ?? '',
+              UPLOAD_API_DEPRECATED_DIDS: process.env.UPLOAD_API_DEPRECATED_DIDS ?? '',
+            },
+            bind: [
+              privateKey,
+            ]
+          }
+        },
+        'GET /receipt/{taskCid}': {
+          function: {
+            handler: 'upload-api/functions/receipt.handler',
+            permissions: [
+              agentIndexBucket,
+              agentMessageBucket,
+            ],
+            environment: {
+              AGENT_INDEX_BUCKET_NAME: agentIndexBucket.bucketName,
+              AGENT_MESSAGE_BUCKET_NAME: agentMessageBucket.bucketName,
+            }
+          }
+        },
+        'GET /storefront-cron': {
+          function: {
+            handler: 'upload-api/functions/storefront-cron.handler',
+            permissions: [
+              agentIndexBucket,
+              agentMessageBucket,
+              pieceTable,
+            ],
+            environment: {
+              AGENT_INDEX_BUCKET_NAME: agentIndexBucket.bucketName,
+              AGENT_MESSAGE_BUCKET_NAME: agentMessageBucket.bucketName,
+              AGGREGATOR_DID,
+              DID: process.env.UPLOAD_API_DID ?? '',
+              PIECE_TABLE_NAME: pieceTable.tableName,
+            },
+            bind: [
+              privateKey,
+            ]
+          }
+        },
+        'GET /metrics': {
+          function: {
+            handler: 'upload-api/functions/metrics.handler',
+            permissions: [
+              adminMetricsTable,
+            ],
+            environment: {
+              ADMIN_METRICS_TABLE_NAME: adminMetricsTable.tableName,
+            }
+          }
+        },
         // AWS API Gateway does not know trailing slash... and Grafana Agent puts trailing slash
-        'GET /metrics/{proxy+}': 'upload-api/functions/metrics.handler',
-        'GET /sample': 'upload-api/functions/sample.handler',
-        'GET /oauth/callback': 'upload-api/functions/oauth-callback.handler',
-        'GET /oauth/humanode/callback': 'upload-api/functions/oauth-humanode-callback.handler',
+        'GET /metrics/{proxy+}': {
+          function: {
+            handler: 'upload-api/functions/metrics.handler',
+            permissions: [
+              adminMetricsTable,
+            ],
+            environment: {
+              ADMIN_METRICS_TABLE_NAME: adminMetricsTable.tableName,
+            }
+          }
+        },
+        'GET /sample': {
+          function: {
+            handler: 'upload-api/functions/sample.handler',
+            permissions: [
+              uploadTable,
+            ],
+            environment: {
+              UPLOAD_TABLE_NAME: uploadTable.tableName,
+            }
+          }
+        },
+        'GET /oauth/callback': {
+          function: {
+            handler: 'upload-api/functions/oauth-callback.handler',
+            permissions: [
+              agentIndexBucket,
+              agentMessageBucket,
+              customerTable,
+              ucanStream,
+            ],
+            environment: {
+              AGENT_INDEX_BUCKET_NAME: agentIndexBucket.bucketName,
+              AGENT_MESSAGE_BUCKET_NAME: agentMessageBucket.bucketName,
+              CUSTOMER_TABLE_NAME: customerTable.tableName,
+              GITHUB_CLIENT_ID: process.env.GITHUB_CLIENT_ID ?? '',
+              UCAN_LOG_STREAM_NAME: ucanStream.streamName,
+              UPLOAD_API_DID: process.env.UPLOAD_API_DID ?? '',
+              UPLOAD_SERVICE_URL: getServiceURL(stack, customDomain) ?? '',
+            },
+            bind: [
+              githubClientSecret,
+              privateKey,
+            ]
+          }
+        },
+        'GET /oauth/humanode/callback': {
+          function: {
+            handler: 'upload-api/functions/oauth-humanode-callback.handler',
+            permissions: [
+              customerTable,
+              humanodeTable,
+            ],
+            environment: {
+              CUSTOMER_TABLE_NAME: customerTable.tableName,
+              HUMANODE_CLIENT_ID: process.env.HUMANODE_CLIENT_ID ?? '',
+              HUMANODE_TABLE_NAME: humanodeTable.tableName,
+              HUMANODE_TOKEN_ENDPOINT: process.env.HUMANODE_TOKEN_ENDPOINT ?? '',
+              UPLOAD_API_DID: process.env.UPLOAD_API_DID ?? '',
+            },
+            bind: [
+              humanodeClientSecret,
+              privateKey,
+            ]
+          }
+        },
       },
       accessLog: {
         format:'{"requestTime":"$context.requestTime","requestId":"$context.requestId","httpMethod":"$context.httpMethod","path":"$context.path","routeKey":"$context.routeKey","status":$context.status,"responseLatency":$context.responseLatency,"integrationRequestId":"$context.integration.requestId","integrationStatus":"$context.integration.status","integrationLatency":"$context.integration.latency","integrationServiceStatus":"$context.integration.integrationStatus","ip":"$context.identity.sourceIp","userAgent":"$context.identity.userAgent"}'
@@ -197,7 +401,7 @@ export function UploadApiStack({ stack, app }) {
         allowOrigins: ['*'],
         maxAge: '1 day'
       }
-    });
+    })
   })
 
   // UCAN stream metrics for admin and space

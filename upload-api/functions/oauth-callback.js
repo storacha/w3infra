@@ -223,8 +223,8 @@ const getContext = (customContext) => {
       connection: { address: { region } },
       region,
       buckets: {
-        message: { name: mustGetEnv('WORKFLOW_BUCKET_NAME') },
-        index: { name: mustGetEnv('INVOCATION_BUCKET_NAME') },
+        message: { name: mustGetEnv('AGENT_MESSAGE_BUCKET_NAME') },
+        index: { name: mustGetEnv('AGENT_INDEX_BUCKET_NAME') },
       },
     },
     stream: {
