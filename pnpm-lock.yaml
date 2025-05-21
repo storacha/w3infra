@@ -322,7 +322,7 @@ importers:
         version: 4.0.0
       sst:
         specifier: 'catalog:'
-        version: 2.47.3(@aws-sdk/client-sso-oidc@3.699.0(@aws-sdk/client-sts@3.699.0(aws-crt@1.26.2))(aws-crt@1.26.2))(@jest/transform@29.7.0)(@jest/types@29.6.3)(aws-crt@1.26.2)(babel-jest@29.7.0(@babel/core@7.26.10))(encoding@0.1.13)(typescript@5.8.3)
+        version: 2.47.3(@aws-sdk/client-sso-oidc@3.699.0(@aws-sdk/client-sts@3.782.0(aws-crt@1.26.2))(aws-crt@1.26.2))(@jest/transform@29.7.0)(@jest/types@29.6.3)(aws-crt@1.26.2)(babel-jest@29.7.0(@babel/core@7.26.10))(encoding@0.1.13)(typescript@5.8.3)
     devDependencies:
       '@aws-sdk/client-dynamodb':
         specifier: 'catalog:'
@@ -924,8 +924,8 @@ importers:
         specifier: 'catalog:'
         version: 1.0.2
       '@storacha/indexing-service-client':
-        specifier: 'catalog:'
-        version: 2.1.1
+        specifier: ^2.1.3
+        version: 2.1.3
       '@storacha/one-webcrypto':
         specifier: 'catalog:'
         version: 1.0.1
@@ -988,7 +988,7 @@ importers:
         version: 15.1.3
       sst:
         specifier: 'catalog:'
-        version: 2.47.3(@aws-sdk/client-sso-oidc@3.699.0(@aws-sdk/client-sts@3.782.0(aws-crt@1.26.2))(aws-crt@1.26.2))(@jest/transform@29.7.0)(@jest/types@29.6.3)(aws-crt@1.26.2)(babel-jest@29.7.0(@babel/core@7.26.10))(encoding@0.1.13)(typescript@5.8.3)
+        version: 2.47.3(@aws-sdk/client-sso-oidc@3.699.0(@aws-sdk/client-sts@3.699.0(aws-crt@1.26.2))(aws-crt@1.26.2))(@jest/transform@29.7.0)(@jest/types@29.6.3)(aws-crt@1.26.2)(babel-jest@29.7.0(@babel/core@7.26.10))(encoding@0.1.13)(typescript@3.9.10)
       stripe:
         specifier: 'catalog:'
         version: 14.25.0
@@ -2929,6 +2929,10 @@ packages:
     resolution: {integrity: sha512-uIEOuruCqKTP50OBWwgz4Js2+LhiBQaxc57cnP71f45b1mHEAo1OCR1Zn/TbvSW/mV1x+JqhacIktkKyaYqhCw==}
     engines: {node: '>=16.0.0', npm: '>=7.0.0'}
 
+  '@ipld/dag-cbor@9.2.3':
+    resolution: {integrity: sha512-x78CdVhtctIMBpwOnzbojsvDy6qNxdeR3RC2W+/fMo2sccqlYkPXbjpmghAVdKx/g0xfHYvSMU8cgCnYvLwRag==}
+    engines: {node: '>=16.0.0', npm: '>=7.0.0'}
+
   '@ipld/dag-json@10.2.3':
     resolution: {integrity: sha512-itacv1j1hvYgLox2B42Msn70QLzcr0MEo5yGIENuw2SM/lQzq9bmBiMky+kDsIrsqqblKTXcHBZnnmK7D4a6ZQ==}
     engines: {node: '>=16.0.0', npm: '>=7.0.0'}
@@ -4191,6 +4195,9 @@ packages:
 
   '@storacha/indexing-service-client@2.1.1':
     resolution: {integrity: sha512-5YcliHOHH989wizdya3X9aAE7lGFm/a2xa1wQmZ9JFM/EdW27D7xDhVaOkbi0SZKHgpgwXqiZTdl/A1Wy/PloQ==}
+
+  '@storacha/indexing-service-client@2.1.3':
+    resolution: {integrity: sha512-iq9aJ0ErhPrUK48qItQ7s5zXXeKqiKlK8t0ADg2UbvBgliiscDt9g7FhsIRYpkKPoGYDCW/64Y+6spM7hO7ywg==}
 
   '@storacha/one-webcrypto@1.0.1':
     resolution: {integrity: sha512-bD+vWmcgsEBqU0Dz04BR43SA03bBoLTAY29vaKasY9Oe8cb6XIP0/vkm0OS2UwKC13c8uRgFW4rjJUgDCNLejQ==}
@@ -14537,7 +14544,7 @@ snapshots:
       it-map: 3.1.2
       it-pipe: 3.0.1
       it-take: 3.0.7
-      multiformats: 13.3.2
+      multiformats: 13.3.6
       p-defer: 4.0.1
       progress-events: 1.0.1
       protons-runtime: 5.5.0
@@ -14692,6 +14699,11 @@ snapshots:
     dependencies:
       cborg: 4.2.9
       multiformats: 13.3.2
+
+  '@ipld/dag-cbor@9.2.3':
+    dependencies:
+      cborg: 4.2.9
+      multiformats: 13.3.6
 
   '@ipld/dag-json@10.2.3':
     dependencies:
@@ -15040,7 +15052,7 @@ snapshots:
       '@multiformats/multiaddr': 12.4.0
       it-pushable: 3.2.3
       it-stream-types: 2.0.2
-      multiformats: 13.3.2
+      multiformats: 13.3.6
       progress-events: 1.0.1
       uint8arraylist: 2.4.8
 
@@ -15101,7 +15113,7 @@ snapshots:
       '@libp2p/interface': 2.7.0
       '@multiformats/multiaddr': 12.4.0
       interface-datastore: 8.3.1
-      multiformats: 13.3.2
+      multiformats: 13.3.6
       weald: 1.0.4
 
   '@libp2p/mdns@10.1.5':
@@ -17034,6 +17046,15 @@ snapshots:
       '@ucanto/interface': 10.2.0
       '@web3-storage/content-claims': 5.2.0
       multiformats: 13.3.2
+
+  '@storacha/indexing-service-client@2.1.3':
+    dependencies:
+      '@ipld/dag-cbor': 9.2.3
+      '@storacha/blob-index': 1.0.6
+      '@ucanto/core': 10.4.0
+      '@ucanto/interface': 10.3.0
+      '@web3-storage/content-claims': 5.2.1
+      multiformats: 13.3.6
 
   '@storacha/one-webcrypto@1.0.1': {}
 
@@ -23291,7 +23312,7 @@ snapshots:
       cpu-features: 0.0.10
       nan: 2.22.2
 
-  sst-aws-cdk@2.171.1-4(@aws-sdk/client-sso-oidc@3.699.0(@aws-sdk/client-sts@3.699.0(aws-crt@1.26.2))(aws-crt@1.26.2))(@babel/core@7.26.10)(@jest/transform@29.7.0)(@jest/types@29.6.3)(aws-crt@1.26.2)(babel-jest@29.7.0(@babel/core@7.26.10))(encoding@0.1.13)(esbuild@0.18.13)(typescript@5.8.3):
+  sst-aws-cdk@2.171.1-4(@aws-sdk/client-sso-oidc@3.699.0(@aws-sdk/client-sts@3.699.0(aws-crt@1.26.2))(aws-crt@1.26.2))(@babel/core@7.26.10)(@jest/transform@29.7.0)(@jest/types@29.6.3)(aws-crt@1.26.2)(babel-jest@29.7.0(@babel/core@7.26.10))(encoding@0.1.13)(esbuild@0.18.13)(typescript@3.9.10):
     dependencies:
       '@aws-cdk/cloud-assembly-schema': 38.0.1
       '@aws-cdk/cloudformation-diff': 2.171.1
@@ -23367,8 +23388,8 @@ snapshots:
       sinon: 9.2.4
       strip-ansi: 6.0.1
       table: 6.9.0
-      ts-jest: 29.3.1(@babel/core@7.26.10)(@jest/transform@29.7.0)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.26.10))(esbuild@0.18.13)(jest@29.7.0(@types/node@18.19.86))(typescript@5.8.3)
-      ts-mock-imports: 1.3.16(sinon@9.2.4)(typescript@5.8.3)
+      ts-jest: 29.3.1(@babel/core@7.26.10)(@jest/transform@29.7.0)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.26.10))(esbuild@0.18.13)(jest@29.7.0(@types/node@18.19.86))(typescript@3.9.10)
+      ts-mock-imports: 1.3.16(sinon@9.2.4)(typescript@3.9.10)
       uuid: 8.3.2
       wrap-ansi: 7.0.0
       xml-js: 1.6.11
@@ -23495,7 +23516,7 @@ snapshots:
       - typescript
       - vitest
 
-  sst@2.47.3(@aws-sdk/client-sso-oidc@3.699.0(@aws-sdk/client-sts@3.699.0(aws-crt@1.26.2))(aws-crt@1.26.2))(@jest/transform@29.7.0)(@jest/types@29.6.3)(aws-crt@1.26.2)(babel-jest@29.7.0(@babel/core@7.26.10))(encoding@0.1.13)(typescript@5.8.3):
+  sst@2.47.3(@aws-sdk/client-sso-oidc@3.699.0(@aws-sdk/client-sts@3.699.0(aws-crt@1.26.2))(aws-crt@1.26.2))(@jest/transform@29.7.0)(@jest/types@29.6.3)(aws-crt@1.26.2)(babel-jest@29.7.0(@babel/core@7.26.10))(encoding@0.1.13)(typescript@3.9.10):
     dependencies:
       '@aws-cdk/aws-lambda-python-alpha': 2.171.1-alpha.0(aws-cdk-lib@2.171.1(constructs@10.3.0))(constructs@10.3.0)
       '@aws-cdk/cloud-assembly-schema': 38.0.1
@@ -23557,7 +23578,7 @@ snapshots:
       ora: 6.3.1
       react: 18.3.1
       remeda: 1.61.0
-      sst-aws-cdk: 2.171.1-4(@aws-sdk/client-sso-oidc@3.699.0(@aws-sdk/client-sts@3.699.0(aws-crt@1.26.2))(aws-crt@1.26.2))(@babel/core@7.26.10)(@jest/transform@29.7.0)(@jest/types@29.6.3)(aws-crt@1.26.2)(babel-jest@29.7.0(@babel/core@7.26.10))(encoding@0.1.13)(esbuild@0.18.13)(typescript@5.8.3)
+      sst-aws-cdk: 2.171.1-4(@aws-sdk/client-sso-oidc@3.699.0(@aws-sdk/client-sts@3.699.0(aws-crt@1.26.2))(aws-crt@1.26.2))(@babel/core@7.26.10)(@jest/transform@29.7.0)(@jest/types@29.6.3)(aws-crt@1.26.2)(babel-jest@29.7.0(@babel/core@7.26.10))(encoding@0.1.13)(esbuild@0.18.13)(typescript@3.9.10)
       tree-kill: 1.2.2
       undici: 5.29.0
       uuid: 9.0.1
@@ -24012,6 +24033,27 @@ snapshots:
     dependencies:
       utf8-byte-length: 1.0.5
 
+  ts-jest@29.3.1(@babel/core@7.26.10)(@jest/transform@29.7.0)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.26.10))(esbuild@0.18.13)(jest@29.7.0(@types/node@18.19.86))(typescript@3.9.10):
+    dependencies:
+      bs-logger: 0.2.6
+      ejs: 3.1.10
+      fast-json-stable-stringify: 2.1.0
+      jest: 29.7.0(@types/node@18.19.86)
+      jest-util: 29.7.0
+      json5: 2.2.3
+      lodash.memoize: 4.1.2
+      make-error: 1.3.6
+      semver: 7.7.1
+      type-fest: 4.39.1
+      typescript: 3.9.10
+      yargs-parser: 21.1.1
+    optionalDependencies:
+      '@babel/core': 7.26.10
+      '@jest/transform': 29.7.0
+      '@jest/types': 29.6.3
+      babel-jest: 29.7.0(@babel/core@7.26.10)
+      esbuild: 0.18.13
+
   ts-jest@29.3.1(@babel/core@7.26.10)(@jest/transform@29.7.0)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.26.10))(esbuild@0.18.13)(jest@29.7.0(@types/node@18.19.86))(typescript@5.8.3):
     dependencies:
       bs-logger: 0.2.6
@@ -24032,6 +24074,11 @@ snapshots:
       '@jest/types': 29.6.3
       babel-jest: 29.7.0(@babel/core@7.26.10)
       esbuild: 0.18.13
+
+  ts-mock-imports@1.3.16(sinon@9.2.4)(typescript@3.9.10):
+    dependencies:
+      sinon: 9.2.4
+      typescript: 3.9.10
 
   ts-mock-imports@1.3.16(sinon@9.2.4)(typescript@5.8.3):
     dependencies:
