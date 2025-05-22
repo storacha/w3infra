@@ -10,7 +10,8 @@ import {
   revocationTableProps,
   rateLimitTableProps,
   adminMetricsTableProps,
-  spaceMetricsTableProps
+  spaceMetricsTableProps,
+  humanodeTableProps
 } from '../upload-api/tables/index.js'
 import {
   pieceTableProps
@@ -33,6 +34,9 @@ export function UploadDbStack({ stack, app }) {
   const contentClaimsPrivateKey = new Config.Secret(stack, 'CONTENT_CLAIMS_PRIVATE_KEY')
 
   const githubClientSecret = new Config.Secret(stack, 'GITHUB_CLIENT_SECRET')
+  const humanodeClientSecret = new Config.Secret(stack, 'HUMANODE_CLIENT_SECRET')
+
+  const humanodeTable = new Table(stack, 'humanode', humanodeTableProps)
 
   /**
    * The allocation table tracks allocated multihashes per space.
@@ -109,6 +113,7 @@ export function UploadDbStack({ stack, app }) {
 
   return {
     allocationTable,
+    humanodeTable,
     storeTable,
     uploadTable,
     pieceTable,
@@ -122,6 +127,7 @@ export function UploadDbStack({ stack, app }) {
     spaceMetricsTable,
     privateKey,
     contentClaimsPrivateKey,
-    githubClientSecret
+    githubClientSecret,
+    humanodeClientSecret
   }
 }
