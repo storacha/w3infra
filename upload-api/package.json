@@ -22,6 +22,7 @@
     "@storacha/access": "catalog:",
     "@storacha/capabilities": "catalog:",
     "@storacha/did-mailto": "catalog:",
+    "@storacha/did-plc": "file:../../upload-service/packages/did-plc/storacha-did-plc-0.1.4.tgz",
     "@storacha/indexing-service-client": "catalog:",
     "@storacha/one-webcrypto": "catalog:",
     "@storacha/upload-api": "catalog:",

@@ -1,8 +1,8 @@
 import { Config } from 'sst/node/config'
-import { API, error, ok } from '@ucanto/core'
+import { API } from '@ucanto/core'
 import * as Delegation from '@ucanto/core/delegation'
 import { CAR, Legacy, Codec } from '@ucanto/transport'
-import { DIDResolutionError, Schema } from '@ucanto/validator'
+import { Schema } from '@ucanto/validator'
 import * as Link from 'multiformats/link'
 import { base64 } from 'multiformats/bases/base64'
 import * as Sentry from '@sentry/serverless'
@@ -11,6 +11,7 @@ import Stripe from 'stripe'
 import { Client as IndexingServiceClient } from '@storacha/indexing-service-client'
 import * as UploadAPI from '@storacha/upload-api'
 import * as UCANCaps from '@storacha/capabilities/ucan'
+import { createDidResolver } from '../did-resolver.js'
 import { composeCarStoresWithOrderedHas, createCarStore } from '../buckets/car-store.js'
 import { createStoreTable } from '../tables/store.js'
 import { createUploadTable } from '../tables/upload.js'
@@ -48,6 +49,7 @@ import { mustGetEnv } from '../../lib/env.js'
 import { createEgressTrafficQueue } from '../../billing/queues/egress-traffic.js'
 import { create as createRoutingService } from '../external-services/router.js'
 import { create as createBlobRetriever } from '../external-services/blob-retriever.js'
+import { PlcClient } from '@storacha/did-plc'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -119,15 +121,15 @@ export const knownWebDIDs = {
  */
 export async function ucanInvocationRouter(request) {
   try {
-      // Capture X-Client custom header for analytics
-      const clientId = Object.entries(request.headers)
+    // Capture X-Client custom header for analytics
+    const clientId = Object.entries(request.headers)
       .find(([key]) => key.toLowerCase() === 'x-client')?.[1] ?? 'Storacha/?'
-      console.log(JSON.stringify({
-        message: 'Client request',
-        clientId,
-        requestId: request.requestContext?.requestId || 'unknown',
-          timestamp: new Date().toISOString()
-      }))
+    console.log(JSON.stringify({
+      message: 'Client request',
+      clientId,
+      requestId: request.requestContext?.requestId || 'unknown',
+      timestamp: new Date().toISOString()
+    }))
   } catch (error) {
     console.error(error)
   }
@@ -309,10 +311,7 @@ export async function ucanInvocationRouter(request) {
     registry: allocationBlobRegistry,
     blobsStorage,
     blobRetriever,
-    resolveDIDKey: (did) =>
-      Schema.did({ method: 'web' }).is(did) && principalMapping[did]
-        ? ok(principalMapping[did])
-        : error(new DIDResolutionError(did)),
+    resolveDIDKey: createDidResolver(principalMapping, new PlcClient()),
     getServiceConnection: () => connection,
     // TODO: to be deprecated with `store/*` protocol
     storeTable: createStoreTable(AWS_REGION, storeTableName, {
