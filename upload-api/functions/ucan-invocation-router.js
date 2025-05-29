@@ -311,6 +311,7 @@ export async function ucanInvocationRouter(request) {
     registry: allocationBlobRegistry,
     blobsStorage,
     blobRetriever,
+    // @ts-expect-error needs update of ucanto libs
     resolveDIDKey: createDidResolver(principalMapping, new PlcClient()),
     getServiceConnection: () => connection,
     // TODO: to be deprecated with `store/*` protocol
