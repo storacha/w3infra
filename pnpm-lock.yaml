@@ -109,8 +109,8 @@ catalogs:
       specifier: ^1.0.1
       version: 1.0.1
     '@storacha/upload-api':
-      specifier: ^1.5.0
-      version: 1.5.0
+      specifier: ^2.0.0-rc.0
+      version: 2.0.0-rc.0
     '@storacha/upload-client':
       specifier: ^1.0.9
       version: 1.0.9
@@ -322,7 +322,7 @@ importers:
         version: 4.0.0
       sst:
         specifier: 'catalog:'
-        version: 2.47.3(@aws-sdk/client-sso-oidc@3.699.0(@aws-sdk/client-sts@3.782.0(aws-crt@1.26.2))(aws-crt@1.26.2))(@jest/transform@29.7.0)(@jest/types@29.6.3)(aws-crt@1.26.2)(babel-jest@29.7.0(@babel/core@7.26.10))(encoding@0.1.13)(typescript@5.8.3)
+        version: 2.47.3(@aws-sdk/client-sso-oidc@3.699.0(@aws-sdk/client-sts@3.699.0(aws-crt@1.26.2))(aws-crt@1.26.2))(@jest/transform@29.7.0)(@jest/types@29.6.3)(aws-crt@1.26.2)(babel-jest@29.7.0(@babel/core@7.26.10))(encoding@0.1.13)(typescript@5.8.3)
     devDependencies:
       '@aws-sdk/client-dynamodb':
         specifier: 'catalog:'
@@ -380,7 +380,7 @@ importers:
         version: 1.0.6
       '@storacha/upload-api':
         specifier: 'catalog:'
-        version: 1.5.0
+        version: 2.0.0-rc.0
       '@storacha/upload-client':
         specifier: 'catalog:'
         version: 1.0.9(encoding@0.1.13)
@@ -849,7 +849,7 @@ importers:
     dependencies:
       '@storacha/upload-api':
         specifier: 'catalog:'
-        version: 1.5.0
+        version: 2.0.0-rc.0
     devDependencies:
       '@aws-sdk/client-dynamodb':
         specifier: 'catalog:'
@@ -931,7 +931,7 @@ importers:
         version: 1.0.1
       '@storacha/upload-api':
         specifier: 'catalog:'
-        version: 1.5.0
+        version: 2.0.0-rc.0
       '@ucanto/client':
         specifier: 'catalog:'
         version: 9.0.1
@@ -988,7 +988,7 @@ importers:
         version: 15.1.3
       sst:
         specifier: 'catalog:'
-        version: 2.47.3(@aws-sdk/client-sso-oidc@3.699.0(@aws-sdk/client-sts@3.699.0(aws-crt@1.26.2))(aws-crt@1.26.2))(@jest/transform@29.7.0)(@jest/types@29.6.3)(aws-crt@1.26.2)(babel-jest@29.7.0(@babel/core@7.26.10))(encoding@0.1.13)(typescript@3.9.10)
+        version: 2.47.3(@aws-sdk/client-sso-oidc@3.699.0(@aws-sdk/client-sts@3.782.0(aws-crt@1.26.2))(aws-crt@1.26.2))(@jest/transform@29.7.0)(@jest/types@29.6.3)(aws-crt@1.26.2)(babel-jest@29.7.0(@babel/core@7.26.10))(encoding@0.1.13)(typescript@5.8.3)
       stripe:
         specifier: 'catalog:'
         version: 14.25.0
@@ -4153,8 +4153,8 @@ packages:
   '@storacha/access@1.1.1':
     resolution: {integrity: sha512-P1uaod5hrERJmy+wKiZVDN0bsLZ8AFoEbE2XT0NouUmbP1Upt4DUSFf/NK5OWbXDt/6qwWVKFS9AG22ylapNIg==}
 
-  '@storacha/access@1.2.0':
-    resolution: {integrity: sha512-nM7Zz/H/PkB6F+bq9DEIRkVo0zUa7iIbKDYR2+WKw3R+59brTxEruXpu2A7LCrN3kbKJtGifzMWZoIwAAegZxA==}
+  '@storacha/access@1.2.2':
+    resolution: {integrity: sha512-ezL1MmPX9XL7GTOF4ZKf3jZWVSkrDvtzlLrKJlEsQZRM9UFRVops6Uf/yeQioy1eAgFh0HUUixa88YyPek21BQ==}
 
   '@storacha/blob-index@0.0.0':
     resolution: {integrity: sha512-sjscFR2aeSTB73LW0fd1Cypd09DjM+EdqNMxinyTttQBhGuzDw+1bnllhdgVNZAIyuablk5zI92MdHel8yCNYQ==}
@@ -4168,11 +4168,25 @@ packages:
     resolution: {integrity: sha512-i0T942GU3cWI9uT2om00VRiSVypLQR47NHv97TXiDAJrZh+vT3oo2pJOjMZ9d5IDxFxDwhCN5pt/aMWLL1cj+Q==}
     engines: {node: '>=16.15'}
 
+  '@storacha/blob-index@1.1.0':
+    resolution: {integrity: sha512-f8+e7N6ww/YJ83Z4GeeGuQevVueRLg3StB0kv36ia/RkOWGBzqzoDQvXnxTY5rTJzcDT712pZdVcdHJX6jwbkg==}
+    engines: {node: '>=16.15'}
+
+  '@storacha/blob-index@1.1.0-rc.0':
+    resolution: {integrity: sha512-LTPfv0POAKbFJAem1Iz7utZzlh2auIhUZ7TQYz9YM9tZOWXwWz4oKXv6v0sXsqK5NGZsnolT5iQbNJ2f8GXZBg==}
+    engines: {node: '>=16.15'}
+
   '@storacha/capabilities@0.0.0':
     resolution: {integrity: sha512-6PINXoAMrcDS0a76H+d/LM5QlrfrDSbdHOoB8YT1AwQipJfMKTDUVFhWgpIaUrNljoJ8JHh7Y0Z/xb/biKwtYg==}
 
   '@storacha/capabilities@1.5.0':
     resolution: {integrity: sha512-URShZ1RkEHsQa/uuEtLcuQGTZ5gzClfJ4UVm0KRivGnP+p8GvFnXnzmPRvaaYOkw/PhChe3e5oeVzvVNSOSsiA==}
+
+  '@storacha/capabilities@1.7.0':
+    resolution: {integrity: sha512-YMIuocTgaVpqlgyds5NG+eJqfr+dfFkxdk33lJcFIRD30SZaGiA8vQ0ZPUHqcC9Azj0XZCRexz6nHXqEsn1aag==}
+
+  '@storacha/capabilities@1.7.0-rc.0':
+    resolution: {integrity: sha512-y+BhKDY8fem15+4YstC07BQY2jLO5zD8zcsBUpnMmZOmouDfPiq/SK/e8S5FbXS7J+xcqCTamSacXLxCojsAsg==}
 
   '@storacha/client@1.2.6':
     resolution: {integrity: sha512-8uB5dPwVBjtY3fg4ENBjLfyTBJy9jFY9w6NTBpvMPBoc40iKgNQq7tmFE7S/FqxMIkizh1UYRq7+uf/Y+7pqdg==}
@@ -4182,12 +4196,12 @@ packages:
     resolution: {integrity: sha512-0ee1t15yG4xdyIYz2iL+wP06VnGQf8zJ/xpszjf4sdP2sTgAVzx92LfEgHcuIbFF4sabcJXzHFAcMi8l8u64Mg==}
     engines: {node: '>=16.15'}
 
-  '@storacha/filecoin-api@1.1.7':
-    resolution: {integrity: sha512-g+cd1jOSnEvKK/xSGsyIdZ86iQBKzrEENW6LIo9AlAc3npjZOtv0SD4eE3XibAwGso33L2r1GesB3Pt9Q7eCrg==}
+  '@storacha/filecoin-api@1.1.10':
+    resolution: {integrity: sha512-RlsnvvQsWt7DqYAPo93MGNjEWyezc4CyWG0HapQYK8blb9wgkqJ0ImAwWBm1BvsDNBfnyLV3RlaYCqpbQtbGwg==}
     engines: {node: '>=16.15'}
 
-  '@storacha/filecoin-api@1.1.8':
-    resolution: {integrity: sha512-nHhTorAG50TZy5C6JRha++3TIH0c2IfYFJCD+IzI3dhklttAPwT3imgcDR9fMpcrLIYsfjALGrC5dRugb+RJPg==}
+  '@storacha/filecoin-api@1.1.7':
+    resolution: {integrity: sha512-g+cd1jOSnEvKK/xSGsyIdZ86iQBKzrEENW6LIo9AlAc3npjZOtv0SD4eE3XibAwGso33L2r1GesB3Pt9Q7eCrg==}
     engines: {node: '>=16.15'}
 
   '@storacha/filecoin-client@1.0.6':
@@ -4199,11 +4213,14 @@ packages:
   '@storacha/indexing-service-client@2.1.3':
     resolution: {integrity: sha512-iq9aJ0ErhPrUK48qItQ7s5zXXeKqiKlK8t0ADg2UbvBgliiscDt9g7FhsIRYpkKPoGYDCW/64Y+6spM7hO7ywg==}
 
+  '@storacha/indexing-service-client@2.2.0-rc.3':
+    resolution: {integrity: sha512-eyEW3EVkWBiNim5YEfK4gV/Qbocc8EQcaavuewpz79/+z32ICYvzJVZrNBNxgxvSBiIi8qtuc++1bvgoSNWL5w==}
+
   '@storacha/one-webcrypto@1.0.1':
     resolution: {integrity: sha512-bD+vWmcgsEBqU0Dz04BR43SA03bBoLTAY29vaKasY9Oe8cb6XIP0/vkm0OS2UwKC13c8uRgFW4rjJUgDCNLejQ==}
 
-  '@storacha/upload-api@1.5.0':
-    resolution: {integrity: sha512-yi9kOkvSNOtriez8rp+m8RyEgW8W2VUlRIiRrhWW8g0V3zDFen10pFODuhlzCAnVCMHEltVxxZ0K3PVvKv5T8w==}
+  '@storacha/upload-api@2.0.0-rc.0':
+    resolution: {integrity: sha512-5FzH8H0Sm5kSs54pup3W+miDe5k5zQDZlnzubT4vfNpK3Hd3puRkp3gBgJB25147fH73jgUDF1k0RFPKurC94w==}
     engines: {node: '>=16.15'}
 
   '@storacha/upload-client@1.0.9':
@@ -16907,12 +16924,12 @@ snapshots:
       type-fest: 4.39.1
       uint8arrays: 5.1.0
 
-  '@storacha/access@1.2.0':
+  '@storacha/access@1.2.2':
     dependencies:
       '@ipld/car': 5.4.0
       '@ipld/dag-ucan': 3.4.5
       '@scure/bip39': 1.5.4
-      '@storacha/capabilities': 1.5.0
+      '@storacha/capabilities': 1.7.0
       '@storacha/did-mailto': 1.0.2
       '@storacha/one-webcrypto': 1.0.1
       '@ucanto/client': 9.0.1
@@ -16961,6 +16978,28 @@ snapshots:
       multiformats: 13.3.6
       uint8arrays: 5.1.0
 
+  '@storacha/blob-index@1.1.0':
+    dependencies:
+      '@ipld/dag-cbor': 9.2.3
+      '@storacha/capabilities': 1.7.0
+      '@storacha/one-webcrypto': 1.0.1
+      '@ucanto/core': 10.4.0
+      '@ucanto/interface': 10.3.0
+      carstream: 2.3.0
+      multiformats: 13.3.6
+      uint8arrays: 5.1.0
+
+  '@storacha/blob-index@1.1.0-rc.0':
+    dependencies:
+      '@ipld/dag-cbor': 9.2.3
+      '@storacha/capabilities': 1.7.0
+      '@storacha/one-webcrypto': 1.0.1
+      '@ucanto/core': 10.4.0
+      '@ucanto/interface': 10.3.0
+      carstream: 2.3.0
+      multiformats: 13.3.6
+      uint8arrays: 5.1.0
+
   '@storacha/capabilities@0.0.0':
     dependencies:
       '@ucanto/core': 10.4.0
@@ -16980,6 +17019,26 @@ snapshots:
       '@ucanto/validator': 9.1.0
       '@web3-storage/data-segment': 5.3.0
       uint8arrays: 5.1.0
+
+  '@storacha/capabilities@1.7.0':
+    dependencies:
+      '@ucanto/core': 10.4.0
+      '@ucanto/interface': 10.3.0
+      '@ucanto/principal': 9.0.2
+      '@ucanto/transport': 9.2.0
+      '@ucanto/validator': 9.1.0
+      '@web3-storage/data-segment': 5.3.0
+      multiformats: 13.3.6
+
+  '@storacha/capabilities@1.7.0-rc.0':
+    dependencies:
+      '@ucanto/core': 10.4.0
+      '@ucanto/interface': 10.3.0
+      '@ucanto/principal': 9.0.2
+      '@ucanto/transport': 9.2.0
+      '@ucanto/validator': 9.1.0
+      '@web3-storage/data-segment': 5.3.0
+      multiformats: 13.3.6
 
   '@storacha/client@1.2.6(encoding@0.1.13)':
     dependencies:
@@ -17001,10 +17060,10 @@ snapshots:
 
   '@storacha/did-mailto@1.0.2': {}
 
-  '@storacha/filecoin-api@1.1.7':
+  '@storacha/filecoin-api@1.1.10':
     dependencies:
       '@ipld/dag-ucan': 3.4.5
-      '@storacha/capabilities': 1.5.0
+      '@storacha/capabilities': 1.7.0
       '@ucanto/client': 9.0.1
       '@ucanto/core': 10.4.0
       '@ucanto/interface': 10.3.0
@@ -17015,7 +17074,7 @@ snapshots:
       fr32-sha2-256-trunc254-padded-binary-tree-multihash: 3.3.0
       p-map: 6.0.0
 
-  '@storacha/filecoin-api@1.1.8':
+  '@storacha/filecoin-api@1.1.7':
     dependencies:
       '@ipld/dag-ucan': 3.4.5
       '@storacha/capabilities': 1.5.0
@@ -17056,15 +17115,25 @@ snapshots:
       '@web3-storage/content-claims': 5.2.1
       multiformats: 13.3.6
 
+  '@storacha/indexing-service-client@2.2.0-rc.3':
+    dependencies:
+      '@ipld/dag-cbor': 9.2.3
+      '@storacha/blob-index': 1.1.0-rc.0
+      '@storacha/capabilities': 1.7.0-rc.0
+      '@ucanto/core': 10.4.0
+      '@ucanto/interface': 10.3.0
+      multiformats: 13.3.6
+
   '@storacha/one-webcrypto@1.0.1': {}
 
-  '@storacha/upload-api@1.5.0':
+  '@storacha/upload-api@2.0.0-rc.0':
     dependencies:
-      '@storacha/access': 1.2.0
-      '@storacha/blob-index': 1.0.6
-      '@storacha/capabilities': 1.5.0
+      '@storacha/access': 1.2.2
+      '@storacha/blob-index': 1.1.0
+      '@storacha/capabilities': 1.7.0
       '@storacha/did-mailto': 1.0.2
-      '@storacha/filecoin-api': 1.1.8
+      '@storacha/filecoin-api': 1.1.10
+      '@storacha/indexing-service-client': 2.2.0-rc.3
       '@ucanto/client': 9.0.1
       '@ucanto/interface': 10.3.0
       '@ucanto/principal': 9.0.2
@@ -23312,7 +23381,7 @@ snapshots:
       cpu-features: 0.0.10
       nan: 2.22.2
 
-  sst-aws-cdk@2.171.1-4(@aws-sdk/client-sso-oidc@3.699.0(@aws-sdk/client-sts@3.699.0(aws-crt@1.26.2))(aws-crt@1.26.2))(@babel/core@7.26.10)(@jest/transform@29.7.0)(@jest/types@29.6.3)(aws-crt@1.26.2)(babel-jest@29.7.0(@babel/core@7.26.10))(encoding@0.1.13)(esbuild@0.18.13)(typescript@3.9.10):
+  sst-aws-cdk@2.171.1-4(@aws-sdk/client-sso-oidc@3.699.0(@aws-sdk/client-sts@3.699.0(aws-crt@1.26.2))(aws-crt@1.26.2))(@babel/core@7.26.10)(@jest/transform@29.7.0)(@jest/types@29.6.3)(aws-crt@1.26.2)(babel-jest@29.7.0(@babel/core@7.26.10))(encoding@0.1.13)(esbuild@0.18.13)(typescript@5.8.3):
     dependencies:
       '@aws-cdk/cloud-assembly-schema': 38.0.1
       '@aws-cdk/cloudformation-diff': 2.171.1
@@ -23388,8 +23457,8 @@ snapshots:
       sinon: 9.2.4
       strip-ansi: 6.0.1
       table: 6.9.0
-      ts-jest: 29.3.1(@babel/core@7.26.10)(@jest/transform@29.7.0)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.26.10))(esbuild@0.18.13)(jest@29.7.0(@types/node@18.19.86))(typescript@3.9.10)
-      ts-mock-imports: 1.3.16(sinon@9.2.4)(typescript@3.9.10)
+      ts-jest: 29.3.1(@babel/core@7.26.10)(@jest/transform@29.7.0)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.26.10))(esbuild@0.18.13)(jest@29.7.0(@types/node@18.19.86))(typescript@5.8.3)
+      ts-mock-imports: 1.3.16(sinon@9.2.4)(typescript@5.8.3)
       uuid: 8.3.2
       wrap-ansi: 7.0.0
       xml-js: 1.6.11
@@ -23516,7 +23585,7 @@ snapshots:
       - typescript
       - vitest
 
-  sst@2.47.3(@aws-sdk/client-sso-oidc@3.699.0(@aws-sdk/client-sts@3.699.0(aws-crt@1.26.2))(aws-crt@1.26.2))(@jest/transform@29.7.0)(@jest/types@29.6.3)(aws-crt@1.26.2)(babel-jest@29.7.0(@babel/core@7.26.10))(encoding@0.1.13)(typescript@3.9.10):
+  sst@2.47.3(@aws-sdk/client-sso-oidc@3.699.0(@aws-sdk/client-sts@3.699.0(aws-crt@1.26.2))(aws-crt@1.26.2))(@jest/transform@29.7.0)(@jest/types@29.6.3)(aws-crt@1.26.2)(babel-jest@29.7.0(@babel/core@7.26.10))(encoding@0.1.13)(typescript@5.8.3):
     dependencies:
       '@aws-cdk/aws-lambda-python-alpha': 2.171.1-alpha.0(aws-cdk-lib@2.171.1(constructs@10.3.0))(constructs@10.3.0)
       '@aws-cdk/cloud-assembly-schema': 38.0.1
@@ -23578,7 +23647,7 @@ snapshots:
       ora: 6.3.1
       react: 18.3.1
       remeda: 1.61.0
-      sst-aws-cdk: 2.171.1-4(@aws-sdk/client-sso-oidc@3.699.0(@aws-sdk/client-sts@3.699.0(aws-crt@1.26.2))(aws-crt@1.26.2))(@babel/core@7.26.10)(@jest/transform@29.7.0)(@jest/types@29.6.3)(aws-crt@1.26.2)(babel-jest@29.7.0(@babel/core@7.26.10))(encoding@0.1.13)(esbuild@0.18.13)(typescript@3.9.10)
+      sst-aws-cdk: 2.171.1-4(@aws-sdk/client-sso-oidc@3.699.0(@aws-sdk/client-sts@3.699.0(aws-crt@1.26.2))(aws-crt@1.26.2))(@babel/core@7.26.10)(@jest/transform@29.7.0)(@jest/types@29.6.3)(aws-crt@1.26.2)(babel-jest@29.7.0(@babel/core@7.26.10))(encoding@0.1.13)(esbuild@0.18.13)(typescript@5.8.3)
       tree-kill: 1.2.2
       undici: 5.29.0
       uuid: 9.0.1
@@ -24033,27 +24102,6 @@ snapshots:
     dependencies:
       utf8-byte-length: 1.0.5
 
-  ts-jest@29.3.1(@babel/core@7.26.10)(@jest/transform@29.7.0)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.26.10))(esbuild@0.18.13)(jest@29.7.0(@types/node@18.19.86))(typescript@3.9.10):
-    dependencies:
-      bs-logger: 0.2.6
-      ejs: 3.1.10
-      fast-json-stable-stringify: 2.1.0
-      jest: 29.7.0(@types/node@18.19.86)
-      jest-util: 29.7.0
-      json5: 2.2.3
-      lodash.memoize: 4.1.2
-      make-error: 1.3.6
-      semver: 7.7.1
-      type-fest: 4.39.1
-      typescript: 3.9.10
-      yargs-parser: 21.1.1
-    optionalDependencies:
-      '@babel/core': 7.26.10
-      '@jest/transform': 29.7.0
-      '@jest/types': 29.6.3
-      babel-jest: 29.7.0(@babel/core@7.26.10)
-      esbuild: 0.18.13
-
   ts-jest@29.3.1(@babel/core@7.26.10)(@jest/transform@29.7.0)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.26.10))(esbuild@0.18.13)(jest@29.7.0(@types/node@18.19.86))(typescript@5.8.3):
     dependencies:
       bs-logger: 0.2.6
@@ -24074,11 +24122,6 @@ snapshots:
       '@jest/types': 29.6.3
       babel-jest: 29.7.0(@babel/core@7.26.10)
       esbuild: 0.18.13
-
-  ts-mock-imports@1.3.16(sinon@9.2.4)(typescript@3.9.10):
-    dependencies:
-      sinon: 9.2.4
-      typescript: 3.9.10
 
   ts-mock-imports@1.3.16(sinon@9.2.4)(typescript@5.8.3):
     dependencies:

@@ -177,6 +177,7 @@ export async function ucanInvocationRouter(request) {
     carparkBucketAccessKeyId,
     carparkBucketSecretAccessKey,
     blockAdvertisementPublisherQueueConfig,
+    blockIndexWriterQueueConfig,
     sstStage
   } = getLambdaEnv()
 
@@ -252,7 +253,11 @@ export async function ucanInvocationRouter(request) {
     url: dealTrackerUrl
   })
 
-  const ipniService = createIPNIService(blockAdvertisementPublisherQueueConfig)
+  const ipniService = createIPNIService(
+    blockAdvertisementPublisherQueueConfig,
+    blockIndexWriterQueueConfig,
+    blobsStorage
+  )
   const indexingServicePrincipal = DID.parse(mustGetEnv('INDEXING_SERVICE_DID'))
   const indexingServiceURL = new URL(mustGetEnv('INDEXING_SERVICE_URL'))
 
@@ -444,6 +449,10 @@ function getLambdaEnv() {
     // IPNI service
     blockAdvertisementPublisherQueueConfig: {
       url: new URL(mustGetEnv('BLOCK_ADVERT_PUBLISHER_QUEUE_URL')),
+      region: AWS_REGION
+    },
+    blockIndexWriterQueueConfig: {
+      url: new URL(mustGetEnv('BLOCK_INDEX_WRITER_QUEUE_URL')),
       region: AWS_REGION
     },
     sstStage: mustGetEnv('SST_STAGE'),

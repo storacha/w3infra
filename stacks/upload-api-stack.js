@@ -47,7 +47,7 @@ export function UploadApiStack({ stack, app }) {
   const { agentIndexBucket, agentMessageBucket, ucanStream } = use(UcanInvocationStack)
   const { customerTable, spaceDiffTable, spaceSnapshotTable, egressTrafficTable, stripeSecretKey } = use(BillingDbStack)
   const { pieceOfferQueue, filecoinSubmitQueue } = use(FilecoinStack)
-  const { blockAdvertPublisherQueue } = use(IndexerStack)
+  const { blockAdvertPublisherQueue, blockIndexWriterQueue } = use(IndexerStack)
   const { egressTrafficQueue } = use(BillingStack)
 
   // Setup API
@@ -86,6 +86,7 @@ export function UploadApiStack({ stack, app }) {
               allocationTable, // legacy
               blobRegistryTable,
               blockAdvertPublisherQueue,
+              blockIndexWriterQueue,
               carparkBucket,
               consumerTable,
               customerTable,
@@ -117,6 +118,7 @@ export function UploadApiStack({ stack, app }) {
               ALLOCATION_TABLE_NAME: allocationTable.tableName,
               BLOB_REGISTRY_TABLE_NAME: blobRegistryTable.tableName,
               BLOCK_ADVERT_PUBLISHER_QUEUE_URL: blockAdvertPublisherQueue.queueUrl,
+              BLOCK_INDEX_WRITER_QUEUE_URL: blockIndexWriterQueue.queueUrl,
               CONSUMER_TABLE_NAME: consumerTable.tableName,
               CUSTOMER_TABLE_NAME: customerTable.tableName,
               DEAL_TRACKER_DID: process.env.DEAL_TRACKER_DID ?? '',
