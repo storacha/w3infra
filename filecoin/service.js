@@ -15,9 +15,7 @@ export function getServiceSigner(config) {
 }
 
 /**
- * 
- * @param {{ did: string, url: string }} config 
- * @returns 
+ * @param {{ did: string, url: string|URL }} config
  */
 export function getServiceConnection (config) {
   const servicePrincipal = DID.parse(config.did) // 'did:web:filecoin.web3.storage'

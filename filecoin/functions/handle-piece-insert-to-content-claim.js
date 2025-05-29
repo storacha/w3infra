@@ -38,7 +38,7 @@ async function pieceCidReport (event) {
 
   const connection = getServiceConnection({
     did: indexingServiceDid,
-    url: indexingServiceUrl
+    url: new URL('/claims', indexingServiceUrl)
   })
   const cid = Link.parse(indexingServiceProof, base64)
   const proof = await Delegation.extract(cid.multihash.digest)
@@ -79,7 +79,7 @@ export const main = Sentry.AWSLambda.wrapHandler(pieceCidReport)
 function getEnv() {
   return {
     indexingServiceDid: mustGetEnv('INDEXING_SERVICE_DID'),
-    indexingServiceUrl: mustGetEnv('INDEXING_SERVICE_URL'),
+    indexingServiceUrl: new URL(mustGetEnv('INDEXING_SERVICE_URL')),
   }
 }
 
