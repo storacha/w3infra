@@ -344,7 +344,7 @@ export async function executionContextToUcantoTestServerContext(t) {
   const ipniService = await createTestIPNIService({ sqs }, blobsStorage)
   const claimsService = await ClaimsService.activate()
   const indexingService = await IndexingService.activate()
-  const indexingServiceClient = createIndexingServiceClient(claimsService)
+  const indexingServiceClient = createIndexingServiceClient(indexingService, claimsService)
   const blobRetriever = createBlobRetriever(indexingServiceClient)
 
   const storageProviders = await Promise.all([
