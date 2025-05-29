@@ -6,7 +6,7 @@ import * as UcantoClient from '@ucanto/client'
 import { connect, createServer } from '@storacha/upload-api'
 import { DebugEmail } from '@storacha/upload-api/test'
 import { confirmConfirmationUrl } from '@storacha/upload-api/test/utils'
-import { ClaimsService } from '@storacha/upload-api/test/external-service'
+import { ClaimsService, IndexingService } from '@storacha/upload-api/test/external-service'
 import { createBucket, createTable } from '../helpers/resources.js'
 import { storeTableProps, uploadTableProps, allocationTableProps, consumerTableProps, delegationTableProps, subscriptionTableProps, rateLimitTableProps, revocationTableProps, spaceMetricsTableProps, storageProviderTableProps, blobRegistryTableProps, adminMetricsTableProps, replicaTableProps } from '../../tables/index.js'
 import { useBlobRegistry, useAllocationTableBlobRegistry } from '../../stores/blob-registry.js'
@@ -341,15 +341,16 @@ export async function executionContextToUcantoTestServerContext(t) {
   const billingProvider = createTestBillingProvider()
   const plansStorage = usePlansStore(customersStore, billingProvider)
   const email = new DebugEmail()
-  const ipniService = await createTestIPNIService({ sqs })
+  const ipniService = await createTestIPNIService({ sqs }, blobsStorage)
   const claimsService = await ClaimsService.activate()
+  const indexingService = await IndexingService.activate()
   const indexingServiceClient = createIndexingServiceClient(claimsService)
   const blobRetriever = createBlobRetriever(indexingServiceClient)
 
   const storageProviders = await Promise.all([
-    createStorageProvider(storageProviderTable, claimsService, id),
-    createStorageProvider(storageProviderTable, claimsService, id),
-    createStorageProvider(storageProviderTable, claimsService, id),
+    createStorageProvider(storageProviderTable, indexingService, id),
+    createStorageProvider(storageProviderTable, indexingService, id),
+    createStorageProvider(storageProviderTable, indexingService, id),
   ])
   const replicaStore = useReplicaTable(
     dynamo,
@@ -416,6 +417,7 @@ export async function executionContextToUcantoTestServerContext(t) {
     blobsStorage,
     storageProviders,
     ipniService,
+    indexingService,
     claimsService,
     mail: email,
     grantAccess: (mail) => confirmConfirmationUrl(connection, mail),

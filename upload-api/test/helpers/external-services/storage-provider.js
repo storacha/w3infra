@@ -10,10 +10,10 @@ import { delegate } from '@ucanto/core/delegation'
 
 /**
  * @param {API.StorageProviderTable} storageProviderTable 
- * @param {import('@storacha/upload-api').ClaimsClientConfig} claimsService
+ * @param {import('@storacha/upload-api').IndexingServiceAPI.ClientConfig} indexingService
  * @param {import('@ucanto/interface').Signer} serviceID
  */
-export const create = async (storageProviderTable, claimsService, serviceID) => {
+export const create = async (storageProviderTable, indexingService, serviceID) => {
   /** @type {import('@ucanto/interface').PrincipalResolver} */
   const principalResolver = {}
   if (serviceID.did().startsWith('did:web')) {
@@ -25,7 +25,7 @@ export const create = async (storageProviderTable, claimsService, serviceID) => 
 
   const node = await StorageNode.activate({
     http,
-    claimsService,
+    indexingService,
     ...principalResolver
   })
 
