@@ -188,7 +188,7 @@ export async function ucanInvocationRouter(request) {
   }
 
   const { UPLOAD_API_DID, UPLOAD_API_ALIAS, MAX_REPLICAS } = process.env
-  const { PRIVATE_KEY, STRIPE_SECRET_KEY, INDEXING_SERVICE_PROOF } = Config
+  const { PRIVATE_KEY, STRIPE_SECRET_KEY, INDEXING_SERVICE_PROOF, CONTENT_CLAIMS_PRIVATE_KEY, CONTENT_CLAIMS_PROOF } = Config
   const serviceSigner = getServiceSigner({ did: UPLOAD_API_DID, privateKey: PRIVATE_KEY })
 
   const options = { endpoint: dbEndpoint }
@@ -258,6 +258,33 @@ export async function ucanInvocationRouter(request) {
     blockIndexWriterQueueConfig,
     blobsStorage
   )
+
+  const claimsServicePrincipal = DID.parse(mustGetEnv('CONTENT_CLAIMS_DID'))
+  const claimsServiceURL = new URL(mustGetEnv('CONTENT_CLAIMS_URL'))
+  let claimsIssuer = getServiceSigner({ privateKey: CONTENT_CLAIMS_PRIVATE_KEY })
+  const claimsProofs = []
+  if (CONTENT_CLAIMS_PROOF) {
+    const cid = Link.parse(CONTENT_CLAIMS_PROOF, base64)
+    const proof = await Delegation.extract(cid.multihash.digest)
+    if (!proof.ok) throw new Error('failed to extract proof', { cause: proof.error })
+    claimsProofs.push(proof.ok)
+  } else {
+    // if no proofs, we must be using the service private key to sign
+    claimsIssuer = claimsIssuer.withDID(claimsServicePrincipal.did())
+  }
+  const claimsServiceConfig = {
+    invocationConfig: {
+      issuer: claimsIssuer,
+      audience: claimsServicePrincipal,
+      with: claimsIssuer.did(),
+      proofs: claimsProofs
+    },
+    connection: getServiceConnection({
+      did: claimsServicePrincipal.did(),
+      url: claimsServiceURL.toString()
+    })
+  }
+
   const indexingServicePrincipal = DID.parse(mustGetEnv('INDEXING_SERVICE_DID'))
   const indexingServiceURL = new URL(mustGetEnv('INDEXING_SERVICE_URL'))
 
@@ -365,7 +392,8 @@ export async function ucanInvocationRouter(request) {
     requirePaymentPlan,
     usageStorage,
     ipniService,
-    claimsService: indexingServiceConfig,
+    claimsService: claimsServiceConfig,
+    indexingService: indexingServiceConfig,
     maxReplicas: MAX_REPLICAS ? parseInt(MAX_REPLICAS) : 2,
     replicaStore: createReplicaTable(AWS_REGION, replicaTableName)
   })

@@ -36,6 +36,8 @@ export function UploadApiStack({ stack, app }) {
     AGGREGATOR_DID,
     INDEXING_SERVICE_DID,
     INDEXING_SERVICE_URL,
+    CONTENT_CLAIMS_DID,
+    CONTENT_CLAIMS_URL,
   } = getEnv()
 
   // Setup app monitoring with Sentry
@@ -43,7 +45,7 @@ export function UploadApiStack({ stack, app }) {
 
   // Get references to constructs created in other stacks
   const { carparkBucket } = use(CarparkStack)
-  const { allocationTable, blobRegistryTable, humanodeTable, storeTable, uploadTable, delegationBucket, delegationTable, revocationTable, adminMetricsTable, spaceMetricsTable, consumerTable, subscriptionTable, storageProviderTable, replicaTable, rateLimitTable, pieceTable, privateKey, indexingServiceProof, githubClientSecret, humanodeClientSecret } = use(UploadDbStack)
+  const { allocationTable, blobRegistryTable, humanodeTable, storeTable, uploadTable, delegationBucket, delegationTable, revocationTable, adminMetricsTable, spaceMetricsTable, consumerTable, subscriptionTable, storageProviderTable, replicaTable, rateLimitTable, pieceTable, privateKey, contentClaimsPrivateKey, contentClaimsProof, indexingServiceProof, githubClientSecret, humanodeClientSecret } = use(UploadDbStack)
   const { agentIndexBucket, agentMessageBucket, ucanStream } = use(UcanInvocationStack)
   const { customerTable, spaceDiffTable, spaceSnapshotTable, egressTrafficTable, stripeSecretKey } = use(BillingDbStack)
   const { pieceOfferQueue, filecoinSubmitQueue } = use(FilecoinStack)
@@ -120,6 +122,8 @@ export function UploadApiStack({ stack, app }) {
               BLOCK_ADVERT_PUBLISHER_QUEUE_URL: blockAdvertPublisherQueue.queueUrl,
               BLOCK_INDEX_WRITER_QUEUE_URL: blockIndexWriterQueue.queueUrl,
               CONSUMER_TABLE_NAME: consumerTable.tableName,
+              CONTENT_CLAIMS_DID,
+              CONTENT_CLAIMS_URL,
               CUSTOMER_TABLE_NAME: customerTable.tableName,
               DEAL_TRACKER_DID: process.env.DEAL_TRACKER_DID ?? '',
               DEAL_TRACKER_URL: process.env.DEAL_TRACKER_URL ?? '',
@@ -159,6 +163,8 @@ export function UploadApiStack({ stack, app }) {
               UPLOAD_TABLE_NAME: uploadTable.tableName,
             },
             bind: [
+              contentClaimsPrivateKey,
+              contentClaimsProof,
               indexingServiceProof,
               privateKey,
               stripeSecretKey,
