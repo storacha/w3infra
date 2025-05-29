@@ -45,7 +45,7 @@ export function UploadApiStack({ stack, app }) {
 
   // Get references to constructs created in other stacks
   const { carparkBucket } = use(CarparkStack)
-  const { allocationTable, blobRegistryTable, humanodeTable, storeTable, uploadTable, delegationBucket, delegationTable, revocationTable, adminMetricsTable, spaceMetricsTable, consumerTable, subscriptionTable, storageProviderTable, replicaTable, rateLimitTable, pieceTable, privateKey, contentClaimsPrivateKey, contentClaimsProof, indexingServiceProof, githubClientSecret, humanodeClientSecret } = use(UploadDbStack)
+  const { allocationTable, blobRegistryTable, humanodeTable, storeTable, uploadTable, delegationBucket, delegationTable, revocationTable, adminMetricsTable, spaceMetricsTable, consumerTable, subscriptionTable, storageProviderTable, replicaTable, rateLimitTable, pieceTable, privateKey, contentClaimsPrivateKey, indexingServiceProof, githubClientSecret, humanodeClientSecret } = use(UploadDbStack)
   const { agentIndexBucket, agentMessageBucket, ucanStream } = use(UcanInvocationStack)
   const { customerTable, spaceDiffTable, spaceSnapshotTable, egressTrafficTable, stripeSecretKey } = use(BillingDbStack)
   const { pieceOfferQueue, filecoinSubmitQueue } = use(FilecoinStack)
@@ -164,7 +164,6 @@ export function UploadApiStack({ stack, app }) {
             },
             bind: [
               contentClaimsPrivateKey,
-              contentClaimsProof,
               indexingServiceProof,
               privateKey,
               stripeSecretKey,

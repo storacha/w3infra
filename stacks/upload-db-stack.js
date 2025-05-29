@@ -35,8 +35,6 @@ export function UploadDbStack({ stack, app }) {
   // Content claims private key
   /** @deprecated */
   const contentClaimsPrivateKey = new Config.Secret(stack, 'CONTENT_CLAIMS_PRIVATE_KEY')
-  /** @deprecated */
-  const contentClaimsProof = new Config.Secret(stack, 'CONTENT_CLAIMS_PROOF')
 
   // Not strictly a secret, but it makes the env vars exceed the 4kb limit...
   const indexingServiceProof = new Config.Secret(stack, 'INDEXING_SERVICE_PROOF')
@@ -155,7 +153,6 @@ export function UploadDbStack({ stack, app }) {
     privateKey,
     githubClientSecret,
     contentClaimsPrivateKey,
-    contentClaimsProof,
     humanodeClientSecret,
     indexingServiceProof,
   }

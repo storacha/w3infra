@@ -188,7 +188,7 @@ export async function ucanInvocationRouter(request) {
   }
 
   const { UPLOAD_API_DID, UPLOAD_API_ALIAS, MAX_REPLICAS } = process.env
-  const { PRIVATE_KEY, STRIPE_SECRET_KEY, INDEXING_SERVICE_PROOF, CONTENT_CLAIMS_PRIVATE_KEY, CONTENT_CLAIMS_PROOF } = Config
+  const { PRIVATE_KEY, STRIPE_SECRET_KEY, INDEXING_SERVICE_PROOF, CONTENT_CLAIMS_PRIVATE_KEY } = Config
   const serviceSigner = getServiceSigner({ did: UPLOAD_API_DID, privateKey: PRIVATE_KEY })
 
   const options = { endpoint: dbEndpoint }
@@ -261,10 +261,11 @@ export async function ucanInvocationRouter(request) {
 
   const claimsServicePrincipal = DID.parse(mustGetEnv('CONTENT_CLAIMS_DID'))
   const claimsServiceURL = new URL(mustGetEnv('CONTENT_CLAIMS_URL'))
+
   let claimsIssuer = getServiceSigner({ privateKey: CONTENT_CLAIMS_PRIVATE_KEY })
   const claimsProofs = []
-  if (CONTENT_CLAIMS_PROOF) {
-    const cid = Link.parse(CONTENT_CLAIMS_PROOF, base64)
+  if (process.env.CONTENT_CLAIMS_PROOF) {
+    const cid = Link.parse(process.env.CONTENT_CLAIMS_PROOF, base64)
     const proof = await Delegation.extract(cid.multihash.digest)
     if (!proof.ok) throw new Error('failed to extract proof', { cause: proof.error })
     claimsProofs.push(proof.ok)

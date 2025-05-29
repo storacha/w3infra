@@ -263,10 +263,6 @@ declare module 'sst/node/config' {
     CONTENT_CLAIMS_PRIVATE_KEY: {
       value: string
     }
-    /** @deprecated */
-    CONTENT_CLAIMS_PROOF: {
-      value: string
-    }
   }
 }
 
