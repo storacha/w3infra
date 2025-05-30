@@ -375,6 +375,9 @@ importers:
       '@storacha/client':
         specifier: 'catalog:'
         version: 1.2.6(encoding@0.1.13)
+      '@storacha/did-mailto':
+        specifier: 'catalog:'
+        version: 1.0.2
       '@storacha/filecoin-client':
         specifier: 'catalog:'
         version: 1.0.6
