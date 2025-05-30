@@ -44,7 +44,6 @@ export default {
         : 'disabled'
     })
 
-    app.stack(PSAStack) // legacy
     app.stack(BusStack) // legacy
     app.stack(UploadDbStack)
     app.stack(RoundaboutStack)
@@ -55,7 +54,6 @@ export default {
     app.stack(FilecoinStack)
     app.stack(IndexerStack)
     app.stack(UploadApiStack)
-    app.stack(ReplicatorStack) // legacy
     app.stack(UcanFirehoseStack)
 
     // tags let us discover all the aws resource costs incurred by this app
