@@ -37,6 +37,7 @@
     "@storacha/blob-index": "catalog:",
     "@storacha/capabilities": "catalog:",
     "@storacha/client": "catalog:",
+    "@storacha/did-mailto": "catalog:",
     "@storacha/filecoin-client": "catalog:",
     "@storacha/upload-api": "catalog:",
     "@storacha/upload-client": "catalog:",

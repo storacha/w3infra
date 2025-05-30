@@ -244,6 +244,10 @@ AWS URL for Elastic IPFS SQS indexer used to request Elastic IPFS to index given
 
 AWS ARN used to request Elastic IPFS to publish IPNI adverts for the given multihashes.
 
+#### `EIPFS_BLOCKS_CAR_POSITION_TABLE_ARN`
+
+AWS ARN for Elastic IPFS DynamoDB table used to store blocks and positions for indexed CAR files.
+
 #### `POSTMARK_TOKEN`
 
 Postmark API token, which is used by the email verification system to send emails.

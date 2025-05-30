@@ -95,7 +95,6 @@ async function handlePieceInsertToFilecoinSubmit (event) {
  */
 function getEnv () {
   return {
-    did: mustGetEnv('DID'),
     storefrontDid: mustGetEnv('STOREFRONT_DID'),
     storefrontUrl: mustGetEnv('STOREFRONT_URL'),
     storefrontProof: process.env.PROOF,

@@ -23,7 +23,7 @@ Sentry.AWSLambda.init({
  * @param {import('aws-lambda').DynamoDBStreamEvent} event
  */
 async function pieceCidReport (event) {
-  const { indexingServiceDid, indexingServiceUrl } = getEnv()
+  const { storefrontDid, indexingServiceDid, indexingServiceUrl } = getEnv()
   const { PRIVATE_KEY: privateKey, INDEXING_SERVICE_PROOF: indexingServiceProof } = Config
 
   const records = parseDynamoDbEvent(event)
@@ -38,7 +38,7 @@ async function pieceCidReport (event) {
 
   const connection = getServiceConnection({
     did: indexingServiceDid,
-    url: indexingServiceUrl
+    url: new URL('/claims', indexingServiceUrl)
   })
   const cid = Link.parse(indexingServiceProof, base64)
   const proof = await Delegation.extract(cid.multihash.digest)
@@ -48,7 +48,7 @@ async function pieceCidReport (event) {
     claimsService: {
       connection,
       invocationConfig: {
-        issuer: getServiceSigner({ privateKey }),
+        issuer: getServiceSigner({ privateKey, did: storefrontDid }),
         audience: connection.id,
         with: connection.id.did(),
         proofs: [proof.ok]
@@ -78,8 +78,9 @@ export const main = Sentry.AWSLambda.wrapHandler(pieceCidReport)
  */
 function getEnv() {
   return {
+    storefrontDid: mustGetEnv('STOREFRONT_DID'),
     indexingServiceDid: mustGetEnv('INDEXING_SERVICE_DID'),
-    indexingServiceUrl: mustGetEnv('INDEXING_SERVICE_URL'),
+    indexingServiceUrl: new URL(mustGetEnv('INDEXING_SERVICE_URL')),
   }
 }
 

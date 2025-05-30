@@ -36,6 +36,8 @@ export function UploadApiStack({ stack, app }) {
     AGGREGATOR_DID,
     INDEXING_SERVICE_DID,
     INDEXING_SERVICE_URL,
+    CONTENT_CLAIMS_DID,
+    CONTENT_CLAIMS_URL,
   } = getEnv()
 
   // Setup app monitoring with Sentry
@@ -43,11 +45,11 @@ export function UploadApiStack({ stack, app }) {
 
   // Get references to constructs created in other stacks
   const { carparkBucket } = use(CarparkStack)
-  const { allocationTable, blobRegistryTable, humanodeTable, storeTable, uploadTable, delegationBucket, delegationTable, revocationTable, adminMetricsTable, spaceMetricsTable, consumerTable, subscriptionTable, storageProviderTable, replicaTable, rateLimitTable, pieceTable, privateKey, indexingServiceProof, githubClientSecret, humanodeClientSecret } = use(UploadDbStack)
+  const { allocationTable, blobRegistryTable, humanodeTable, storeTable, uploadTable, delegationBucket, delegationTable, revocationTable, adminMetricsTable, spaceMetricsTable, consumerTable, subscriptionTable, storageProviderTable, replicaTable, rateLimitTable, pieceTable, privateKey, contentClaimsPrivateKey, indexingServiceProof, githubClientSecret, humanodeClientSecret } = use(UploadDbStack)
   const { agentIndexBucket, agentMessageBucket, ucanStream } = use(UcanInvocationStack)
   const { customerTable, spaceDiffTable, spaceSnapshotTable, egressTrafficTable, stripeSecretKey } = use(BillingDbStack)
   const { pieceOfferQueue, filecoinSubmitQueue } = use(FilecoinStack)
-  const { blockAdvertPublisherQueue } = use(IndexerStack)
+  const { blockAdvertPublisherQueue, blockIndexWriterQueue } = use(IndexerStack)
   const { egressTrafficQueue } = use(BillingStack)
 
   // Setup API
@@ -86,6 +88,7 @@ export function UploadApiStack({ stack, app }) {
               allocationTable, // legacy
               blobRegistryTable,
               blockAdvertPublisherQueue,
+              blockIndexWriterQueue,
               carparkBucket,
               consumerTable,
               customerTable,
@@ -117,7 +120,10 @@ export function UploadApiStack({ stack, app }) {
               ALLOCATION_TABLE_NAME: allocationTable.tableName,
               BLOB_REGISTRY_TABLE_NAME: blobRegistryTable.tableName,
               BLOCK_ADVERT_PUBLISHER_QUEUE_URL: blockAdvertPublisherQueue.queueUrl,
+              BLOCK_INDEX_WRITER_QUEUE_URL: blockIndexWriterQueue.queueUrl,
               CONSUMER_TABLE_NAME: consumerTable.tableName,
+              CONTENT_CLAIMS_DID,
+              CONTENT_CLAIMS_URL,
               CUSTOMER_TABLE_NAME: customerTable.tableName,
               DEAL_TRACKER_DID: process.env.DEAL_TRACKER_DID ?? '',
               DEAL_TRACKER_URL: process.env.DEAL_TRACKER_URL ?? '',
@@ -157,6 +163,7 @@ export function UploadApiStack({ stack, app }) {
               UPLOAD_TABLE_NAME: uploadTable.tableName,
             },
             bind: [
+              contentClaimsPrivateKey,
               indexingServiceProof,
               privateKey,
               stripeSecretKey,
@@ -218,6 +225,7 @@ export function UploadApiStack({ stack, app }) {
               consumerTable,
               customerTable,
               delegationTable,
+              delegationBucket,
               rateLimitTable,
               revocationTable,
               spaceMetricsTable,
@@ -231,6 +239,7 @@ export function UploadApiStack({ stack, app }) {
               CONSUMER_TABLE_NAME: consumerTable.tableName,
               CUSTOMER_TABLE_NAME: customerTable.tableName,
               DELEGATION_TABLE_NAME: delegationTable.tableName,
+              DELEGATION_BUCKET_NAME: delegationBucket.bucketName,
               HOSTED_ZONE: hostedZone ?? '',
               POSTMARK_TOKEN: process.env.POSTMARK_TOKEN ?? '',
               PROVIDERS: process.env.PROVIDERS ?? '',

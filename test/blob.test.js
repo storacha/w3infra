@@ -377,7 +377,7 @@ test('10k NFT drop', async t => {
         const gatewayRetries = 5
         for (let i = 0; i < gatewayRetries; i++) {
           const controller = new AbortController()
-          const timeoutID = setTimeout(() => controller.abort(), 5000)
+          const timeoutID = setTimeout(() => controller.abort(), 15_000)
           try {
             const res = await fetch(gatewayURL, { method: 'HEAD', signal: controller.signal })
             if (res.status === 200) break

@@ -7,13 +7,13 @@ import { getS3Client } from '../../lib/aws/s3.js'
 
 /**
  * Abstraction layer with Factory to perform operations on bucket.
- * 
+ *
  * @param {string} endpoint 
  * @param {string} accessKeyId 
  * @param {string} secretAccessKey 
  * @param {string} bucketName
  */
-export function createDelegationsStore(endpoint, accessKeyId, secretAccessKey, bucketName){
+export function createR2DelegationsStore(endpoint, accessKeyId, secretAccessKey, bucketName) {
   const s3Client = getS3Client({
     region: 'auto',
     endpoint,
@@ -23,6 +23,18 @@ export function createDelegationsStore(endpoint, accessKeyId, secretAccessKey, b
     },
   })
   return useDelegationsStore(s3Client, bucketName)
+}
+
+/**
+ * Abstraction layer with Factory to perform operations on bucket.
+ *
+ * @param {string} region
+ * @param {string} bucketName
+ * @param {Partial<import('../../lib/aws/s3.js').Address>} [options]
+ */
+export function createDelegationsStore(region, bucketName, options) {
+  const s3 = getS3Client({ region, ...options })
+  return useDelegationsStore(s3, bucketName)
 }
 
 /**
