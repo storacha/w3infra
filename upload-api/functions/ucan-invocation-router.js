@@ -28,7 +28,7 @@ import { createAllocationTableBlobRegistry, createBlobRegistry } from '../stores
 import { useProvisionStore } from '../stores/provisions.js'
 import { useSubscriptionsStore } from '../stores/subscriptions.js'
 import { createDelegationsTable } from '../tables/delegations.js'
-import { createDelegationsStore } from '../buckets/delegations-store.js'
+import { createDelegationsStore, createR2DelegationsStore } from '../buckets/delegations-store.js'
 import { createSubscriptionTable } from '../tables/subscription.js'
 import { createConsumerTable } from '../tables/consumer.js'
 import { createRateLimitTable } from '../tables/rate-limit.js'
@@ -143,6 +143,7 @@ export async function ucanInvocationRouter(request) {
     customerTableName,
     subscriptionTableName,
     delegationTableName,
+    delegationBucketName,
     revocationTableName,
     adminMetricsTableName,
     spaceMetricsTableName,
@@ -229,7 +230,9 @@ export async function ucanInvocationRouter(request) {
 
   const blobRegistry = createBlobRegistry(AWS_REGION, blobRegistryTableName, spaceDiffTableName, consumerTableName, metrics, options)
   const allocationBlobRegistry = createAllocationTableBlobRegistry(blobRegistry, AWS_REGION, allocationTableName, options)
-  const delegationBucket = createDelegationsStore(r2DelegationBucketEndpoint, r2DelegationBucketAccessKeyId, r2DelegationBucketSecretAccessKey, r2DelegationBucketName)
+  const delegationBucket = r2DelegationBucketName && r2DelegationBucketEndpoint && r2DelegationBucketAccessKeyId && r2DelegationBucketSecretAccessKey && r2DelegationBucketName
+    ? createR2DelegationsStore(r2DelegationBucketEndpoint, r2DelegationBucketAccessKeyId, r2DelegationBucketSecretAccessKey, r2DelegationBucketName)
+    : createDelegationsStore(AWS_REGION, delegationBucketName)
   const subscriptionTable = createSubscriptionTable(AWS_REGION, subscriptionTableName, options)
   const consumerTable = createConsumerTable(AWS_REGION, consumerTableName, options)
   const customerStore = createCustomerStore({ region: AWS_REGION }, { tableName: customerTableName })
@@ -442,6 +445,7 @@ function getLambdaEnv() {
     consumerTableName: mustGetEnv('CONSUMER_TABLE_NAME'),
     customerTableName: mustGetEnv('CUSTOMER_TABLE_NAME'),
     subscriptionTableName: mustGetEnv('SUBSCRIPTION_TABLE_NAME'),
+    delegationBucketName: mustGetEnv('DELEGATION_BUCKET_NAME'),
     delegationTableName: mustGetEnv('DELEGATION_TABLE_NAME'),
     revocationTableName: mustGetEnv('REVOCATION_TABLE_NAME'),
     spaceMetricsTableName: mustGetEnv('SPACE_METRICS_TABLE_NAME'),
@@ -455,10 +459,10 @@ function getLambdaEnv() {
     pieceOfferQueueUrl: mustGetEnv('PIECE_OFFER_QUEUE_URL'),
     filecoinSubmitQueueUrl: mustGetEnv('FILECOIN_SUBMIT_QUEUE_URL'),
     egressTrafficQueueUrl: mustGetEnv('EGRESS_TRAFFIC_QUEUE_URL'),
-    r2DelegationBucketEndpoint: mustGetEnv('R2_ENDPOINT'),
-    r2DelegationBucketAccessKeyId: mustGetEnv('R2_ACCESS_KEY_ID'),
-    r2DelegationBucketSecretAccessKey: mustGetEnv('R2_SECRET_ACCESS_KEY'),
-    r2DelegationBucketName: mustGetEnv('R2_DELEGATION_BUCKET_NAME'),
+    r2DelegationBucketEndpoint: process.env.R2_ENDPOINT,
+    r2DelegationBucketAccessKeyId: process.env.R2_ACCESS_KEY_ID,
+    r2DelegationBucketSecretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
+    r2DelegationBucketName: process.env.R2_DELEGATION_BUCKET_NAME,
     agentIndexBucketName: mustGetEnv('AGENT_INDEX_BUCKET_NAME'),
     agentMessageBucketName: mustGetEnv('AGENT_MESSAGE_BUCKET_NAME'),
     streamName: mustGetEnv('UCAN_LOG_STREAM_NAME'),
