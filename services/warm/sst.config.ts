@@ -1,25 +1,25 @@
 import type { SSTConfig } from 'sst'
 import { Tags, RemovalPolicy } from 'aws-cdk-lib'
 
-import { BillingStack } from './stacks/billing-stack.js'
-import { BillingDbStack } from './stacks/billing-db-stack.js'
-import { UploadApiStack } from './stacks/upload-api-stack.js'
-import { UploadDbStack } from './stacks/upload-db-stack.js'
-import { UcanInvocationStack } from './stacks/ucan-invocation-stack.js'
-import { BusStack } from './stacks/bus-stack.js'
-import { CarparkStack } from './stacks/carpark-stack.js'
-import { FilecoinStack } from './stacks/filecoin-stack.js'
-import { ReplicatorStack } from './stacks/replicator-stack.js'
-import { UcanFirehoseStack } from './stacks/firehose-stack.js'
-import { IndexerStack } from './stacks/indexer-stack.js'
-import { RoundaboutStack } from './stacks/roundabout-stack.js'
-import { PSAStack } from './stacks/psa-stack.js'
-import { isPrBuild } from './stacks/config.js'
+import { BillingStack } from '../../stacks/billing-stack.js'
+import { BillingDbStack } from '../../stacks/billing-db-stack.js'
+import { UploadApiStack } from '../../stacks/upload-api-stack.js'
+import { UploadDbStack } from '../../stacks/upload-db-stack.js'
+import { UcanInvocationStack } from '../../stacks/ucan-invocation-stack.js'
+import { BusStack } from '../../stacks/bus-stack.js'
+import { CarparkStack } from '../../stacks/carpark-stack.js'
+import { FilecoinStack } from '../../stacks/filecoin-stack.js'
+import { ReplicatorStack } from '../../stacks/replicator-stack.js'
+import { UcanFirehoseStack } from '../../stacks/firehose-stack.js'
+import { IndexerStack } from '../../stacks/indexer-stack.js'
+import { RoundaboutStack } from '../../stacks/roundabout-stack.js'
+import { PSAStack } from '../../stacks/psa-stack.js'
+import { isPrBuild } from '../../stacks/config.js'
 
 export default {
   config(_input) {
     return {
-      name: 'warm-upload-service',
+      name: 'warm-upload-api',
       region: 'us-west-2',
     }
   },
@@ -60,7 +60,7 @@ export default {
 
     // tags let us discover all the aws resource costs incurred by this app
     // see: https://docs.sst.dev/advanced/tagging-resources
-    Tags.of(app).add('Project', 'w3infra')
+    Tags.of(app).add('Project', 'warm-upload-service')
     Tags.of(app).add('Repository', 'https://github.com/storacha/w3infra')
     Tags.of(app).add('Environment', `${app.stage}`)
     Tags.of(app).add('ManagedBy', 'SST')
