@@ -149,6 +149,7 @@ export function FilecoinStack({ stack, app }) {
       function: {
         handler: 'filecoin/functions/handle-piece-insert-to-content-claim.main',
         environment: {
+          STOREFRONT_DID: UPLOAD_API_DID,
           INDEXING_SERVICE_DID,
           INDEXING_SERVICE_URL,
         },

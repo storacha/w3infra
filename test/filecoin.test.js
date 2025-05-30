@@ -64,7 +64,7 @@ test('w3filecoin integration flow', async t => {
             content,
             piece: meta.piece
           })
-          console.log(`shard file written with {${meta.cid}, ${content}, ${meta.piece}}`)
+          console.log(`file written with root: ${content}, shard: ${meta.cid}, piece: ${meta.piece}`)
         }
       })
       t.is(uploadFiles.length, 1)
