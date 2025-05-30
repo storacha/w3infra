@@ -99,7 +99,7 @@ export async function setupNewClient (options = {}) {
       console.log(`  Link: ${authLink}`)
       const res = await fetch(authLink, { method: 'POST' })
       if (!res.ok) {
-        throw new Error('failed to authenticate by clickling on auth link from e-mail')
+        throw new Error(`failed to authenticate by clickling on auth link from e-mail: ${res.status}: ${await res.text()}`)
       }
     })(),
     (async () => {
