@@ -5,7 +5,7 @@ import * as DidMailto from '@storacha/did-mailto'
 import { getServiceSigner, parseServiceDids } from '../config.js'
 import { Email } from '../email.js'
 import { createDelegationsTable } from '../tables/delegations.js'
-import { createDelegationsStore } from '../buckets/delegations-store.js'
+import { createDelegationsStore, createR2DelegationsStore } from '../buckets/delegations-store.js'
 import { createSubscriptionTable } from '../tables/subscription.js'
 import { createConsumerTable } from '../tables/consumer.js'
 import { createRevocationsTable } from '../stores/revocations.js'
@@ -74,6 +74,7 @@ function createAuthorizeContext() {
   const {
     ACCESS_SERVICE_URL = '',
     AWS_REGION = '',
+    DELEGATION_BUCKET_NAME = '',
     DELEGATION_TABLE_NAME = '',
     REVOCATION_TABLE_NAME = '',
     RATE_LIMIT_TABLE_NAME = '',
@@ -101,12 +102,10 @@ function createAuthorizeContext() {
   } = process.env
   const { PRIVATE_KEY } = Config
 
-  const delegationBucket = createDelegationsStore(
-    R2_ENDPOINT,
-    R2_ACCESS_KEY_ID,
-    R2_SECRET_ACCESS_KEY,
-    R2_DELEGATION_BUCKET_NAME
-  )
+  const delegationBucket = R2_DELEGATION_BUCKET_NAME
+    ? createR2DelegationsStore(R2_ENDPOINT, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_DELEGATION_BUCKET_NAME)
+    : createDelegationsStore(AWS_REGION, DELEGATION_BUCKET_NAME)
+
   const subscriptionTable = createSubscriptionTable(
     AWS_REGION,
     SUBSCRIPTION_TABLE_NAME,
