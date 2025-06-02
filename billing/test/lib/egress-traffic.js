@@ -115,7 +115,7 @@ export const test = {
               value_grouping_window: 'hour',
             }
           )
-          if (result && result.data && result.data.length > 0) {
+          if (result && result.data && result.data.length > 0 && result.data[0].aggregated_value > 0) {
             return result
           }
           throw new Error('No aggregated meter event found yet')
