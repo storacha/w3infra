@@ -39,6 +39,7 @@
     "billing",
     "indexer",
     "upload-api",
+    "upload-api/package.json",
     "stacks",
     "carpark",
     "replicator",

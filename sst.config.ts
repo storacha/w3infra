@@ -30,7 +30,6 @@ const getServiceConfig = async (): Promise<SSTConfig|undefined> => {
 export default {
   async config(_input) {
     const sstConfig = await getServiceConfig()
-    console.log(sstConfig)
     if (sstConfig) return sstConfig.config(_input)
     return {
       name: 'w3infra',
