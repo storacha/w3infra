@@ -17,13 +17,10 @@ import { RoundaboutStack } from './stacks/roundabout-stack.js'
 import { PSAStack } from './stacks/psa-stack.js'
 import { isPrBuild } from './stacks/config.js'
 
-console.log('IN ROOT SST CONFIG', process.env)
-
-const getServiceConfig = async () => {
+const getServiceConfig = async (): Promise<SSTConfig|undefined> => {
   const servicePath = process.env.SEED_SERVICE_PATH
   if (servicePath) {
-    const sstConfig = await import(`./${path.join('.', servicePath, 'config.js')}`)
-    return sstConfig.config
+    return import(`./${path.join('.', servicePath, 'config.js')}`)
   }
 }
 
