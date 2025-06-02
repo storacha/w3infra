@@ -14,7 +14,9 @@
   "devDependencies": {
     "@ipld/car": "catalog:",
     "@ipld/dag-pb": "catalog:",
+    "@storacha/capabilities": "catalog:",
     "@ucanto/core": "catalog:",
+    "@ucanto/principal": "catalog:",
     "@web3-storage/data-segment": "catalog:",
     "ava": "catalog:",
     "multiformats": "catalog:",

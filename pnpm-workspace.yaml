@@ -37,7 +37,7 @@ catalog:
   "@sentry/serverless": ^7.74.1
   "@storacha/access": ^1.1.1
   "@storacha/blob-index": ^1.0.5
-  "@storacha/capabilities": ^1.5.0
+  "@storacha/capabilities": ^1.7.0
   "@storacha/client": ^1.2.6
   "@storacha/did-mailto": ^1.0.1
   "@storacha/filecoin-api": ^1.1.6

@@ -5,12 +5,8 @@ import { equals } from 'multiformats/bytes'
 import { PIECE_V1_CODE, PIECE_V1_MULTIHASH, PIECE_V2_MULTIHASH, RAW_CODE } from './constants.js'
 
 /**
- * @import { Delegation, Capability, Resource, UnknownLink } from '@ucanto/interface'
+ * @import { IndexingServiceClient } from '@storacha/indexing-service-client/api'
  */
-
-/** 
- * @typedef {import('@web3-storage/content-claims/client/api').Claim} Claim
- **/
 
 /**
  * Return the cid if it is a Piece CID or undefined if not
@@ -38,7 +34,7 @@ export function asPieceCidV1 (cid) {
  * Find the set of CIDs that are claimed to be equivalent to the Piece CID.
  * 
  * @param {CID} piece
- * @param {Client} [indexingService] - returns content claims for a cid
+ * @param {IndexingServiceClient} [indexingService] - returns content claims for a cid
  */
 export async function findEquivalentCids (piece, indexingService = createIndexingServiceClient()) {
   /** @type {Map<string, import('multiformats').UnknownLink>} */

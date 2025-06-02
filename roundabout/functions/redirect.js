@@ -1,5 +1,6 @@
 import * as Sentry from '@sentry/serverless'
 import { CID } from 'multiformats/cid'
+import { Client } from '@storacha/indexing-service-client'
 
 import { getSigner, contentLocationResolver } from '../index.js'
 import { findEquivalentCids, asPieceCidV1, asPieceCidV2 } from '../piece.js'
@@ -28,15 +29,19 @@ export async function redirectGet(request) {
     return { statusCode: 400, body: err.message }
   }
 
+  const env = process.env.SST_STAGE
+  const indexingService = new Client(env === 'prod' ? {} : { serviceURL: 'https://staging.indexer.storacha.network' })
+
   const locateContent = contentLocationResolver({ 
     bucket: getEnv().BUCKET_NAME,
     s3Client: getBucketClient(),
-    expiresIn
+    expiresIn,
+    indexingService
   })
 
   let response
   if (asPieceCidV2(cid) !== undefined) {
-    response = await resolvePiece(cid, locateContent)
+    response = await resolvePiece(cid, locateContent, indexingService)
   } else if (asPieceCidV1(cid) !== undefined) {
     response = {
       statusCode: 415,
@@ -71,9 +76,10 @@ async function resolveContent (cid, locateContent) {
  * 
  * @param {CID} cid
  * @param {(cid: CID) => Promise<string | undefined> } locateContent
+ * @param {IndexingServiceClient} [indexingService]
  */
-async function resolvePiece (cid, locateContent) {
-  const cids = await findEquivalentCids(cid)
+async function resolvePiece (cid, locateContent, indexingService) {
+  const cids = await findEquivalentCids(cid, indexingService)
   if (cids.size === 0) {
     return { statusCode: 404, body: 'No equivalent CID for Piece CID found' }
   }
