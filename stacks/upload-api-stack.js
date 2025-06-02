@@ -38,6 +38,7 @@ export function UploadApiStack({ stack, app }) {
     INDEXING_SERVICE_URL,
     CONTENT_CLAIMS_DID,
     CONTENT_CLAIMS_URL,
+    DISABLE_IPNI_PUBLISHING
   } = getEnv()
 
   // Setup app monitoring with Sentry
@@ -49,7 +50,21 @@ export function UploadApiStack({ stack, app }) {
   const { agentIndexBucket, agentMessageBucket, ucanStream } = use(UcanInvocationStack)
   const { customerTable, spaceDiffTable, spaceSnapshotTable, egressTrafficTable, stripeSecretKey } = use(BillingDbStack)
   const { pieceOfferQueue, filecoinSubmitQueue } = use(FilecoinStack)
-  const { blockAdvertPublisherQueue, blockIndexWriterQueue } = use(IndexerStack)
+  /** @type {{ permissions: import('sst/constructs').Permissions, environment: Record<string, string> } | undefined} */
+  let ipniConfig
+  if (DISABLE_IPNI_PUBLISHING !== 'true') {
+    const { blockAdvertPublisherQueue, blockIndexWriterQueue } = use(IndexerStack)
+    ipniConfig = {
+      permissions: [
+        blockAdvertPublisherQueue,
+        blockIndexWriterQueue,
+      ],
+      environment: {
+        BLOCK_ADVERT_PUBLISHER_QUEUE_URL: blockAdvertPublisherQueue.queueUrl,
+        BLOCK_INDEX_WRITER_QUEUE_URL: blockIndexWriterQueue.queueUrl,
+      }
+    }
+  }
   const { egressTrafficQueue } = use(BillingStack)
 
   // Setup API
@@ -87,8 +102,6 @@ export function UploadApiStack({ stack, app }) {
               agentMessageBucket,
               allocationTable, // legacy
               blobRegistryTable,
-              blockAdvertPublisherQueue,
-              blockIndexWriterQueue,
               carparkBucket,
               consumerTable,
               customerTable,
@@ -97,6 +110,7 @@ export function UploadApiStack({ stack, app }) {
               egressTrafficQueue,
               egressTrafficTable,
               filecoinSubmitQueue,
+              ...(ipniConfig ? ipniConfig.permissions : []),
               pieceOfferQueue,
               pieceTable,
               rateLimitTable,
@@ -119,8 +133,6 @@ export function UploadApiStack({ stack, app }) {
               AGGREGATOR_DID,
               ALLOCATION_TABLE_NAME: allocationTable.tableName,
               BLOB_REGISTRY_TABLE_NAME: blobRegistryTable.tableName,
-              BLOCK_ADVERT_PUBLISHER_QUEUE_URL: blockAdvertPublisherQueue.queueUrl,
-              BLOCK_INDEX_WRITER_QUEUE_URL: blockIndexWriterQueue.queueUrl,
               CONSUMER_TABLE_NAME: consumerTable.tableName,
               CONTENT_CLAIMS_DID,
               CONTENT_CLAIMS_URL,
@@ -134,6 +146,7 @@ export function UploadApiStack({ stack, app }) {
               FILECOIN_SUBMIT_QUEUE_URL: filecoinSubmitQueue.queueUrl,
               INDEXING_SERVICE_DID,
               INDEXING_SERVICE_URL,
+              ...(ipniConfig ? ipniConfig.environment : {}),
               PIECE_OFFER_QUEUE_URL: pieceOfferQueue.queueUrl,
               PIECE_TABLE_NAME: pieceTable.tableName,
               POSTMARK_TOKEN: process.env.POSTMARK_TOKEN ?? '',
