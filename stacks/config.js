@@ -147,7 +147,11 @@ export function getKinesisStreamConfig (stack) {
 }
 
 export function getApiPackageJson () {
-  return createRequire(import.meta.url)('../upload-api/package.json')
+  try {
+    return createRequire(import.meta.url)('./upload-api/package.json')
+  } catch {
+    return createRequire(import.meta.url)('../upload-api/package.json')
+  }
 }
 
 export function getGitInfo () {
@@ -202,6 +206,7 @@ export function getEnv() {
     // Not required
     STOREFRONT_PROOF: process.env.STOREFRONT_PROOF ?? '',
     DISABLE_PIECE_CID_COMPUTE: process.env.DISABLE_PIECE_CID_COMPUTE ?? '',
-    START_FILECOIN_METRICS_EPOCH_MS: process.env.START_FILECOIN_METRICS_EPOCH_MS ?? ''
+    START_FILECOIN_METRICS_EPOCH_MS: process.env.START_FILECOIN_METRICS_EPOCH_MS ?? '',
+    DISABLE_IPNI_PUBLISHING: process.env.DISABLE_IPNI_PUBLISHING ?? '',
   }
 }
