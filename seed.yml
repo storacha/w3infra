@@ -6,3 +6,7 @@ before_compile:
 
 compile:
   - pnpm install --frozen-lockfile
+
+after_build:
+  - ls .sst
+  - cat .sst/stage
