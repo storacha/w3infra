@@ -9,4 +9,4 @@ compile:
 
 before_deploy:
   - echo -n $SEED_STAGE_NAME > .sst/stage
-  - if [ $SEED_SERVICE_PATH != "" ]; then cp .sst $SEED_SERVICE_FULLPATH/.sst; fi
+  - if [ $SEED_SERVICE_PATH != "" ]; then cp -R .sst $SEED_SERVICE_FULLPATH/.sst; fi
