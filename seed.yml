@@ -8,4 +8,4 @@ compile:
   - pnpm install --frozen-lockfile
 
 before_deploy:
-  - echo $SEED_STAGE_NAME > .sst/stage
+  - echo -n $SEED_STAGE_NAME > .sst/stage
