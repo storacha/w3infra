@@ -1,5 +1,6 @@
 import type { SSTConfig } from 'sst'
 import { Tags, RemovalPolicy } from 'aws-cdk-lib'
+import path from 'node:path'
 
 import { BillingStack } from './stacks/billing-stack.js'
 import { BillingDbStack } from './stacks/billing-db-stack.js'
@@ -19,7 +20,7 @@ import { isPrBuild } from './stacks/config.js'
 const getServiceConfig = async () => {
   const servicePath = process.env.SEED_SERVICE_PATH
   if (servicePath) {
-    const sstConfig = await import(`./${servicePath}/sst.config.ts`)
+    const sstConfig = await import(`./${path.join('.', servicePath, 'sst.config.ts')}`)
     return sstConfig.config
   }
 }
