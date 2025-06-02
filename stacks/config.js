@@ -147,7 +147,7 @@ export function getKinesisStreamConfig (stack) {
 }
 
 export function getApiPackageJson () {
-  return createRequire(import.meta.url)('./upload-api/package.json')
+  return createRequire(import.meta.url)('../upload-api/package.json')
 }
 
 export function getGitInfo () {
