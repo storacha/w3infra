@@ -17,6 +17,8 @@ import { RoundaboutStack } from './stacks/roundabout-stack.js'
 import { PSAStack } from './stacks/psa-stack.js'
 import { isPrBuild } from './stacks/config.js'
 
+// Seed.run does not respect the service path and runs the build in the root of
+// the repo (despite cd'ing into the service path before build command).
 const getServiceConfig = async (): Promise<SSTConfig|undefined> => {
   const servicePath = process.env.SEED_SERVICE_PATH
   if (servicePath) {
