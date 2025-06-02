@@ -22,7 +22,7 @@
     "@storacha/access": "catalog:",
     "@storacha/capabilities": "catalog:",
     "@storacha/did-mailto": "catalog:",
-    "@storacha/indexing-service-client": "^2.1.3",
+    "@storacha/indexing-service-client": "catalog:",
     "@storacha/one-webcrypto": "catalog:",
     "@storacha/upload-api": "catalog:",
     "@ucanto/client": "catalog:",
