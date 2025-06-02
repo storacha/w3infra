@@ -147,10 +147,11 @@ export function getKinesisStreamConfig (stack) {
 }
 
 export function getApiPackageJson () {
+  const require = createRequire(import.meta.url)
   try {
-    return createRequire(import.meta.url)('./upload-api/package.json')
+    return require('./upload-api/package.json')
   } catch {
-    return createRequire(import.meta.url)('../upload-api/package.json')
+    return require('../upload-api/package.json')
   }
 }
 
