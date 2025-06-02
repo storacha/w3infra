@@ -7,8 +7,6 @@ before_compile:
 compile:
   - pnpm install --frozen-lockfile
 
-before_build:
-  - cd $SEED_SERVICE_FULLPATH && pnpm sst build --stage $SEED_STAGE_NAME --verbose --region $SEED_STAGE_REGION --to ./.sst/cdk.out
-
 before_deploy:
   - echo -n $SEED_STAGE_NAME > .sst/stage
+  - if [ $SEED_SERVICE_PATH != "" ]; then cp .sst $SEED_SERVICE_FULLPATH/.sst; fi
