@@ -41,7 +41,9 @@ export default {
     })
 
     // IPNI publishing is force disabled as the indexer stack is not included
-    process.env.DISABLE_IPNI_PUBLISHING = 'true'
+    if (process.env.DISABLE_IPNI_PUBLISHING !== 'true') {
+      throw new Error(`IPNI publishing is required to be disabled - set DISABLE_IPNI_PUBLISHING='true'`)
+    }
 
     app.stack(BusStack) // legacy
     app.stack(UploadDbStack)
