@@ -18,6 +18,7 @@ The repo contains the infra deployment code and the api implementation.
 ├── psa             - lambdas to support migrating Pinning Service API data
 ├── replicator      - lambda to replicate buckets to R2
 ├── roundabout      - redirection service from Piece CID to signed URL
+├── services        - configuration for additional service deployments (e.g. warm)
 ├── stacks          - sst and aws cdk code to deploy all the things
 └── upload-api      - lambda & dynamoDB implementation of the upload-api http gateway
 ```
