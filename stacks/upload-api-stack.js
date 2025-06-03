@@ -142,6 +142,7 @@ export function UploadApiStack({ stack, app }) {
               DELEGATION_BUCKET_NAME: delegationBucket.bucketName,
               DELEGATION_TABLE_NAME: delegationTable.tableName,
               DID: process.env.UPLOAD_API_DID ?? '',
+              DISABLE_IPNI_PUBLISHING,
               EGRESS_TRAFFIC_QUEUE_URL: egressTrafficQueue.queueUrl,
               FILECOIN_SUBMIT_QUEUE_URL: filecoinSubmitQueue.queueUrl,
               INDEXING_SERVICE_DID,
