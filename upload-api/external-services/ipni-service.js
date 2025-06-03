@@ -207,10 +207,3 @@ export class BlockIndexWriterQueue {
     }
   }
 }
-
-/**
- * Creates an IPNI service that does not publish to IPNI.
- * 
- * @returns {import('@storacha/upload-api').IPNIService}
- */
-export const createNoopIPNIService = () => ({ publish: async () => ok({}) })

@@ -44,7 +44,7 @@ import { createSpaceDiffStore } from '../../billing/tables/space-diff.js'
 import { createSpaceSnapshotStore } from '../../billing/tables/space-snapshot.js'
 import { useUsageStore } from '../stores/usage.js'
 import { createStripeBillingProvider } from '../billing.js'
-import { createIPNIService, createNoopIPNIService } from '../external-services/ipni-service.js'
+import { createIPNIService } from '../external-services/ipni-service.js'
 import { mustGetEnv } from '../../lib/env.js'
 import { createEgressTrafficQueue } from '../../billing/queues/egress-traffic.js'
 import { create as createRoutingService } from '../external-services/router.js'
@@ -255,13 +255,14 @@ export async function ucanInvocationRouter(request) {
     url: dealTrackerUrl
   })
 
-  const ipniService = ipniConfig
-    ? createIPNIService(
-        ipniConfig.blockAdvertisementPublisherQueue,
-        ipniConfig.blockIndexWriterQueue,
-        blobsStorage
-      )
-    : createNoopIPNIService()
+  let ipniService
+  if (ipniConfig) {
+    ipniService = createIPNIService(
+      ipniConfig.blockAdvertisementPublisherQueue,
+      ipniConfig.blockIndexWriterQueue,
+      blobsStorage
+    )
+  }
 
   const claimsServicePrincipal = DID.parse(mustGetEnv('CONTENT_CLAIMS_DID'))
   const claimsServiceURL = new URL(mustGetEnv('CONTENT_CLAIMS_URL'))
