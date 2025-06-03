@@ -120,15 +120,15 @@ export const knownWebDIDs = {
  */
 export async function ucanInvocationRouter(request) {
   try {
-      // Capture X-Client custom header for analytics
-      const clientId = Object.entries(request.headers)
+    // Capture X-Client custom header for analytics
+    const clientId = Object.entries(request.headers)
       .find(([key]) => key.toLowerCase() === 'x-client')?.[1] ?? 'Storacha/?'
-      console.log(JSON.stringify({
-        message: 'Client request',
-        clientId,
-        requestId: request.requestContext?.requestId || 'unknown',
-          timestamp: new Date().toISOString()
-      }))
+    console.log(JSON.stringify({
+      message: 'Client request',
+      clientId,
+      requestId: request.requestContext?.requestId || 'unknown',
+      timestamp: new Date().toISOString()
+    }))
   } catch (error) {
     console.error(error)
   }
