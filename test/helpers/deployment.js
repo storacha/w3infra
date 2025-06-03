@@ -18,7 +18,11 @@ export function getStage () {
 
 export const getStackName = () => {
   const stage = getStage()
-  const service = process.env.SEED_SERVICE_NAME ?? 'w3infra'
+  // you can change the service name in seed and it is currently different to
+  // what is configured in sst.config :(
+  const service = process.env.SEED_SERVICE_NAME === 'upload-api'
+    ? 'w3infra'
+    : (process.env.SEED_SERVICE_NAME ?? 'w3infra')
   return `${stage}-${service}`
 }
 
