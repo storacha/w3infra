@@ -18,7 +18,8 @@ export function getStage () {
 
 export const getStackName = () => {
   const stage = getStage()
-  return `${stage}-w3infra`
+  const service = process.env.SEED_SERVICE_NAME ?? 'w3infra'
+  return `${stage}-${service}`
 }
 
 export const getCloudflareBucketClient = () => new S3Client({
