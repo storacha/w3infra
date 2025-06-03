@@ -36,9 +36,8 @@ export const getAwsBucketClient = (region = getAwsRegion()) => new S3Client({
 
 export const getApiEndpoint = () => {
   // CI/CD deployment
-  if (process.env.SEED_APP_NAME) {
-    const stage = getStage()
-    return `https://${stage}.up.storacha.network`
+  if (process.env.SEED_APP_NAME) {    
+    return `https://${process.env.UPLOAD_API_DID.replace('did:key:', '')}`
   }
 
   const require = createRequire(import.meta.url)
