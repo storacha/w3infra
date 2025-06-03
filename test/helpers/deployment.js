@@ -37,7 +37,7 @@ export const getAwsBucketClient = (region = getAwsRegion()) => new S3Client({
 export const getApiEndpoint = () => {
   // CI/CD deployment
   if (process.env.SEED_APP_NAME) {    
-    return `https://${process.env.UPLOAD_API_DID.replace('did:key:', '')}`
+    return `https://${process.env.UPLOAD_API_DID.replace('did:web:', '')}`
   }
 
   const require = createRequire(import.meta.url)
