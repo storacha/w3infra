@@ -177,8 +177,7 @@ export async function ucanInvocationRouter(request) {
     carparkBucketEndpoint,
     carparkBucketAccessKeyId,
     carparkBucketSecretAccessKey,
-    blockAdvertisementPublisherQueueConfig,
-    blockIndexWriterQueueConfig,
+    ipniConfig,
     sstStage
   } = getLambdaEnv()
 
@@ -256,11 +255,14 @@ export async function ucanInvocationRouter(request) {
     url: dealTrackerUrl
   })
 
-  const ipniService = createIPNIService(
-    blockAdvertisementPublisherQueueConfig,
-    blockIndexWriterQueueConfig,
-    blobsStorage
-  )
+  let ipniService
+  if (ipniConfig) {
+    ipniService = createIPNIService(
+      ipniConfig.blockAdvertisementPublisherQueue,
+      ipniConfig.blockIndexWriterQueue,
+      blobsStorage
+    )
+  }
 
   const claimsServicePrincipal = DID.parse(mustGetEnv('CONTENT_CLAIMS_DID'))
   const claimsServiceURL = new URL(mustGetEnv('CONTENT_CLAIMS_URL'))
@@ -480,14 +482,18 @@ function getLambdaEnv() {
     carparkBucketAccessKeyId: mustGetEnv('R2_ACCESS_KEY_ID'),
     carparkBucketSecretAccessKey: mustGetEnv('R2_SECRET_ACCESS_KEY'),
     // IPNI service
-    blockAdvertisementPublisherQueueConfig: {
-      url: new URL(mustGetEnv('BLOCK_ADVERT_PUBLISHER_QUEUE_URL')),
-      region: AWS_REGION
-    },
-    blockIndexWriterQueueConfig: {
-      url: new URL(mustGetEnv('BLOCK_INDEX_WRITER_QUEUE_URL')),
-      region: AWS_REGION
-    },
+    ipniConfig: process.env.DISABLE_IPNI_PUBLISHING === 'true' 
+      ? null
+      : {
+        blockAdvertisementPublisherQueue: {
+          url: new URL(mustGetEnv('BLOCK_ADVERT_PUBLISHER_QUEUE_URL')),
+          region: AWS_REGION
+        },
+        blockIndexWriterQueue: {
+          url: new URL(mustGetEnv('BLOCK_INDEX_WRITER_QUEUE_URL')),
+          region: AWS_REGION
+        }
+      },
     sstStage: mustGetEnv('SST_STAGE'),
     principalMapping:
       /** @type {Record<`did:web:${string}`, `did:key:${string}`>} */

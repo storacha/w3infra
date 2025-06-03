@@ -109,8 +109,8 @@ catalogs:
       specifier: ^1.0.1
       version: 1.0.1
     '@storacha/upload-api':
-      specifier: ^2.0.0-rc.0
-      version: 2.0.0-rc.0
+      specifier: ^2.0.0-rc.1
+      version: 2.0.0-rc.1
     '@storacha/upload-client':
       specifier: ^1.0.9
       version: 1.0.9
@@ -383,7 +383,7 @@ importers:
         version: 1.0.6
       '@storacha/upload-api':
         specifier: 'catalog:'
-        version: 2.0.0-rc.0
+        version: 2.0.0-rc.1
       '@storacha/upload-client':
         specifier: 'catalog:'
         version: 1.0.9(encoding@0.1.13)
@@ -852,7 +852,7 @@ importers:
     dependencies:
       '@storacha/upload-api':
         specifier: 'catalog:'
-        version: 2.0.0-rc.0
+        version: 2.0.0-rc.1
     devDependencies:
       '@aws-sdk/client-dynamodb':
         specifier: 'catalog:'
@@ -934,7 +934,7 @@ importers:
         version: 1.0.1
       '@storacha/upload-api':
         specifier: 'catalog:'
-        version: 2.0.0-rc.0
+        version: 2.0.0-rc.1
       '@ucanto/client':
         specifier: 'catalog:'
         version: 9.0.1
@@ -4208,8 +4208,8 @@ packages:
   '@storacha/one-webcrypto@1.0.1':
     resolution: {integrity: sha512-bD+vWmcgsEBqU0Dz04BR43SA03bBoLTAY29vaKasY9Oe8cb6XIP0/vkm0OS2UwKC13c8uRgFW4rjJUgDCNLejQ==}
 
-  '@storacha/upload-api@2.0.0-rc.0':
-    resolution: {integrity: sha512-5FzH8H0Sm5kSs54pup3W+miDe5k5zQDZlnzubT4vfNpK3Hd3puRkp3gBgJB25147fH73jgUDF1k0RFPKurC94w==}
+  '@storacha/upload-api@2.0.0-rc.1':
+    resolution: {integrity: sha512-WX/R3N4ik+0tLBLMVAb/7MyFdJTUqdv1Btc0IRBT2NcM3IvVoJqo7oDHQqx1gDq6CvZmjBiKUJtcx/9ZVCOoMw==}
     engines: {node: '>=16.15'}
 
   '@storacha/upload-client@1.0.9':
@@ -17068,7 +17068,7 @@ snapshots:
 
   '@storacha/one-webcrypto@1.0.1': {}
 
-  '@storacha/upload-api@2.0.0-rc.0':
+  '@storacha/upload-api@2.0.0-rc.1':
     dependencies:
       '@storacha/access': 1.2.2
       '@storacha/blob-index': 1.1.0

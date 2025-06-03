@@ -8,7 +8,6 @@ import { BusStack } from '../../stacks/bus-stack.js'
 import { CarparkStack } from '../../stacks/carpark-stack.js'
 import { FilecoinStack } from '../../stacks/filecoin-stack.js'
 import { UcanFirehoseStack } from '../../stacks/firehose-stack.js'
-import { IndexerStack } from '../../stacks/indexer-stack.js'
 import { RoundaboutStack } from '../../stacks/roundabout-stack.js'
 import { isPrBuild } from '../../stacks/config.js'
 
@@ -41,6 +40,9 @@ export default {
         : 'disabled'
     })
 
+    // IPNI publishing is force disabled as the indexer stack is not included
+    process.env.DISABLE_IPNI_PUBLISHING = 'true'
+
     app.stack(BusStack) // legacy
     app.stack(UploadDbStack)
     app.stack(RoundaboutStack)
@@ -49,7 +51,6 @@ export default {
     app.stack(UcanInvocationStack)
     app.stack(BillingStack)
     app.stack(FilecoinStack)
-    app.stack(IndexerStack)
     app.stack(UploadApiStack)
     app.stack(UcanFirehoseStack)
 
