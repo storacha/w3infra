@@ -22,7 +22,7 @@ import { isPrBuild } from './stacks/config.js'
 const getServiceConfig = async (): Promise<SSTConfig|undefined> => {
   const servicePath = process.env.SEED_SERVICE_PATH
   if (servicePath) {
-    const sstConfig = await import(`./${path.join('.', servicePath, 'config.js')}`)
+    const sstConfig = await import(`./${path.join('.', servicePath, 'sst.config.js')}`)
     return sstConfig.default
   }
 }

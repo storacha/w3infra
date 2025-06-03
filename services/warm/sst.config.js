@@ -12,6 +12,7 @@ import { IndexerStack } from '../../stacks/indexer-stack.js'
 import { RoundaboutStack } from '../../stacks/roundabout-stack.js'
 import { isPrBuild } from '../../stacks/config.js'
 
+/** @type {import('sst').SSTConfig} */
 export default {
   config(_input) {
     return {
@@ -54,9 +55,9 @@ export default {
 
     // tags let us discover all the aws resource costs incurred by this app
     // see: https://docs.sst.dev/advanced/tagging-resources
-    Tags.of(app).add('Project', 'warm-upload-service')
+    Tags.of(app).add('Project', 'warm-upload-api')
     Tags.of(app).add('Repository', 'https://github.com/storacha/w3infra')
-    Tags.of(app).add('Environment', `${app.stage}`)
+    Tags.of(app).add('Environment', app.stage)
     Tags.of(app).add('ManagedBy', 'SST')
   },
 }

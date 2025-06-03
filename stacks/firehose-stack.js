@@ -33,7 +33,7 @@ export function UcanFirehoseStack ({ stack, app }) {
     cors: true,
     cdk: {
       bucket: {
-        ...getBucketConfig('stream-log-store', app.stage),
+        ...getBucketConfig('stream-log-store', app.stage, app.name),
         lifecycleRules: [
           // disable this for now - maybe we do want lifecycle rules eventually but we DEFINITELY don't want to expire these logs!
           // {
@@ -772,7 +772,7 @@ export function UcanFirehoseStack ({ stack, app }) {
     cors: true,
     cdk: {
       bucket: {
-        ...getBucketConfig('athena-w3up-results', app.stage),
+        ...getBucketConfig('athena-w3up-results', app.stage, app.name),
         lifecycleRules: [{
           enabled: true,
           expiration: Duration.days(7)
@@ -1098,7 +1098,7 @@ INNER JOIN accepted_aggregates ON accepted_aggregates.cid = value.att[1].nb.aggr
     cors: true,
     cdk: {
       bucket: {
-        ...getBucketConfig('athena-dynamo-spill', app.stage),
+        ...getBucketConfig('athena-dynamo-spill', app.stage, app.name),
         lifecycleRules: [{
           enabled: true,
           expiration: Duration.days(1)

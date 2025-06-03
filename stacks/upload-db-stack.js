@@ -99,7 +99,7 @@ export function UploadDbStack({ stack, app }) {
   const delegationBucket = new Bucket(stack, 'delegation-store', {
     cors: true,
     cdk: {
-      bucket: getBucketConfig('delegation', app.stage)
+      bucket: getBucketConfig('delegation', app.stage, app.name)
     }
   })
 

@@ -21,7 +21,7 @@ export function UcanInvocationStack({ stack, app }) {
     cors: true,
     cdk: {
       bucket: {
-        ...getBucketConfig('workflow-store', app.stage),
+        ...getBucketConfig('workflow-store', app.stage, app.name),
         // change the defaults accordingly to allow access via new Policy
         blockPublicAccess: {
           blockPublicAcls: true,
@@ -45,7 +45,7 @@ export function UcanInvocationStack({ stack, app }) {
   const agentIndexBucket = new Bucket(stack, 'invocation-store', {
     cors: true,
     cdk: {
-      bucket: getBucketConfig('invocation-store', app.stage)
+      bucket: getBucketConfig('invocation-store', app.stage, app.name)
     }
   })
 
@@ -53,7 +53,7 @@ export function UcanInvocationStack({ stack, app }) {
   new Bucket(stack, 'ucan-store', {
     cors: true,
     cdk: {
-      bucket: getBucketConfig('ucan-store', app.stage)
+      bucket: getBucketConfig('ucan-store', app.stage, app.name)
     }
   })
 

@@ -15,11 +15,17 @@ import { mustGetEnv } from '../lib/env.js'
  *
  * @param {string} name
  * @param {string} stage
+ * @param {string} app
  * @param {number} version
  */
-export function getBucketName (name, stage, version = 0) {
-  // e.g `carpark-prod-0` or `carpark-pr101-0`
-  return `${name}-${stage}-${version}`
+export function getBucketName (name, stage, app, version = 0) {
+  // if w3infra we use legacy naming conventions which unfortunately don't
+  // produce a unique bucket name across service deployments.
+  if (app === 'w3infra') {
+    // e.g `carpark-prod-0` or `carpark-pr101-0`
+    return `${name}-${stage}-${version}`
+  }
+  return `${stage}-${app}-${name}${version > 0 ? '-' + version : ''}`
 }
 
 /**
@@ -47,11 +53,12 @@ export function isPrBuild (stage) {
 /**
  * @param {string} name
  * @param {string} stage
+ * @param {string} app
  * @param {number} version
  */
-export function getBucketConfig(name, stage, version = 0){
+export function getBucketConfig(name, stage, app, version = 0){
   return {
-    bucketName: getBucketName(name, stage, version),
+    bucketName: getBucketName(name, stage, app, version),
     ...(isPrBuild(stage) && {
       autoDeleteObjects: true,
       removalPolicy: RemovalPolicy.DESTROY
