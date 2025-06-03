@@ -46,13 +46,13 @@ export function UcanFirehoseStack ({ stack, app }) {
   })
 
   // Roles for delivery stream
-  const deliveryStreamRoleName = getCdkNames('ucan-stream-delivery-role', app.stage)
+  const deliveryStreamRoleName = getCdkNames('ucan-stream-delivery-role', app.stage, app.name)
   const deliveryStreamRole = new iam.Role(stack, deliveryStreamRoleName, {
     assumedBy: new iam.ServicePrincipal('firehose.amazonaws.com'),
     roleName: deliveryStreamRoleName
   })
 
-  const logGroupName = getCdkNames('ucan-stream-delivery-error-logging', app.stage)
+  const logGroupName = getCdkNames('ucan-stream-delivery-error-logging', app.stage, app.name)
   const cfnLogGroup = new logs.CfnLogGroup(stack, logGroupName, {
     retentionInDays: 90,
     logGroupName
@@ -60,7 +60,7 @@ export function UcanFirehoseStack ({ stack, app }) {
 
   // Assign permissions
   ucanStream.cdk.stream.grantRead(deliveryStreamRole)
-  const policyName = getCdkNames('ucan-stream-delivery-policy', app.stage)
+  const policyName = getCdkNames('ucan-stream-delivery-policy', app.stage, app.name)
   new iam.Policy(stack, policyName, {
     policyName,
     roles: [deliveryStreamRole],
@@ -101,7 +101,7 @@ export function UcanFirehoseStack ({ stack, app }) {
   })
 
   // Create AWS Kinesis Firehose
-  const deliveryStreamName = getCdkNames('ucan-stream-delivery', app.stage)
+  const deliveryStreamName = getCdkNames('ucan-stream-delivery', app.stage, app.name)
   const deliveryFirehose = new firehose.CfnDeliveryStream(stack, deliveryStreamName, {
     deliveryStreamName,
     deliveryStreamType: 'KinesisStreamAsSource',
@@ -167,7 +167,7 @@ export function UcanFirehoseStack ({ stack, app }) {
   deliveryFirehose.node.addDependency(deliveryStreamRole)
 
   // Glue database
-  const databaseName = getCdkNames('ucan-stream-delivery-database', app.stage)
+  const databaseName = getCdkNames('ucan-stream-delivery-database', app.stage, app.name)
   const glueDatabase = new glue.CfnDatabase(stack, databaseName, {
     catalogId: Aws.ACCOUNT_ID,
     databaseInput: {
@@ -179,7 +179,7 @@ export function UcanFirehoseStack ({ stack, app }) {
   // https://console.aws.amazon.com/glue/home#/v2/data-catalog/tables
   // and in the data browser in the Athena Query editor at
   // https://console.aws.amazon.com/athena/home#/query-editor
-  const receiptTableName = getCdkNames('ucan-receipt-table', app.stage)
+  const receiptTableName = getCdkNames('ucan-receipt-table', app.stage, app.name)
   const receiptTable = new glue.CfnTable(stack, receiptTableName, {
     catalogId: Aws.ACCOUNT_ID,
     databaseName,
@@ -231,7 +231,7 @@ export function UcanFirehoseStack ({ stack, app }) {
   // https://console.aws.amazon.com/glue/home#/v2/data-catalog/tables
   // and in the data browser in the Athena Query editor at
   // https://console.aws.amazon.com/athena/home#/query-editor
-  const storeAddTableName = getCdkNames('store-add-table', app.stage)
+  const storeAddTableName = getCdkNames('store-add-table', app.stage, app.name)
   const storeAddTable = new glue.CfnTable(stack, storeAddTableName, {
     catalogId: Aws.ACCOUNT_ID,
     databaseName,
@@ -280,7 +280,7 @@ export function UcanFirehoseStack ({ stack, app }) {
   // https://console.aws.amazon.com/glue/home#/v2/data-catalog/tables
   // and in the data browser in the Athena Query editor at
   // https://console.aws.amazon.com/athena/home#/query-editor
-  const spaceBlobAddTableName = getCdkNames('space-blob-add-table', app.stage)
+  const spaceBlobAddTableName = getCdkNames('space-blob-add-table', app.stage, app.name)
   const spaceBlobAddTable = new glue.CfnTable(stack, spaceBlobAddTableName, {
     catalogId: Aws.ACCOUNT_ID,
     databaseName,
@@ -329,7 +329,7 @@ export function UcanFirehoseStack ({ stack, app }) {
   // https://console.aws.amazon.com/glue/home#/v2/data-catalog/tables
   // and in the data browser in the Athena Query editor at
   // https://console.aws.amazon.com/athena/home#/query-editor
-  const blobAllocateTableName = getCdkNames('blob-allocate-table', app.stage)
+  const blobAllocateTableName = getCdkNames('blob-allocate-table', app.stage, app.name)
   const blobAllocateTable = new glue.CfnTable(stack, blobAllocateTableName, {
     catalogId: Aws.ACCOUNT_ID,
     databaseName,
@@ -379,7 +379,7 @@ export function UcanFirehoseStack ({ stack, app }) {
   // https://console.aws.amazon.com/glue/home#/v2/data-catalog/tables
   // and in the data browser in the Athena Query editor at
   // https://console.aws.amazon.com/athena/home#/query-editor
-  const blobAcceptTableName = getCdkNames('blob-accept-table', app.stage)
+  const blobAcceptTableName = getCdkNames('blob-accept-table', app.stage, app.name)
   const blobAcceptTable = new glue.CfnTable(stack, blobAcceptTableName, {
     catalogId: Aws.ACCOUNT_ID,
     databaseName,
@@ -429,7 +429,7 @@ export function UcanFirehoseStack ({ stack, app }) {
   // https://console.aws.amazon.com/glue/home#/v2/data-catalog/tables
   // and in the data browser in the Athena Query editor at
   // https://console.aws.amazon.com/athena/home#/query-editor
-  const uploadAddTableName = getCdkNames('upload-add-table', app.stage)
+  const uploadAddTableName = getCdkNames('upload-add-table', app.stage, app.name)
   const uploadAddTable = new glue.CfnTable(stack, uploadAddTableName, {
     catalogId: Aws.ACCOUNT_ID,
     databaseName,
@@ -478,7 +478,7 @@ export function UcanFirehoseStack ({ stack, app }) {
   // https://console.aws.amazon.com/glue/home#/v2/data-catalog/tables
   // and in the data browser in the Athena Query editor at
   // https://console.aws.amazon.com/athena/home#/query-editor
-  const storeRemoveTableName = getCdkNames('store-remove-table', app.stage)
+  const storeRemoveTableName = getCdkNames('store-remove-table', app.stage, app.name)
   const storeRemoveTable = new glue.CfnTable(stack, storeRemoveTableName, {
     catalogId: Aws.ACCOUNT_ID,
     databaseName,
@@ -527,7 +527,7 @@ export function UcanFirehoseStack ({ stack, app }) {
   // https://console.aws.amazon.com/glue/home#/v2/data-catalog/tables
   // and in the data browser in the Athena Query editor at
   // https://console.aws.amazon.com/athena/home#/query-editor
-  const blobRemoveTableName = getCdkNames('blob-remove-table', app.stage)
+  const blobRemoveTableName = getCdkNames('blob-remove-table', app.stage, app.name)
   const blobRemoveTable = new glue.CfnTable(stack, blobRemoveTableName, {
     catalogId: Aws.ACCOUNT_ID,
     databaseName,
@@ -576,7 +576,7 @@ export function UcanFirehoseStack ({ stack, app }) {
   // https://console.aws.amazon.com/glue/home#/v2/data-catalog/tables
   // and in the data browser in the Athena Query editor at
   // https://console.aws.amazon.com/athena/home#/query-editor
-  const uploadRemoveTableName = getCdkNames('upload-remove-table', app.stage)
+  const uploadRemoveTableName = getCdkNames('upload-remove-table', app.stage, app.name)
   const uploadRemoveTable = new glue.CfnTable(stack, uploadRemoveTableName, {
     catalogId: Aws.ACCOUNT_ID,
     databaseName,
@@ -625,7 +625,7 @@ export function UcanFirehoseStack ({ stack, app }) {
   // https://console.aws.amazon.com/glue/home#/v2/data-catalog/tables
   // and in the data browser in the Athena Query editor at
   // https://console.aws.amazon.com/athena/home#/query-editor
-  const providerAddTableName = getCdkNames('provider-add-table', app.stage)
+  const providerAddTableName = getCdkNames('provider-add-table', app.stage, app.name)
   const providerAddTable = new glue.CfnTable(stack, providerAddTableName, {
     catalogId: Aws.ACCOUNT_ID,
     databaseName,
@@ -674,7 +674,7 @@ export function UcanFirehoseStack ({ stack, app }) {
   // https://console.aws.amazon.com/glue/home#/v2/data-catalog/tables
   // and in the data browser in the Athena Query editor at
   // https://console.aws.amazon.com/athena/home#/query-editor
-  const aggregateOfferTableName = getCdkNames('aggregate-offer-table', app.stage)
+  const aggregateOfferTableName = getCdkNames('aggregate-offer-table', app.stage, app.name)
   const aggregateOfferTable = new glue.CfnTable(stack, aggregateOfferTableName, {
     catalogId: Aws.ACCOUNT_ID,
     databaseName,
@@ -723,7 +723,7 @@ export function UcanFirehoseStack ({ stack, app }) {
   // https://console.aws.amazon.com/glue/home#/v2/data-catalog/tables
   // and in the data browser in the Athena Query editor at
   // https://console.aws.amazon.com/athena/home#/query-editor
-  const aggregateAcceptTableName = getCdkNames('aggregate-accept-table', app.stage)
+  const aggregateAcceptTableName = getCdkNames('aggregate-accept-table', app.stage, app.name)
   const aggregateAcceptTable = new glue.CfnTable(stack, aggregateAcceptTableName, {
     catalogId: Aws.ACCOUNT_ID,
     databaseName,
@@ -785,7 +785,7 @@ export function UcanFirehoseStack ({ stack, app }) {
   // to use the queries below, Athena users must select the appropriate 
   // workspace in the query editor at:
   // https://console.aws.amazon.com/athena/home#/query-editor
-  const workgroupName = getCdkNames('w3up', app.stage)
+  const workgroupName = getCdkNames('w3up', app.stage, app.name)
   const workgroup = new athena.CfnWorkGroup(stack, workgroupName, {
     name: workgroupName,
     workGroupConfiguration: {
@@ -798,7 +798,7 @@ export function UcanFirehoseStack ({ stack, app }) {
   // create a query that can be executed by going to 
   // https://console.aws.amazon.com/athena/home#/query-editor/saved-queries
   // and selecting the appropriate Workgroup from the dropdown in the upper right
-  const inputOutputQueryName = getCdkNames('input-output-query', app.stage)
+  const inputOutputQueryName = getCdkNames('input-output-query', app.stage, app.name)
   const inputOutputQuery = new athena.CfnNamedQuery(stack, inputOutputQueryName, {
     name: "Inputs and Outputs, last 24 hours",
     description: `${app.stage} w3up preload`,
@@ -817,7 +817,7 @@ WHERE day >= (CURRENT_DATE - INTERVAL '1' DAY)
   // create a query that can be executed by going to 
   // https://console.aws.amazon.com/athena/home#/query-editor/saved-queries
   // and selecting the appropriate Workgroup from the dropdown in the upper right
-  const dataStoredQueryName = getCdkNames('data-stored-query', app.stage)
+  const dataStoredQueryName = getCdkNames('data-stored-query', app.stage, app.name)
   const dataStoredQuery = new athena.CfnNamedQuery(stack, dataStoredQueryName, {
     name: "Data stored by space, past 7 days",
     description: `${app.stage} w3up preload`,
@@ -838,7 +838,7 @@ GROUP BY value.att[1]."with"
   // create a query that can be executed by going to 
   // https://console.aws.amazon.com/athena/home#/query-editor/saved-queries
   // and selecting the appropriate Workgroup from the dropdown in the upper right
-  const storesBySpaceQueryName = getCdkNames('stores-by-space-query', app.stage)
+  const storesBySpaceQueryName = getCdkNames('stores-by-space-query', app.stage, app.name)
   const storesBySpaceQuery = new athena.CfnNamedQuery(stack, storesBySpaceQueryName, {
     name: "Stores, past 7 days",
     description: `${app.stage} w3up preload
@@ -881,7 +881,7 @@ stores_by_account AS (
   // create a query that can be executed by going to 
   // https://console.aws.amazon.com/athena/home#/query-editor/saved-queries
   // and selecting the appropriate Workgroup from the dropdown in the upper right
-  const uploadsQueryName = getCdkNames('uploads-query', app.stage)
+  const uploadsQueryName = getCdkNames('uploads-query', app.stage, app.name)
   const uploadsQuery = new athena.CfnNamedQuery(stack, uploadsQueryName, {
     name: "Uploads, past 7 days",
     description: `${app.stage} w3up preload
@@ -924,7 +924,7 @@ uploads_by_account AS (
   // create a query that can be executed by going to 
   // https://console.aws.amazon.com/athena/home#/query-editor/saved-queries
   // and selecting the appropriate Workgroup from the dropdown in the upper right
-  const uploadVolumeSizeQueryName = getCdkNames('upload-volume-size-query', app.stage)
+  const uploadVolumeSizeQueryName = getCdkNames('upload-volume-size-query', app.stage, app.name)
   const uploadVolumeSizeQuery = new athena.CfnNamedQuery(stack, uploadVolumeSizeQueryName, {
     name: "Users with highest upload volume (by size), past day",
     description: `${app.stage} w3up preload
@@ -965,7 +965,7 @@ stores_by_account AS (
   // create a query that can be executed by going to
   // https://console.aws.amazon.com/athena/home#/query-editor/saved-queries
   // and selecting the appropriate Workgroup from the dropdown in the upper right
-  const uploadVolumeCountQueryName = getCdkNames('upload-volume-count-query', app.stage)
+  const uploadVolumeCountQueryName = getCdkNames('upload-volume-count-query', app.stage, app.name)
   const uploadVolumeCountQuery = new athena.CfnNamedQuery(stack, uploadVolumeCountQueryName, {
     name: "Users with highest upload volume (by count), past day",
     description: `${app.stage} w3up preload
@@ -1007,7 +1007,7 @@ uploads_by_account AS (
   // create a query that can be executed by going to
   // https://console.aws.amazon.com/athena/home#/query-editor/saved-queries
   // and selecting the appropriate Workgroup from the dropdown in the upper right
-  const uploadsBySpaceAndSizeQueryName = getCdkNames('uploads-by-space-and-size', app.stage)
+  const uploadsBySpaceAndSizeQueryName = getCdkNames('uploads-by-space-and-size', app.stage, app.name)
   const uploadsBySpaceAndSizeQuery = new athena.CfnNamedQuery(stack, uploadsBySpaceAndSizeQueryName, {
     name: "Uploads by space and size, last 2 days",
     description: `${app.stage} w3up preload
@@ -1062,7 +1062,7 @@ ORDER BY upload_ts DESC
   // create a query that can be executed by going to 
   // https://console.aws.amazon.com/athena/home#/query-editor/saved-queries
   // and selecting the appropriate Workgroup from the dropdown in the upper right
-  const aggregateHoursToDataCommitedQueryName = getCdkNames('aggregate-hours-to-data-commited-query', app.stage)
+  const aggregateHoursToDataCommitedQueryName = getCdkNames('aggregate-hours-to-data-commited-query', app.stage, app.name)
   const aggregateHoursToDataCommitedQuery = new athena.CfnNamedQuery(stack, aggregateHoursToDataCommitedQueryName, {
     name: "Hours to data commited per aggregate in the last 7 days",
     description: `${app.stage} w3up preload
@@ -1107,8 +1107,8 @@ INNER JOIN accepted_aggregates ON accepted_aggregates.cid = value.att[1].nb.aggr
     }
   })
 
-  const dynamoAthenaLambdaName = getCdkNames('dynamo-athena', app.stage)
-  const athenaDynamoConnector = new sam.CfnApplication(stack, getCdkNames('athena-dynamo-connector', app.stage), {
+  const dynamoAthenaLambdaName = getCdkNames('dynamo-athena', app.stage, app.name)
+  const athenaDynamoConnector = new sam.CfnApplication(stack, getCdkNames('athena-dynamo-connector', app.stage, app.name), {
     // I got this ARN and version from the AWS admin UI after configuring the Athena Dynamo connector manually using these instructions:
     // https://docs.aws.amazon.com/athena/latest/ug/connect-data-source-serverless-app-repo.html
     location: {
@@ -1123,8 +1123,8 @@ INNER JOIN accepted_aggregates ON accepted_aggregates.cid = value.att[1].nb.aggr
 
   // creates an Athena data source that will enable Athena to query our dynamo tables:
   // https://console.aws.amazon.com/athena/home#/data-sources
-  const dynamoDataCatalogName = getCdkNames('dynamo-data-catalog', app.stage)
-  const dynamoDataCatalogDatabaseName = getCdkNames('dynamo', app.stage)
+  const dynamoDataCatalogName = getCdkNames('dynamo-data-catalog', app.stage, app.name)
+  const dynamoDataCatalogDatabaseName = getCdkNames('dynamo', app.stage, app.name)
   const dynamoDataCatalog = new athena.CfnDataCatalog(stack, dynamoDataCatalogName, {
     name: dynamoDataCatalogDatabaseName,
     type: 'LAMBDA',
@@ -1139,7 +1139,7 @@ INNER JOIN accepted_aggregates ON accepted_aggregates.cid = value.att[1].nb.aggr
   // create a query that can be executed by going to
   // https://console.aws.amazon.com/athena/home#/query-editor/saved-queries
   // and selecting the appropriate Workgroup from the dropdown in the upper right
-  const spacesByAccountQueryName = getCdkNames('spaces-by-account-query', app.stage)
+  const spacesByAccountQueryName = getCdkNames('spaces-by-account-query', app.stage, app.name)
   const spacesByAccountQuery = new athena.CfnNamedQuery(stack, spacesByAccountQueryName, {
     name: "Dynamo: spaces by account",
     description: `${app.stage} w3up preload`,
@@ -1148,8 +1148,8 @@ INNER JOIN accepted_aggregates ON accepted_aggregates.cid = value.att[1].nb.aggr
     queryString: `SELECT 
   customer as account,
   consumer as space
-FROM "${dynamoDataCatalogDatabaseName}"."default"."${app.stage}-w3infra-subscription" AS sub 
-  LEFT JOIN "${dynamoDataCatalogDatabaseName}"."default"."${app.stage}-w3infra-consumer" AS space 
+FROM "${dynamoDataCatalogDatabaseName}"."default"."${app.stage}-${app.name}-subscription" AS sub 
+  LEFT JOIN "${dynamoDataCatalogDatabaseName}"."default"."${app.stage}-${app.name}-consumer" AS space 
   ON space.subscription = sub.subscription
 `
   })
@@ -1159,7 +1159,7 @@ FROM "${dynamoDataCatalogDatabaseName}"."default"."${app.stage}-w3infra-subscrip
   // create a query that can be executed by going to
   // https://console.aws.amazon.com/athena/home#/query-editor/saved-queries
   // and selecting the appropriate Workgroup from the dropdown in the upper right
-  const uploadsByAccountQueryName = getCdkNames('uploads-by-account-query', app.stage)
+  const uploadsByAccountQueryName = getCdkNames('uploads-by-account-query', app.stage, app.name)
   const uploadsByAccountQuery = new athena.CfnNamedQuery(stack, uploadsByAccountQueryName, {
     name: "Dynamo: uploads by account",
     description: `${app.stage} w3up preload`,
@@ -1169,8 +1169,8 @@ FROM "${dynamoDataCatalogDatabaseName}"."default"."${app.stage}-w3infra-subscrip
 spaces AS (
   SELECT customer as account,
          consumer as did
-  FROM "${dynamoDataCatalogDatabaseName}"."default"."${app.stage}-w3infra-subscription" AS sub 
-  LEFT JOIN "${dynamoDataCatalogDatabaseName}"."default"."${app.stage}-w3infra-consumer" AS space 
+  FROM "${dynamoDataCatalogDatabaseName}"."default"."${app.stage}-${app.name}-subscription" AS sub 
+  LEFT JOIN "${dynamoDataCatalogDatabaseName}"."default"."${app.stage}-${app.name}-consumer" AS space 
   ON space.subscription = sub.subscription
 ), 
 uploads AS (

@@ -25,7 +25,7 @@ export function getBucketName (name, stage, app, version = 0) {
     // e.g `carpark-prod-0` or `carpark-pr101-0`
     return `${name}-${stage}-${version}`
   }
-  return `${stage}-${app}-${name}${version > 0 ? '-' + version : ''}`
+  return `${stage}-${app}-${name}-${version}`
 }
 
 /**
@@ -33,11 +33,12 @@ export function getBucketName (name, stage, app, version = 0) {
  *
  * @param {string} name
  * @param {string} stage
+ * @param {string} app
  * @param {number} version
  */
-export function getCdkNames (name, stage, version = 0) {
+export function getCdkNames (name, stage, app, version = 0) {
   // e.g `prod-w3infra-ucan-stream-delivery-0`
-  return `${stage}-w3infra-${name}-${version}`
+  return `${stage}-${app}-${name}-${version}`
 }
 
 /**
