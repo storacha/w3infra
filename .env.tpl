@@ -9,6 +9,11 @@
 # the value should match a hosted zone configured in route53 that your aws account has access to.
 # ROUNDABOUT_HOSTED_ZONE=roundabout.web3.storage
 
+# uncomment to disable the roundabout stack deployment and instead use an
+# existing roundabout deployment. This is primarily for use by other deployed
+# upload services that all use the same Filecoin pipeline.
+# ROUNDABOUT_API_URL = 'https://roundabout.web3.storage'
+
 # uncomment to set SENTRY_DSN
 # SENTRY_DSN = ''
 
