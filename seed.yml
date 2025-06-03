@@ -10,4 +10,5 @@ compile:
 before_deploy:
   - echo -n $SEED_STAGE_NAME > .sst/stage
   - 'if [[ ! -z "$SEED_SERVICE_PATH" ]]; then rm -rf $SEED_SERVICE_FULLPATH/.sst && cp -R .sst $SEED_SERVICE_FULLPATH/.sst; fi'
+  - if [ -z "$SEED_SERVICE_PATH" ]; then echo 'No service path'; else rm -rf $SEED_SERVICE_FULLPATH/.sst && cp -R .sst $SEED_SERVICE_FULLPATH/.sst; fi
   - ls $SEED_SERVICE_FULLPATH/.sst
