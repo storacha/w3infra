@@ -58,7 +58,7 @@ export async function add(
     })
   }
 
-  // Alocate if there is an address to allocate
+  // Allocate if there is an address to allocate
   const next = parseBlobAddReceiptNext(blobAddResult)
   if (next.allocate.receipt.out.error) {
     console.error(next.allocate.receipt.out.error)
@@ -90,7 +90,7 @@ export async function add(
       })
       
       if (res.status !== 200) {
-        throw new Error('failed to PUT data')
+        throw new Error(`failed to PUT data, status: ${res.status}, body: ${await res.text()}`)
       }
       return res
     },
