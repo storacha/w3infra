@@ -88,8 +88,7 @@ export async function add(
         body: data,
         headers: address.headers,
       })
-      
-      if (res.status !== 200) {
+      if (!res.ok) {
         throw new Error(`failed to PUT data, status: ${res.status}, body: ${await res.text()}`)
       }
       return res
