@@ -60,6 +60,13 @@ export async function add(
 
   // Alocate if there is an address to allocate
   const next = parseBlobAddReceiptNext(blobAddResult)
+  if (next.allocate.receipt.out.error) {
+    console.error(next.allocate.receipt.out.error)
+    throw new Error(`failed ${BlobCapabilities.allocate.can} invocation`, {
+      cause: next.allocate.receipt.out.error
+    })
+  }
+
   /** @type {import('@storacha/capabilities/types').BlobAddress} */
   // @ts-expect-error receipt type is unknown
   const address = next.allocate.receipt.out.ok.address
