@@ -193,10 +193,10 @@ test('blob integration flow with receipts validation', async t => {
     const shardLocationCommitment = claims
       .find(c => (
         c.type === 'assert/location' &&
-        equals(toDigest(c.content).bytes, shards[0].bytes)
+        equals(toDigest(c.content).bytes, shards[0].multihash.bytes)
       ))
     if (!shardLocationCommitment) {
-      return t.fail(`location commitment not found for shard: ${b58(shards[0])}`)
+      return t.fail(`location commitment not found for shard: ${b58(shards[0].multihash)}`)
     }
     const shardHeadRes = await fetch(shardLocationCommitment.location[0], { method: 'HEAD' })
     t.true(shardHeadRes.ok, `shard not found at URL: ${shardLocationCommitment.location[0]}, status: ${shardHeadRes.status}`)

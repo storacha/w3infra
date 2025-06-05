@@ -203,9 +203,9 @@ test('w3infra store/upload integration flow', async t => {
   // find location commitment for shard
   const shardLocationCommitment = claims
     .filter(c => c.type === 'assert/location')
-    .find(c => equals(toDigest(c.content).bytes, shards[0].bytes))
+    .find(c => equals(toDigest(c.content).bytes, shards[0].multihash.bytes))
   if (!shardLocationCommitment) {
-    return t.fail(`location commitment not found for shard: ${b58(shards[0])}`)
+    return t.fail(`location commitment not found for shard: ${b58(shards[0].multihash)}`)
   }
   const shardHeadRes = await fetch(shardLocationCommitment.location[0], { method: 'HEAD' })
   t.true(shardHeadRes.ok, `shard not found at URL: ${shardLocationCommitment.location[0]}, status: ${shardHeadRes.status}`)
