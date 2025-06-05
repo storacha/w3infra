@@ -207,7 +207,7 @@ test('w3infra store/upload integration flow', async t => {
   if (!shardLocationCommitment) {
     return t.fail(`location commitment not found for shard: ${b58(shards[0].multihash)}`)
   }
-  const shardHeadRes = await fetch(shardLocationCommitment.location[0], { method: 'HEAD' })
+  const shardHeadRes = await fetch(shardLocationCommitment.location[0])
   t.true(shardHeadRes.ok, `shard not found at URL: ${shardLocationCommitment.location[0]}, status: ${shardHeadRes.status}`)
   console.log(`Shard is retrievable at ${shardLocationCommitment.location[0]}`)
 
@@ -226,7 +226,7 @@ test('w3infra store/upload integration flow', async t => {
   if (!indexLocationCommitment) {
     return t.fail(`location commitment not found for index: ${b58(indexClaim.index.multihash)}`)
   }
-  const indexHeadRes = await fetch(indexLocationCommitment.location[0], { method: 'HEAD' })
+  const indexHeadRes = await fetch(indexLocationCommitment.location[0])
   t.true(indexHeadRes.ok, `index not found at URL: ${indexLocationCommitment.location[0]}, status: ${indexHeadRes.status}`)
   console.log(`Index is retrievable at ${indexLocationCommitment.location[0]}`)
 
