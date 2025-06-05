@@ -252,6 +252,7 @@ test('blob integration flow with receipts validation', async t => {
     // Check delegation
     const acceptForks = getAcceptTaskReceipt.ok?.fx.fork
     if (!acceptForks) {
+      console.error(getAcceptTaskReceipt.ok.fx)
       throw new Error('must have a fork')
     }
     t.is(acceptForks?.length, 1)
@@ -345,7 +346,7 @@ test('blob integration flow with receipts validation', async t => {
     }
   } catch (err) {
     console.error(err.stack)
-    console.error('[cause]:', err.cause)
+    if (err.cause) console.error('[cause]:', err.cause)
     throw err
   }
 })
