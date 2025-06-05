@@ -3,12 +3,12 @@ import pWaitFor from 'p-wait-for'
 import * as SpaceBlobCapabilities from '@storacha/capabilities/space/blob'
 import * as UploadCapabilities from '@storacha/capabilities/upload'
 import * as SpaceIndexCapabilities from '@storacha/capabilities/space/index'
+import * as AssertCapabilities from '@storacha/capabilities/assert'
 import { base58btc } from 'multiformats/bases/base58'
 import * as Link from 'multiformats/link'
 import { equals } from 'multiformats/bytes'
 import { code as RAW_CODE } from 'multiformats/codecs/raw'
 import * as Digest from 'multiformats/hashes/digest'
-import { Assert } from '@web3-storage/content-claims/capability'
 import { ShardingStream, UnixFS, Upload, Index } from '@storacha/upload-client'
 import { codec as carCodec } from '@ucanto/transport/car'
 import { ShardedDAGIndex } from '@storacha/blob-index'
@@ -243,20 +243,29 @@ test('blob integration flow with receipts validation', async t => {
       },
     })
     const getPutTaskReceipt = await agentStore.receipts.get(next?.put.task.link())
-    t.truthy(getPutTaskReceipt.ok?.out.ok)
-    t.deepEqual(getPutTaskReceipt.ok?.out.ok, {})
+    if (getPutTaskReceipt.error) {
+      throw new Error(`get http/put receipt failed for: ${next?.put.task.link()}`, { cause: getPutTaskReceipt.error })
+    }
+    if (getPutTaskReceipt.ok.out.error) {
+      throw new Error('http/put task failed', { cause: getPutTaskReceipt.ok.out.error })
+    }
+    t.deepEqual(getPutTaskReceipt.ok.out.ok, {})
+
     const getAcceptTaskReceipt = await agentStore.receipts.get(next?.accept.task.link())
+    if (getAcceptTaskReceipt.error) {
+      throw new Error(`get blob/accept receipt failed for: ${next?.accept.task.link()}`, { cause: getAcceptTaskReceipt.error })
+    }
+    if (getAcceptTaskReceipt.ok.out.error) {
+      throw new Error('blob/accept task failed', { cause: getAcceptTaskReceipt.ok.out.error })
+    }
     t.truthy(getAcceptTaskReceipt.ok?.out.ok)
     t.truthy(getAcceptTaskReceipt.ok?.out.ok.site)
 
     // Check delegation
     const acceptForks = getAcceptTaskReceipt.ok?.fx.fork
-    if (!acceptForks) {
-      console.error(getAcceptTaskReceipt.ok.fx)
-      throw new Error('must have a fork')
-    }
+    t.truthy(acceptForks)
     t.is(acceptForks?.length, 1)
-    t.truthy(acceptForks?.find(f => f.capabilities[0].can === Assert.location.can))
+    t.truthy(acceptForks?.find(f => f.capabilities[0].can === AssertCapabilities.location.can))
 
     // Read from Roundabout and check bytes can be read by raw CID
     const rawCid = Link.create(RAW_CODE, multihash)
