@@ -216,7 +216,7 @@ test('w3infra store/upload integration flow', async t => {
     .filter(c => c.type === 'assert/index')
     .find(c => equals(toDigest(c.content).bytes, fileLink.multihash.bytes))
   if (!indexClaim) {
-    return t.fail(`index claim not found for root: ${root}`)
+    return t.fail(`index claim not found for root: ${fileLink}`)
   }
 
   // find location commitment for index
