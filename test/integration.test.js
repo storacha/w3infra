@@ -24,6 +24,7 @@ import { createMailSlurpInbox, createNewClient, setupNewClient } from './helpers
 import { randomFile } from './helpers/random.js'
 import { getMetrics, getSpaceMetrics } from './helpers/metrics.js'
 // import { createNode } from './helpers/helia.js'
+import * as IndexingService from './helpers/indexing-service.js'
 
 test.before(t => {
   t.context = {
@@ -162,36 +163,74 @@ test('w3infra store/upload integration flow', async t => {
   const beforeUploadAddTotal = beforeOperationMetrics.find(row => row.name === METRICS_NAMES.UPLOAD_ADD_TOTAL)
   const beforeBlobAddSizeTotal = beforeOperationMetrics.find(row => row.name === METRICS_NAMES.BLOB_ADD_SIZE_TOTAL)
 
-  const r2Client = getCloudflareBucketClient()
-
   console.log('Creating new File')
   const file = await randomFile(100)
   const shards = []
+  const shardSizes = []
 
   // Upload new file
   const fileLink = await client.uploadFile(file, {
     onShardStored: (meta) => {
       shards.push(meta.cid)
+      shardSizes.push(meta.size)
       console.log('Shard file written', meta.cid)
     },
     receiptsEndpoint: getReceiptsEndpoint()
   })
   t.truthy(fileLink)
   t.is(shards.length, 1)
+  t.is(shardSizes.length, 1)
   console.log('Uploaded new file', fileLink)
 
-  // Check carpark
-  const encodedMultihash = base58btc.encode(shards[0].multihash.bytes)
-  console.log('Checking blob stored in write target:', encodedMultihash)
-  const carparkRequest = await r2Client.send(
-    new HeadObjectCommand({
-      Bucket: writeTargetBucketName,
-      Key: `${encodedMultihash}/${encodedMultihash}.blob`,
-    })
-  )
-  t.is(carparkRequest.$metadata.httpStatusCode, 200)
+  const rootDigest = fileLink.multihash
+  const queryRes = await IndexingService.client.queryClaims({
+    hashes: [rootDigest]
+  })
+  if (queryRes.error) {
+    throw new Error(`querying indexing service (${IndexingService.serviceURL}) for: ${b58(rootDigest)}`, { cause: queryRes.error })
+  }
 
-  const carSize = carparkRequest.ContentLength
+  console.log(`Indexing service found ${queryRes.ok.claims.size} claim(s), ${queryRes.ok.indexes.size} index(es) for: ${b58(rootDigest)}`)
+  // expect at least 1 index
+  t.true(queryRes.ok.indexes.size > 0)
+  // expect at least 3 claims:
+  // 1) shard location commitment 2) index location commitment 3) index claim
+  t.true(queryRes.ok.claims.size > 2)
+
+  const claims = [...queryRes.ok.claims.values()]
+
+  // find location commitment for shard
+  const shardLocationCommitment = claims
+    .filter(c => c.type === 'assert/location')
+    .find(c => equals(toDigest(c.content).bytes, shards[0].bytes))
+  if (!shardLocationCommitment) {
+    return t.fail(`location commitment not found for shard: ${b58(shards[0])}`)
+  }
+  const shardHeadRes = await fetch(shardLocationCommitment.location[0], { method: 'HEAD' })
+  t.true(shardHeadRes.ok, `shard not found at URL: ${shardLocationCommitment.location[0]}, status: ${shardHeadRes.status}`)
+  console.log(`Shard is retrievable at ${shardLocationCommitment.location[0]}`)
+
+  // find location commitment for index
+  const indexLocationCommitment = claims
+    .filter(c => c.type === 'assert/location')
+    .find(c => equals(toDigest(c.content).bytes, indexLink.multihash.bytes))
+  if (!indexLocationCommitment) {
+    return t.fail(`location commitment not found for index: ${b58(indexLink.multihash)}`)
+  }
+  const indexHeadRes = await fetch(indexLocationCommitment.location[0], { method: 'HEAD' })
+  t.true(indexHeadRes.ok, `index not found at URL: ${indexLocationCommitment.location[0]}, status: ${indexHeadRes.status}`)
+  console.log(`Index is retrievable at ${indexLocationCommitment.location[0]}`)
+
+  // find index claim for root
+  t.true(
+    claims
+      .filter(c => c.type === 'assert/index')
+      .some(c => (
+        equals(toDigest(c.content).bytes, root.multihash.bytes) &&
+        equals(c.index.multihash.bytes, indexLink.multihash.bytes)
+      )),
+    `index claim not found for root: ${root}, index: ${indexLink}`
+  )
 
   // List space files
   let uploadFound, cursor
@@ -266,20 +305,20 @@ test('w3infra store/upload integration flow', async t => {
         return (
           afterBlobAddTotal?.value >= beforeBlobAddTotal?.value + 1 &&
           afterUploadAddTotal?.value === beforeUploadAddTotal?.value + 1 &&
-          afterBlobAddSizeTotal?.value >= beforeBlobAddSizeTotal.value + carSize &&
+          afterBlobAddSizeTotal?.value >= beforeBlobAddSizeTotal.value + shardSizes[0] &&
           spaceAfterBlobAddMetrics?.value >= spaceBeforeBlobAddMetrics?.value + 1 &&
           spaceAfterUploadAddMetrics?.value >= spaceBeforeUploadAddMetrics?.value + 1 &&
-          spaceAfterBlobAddSizeMetrics?.value >= spaceBeforeBlobAddSizeMetrics?.value + carSize
+          spaceAfterBlobAddSizeMetrics?.value >= spaceBeforeBlobAddSizeMetrics?.value + shardSizes[0]
         )
       }
 
       return (
         afterBlobAddTotal?.value === beforeBlobAddTotal?.value + 1 &&
         afterUploadAddTotal?.value === beforeUploadAddTotal?.value + 1 &&
-        afterBlobAddSizeTotal?.value === beforeBlobAddSizeTotal.value + carSize &&
+        afterBlobAddSizeTotal?.value === beforeBlobAddSizeTotal.value + shardSizes[0] &&
         spaceAfterBlobAddMetrics?.value === spaceBeforeBlobAddMetrics?.value + 1 &&
         spaceAfterUploadAddMetrics?.value === spaceBeforeUploadAddMetrics?.value + 1 &&
-        spaceAfterBlobAddSizeMetrics?.value === spaceBeforeBlobAddSizeMetrics?.value + carSize
+        spaceAfterBlobAddSizeMetrics?.value === spaceBeforeBlobAddSizeMetrics?.value + shardSizes[0]
       )
     })
   }

@@ -7,7 +7,7 @@ import { base58btc } from 'multiformats/bases/base58'
 import * as Link from 'multiformats/link'
 import { equals } from 'multiformats/bytes'
 import { code as RAW_CODE } from 'multiformats/codecs/raw'
-import { HeadObjectCommand } from '@aws-sdk/client-s3'
+import * as Digest from 'multiformats/hashes/digest'
 import { Assert } from '@web3-storage/content-claims/capability'
 import { ShardingStream, UnixFS, Upload, Index } from '@storacha/upload-client'
 import { codec as carCodec } from '@ucanto/transport/car'
@@ -18,8 +18,6 @@ import * as Blob from './helpers/blob-client.js'
 import {
   getStage,
   getAwsBucketClient,
-  getCloudflareBucketClient,
-  getCarparkBucketInfo,
   getRoundaboutEndpoint,
   getDynamoDb,
   getAwsRegion,
@@ -29,6 +27,12 @@ import { setupNewClient, getServiceProps } from './helpers/up-client.js'
 import { getMetrics, getSpaceMetrics } from './helpers/metrics.js'
 import { getUsage } from './helpers/store.js'
 import { addStorageProvider } from './helpers/storage-provider.js'
+import * as IndexingService from './helpers/indexing-service.js'
+
+/** @param {import('multiformats').Digest} d */
+const b58 = d => base58btc.encode(d.bytes)
+/** @param {import('multiformats').UnknownLink|{ digest: Uint8Array }} c */
+const toDigest = c => 'multihash' in c ? c.multihash : Digest.decode(c.digest)
 
 test.before(async t => {
   await addStorageProvider(getDynamoDb('storage-provider'))
@@ -60,11 +64,6 @@ test.before(async t => {
 test('blob integration flow with receipts validation', async t => {
   try {
     const stage = getStage()
-    const writeTargetBucketName = process.env.R2_CARPARK_BUCKET_NAME
-    if (!writeTargetBucketName) {
-      throw new Error('no write target bucket name configure using ENV VAR `R2_CARPARK_BUCKET_NAME`')
-    }
-
     const { client, account } = await setupNewClient()
     const serviceProps = getServiceProps(client, [
       SpaceBlobCapabilities.add.can,
@@ -146,7 +145,7 @@ test('blob integration flow with receipts validation', async t => {
     if (multihash === undefined) throw new Error('missing multihash')
     t.is(shards.length, 1)
 
-    console.log(`Added blob ${base58btc.encode(multihash.bytes)}, root: ${root}`)
+    console.log(`Added blob ${b58(multihash)}, root: ${root}`)
 
     // Add the index with `index/add`
     const index = ShardedDAGIndex.create(root)
@@ -162,7 +161,7 @@ test('blob integration flow with receipts validation', async t => {
     const resIndex = await Blob.add(serviceProps.conf, indexBytes.ok, { connection: serviceProps.connection })
     const indexLink = Link.create(carCodec.code, resIndex.multihash)
 
-    console.log(`Added index ${indexLink} (${base58btc.encode(resIndex.multihash.bytes)})`)
+    console.log(`Added index ${indexLink} (${b58(resIndex.multihash)})`)
 
     try {
       // Register the index with the service
@@ -170,50 +169,61 @@ test('blob integration flow with receipts validation', async t => {
       // Register an upload with the service
       await Upload.add(serviceProps.conf, root, shards, { connection: serviceProps.connection })
     } catch (err) {
-      console.error(err, err.cause)
       throw err
     }
 
-    // Get bucket clients
-    const s3Client = getAwsBucketClient()
-    const r2Client = getCloudflareBucketClient()
-
-    // Check blob exists in R2, but not S3
-    const encodedMultihash = base58btc.encode(multihash.bytes)
-    console.log('Checking blob stored in write target:', encodedMultihash)
-    const r2Request = await r2Client.send(
-      new HeadObjectCommand({
-        // Env var
-        Bucket: writeTargetBucketName,
-        Key: `${encodedMultihash}/${encodedMultihash}.blob`,
-      })
-    )
-    t.is(r2Request.$metadata.httpStatusCode, 200)
-    const carSize = r2Request.ContentLength
-    try {
-      await s3Client.send(
-        new HeadObjectCommand({
-          Bucket: (getCarparkBucketInfo()).Bucket,
-          Key: `${encodedMultihash}/${encodedMultihash}.blob`,
-        })
-      )
-    } catch (cause) {
-      t.is(cause?.$metadata?.httpStatusCode, 404)
+    const rootDigest = root.multihash
+    const queryRes = await IndexingService.client.queryClaims({
+      hashes: [rootDigest]
+    })
+    if (queryRes.error) {
+      throw new Error(`querying indexing service (${IndexingService.serviceURL}) for: ${b58(rootDigest)}`, { cause: queryRes.error })
     }
 
-    // Check index exists in R2
-    const encodedIndexMultihash = base58btc.encode(resIndex.multihash.bytes)
-    console.log('Checking index stored in write target:', encodedIndexMultihash)
-    const r2IndexRequest = await r2Client.send(
-      new HeadObjectCommand({
-        // Env var
-        Bucket: writeTargetBucketName,
-        Key: `${encodedIndexMultihash}/${encodedIndexMultihash}.blob`,
-      })
+    console.log(`Indexing service found ${queryRes.ok.claims.size} claim(s), ${queryRes.ok.indexes.size} index(es) for: ${b58(rootDigest)}`)
+    // expect at least 1 index
+    t.true(queryRes.ok.indexes.size > 0)
+    // expect at least 3 claims:
+    // 1) shard location commitment 2) index location commitment 3) index claim
+    t.true(queryRes.ok.claims.size > 2)
+
+    const claims = [...queryRes.ok.claims.values()]
+
+    // find location commitment for shard
+    const shardLocationCommitment = claims
+      .filter(c => c.type === 'assert/location')
+      .find(c => equals(toDigest(c.content).bytes, shards[0].bytes))
+    if (!shardLocationCommitment) {
+      return t.fail(`location commitment not found for shard: ${b58(shards[0])}`)
+    }
+    const shardHeadRes = await fetch(shardLocationCommitment.location[0], { method: 'HEAD' })
+    t.true(shardHeadRes.ok, `shard not found at URL: ${shardLocationCommitment.location[0]}, status: ${shardHeadRes.status}`)
+    console.log(`Shard is retrievable at ${shardLocationCommitment.location[0]}`)
+
+    // find location commitment for index
+    const indexLocationCommitment = claims
+      .filter(c => c.type === 'assert/location')
+      .find(c => equals(toDigest(c.content).bytes, indexLink.multihash.bytes))
+    if (!indexLocationCommitment) {
+      return t.fail(`location commitment not found for index: ${b58(indexLink.multihash)}`)
+    }
+    const indexHeadRes = await fetch(indexLocationCommitment.location[0], { method: 'HEAD' })
+    t.true(indexHeadRes.ok, `index not found at URL: ${indexLocationCommitment.location[0]}, status: ${indexHeadRes.status}`)
+    console.log(`Index is retrievable at ${indexLocationCommitment.location[0]}`)
+
+    // find index claim for root
+    t.true(
+      claims
+        .filter(c => c.type === 'assert/index')
+        .some(c => (
+          equals(toDigest(c.content).bytes, root.multihash.bytes) &&
+          equals(c.index.multihash.bytes, indexLink.multihash.bytes)
+        )),
+      `index claim not found for root: ${root}, index: ${indexLink}`
     )
-    t.is(r2IndexRequest.$metadata.httpStatusCode, 200)
 
     // Check receipts were written
+    const s3Client = getAwsBucketClient()
     const agentStore = AgentStore.open({
       store: {
         region: getAwsRegion(),
