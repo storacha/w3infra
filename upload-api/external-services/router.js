@@ -17,7 +17,7 @@ export const create = (storageProviderTable, serviceID) => ({
   selectStorageProvider: async () => {
     const ids = await storageProviderTable.list()
     if (!ids.length) return error(new CandidateUnavailableError())
-    const provider = parse(ids[getWeightedRandomInt(ids.map(id => id.weight))].provider)
+    const provider = parse(ids[getWeightedRandomInt(ids.map(id => id.weight ?? 0))].provider)
     return ok(provider)
   },
   configureInvocation: async (provider, capability, options) => {
@@ -51,7 +51,7 @@ export const create = (storageProviderTable, serviceID) => ({
 
     const selection = []
     for (let i = 0; i < count; i++) {
-      const index = getWeightedRandomInt(providers.map(p => p.weight))
+      const index = getWeightedRandomInt(providers.map(p => p.weight ?? 0))
       selection.push(parse(providers[index].provider))
       providers.splice(index, 1)
     }
