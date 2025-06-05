@@ -6,7 +6,8 @@ import pWaitFor from 'p-wait-for'
 import * as Link from 'multiformats/link'
 import { code as RAW_CODE } from 'multiformats/codecs/raw'
 import { base58btc } from 'multiformats/bases/base58'
-import { HeadObjectCommand } from '@aws-sdk/client-s3'
+import { equals } from 'multiformats/bytes'
+import * as Digest from 'multiformats/hashes/digest'
 import { PutItemCommand } from '@aws-sdk/client-dynamodb'
 import { marshall } from '@aws-sdk/util-dynamodb'
 import * as DidMailto from '@storacha/did-mailto'
@@ -15,7 +16,6 @@ import { test } from './helpers/context.js'
 import {
   getStage,
   getApiEndpoint,
-  getCloudflareBucketClient,
   getRoundaboutEndpoint,
   getReceiptsEndpoint,
   getDynamoDb
@@ -25,6 +25,11 @@ import { randomFile } from './helpers/random.js'
 import { getMetrics, getSpaceMetrics } from './helpers/metrics.js'
 // import { createNode } from './helpers/helia.js'
 import * as IndexingService from './helpers/indexing-service.js'
+
+/** @param {import('multiformats').Digest} d */
+const b58 = d => base58btc.encode(d.bytes)
+/** @param {import('multiformats').UnknownLink|{ digest: Uint8Array }} c */
+const toDigest = c => 'multihash' in c ? c.multihash : Digest.decode(c.digest)
 
 test.before(t => {
   t.context = {
@@ -135,10 +140,6 @@ test('authorizations can be blocked by email or domain', async t => {
  */
 test('w3infra store/upload integration flow', async t => {
   const stage = getStage()
-  const writeTargetBucketName = process.env.R2_CARPARK_BUCKET_NAME
-  if (!writeTargetBucketName) {
-    throw new Error('no write target bucket name configure using ENV VAR `R2_CARPARK_BUCKET_NAME`')
-  }
   const inbox = await createMailSlurpInbox()
   const { client } = await setupNewClient({ inbox })
   const spaceDid = client.currentSpace()?.did()
@@ -210,27 +211,24 @@ test('w3infra store/upload integration flow', async t => {
   t.true(shardHeadRes.ok, `shard not found at URL: ${shardLocationCommitment.location[0]}, status: ${shardHeadRes.status}`)
   console.log(`Shard is retrievable at ${shardLocationCommitment.location[0]}`)
 
+  // find index claim for root
+  const indexClaim = claims
+    .filter(c => c.type === 'assert/index')
+    .find(c => equals(toDigest(c.content).bytes, fileLink.multihash.bytes))
+  if (!indexClaim) {
+    return t.fail(`index claim not found for root: ${root}`)
+  }
+
   // find location commitment for index
   const indexLocationCommitment = claims
     .filter(c => c.type === 'assert/location')
-    .find(c => equals(toDigest(c.content).bytes, indexLink.multihash.bytes))
+    .find(c => equals(toDigest(c.content).bytes, indexClaim.index.multihash.bytes))
   if (!indexLocationCommitment) {
-    return t.fail(`location commitment not found for index: ${b58(indexLink.multihash)}`)
+    return t.fail(`location commitment not found for index: ${b58(indexClaim.index.multihash)}`)
   }
   const indexHeadRes = await fetch(indexLocationCommitment.location[0], { method: 'HEAD' })
   t.true(indexHeadRes.ok, `index not found at URL: ${indexLocationCommitment.location[0]}, status: ${indexHeadRes.status}`)
   console.log(`Index is retrievable at ${indexLocationCommitment.location[0]}`)
-
-  // find index claim for root
-  t.true(
-    claims
-      .filter(c => c.type === 'assert/index')
-      .some(c => (
-        equals(toDigest(c.content).bytes, root.multihash.bytes) &&
-        equals(c.index.multihash.bytes, indexLink.multihash.bytes)
-      )),
-    `index claim not found for root: ${root}, index: ${indexLink}`
-  )
 
   // List space files
   let uploadFound, cursor

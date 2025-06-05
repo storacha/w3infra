@@ -95,6 +95,8 @@ test('blob integration flow with receipts validation', async t => {
     const blocksReadableStream = UnixFS.createFileEncoderStream(file)
     /** @type {import('@storacha/upload-client/types').CARLink[]} */
     const shards = []
+    /** @type {number[]} */
+    const shardSizes = []
     /** @type {Uint8Array[]} */
     const shardBytes = []
     /** @type {Array<Map<import('@storacha/upload-client/types').SliceDigest, import('@storacha/upload-client/types').Position>>} */
@@ -133,6 +135,7 @@ test('blob integration flow with receipts validation', async t => {
             root = root || meta.roots[0]
             shards.push(meta.cid)
             shardBytes.push(meta.bytes)
+            shardSizes.push(meta.size)
 
             // add the CAR shard itself to the slices
             meta.slices.set(meta.cid.multihash, [0, meta.size])
@@ -143,7 +146,9 @@ test('blob integration flow with receipts validation', async t => {
 
     if (root === undefined) throw new Error('missing root CID')
     if (multihash === undefined) throw new Error('missing multihash')
+
     t.is(shards.length, 1)
+    t.is(shardSizes.length, 1)
 
     console.log(`Added blob ${b58(multihash)}, root: ${root}`)
 
@@ -162,15 +167,10 @@ test('blob integration flow with receipts validation', async t => {
     const indexLink = Link.create(carCodec.code, resIndex.multihash)
 
     console.log(`Added index ${indexLink} (${b58(resIndex.multihash)})`)
-
-    try {
-      // Register the index with the service
-      await Index.add(serviceProps.conf, indexLink, { connection: serviceProps.connection })
-      // Register an upload with the service
-      await Upload.add(serviceProps.conf, root, shards, { connection: serviceProps.connection })
-    } catch (err) {
-      throw err
-    }
+    // Register the index with the service
+    await Index.add(serviceProps.conf, indexLink, { connection: serviceProps.connection })
+    // Register an upload with the service
+    await Upload.add(serviceProps.conf, root, shards, { connection: serviceProps.connection })
 
     const rootDigest = root.multihash
     const queryRes = await IndexingService.client.queryClaims({
@@ -191,8 +191,10 @@ test('blob integration flow with receipts validation', async t => {
 
     // find location commitment for shard
     const shardLocationCommitment = claims
-      .filter(c => c.type === 'assert/location')
-      .find(c => equals(toDigest(c.content).bytes, shards[0].bytes))
+      .find(c => (
+        c.type === 'assert/location' &&
+        equals(toDigest(c.content).bytes, shards[0].bytes)
+      ))
     if (!shardLocationCommitment) {
       return t.fail(`location commitment not found for shard: ${b58(shards[0])}`)
     }
@@ -200,27 +202,29 @@ test('blob integration flow with receipts validation', async t => {
     t.true(shardHeadRes.ok, `shard not found at URL: ${shardLocationCommitment.location[0]}, status: ${shardHeadRes.status}`)
     console.log(`Shard is retrievable at ${shardLocationCommitment.location[0]}`)
 
+    // find index claim for root
+    const indexClaim = claims
+      .find(c => (
+        c.type === 'assert/index' &&
+        equals(toDigest(c.content).bytes, root.multihash.bytes) &&
+        equals(c.index.multihash.bytes, indexLink.multihash.bytes)
+      ))
+    if (!indexClaim) {
+      return t.fail(`index claim not found for root: ${root}, index: ${indexLink}`)
+    }
+  
     // find location commitment for index
     const indexLocationCommitment = claims
-      .filter(c => c.type === 'assert/location')
-      .find(c => equals(toDigest(c.content).bytes, indexLink.multihash.bytes))
+      .find(c => (
+        c.type === 'assert/location' &&
+        equals(toDigest(c.content).bytes, indexClaim.index.multihash.bytes)
+      ))
     if (!indexLocationCommitment) {
-      return t.fail(`location commitment not found for index: ${b58(indexLink.multihash)}`)
+      return t.fail(`location commitment not found for index: ${b58(indexClaim.index.multihash)}`)
     }
     const indexHeadRes = await fetch(indexLocationCommitment.location[0], { method: 'HEAD' })
     t.true(indexHeadRes.ok, `index not found at URL: ${indexLocationCommitment.location[0]}, status: ${indexHeadRes.status}`)
     console.log(`Index is retrievable at ${indexLocationCommitment.location[0]}`)
-
-    // find index claim for root
-    t.true(
-      claims
-        .filter(c => c.type === 'assert/index')
-        .some(c => (
-          equals(toDigest(c.content).bytes, root.multihash.bytes) &&
-          equals(c.index.multihash.bytes, indexLink.multihash.bytes)
-        )),
-      `index claim not found for root: ${root}, index: ${indexLink}`
-    )
 
     // Check receipts were written
     const s3Client = getAwsBucketClient()
@@ -312,17 +316,17 @@ test('blob integration flow with receipts validation', async t => {
         if (stage === 'staging') {
           return (
             afterBlobAddTotal?.value >= beforeBlobAddTotal?.value + 1 &&
-            afterBlobAddSizeTotal?.value >= beforeBlobAddSizeTotal.value + carSize &&
+            afterBlobAddSizeTotal?.value >= beforeBlobAddSizeTotal.value + shardSizes[0] &&
             spaceAfterBlobAddMetrics?.value >= spaceBeforeBlobAddMetrics?.value + 1 &&
-            spaceAfterBlobAddSizeMetrics?.value >= spaceBeforeBlobAddSizeMetrics?.value + carSize
+            spaceAfterBlobAddSizeMetrics?.value >= spaceBeforeBlobAddSizeMetrics?.value + shardSizes[0]
           )
         }
 
         return (
           afterBlobAddTotal?.value === beforeBlobAddTotal?.value + 1 &&
-          afterBlobAddSizeTotal?.value === beforeBlobAddSizeTotal.value + carSize &&
+          afterBlobAddSizeTotal?.value === beforeBlobAddSizeTotal.value + shardSizes[0] &&
           spaceAfterBlobAddMetrics?.value === spaceBeforeBlobAddMetrics?.value + 1 &&
-          spaceAfterBlobAddSizeMetrics?.value === spaceBeforeBlobAddSizeMetrics?.value + carSize
+          spaceAfterBlobAddSizeMetrics?.value === spaceBeforeBlobAddSizeMetrics?.value + shardSizes[0]
         )
       })
     }
@@ -335,7 +339,7 @@ test('blob integration flow with receipts validation', async t => {
         const spaceAfterStoreAddUsage = afterOperationUsage[spaceDid]
         // If staging accept more broad condition given multiple parallel tests can happen there
         return (
-            spaceAfterStoreAddUsage >= spaceBeforeStoreAddUsage + carSize
+            spaceAfterStoreAddUsage >= spaceBeforeStoreAddUsage + shardSizes[0]
         )
       })
     }
