@@ -116,6 +116,8 @@
       "no-continue": "off",
       "no-loop-func": "off",
       "no-warning-comments": "off",
+      "max-depth": "off",
+      "complexity": "off",
       "jsdoc/check-indentation": "off",
       "jsdoc/check-tag-names": [
         "error",
