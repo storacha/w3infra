@@ -280,23 +280,25 @@ test('blob integration flow with receipts validation', async t => {
     const fetchedBytes =  new Uint8Array(await roundaboutResponse.arrayBuffer())
     t.truthy(equals(shardBytes[0], fetchedBytes))
 
-    // Verify w3link can resolve uploaded file
-    console.log('Checking w3link can fetch root', root.toString())
-    const gatewayURL = `https://${root}.ipfs-staging.w3s.link`
-    const gatewayRetries = 5
-    for (let i = 0; i < gatewayRetries; i++) {
-      const controller = new AbortController()
-      const timeoutID = setTimeout(() => controller.abort(), 5000)
-      try {
-        const res = await fetch(gatewayURL, { method: 'HEAD', signal: controller.signal })
-        if (res.status === 200) break
-      } catch (err) {
-        console.error(`failed gateway fetch: ${root} (attempt ${i + 1})`, err)
-        if (i === gatewayRetries - 1) throw err
-      } finally {
-        clearTimeout(timeoutID)
+    if (process.env.DISABLE_IPNI_PUBLISHING !== 'true') {
+      // Verify w3link can resolve uploaded file
+      console.log('Checking w3link can fetch root', root.toString())
+      const gatewayURL = `https://${root}.ipfs-staging.w3s.link`
+      const gatewayRetries = 5
+      for (let i = 0; i < gatewayRetries; i++) {
+        const controller = new AbortController()
+        const timeoutID = setTimeout(() => controller.abort(), 5000)
+        try {
+          const res = await fetch(gatewayURL, { method: 'HEAD', signal: controller.signal })
+          if (res.status === 200) break
+        } catch (err) {
+          console.error(`failed gateway fetch: ${root} (attempt ${i + 1})`, err)
+          if (i === gatewayRetries - 1) throw err
+        } finally {
+          clearTimeout(timeoutID)
+        }
+        await new Promise(resolve => setTimeout(resolve, 1000))
       }
-      await new Promise(resolve => setTimeout(resolve, 1000))
     }
 
     // Verify hoverboard can resolved uploaded root via Bitswap
@@ -393,29 +395,31 @@ test('10k NFT drop', async t => {
       }
     })
 
-    const sample = Array.from(Array(5), () => randomInt(total))
-    for (const index of sample) {
-      // Verify gateway can resolve uploaded file
-      const gatewayURL = `https://${root}.ipfs-staging.w3s.link/${index}.json`
-      console.log('Checking gateway can fetch', gatewayURL)
+    if (process.env.DISABLE_IPNI_PUBLISHING !== 'true') {
+      const sample = Array.from(Array(5), () => randomInt(total))
+      for (const index of sample) {
+        // Verify gateway can resolve uploaded file
+        const gatewayURL = `https://${root}.ipfs-staging.w3s.link/${index}.json`
+        console.log('Checking gateway can fetch', gatewayURL)
 
-      await t.notThrowsAsync(async () => {
-        const gatewayRetries = 5
-        for (let i = 0; i < gatewayRetries; i++) {
-          const controller = new AbortController()
-          const timeoutID = setTimeout(() => controller.abort(), 15_000)
-          try {
-            const res = await fetch(gatewayURL, { method: 'HEAD', signal: controller.signal })
-            if (res.status === 200) break
-          } catch (err) {
-            console.error(`failed gateway fetch: ${gatewayURL} (attempt ${i + 1})`, err)
-            if (i === gatewayRetries - 1) throw err
-          } finally {
-            clearTimeout(timeoutID)
+        await t.notThrowsAsync(async () => {
+          const gatewayRetries = 5
+          for (let i = 0; i < gatewayRetries; i++) {
+            const controller = new AbortController()
+            const timeoutID = setTimeout(() => controller.abort(), 15_000)
+            try {
+              const res = await fetch(gatewayURL, { method: 'HEAD', signal: controller.signal })
+              if (res.status === 200) break
+            } catch (err) {
+              console.error(`failed gateway fetch: ${gatewayURL} (attempt ${i + 1})`, err)
+              if (i === gatewayRetries - 1) throw err
+            } finally {
+              clearTimeout(timeoutID)
+            }
+            await new Promise(resolve => setTimeout(resolve, 1000))
           }
-          await new Promise(resolve => setTimeout(resolve, 1000))
-        }
-      })
+        })
+      }
     }
   } catch (/** @type {any} */ err) {
     console.error(err.stack)

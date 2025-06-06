@@ -256,15 +256,17 @@ test('w3infra store/upload integration flow', async t => {
   )
   t.is(roundaboutResponse.status, 200)
 
-  // Verify w3link can resolve uploaded file via HTTP
-  console.log('Checking w3link can fetch root', fileLink.toString())
-  const w3linkResponse = await fetch(
-    `https://${fileLink}.ipfs-staging.w3s.link`,
-    {
-      method: 'HEAD'
-    }
-  )
-  t.is(w3linkResponse.status, 200)
+  if (process.env.DISABLE_IPNI_PUBLISHING !== 'true') {
+    // Verify w3link can resolve uploaded file via HTTP
+    console.log('Checking w3link can fetch root', fileLink.toString())
+    const w3linkResponse = await fetch(
+      `https://${fileLink}.ipfs-staging.w3s.link`,
+      {
+        method: 'HEAD'
+      }
+    )
+    t.is(w3linkResponse.status, 200)
+  }
 
   // FIXME: disabled due to eror:
   //   Error: Cannot find module '../build/Release/node_datachannel.node'
