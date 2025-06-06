@@ -26,12 +26,10 @@ async function getServicePublicKey() {
 }
 
 /**
- * 
- * @param {import('@storacha/client').Client} client 
- * @param {[import('@ucanto/interface').Capability, ...import('@ucanto/interface').Capability[]]} capabilities 
- * @param {number} expiration 
- * @param {string | undefined} password 
- * @returns 
+ * @param {import('@storacha/client').Client} client
+ * @param {[import('@ucanto/interface').Capability, ...import('@ucanto/interface').Capability[]]} capabilities
+ * @param {number} expiration
+ * @param {string | undefined} password
  */
 async function generateAuthHeaders(client, capabilities, expiration, password = 'i am the very model of a modern major general') {
   const coupon = await client.coupon.issue({
@@ -106,10 +104,7 @@ test('the bridge can make various types of requests', async t => {
   // upload a file and wait for it to show up
   const file = await randomFile(42)
   const fileLink = await client.uploadFile(file)
-  /**
-   * FIXME: no type information
-   * @type {any}
-   */
+  /** @type {any} */ // FIXME: no type information
   let secondReceipts
   await pWaitFor(async () => {
     const secondResponse = await makeBridgeRequest(

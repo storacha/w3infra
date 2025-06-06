@@ -128,7 +128,10 @@ export const getDynamoDb = (tableName) => {
   }
 }
 
-/** @param {string} name */
+/**
+ * @param {string} name
+ * @param {number} [version]
+ */
 export const getBucketName = (name, version = 0) => {
   const stage = getStage()
   const app = getAppName()
