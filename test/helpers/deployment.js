@@ -128,3 +128,19 @@ export const getDynamoDb = (tableName) => {
     endpoint
   }
 }
+
+export const getBucketName = (name, version = 0) => {
+  const stage = getStage()
+  // you can change the service name in seed and it is currently different to
+  // what is configured in sst.config :(
+  const app = process.env.SEED_SERVICE_NAME === 'upload-api'
+    ? 'w3infra'
+    : (process.env.SEED_SERVICE_NAME ?? 'w3infra')
+  // if w3infra we use legacy naming conventions which unfortunately don't
+  // produce a unique bucket name across service deployments.
+  if (app === 'w3infra') {
+    // e.g `carpark-prod-0` or `carpark-pr101-0`
+    return `${name}-${stage}-${version}`
+  }
+  return `${stage}-${app}-${name}-${version}`
+}

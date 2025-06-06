@@ -158,8 +158,8 @@ test('w3filecoin integration flow', async t => {
           region: getAwsRegion(),
           connection: { channel: s3Client },
           buckets: {
-            message: { name: `workflow-store-${stage}-0` },
-            index: { name: `invocation-store-${stage}-0` },
+            message: { name: getBucketName('workflow-store') },
+            index: { name: getBucketName('invocation-store') },
           },
         },
         stream: {
