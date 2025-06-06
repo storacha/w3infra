@@ -47,7 +47,8 @@
     "filecoin",
     "tools",
     "lib",
-    "psa"
+    "psa",
+    "test"
   ],
   "exclude": ["billing/coverage", "upload-api/dist"]
 }

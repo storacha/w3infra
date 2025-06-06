@@ -10,6 +10,7 @@ import { equals } from 'multiformats/bytes'
 import { code as RAW_CODE } from 'multiformats/codecs/raw'
 import * as Digest from 'multiformats/hashes/digest'
 import { ShardingStream, UnixFS, Upload, Index } from '@storacha/upload-client'
+import { isDelegation } from '@ucanto/core'
 import { codec as carCodec } from '@ucanto/transport/car'
 import { ShardedDAGIndex } from '@storacha/blob-index'
 import * as AgentStore from '../upload-api/stores/agent.js'
@@ -21,6 +22,7 @@ import {
   getRoundaboutEndpoint,
   getDynamoDb,
   getAwsRegion,
+  getBucketName,
 } from './helpers/deployment.js'
 import { randomFile, randomInt } from './helpers/random.js'
 import { setupNewClient, getServiceProps } from './helpers/up-client.js'
@@ -29,7 +31,7 @@ import { getUsage } from './helpers/store.js'
 import { addStorageProvider } from './helpers/storage-provider.js'
 import * as IndexingService from './helpers/indexing-service.js'
 
-/** @param {import('multiformats').Digest} d */
+/** @param {import('multiformats').MultihashDigest} d */
 const b58 = d => base58btc.encode(d.bytes)
 /** @param {import('multiformats').UnknownLink|{ digest: Uint8Array }} c */
 const toDigest = c => 'multihash' in c ? c.multihash : Digest.decode(c.digest)
@@ -191,10 +193,8 @@ test('blob integration flow with receipts validation', async t => {
 
     // find location commitment for shard
     const shardLocationCommitment = claims
-      .find(c => (
-        c.type === 'assert/location' &&
-        equals(toDigest(c.content).bytes, shards[0].multihash.bytes)
-      ))
+      .filter(c => c.type === 'assert/location')
+      .find(c => equals(toDigest(c.content).bytes, shards[0].multihash.bytes))
     if (!shardLocationCommitment) {
       return t.fail(`location commitment not found for shard: ${b58(shards[0].multihash)}`)
     }
@@ -204,9 +204,9 @@ test('blob integration flow with receipts validation', async t => {
 
     // find index claim for root
     const indexClaim = claims
+      .filter(c => c.type === 'assert/index')
       .find(c => (
-        c.type === 'assert/index' &&
-        equals(toDigest(c.content).bytes, root.multihash.bytes) &&
+        equals(toDigest(c.content).bytes, rootDigest.bytes) &&
         equals(c.index.multihash.bytes, indexLink.multihash.bytes)
       ))
     if (!indexClaim) {
@@ -215,8 +215,8 @@ test('blob integration flow with receipts validation', async t => {
   
     // find location commitment for index
     const indexLocationCommitment = claims
+      .filter(c => c.type === 'assert/location')
       .find(c => (
-        c.type === 'assert/location' &&
         equals(toDigest(c.content).bytes, indexClaim.index.multihash.bytes)
       ))
     if (!indexLocationCommitment) {
@@ -262,10 +262,12 @@ test('blob integration flow with receipts validation', async t => {
     t.truthy(getAcceptTaskReceipt.ok?.out.ok.site)
 
     // Check delegation
-    const acceptForks = getAcceptTaskReceipt.ok?.fx.fork
-    t.truthy(acceptForks)
-    t.is(acceptForks?.length, 1)
-    t.truthy(acceptForks?.find(f => f.capabilities[0].can === AssertCapabilities.location.can))
+    const acceptForks = getAcceptTaskReceipt.ok.fx.fork
+    t.is(acceptForks.length, 1)
+    t.true(
+      isDelegation(acceptForks[0]) &&
+      acceptForks[0].capabilities[0].can === AssertCapabilities.location.can
+    )
 
     // Read from Roundabout and check bytes can be read by raw CID
     const rawCid = Link.create(RAW_CODE, multihash)
@@ -353,7 +355,7 @@ test('blob integration flow with receipts validation', async t => {
         )
       })
     }
-  } catch (err) {
+  } catch (/** @type {any} */ err) {
     console.error(err.stack)
     if (err.cause) console.error('[cause]:', err.cause)
     throw err
@@ -415,9 +417,9 @@ test('10k NFT drop', async t => {
         }
       })
     }
-  } catch (err) {
+  } catch (/** @type {any} */ err) {
     console.error(err.stack)
-    console.error('[cause]:', err.cause)
+    if (err.cause) console.error('[cause]:', err.cause)
     throw err
   }
 })

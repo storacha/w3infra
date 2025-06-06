@@ -1,9 +1,9 @@
 import fs from 'fs'
 import path from 'path'
-
 import { createRequire } from 'module'
 import { S3Client } from '@aws-sdk/client-s3'
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
+import { mustGetEnv } from '../../lib/env.js'
 
 // Either seed.run deployment, or development deploy outputs-file
 // https://seed.run/docs/adding-a-post-deploy-phase.html#post-deploy-phase-environment
@@ -12,19 +12,17 @@ export function getStage () {
   if (stage) {
     return stage
   }
-
   return fs.readFileSync(path.join(process.cwd(), '.sst', 'stage'), 'utf8')
 }
 
-export const getStackName = () => {
-  const stage = getStage()
+export const getAppName = () =>
   // you can change the service name in seed and it is currently different to
   // what is configured in sst.config :(
-  const service = process.env.SEED_SERVICE_NAME === 'upload-api'
+  process.env.SEED_SERVICE_NAME === 'upload-api'
     ? 'w3infra'
     : (process.env.SEED_SERVICE_NAME ?? 'w3infra')
-  return `${stage}-${service}`
-}
+
+export const getStackName = () => `${getStage()}-${getAppName()}`
 
 export const getCloudflareBucketClient = () => new S3Client({
   region: 'auto',
@@ -41,8 +39,9 @@ export const getAwsBucketClient = (region = getAwsRegion()) => new S3Client({
 
 export const getApiEndpoint = () => {
   // CI/CD deployment
-  if (process.env.SEED_APP_NAME) {    
-    return `https://${process.env.UPLOAD_API_DID.replace('did:web:', '')}`
+  if (process.env.SEED_APP_NAME) {
+    const serviceDID = mustGetEnv('UPLOAD_API_DID')
+    return `https://${serviceDID.replace('did:web:', '')}`
   }
 
   const require = createRequire(import.meta.url)
@@ -129,13 +128,10 @@ export const getDynamoDb = (tableName) => {
   }
 }
 
+/** @param {string} name */
 export const getBucketName = (name, version = 0) => {
   const stage = getStage()
-  // you can change the service name in seed and it is currently different to
-  // what is configured in sst.config :(
-  const app = process.env.SEED_SERVICE_NAME === 'upload-api'
-    ? 'w3infra'
-    : (process.env.SEED_SERVICE_NAME ?? 'w3infra')
+  const app = getAppName()
   // if w3infra we use legacy naming conventions which unfortunately don't
   // produce a unique bucket name across service deployments.
   if (app === 'w3infra') {
