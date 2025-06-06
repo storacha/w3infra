@@ -37,7 +37,7 @@ test('HEAD /{pieceCid}', async t => {
   )
   t.is(response.status, 302)
   const location = response.headers.get('location')
-  t.truthy(location)
+  if (!location) return t.fail('missing Location header in response')
   t.true(location.includes(blobHash))
   console.log(response.headers.get('location'))
 })

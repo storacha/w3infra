@@ -3,7 +3,8 @@ import * as Signer from '@ucanto/principal/ed25519'
 import { AgentData } from '@storacha/access/agent'
 import { Client, authorizeContentServe } from '@storacha/client'
 import { uploadServiceConnection, accessServiceConnection, gatewayServiceConnection, filecoinServiceConnection } from '@storacha/client/service'
-import { MailSlurp } from "mailslurp-client"
+import * as DIDMailto from '@storacha/did-mailto'
+import { MailSlurp } from 'mailslurp-client'
 import { fileURLToPath } from 'node:url'
 import dotenv from 'dotenv'
 import { getApiEndpoint } from './deployment.js'
@@ -48,7 +49,7 @@ export const receiptsEndpoint = new URL('/receipt/', uploadServiceURL)
 function getAuthLinkFromEmail (email) {
   // forgive me for I have s̵i̵n̴n̴e̵d̴ ̸a̸n̵d̷ ̷p̶a̵r̵s̵e̸d̷ Ȟ̷̞T̷̢̈́M̸̼̿L̴̎ͅ ̵̗̍ẅ̵̝́ï̸ͅt̴̬̅ḫ̸̔ ̵͚̔ŗ̵͊e̸͍͐g̶̜͒ė̷͖x̴̱̌
   // TODO we should update the email and add an ID to this element to make this more robust - tracked in https://github.com/storacha/w3infra/issues/208
-  const link = email.match(/<a href="([^"]*)".*Verify email address/)[1]
+  const link = email.match(/<a href="([^"]*)".*Verify email address/)?.[1]
   if (!link){
     throw new Error(`Could not find email verification link in ${email}`)
   }
@@ -56,7 +57,7 @@ function getAuthLinkFromEmail (email) {
 }
 
 export async function createMailSlurpInbox() {
-  const apiKey = process.env.MAILSLURP_API_KEY
+  const apiKey = mustGetEnv('MAILSLURP_API_KEY')
   const mailslurp = new MailSlurp({ apiKey })
   const inbox = await mailslurp.inboxController.createInbox({})
   return {
@@ -72,6 +73,10 @@ export async function createNewClient() {
   return new Client(data, { serviceConf, receiptsEndpoint })
 }
 
+/**
+ * @param {object} [options]
+ * @param {{ mailslurp: MailSlurp, id: string, email: string }} [options.inbox]
+ */
 export async function setupNewClient (options = {}) {
   console.log('Setting up new client...')
   console.log('Creating mailslurp inbox...')
@@ -94,6 +99,9 @@ export async function setupNewClient (options = {}) {
       console.log('Waiting for authorization email...')
       const timeoutMs = process.env.MAILSLURP_TIMEOUT ? parseInt(process.env.MAILSLURP_TIMEOUT) : 60_000
       const latestEmail = await mailslurp.waitForLatestEmail(inboxId, timeoutMs)
+      if (!latestEmail.body) {
+        throw new Error('missing body in latest email from mailslurp')
+      }
       const authLink = getAuthLinkFromEmail(latestEmail.body)
       console.log(`Clicking authorization link...`)
       console.log(`  Link: ${authLink}`)
@@ -107,7 +115,7 @@ export async function setupNewClient (options = {}) {
       await new Promise(resolve => setTimeout(resolve, 500))
       console.log('Logging in...')
       console.log(`  Email: ${email}`)
-      return client.login(email)
+      return client.login(DIDMailto.email(email))
     })(),
   ])
 
@@ -131,7 +139,7 @@ export async function setupNewClient (options = {}) {
 
 /**
  * @param {Client} client
- * @param {string[]} caps
+ * @param {import('@ipld/dag-ucan').Ability[]} caps
  */
 export function getServiceProps (client, caps) {
   // Get invocation config

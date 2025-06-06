@@ -26,7 +26,7 @@ import { getMetrics, getSpaceMetrics } from './helpers/metrics.js'
 // import { createNode } from './helpers/helia.js'
 import * as IndexingService from './helpers/indexing-service.js'
 
-/** @param {import('multiformats').Digest} d */
+/** @param {import('multiformats').MultihashDigest} d */
 const b58 = d => base58btc.encode(d.bytes)
 /** @param {import('multiformats').UnknownLink|{ digest: Uint8Array }} c */
 const toDigest = c => 'multihash' in c ? c.multihash : Digest.decode(c.digest)
@@ -99,9 +99,9 @@ test('authorizations can be blocked by email or domain', async t => {
   try {
     await client.authorize('travis@example.com')
     t.fail('authorize should fail with a blocked email address')
-  } catch (e) {
-    t.is(e.name, 'AccountBlocked')
-    t.is(e.message, 'Account identified by did:mailto:example.com:travis is blocked')
+  } catch (/** @type {any} */ err) {
+    t.is(err.name, 'AccountBlocked')
+    t.is(err.message, 'Account identified by did:mailto:example.com:travis is blocked')
   }
 
   // test domain blocking
@@ -118,9 +118,9 @@ test('authorizations can be blocked by email or domain', async t => {
   try {
     await client.login('travis@example2.com')
     t.fail('authorize should fail with a blocked domain')
-  } catch (e) {
-    t.is(e.name, 'AccountBlocked')
-    t.is(e.message, 'Account identified by did:mailto:example2.com:travis is blocked')
+  } catch (/** @type {any} */ err) {
+    t.is(err.name, 'AccountBlocked')
+    t.is(err.message, 'Account identified by did:mailto:example2.com:travis is blocked')
   }
 })
 
@@ -146,7 +146,7 @@ test('w3infra store/upload integration flow', async t => {
   if (!spaceDid) {
     throw new Error('Testing space DID must be set')
   }
-  const account = client.accounts()[DidMailto.fromEmail(inbox.email)]
+  const account = client.accounts()[DidMailto.fromString(inbox.email)]
 
   // it should be possible to create more than one space
   const space = await client.createSpace('2nd space')
@@ -166,7 +166,9 @@ test('w3infra store/upload integration flow', async t => {
 
   console.log('Creating new File')
   const file = await randomFile(100)
+  /** @type {import('@storacha/upload-client/types').CARLink[]} */
   const shards = []
+  /** @type {number[]} */
   const shardSizes = []
 
   // Upload new file
