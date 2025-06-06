@@ -9,8 +9,12 @@ import { sha256 as hasher } from 'multiformats/hashes/sha2'
 import * as pb from '@ipld/dag-pb'
 import { CarBufferWriter } from '@ipld/car'
 import * as CAR from '@ucanto/transport/car'
-
-import { RAW_CODE } from '../constants.js'
+import * as ed25519 from '@ucanto/principal/ed25519'
+import { Client } from '@storacha/indexing-service-client'
+import * as QueryResult from '@storacha/indexing-service-client/query-result'
+import * as Claim from '@storacha/indexing-service-client/claim'
+import { Assert } from '@storacha/capabilities'
+import { RAW_CODE, CARPARK_DOMAIN } from '../constants.js'
 import { getSigner, contentLocationResolver } from '../index.js'
 import {
   parseQueryStringParameters,
@@ -31,11 +35,13 @@ test('can create signed url for CAR in bucket and get it', async t => {
   const bucketName = await createBucket(t.context.s3Client)
   const carCid = await putCarToBucket(t.context.s3Client, bucketName)
   const expiresIn = 3 * 24 * 60 * 60 // 3 days in seconds
+  const indexingService = new Client()
 
   const locateContent = contentLocationResolver({ 
     bucket: bucketName,
     s3Client: t.context.s3Client,
-    expiresIn
+    expiresIn,
+    indexingService,
   })
 
   const signedUrl = await locateContent(carCid)
@@ -52,12 +58,50 @@ test('can create signed url for CAR in bucket and get it', async t => {
 test('can create signed url for Blob in bucket and get it', async t => {
   const bucketName = await createBucket(t.context.s3Client)
   const blobCid = await putBlobToBucket(t.context.s3Client, bucketName)
+  const encodedMultihash = base58btc.encode(blobCid.multihash.bytes)
   const expiresIn = 3 * 24 * 60 * 60 // 3 days in seconds
+
+  const alice = await ed25519.generate()
+  const space = await ed25519.generate()
+
+  const site = await Assert.location.delegate({
+    issuer: alice,
+    audience: space,
+    with: alice.did(),
+    nb: {
+      content: blobCid,
+      location: [
+        `http://${CARPARK_DOMAIN}/${encodedMultihash}/${encodedMultihash}.blob`
+      ]
+    }
+  })
+
+  const blocks = new Map()
+  for (const b of site.export()) {
+    blocks.set(b.cid.toString(), b)
+  }
+
+  const result = await QueryResult.from({
+    claims: [Claim.view({ root: site.cid, blocks })]
+  })
+  if (result.error) {
+    return t.fail(result.error)
+  }
+
+  const queryArchiveRes = await QueryResult.archive(result.ok)
+  if (queryArchiveRes.error) {
+    return t.fail(queryArchiveRes.error)
+  }
+
+  const indexingService = new Client({
+    fetch: async () => new Response(queryArchiveRes.ok)
+  })
 
   const locateContent = contentLocationResolver({ 
     bucket: bucketName,
     s3Client: t.context.s3Client,
-    expiresIn
+    expiresIn,
+    indexingService,
   })
 
   const signedUrl = await locateContent(blobCid)
@@ -65,8 +109,6 @@ test('can create signed url for Blob in bucket and get it', async t => {
     throw new Error('presigned url must be received')
   }
   t.truthy(signedUrl?.includes(`X-Amz-Expires=${expiresIn}`))
-
-  const encodedMultihash = base58btc.encode(blobCid.multihash.bytes)
   t.truthy(signedUrl?.includes(`${encodedMultihash}/${encodedMultihash}.blob`))
 
   const fetchResponse = await fetch(signedUrl)

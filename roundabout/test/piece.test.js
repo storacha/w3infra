@@ -4,9 +4,10 @@ import * as Raw from 'multiformats/codecs/raw'
 import { sha256 } from 'multiformats/hashes/sha2'
 import * as Digest from 'multiformats/hashes/digest'
 import { Piece, MIN_PAYLOAD_SIZE } from '@web3-storage/data-segment'
-import { decodeDelegation } from '@web3-storage/content-claims/client'
 import { Client } from '@storacha/indexing-service-client'
 import * as QueryResult from '@storacha/indexing-service-client/query-result'
+import * as Claim from '@storacha/indexing-service-client/claim'
+import { Assert } from '@storacha/capabilities'
 import { asCarCid } from '../utils.js'
 import { CAR_CODE } from '../constants.js'
 import { findEquivalentCids, asPieceCidV1, asPieceCidV2 } from '../piece.js'
@@ -19,13 +20,16 @@ import * as ed25519 from '@ucanto/principal/ed25519'
  */
 const claim = async (can, nb) => {
   const signer = await ed25519.generate()
-  return decodeDelegation(
-    await Delegation.delegate({
-      issuer: signer,
-      audience: signer,
-      capabilities: [{ can, with: signer.did(), nb }]
-    })
-  )
+  const claim = await Delegation.delegate({
+    issuer: signer,
+    audience: signer,
+    capabilities: [{ can, with: signer.did(), nb }]
+  })
+  const blocks = new Map()
+  for (const b of claim.export()) {
+    blocks.set(b.cid.toString(), b)
+  }
+  return Claim.view({ root: claim.cid, blocks })
 }
 
 test('findEquivalentCids', async t => {
@@ -56,11 +60,43 @@ test('findEquivalentCids', async t => {
   t.is([...carSet].at(0).toString(), carCid.toString())
 })
 
-// FIXME: relies on staging service and existing data on staging service
-test.skip('findEquivalentCids from content-claims api', async t => {
+test('findEquivalentCids from indexing service', async t => {
   const pieceCid = CID.parse('bafkzcibbai3tdo4zvruj6zxo6wlt4suu3imi6to4vzmaojh4n475mdp5jcbtg')
   const carCid = CID.parse('bagbaieratdhefxxpkhkae2ovil2tcs7pfr2grvabvvoykful7k2maeepox3q')
-  const carSet = await findEquivalentCids(pieceCid)
+
+  const alice = await ed25519.generate()
+  const claim = await Assert.equals.delegate({
+    issuer: alice,
+    audience: alice,
+    with: alice.did(),
+    nb: {
+      content: carCid,
+      equals: pieceCid,
+    }
+  })
+
+  const blocks = new Map()
+  for (const b of claim.export()) {
+    blocks.set(b.cid.toString(), b)
+  }
+
+  const result = await QueryResult.from({
+    claims: [Claim.view({ root: claim.cid, blocks })]
+  })
+  if (result.error) {
+    return t.fail(result.error)
+  }
+
+  const queryArchiveRes = await QueryResult.archive(result.ok)
+  if (queryArchiveRes.error) {
+    return t.fail(queryArchiveRes.error)
+  }
+
+  const indexingService = new Client({
+    fetch: async () => new Response(queryArchiveRes.ok)
+  })
+
+  const carSet = await findEquivalentCids(pieceCid, indexingService)
   let found
   for (const cid of carSet) {
     if (cid.toString() === carCid.toString()) {
