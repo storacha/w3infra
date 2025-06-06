@@ -1,12 +1,12 @@
 import { getSignedUrl as getR2SignedUrl } from '@aws-sdk/s3-request-presigner'
 import { GetObjectCommand } from '@aws-sdk/client-s3'
-import { RAW_CODE, CARPARK_DOMAIN } from './constants.js'
-
 /**
- * @typedef {import('multiformats').CID} CID
- * @typedef {import('@aws-sdk/client-s3').S3Client} S3Client
- * @typedef {import('@aws-sdk/types').RequestPresigningArguments} RequestPresigningArguments
+ * @import { UnknownLink } from 'multiformats'
+ * @import { IndexingServiceClient } from '@storacha/indexing-service-client/api'
+ * @import { S3Client } from '@aws-sdk/client-s3'
+ * @import { RequestPresigningArguments } from '@smithy/types'
  */
+import { RAW_CODE, CARPARK_DOMAIN } from './constants.js'
 
 /**
  * @param {S3Client} s3Client
@@ -15,7 +15,6 @@ import { RAW_CODE, CARPARK_DOMAIN } from './constants.js'
 export function getSigner (s3Client, bucketName) {
   return {
     /**
-     * 
      * @param {string} key
      * @param {RequestPresigningArguments} [options]
      */
@@ -46,12 +45,12 @@ export function getSigner (s3Client, bucketName) {
  * @param {S3Client} config.s3Client
  * @param {string} config.bucket
  * @param {number} config.expiresIn
- * @param {import('@storacha/indexing-service-client/api').IndexingServiceClient} config.indexingService
+ * @param {IndexingServiceClient} config.indexingService
  */
 export function contentLocationResolver ({ s3Client, bucket, expiresIn, indexingService }) {
   const signer = getSigner(s3Client, bucket)
   /**
-   * @param {CID} cid
+   * @param {UnknownLink} cid
    */
   return async function locateContent (cid) {
     if (cid.code !== RAW_CODE) {

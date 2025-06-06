@@ -1,6 +1,11 @@
 import { mustGetEnv } from '../lib/env.js'
 import { CAR_CODE } from './constants.js'
 
+/**
+ * @import { UnknownLink } from 'multiformats'
+ * @import { APIGatewayProxyEventPathParameters } from 'aws-lambda'
+ */
+
 // Per https://developers.cloudflare.com/r2/api/s3/presigned-urls/
 export const MAX_EXPIRES_IN = 3 * 24 * 60 * 60 // 7 days in seconds
 export const MIN_EXPIRES_IN = 1
@@ -8,12 +13,8 @@ export const DEFAULT_EXPIRES_IN = 3 * 24 * 60 * 60 // 3 days in seconds by defau
 
 export const VALID_BUCKETS = ['dagcargo']
 
-/** 
- * @typedef {import('multiformats/cid').CID} CID
- **/
-
 /**
- * @param {import('aws-lambda').APIGatewayProxyEventPathParameters | undefined} queryStringParameters
+ * @param {APIGatewayProxyEventPathParameters | undefined} queryStringParameters
  */
 export function parseQueryStringParameters (queryStringParameters) {
   const expiresIn = queryStringParameters?.expires ?
@@ -51,7 +52,7 @@ export function getEnv() {
 /**
  * Return the cid if it is a CAR CID or undefined if not
  *
- * @param {CID} cid
+ * @param {UnknownLink} cid
  */
 export function asCarCid(cid) {
   if (cid.code === CAR_CODE) {

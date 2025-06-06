@@ -6,8 +6,16 @@
 # HOSTED_ZONES=up.storacha.network,up.web3.storage
 
 # uncomment to try out deploying the roundabout api under a custom domain.
-# the value should match a hosted zone configured in route53 that your aws account has access to.
+# the value should match a hosted zone configured in route53 that your aws
+# account has access to.
+# Note: unused if ROUNDABOUT_API_URL var is set.
 # ROUNDABOUT_HOSTED_ZONE=roundabout.web3.storage
+
+# uncomment to specify 1 or more indexing service URLs that roundabout should
+# query for location commitments and equals claims. JSON encoded array of 
+# strings.
+# Note: unused if ROUNDABOUT_API_URL var is set.
+# ROUNDABOUT_INDEXING_SERVICE_URLS = '[]'
 
 # uncomment to disable the roundabout stack deployment and instead use an
 # existing roundabout deployment. This is primarily for use by other deployed

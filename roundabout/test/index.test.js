@@ -22,12 +22,12 @@ import {
   MIN_EXPIRES_IN,
   DEFAULT_EXPIRES_IN
 } from '../utils.js'
-
 import { createS3, createBucket } from './helpers/resources.js'
+
+/** @import { URI } from '@ucanto/interface' */
 
 test.before(async t => {
   const { client } = await createS3({ port: 9000 })
-
   t.context.s3Client = client
 })
 
@@ -71,7 +71,8 @@ test('can create signed url for Blob in bucket and get it', async t => {
     nb: {
       content: blobCid,
       location: [
-        `http://${CARPARK_DOMAIN}/${encodedMultihash}/${encodedMultihash}.blob`
+        /** @type {URI} */
+        (`http://${CARPARK_DOMAIN}/${encodedMultihash}/${encodedMultihash}.blob`)
       ]
     }
   })
@@ -85,12 +86,14 @@ test('can create signed url for Blob in bucket and get it', async t => {
     claims: [Claim.view({ root: site.cid, blocks })]
   })
   if (result.error) {
-    return t.fail(result.error)
+    console.error(result.error)
+    return t.fail(result.error.message)
   }
 
   const queryArchiveRes = await QueryResult.archive(result.ok)
   if (queryArchiveRes.error) {
-    return t.fail(queryArchiveRes.error)
+    console.error(result.error)
+    return t.fail(queryArchiveRes.error.message)
   }
 
   const indexingService = new Client({

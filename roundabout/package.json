@@ -14,7 +14,9 @@
   "devDependencies": {
     "@ipld/car": "catalog:",
     "@ipld/dag-pb": "catalog:",
+    "@smithy/types": "^4.3.1",
     "@storacha/capabilities": "catalog:",
+    "@types/aws-lambda": "catalog:",
     "@ucanto/core": "catalog:",
     "@ucanto/principal": "catalog:",
     "@web3-storage/data-segment": "catalog:",
