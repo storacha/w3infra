@@ -263,11 +263,8 @@ test('blob integration flow with receipts validation', async t => {
 
     // Check delegation
     const acceptForks = getAcceptTaskReceipt.ok.fx.fork
-    t.is(acceptForks.length, 1)
-    t.true(
-      isDelegation(acceptForks[0]) &&
-      acceptForks[0].capabilities[0].can === AssertCapabilities.location.can
-    )
+    t.true(acceptForks.length > 0) // PDP node will also include a forked PDP task
+    t.true(acceptForks.some(f => isDelegation(f) && f.capabilities[0].can === AssertCapabilities.location.can))
 
     // Read from Roundabout and check bytes can be read by raw CID
     const rawCid = Link.create(RAW_CODE, multihash)
