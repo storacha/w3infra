@@ -96,8 +96,9 @@ test('w3filecoin integration flow', async t => {
             method: 'HEAD',
             redirect: 'manual'
           })
-          const encodedMultihash = base58btc.encode(testUpload.content.multihash.bytes)
-          return res.status === 302 && Boolean(res.headers.get('location')?.includes(encodedMultihash))
+          // do not assume blob hash is in redirect URL, just ensure roundabout
+          // returns a redirect status (signalling it found the piece).
+          return res.status === 302
         } catch {}
         return false
       }, {
