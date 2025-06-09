@@ -6,7 +6,6 @@ import * as CAR from '@ucanto/transport/car'
 import { Storefront } from '@storacha/filecoin-client'
 import * as Link from 'multiformats/link'
 import * as raw from 'multiformats/codecs/raw'
-import { base58btc } from 'multiformats/bases/base58'
 import * as AgentStore from '../upload-api/stores/agent.js'
 import {
   getApiEndpoint,
