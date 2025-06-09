@@ -146,7 +146,7 @@ test('w3infra store/upload integration flow', withCauseLog(async t => {
   if (!spaceDid) {
     throw new Error('Testing space DID must be set')
   }
-  const account = client.accounts()[DidMailto.fromString(inbox.email)]
+  const account = client.accounts()[DidMailto.fromEmail(DidMailto.email(inbox.email))]
 
   // it should be possible to create more than one space
   const space = await client.createSpace('2nd space')
