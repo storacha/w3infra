@@ -4,6 +4,7 @@ import pWaitFor from 'p-wait-for'
 import { isDelegation } from '@ucanto/core'
 import * as CAR from '@ucanto/transport/car'
 import { Storefront } from '@storacha/filecoin-client'
+import * as FilecoinCapabilities from '@storacha/capabilities/filecoin'
 import * as Link from 'multiformats/link'
 import * as raw from 'multiformats/codecs/raw'
 import * as AgentStore from '../upload-api/stores/agent.js'
@@ -108,7 +109,9 @@ test('w3filecoin integration flow', async t => {
       // Invoke `filecoin/offer`
       console.log(`invoke 'filecoin/offer' for piece ${testUpload.piece.toString()} (${testUpload.content})`)
       const filecoinOfferRes = await Storefront.filecoinOffer(invocationConfig, testUpload.content, testUpload.piece, { connection })
-      t.truthy(filecoinOfferRes.out.ok)
+      if (filecoinOfferRes.out.error) {
+        throw new Error(`failed ${FilecoinCapabilities.offer.can} invocation`, { cause: filecoinOfferRes.out.error })
+      }
       t.truthy(filecoinOfferRes.fx.join)
       t.is(filecoinOfferRes.fx.fork.length, 1)
 
