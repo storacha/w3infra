@@ -274,8 +274,8 @@ test('blob integration flow with receipts validation', async t => {
     )
     t.is(roundaboutResponse.status, 200)
 
-    const fetchedBytes =  new Uint8Array(await roundaboutResponse.arrayBuffer())
-    t.truthy(equals(shardBytes[0], fetchedBytes))
+    const fetchedBytes = new Uint8Array(await roundaboutResponse.arrayBuffer())
+    t.deepEqual(shardBytes[0], fetchedBytes)
 
     if (process.env.DISABLE_IPNI_PUBLISHING !== 'true') {
       // Verify w3link can resolve uploaded file
