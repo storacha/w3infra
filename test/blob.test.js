@@ -116,7 +116,6 @@ test('blob integration flow with receipts validation', async t => {
         new TransformStream({
           async transform(car, controller) {
             const bytes = new Uint8Array(await car.arrayBuffer())
-            console.log('transform', bytes.length, bytes)
 
             // Add blob using custom client to be able to access receipts
             // Given Blob client exported from client would only return multihash
@@ -138,7 +137,6 @@ test('blob integration flow with receipts validation', async t => {
             root = root || meta.roots[0]
             shards.push(meta.cid)
             shardBytes.push(meta.bytes)
-            console.log('write', meta.bytes.length, meta.bytes)
             shardSizes.push(meta.size)
 
             // add the CAR shard itself to the slices
@@ -278,8 +276,6 @@ test('blob integration flow with receipts validation', async t => {
     t.is(roundaboutResponse.status, 200)
 
     const fetchedBytes = new Uint8Array(await roundaboutResponse.arrayBuffer())
-    console.log('shardBytes[0]', shardBytes[0].length, shardBytes[0])
-    console.log(fetchedBytes)
     t.deepEqual(shardBytes[0], fetchedBytes)
 
     if (process.env.DISABLE_IPNI_PUBLISHING !== 'true') {

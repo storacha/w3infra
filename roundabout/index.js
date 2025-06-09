@@ -1,5 +1,8 @@
 import { getSignedUrl as getR2SignedUrl } from '@aws-sdk/s3-request-presigner'
 import { GetObjectCommand } from '@aws-sdk/client-s3'
+import { equals } from 'multiformats/bytes'
+import * as Digest from 'multiformats/hashes/digest'
+
 /**
  * @import { UnknownLink } from 'multiformats'
  * @import { IndexingServiceClient } from '@storacha/indexing-service-client/api'
@@ -67,12 +70,17 @@ export function contentLocationResolver ({ s3Client, bucket, expiresIn, indexing
     const locations = []
     for (const [, c] of res.ok.claims) {
       if (c.type === 'assert/location') {
-        locations.push(...c.location)
-        for (const url of c.location) {
-          // if location is a known carpark URI then return a signed URL
-          if (url.includes(CARPARK_DOMAIN)) {
-            const blobKey = new URL(url).pathname.slice(1)
-            return signer.getUrl(blobKey, { expiresIn })
+        const contentDigest = 'multihash' in c.content
+          ? c.content.multihash
+          : Digest.decode(c.content.digest)
+        if (equals(contentDigest.bytes, cid.multihash.bytes)) {
+          locations.push(...c.location)
+          for (const url of c.location) {
+            // if location is a known carpark URI then return a signed URL
+            if (url.includes(CARPARK_DOMAIN)) {
+              const blobKey = new URL(url).pathname.slice(1)
+              return signer.getUrl(blobKey, { expiresIn })
+            }
           }
         }
       }
