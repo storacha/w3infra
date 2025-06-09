@@ -391,6 +391,7 @@ test('10k NFT drop', async t => {
         console.log(`Uploaded blob ${cid} (${size} bytes)`)
       }
     })
+    t.truthy(root)
 
     if (process.env.DISABLE_IPNI_PUBLISHING !== 'true') {
       const sample = Array.from(Array(5), () => randomInt(total))
