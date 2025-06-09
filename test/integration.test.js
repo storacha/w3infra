@@ -12,7 +12,7 @@ import { PutItemCommand } from '@aws-sdk/client-dynamodb'
 import { marshall } from '@aws-sdk/util-dynamodb'
 import * as DidMailto from '@storacha/did-mailto'
 import { METRICS_NAMES, SPACE_METRICS_NAMES } from '../upload-api/constants.js'
-import { test } from './helpers/context.js'
+import { test, withCauseLog } from './helpers/context.js'
 import {
   getStage,
   getApiEndpoint,
@@ -138,7 +138,7 @@ test('authorizations can be blocked by email or domain', async t => {
  * 10. Remove
  * 11. Verify metrics
  */
-test('w3infra store/upload integration flow', async t => {
+test('w3infra store/upload integration flow', withCauseLog(async t => {
   const stage = getStage()
   const inbox = await createMailSlurpInbox()
   const { client } = await setupNewClient({ inbox })
@@ -324,4 +324,4 @@ test('w3infra store/upload integration flow', async t => {
       )
     })
   }
-})
+}))

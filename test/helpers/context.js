@@ -57,3 +57,22 @@ export const testBlob  = /** @type {TestBlobContextFn} */ (anyTest)
 
 // eslint-disable-next-line unicorn/prefer-export-from
 export const testStore  = /** @type {TestStoreContextFn} */ (anyTest)
+
+/**
+ * Ava does not log error cause.
+ *
+ * @template T
+ * @param {(ctx: T) => Promise<unknown>} testFn
+ */
+export const withCauseLog = testFn => {
+  /** @param {T} t */
+  return async t => {
+    try {
+      return await testFn(t)
+    } catch (/** @type {any} */ err) {
+      console.error(err.stack)
+      if (err.cause) console.error('[cause]:', err.cause)
+      throw err
+    }
+  }
+}
