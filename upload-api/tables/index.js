@@ -169,7 +169,10 @@ export const humanodeTableProps = {
     // the ID of the storacha user associated with this subject
     account: 'string',
   },
-  primaryIndex: { partitionKey: 'sub'}
+  primaryIndex: { partitionKey: 'sub' },
+  globalIndexes: {
+    account: { partitionKey: 'account', projection: ['sub'] },
+  }
 }
 
 /** @type TableProps */
