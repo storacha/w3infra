@@ -178,8 +178,6 @@ function createAuthorizeContext() {
   }
 }
 
-
-
 /**
  * AWS HTTP Gateway handler for POST /validate-email
  *
