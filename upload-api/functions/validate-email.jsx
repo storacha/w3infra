@@ -210,7 +210,7 @@ export async function validateEmailPost(request) {
     )
   }
 
-  const { email, audience, ucan } = authorizeResult.ok
+  const { email, audience, ucan, facts } = authorizeResult.ok
 
   const planCheckResult = await context.customerStore.get({
     customer: DidMailto.fromEmail(email),
@@ -229,9 +229,22 @@ export async function validateEmailPost(request) {
   let stripePricingTableId
   let stripePublishableKey
 
+  // if one of the facts have an 'app' entry, return it
+  // if there are more than one this will potentially be nondeterministic
+  const appName = facts.find(fact => fact.appName)?.appName
   if (!planCheckResult.ok?.product) {
     stripePublishableKey = context.stripePublishableKey
-    stripePricingTableId = isReferred ? context.stripeFreeTrialPricingTableId : context.stripePricingTableId
+    // TODO: use AppName.BskyBackups from @storacha/client/types once we upgrade that dependency
+    // I'd have done it now but upgrading causes linting issues and I want to save 
+    // that rabbithole for later
+    if (appName === 'bsky-backups') {
+      // don't show a pricing table to bsky.storage users
+      stripePricingTableId = null
+    } else if (isReferred) {
+      stripePricingTableId = context.stripeFreeTrialPricingTableId 
+    } else {
+      stripePricingTableId = context.stripePricingTableId
+    }
   }
   return toLambdaResponse(
     new html.HtmlResponse(
