@@ -269,7 +269,6 @@ export function UploadApiStack({ stack, app }) {
               STRIPE_FREE_TRIAL_PRICING_TABLE_ID: process.env.STRIPE_FREE_TRIAL_PRICING_TABLE_ID ?? '',
               STRIPE_PRICING_TABLE_ID: process.env.STRIPE_PRICING_TABLE_ID ?? '',
               STRIPE_PUBLISHABLE_KEY: process.env.STRIPE_PUBLISHABLE_KEY ?? '',
-              STRIPE_BLUESKY_PRICING_TABLE_ID: process.env.STRIPE_BLUESKY_PRICING_TABLE_ID ?? '',
               SUBSCRIPTION_TABLE_NAME: subscriptionTable.tableName,
               UCAN_LOG_STREAM_NAME: ucanStream.streamName,
               UPLOAD_API_DID: process.env.UPLOAD_API_DID ?? '',
