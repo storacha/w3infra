@@ -166,8 +166,13 @@ export const humanodeTableProps = {
   fields: {
     // the humanode "subject" - `sub` matches the name it is given in the JWT we receive.
     sub: 'string',
+    // the ID of the storacha user associated with this subject
+    account: 'string',
   },
-  primaryIndex: { partitionKey: 'sub'}
+  primaryIndex: { partitionKey: 'sub' },
+  globalIndexes: {
+    account: { partitionKey: 'account', projection: ['sub'] },
+  }
 }
 
 /** @type TableProps */

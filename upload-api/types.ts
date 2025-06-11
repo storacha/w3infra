@@ -291,7 +291,7 @@ export interface ReferralsStore {
 }
 
 export interface HumanodeStore {
-  add: (sub: string) => Promise<Result<Unit, UnexpectedError>>
+  add: (sub: string, account: string) => Promise<Result<Unit, UnexpectedError>>
   exists: (sub: string) => Promise<Result<boolean, UnexpectedError>>
 }
 

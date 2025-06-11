@@ -130,7 +130,7 @@ export const oauthCallbackGet = async (request, context) => {
     return htmlResponse(500, getUnexpectedErrorResponseHTML('Failed to update customer store.'))
   }
 
-  await humanodeStore.add(humanodeId)
+  await humanodeStore.add(humanodeId, customer)
 
   return htmlResponse(200, getResponseHTML())
 }
