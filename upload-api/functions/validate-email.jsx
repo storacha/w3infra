@@ -245,7 +245,7 @@ export async function validateEmailPost(request) {
   if (!planCheckResult.ok?.product) {
     stripePublishableKey = context.stripePublishableKey
     if (appName === AppName.BskyBackups) {
-      stripePricingTableId = context.stripeBlueskyPricingTableId
+      stripePricingTableId = null
     } else if (isReferred) {
       stripePricingTableId = context.stripeFreeTrialPricingTableId 
     } else {
