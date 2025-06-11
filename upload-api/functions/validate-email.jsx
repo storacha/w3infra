@@ -2,7 +2,6 @@ import * as Sentry from '@sentry/serverless'
 import { authorize } from '@storacha/upload-api/validate'
 import { Config } from 'sst/node/config'
 import * as DidMailto from '@storacha/did-mailto'
-import { AppName } from '@storacha/client/types'
 import { getServiceSigner, parseServiceDids } from '../config.js'
 import { Email } from '../email.js'
 import { createDelegationsTable } from '../tables/delegations.js'
@@ -237,7 +236,7 @@ export async function validateEmailPost(request) {
   const appName = facts.find(fact => fact.appName)?.appName
   if (!planCheckResult.ok?.product) {
     stripePublishableKey = context.stripePublishableKey
-    if (appName === AppName.BskyBackups) {
+    if (appName === 'bsky-backups') {
       // don't show a pricing table to bsky.storage users
       stripePricingTableId = null
     } else if (isReferred) {
