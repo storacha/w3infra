@@ -1,21 +1,21 @@
 import { fetch } from '@web-std/fetch'
 import git from 'git-rev-sync'
 import pWaitFor from 'p-wait-for'
-import { unixfs } from '@helia/unixfs'
-import { multiaddr } from '@multiformats/multiaddr'
+// import { unixfs } from '@helia/unixfs'
+// import { multiaddr } from '@multiformats/multiaddr'
 import * as Link from 'multiformats/link'
 import { code as RAW_CODE } from 'multiformats/codecs/raw'
 import { base58btc } from 'multiformats/bases/base58'
-import { HeadObjectCommand } from '@aws-sdk/client-s3'
+import { equals } from 'multiformats/bytes'
+import * as Digest from 'multiformats/hashes/digest'
 import { PutItemCommand } from '@aws-sdk/client-dynamodb'
 import { marshall } from '@aws-sdk/util-dynamodb'
 import * as DidMailto from '@storacha/did-mailto'
 import { METRICS_NAMES, SPACE_METRICS_NAMES } from '../upload-api/constants.js'
-import { test } from './helpers/context.js'
+import { test, withCauseLog } from './helpers/context.js'
 import {
   getStage,
   getApiEndpoint,
-  getCloudflareBucketClient,
   getRoundaboutEndpoint,
   getReceiptsEndpoint,
   getDynamoDb
@@ -23,7 +23,13 @@ import {
 import { createMailSlurpInbox, createNewClient, setupNewClient } from './helpers/up-client.js'
 import { randomFile } from './helpers/random.js'
 import { getMetrics, getSpaceMetrics } from './helpers/metrics.js'
-import { createNode } from './helpers/helia.js'
+// import { createNode } from './helpers/helia.js'
+import * as IndexingService from './helpers/indexing-service.js'
+
+/** @param {import('multiformats').MultihashDigest} d */
+const b58 = d => base58btc.encode(d.bytes)
+/** @param {import('multiformats').UnknownLink|{ digest: Uint8Array }} c */
+const toDigest = c => 'multihash' in c ? c.multihash : Digest.decode(c.digest)
 
 test.before(t => {
   t.context = {
@@ -93,9 +99,9 @@ test('authorizations can be blocked by email or domain', async t => {
   try {
     await client.authorize('travis@example.com')
     t.fail('authorize should fail with a blocked email address')
-  } catch (e) {
-    t.is(e.name, 'AccountBlocked')
-    t.is(e.message, 'Account identified by did:mailto:example.com:travis is blocked')
+  } catch (/** @type {any} */ err) {
+    t.is(err.name, 'AccountBlocked')
+    t.is(err.message, 'Account identified by did:mailto:example.com:travis is blocked')
   }
 
   // test domain blocking
@@ -112,9 +118,9 @@ test('authorizations can be blocked by email or domain', async t => {
   try {
     await client.login('travis@example2.com')
     t.fail('authorize should fail with a blocked domain')
-  } catch (e) {
-    t.is(e.name, 'AccountBlocked')
-    t.is(e.message, 'Account identified by did:mailto:example2.com:travis is blocked')
+  } catch (/** @type {any} */ err) {
+    t.is(err.name, 'AccountBlocked')
+    t.is(err.message, 'Account identified by did:mailto:example2.com:travis is blocked')
   }
 })
 
@@ -132,19 +138,15 @@ test('authorizations can be blocked by email or domain', async t => {
  * 10. Remove
  * 11. Verify metrics
  */
-test('w3infra store/upload integration flow', async t => {
+test('w3infra store/upload integration flow', withCauseLog(async t => {
   const stage = getStage()
-  const writeTargetBucketName = process.env.R2_CARPARK_BUCKET_NAME
-  if (!writeTargetBucketName) {
-    throw new Error('no write target bucket name configure using ENV VAR `R2_CARPARK_BUCKET_NAME`')
-  }
   const inbox = await createMailSlurpInbox()
   const { client } = await setupNewClient({ inbox })
   const spaceDid = client.currentSpace()?.did()
   if (!spaceDid) {
     throw new Error('Testing space DID must be set')
   }
-  const account = client.accounts()[DidMailto.fromEmail(inbox.email)]
+  const account = client.accounts()[DidMailto.fromEmail(DidMailto.email(inbox.email))]
 
   // it should be possible to create more than one space
   const space = await client.createSpace('2nd space')
@@ -162,36 +164,73 @@ test('w3infra store/upload integration flow', async t => {
   const beforeUploadAddTotal = beforeOperationMetrics.find(row => row.name === METRICS_NAMES.UPLOAD_ADD_TOTAL)
   const beforeBlobAddSizeTotal = beforeOperationMetrics.find(row => row.name === METRICS_NAMES.BLOB_ADD_SIZE_TOTAL)
 
-  const r2Client = getCloudflareBucketClient()
-
   console.log('Creating new File')
   const file = await randomFile(100)
+  /** @type {import('@storacha/upload-client/types').CARLink[]} */
   const shards = []
+  /** @type {number[]} */
+  const shardSizes = []
 
   // Upload new file
   const fileLink = await client.uploadFile(file, {
     onShardStored: (meta) => {
       shards.push(meta.cid)
+      shardSizes.push(meta.size)
       console.log('Shard file written', meta.cid)
     },
     receiptsEndpoint: getReceiptsEndpoint()
   })
   t.truthy(fileLink)
   t.is(shards.length, 1)
+  t.is(shardSizes.length, 1)
   console.log('Uploaded new file', fileLink)
 
-  // Check carpark
-  const encodedMultihash = base58btc.encode(shards[0].multihash.bytes)
-  console.log('Checking blob stored in write target:', encodedMultihash)
-  const carparkRequest = await r2Client.send(
-    new HeadObjectCommand({
-      Bucket: writeTargetBucketName,
-      Key: `${encodedMultihash}/${encodedMultihash}.blob`,
-    })
-  )
-  t.is(carparkRequest.$metadata.httpStatusCode, 200)
+  const rootDigest = fileLink.multihash
+  const queryRes = await IndexingService.client.queryClaims({
+    hashes: [rootDigest]
+  })
+  if (queryRes.error) {
+    throw new Error(`querying indexing service (${IndexingService.serviceURL}) for: ${b58(rootDigest)}`, { cause: queryRes.error })
+  }
 
-  const carSize = carparkRequest.ContentLength
+  console.log(`Indexing service found ${queryRes.ok.claims.size} claim(s), ${queryRes.ok.indexes.size} index(es) for: ${b58(rootDigest)}`)
+  // expect at least 1 index
+  t.true(queryRes.ok.indexes.size > 0)
+  // expect at least 3 claims:
+  // 1) shard location commitment 2) index location commitment 3) index claim
+  t.true(queryRes.ok.claims.size > 2)
+
+  const claims = [...queryRes.ok.claims.values()]
+
+  // find location commitment for shard
+  const shardLocationCommitment = claims
+    .filter(c => c.type === 'assert/location')
+    .find(c => equals(toDigest(c.content).bytes, shards[0].multihash.bytes))
+  if (!shardLocationCommitment) {
+    return t.fail(`location commitment not found for shard: ${b58(shards[0].multihash)}`)
+  }
+  const shardHeadRes = await fetch(shardLocationCommitment.location[0])
+  t.true(shardHeadRes.ok, `shard not found at URL: ${shardLocationCommitment.location[0]}, status: ${shardHeadRes.status}`)
+  console.log(`Shard is retrievable at ${shardLocationCommitment.location[0]}`)
+
+  // find index claim for root
+  const indexClaim = claims
+    .filter(c => c.type === 'assert/index')
+    .find(c => equals(toDigest(c.content).bytes, fileLink.multihash.bytes))
+  if (!indexClaim) {
+    return t.fail(`index claim not found for root: ${fileLink}`)
+  }
+
+  // find location commitment for index
+  const indexLocationCommitment = claims
+    .filter(c => c.type === 'assert/location')
+    .find(c => equals(toDigest(c.content).bytes, indexClaim.index.multihash.bytes))
+  if (!indexLocationCommitment) {
+    return t.fail(`location commitment not found for index: ${b58(indexClaim.index.multihash)}`)
+  }
+  const indexHeadRes = await fetch(indexLocationCommitment.location[0])
+  t.true(indexHeadRes.ok, `index not found at URL: ${indexLocationCommitment.location[0]}, status: ${indexHeadRes.status}`)
+  console.log(`Index is retrievable at ${indexLocationCommitment.location[0]}`)
 
   // List space files
   let uploadFound, cursor
@@ -217,29 +256,33 @@ test('w3infra store/upload integration flow', async t => {
   )
   t.is(roundaboutResponse.status, 200)
 
-  // Verify w3link can resolve uploaded file via HTTP
-  console.log('Checking w3link can fetch root', fileLink.toString())
-  const w3linkResponse = await fetch(
-    `https://${fileLink}.ipfs-staging.w3s.link`,
-    {
-      method: 'HEAD'
-    }
-  )
-  t.is(w3linkResponse.status, 200)
+  if (process.env.DISABLE_IPNI_PUBLISHING !== 'true') {
+    // Verify w3link can resolve uploaded file via HTTP
+    console.log('Checking w3link can fetch root', fileLink.toString())
+    const w3linkResponse = await fetch(
+      `https://${fileLink}.ipfs-staging.w3s.link`,
+      {
+        method: 'HEAD'
+      }
+    )
+    t.is(w3linkResponse.status, 200)
+  }
 
+  // FIXME: disabled due to eror:
+  //   Error: Cannot find module '../build/Release/node_datachannel.node'
   // Verify hoverboard can resolved uploaded root via Bitswap
-  console.log('Checking Hoverboard can fetch root', fileLink.toString())
-  const helia = await createNode()
-  const heliaFs = unixfs(helia)
-  const hoverboardMultiaddr = multiaddr('/dns4/elastic-staging.dag.house/tcp/443/wss/p2p/Qmc5vg9zuLYvDR1wtYHCaxjBHenfCNautRwCjG3n5v5fbs')
-  console.log(`Dialing ${hoverboardMultiaddr}`)
-  await helia.libp2p.dial(hoverboardMultiaddr)
+  // console.log('Checking Hoverboard can fetch root', fileLink.toString())
+  // const helia = await createNode()
+  // const heliaFs = unixfs(helia)
+  // const hoverboardMultiaddr = multiaddr('/dns4/elastic-staging.dag.house/tcp/443/wss/p2p/Qmc5vg9zuLYvDR1wtYHCaxjBHenfCNautRwCjG3n5v5fbs')
+  // console.log(`Dialing ${hoverboardMultiaddr}`)
+  // await helia.libp2p.dial(hoverboardMultiaddr)
 
-  // @ts-expect-error link different from CID
-  const rootStat = await heliaFs.stat(fileLink)
-  t.truthy(rootStat)
-  t.is(rootStat.type, 'raw')
-  await helia.stop()
+  // // @ts-expect-error link different from CID
+  // const rootStat = await heliaFs.stat(fileLink)
+  // t.truthy(rootStat)
+  // t.is(rootStat.type, 'raw')
+  // await helia.stop()
 
   // Remove file from space
   console.log(`Removing ${fileLink}`)
@@ -264,21 +307,21 @@ test('w3infra store/upload integration flow', async t => {
         return (
           afterBlobAddTotal?.value >= beforeBlobAddTotal?.value + 1 &&
           afterUploadAddTotal?.value === beforeUploadAddTotal?.value + 1 &&
-          afterBlobAddSizeTotal?.value >= beforeBlobAddSizeTotal.value + carSize &&
+          afterBlobAddSizeTotal?.value >= beforeBlobAddSizeTotal.value + shardSizes[0] &&
           spaceAfterBlobAddMetrics?.value >= spaceBeforeBlobAddMetrics?.value + 1 &&
           spaceAfterUploadAddMetrics?.value >= spaceBeforeUploadAddMetrics?.value + 1 &&
-          spaceAfterBlobAddSizeMetrics?.value >= spaceBeforeBlobAddSizeMetrics?.value + carSize
+          spaceAfterBlobAddSizeMetrics?.value >= spaceBeforeBlobAddSizeMetrics?.value + shardSizes[0]
         )
       }
 
       return (
         afterBlobAddTotal?.value === beforeBlobAddTotal?.value + 1 &&
         afterUploadAddTotal?.value === beforeUploadAddTotal?.value + 1 &&
-        afterBlobAddSizeTotal?.value === beforeBlobAddSizeTotal.value + carSize &&
+        afterBlobAddSizeTotal?.value === beforeBlobAddSizeTotal.value + shardSizes[0] &&
         spaceAfterBlobAddMetrics?.value === spaceBeforeBlobAddMetrics?.value + 1 &&
         spaceAfterUploadAddMetrics?.value === spaceBeforeUploadAddMetrics?.value + 1 &&
-        spaceAfterBlobAddSizeMetrics?.value === spaceBeforeBlobAddSizeMetrics?.value + carSize
+        spaceAfterBlobAddSizeMetrics?.value === spaceBeforeBlobAddSizeMetrics?.value + shardSizes[0]
       )
     })
   }
-})
+}))

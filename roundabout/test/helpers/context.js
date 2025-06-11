@@ -1,6 +1,5 @@
 import anyTest from 'ava'
 
-
 /**
  * @typedef {object} TestContext
  * @property {import('@aws-sdk/client-s3').S3Client} s3Client

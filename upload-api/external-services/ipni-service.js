@@ -2,6 +2,7 @@ import { SendMessageCommand } from '@aws-sdk/client-sqs'
 import * as dagJSON from '@ipld/dag-json'
 import retry from 'p-retry'
 import map from 'p-map'
+import Queue from 'p-queue'
 import { ok, error } from '@ucanto/server'
 import { getSQSClient } from '../../lib/aws/sqs.js'
 
@@ -11,24 +12,35 @@ import { getSQSClient } from '../../lib/aws/sqs.js'
 
 const CONCURRENCY = 10
 
+/** @param {import('@storacha/upload-api').ProviderDID} s */
+export const isW3sProvider = (s) => s.endsWith('web3.storage')
+
 /**
- * @param {{ url: URL, region: string }} blockAdvertisementPublisherQueueConfig 
+ * @param {{ url: URL, region: string }} blockAdvertisementPublisherQueueConfig
+ * @param {{ url: URL, region: string }} blockIndexWriterQueueConfig
+ * @param {import('@web3-storage/upload-api').BlobsStorage} blobsStorage
  */
-export const createIPNIService = (blockAdvertisementPublisherQueueConfig) => {
+export const createIPNIService = (blockAdvertisementPublisherQueueConfig, blockIndexWriterQueueConfig, blobsStorage) => {
   const blockAdvertPublisherQueue = new BlockAdvertisementPublisherQueue({
     client: getSQSClient(blockAdvertisementPublisherQueueConfig),
     url: blockAdvertisementPublisherQueueConfig.url
   })
-  return useIPNIService(blockAdvertPublisherQueue)
+  const blockIndexWriterQueue = new BlockIndexWriterQueue({
+    client: getSQSClient(blockIndexWriterQueueConfig),
+    url: blockIndexWriterQueueConfig.url
+  })
+  return useIPNIService(blockAdvertPublisherQueue, blockIndexWriterQueue, blobsStorage)
 }
 
 /**
  * @param {BlockAdvertisementPublisherQueue} blockAdvertPublisherQueue
- * @returns {import('@web3-storage/upload-api').IPNIService}
+ * @param {BlockIndexWriterQueue} blockIndexWriterQueue
+ * @param {import('@web3-storage/upload-api').BlobsStorage} blobsStorage
+ * @returns {import('@storacha/upload-api').IPNIService}
  */
-export const useIPNIService = (blockAdvertPublisherQueue) => ({
-  /** @param {import('@web3-storage/upload-api').ShardedDAGIndex} index */
-  async publish (index) {
+export const useIPNIService = (blockAdvertPublisherQueue, blockIndexWriterQueue, blobsStorage) => ({
+  /** @type {import('@storacha/upload-api').IPNIService['publish']} */
+  async publish (space, providers, index) {
     /** @type {import('multiformats').MultihashDigest[]} */
     const entries = []
 
@@ -38,6 +50,22 @@ export const useIPNIService = (blockAdvertPublisherQueue) => ({
 
     const addRes = await blockAdvertPublisherQueue.add({ entries })
     if (addRes.error) return addRes
+
+    // spaces with legacy providers need to be added to the legacy E-IPFS block
+    // index writer queue.
+    if (providers.some(isW3sProvider)) {
+      /** @type {Array<[location: URL, slices: Slices]>} */
+      const records = []
+      for (const [shard, slices] of index.shards.entries()) {
+        const createUrlRes = await blobsStorage.createDownloadUrl(shard)
+        if (!createUrlRes.ok) return createUrlRes
+        const location = new URL(createUrlRes.ok)
+        records.push([location, slices])
+        entries.push(...slices.keys())
+      }
+      const queueRes = await blockIndexWriterQueue.add(records)
+      if (queueRes.error) return queueRes
+    }
 
     return ok({})
   }
@@ -97,6 +125,84 @@ export class BlockAdvertisementPublisherQueue {
       return error({
         name: 'BlockAdvertPublisherQueueError',
         message: `failed to queue entries for IPNI advertisement publisher: ${err.message}`
+      })
+    }
+  }
+}
+
+// Max SendMessage size is 262,144 bytes
+// ```js
+// const { base58btc } = await import('multiformats/bases/base58')
+// const Digest = await import('multiformats/hashes/digest')
+// const dagJSON = await import('@ipld/dag-json')
+// new TextEncoder().encode(
+//   dagJSON.stringify(
+//     [
+//       'https://xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.w3s.link/zQmNLfzmTMp1CBZAX8atkYWrefR6L3BTsSeghvmsQDMfaHt/zQmNLfzmTMp1CBZAX8atkYWrefR6L3BTsSeghvmsQDMfaHt.blob',
+//       Array(2000).fill(
+//         [
+//           Digest.decode(base58btc.decode('zQmNLfzmTMp1CBZAX8atkYWrefR6L3BTsSeghvmsQDMfaHt')).bytes,
+//           [Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER]
+//         ]
+//       )
+//     ]
+//   )
+// ).length
+// ```
+// = 206,156
+const MAX_INDEX_ENTRIES = 2000
+
+/** Queues block index records for writing to DynamoDB. */
+export class BlockIndexWriterQueue {
+  #client
+  #url
+
+  /**
+   * @param {object} config
+   * @param {import('@aws-sdk/client-sqs').SQSClient} config.client
+   * @param {URL} config.url
+   */
+  constructor (config) {
+    this.#client = config.client
+    this.#url = config.url
+  }
+
+  /**
+   * @param {Array<[location: URL, slices: Slices]>} records
+   * @returns {Promise<import('@ucanto/interface').Result<import('@ucanto/interface').Unit, import('@ucanto/interface').Failure>>}
+   */
+  async add (records) {
+    try {
+      const queue = new Queue({ concurrency: CONCURRENCY })
+      const requests = []
+
+      for (const [location, slices] of records) {
+        /** @type {Array<[Uint8Array, [number, number]]>} */
+        const items = [...slices.entries()].map(s => [s[0].bytes, s[1]])
+        while (true) {
+          const batch = items.splice(0, MAX_INDEX_ENTRIES)
+          if (!batch.length) break
+          requests.push(() => (
+            retry(() => {
+              /** @type {import('../../indexer/types.js').BlockIndexQueueMessage} */
+              const message = [location.toString(), batch]
+              const cmd = new SendMessageCommand({
+                QueueUrl: this.#url.toString(),
+                MessageBody: dagJSON.stringify(message)
+              })
+              return this.#client.send(cmd)
+            })
+          ))
+        }
+      }
+
+      await queue.addAll(requests)
+      return ok({})
+    } catch (/** @type {any} */ err) {
+      console.error('failed to queue records for block index', err)
+      return error({
+        name: 'BlockIndexQueueRecordsError',
+        message: `failed to queue records for block index: ${err.message}`
       })
     }
   }

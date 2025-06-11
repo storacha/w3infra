@@ -1,19 +1,20 @@
-import { testFilecoin as test } from './helpers/context.js'
+import { testFilecoin as test, withCauseLog } from './helpers/context.js'
 import { fetch } from '@web-std/fetch'
 import pWaitFor from 'p-wait-for'
+import { isDelegation } from '@ucanto/core'
 import * as CAR from '@ucanto/transport/car'
 import { Storefront } from '@storacha/filecoin-client'
+import * as FilecoinCapabilities from '@storacha/capabilities/filecoin'
 import * as Link from 'multiformats/link'
 import * as raw from 'multiformats/codecs/raw'
-import { base58btc } from 'multiformats/bases/base58'
 import * as AgentStore from '../upload-api/stores/agent.js'
 import {
   getApiEndpoint,
   getAwsBucketClient,
   getRoundaboutEndpoint,
   getDynamoDb,
-  getStage,
-  getAwsRegion
+  getAwsRegion,
+  getBucketName
 } from './helpers/deployment.js'
 import { setupNewClient } from './helpers/up-client.js'
 import { getClientConfig } from './helpers/fil-client.js'
@@ -22,7 +23,7 @@ import { pollQueryTable } from './helpers/table.js'
 import { waitForStoreOperationOkResult } from './helpers/store.js'
 
 /**
- * @typedef {import('@storacha/client/src/types.js').CARLink} CARLink
+ * @typedef {import('multiformats').UnknownLink} UnknownLink
  * @typedef {import('@web3-storage/data-segment').PieceLink} PieceLink
  */
 
@@ -32,8 +33,7 @@ test.before(t => {
   }
 })
 
-test('w3filecoin integration flow', async t => {
-  const stage = getStage()
+test('w3filecoin integration flow', withCauseLog(async t => {
   const s3Client = getAwsBucketClient()
   // const s3ClientFilecoin = getAwsBucketClient('us-east-2')
 
@@ -51,7 +51,7 @@ test('w3filecoin integration flow', async t => {
   const uploads = await Promise.all(Array.from({ length: 4 }).map(async () => {
       const file = await randomFile(1024)
 
-      /** @type {{ content: CARLink, piece: PieceLink}[]} */
+      /** @type {Array<{ content: UnknownLink, piece: PieceLink }>} */
       const uploadFiles = []
 
       // TODO: New client should use blob directly and this should be the same and work :)
@@ -59,12 +59,12 @@ test('w3filecoin integration flow', async t => {
       await client.uploadFile(file, {
         onShardStored: (meta) => {
           const content = Link.create(raw.code, meta.cid.multihash)
-
+          if (!meta.piece) throw new Error('missing piece link in upload meta')
           uploadFiles.push({
             content,
             piece: meta.piece
           })
-          console.log(`shard file written with {${meta.cid}, ${content}, ${meta.piece}}`)
+          console.log(`file written with root: ${content}, shard: ${meta.cid}, piece: ${meta.piece}`)
         }
       })
       t.is(uploadFiles.length, 1)
@@ -95,8 +95,9 @@ test('w3filecoin integration flow', async t => {
           method: 'HEAD',
           redirect: 'manual'
         })
-        const encodedMultihash = base58btc.encode(testUpload.content.multihash.bytes)
-        return res.status === 302 && res.headers.get('location')?.includes(encodedMultihash)
+        // do not assume blob hash is in redirect URL, just ensure roundabout
+        // returns a redirect status (signalling it found the piece).
+        return res.status === 302
       } catch {}
       return false
     }, {
@@ -107,7 +108,9 @@ test('w3filecoin integration flow', async t => {
     // Invoke `filecoin/offer`
     console.log(`invoke 'filecoin/offer' for piece ${testUpload.piece.toString()} (${testUpload.content})`)
     const filecoinOfferRes = await Storefront.filecoinOffer(invocationConfig, testUpload.content, testUpload.piece, { connection })
-    t.truthy(filecoinOfferRes.out.ok)
+    if (filecoinOfferRes.out.error) {
+      throw new Error(`failed ${FilecoinCapabilities.offer.can} invocation`, { cause: filecoinOfferRes.out.error })
+    }
     t.truthy(filecoinOfferRes.fx.join)
     t.is(filecoinOfferRes.fx.fork.length, 1)
 
@@ -117,7 +120,7 @@ test('w3filecoin integration flow', async t => {
     console.log('filecoin/offer fork (filecoin/submit)', filecoinSubmitReceiptCid)
     console.log('filecoin/offer join (filecoin/accept)', filecoinAcceptReceiptCid)
     if (!filecoinAcceptReceiptCid) {
-      throw new Error('filecoin/offer receipt has no effect for filecoin/accept')
+      return t.fail('filecoin/offer receipt has no effect for filecoin/accept')
     }
 
     // Get receipt from endpoint
@@ -131,24 +134,36 @@ test('w3filecoin integration flow', async t => {
     t.is(workflowWithReceiptResponse.status, 302)
     const workflowLocation = workflowWithReceiptResponse.headers.get('location')
     if (!workflowLocation) {
-      throw new Error(`no workflow with receipt for task cid ${filecoinOfferInvCid.toString()}`)
+      return t.fail(`no workflow with receipt for task: ${filecoinOfferInvCid}`)
     }
 
     const workflowWithReceiptResponseAfterRedirect = await fetch(workflowLocation)
     // Get receipt from Message Archive
     const agentMessageBytes = new Uint8Array((await workflowWithReceiptResponseAfterRedirect.arrayBuffer()))
-    console.log(agentMessageBytes.length)
     const agentMessage = await CAR.request.decode({
       body: agentMessageBytes,
       headers: {},
     })
     // @ts-expect-error unknown link does not mach expectations
     const receipt = agentMessage.receipts.get(filecoinOfferInvCid.toString())
-    t.assert(receipt)
+    if (!receipt) {
+      return t.fail(`receipt not found for task: ${filecoinOfferInvCid}`)
+    }
     // Receipt matches what we received when invoked
-    t.truthy(receipt?.ran.link().equals(filecoinOfferInvCid))
-    t.truthy(receipt?.fx.join?.equals(filecoinAcceptReceiptCid))
-    t.truthy(receipt?.fx.fork[0].equals(filecoinSubmitReceiptCid))
+    t.truthy(receipt.ran.link().equals(filecoinOfferInvCid))
+    if (!receipt.fx.join) {
+      return t.fail(`receipt missing join effect: ${filecoinOfferInvCid}`)
+    }
+
+    const joinLink = isDelegation(receipt.fx.join)
+      ? receipt.fx.join.cid
+      : receipt.fx.join
+    t.truthy(joinLink.equals(filecoinAcceptReceiptCid))
+
+    const forkLink = isDelegation(receipt.fx.fork[0])
+      ? receipt.fx.fork[0].cid
+      : receipt.fx.fork[0]
+    t.truthy(forkLink.equals(filecoinSubmitReceiptCid))
 
     // Verify receipt chain
     console.log(`wait for receipt chain...`)
@@ -157,8 +172,8 @@ test('w3filecoin integration flow', async t => {
         region: getAwsRegion(),
         connection: { channel: s3Client },
         buckets: {
-          message: { name: `workflow-store-${stage}-0` },
-          index: { name: `invocation-store-${stage}-0` },
+          message: { name: getBucketName('workflow-store') },
+          index: { name: getBucketName('invocation-store') },
         },
       },
       stream: {
@@ -247,9 +262,9 @@ test('w3filecoin integration flow', async t => {
     //     // return agentStoreFilecoin.receipts.get(aggregateAcceptReceiptCid)
     //   },
     //   (res) => Boolean(res.ok)
-    // )
+    // ) 
   }))
-})
+}))
 
 /**
  * @param {import('ava').ExecutionContext<import('./helpers/context.js').FilecoinContext>} t

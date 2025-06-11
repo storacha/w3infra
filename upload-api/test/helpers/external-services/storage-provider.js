@@ -2,6 +2,7 @@ import http from 'node:http'
 import { ok, error } from '@ucanto/core'
 import { StorageNode } from '@storacha/upload-api/test/external-service'
 import * as BlobCapabilities from '@storacha/capabilities/blob'
+import * as BlobReplicaCapabilities from '@storacha/capabilities/blob/replica'
 import { DIDResolutionError } from '@ucanto/validator'
 import { delegate } from '@ucanto/core/delegation'
 
@@ -9,10 +10,10 @@ import { delegate } from '@ucanto/core/delegation'
 
 /**
  * @param {API.StorageProviderTable} storageProviderTable 
- * @param {import('@storacha/upload-api').ClaimsClientConfig} claimsService
+ * @param {import('@storacha/upload-api').IndexingServiceAPI.ClientConfig} indexingService
  * @param {import('@ucanto/interface').Signer} serviceID
  */
-export const create = async (storageProviderTable, claimsService, serviceID) => {
+export const create = async (storageProviderTable, indexingService, serviceID) => {
   /** @type {import('@ucanto/interface').PrincipalResolver} */
   const principalResolver = {}
   if (serviceID.did().startsWith('did:web')) {
@@ -24,7 +25,7 @@ export const create = async (storageProviderTable, claimsService, serviceID) => 
 
   const node = await StorageNode.activate({
     http,
-    claimsService,
+    indexingService,
     ...principalResolver
   })
 
@@ -34,6 +35,7 @@ export const create = async (storageProviderTable, claimsService, serviceID) => 
     capabilities: [
       { can: BlobCapabilities.allocate.can, with: node.id.did() },
       { can: BlobCapabilities.accept.can, with: node.id.did() },
+      { can: BlobReplicaCapabilities.allocate.can, with: node.id.did() },
     ],
     expiration: Infinity
   })
@@ -50,6 +52,7 @@ export const create = async (storageProviderTable, claimsService, serviceID) => 
   })
 
   return {
+    id: node.id,
     async deactivate () {
       // take out of rotation on deactivate
       await storageProviderTable.del(node.id.did())

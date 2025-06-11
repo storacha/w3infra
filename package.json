@@ -37,7 +37,9 @@
     "@storacha/blob-index": "catalog:",
     "@storacha/capabilities": "catalog:",
     "@storacha/client": "catalog:",
+    "@storacha/did-mailto": "catalog:",
     "@storacha/filecoin-client": "catalog:",
+    "@storacha/indexing-service-client": "catalog:",
     "@storacha/upload-api": "catalog:",
     "@storacha/upload-client": "catalog:",
     "@tsconfig/node16": "catalog:",
@@ -114,6 +116,8 @@
       "no-continue": "off",
       "no-loop-func": "off",
       "no-warning-comments": "off",
+      "max-depth": "off",
+      "complexity": "off",
       "jsdoc/check-indentation": "off",
       "jsdoc/check-tag-names": [
         "error",

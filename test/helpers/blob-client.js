@@ -12,19 +12,27 @@ import pRetry from 'p-retry'
 // and enable a more internal testing
 
 /**
- * @typedef {import('@ucanto/interface').Failure} Failure
  * @typedef {import('@storacha/capabilities/types').SpaceBlobAddSuccess} SpaceBlobAddSuccess
  * @typedef {import('@storacha/capabilities/types').SpaceBlobAddFailure} SpaceBlobAddFailure
  * @typedef {import('@storacha/capabilities/types').BlobAllocateSuccess} BlobAllocateSuccess
  * @typedef {import('@storacha/capabilities/types').BlobAllocateFailure} BlobAllocateFailure
  * @typedef {import('@storacha/capabilities/types').BlobAcceptSuccess} BlobAcceptSuccess
  * @typedef {import('@storacha/capabilities/types').BlobAcceptFailure} BlobAcceptFailure
+ * @typedef {import('@ucanto/interface').Failure} Failure
+ * @typedef {import('@ucanto/interface').Principal } Principal
  * @typedef {import('@ucanto/interface').Receipt<SpaceBlobAddSuccess, SpaceBlobAddFailure> } SpaceBlobAddReceipt
  * @typedef {import('@ucanto/interface').Receipt<BlobAllocateSuccess, BlobAllocateFailure> } BlobAllocateReceipt
  * @typedef {import('@ucanto/interface').Receipt<BlobAcceptSuccess, BlobAcceptFailure> } BlobAcceptReceipt
  * @typedef {import('@ucanto/interface').Receipt<{}, Failure> } HTTPPutReceipt
+ * @typedef {import('@ucanto/interface').ConnectionView<any> } ConnectionView
+ * @typedef {import('@storacha/upload-client/types').InvocationConfig} InvocationConfig
  */
 
+/**
+ * @param {InvocationConfig & { audience: Principal }} config
+ * @param {Uint8Array} data
+ * @param {{ connection: ConnectionView, retries?: number }} options
+ */
 export async function add(
   { issuer, with: resource, proofs, audience },
   data,
@@ -39,7 +47,6 @@ export async function add(
   const blobAddInvocation = SpaceBlobCapabilities.add
     .invoke({
       issuer,
-      /* c8 ignore next */
       audience,
       with: SpaceDID.from(resource),
       nb: {
@@ -58,8 +65,15 @@ export async function add(
     })
   }
 
-  // Alocate if there is an address to allocate
+  // Allocate if there is an address to allocate
   const next = parseBlobAddReceiptNext(blobAddResult)
+  if (next.allocate.receipt.out.error) {
+    console.error(next.allocate.receipt.out.error)
+    throw new Error(`failed ${BlobCapabilities.allocate.can} invocation`, {
+      cause: next.allocate.receipt.out.error
+    })
+  }
+
   /** @type {import('@storacha/capabilities/types').BlobAddress} */
   // @ts-expect-error receipt type is unknown
   const address = next.allocate.receipt.out.ok.address
@@ -81,9 +95,8 @@ export async function add(
         body: data,
         headers: address.headers,
       })
-      
-      if (res.status !== 200) {
-        throw new Error('failed to PUT data')
+      if (!res.ok) {
+        throw new Error(`failed to PUT data, status: ${res.status}, body: ${await res.text()}`)
       }
       return res
     },
@@ -231,7 +244,7 @@ export function getConcludeReceipt(concludeFx) {
 
 /**
  * @param {import('@ucanto/interface').Signer} id
- * @param {import('@ucanto/interface').Verifier} serviceDid
+ * @param {import('@ucanto/interface').Principal} serviceDid
  * @param {import('@ucanto/interface').Receipt} receipt
  */
 export function createConcludeInvocation(id, serviceDid, receipt) {

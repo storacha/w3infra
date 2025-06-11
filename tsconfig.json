@@ -39,14 +39,17 @@
     "billing",
     "indexer",
     "upload-api",
+    "upload-api/package.json",
     "stacks",
     "carpark",
     "replicator",
+    "roundabout",
     "ucan-invocation",
     "filecoin",
     "tools",
     "lib",
-    "psa"
+    "psa",
+    "test"
   ],
   "exclude": ["billing/coverage", "upload-api/dist"]
 }

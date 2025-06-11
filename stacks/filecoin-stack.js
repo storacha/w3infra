@@ -49,7 +49,7 @@ export function FilecoinStack({ stack, app }) {
    * 1st processor queue - filecoin submit
    * On filecoin submit queue messages, validate piece for given content and store it in store.
    */
-  const filecoinSubmitQueueName = getCdkNames('filecoin-submit-queue', stack.stage)
+  const filecoinSubmitQueueName = getCdkNames('filecoin-submit-queue', stack.stage, app.name)
   const filecoinSubmitQueueDLQ = new Queue(stack, `${filecoinSubmitQueueName}-dlq`, {
     cdk: { queue: { retentionPeriod: Duration.days(14) } }
    })
@@ -83,7 +83,7 @@ export function FilecoinStack({ stack, app }) {
    * 2nd processor queue - piece offer invocation
    * On piece offer queue message, offer piece for aggregation.
    */
-  const pieceOfferQueueName = getCdkNames('piece-offer-queue', stack.stage)
+  const pieceOfferQueueName = getCdkNames('piece-offer-queue', stack.stage, app.name)
   const pieceOfferQueueDLQ = new Queue(stack, `${pieceOfferQueueName}-dlq`, {
     cdk: { queue: { retentionPeriod: Duration.days(14) } }
    })
@@ -113,7 +113,7 @@ export function FilecoinStack({ stack, app }) {
    * CRON to track deals pending resolution.
    * On cron tick event, issue `filecoin/accept` receipts for pieces that have a deal.
    */
-  const dealTrackCronName = getCdkNames('deal-track-cron', stack.stage)
+  const dealTrackCronName = getCdkNames('deal-track-cron', stack.stage, app.name)
   new Cron(stack, dealTrackCronName, {
     schedule: 'rate(6 minutes)',
     job: {
@@ -149,6 +149,7 @@ export function FilecoinStack({ stack, app }) {
       function: {
         handler: 'filecoin/functions/handle-piece-insert-to-content-claim.main',
         environment: {
+          STOREFRONT_DID: UPLOAD_API_DID,
           INDEXING_SERVICE_DID,
           INDEXING_SERVICE_URL,
         },

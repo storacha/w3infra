@@ -1,14 +1,15 @@
 import { getSignedUrl as getR2SignedUrl } from '@aws-sdk/s3-request-presigner'
 import { GetObjectCommand } from '@aws-sdk/client-s3'
-import { base58btc } from 'multiformats/bases/base58'
-
-import { RAW_CODE } from './constants.js'
+import { equals } from 'multiformats/bytes'
+import * as Digest from 'multiformats/hashes/digest'
 
 /**
- * @typedef {import('multiformats').CID} CID
- * @typedef {import('@aws-sdk/client-s3').S3Client} S3Client
- * @typedef {import('@aws-sdk/types').RequestPresigningArguments} RequestPresigningArguments
+ * @import { UnknownLink } from 'multiformats'
+ * @import { IndexingServiceClient } from '@storacha/indexing-service-client/api'
+ * @import { S3Client } from '@aws-sdk/client-s3'
+ * @import { RequestPresigningArguments } from '@smithy/types'
  */
+import { RAW_CODE, CARPARK_DOMAIN } from './constants.js'
 
 /**
  * @param {S3Client} s3Client
@@ -17,7 +18,6 @@ import { RAW_CODE } from './constants.js'
 export function getSigner (s3Client, bucketName) {
   return {
     /**
-     * 
      * @param {string} key
      * @param {RequestPresigningArguments} [options]
      */
@@ -48,20 +48,44 @@ export function getSigner (s3Client, bucketName) {
  * @param {S3Client} config.s3Client
  * @param {string} config.bucket
  * @param {number} config.expiresIn
+ * @param {IndexingServiceClient} config.indexingService
  */
-export function contentLocationResolver ({ s3Client, bucket, expiresIn }) {
+export function contentLocationResolver ({ s3Client, bucket, expiresIn, indexingService }) {
   const signer = getSigner(s3Client, bucket)
   /**
-   * @param {CID} cid
+   * @param {UnknownLink} cid
    */
   return async function locateContent (cid) {
-    const carKey = `${cid}/${cid}.car`
-
-    if (cid.code === RAW_CODE) {
-      const encodedMultihash = base58btc.encode(cid.multihash.bytes)
-      const blobKey = `${encodedMultihash}/${encodedMultihash}.blob`
-      return signer.getUrl(blobKey, { expiresIn })
+    if (cid.code !== RAW_CODE) {
+      const carKey = `${cid}/${cid}.car`
+      return signer.getUrl(carKey, { expiresIn })
     }
-    return signer.getUrl(carKey, { expiresIn })
+
+    const res = await indexingService.queryClaims({ hashes: [cid.multihash] })
+    if (res.error) {
+      console.error(res.error)
+      throw new Error('indexing service query failed', { cause: res.error })
+    }
+
+    const locations = []
+    for (const [, c] of res.ok.claims) {
+      if (c.type === 'assert/location') {
+        const contentDigest = 'multihash' in c.content
+          ? c.content.multihash
+          : Digest.decode(c.content.digest)
+        if (equals(contentDigest.bytes, cid.multihash.bytes)) {
+          locations.push(...c.location)
+          for (const url of c.location) {
+            // if location is a known carpark URI then return a signed URL
+            if (url.includes(CARPARK_DOMAIN)) {
+              const blobKey = new URL(url).pathname.slice(1)
+              return signer.getUrl(blobKey, { expiresIn })
+            }
+          }
+        }
+      }
+    }
+    // just return a random one
+    return locations[Math.floor(Math.random() * locations.length)]
   }
 }

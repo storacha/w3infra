@@ -166,8 +166,13 @@ export const humanodeTableProps = {
   fields: {
     // the humanode "subject" - `sub` matches the name it is given in the JWT we receive.
     sub: 'string',
+    // the ID of the storacha user associated with this subject
+    account: 'string',
   },
-  primaryIndex: { partitionKey: 'sub'}
+  primaryIndex: { partitionKey: 'sub' },
+  globalIndexes: {
+    account: { partitionKey: 'account', projection: ['sub'] },
+  }
 }
 
 /** @type TableProps */
@@ -219,4 +224,27 @@ export const storageProviderTableProps = {
     updatedAt: 'string',
   },
   primaryIndex: { partitionKey: 'provider' }
+}
+
+/** @type {TableProps} */
+export const replicaTableProps = {
+  fields: {
+    /** Composite key with format: "space#digest" */
+    pk: 'string',
+    /** DID of Space the blob is registered in. */
+    space: 'string',
+    /** Base58btc encoded multihash of the blob. */
+    digest: 'string',
+    /** DID of the replica node. */
+    provider: 'string',
+    /** Status of the replication (allocated/transferred/failed). */
+    status: 'string',
+    /** CID of `blob/replica/allocate` UCAN that allocated the replica space. */
+    cause: 'string',
+    /** Date and time the record was created (ISO 8601) */
+    insertedAt: 'string',
+    /** Date and time the record was last updated (ISO 8601) */
+    updatedAt: 'string',
+  },
+  primaryIndex: { partitionKey: 'pk', sortKey: 'provider' }
 }

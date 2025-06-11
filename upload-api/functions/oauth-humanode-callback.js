@@ -73,7 +73,7 @@ export const oauthCallbackGet = async (request, context) => {
   const humanodeIdToken = jwtDecode(tokenResult.id_token)
   const humanodeId = humanodeIdToken.sub
   if (!humanodeId) {
-    console.error("humanodeId is not undefined, this is very strange")
+    console.error("humanodeId is undefined, this is very strange")
     return htmlResponse(500, getUnexpectedErrorResponseHTML('Failed to get Humanode ID'))
   }
 
@@ -130,7 +130,7 @@ export const oauthCallbackGet = async (request, context) => {
     return htmlResponse(500, getUnexpectedErrorResponseHTML('Failed to update customer store.'))
   }
 
-  await humanodeStore.add(humanodeId)
+  await humanodeStore.add(humanodeId, customer)
 
   return htmlResponse(200, getResponseHTML())
 }

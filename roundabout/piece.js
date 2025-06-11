@@ -5,17 +5,14 @@ import { equals } from 'multiformats/bytes'
 import { PIECE_V1_CODE, PIECE_V1_MULTIHASH, PIECE_V2_MULTIHASH, RAW_CODE } from './constants.js'
 
 /**
- * @import { Delegation, Capability, Resource, UnknownLink } from '@ucanto/interface'
+ * @import { UnknownLink } from 'multiformats'
+ * @import { IndexingServiceClient } from '@storacha/indexing-service-client/api'
  */
-
-/** 
- * @typedef {import('@web3-storage/content-claims/client/api').Claim} Claim
- **/
 
 /**
  * Return the cid if it is a Piece CID or undefined if not
  *
- * @param {CID} cid
+ * @param {UnknownLink} cid
  */
 export function asPieceCidV2 (cid) {
   if (cid.multihash.code === PIECE_V2_MULTIHASH && cid.code === RAW_CODE) {
@@ -26,7 +23,7 @@ export function asPieceCidV2 (cid) {
 /**
  * Return the cid if it is a v1 Piece CID or undefined if not
  *
- * @param {CID} cid
+ * @param {UnknownLink} cid
  */
 export function asPieceCidV1 (cid) {
   if (cid.multihash.code === PIECE_V1_MULTIHASH && cid.code === PIECE_V1_CODE) {
@@ -37,8 +34,8 @@ export function asPieceCidV1 (cid) {
 /**
  * Find the set of CIDs that are claimed to be equivalent to the Piece CID.
  * 
- * @param {CID} piece
- * @param {Client} [indexingService] - returns content claims for a cid
+ * @param {UnknownLink} piece
+ * @param {IndexingServiceClient} [indexingService] - returns content claims for a cid
  */
 export async function findEquivalentCids (piece, indexingService = createIndexingServiceClient()) {
   /** @type {Map<string, import('multiformats').UnknownLink>} */
@@ -70,7 +67,7 @@ export async function findEquivalentCids (piece, indexingService = createIndexin
   return new Set(cids.values())
 }
 
-/** @param {'prod' | string} env */
+/** @param {'prod' | string | undefined} env */
 export function createIndexingServiceClient (env = process.env.SST_STAGE) {
-  return new Client(env === 'prod' ? {} : { serviceURL: 'https://staging.indexer.storacha.network' })
+  return new Client(env === 'prod' ? {} : { serviceURL: new URL('https://staging.indexer.storacha.network') })
 }

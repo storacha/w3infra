@@ -2,8 +2,8 @@ import pRetry from 'p-retry'
 
 /**
  * @template T
- * @param {() => Promise<import('../../filecoin/types').Result<T>>} fn
- * @param {(res: import('../../filecoin/types').Result<T>) => boolean} verifyResFn
+ * @param {() => Promise<import('../../filecoin/types.js').Result<T>>} fn
+ * @param {(res: import('../../filecoin/types.js').Result<T>) => boolean} verifyResFn
  */
 export async function waitForStoreOperationOkResult (fn, verifyResFn) {
   return await pRetry(async () => {

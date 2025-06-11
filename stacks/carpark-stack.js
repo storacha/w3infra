@@ -25,7 +25,7 @@ export function CarparkStack({ stack, app }) {
   const carparkBucket = new Bucket(stack, 'car-store', {
     cors: true,
     cdk: {
-      bucket: getBucketConfig('carpark', app.stage)
+      bucket: getBucketConfig('carpark', app.stage, app.name)
     }
   })
 

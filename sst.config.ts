@@ -1,5 +1,6 @@
 import type { SSTConfig } from 'sst'
 import { Tags, RemovalPolicy } from 'aws-cdk-lib'
+import path from 'node:path'
 
 import { BillingStack } from './stacks/billing-stack.js'
 import { BillingDbStack } from './stacks/billing-db-stack.js'
@@ -16,14 +17,28 @@ import { RoundaboutStack } from './stacks/roundabout-stack.js'
 import { PSAStack } from './stacks/psa-stack.js'
 import { isPrBuild } from './stacks/config.js'
 
+// Seed.run does not respect the service path and runs the build in the root of
+// the repo (despite cd'ing into the service path before build command).
+const getServiceConfig = async (): Promise<SSTConfig|undefined> => {
+  const servicePath = process.env.SEED_SERVICE_PATH
+  if (servicePath) {
+    const sstConfig = await import(`./${path.join('.', servicePath, 'sst.config.js')}`)
+    return sstConfig.default
+  }
+}
+
 export default {
-  config(_input) {
+  async config(_input) {
+    const sstConfig = await getServiceConfig()
+    if (sstConfig) return sstConfig.config(_input)
     return {
       name: 'w3infra',
       region: 'us-west-2',
     }
   },
-  stacks(app) {
+  async stacks(app) {
+    const sstConfig = await getServiceConfig()
+    if (sstConfig) return sstConfig.stacks(app)
     if (isPrBuild(app.stage)) {
       // destroy buckets and tables for PR builds
       app.setDefaultRemovalPolicy(RemovalPolicy.DESTROY)

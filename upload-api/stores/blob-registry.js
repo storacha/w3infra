@@ -92,7 +92,7 @@ export const useBlobRegistry = (
     const diffs = []
     // There should only be one subscription per provider, but in theory you
     // could have multiple providers for the same consumer (space).
-    const consumers = /** @type Record<string, any>[] */ (consumerList.ok?.results)
+    const consumers = consumerList.ok.results
     console.log(`Found ${consumers.length} consumers for space ${deltaInfo.space}`)
     for (const consumer of consumers) {
       diffs.push({
@@ -245,7 +245,7 @@ export const useBlobRegistry = (
         const spaceDiffResults = await buildSpaceDiffs({
           space,
           cause: cause.toString(),
-          delta: blobSize,
+          delta: -blobSize,
           receiptAt: dateNow,
           insertedAt: dateNow
         })

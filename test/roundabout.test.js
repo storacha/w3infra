@@ -26,8 +26,8 @@ test('HEAD /{cid}', async t => {
 })
 
 test('HEAD /{pieceCid}', async t => {
-  const pieceCid = 'bafkzcibband7offrs5xxampc4etmefycbsoyu2qqav6sbjbmuzhoeetht5ncs'
-  const carCid = 'bagbaieraky3zsxcozokb33wunu5bmxixfpkz2t2pe25rs6tokqcgm3h3d5ya'
+  const pieceCid = 'bafkzcibdr4dqmqbpd2sw5776tv4262dvtzyoftihg5jwflvvbvd7pxhebk3l45bt'
+  const blobHash = 'zQmWw7DCqwG91Kxq9oBB24aMALTQ82iaTv861xn3e2zi1Ce'
   const response = await fetch(
     `${t.context.roundaboutEndpoint}/${pieceCid}`,
     {
@@ -37,8 +37,8 @@ test('HEAD /{pieceCid}', async t => {
   )
   t.is(response.status, 302)
   const location = response.headers.get('location')
-  t.truthy(location)
-  t.true(location.includes(carCid))
+  if (!location) return t.fail('missing Location header in response')
+  t.true(location.includes(blobHash))
   console.log(response.headers.get('location'))
 })
 

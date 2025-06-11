@@ -17,6 +17,8 @@ The repo contains the infra deployment code and the api implementation.
 ├── indexer         - lambdas to connect w3up to E-IPFS
 ├── psa             - lambdas to support migrating Pinning Service API data
 ├── replicator      - lambda to replicate buckets to R2
+├── roundabout      - redirection service from Piece CID to signed URL
+├── services        - configuration for additional service deployments (e.g. warm)
 ├── stacks          - sst and aws cdk code to deploy all the things
 └── upload-api      - lambda & dynamoDB implementation of the upload-api http gateway
 ```
@@ -243,6 +245,10 @@ AWS URL for Elastic IPFS SQS indexer used to request Elastic IPFS to index given
 #### `EIPFS_MULTIHASHES_SQS_ARN`
 
 AWS ARN used to request Elastic IPFS to publish IPNI adverts for the given multihashes.
+
+#### `EIPFS_BLOCKS_CAR_POSITION_TABLE_ARN`
+
+AWS ARN for Elastic IPFS DynamoDB table used to store blocks and positions for indexed CAR files.
 
 #### `POSTMARK_TOKEN`
 

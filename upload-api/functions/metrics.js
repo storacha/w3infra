@@ -2,6 +2,8 @@ import * as Sentry from '@sentry/serverless'
 import * as Prom from 'prom-client'
 
 import {
+  BLOB_ADD,
+  BLOB_REMOVE,
   METRICS_NAMES,
   STORE_ADD,
   STORE_REMOVE,
@@ -71,12 +73,16 @@ export async function recordMetrics (metrics, metricsTable) {
   // invocations size
   metrics.bytes.inc({ 'can': STORE_ADD }, fetchedMetrics[METRICS_NAMES.STORE_ADD_SIZE_TOTAL] || 0)
   metrics.bytes.inc({ 'can': STORE_REMOVE }, fetchedMetrics[METRICS_NAMES.STORE_REMOVE_SIZE_TOTAL] || 0)
+  metrics.bytes.inc({ 'can': BLOB_ADD }, fetchedMetrics[METRICS_NAMES.BLOB_ADD_SIZE_TOTAL] || 0)
+  metrics.bytes.inc({ 'can': BLOB_REMOVE }, fetchedMetrics[METRICS_NAMES.BLOB_REMOVE_SIZE_TOTAL] || 0)
 
   // invocations count
   metrics.invocations.inc({ 'can': STORE_ADD }, fetchedMetrics[METRICS_NAMES.STORE_ADD_TOTAL] || 0)
   metrics.invocations.inc({ 'can': STORE_REMOVE }, fetchedMetrics[METRICS_NAMES.STORE_REMOVE_TOTAL] || 0)
   metrics.invocations.inc({ 'can': UPLOAD_ADD }, fetchedMetrics[METRICS_NAMES.UPLOAD_ADD_TOTAL] || 0)
   metrics.invocations.inc({ 'can': UPLOAD_REMOVE }, fetchedMetrics[METRICS_NAMES.UPLOAD_REMOVE_TOTAL] || 0)
+  metrics.invocations.inc({ 'can': BLOB_ADD }, fetchedMetrics[METRICS_NAMES.BLOB_ADD_TOTAL] || 0)
+  metrics.invocations.inc({ 'can': BLOB_REMOVE }, fetchedMetrics[METRICS_NAMES.BLOB_REMOVE_TOTAL] || 0)
 
   // aggregates count
   metrics.aggregates.inc({ 'can': AGGREGATE_OFFER }, fetchedMetrics[FILECOIN_METRIC_NAMES.AGGREGATE_OFFER_TOTAL] || 0)

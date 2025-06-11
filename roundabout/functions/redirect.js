@@ -1,10 +1,17 @@
 import * as Sentry from '@sentry/serverless'
 import { CID } from 'multiformats/cid'
+import { Client } from '@storacha/indexing-service-client'
+import { combine } from '@storacha/indexing-service-client/util'
 
 import { getSigner, contentLocationResolver } from '../index.js'
 import { findEquivalentCids, asPieceCidV1, asPieceCidV2 } from '../piece.js'
 import { getEnv, parseQueryStringParameters } from '../utils.js'
 import { getS3Client } from '../../lib/aws/s3.js'
+
+/**
+ * @import { UnknownLink } from 'multiformats'
+ * @import { IndexingServiceClient } from '@storacha/indexing-service-client/api'
+ */
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -24,19 +31,35 @@ export async function redirectGet(request) {
     expiresIn = parsedQueryParams.expiresIn
     const cidString = request.pathParameters?.cid
     cid = CID.parse(cidString || '')
-  } catch (err) {
+  } catch (/** @type {any} */ err) {
     return { statusCode: 400, body: err.message }
+  }
+
+  /** @type {string[]} */
+  const indexingServiceURLs = JSON.parse(process.env.ROUNDABOUT_INDEXING_SERVICE_URLS ?? '[]')
+  if (!indexingServiceURLs.length && process.env.SST_STAGE !== 'prod') {
+    indexingServiceURLs.push('https://staging.indexer.storacha.network')
+  }
+
+  let indexingService
+  if (indexingServiceURLs.length > 1) {
+    const clients = indexingServiceURLs.map(u => new Client({ serviceURL: new URL(u) }))
+    indexingService = combine(clients)
+  } else {
+    const url = indexingServiceURLs[0] ? new URL(indexingServiceURLs[0]): undefined
+    indexingService = new Client({ serviceURL: url })
   }
 
   const locateContent = contentLocationResolver({ 
     bucket: getEnv().BUCKET_NAME,
     s3Client: getBucketClient(),
-    expiresIn
+    expiresIn,
+    indexingService
   })
 
   let response
   if (asPieceCidV2(cid) !== undefined) {
-    response = await resolvePiece(cid, locateContent)
+    response = await resolvePiece(cid, locateContent, indexingService)
   } else if (asPieceCidV1(cid) !== undefined) {
     response = {
       statusCode: 415,
@@ -55,8 +78,8 @@ export async function redirectGet(request) {
 /**
  * Return response for a content CID
  * 
- * @param {CID} cid
- * @param {(cid: CID) => Promise<string | undefined> } locateContent
+ * @param {UnknownLink} cid
+ * @param {(cid: UnknownLink) => Promise<string | undefined> } locateContent
  */
 async function resolveContent (cid, locateContent) {
   const url = await locateContent(cid)
@@ -69,11 +92,12 @@ async function resolveContent (cid, locateContent) {
 /**
  * Return response for a Piece CID, or undefined for other CID types
  * 
- * @param {CID} cid
- * @param {(cid: CID) => Promise<string | undefined> } locateContent
+ * @param {UnknownLink} cid
+ * @param {(cid: UnknownLink) => Promise<string | undefined> } locateContent
+ * @param {IndexingServiceClient} [indexingService]
  */
-async function resolvePiece (cid, locateContent) {
-  const cids = await findEquivalentCids(cid)
+async function resolvePiece (cid, locateContent, indexingService) {
+  const cids = await findEquivalentCids(cid, indexingService)
   if (cids.size === 0) {
     return { statusCode: 404, body: 'No equivalent CID for Piece CID found' }
   }
@@ -104,8 +128,10 @@ export async function redirectKeyGet(request) {
     if (!key) {
       throw new Error('no path key provided')
     }
-
-  } catch (err) {
+    if (!bucketName) {
+      throw new Error('no bucket name provided')
+    }
+  } catch (/** @type {any} */ err) {
     return {
       body: err.message,
       statusCode: 400

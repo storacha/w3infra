@@ -8,6 +8,15 @@ import { getCustomDomain, setupSentry } from './config.js'
  * @param {import('sst/constructs').StackContext} properties
  */
 export function RoundaboutStack({ stack, app }) {
+  if (process.env.ROUNDABOUT_API_URL) {
+    const url = new URL(process.env.ROUNDABOUT_API_URL)
+    stack.addOutputs({
+      ApiEndpoint: url.toString(),
+      CustomDomain:  'Using ROUNDABOUT_API_URL - no custom domain'
+    })
+    return { roundaboutApiUrl: url.toString() }
+  }
+
   // Setup app monitoring with Sentry
   setupSentry(app, stack)
 
@@ -24,6 +33,7 @@ export function RoundaboutStack({ stack, app }) {
           BUCKET_NAME: process.env.R2_CARPARK_BUCKET_NAME ?? '',
           BUCKET_ACCESS_KEY_ID: process.env.R2_ACCESS_KEY_ID ?? '',
           BUCKET_SECRET_ACCESS_KEY: process.env.R2_SECRET_ACCESS_KEY ?? '',
+          ROUNDABOUT_INDEXING_SERVICE_URLS: process.env.ROUNDABOUT_INDEXING_SERVICE_URLS ?? ''
         }
       }
     },

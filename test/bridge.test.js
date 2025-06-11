@@ -5,13 +5,14 @@ import { ed25519 } from '@ucanto/principal'
 import { CBOR } from '@ucanto/core'
 import * as dagJSON from '@ipld/dag-json'
 import pWaitFor from 'p-wait-for'
-import { test } from './helpers/context.js'
-import { getDynamoDb, getApiEndpoint } from './helpers/deployment.js'
+import { test, withCauseLog } from './helpers/context.js'
+import { getDynamoDb, getApiEndpoint, getRoundaboutEndpoint } from './helpers/deployment.js'
 import { randomFile } from './helpers/random.js'
 import { setupNewClient } from './helpers/up-client.js'
 
 test.before(t => {
   t.context = {
+    roundaboutEndpoint: getRoundaboutEndpoint(),
     metricsDynamo: getDynamoDb('admin-metrics'),
     spaceMetricsDynamo: getDynamoDb('space-metrics'),
     rateLimitsDynamo: getDynamoDb('rate-limit')
@@ -25,12 +26,10 @@ async function getServicePublicKey() {
 }
 
 /**
- * 
- * @param {import('@storacha/client').Client} client 
- * @param {[import('@ucanto/interface').Capability, ...import('@ucanto/interface').Capability[]]} capabilities 
- * @param {number} expiration 
- * @param {string | undefined} password 
- * @returns 
+ * @param {import('@storacha/client').Client} client
+ * @param {[import('@ucanto/interface').Capability, ...import('@ucanto/interface').Capability[]]} capabilities
+ * @param {number} expiration
+ * @param {string | undefined} password
  */
 async function generateAuthHeaders(client, capabilities, expiration, password = 'i am the very model of a modern major general') {
   const coupon = await client.coupon.issue({
@@ -73,7 +72,7 @@ async function makeBridgeRequest(context, client, capabilities, expiration, requ
   })
 }
 
-test('the bridge can make various types of requests', async t => {
+test('the bridge can make various types of requests', withCauseLog(async t => {
   const { client } = await setupNewClient()
   const spaceDID = client.currentSpace()?.did()
   if (!spaceDID) {
@@ -105,6 +104,7 @@ test('the bridge can make various types of requests', async t => {
   // upload a file and wait for it to show up
   const file = await randomFile(42)
   const fileLink = await client.uploadFile(file)
+  /** @type {any} */ // FIXME: no type information
   let secondReceipts
   await pWaitFor(async () => {
     const secondResponse = await makeBridgeRequest(
@@ -125,6 +125,9 @@ test('the bridge can make various types of requests', async t => {
     interval: 100,
   })
 
+  if (!secondReceipts) {
+    return t.fail('missing second receipts')
+  }
   t.assert(secondReceipts[0].p.out.ok)
   t.deepEqual(secondReceipts[0].p.out.ok.results.length, 1)
   // assert that the first item in the list is the item we just uploaded
@@ -162,5 +165,4 @@ test('the bridge can make various types of requests', async t => {
     console.error(verification.error)
   }
   t.assert(verification.ok)
-})
-
+}))

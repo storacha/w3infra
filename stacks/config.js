@@ -15,11 +15,17 @@ import { mustGetEnv } from '../lib/env.js'
  *
  * @param {string} name
  * @param {string} stage
+ * @param {string} app
  * @param {number} version
  */
-export function getBucketName (name, stage, version = 0) {
-  // e.g `carpark-prod-0` or `carpark-pr101-0`
-  return `${name}-${stage}-${version}`
+export function getBucketName (name, stage, app, version = 0) {
+  // if w3infra we use legacy naming conventions which unfortunately don't
+  // produce a unique bucket name across service deployments.
+  if (app === 'w3infra') {
+    // e.g `carpark-prod-0` or `carpark-pr101-0`
+    return `${name}-${stage}-${version}`
+  }
+  return `${stage}-${app}-${name}-${version}`
 }
 
 /**
@@ -27,11 +33,12 @@ export function getBucketName (name, stage, version = 0) {
  *
  * @param {string} name
  * @param {string} stage
+ * @param {string} app
  * @param {number} version
  */
-export function getCdkNames (name, stage, version = 0) {
+export function getCdkNames (name, stage, app, version = 0) {
   // e.g `prod-w3infra-ucan-stream-delivery-0`
-  return `${stage}-w3infra-${name}-${version}`
+  return `${stage}-${app}-${name}-${version}`
 }
 
 /**
@@ -47,11 +54,12 @@ export function isPrBuild (stage) {
 /**
  * @param {string} name
  * @param {string} stage
+ * @param {string} app
  * @param {number} version
  */
-export function getBucketConfig(name, stage, version = 0){
+export function getBucketConfig(name, stage, app, version = 0){
   return {
-    bucketName: getBucketName(name, stage, version),
+    bucketName: getBucketName(name, stage, app, version),
     ...(isPrBuild(stage) && {
       autoDeleteObjects: true,
       removalPolicy: RemovalPolicy.DESTROY
@@ -147,7 +155,12 @@ export function getKinesisStreamConfig (stack) {
 }
 
 export function getApiPackageJson () {
-  return createRequire(import.meta.url)('./upload-api/package.json')
+  const require = createRequire(import.meta.url)
+  try {
+    return require('./upload-api/package.json')
+  } catch {
+    return require('../upload-api/package.json')
+  }
 }
 
 export function getGitInfo () {
@@ -193,11 +206,16 @@ export function getEnv() {
     AGGREGATOR_URL: mustGetEnv('AGGREGATOR_URL'),
     INDEXING_SERVICE_DID: mustGetEnv('INDEXING_SERVICE_DID'),
     INDEXING_SERVICE_URL: mustGetEnv('INDEXING_SERVICE_URL'),
+    /** @deprecated */
+    CONTENT_CLAIMS_DID: mustGetEnv('CONTENT_CLAIMS_DID'),
+    /** @deprecated */
+    CONTENT_CLAIMS_URL: mustGetEnv('CONTENT_CLAIMS_URL'),
     EIPFS_MULTIHASHES_SQS_ARN: mustGetEnv('EIPFS_MULTIHASHES_SQS_ARN'),
     EIPFS_BLOCKS_CAR_POSITION_TABLE_ARN: mustGetEnv('EIPFS_BLOCKS_CAR_POSITION_TABLE_ARN'),
     // Not required
     STOREFRONT_PROOF: process.env.STOREFRONT_PROOF ?? '',
     DISABLE_PIECE_CID_COMPUTE: process.env.DISABLE_PIECE_CID_COMPUTE ?? '',
-    START_FILECOIN_METRICS_EPOCH_MS: process.env.START_FILECOIN_METRICS_EPOCH_MS ?? ''
+    START_FILECOIN_METRICS_EPOCH_MS: process.env.START_FILECOIN_METRICS_EPOCH_MS ?? '',
+    DISABLE_IPNI_PUBLISHING: process.env.DISABLE_IPNI_PUBLISHING ?? '',
   }
 }
