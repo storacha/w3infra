@@ -38,12 +38,13 @@ export function createHumanodesTable(region, tableName, options = {}) {
  */
 export function useHumanodesTable(dynamoDb, tableName) {
   return {
-    async add(sub) {
+    async add(sub, account) {
       try {
         await dynamoDb.send(new PutItemCommand({
           TableName: tableName,
           Item: marshall({
-            sub
+            sub,
+            account
           }),
         }))
         return { ok: {} }
