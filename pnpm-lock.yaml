@@ -92,7 +92,7 @@ catalogs:
       version: 1.7.0
     '@storacha/client':
       specifier: ^1.2.6
-      version: 1.4.0
+      version: 1.2.6
     '@storacha/did-mailto':
       specifier: ^1.0.1
       version: 1.0.2
@@ -374,7 +374,7 @@ importers:
         version: 1.7.0
       '@storacha/client':
         specifier: 'catalog:'
-        version: 1.4.0(encoding@0.1.13)
+        version: 1.2.6(encoding@0.1.13)
       '@storacha/did-mailto':
         specifier: 'catalog:'
         version: 1.0.2
@@ -4069,8 +4069,8 @@ packages:
   '@storacha/capabilities@1.7.0-rc.0':
     resolution: {integrity: sha512-y+BhKDY8fem15+4YstC07BQY2jLO5zD8zcsBUpnMmZOmouDfPiq/SK/e8S5FbXS7J+xcqCTamSacXLxCojsAsg==}
 
-  '@storacha/client@1.4.0':
-    resolution: {integrity: sha512-APTALFekKg9FBHym7/B5jkqP8v/71C6ZToyWKqFdaWdoNZJM8ZNK/KNkB5tyMdboYxvfkXwHl9gSxEoW+wgSgA==}
+  '@storacha/client@1.2.6':
+    resolution: {integrity: sha512-8uB5dPwVBjtY3fg4ENBjLfyTBJy9jFY9w6NTBpvMPBoc40iKgNQq7tmFE7S/FqxMIkizh1UYRq7+uf/Y+7pqdg==}
     engines: {node: '>=18'}
 
   '@storacha/did-mailto@1.0.2':
@@ -4088,9 +4088,6 @@ packages:
   '@storacha/filecoin-client@1.0.6':
     resolution: {integrity: sha512-2ESQNvYqsStjktcn5PDHM97jAUEEUPIgCI9We85NTzMkIUTmSDWWOn3tI15MlwJo9Er+XBoogmQ2znQ/XaW0Dg==}
 
-  '@storacha/filecoin-client@1.0.9':
-    resolution: {integrity: sha512-T3vFcQ3QNtiNdbTCO/O5v0l+BPbG29uj2LRonBuWTUZhXEkRC54Kfobw+kVgHy8CcFZmROR4OnwRXc1EYgzLIQ==}
-
   '@storacha/indexing-service-client@2.2.0-rc.3':
     resolution: {integrity: sha512-eyEW3EVkWBiNim5YEfK4gV/Qbocc8EQcaavuewpz79/+z32ICYvzJVZrNBNxgxvSBiIi8qtuc++1bvgoSNWL5w==}
 
@@ -4106,9 +4103,6 @@ packages:
 
   '@storacha/upload-client@1.0.9':
     resolution: {integrity: sha512-hW0LwhVb22FfmttuaJ1JK6Zw0/02OVS0TiBtmQCoPEhY3C1e/muZ2OYkzbeK2i+hGUUCI+s2l/JyzOIiVWKsjw==}
-
-  '@storacha/upload-client@1.2.3':
-    resolution: {integrity: sha512-eVFAbXuLkoryhHvN9VMsmHR3nqUZfGTo22CodTKbLRlCCSEc6zpz+tpvjWYar+5/nwlQhRFWOBOJVTkb0KgRQA==}
 
   '@tootallnate/quickjs-emscripten@0.23.0':
     resolution: {integrity: sha512-C5Mc6rdnsaJDjO3UpGW/CQTHtCKaYlScZTly4JIu97Jxo/odCiH0ITnDXSJPTOrEKk/ycSZ0AOgTmkDtkOsvIA==}
@@ -16093,15 +16087,15 @@ snapshots:
       '@web3-storage/data-segment': 5.3.0
       multiformats: 13.3.6
 
-  '@storacha/client@1.4.0(encoding@0.1.13)':
+  '@storacha/client@1.2.6(encoding@0.1.13)':
     dependencies:
       '@ipld/dag-ucan': 3.4.5
-      '@storacha/access': 1.2.2
-      '@storacha/blob-index': 1.1.0
+      '@storacha/access': 1.1.1
+      '@storacha/blob-index': 1.0.5
       '@storacha/capabilities': 1.7.0
       '@storacha/did-mailto': 1.0.2
-      '@storacha/filecoin-client': 1.0.9
-      '@storacha/upload-client': 1.2.3(encoding@0.1.13)
+      '@storacha/filecoin-client': 1.0.6
+      '@storacha/upload-client': 1.0.9(encoding@0.1.13)
       '@ucanto/client': 9.0.1
       '@ucanto/core': 10.4.0
       '@ucanto/interface': 10.3.0
@@ -16142,15 +16136,6 @@ snapshots:
       p-map: 6.0.0
 
   '@storacha/filecoin-client@1.0.6':
-    dependencies:
-      '@ipld/dag-ucan': 3.4.5
-      '@storacha/capabilities': 1.7.0
-      '@ucanto/client': 9.0.1
-      '@ucanto/core': 10.4.0
-      '@ucanto/interface': 10.3.0
-      '@ucanto/transport': 9.2.0
-
-  '@storacha/filecoin-client@1.0.9':
     dependencies:
       '@ipld/dag-ucan': 3.4.5
       '@storacha/capabilities': 1.7.0
@@ -16214,27 +16199,6 @@ snapshots:
       '@web3-storage/data-segment': 5.3.0
       ipfs-utils: 9.0.14(encoding@0.1.13)
       multiformats: 13.3.2
-      p-retry: 5.1.2
-      varint: 6.0.0
-    transitivePeerDependencies:
-      - encoding
-
-  '@storacha/upload-client@1.2.3(encoding@0.1.13)':
-    dependencies:
-      '@ipld/car': 5.4.0
-      '@ipld/dag-cbor': 9.2.3
-      '@ipld/dag-ucan': 3.4.5
-      '@ipld/unixfs': 3.0.0
-      '@storacha/blob-index': 1.1.0
-      '@storacha/capabilities': 1.7.0
-      '@storacha/filecoin-client': 1.0.9
-      '@ucanto/client': 9.0.1
-      '@ucanto/core': 10.4.0
-      '@ucanto/interface': 10.3.0
-      '@ucanto/transport': 9.2.0
-      '@web3-storage/data-segment': 5.3.0
-      ipfs-utils: 9.0.14(encoding@0.1.13)
-      multiformats: 13.3.6
       p-retry: 5.1.2
       varint: 6.0.0
     transitivePeerDependencies:
