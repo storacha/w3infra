@@ -245,7 +245,7 @@ export const useBlobRegistry = (
         const spaceDiffResults = await buildSpaceDiffs({
           space,
           cause: cause.toString(),
-          delta: blobSize,
+          delta: -blobSize,
           receiptAt: dateNow,
           insertedAt: dateNow
         })
