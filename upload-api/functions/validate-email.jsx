@@ -234,6 +234,9 @@ export async function validateEmailPost(request) {
   const appName = facts.find(fact => fact.appName)?.appName
   if (!planCheckResult.ok?.product) {
     stripePublishableKey = context.stripePublishableKey
+    // TODO: use AppName.BskyBackups from @storacha/client/types once we upgrade that dependency
+    // I'd have done it now but upgrading causes linting issues and I want to save 
+    // that rabbithole for later
     if (appName === 'bsky-backups') {
       // don't show a pricing table to bsky.storage users
       stripePricingTableId = null
