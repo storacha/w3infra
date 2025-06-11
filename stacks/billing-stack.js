@@ -95,7 +95,7 @@ export function BillingStack ({ stack, app }) {
   const { ucanStream } = use(UcanInvocationStack)
 
   // Lambda that receives UCAN stream events and writes diffs to spaceSizeDiffTable
-  const ucanStreamHandler = new Function(stack, 'ucan-stream-handler', {
+  const ucanStreamHandler = new Function(stack, 'ucan-stream-handler-2', {
     permissions: [spaceDiffTable, consumerTable],
     handler: 'billing/functions/ucan-stream.handler',
     environment: {
