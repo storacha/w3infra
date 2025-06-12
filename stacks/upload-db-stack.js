@@ -2,6 +2,7 @@ import { Table, Bucket, Config } from 'sst/constructs'
 
 import {
   allocationTableProps,
+  blobRegistryTableProps,
   storeTableProps,
   uploadTableProps,
   consumerTableProps,
@@ -11,7 +12,9 @@ import {
   rateLimitTableProps,
   adminMetricsTableProps,
   spaceMetricsTableProps,
-  humanodeTableProps
+  storageProviderTableProps,
+  humanodeTableProps,
+  replicaTableProps
 } from '../upload-api/tables/index.js'
 import {
   pieceTableProps
@@ -43,6 +46,12 @@ export function UploadDbStack({ stack, app }) {
    * Used by the blob/* service capabilities.
    */
   const allocationTable = new Table(stack, 'allocation', allocationTableProps)
+
+  /**
+   * The blob registry table contains information about blob registrations
+   * per space.
+   */
+  const blobRegistryTable = new Table(stack, 'blob-registry', blobRegistryTableProps)
 
   /**
    * This table takes a stored CAR and makes an entry in the store table
@@ -111,8 +120,19 @@ export function UploadDbStack({ stack, app }) {
    */
   const spaceMetricsTable = new Table(stack, 'space-metrics', spaceMetricsTableProps)
 
+    /**
+   * This table tracks storage providers in the system.
+   */
+  const storageProviderTable = new Table(stack, 'storage-provider', storageProviderTableProps)
+
+  /**
+   * This table tracks replicas in the system.
+   */
+  const replicaTable = new Table(stack, 'replica', replicaTableProps)
+
   return {
     allocationTable,
+    blobRegistryTable,
     humanodeTable,
     storeTable,
     uploadTable,
@@ -125,9 +145,11 @@ export function UploadDbStack({ stack, app }) {
     revocationTable,
     adminMetricsTable,
     spaceMetricsTable,
+    storageProviderTable,
+    replicaTable,
     privateKey,
-    contentClaimsPrivateKey,
     githubClientSecret,
-    humanodeClientSecret
+    contentClaimsPrivateKey,
+    humanodeClientSecret,
   }
 }
