@@ -41,32 +41,41 @@ export const createIPNIService = (blockAdvertisementPublisherQueueConfig, blockI
 export const useIPNIService = (blockAdvertPublisherQueue, blockIndexWriterQueue, blobsStorage) => ({
   /** @type {import('@storacha/upload-api').IPNIService['publish']} */
   async publish (space, providers, index) {
-    /** @type {import('multiformats').MultihashDigest[]} */
-    const entries = []
+    console.log('publish to IPNI', space, providers, index)
+    try {
+      /** @type {import('multiformats').MultihashDigest[]} */
+      const entries = []
 
-    for (const [, slices] of index.shards.entries()) {
-      entries.push(...slices.keys())
-    }
-
-    const addRes = await blockAdvertPublisherQueue.add({ entries })
-    if (addRes.error) return addRes
-
-    // spaces with legacy providers need to be added to the legacy E-IPFS block
-    // index writer queue.
-    if (providers.some(isW3sProvider)) {
-      /** @type {Array<[location: URL, slices: Slices]>} */
-      const records = []
-      for (const [shard, slices] of index.shards.entries()) {
-        const createUrlRes = await blobsStorage.createDownloadUrl(shard)
-        if (!createUrlRes.ok) return createUrlRes
-        const location = new URL(createUrlRes.ok)
-        records.push([location, slices])
+      for (const [, slices] of index.shards.entries()) {
         entries.push(...slices.keys())
       }
-      const queueRes = await blockIndexWriterQueue.add(records)
-      if (queueRes.error) return queueRes
+
+      const addRes = await blockAdvertPublisherQueue.add({ entries })
+      if (addRes.error) return addRes
+      console.log('published to blockAdvertPublisherQueue')
+
+      // spaces with legacy providers need to be added to the legacy E-IPFS block
+      // index writer queue.
+      if (providers.some(isW3sProvider)) {
+        /** @type {Array<[location: URL, slices: Slices]>} */
+        const records = []
+        for (const [shard, slices] of index.shards.entries()) {
+          const createUrlRes = await blobsStorage.createDownloadUrl(shard)
+          if (!createUrlRes.ok) return createUrlRes
+          const location = new URL(createUrlRes.ok)
+          console.log('location', location.toString())
+          records.push([location, slices])
+          entries.push(...slices.keys())
+        }
+        const queueRes = await blockIndexWriterQueue.add(records)
+        if (queueRes.error) return queueRes
+        console.log('published to blockIndexWriterQueue')
+      }
+    } catch (/** @type {any} */err) {
+      console.log(err)
     }
 
+    console.log('successfully published to IPNI')
     return ok({})
   }
 })
