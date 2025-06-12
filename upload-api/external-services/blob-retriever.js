@@ -21,10 +21,16 @@ export const create = (client) => {
   return {
     /** @type {API.BlobRetriever['stream']} */
     async stream(digest) {
-      const result = await client.queryClaims({ hashes: [digest] })
-      if (result.error) {
-        // @ts-expect-error need to align blob retriever error types
-        return result
+      let result
+      try {
+        result = await client.queryClaims({ hashes: [digest] })
+        if (result.error) {
+          // @ts-expect-error need to align blob retriever error types
+          return result
+        }
+      } catch (/** @type {any} */ err) {
+        console.error('queryclaimserr', err)
+        throw err
       }
 
       for (const claim of result.ok.claims.values()) {
@@ -35,9 +41,14 @@ export const create = (client) => {
             if (claim.range) {
               headers.set('Range', `bytes=${claim.range.offset}-${claim.range.length || ''}`)
             }
-            const res = await fetch(claim.location[0], { headers })
-            if (!res.body) throw new Error('missing response body')
-            return ok(res.body)
+            try {
+              const res = await fetch(claim.location[0], { headers })
+              if (!res.body) throw new Error('missing response body')
+              return ok(res.body)
+            } catch (/** @type {any} */ err) {
+              console.error('blobretrieveerr', claim.location, err)
+              throw err
+            }
           }
         }
       }
