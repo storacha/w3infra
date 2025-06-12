@@ -382,7 +382,6 @@ function getLambdaEnv () {
     r2DelegationBucketSecretAccessKey: mustGetEnv('R2_SECRET_ACCESS_KEY'),
     r2DelegationBucketName: mustGetEnv('R2_DELEGATION_BUCKET_NAME'),
     invocationBucketName: mustGetEnv('INVOCATION_BUCKET_NAME'),
-    taskBucketName: mustGetEnv('TASK_BUCKET_NAME'),
     workflowBucketName: mustGetEnv('WORKFLOW_BUCKET_NAME'),
     streamName: mustGetEnv('UCAN_LOG_STREAM_NAME'),
     postmarkToken: mustGetEnv('POSTMARK_TOKEN'),

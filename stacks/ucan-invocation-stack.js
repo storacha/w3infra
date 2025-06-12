@@ -48,12 +48,6 @@ export function UcanInvocationStack({ stack, app }) {
       bucket: getBucketConfig('invocation-store', app.stage)
     }
   })
-  const taskBucket = new Bucket(stack, 'task-store', {
-    cors: true,
-    cdk: {
-      bucket: getBucketConfig('task-store', app.stage)
-    }
-  })
 
   // TODO: keep for historical content that we might want to process
   new Bucket(stack, 'ucan-store', {
@@ -83,12 +77,10 @@ export function UcanInvocationStack({ stack, app }) {
   stack.addOutputs({
     workflowBucketName: workflowBucket.bucketName,
     invocationBucketName: invocationBucket.bucketName,
-    taskBucketName: taskBucket.bucketName
   })
 
   return {
     invocationBucket,
-    taskBucket,
     workflowBucket,
     ucanStream
   }
