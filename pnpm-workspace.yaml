@@ -44,7 +44,7 @@ catalog:
   "@storacha/filecoin-client": ^1.0.6
   "@storacha/indexing-service-client": ^2.3.0
   "@storacha/one-webcrypto": ^1.0.1
-  "@storacha/upload-api": ^2.0.0-rc.1
+  "@storacha/upload-api": ^2.0.0-rc.2
   "@storacha/upload-client": ^1.0.9
   "@tsconfig/node16": ^1.0.3
   "@types/aws-lambda": ^8.10.108
