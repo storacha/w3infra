@@ -45,7 +45,7 @@ export function UploadApiStack({ stack, app }) {
   // Get references to constructs created in other stacks
   const { carparkBucket } = use(CarparkStack)
   const { allocationTable, humanodeTable, storeTable, uploadTable, delegationBucket, delegationTable, revocationTable, adminMetricsTable, spaceMetricsTable, consumerTable, subscriptionTable, rateLimitTable, pieceTable, privateKey, contentClaimsPrivateKey, githubClientSecret, humanodeClientSecret } = use(UploadDbStack)
-  const { invocationBucket, taskBucket, workflowBucket, ucanStream } = use(UcanInvocationStack)
+  const { invocationBucket, workflowBucket, ucanStream } = use(UcanInvocationStack)
   const { customerTable, spaceDiffTable, spaceSnapshotTable, egressTrafficTable, stripeSecretKey } = use(BillingDbStack)
   const { pieceOfferQueue, filecoinSubmitQueue } = use(FilecoinStack)
   const { blockAdvertPublisherQueue, blockIndexWriterQueue } = use(IndexerStack)
@@ -88,7 +88,6 @@ export function UploadApiStack({ stack, app }) {
             egressTrafficTable,
             carparkBucket,
             invocationBucket,
-            taskBucket,
             workflowBucket,
             ucanStream,
             pieceOfferQueue,
@@ -116,7 +115,6 @@ export function UploadApiStack({ stack, app }) {
             SPACE_SNAPSHOT_TABLE_NAME: spaceSnapshotTable.tableName,
             DELEGATION_BUCKET_NAME: delegationBucket.bucketName,
             INVOCATION_BUCKET_NAME: invocationBucket.bucketName,
-            TASK_BUCKET_NAME: taskBucket.bucketName,
             WORKFLOW_BUCKET_NAME: workflowBucket.bucketName,
             UCAN_LOG_STREAM_NAME: ucanStream.streamName,
             ADMIN_METRICS_TABLE_NAME: adminMetricsTable.tableName,
