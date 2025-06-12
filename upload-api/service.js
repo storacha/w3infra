@@ -25,8 +25,13 @@ export const createUcantoServer = (servicePrincipal, context) =>
     id: servicePrincipal,
     maxUploadSize: MAX_UPLOAD_SIZE,
     errorReporter: {
-      catch: (/** @type {string | Error} */ err) => {
+      catch: (/** @type {any} */ err) => {
         console.warn(err)
+        let cause = err.cause
+        while (cause) {
+          console.warn(cause)
+          cause = cause.cause
+        }
         Sentry.AWSLambda.captureException(err)
       },
     },
