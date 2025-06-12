@@ -19,6 +19,22 @@ export const storeTableProps = {
 }
 
 /** @type TableProps */
+export const blobRegistryTableProps = {
+  fields: {
+    space: 'string',      // `did:key:space`
+    digest: 'string',     // `zQm...`
+    size: 'number',       // `101`
+    cause: 'string',      // `baf...ucan` (CID of invocation UCAN)
+    insertedAt: 'string', // `2022-12-24T...`
+  },
+  // space + digest must be unique to satisfy index constraint
+  primaryIndex: { partitionKey: 'space', sortKey: 'digest' },
+  globalIndexes: {
+    digest: { partitionKey: 'digest', sortKey: 'space' }
+  }
+}
+
+/** @type TableProps */
 export const uploadTableProps = {
   fields: {
     space: 'string',        // `did:key:space`
@@ -181,4 +197,46 @@ export const blocksCarsPositionTableProps = {
     length: 'number',
   },
   primaryIndex: { partitionKey: 'blockmultihash', sortKey: 'carpath' }
+}
+
+/** @type TableProps */
+export const storageProviderTableProps = {
+  fields: {
+    // DID of the stroage provider.
+    provider: 'string',
+    // Public URL that accepts UCAN invocations.
+    endpoint: 'string',
+    // Proof the upload service can invoke blob/allocate and blob/accept.
+    proof: 'string',
+    // Weight determines chance of selection relative to other providers.
+    weight: 'number',
+    // Date and time the record was created (ISO 8601)
+    insertedAt: 'string',
+    // Date and time the record was last updated (ISO 8601)
+    updatedAt: 'string',
+  },
+  primaryIndex: { partitionKey: 'provider' }
+}
+
+/** @type {TableProps} */
+export const replicaTableProps = {
+  fields: {
+    /** Composite key with format: "space#digest" */
+    pk: 'string',
+    /** DID of Space the blob is registered in. */
+    space: 'string',
+    /** Base58btc encoded multihash of the blob. */
+    digest: 'string',
+    /** DID of the replica node. */
+    provider: 'string',
+    /** Status of the replication (allocated/transferred/failed). */
+    status: 'string',
+    /** CID of `blob/replica/allocate` UCAN that allocated the replica space. */
+    cause: 'string',
+    /** Date and time the record was created (ISO 8601) */
+    insertedAt: 'string',
+    /** Date and time the record was last updated (ISO 8601) */
+    updatedAt: 'string',
+  },
+  primaryIndex: { partitionKey: 'pk', sortKey: 'provider' }
 }
