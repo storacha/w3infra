@@ -135,6 +135,12 @@ catalogs:
     '@ucanto/client':
       specifier: ^9.0.1
       version: 9.0.1
+    '@ucanto/core':
+      specifier: ^10.4.0
+      version: 10.4.0
+    '@ucanto/interface':
+      specifier: ^11.0.0
+      version: 11.0.0
     '@ucanto/principal':
       specifier: ^9.0.2
       version: 9.0.2
@@ -144,6 +150,9 @@ catalogs:
     '@ucanto/transport':
       specifier: ^9.2.0
       version: 9.2.0
+    '@ucanto/validator':
+      specifier: ^10.0.0
+      version: 10.0.0
     '@web-std/blob':
       specifier: ^3.0.5
       version: 3.0.5
@@ -385,11 +394,11 @@ importers:
         specifier: 'catalog:'
         version: 9.0.1
       '@ucanto/core':
-        specifier: file:../ucanto/packages/core/ucanto-core-10.4.0.tgz
-        version: file:../ucanto/packages/core/ucanto-core-10.4.0.tgz
+        specifier: 'catalog:'
+        version: 10.4.0
       '@ucanto/interface':
-        specifier: file:../ucanto/packages/interface/ucanto-interface-10.3.0.tgz
-        version: file:../ucanto/packages/interface/ucanto-interface-10.3.0.tgz
+        specifier: 'catalog:'
+        version: 11.0.0
       '@ucanto/principal':
         specifier: 'catalog:'
         version: 9.0.2
@@ -397,8 +406,8 @@ importers:
         specifier: 'catalog:'
         version: 9.2.0
       '@ucanto/validator':
-        specifier: file:../ucanto/packages/validator/ucanto-validator-9.1.1.tgz
-        version: file:../ucanto/packages/validator/ucanto-validator-9.1.1.tgz
+        specifier: 'catalog:'
+        version: 10.0.0
       '@web-std/blob':
         specifier: 'catalog:'
         version: 3.0.5
@@ -478,8 +487,8 @@ importers:
         specifier: 'catalog:'
         version: 1.4.0
       '@ucanto/interface':
-        specifier: file:../../ucanto/packages/interface/ucanto-interface-10.3.0.tgz
-        version: file:../ucanto/packages/interface/ucanto-interface-10.3.0.tgz
+        specifier: 'catalog:'
+        version: 11.0.0
       '@ucanto/server':
         specifier: 'catalog:'
         version: 10.2.0
@@ -612,11 +621,11 @@ importers:
         specifier: 'catalog:'
         version: 9.0.1
       '@ucanto/core':
-        specifier: file:../../ucanto/packages/core/ucanto-core-10.4.0.tgz
-        version: file:../ucanto/packages/core/ucanto-core-10.4.0.tgz
+        specifier: 'catalog:'
+        version: 10.4.0
       '@ucanto/interface':
-        specifier: file:../../ucanto/packages/interface/ucanto-interface-10.3.0.tgz
-        version: file:../ucanto/packages/interface/ucanto-interface-10.3.0.tgz
+        specifier: 'catalog:'
+        version: 11.0.0
       '@ucanto/principal':
         specifier: 'catalog:'
         version: 9.0.2
@@ -694,8 +703,8 @@ importers:
         specifier: 'catalog:'
         version: 1.0.1
       '@ucanto/interface':
-        specifier: file:../../ucanto/packages/interface/ucanto-interface-10.3.0.tgz
-        version: file:../ucanto/packages/interface/ucanto-interface-10.3.0.tgz
+        specifier: 'catalog:'
+        version: 11.0.0
       multiformats:
         specifier: 'catalog:'
         version: 13.3.2
@@ -815,8 +824,8 @@ importers:
         specifier: 'catalog:'
         version: 4.1.3
       '@ucanto/core':
-        specifier: file:../../ucanto/packages/core/ucanto-core-10.4.0.tgz
-        version: file:../ucanto/packages/core/ucanto-core-10.4.0.tgz
+        specifier: 'catalog:'
+        version: 10.4.0
       '@web3-storage/data-segment':
         specifier: 'catalog:'
         version: 5.3.0
@@ -930,11 +939,11 @@ importers:
         specifier: 'catalog:'
         version: 9.0.1
       '@ucanto/core':
-        specifier: file:../../ucanto/packages/core/ucanto-core-10.4.0.tgz
-        version: file:../ucanto/packages/core/ucanto-core-10.4.0.tgz
+        specifier: 'catalog:'
+        version: 10.4.0
       '@ucanto/interface':
-        specifier: file:../../ucanto/packages/interface/ucanto-interface-10.3.0.tgz
-        version: file:../ucanto/packages/interface/ucanto-interface-10.3.0.tgz
+        specifier: 'catalog:'
+        version: 11.0.0
       '@ucanto/principal':
         specifier: 'catalog:'
         version: 9.0.2
@@ -945,8 +954,8 @@ importers:
         specifier: 'catalog:'
         version: 9.2.0
       '@ucanto/validator':
-        specifier: file:../../ucanto/packages/validator/ucanto-validator-9.1.1.tgz
-        version: file:../ucanto/packages/validator/ucanto-validator-9.1.1.tgz
+        specifier: 'catalog:'
+        version: 10.0.0
       '@web-std/stream':
         specifier: 'catalog:'
         version: 1.0.3
@@ -4485,16 +4494,11 @@ packages:
   '@ucanto/core@10.4.0':
     resolution: {integrity: sha512-ohLgxHUo/XgL1G/pvelsHl3zyq7w+fn6ZVN3yVhgiJwbRh67EqvjavXYEFGSLBzlAdMGsfDNkbetQob1sNSNGg==}
 
-  '@ucanto/core@file:../ucanto/packages/core/ucanto-core-10.4.0.tgz':
-    resolution: {integrity: sha512-TvrJYpBovG2vG1xjqQ6I2rGqfpY52UfGkAbGNQwL7JJb4VhdP1Brx2QHDEPGUqubzG1JRKDudoEreqLgyc50AQ==, tarball: file:../ucanto/packages/core/ucanto-core-10.4.0.tgz}
-    version: 10.4.0
-
   '@ucanto/interface@10.3.0':
     resolution: {integrity: sha512-97929CGr3AM4Y01CLZ3wwhzrlth5pq8eJCbd/hUMxD62nyG9eRsyvt3RSOtBNtu4jTdMH580x0oAF2D1XKcPvw==}
 
-  '@ucanto/interface@file:../ucanto/packages/interface/ucanto-interface-10.3.0.tgz':
-    resolution: {integrity: sha512-4/Ig71rj4LDBjF1l4X+RMFiwOTP7pZAEMwl66ipZ4JcisN+AQAwT9XKKlWyT7y8Bas4aNOatkaBJR1yW0Gf59A==, tarball: file:../ucanto/packages/interface/ucanto-interface-10.3.0.tgz}
-    version: 10.3.0
+  '@ucanto/interface@11.0.0':
+    resolution: {integrity: sha512-679NmyKXAuh9Zu8BbTNvwmi5gke8RytH7qRvPxpWL/ytKUm/Ea3y1fwGmaCnTbf38GXtVP89eERAsh+p8pSXzA==}
 
   '@ucanto/principal@9.0.2':
     resolution: {integrity: sha512-RE3Rj0oz4wh4C9p2JJZB9+QLd7Fi3lCixrbHgAvEoSyTNpvz6ky8DGNtttmD5j3O94z13qdVdIoSRY6DQZXfAg==}
@@ -4505,12 +4509,11 @@ packages:
   '@ucanto/transport@9.2.0':
     resolution: {integrity: sha512-w/CtD5LYEpGo/CxV78IiWalW99gNRPHKZ/DoOpart5QShozvnU//PwUqyqnGimZCDIrIq4LH6x92z2L/2k5OKQ==}
 
+  '@ucanto/validator@10.0.0':
+    resolution: {integrity: sha512-24inv+3JgjKSNqBEBZt8QcIFes8uh/7Q10mK8RHiKRNgATEjvJd4BvskzSe1y0zM3sKIlcRQBAfX5cqLaps7vA==}
+
   '@ucanto/validator@9.1.0':
     resolution: {integrity: sha512-2JnEEZYc8kTZz+qbyL7LbI/TSpBRWLOchNhaRB5DTyj38FxMFQUXIB7gQ5lZHv49uYJGx/FXKPw0268WgJdEvg==}
-
-  '@ucanto/validator@file:../ucanto/packages/validator/ucanto-validator-9.1.1.tgz':
-    resolution: {integrity: sha512-TD0kh6aUD81TE/HqYp4kEQJdKdmJcyOUJpOPqB+ZZWOealPvHp4Fp9NcIdFMP7GZd88K/KfJ8U7T9GsoW8nhrw==, tarball: file:../ucanto/packages/validator/ucanto-validator-9.1.1.tgz}
-    version: 9.1.1
 
   '@ungap/structured-clone@1.3.0':
     resolution: {integrity: sha512-WmoN8qaIAo7WTYWbAZuG8PYEhn5fkz7dZrqTBZ7dtt//lL2Gwms1IcnQ5yHqjDfX8Ft5j4YzDM23f87zBfDe9g==}
@@ -17288,7 +17291,7 @@ snapshots:
     dependencies:
       '@types/yargs-parser': 21.0.3
 
-  '@typescript-eslint/eslint-plugin@5.62.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.8.3))(eslint@8.57.1)(typescript@4.9.5)':
+  '@typescript-eslint/eslint-plugin@5.62.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.8.3))(eslint@8.57.1)(typescript@5.8.3)':
     dependencies:
       '@eslint-community/regexpp': 4.12.1
       '@typescript-eslint/parser': 5.62.0(eslint@8.57.1)(typescript@4.9.5)
@@ -17303,7 +17306,7 @@ snapshots:
       semver: 7.7.1
       tsutils: 3.21.0(typescript@4.9.5)
     optionalDependencies:
-      typescript: 4.9.5
+      typescript: 5.8.3
     transitivePeerDependencies:
       - supports-color
 
@@ -17412,14 +17415,6 @@ snapshots:
       '@ipld/dag-cbor': 9.2.2
       '@ipld/dag-ucan': 3.4.5
       '@ucanto/interface': 10.3.0
-      multiformats: 13.3.2
-
-  '@ucanto/core@file:../ucanto/packages/core/ucanto-core-10.4.0.tgz':
-    dependencies:
-      '@ipld/car': 5.4.0
-      '@ipld/dag-cbor': 9.2.2
-      '@ipld/dag-ucan': 3.4.5
-      '@ucanto/interface': 10.3.0
       multiformats: 13.3.6
 
   '@ucanto/interface@10.3.0':
@@ -17427,7 +17422,7 @@ snapshots:
       '@ipld/dag-ucan': 3.4.5
       multiformats: 13.3.2
 
-  '@ucanto/interface@file:../ucanto/packages/interface/ucanto-interface-10.3.0.tgz':
+  '@ucanto/interface@11.0.0':
     dependencies:
       '@ipld/dag-ucan': 3.4.5
       multiformats: 13.3.6
@@ -17454,6 +17449,14 @@ snapshots:
       '@ucanto/core': 10.4.0
       '@ucanto/interface': 10.3.0
 
+  '@ucanto/validator@10.0.0':
+    dependencies:
+      '@ipld/car': 5.4.0
+      '@ipld/dag-cbor': 9.2.2
+      '@ucanto/core': 10.4.0
+      '@ucanto/interface': 11.0.0
+      multiformats: 13.3.6
+
   '@ucanto/validator@9.1.0':
     dependencies:
       '@ipld/car': 5.4.0
@@ -17461,14 +17464,6 @@ snapshots:
       '@ucanto/core': 10.4.0
       '@ucanto/interface': 10.3.0
       multiformats: 13.3.2
-
-  '@ucanto/validator@file:../ucanto/packages/validator/ucanto-validator-9.1.1.tgz':
-    dependencies:
-      '@ipld/car': 5.4.0
-      '@ipld/dag-cbor': 9.2.2
-      '@ucanto/core': 10.4.0
-      '@ucanto/interface': 10.3.0
-      multiformats: 13.3.6
 
   '@ungap/structured-clone@1.3.0': {}
 
@@ -19369,9 +19364,9 @@ snapshots:
     dependencies:
       eslint: 8.57.1
 
-  eslint-config-standard-with-typescript@23.0.0(@typescript-eslint/eslint-plugin@5.62.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.8.3))(eslint@8.57.1)(typescript@5.8.3))(eslint-plugin-import@2.31.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.8.3))(eslint@8.57.1))(eslint-plugin-n@15.7.0(eslint@8.57.1))(eslint-plugin-promise@6.6.0(eslint@8.57.1))(eslint@8.57.1)(typescript@4.9.5):
+  eslint-config-standard-with-typescript@23.0.0(@typescript-eslint/eslint-plugin@5.62.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.8.3))(eslint@8.57.1)(typescript@4.9.5))(eslint-plugin-import@2.31.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.8.3))(eslint@8.57.1))(eslint-plugin-n@15.7.0(eslint@8.57.1))(eslint-plugin-promise@6.6.0(eslint@8.57.1))(eslint@8.57.1)(typescript@4.9.5):
     dependencies:
-      '@typescript-eslint/eslint-plugin': 5.62.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.8.3))(eslint@8.57.1)(typescript@4.9.5)
+      '@typescript-eslint/eslint-plugin': 5.62.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.8.3))(eslint@8.57.1)(typescript@5.8.3)
       '@typescript-eslint/parser': 5.62.0(eslint@8.57.1)(typescript@4.9.5)
       eslint: 8.57.1
       eslint-config-standard: 17.0.0(eslint-plugin-import@2.31.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.8.3))(eslint@8.57.1))(eslint-plugin-n@15.7.0(eslint@8.57.1))(eslint-plugin-promise@6.6.0(eslint@8.57.1))(eslint@8.57.1)
@@ -20161,12 +20156,12 @@ snapshots:
 
   hd-scripts@3.0.2:
     dependencies:
-      '@typescript-eslint/eslint-plugin': 5.62.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.8.3))(eslint@8.57.1)(typescript@4.9.5)
+      '@typescript-eslint/eslint-plugin': 5.62.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.8.3))(eslint@8.57.1)(typescript@5.8.3)
       '@typescript-eslint/parser': 5.62.0(eslint@8.57.1)(typescript@4.9.5)
       eslint: 8.57.1
       eslint-config-prettier: 8.10.0(eslint@8.57.1)
       eslint-config-standard: 17.1.0(eslint-plugin-import@2.31.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.8.3))(eslint@8.57.1))(eslint-plugin-n@15.7.0(eslint@8.57.1))(eslint-plugin-promise@6.6.0(eslint@8.57.1))(eslint@8.57.1)
-      eslint-config-standard-with-typescript: 23.0.0(@typescript-eslint/eslint-plugin@5.62.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.8.3))(eslint@8.57.1)(typescript@5.8.3))(eslint-plugin-import@2.31.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.8.3))(eslint@8.57.1))(eslint-plugin-n@15.7.0(eslint@8.57.1))(eslint-plugin-promise@6.6.0(eslint@8.57.1))(eslint@8.57.1)(typescript@4.9.5)
+      eslint-config-standard-with-typescript: 23.0.0(@typescript-eslint/eslint-plugin@5.62.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.8.3))(eslint@8.57.1)(typescript@4.9.5))(eslint-plugin-import@2.31.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.8.3))(eslint@8.57.1))(eslint-plugin-n@15.7.0(eslint@8.57.1))(eslint-plugin-promise@6.6.0(eslint@8.57.1))(eslint@8.57.1)(typescript@4.9.5)
       eslint-plugin-etc: 2.0.3(eslint@8.57.1)(typescript@4.9.5)
       eslint-plugin-import: 2.31.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.8.3))(eslint@8.57.1)
       eslint-plugin-jsdoc: 39.9.1(eslint@8.57.1)

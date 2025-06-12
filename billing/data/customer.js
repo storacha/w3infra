@@ -9,7 +9,10 @@ import { EncodeFailure, DecodeFailure, Schema } from './lib.js'
  */
 
 const schema = Schema.struct({
-  customer: Schema.did({ method: 'mailto' }),
+  customer: Schema.union([
+    Schema.did({ method: 'mailto' }),
+    Schema.did({ method: 'plc' }), // Add did:plc support
+  ]),
   account: Schema.uri({ protocol: 'stripe:' }).optional(),
   product: Schema.text(),
   details: Schema.text().optional(),

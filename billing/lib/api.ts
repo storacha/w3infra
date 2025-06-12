@@ -72,7 +72,7 @@ export type SpaceSnapshotStore =
  * billed for storage usage.
  */
 export interface Customer {
-  /** DID of the user account e.g. `did:mailto:agent`. */
+  /** DID of the user account e.g. `did:mailto:agent` or `did:plc:abc123` */
   customer: CustomerDID
   /**
    * Opaque identifier representing an account in the payment system
@@ -341,7 +341,7 @@ export interface UcanWorkflowMessage<C extends Capabilities = Capabilities> exte
 // Utility ////////////////////////////////////////////////////////////////////
 
 export type ConsumerDID = DID
-export type CustomerDID = DID<'mailto'>
+export type CustomerDID = DID<'mailto'> | DID<'plc'>
 export type ProviderDID = DID<'web'>
 export type AccountID = URI<'stripe:'>
 
