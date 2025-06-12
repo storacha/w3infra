@@ -23,8 +23,8 @@ export function FilecoinStack({ stack, app }) {
   const {
     AGGREGATOR_DID,
     AGGREGATOR_URL,
-    INDEXING_SERVICE_DID,
-    INDEXING_SERVICE_URL,
+    CONTENT_CLAIMS_DID,
+    CONTENT_CLAIMS_URL,
     DISABLE_PIECE_CID_COMPUTE,
     UPLOAD_API_DID,
     STOREFRONT_PROOF,
@@ -40,7 +40,7 @@ export function FilecoinStack({ stack, app }) {
   // Get eventBus reference
   const { eventBus } = use(BusStack)
   // Get store table reference
-  const { pieceTable, privateKey, adminMetricsTable, indexingServiceProof } = use(UploadDbStack)
+  const { pieceTable, privateKey, adminMetricsTable, contentClaimsPrivateKey } = use(UploadDbStack)
   // Get UCAN store references
   const { agentMessageBucket, agentIndexBucket, ucanStream } = use(UcanInvocationStack)
   const { roundaboutApiUrl } = use(RoundaboutStack)
@@ -149,14 +149,12 @@ export function FilecoinStack({ stack, app }) {
       function: {
         handler: 'filecoin/functions/handle-piece-insert-to-content-claim.main',
         environment: {
-          STOREFRONT_DID: UPLOAD_API_DID,
-          INDEXING_SERVICE_DID,
-          INDEXING_SERVICE_URL,
+          CONTENT_CLAIMS_DID,
+          CONTENT_CLAIMS_URL,
         },
         timeout: 3 * 60,
         bind: [
-          privateKey,
-          indexingServiceProof
+          contentClaimsPrivateKey
         ]
       },
       deadLetterQueue: pieceTableHandleInserToClaimtDLQ.cdk.queue,
