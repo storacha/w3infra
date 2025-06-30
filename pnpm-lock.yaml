@@ -614,6 +614,9 @@ importers:
       '@ipld/dag-json':
         specifier: 'catalog:'
         version: 10.2.3
+      '@ipld/dag-ucan':
+        specifier: 'catalog:'
+        version: 3.4.5
       '@sentry/serverless':
         specifier: 'catalog:'
         version: 7.120.3
@@ -623,6 +626,9 @@ importers:
       '@storacha/filecoin-client':
         specifier: 'catalog:'
         version: 1.0.6
+      '@storacha/indexing-service-client':
+        specifier: 'catalog:'
+        version: 2.3.0
       '@ucanto/client':
         specifier: 'catalog:'
         version: 9.0.1
@@ -13899,9 +13905,9 @@ snapshots:
 
   '@ipld/dag-ucan@3.4.5':
     dependencies:
-      '@ipld/dag-cbor': 9.2.2
+      '@ipld/dag-cbor': 9.2.3
       '@ipld/dag-json': 10.2.3
-      multiformats: 13.3.2
+      multiformats: 13.3.6
 
   '@ipld/unixfs@3.0.0':
     dependencies:
