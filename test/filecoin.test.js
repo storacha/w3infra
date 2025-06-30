@@ -144,7 +144,6 @@ test('w3filecoin integration flow', withCauseLog(async t => {
       body: agentMessageBytes,
       headers: {},
     })
-    // @ts-expect-error unknown link does not mach expectations
     const receipt = agentMessage.receipts.get(filecoinOfferInvCid.toString())
     if (!receipt) {
       return t.fail(`receipt not found for task: ${filecoinOfferInvCid}`)
