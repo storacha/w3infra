@@ -9,23 +9,15 @@ import * as Link from 'multiformats/link'
 import { equals } from 'multiformats/bytes'
 import { code as RAW_CODE } from 'multiformats/codecs/raw'
 import * as Digest from 'multiformats/hashes/digest'
-import { ShardingStream, UnixFS, Upload, Index } from '@storacha/upload-client'
+import { ShardingStream, UnixFS, Upload, Index, Receipt } from '@storacha/upload-client'
 import { isDelegation } from '@ucanto/core'
 import { codec as carCodec } from '@ucanto/transport/car'
 import { ShardedDAGIndex } from '@storacha/blob-index'
-import * as AgentStore from '../upload-api/stores/agent.js'
 import { METRICS_NAMES, SPACE_METRICS_NAMES } from '../upload-api/constants.js'
 import * as Blob from './helpers/blob-client.js'
-import {
-  getStage,
-  getAwsBucketClient,
-  getRoundaboutEndpoint,
-  getDynamoDb,
-  getAwsRegion,
-  getBucketName,
-} from './helpers/deployment.js'
+import { getStage, getRoundaboutEndpoint, getDynamoDb } from './helpers/deployment.js'
 import { randomFile, randomInt } from './helpers/random.js'
-import { setupNewClient, getServiceProps } from './helpers/up-client.js'
+import { setupNewClient, getServiceProps, receiptsEndpoint } from './helpers/up-client.js'
 import { getMetrics, getSpaceMetrics } from './helpers/metrics.js'
 import { getUsage } from './helpers/store.js'
 import { addStorageProvider } from './helpers/storage-provider.js'
@@ -227,42 +219,19 @@ test('blob integration flow with receipts validation', withCauseLog(async t => {
   console.log(`Index is retrievable at ${indexLocationCommitment.location[0]}`)
 
   // Check receipts were written
-  const s3Client = getAwsBucketClient()
-  const agentStore = AgentStore.open({
-    store: {
-      region: getAwsRegion(),
-      connection: { channel: s3Client },
-      buckets: {
-        message: { name: getBucketName('workflow-store') },
-        index: { name: getBucketName('invocation-store') },
-      },
-    },
-    stream: {
-      connection: { disable: {} },
-      name: '',
-    },
-  })
-  const getPutTaskReceipt = await agentStore.receipts.get(next?.put.task.link())
-  if (getPutTaskReceipt.error) {
-    throw new Error(`get http/put receipt failed for: ${next?.put.task.link()}`, { cause: getPutTaskReceipt.error })
-  }
-  if (getPutTaskReceipt.ok.out.error) {
-    throw new Error('http/put task failed', { cause: getPutTaskReceipt.ok.out.error })
-  }
-  t.deepEqual(getPutTaskReceipt.ok.out.ok, {})
+  const receiptOptions = { receiptsEndpoint: receiptsEndpoint.toString() }
+  const getPutTaskReceipt = await Receipt.poll(next?.put.task.link(), receiptOptions)
+  t.is(getPutTaskReceipt.out.error, undefined)
+  t.deepEqual(getPutTaskReceipt.out.ok, {})
 
-  const getAcceptTaskReceipt = await agentStore.receipts.get(next?.accept.task.link())
-  if (getAcceptTaskReceipt.error) {
-    throw new Error(`get blob/accept receipt failed for: ${next?.accept.task.link()}`, { cause: getAcceptTaskReceipt.error })
-  }
-  if (getAcceptTaskReceipt.ok.out.error) {
-    throw new Error('blob/accept task failed', { cause: getAcceptTaskReceipt.ok.out.error })
-  }
-  t.truthy(getAcceptTaskReceipt.ok?.out.ok)
-  t.truthy(getAcceptTaskReceipt.ok?.out.ok.site)
+  const getAcceptTaskReceipt = (await Receipt.poll(next?.accept.task.link(), receiptOptions))
+  t.is(getAcceptTaskReceipt.out.error, undefined)
+  t.truthy(getAcceptTaskReceipt.out.ok)
+  // @ts-expect-error needs better typing
+  t.truthy(getAcceptTaskReceipt.out.ok?.site)
 
   // Check delegation
-  const acceptForks = getAcceptTaskReceipt.ok.fx.fork
+  const acceptForks = getAcceptTaskReceipt.fx.fork
   t.true(acceptForks.length > 0) // PDP node will also include a forked PDP task
   t.true(acceptForks.some(f => isDelegation(f) && f.capabilities[0].can === AssertCapabilities.location.can))
 
