@@ -219,12 +219,14 @@ test('blob integration flow with receipts validation', withCauseLog(async t => {
   console.log(`Index is retrievable at ${indexLocationCommitment.location[0]}`)
 
   // Check receipts were written
-  const receiptOptions = { receiptsEndpoint: receiptsEndpoint.toString() }
+  const receiptOptions = { receiptsEndpoint: receiptsEndpoint.toString(), retries: 10 }
   const getPutTaskReceipt = await Receipt.poll(next?.put.task.link(), receiptOptions)
+  console.log(`Receipt for ${next?.put.task.link()} (http/put) found: ${getPutTaskReceipt.root.cid}`)
   t.is(getPutTaskReceipt.out.error, undefined)
   t.deepEqual(getPutTaskReceipt.out.ok, {})
 
   const getAcceptTaskReceipt = (await Receipt.poll(next?.accept.task.link(), receiptOptions))
+  console.log(`Receipt for ${next?.accept.task.link()} (blob/accept) found: ${getAcceptTaskReceipt.root.cid}`)
   t.is(getAcceptTaskReceipt.out.error, undefined)
   t.truthy(getAcceptTaskReceipt.out.ok)
   // @ts-expect-error needs better typing

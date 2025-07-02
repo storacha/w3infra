@@ -7,7 +7,6 @@ import * as DIDMailto from '@storacha/did-mailto'
 import { MailSlurp } from 'mailslurp-client'
 import { fileURLToPath } from 'node:url'
 import dotenv from 'dotenv'
-import retry from 'p-retry'
 import { getApiEndpoint } from './deployment.js'
 import { mustGetEnv } from '../../lib/env.js'
 
