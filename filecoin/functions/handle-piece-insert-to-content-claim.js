@@ -49,11 +49,9 @@ async function pieceCidReport (event) {
   if (results.error) {
     throw new Error(`failed to query indexer: ${record.content}`, { cause: results.error })
   }
-  if (!results.ok.claims.size) {
-    throw new Error(`missing location for content: ${record.content}`)
-  }
 
   // uploads to legacy spaces do not have a space DID in their location claim
+  // uploads via legacy store protocol will not have _any_ claims
   let isLegacySpace = true
   for (const claim of results.ok.claims.values()) {
     // if there's already an equals claim we are finished
