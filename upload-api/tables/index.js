@@ -56,7 +56,7 @@ export const allocationTableProps = {
     space: 'string',        // `did:key:space`
     multihash: 'string',         // `bagy...1`
     size: 'number',         // `101`
-    invocation: 'string',   // `baf...ucan` (CID of invcation UCAN)
+    cause: 'string',   // `baf...ucan` (CID of invcation UCAN)
     insertedAt: 'string',   // `2022-12-24T...`
   },
   // space + link must be unique to satisfy index constraint

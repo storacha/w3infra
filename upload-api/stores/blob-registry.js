@@ -394,7 +394,7 @@ export const useAllocationTableBlobRegistry = (registry, dynamoDb, tableName) =>
         digest: Digest.decode(base58btc.decode(raw.multihash)),
         size: raw.size
       },
-      cause: Link.parse(raw.invocation).toV1(),
+      cause: Link.parse(raw.cause ?? raw.invocation).toV1(),
       insertedAt: new Date(raw.insertedAt)
     })
   },
@@ -405,7 +405,7 @@ export const useAllocationTableBlobRegistry = (registry, dynamoDb, tableName) =>
       space,
       multihash: base58btc.encode(blob.digest.bytes),
       size: blob.size,
-      invocation: cause.toString(),
+      cause: cause.toString(),
       insertedAt: new Date().toISOString(),
     }
     const cmd = new PutItemCommand({
@@ -467,7 +467,7 @@ export const useAllocationTableBlobRegistry = (registry, dynamoDb, tableName) =>
         },
       },
       ExclusiveStartKey: exclusiveStartKey,
-      AttributesToGet: ['multihash', 'size', 'invocation', 'insertedAt'],
+      AttributesToGet: ['multihash', 'size', 'cause', 'invocation', 'insertedAt'],
     })
     const response = await dynamoDb.send(cmd)
 
@@ -501,9 +501,9 @@ export const useAllocationTableBlobRegistry = (registry, dynamoDb, tableName) =>
  * @param {Record<string, any>} item
  * @returns {BlobAPI.Entry}
  */
-export const allocationToEntry = ({ multihash, invocation, size, insertedAt }) => ({
+export const allocationToEntry = ({ multihash, cause, invocation, size, insertedAt }) => ({
   blob: { digest: Digest.decode(base58btc.decode(multihash)), size },
-  cause: invocation ? Link.parse(invocation).toV1() : Link.parse('bafkqaaa'),
+  cause: invocation ? Link.parse(cause ?? invocation).toV1() : Link.parse('bafkqaaa'),
   insertedAt: new Date(insertedAt),
 })
 
