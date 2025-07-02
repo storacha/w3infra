@@ -50,7 +50,7 @@ export async function pollQueryTable (dynamo, tableName, keyConditions, options 
   const response = await pRetry(async () => {
     const r = await dynamo.send(cmd)
     if (r.$metadata.httpStatusCode === 404 || !r.Count) {
-      throw new Error('not found in dynamoDB yet')
+      throw new Error(`not found in ${tableName} table yet`)
     }
     return r
   }, {

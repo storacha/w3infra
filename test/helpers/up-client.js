@@ -93,6 +93,8 @@ export async function setupNewClient (options = {}) {
   console.log(`    URL: ${uploadServiceURL}`)
   console.log(`  Filecoin Service: ${filecoinServicePrincipal.did()}`)
   console.log(`    URL: ${filecoinServiceURL}`)
+  console.log(`  Receipts:`)
+  console.log(`    URL: ${receiptsEndpoint}`)
 
   const [,account] = await Promise.all([
     (async () => {
@@ -135,7 +137,6 @@ export async function setupNewClient (options = {}) {
 
   return { client, account }
 }
-
 
 /**
  * @param {Client} client
