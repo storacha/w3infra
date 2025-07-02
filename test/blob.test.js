@@ -220,10 +220,12 @@ test('blob integration flow with receipts validation', withCauseLog(async t => {
 
   // Check receipts were written
   const receiptOptions = { receiptsEndpoint: receiptsEndpoint.toString(), retries: 10 }
-  const getPutTaskReceipt = await Receipt.poll(next?.put.task.link(), receiptOptions)
-  console.log(`Receipt for ${next?.put.task.link()} (http/put) found: ${getPutTaskReceipt.root.cid}`)
-  t.is(getPutTaskReceipt.out.error, undefined)
-  t.deepEqual(getPutTaskReceipt.out.ok, {})
+  // TODO: reinstate when this change lands in `@storacha/upload-client`:
+  // https://github.com/storacha/upload-service/pull/278/commits/8aeff82197a5ccd456a2aeaa093ca6bbc9a13b63
+  // const getPutTaskReceipt = await Receipt.poll(next?.put.task.link(), receiptOptions)
+  // console.log(`Receipt for ${next?.put.task.link()} (http/put) found: ${getPutTaskReceipt.root.cid}`)
+  // t.is(getPutTaskReceipt.out.error, undefined)
+  // t.deepEqual(getPutTaskReceipt.out.ok, {})
 
   const getAcceptTaskReceipt = (await Receipt.poll(next?.accept.task.link(), receiptOptions))
   console.log(`Receipt for ${next?.accept.task.link()} (blob/accept) found: ${getAcceptTaskReceipt.root.cid}`)
