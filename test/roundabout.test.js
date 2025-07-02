@@ -12,6 +12,7 @@ test.before(t => {
   }
 })
 
+// FIXME: uses live data in staging - will not pass in PRs
 test('HEAD /{cid}', async t => {
   const carparkCid = 'bagbaiera223xmiutg62dsthdyd6kqgsft25knslnlaxxvwe6nc4zrwezezeq'
   const response = await fetch(
@@ -25,9 +26,10 @@ test('HEAD /{cid}', async t => {
   t.truthy(response.headers.get('location'))
 })
 
+// FIXME: uses live data in staging - will not pass in PRs
 test('HEAD /{pieceCid}', async t => {
-  const pieceCid = 'bafkzcibdr4dqmqbpd2sw5776tv4262dvtzyoftihg5jwflvvbvd7pxhebk3l45bt'
-  const blobHash = 'zQmWw7DCqwG91Kxq9oBB24aMALTQ82iaTv861xn3e2zi1Ce'
+  const pieceCid = 'bafkzcibdr4dqmoetltnxbxun7ogidvbebjtux7luelji4uwnf6agxf3a4wukvlqp'
+  const blobHash = 'zQmV41DP4sTCXdeN5x9JmisywagcuNAu41AswT7zzE95Nze'
   const response = await fetch(
     `${t.context.roundaboutEndpoint}/${pieceCid}`,
     {
@@ -42,6 +44,7 @@ test('HEAD /{pieceCid}', async t => {
   console.log(response.headers.get('location'))
 })
 
+// FIXME: uses live data in staging - will not pass in PRs
 test('HEAD /key/{key}', async t => {
   const key = '0000c19bd9cd7fa9c532eba81428eda0_baga6ea4seaqpohse35l4xucs5mtabgewpp4mgtle7yym7em6ouvhgjb7wc2pcmq.car'
   const bucketName = 'dagcargo'
