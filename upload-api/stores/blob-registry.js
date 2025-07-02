@@ -503,7 +503,7 @@ export const useAllocationTableBlobRegistry = (registry, dynamoDb, tableName) =>
  */
 export const allocationToEntry = ({ multihash, cause, invocation, size, insertedAt }) => ({
   blob: { digest: Digest.decode(base58btc.decode(multihash)), size },
-  cause: invocation ? Link.parse(cause ?? invocation).toV1() : Link.parse('bafkqaaa'),
+  cause: (cause ?? invocation) ? Link.parse(cause ?? invocation).toV1() : Link.parse('bafkqaaa'),
   insertedAt: new Date(insertedAt),
 })
 
