@@ -237,7 +237,7 @@ export async function validateEmailPost(request) {
     // TODO: use AppName.BskyBackups from @storacha/client/types once we upgrade that dependency
     // I'd have done it now but upgrading causes linting issues and I want to save 
     // that rabbithole for later
-    if ((appName === 'bsky-backups') || (appName === 'tg-miniapp') || (appName === 'console')) {
+    if ((appName === 'bsky-backups') || (appName === 'tg-miniapp')) {
       // don't show a pricing table to bsky.storage or tg miniapp users
       stripePricingTableId = null
     } else if (isReferred) {
