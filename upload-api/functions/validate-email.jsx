@@ -234,11 +234,11 @@ export async function validateEmailPost(request) {
   const appName = facts.find(fact => fact.appName)?.appName
   if (!planCheckResult.ok?.product) {
     stripePublishableKey = context.stripePublishableKey
-    // TODO: use AppName.BskyBackups from @storacha/client/types once we upgrade that dependency
+    // TODO: use AppName.{BskyBackups,TGMiniapp,Console} from @storacha/client/types once we upgrade that dependency
     // I'd have done it now but upgrading causes linting issues and I want to save 
     // that rabbithole for later
-    if (appName === 'bsky-backups') {
-      // don't show a pricing table to bsky.storage users
+    if ((appName === 'bsky-backups') || (appName === 'tg-miniapp') || (appName === 'console')) {
+      // don't show a pricing table to bsky.storage, tg miniapp or console users
       stripePricingTableId = null
     } else if (isReferred) {
       stripePricingTableId = context.stripeFreeTrialPricingTableId 
