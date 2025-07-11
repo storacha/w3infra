@@ -112,7 +112,7 @@ export async function didDocumentGet() {
       'Content-Type': `application/json`,
     },
     body: JSON.stringify({
-      '@context': 'https://w3id.org/did/v1',
+      '@context': ['https://w3id.org/did/v1'],
       id: webKey,
       verificationMethod: [...verificationMethods, ...deprecatedVerificationMethods],
       assertionMethod: verificationMethods.map(k => k.id),
