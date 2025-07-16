@@ -7,7 +7,7 @@ import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
 import * as CSV from 'csv-stringify/sync'
 import fs from 'node:fs'
 import all from 'p-all'
-import { startOfLastMonth, startOfMonth } from '../../lib/util.js'
+import { startOfMonth } from '../../lib/util.js'
 import {
   calculateCost,
   createMemoryQueue,
@@ -27,6 +27,7 @@ import { createSpaceSnapshotStore } from '../../tables/space-snapshot.js'
 import * as Usage from '../../data/usage.js'
 import * as SpaceSnapshot from '../../data/space-snapshot.js'
 import { mustGetEnv } from '../../../lib/env.js'
+import { parseArgs } from '../utils.js'
 
 /** @typedef {import('../../lib/api.js').Usage & import('../../lib/api.js').SpaceSnapshot} UsageAndSnapshot */
 
@@ -59,42 +60,84 @@ const readableSpaceSnapshotStore = createSpaceSnapshotStore(dynamo, {
   tableName: SPACE_SNAPSHOT_TABLE_NAME,
 })
 
-/** @type {import('../../lib/api.js').StorePutter<import('../../lib/api.js').SpaceSnapshot> & import('../../lib/api.js').StoreLister<any, import('../../lib/api.js').SpaceSnapshot> & import('../../lib/api.js').StoreGetter<any, import('../../lib/api.js').SpaceSnapshot>} */
-const writableSpaceSnapshotStore = createMemoryStore()
-/** @type {import('../../lib/api.js').StorePutter<import('../../lib/api.js').Usage> & import('../../lib/api.js').StoreLister<any, import('../../lib/api.js').Usage> & import('../../lib/api.js').StoreGetter<any, import('../../lib/api.js').Usage>} */
-const usageStore = createMemoryStore()
 
-/** @type {import('../../lib/api.js').QueueAdder<import('../../lib/api.js').CustomerBillingInstruction> & import('../../test/lib/api.js').QueueRemover<import('../../lib/api.js').CustomerBillingInstruction>} */
+/**
+ *  @typedef {import('../../lib/api.js').CustomerBillingInstruction} CustomerBillingInstruction
+ *  @typedef {import('../../lib/api.js').StorePutter<import('../../lib/api.js').SpaceSnapshot> & import('../../lib/api.js').StoreLister<any, import('../../lib/api.js').SpaceSnapshot> & import('../../lib/api.js').StoreGetter<any, import('../../lib/api.js').SpaceSnapshot>} SpaceSnapshotStore 
+ *  @typedef {import('../../lib/api.js').StorePutter<import('../../lib/api.js').Usage> & import('../../lib/api.js').StoreLister<any, import('../../lib/api.js').Usage> & import('../../lib/api.js').StoreGetter<any, import('../../lib/api.js').Usage>} UsageStore
+ *  @typedef {import('../../lib/api.js').QueueAdder<import('../../lib/api.js').CustomerBillingInstruction> & import('../../test/lib/api.js').QueueRemover<import('../../lib/api.js').CustomerBillingInstruction>} CustomerBillingQueue
+ *  @typedef {import('../../lib/api.js').QueueAdder<import('../../lib/api.js').SpaceBillingInstruction> & import('../../test/lib/api.js').QueueRemover<import('../../lib/api.js').SpaceBillingInstruction>} SpaceBillingQueue
+ */
+
+/** @type SpaceSnapshotStore */
+const writableSpaceSnapshotStore = createMemoryStore()
+/** @type UsageStore */
+const usageStore = createMemoryStore()
+/** @type CustomerBillingQueue */
 const customerBillingQueue = createMemoryQueue()
-/** @type {import('../../lib/api.js').QueueAdder<import('../../lib/api.js').SpaceBillingInstruction> & import('../../test/lib/api.js').QueueRemover<import('../../lib/api.js').SpaceBillingInstruction>} */
+/** @type SpaceBillingQueue */
 const spaceBillingQueue = createMemoryQueue()
 
-const now = new Date()
-now.setUTCMonth(now.getUTCMonth() + 1)
-const from = startOfLastMonth(now)
-const to = startOfMonth(now)
+/**
+ * - `from=yyyy-mm-dd`: Start date. Defaults to the first day of the current month if not provided.
+ * - `to=yyyy-mm-dd`: End date. Defaults to the first day of the next month if not provided.
+ * - `customer=did:mailto:agent`: DID of the user account. Defaults to get all customers.
+ */
+const args = process.argv.slice(2)
+const { from: fromDate, to, customer } = parseArgs(args)
+const from = fromDate || (() => {
+  const now = new Date()
+  return startOfMonth(now) // first day of the current month
+})()
+const fileID = customer ? `${toDateString(from)}-${toDateString(to)}-${customer}`: `${toDateString(from)}-${toDateString(to)}`
 
 console.log(
   `Running billing for period: ${from.toISOString()} - ${to.toISOString()}`
 )
-expect(
-  await BillingCron.enqueueCustomerBillingInstructions(
-    { from, to },
-    {
-      customerStore,
-      customerBillingQueue,
-    }
-  )
-)
 
+/** @type CustomerBillingInstruction[] */
 const customerBillingInstructions = []
-while (true) {
-  const removeResult = await customerBillingQueue.remove()
-  if (removeResult.error) {
-    if (removeResult.error.name === EndOfQueue.name) break
-    throw removeResult.error
+
+if (customer) {
+  console.log(`Getting customer...`)
+
+  const { ok: record, error } = await customerStore.get({ customer })
+  if (error) throw error
+
+  if (record.account) {
+    customerBillingInstructions.push({
+      customer: record.customer,
+      account: record.account,
+      product: record.product,
+      from,
+      to,
+    })
+  } else {
+    throw new Error(
+      `Customer ${customer} does not have an account. Cannot run billing.`
+    )
   }
-  customerBillingInstructions.push(removeResult.ok)
+} else {
+  console.log(`Getting all customers...`)
+
+  expect(
+    await BillingCron.enqueueCustomerBillingInstructions(
+      { from, to },
+      {
+        customerStore,
+        customerBillingQueue,
+      }
+    )
+  )
+
+  while (true) {
+    const removeResult = await customerBillingQueue.remove()
+    if (removeResult.error) {
+      if (removeResult.error.name === EndOfQueue.name) break
+      throw removeResult.error
+    }
+    customerBillingInstructions.push(removeResult.ok)
+  }
 }
 
 await all(
@@ -158,7 +201,7 @@ for (const usage of usages) {
 }
 
 await fs.promises.writeFile(
-  `./usage-${toDateString(from)}-${toDateString(to)}.json`,
+  `./usage-${fileID}.json`,
   JSON.stringify(
     usageSnapshots.map((r) => ({
       ...Usage.encode(r).ok,
@@ -206,7 +249,7 @@ for (const [customer, usages] of usageByCustomer.entries()) {
 data.sort((a, b) => b[3] - a[3])
 
 await fs.promises.writeFile(
-  `./summary-${toDateString(from)}-${toDateString(to)}.csv`,
+  `./summary-${fileID}.csv`,
   CSV.stringify(data, {
     header: true,
     columns: ['Customer', 'Product', 'Bytes', 'Cost ($)'],

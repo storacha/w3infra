@@ -21,8 +21,7 @@ import { EndOfQueue } from '../../test/helpers/queue.js'
 import * as BillingCron from '../../lib/billing-cron.js'
 import * as SpaceBillingQueue from '../../lib/space-billing-queue.js'
 import * as CustomerBillingQueue from '../../lib/customer-billing-queue.js'
-import { startOfMonth } from '../../lib/util.js'
-import { Schema } from '../../data/lib.js'
+import { parseArgs } from '../utils.js'
 
 /**
  * @typedef {import('../../lib/api.js').CustomerDID} CustomerDID
@@ -80,7 +79,8 @@ const result = {}
  * Note: The allocations and stores retrieved have 'insertedAt' values greater than 'from' and less than or equal to 'to'.
  */
 const args = process.argv.slice(2)
-const { from, to, customer } = parseArgs(args)
+const { from: fromDate, to, customer } = parseArgs(args)
+const from = fromDate || new Date('1970-01-01') // since all time
 
 export async function main() {
   /** @type CustomerBillingInstruction[] */
@@ -209,57 +209,6 @@ try {
  *            FUNCTION DECLARATIONS
  * ===========================================
  */
-
-/**
- * @param {string} value
- * @returns {boolean}
- */
-function validateDateArg(value) {
-  return /^\d{4}-\d{2}-\d{2}$/.test(value)
-}
-
-/**
- * @param {string[]} args - Array of arguments in the format 'from=yyyy-mm-dd' or 'to=yyyy-mm-dd'.
- * @returns {{ from: Date, to: Date, customer?: CustomerDID }} - Object with parsed 'from' and 'to' dates.
- * @throws {Error} If the arguments are invalid or improperly formatted.
- */
-function parseArgs(args) {
-  const fromArg = args.find((e) => e.includes('from='))?.split('from=')[1]
-  const toArg = args.find((e) => e.includes('to='))?.split('to=')[1]
-  const customer = /** @type CustomerDID */ (
-    args.find((e) => e.includes('customer='))?.split('customer=')[1]
-  )
-
-  if (
-    (fromArg && !validateDateArg(fromArg)) ||
-    (toArg && !validateDateArg(toArg))
-  ) {
-    throw new Error('Expected argument in the format yyyy-mm-dd')
-  }
-
-  if (customer && Schema.did({ method: 'mailto' }).read(customer).error) {
-    throw new Error(`Invalid customer format: expected 'did:mailto:agent'.`)
-  }
-
-  const from = fromArg ? new Date(fromArg) : new Date('1970-01-01') // since all time
-  const to = toArg
-    ? new Date(toArg)
-    : (() => {
-        const now = new Date()
-        now.setUTCMonth(now.getUTCMonth() + 1)
-        return startOfMonth(now) // until first day of next month
-      })()
-
-  if (from > to) {
-    throw new Error("'from' date must be earlier than 'to' date")
-  }
-
-  return {
-    from,
-    to,
-    customer,
-  }
-}
 
 /**
  * @param  {CustomerBillingQueue | SpaceBillingQueue} queue
