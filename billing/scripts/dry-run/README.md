@@ -8,11 +8,17 @@ Create your own `.env.local` file and fill in the relevant details:
 cp billing/scripts/dry-run/.env.template billing/scripts/dry-run/.env.local
 ```
 
-Run the billing pipeline:
+You can run the billing pipeline using the following optional arguments:
+
+- `from=yyyy-mm-dd`: Start date. Defaults to the first day of the current month if not provided.
+- `to=yyyy-mm-dd`: End date. Defaults to the first day of the next month if not provided.
+- `customer=did:mailto:agent`: DID of the user account. Defaults to get all customers.
+
+**Example Command:**
 
 ```sh
 cd billing/scripts/dry-run
-node dry-run.js
+node dry-run.js from=2025-06-01 to=2025-07-01 customer=did:mailto:storacha.network:admin
 ```
 
 This will output a CSV file (`summary-[from]-[to].csv`) with ordered per customer information about what they will be charged.
