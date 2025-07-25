@@ -79,7 +79,7 @@ async function pieceCidReport (event) {
 
     context = {
       claimsService: {
-        connection: connection,
+        connection,
         invocationConfig: {
           issuer: getServiceSigner({ privateKey, did: storefrontDid }),
           audience: connection.id,
