@@ -147,59 +147,33 @@ export class SSORouter {
  *
  * @param {import('@ucanto/interface').Signer} serviceSigner - The service signer
  * @param {import('@storacha/upload-api').AgentStore} agentStore - The agent store
- * @param {Array<{name: string, service: import('./types.js').SSOProvider}>} providers - Array of provider objects with name and service
- * @returns {SSORouter | null}
+ * @param {Array<import('./types.js').SSOProvider & {name: string}>} providers - Array of SSO provider services with name property
+ * @returns {SSORouter}
  */
 export function createSSOService(serviceSigner, agentStore, providers) {
-  const router = new SSORouter(serviceSigner, agentStore)
-  let hasProviders = false
-
-  for (const provider of providers) {
-    if (provider.service) {
-      router.addProvider(provider.name, provider.service)
-      hasProviders = true
-    }
+  if (!providers || providers.length === 0 || !providers.every(provider => provider && provider.name)) {
+    throw new Error('SSO service requires at least one provider with a name')
   }
 
-  // Return null if no providers are configured, so that the SSO service is disabled
-  return hasProviders ? router : null
+  const router = new SSORouter(serviceSigner, agentStore)
+  for (const provider of providers) {
+    router.addProvider(provider.name, provider)
+  }
+
+  return router
 }
 
 /**
  * Create DMAIL SSO service from environment variables
  * 
  * @param {Record<string, string>} env - Environment variables
- * @returns {{name: string, service: DmailSSOService} | null}
+ * @returns {DmailSSOService}
  */
 export function createDmailSSOService(env) {
-  const apiKey = env.DMAIL_API_KEY
-  const apiSecret = env.DMAIL_API_SECRET
-  const jwtSecret = env.DMAIL_JWT_SECRET
-  const apiUrl = env.DMAIL_API_URL
-
-  if (!apiKey || !apiSecret) {
-    console.log('DMAIL API credentials not configured (missing DMAIL_API_KEY or DMAIL_API_SECRET), SSO disabled')
-    return null
-  }
-
-  if (!jwtSecret) {
-    console.log('DMAIL JWT secret not configured (missing DMAIL_JWT_SECRET), using API-only validation')
-  }
-
-  try {
-    const service = new DmailSSOService({
-      apiKey,
-      apiSecret,
-      jwtSecret,
-      apiUrl
+  return new DmailSSOService({
+      apiKey: env.DMAIL_API_KEY,
+      apiSecret: env.DMAIL_API_SECRET,
+      jwtSecret: env.DMAIL_JWT_SECRET,
+      apiUrl: env.DMAIL_API_URL
     })
-    
-    return {
-      name: 'dmail',
-      service
-    }
-  } catch (error) {
-    console.error('Failed to create DMAIL SSO service:', error instanceof Error ? error.message : String(error))
-    return null
-  }
 }

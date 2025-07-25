@@ -19,7 +19,6 @@ export interface SSOAuthResponse {
   userData: {
     id: string
     email: string
-    emailVerified: boolean
     accountStatus: string
   }
 }
@@ -38,6 +37,7 @@ export interface SSOService {
  * SSO provider can validate a SSO auth request.
  */
 export interface SSOProvider {
+  name: string
   validate: (
     ssoAuthRequest: SSOAuthRequest
   ) => Await<Result<SSOAuthResponse, Error>>

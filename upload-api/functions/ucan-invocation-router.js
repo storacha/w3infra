@@ -322,26 +322,13 @@ export async function ucanInvocationRouter(request) {
   const storageProviderTable = createStorageProviderTable(AWS_REGION, storageProviderTableName, options)
   const routingService = createRoutingService(storageProviderTable, serviceSigner)
 
-  // Configure SSO service with available providers
-  let ssoService
-  try {
-    const dmailSSOService = createDmailSSOService({
-      DMAIL_API_KEY: mustGetEnv('DMAIL_API_KEY'),
-      DMAIL_API_SECRET: mustGetEnv('DMAIL_API_SECRET'),
-      DMAIL_JWT_SECRET: process.env.DMAIL_JWT_SECRET || 'unused', // if undefined, we set it to a dummy value to bypass JWT validation
-      DMAIL_API_URL: process.env.DMAIL_API_URL || 'https://api.dmail.ai/open/api/storacha/getUserStatus',
-    })
-    
-    const providers = []
-    if (dmailSSOService) {
-      providers.push(dmailSSOService)
-    }
-    
-    ssoService = createSSOService(serviceSigner, agentStore, providers)
-  } catch (error) {
-    console.log('SSO service not configured - SSO authentication disabled:', error instanceof Error ? error.message : String(error))
-    ssoService = null
-  }
+  const dmailSSOService = createDmailSSOService({
+    DMAIL_API_KEY: mustGetEnv('DMAIL_API_KEY'),
+    DMAIL_API_SECRET: mustGetEnv('DMAIL_API_SECRET'),
+    DMAIL_JWT_SECRET: process.env.DMAIL_JWT_SECRET || 'unused', // if undefined, we set it to a dummy value to bypass JWT validation
+    DMAIL_API_URL: process.env.DMAIL_API_URL || 'https://api.dmail.ai/open/api/storacha/getUserStatus',
+  })
+  const ssoService = createSSOService(serviceSigner, agentStore, [dmailSSOService])
 
   let audience // accept invocations addressed to any alias
   const proofs = [] // accept attestations issued by any alias

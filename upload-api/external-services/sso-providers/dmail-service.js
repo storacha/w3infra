@@ -36,6 +36,7 @@ export class DmailSSOService {
    * @param {string} config.apiUrl - DMAIL API base URL
    */
   constructor(config) {
+    this.name = 'dmail'
     this.apiKey = config.apiKey
     this.apiSecret = config.apiSecret
     this.jwtSecret = config.jwtSecret
@@ -52,9 +53,6 @@ export class DmailSSOService {
     if (!this.jwtSecret) {
       throw new Error('DMAIL JWT shared secret is required for token verification')
     }
-
-    // Track JWT IDs to prevent replay attacks
-    this.usedJwtIds = new Set()
   }
 
   /**
@@ -81,7 +79,7 @@ export class DmailSSOService {
       // Step 2: Validate user with DMAIL API (real-time status)
       const apiResult = await this.validateWithAPI(email, externalUserId)
       if (apiResult.error) {
-        return error(new Error(`DMAIL API validation failed: ${apiResult.error.message}`))
+        return error(new Error(`DMAIL API validation failed: ${apiResult.error.message}`, { cause: apiResult.error }))
       }
 
       return ok(apiResult.ok)
@@ -159,24 +157,6 @@ export class DmailSSOService {
         throw new Error('JWT userId claim does not match request userId')
       }
 
-      // 5. Prevent replay attacks
-      if (payload.jti) {
-        if (this.usedJwtIds.has(payload.jti)) {
-          throw new Error('JWT token invalid')
-        }
-        this.usedJwtIds.add(payload.jti)
-
-        // Clean up old JTIs after 1 hour to prevent memory leak
-        setTimeout(() => {
-          this.usedJwtIds.delete(payload.jti)
-        }, 60 * 60 * 1000)
-      }
-
-      // 6. Verify issued time is reasonable (within last hour)
-      if (payload.iat && (now - payload.iat) > 3600) {
-        throw new Error('JWT token too old')
-      }
-
       return payload
     } catch (error) {
       throw new Error(`JWT verification failed: ${error instanceof Error ? error.message : String(error)}`)
@@ -233,7 +213,6 @@ export class DmailSSOService {
         userData: {
           id: user.id,
           email: user.email,
-          emailVerified: user.emailVerified,
           accountStatus: user.accountStatus
         }
       })
