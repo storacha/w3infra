@@ -1,4 +1,33 @@
 import * as DidMailto from '@storacha/did-mailto'
+import { Failure } from '@ucanto/core'
+import { RecordNotFound } from '../tables/lib.js'
+
+export class CustomerFoundWithDifferentStripeAccount extends Failure {
+  /**
+   * @param {string} customer
+   * @param {string} expectedAccount
+   * @param {string} foundAccount
+   */
+  constructor(customer, expectedAccount, foundAccount) {
+    super()
+    this.customer = customer
+    this.expectedAccount = expectedAccount
+    this.foundAccount = foundAccount
+  }
+
+  describe() {
+    return `expected ${this.customer} to have account ${this.expectedAccount} but got ${this.foundAccount}`
+  }
+
+  toJSON() {
+    return {
+      ...super.toJSON(),
+      customer: this.customer,
+      expectedAccount: this.expectedAccount,
+      foundAccount: this.foundAccount
+    }
+  }
+}
 
 /**
  * @typedef {import('../lib/api.js').AccountID} AccountID
@@ -55,13 +84,33 @@ export async function handleCustomerSubscriptionCreated(stripe, event, customerS
       stripeCustomer.email
     ))
 
-    return customerStore.put({
-      customer,
-      account,
-      product,
-      insertedAt: new Date(),
-      updatedAt: new Date()
-    })
+    const customerResult = await customerStore.get({ customer })
+    if (customerResult.ok) {
+      const customerRecord = customerResult.ok
+      if (customerRecord.account && (customerRecord.account !== account)) {
+        return {
+          error: new CustomerFoundWithDifferentStripeAccount(customer, customerRecord.account, account)
+        }
+      }
+
+      return customerStore.put({
+        ...customerRecord,
+        account,
+        product,
+        updatedAt: new Date()
+      })
+    } else if (customerResult.error instanceof RecordNotFound) {
+      return customerStore.put({
+        customer,
+        account,
+        product,
+        insertedAt: new Date(),
+        updatedAt: new Date()
+      })
+    } else {
+      // it's an error result but we don't know how to handle it - propagate it!
+      return customerResult
+    }
   }
 }
 
