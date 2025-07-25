@@ -49,6 +49,7 @@ import { mustGetEnv } from '../../lib/env.js'
 import { createEgressTrafficQueue } from '../../billing/queues/egress-traffic.js'
 import { create as createRoutingService } from '../external-services/router.js'
 import { create as createBlobRetriever } from '../external-services/blob-retriever.js'
+import { createSSOService, createDmailSSOService } from '../external-services/sso-providers/index.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -321,6 +322,26 @@ export async function ucanInvocationRouter(request) {
   const storageProviderTable = createStorageProviderTable(AWS_REGION, storageProviderTableName, options)
   const routingService = createRoutingService(storageProviderTable, serviceSigner)
 
+  // Configure SSO service with available providers
+  let ssoService
+  try {
+    const dmailSSOService = createDmailSSOService({
+      DMAIL_API_KEY: mustGetEnv('DMAIL_API_KEY'),
+      DMAIL_API_SECRET: mustGetEnv('DMAIL_API_SECRET'),
+      DMAIL_JWT_SECRET: process.env.DMAIL_JWT_SECRET || 'unused', // if undefined, we set it to a dummy value to bypass JWT validation
+      DMAIL_API_URL: process.env.DMAIL_API_URL || 'https://api.dmail.ai/open/api/storacha/getUserStatus',
+    })
+    
+    const providers = []
+    if (dmailSSOService) {
+      providers.push(dmailSSOService)
+    }
+    
+    ssoService = createSSOService(serviceSigner, agentStore, providers)
+  } catch (error) {
+    console.log('SSO service not configured - SSO authentication disabled:', error instanceof Error ? error.message : String(error))
+    ssoService = null
+  }
 
   let audience // accept invocations addressed to any alias
   const proofs = [] // accept attestations issued by any alias
@@ -401,7 +422,8 @@ export async function ucanInvocationRouter(request) {
     claimsService: claimsServiceConfig,
     indexingService: indexingServiceConfig,
     maxReplicas: MAX_REPLICAS ? parseInt(MAX_REPLICAS) : 2,
-    replicaStore: createReplicaTable(AWS_REGION, replicaTableName)
+    replicaStore: createReplicaTable(AWS_REGION, replicaTableName),
+    ssoService,
   })
 
   const connection = UploadAPI.connect({
@@ -500,5 +522,10 @@ function getLambdaEnv() {
       ({ ...knownWebDIDs, ...JSON.parse(process.env.PRINCIPAL_MAPPING || '{}') }),
     // set for testing
     dbEndpoint: process.env.DYNAMO_DB_ENDPOINT,
+    // SSO provider configuration (optional)
+    dmailApiKey: process.env.DMAIL_API_KEY,
+    dmailApiSecret: process.env.DMAIL_API_SECRET,
+    dmailJwtSecret: process.env.DMAIL_JWT_SECRET,
+    dmailApiUrl: process.env.DMAIL_API_URL,
   }
 }
