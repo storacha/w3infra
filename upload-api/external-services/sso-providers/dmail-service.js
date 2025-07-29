@@ -2,7 +2,6 @@ import crypto from 'crypto'
 import pRetry from 'p-retry'
 import { ok, error } from '@ucanto/core'
 
-
 /**
  * @typedef {object} User
  * @property {string} id
@@ -20,12 +19,18 @@ import { ok, error } from '@ucanto/core'
  */
 
 /**
+ * @typedef {import('@storacha/upload-api/types').SSOProvider} SSOProvider
+ * @typedef {import('@storacha/upload-api/types').SSOAuthParams} SSOAuthParams
+ * @typedef {import('@storacha/upload-api/types').SSOAuthResponse} SSOAuthResponse
+ */
+
+/**
  * DMAIL SSO Service Implementation
  * 
  * Provides JWT verification + API validation for DMAIL users
  * Based on the validation logic from ../storacha/dmail-user-verification
  * 
- * Implements the SSOProvider interface from types.js
+ * @implements {SSOProvider}
  */
 export class DmailSSOService {
   /**
@@ -59,11 +64,11 @@ export class DmailSSOService {
    * Validate SSO request with JWT + API validation
    * Implements the SSOProvider interface expected by upload-service
    * 
-   * @param {import('./types.js').SSOAuthRequest} request
-   * @returns {Promise<import('@ucanto/server').Result<import('./types.js').SSOAuthResponse, Error>>}
+   * @param {SSOAuthParams} ssoAuthParams
+   * @returns {Promise<import('@ucanto/server').Result<SSOAuthResponse, Error>>}
    */
-  async validate(request) {
-    const { authProvider, email, externalUserId, externalSessionToken } = request
+  async validate(ssoAuthParams) {
+    const { authProvider, email, externalUserId, externalSessionToken } = ssoAuthParams
 
     // Verify this is a DMAIL request
     if (authProvider !== 'dmail') {
@@ -168,7 +173,7 @@ export class DmailSSOService {
    *
    * @param {string} email - User email
    * @param {string} externalUserId - External user ID
-   * @returns {Promise<import('@ucanto/server').Result<import('./types.js').SSOAuthResponse, Error>>} API validation result
+   * @returns {Promise<import('@ucanto/server').Result<SSOAuthResponse, Error>>} API validation result
    */
   async validateWithAPI(email, externalUserId) {
     const payload = { email, userId: externalUserId }
