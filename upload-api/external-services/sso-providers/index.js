@@ -6,7 +6,7 @@ import { uploadServiceConnection } from '@storacha/client/service'
 import * as Transport from '@ucanto/transport/car'
 import * as Validator from '@ucanto/validator'
 import { Verifier } from '@ucanto/principal'
-import { AgentMessage } from '@web3-storage/upload-api'
+import { AgentMessage } from '@storacha/upload-api'
 
 /**
  * @typedef {import('@storacha/upload-api/types').SSOProvider} SSOProvider
