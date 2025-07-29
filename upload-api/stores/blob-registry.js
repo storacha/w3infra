@@ -116,6 +116,10 @@ export const useBlobRegistry = (
       const cmd = new GetItemCommand({
         TableName: blobRegistryTableName,
         Key: key,
+        // Enable consistent reads since `find` is typically called when we need
+        // to know 100% if a blob is registered or not, e.g. when registering an
+        // index.
+        ConsistentRead: true,
       })
 
       const response = await dynamoDb.send(cmd)
@@ -381,6 +385,10 @@ export const useAllocationTableBlobRegistry = (registry, dynamoDb, tableName) =>
     const cmd = new GetItemCommand({
       TableName: tableName,
       Key: key,
+      // Enable consistent reads since `find` is typically called when we need
+      // to know 100% if a blob is registered or not, e.g. when registering an
+      // index.
+      ConsistentRead: true,
     })
 
     const response = await dynamoDb.send(cmd)
