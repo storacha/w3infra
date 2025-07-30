@@ -12,6 +12,7 @@
     "remove": "sst remove",
     "console": "sst console",
     "lint": "tsc && eslint '**/*.js' '**/*.jsx'",
+    "lint:fix": "tsc && eslint '**/*.js' '**/*.jsx' --fix",
     "clean": "rm -rf dist node_modules pnpm-lock.yaml ./*/{.cache,dist,node_modules}",
     "test": "pnpm -r --if-present run test",
     "test-integration": "ava --verbose --serial --timeout=660s --fail-fast test/*.test.js",
