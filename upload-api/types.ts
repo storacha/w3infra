@@ -262,7 +262,17 @@ declare module 'sst/node/config' {
     /** @deprecated */
     CONTENT_CLAIMS_PRIVATE_KEY: {
       value: string
-    }
+    },
+    // Dmail API Integration
+    DMAIL_API_KEY: {
+      value: string
+    },
+    DMAIL_API_SECRET: {
+      value: string
+    },
+    DMAIL_JWT_SECRET: {
+      value: string
+    },
   }
 }
 
