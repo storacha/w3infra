@@ -73,6 +73,11 @@ export function UploadApiStack({ stack, app }) {
   const git = getGitInfo()
   const ucanInvocationPostbasicAuth = new Config.Secret(stack, 'UCAN_INVOCATION_POST_BASIC_AUTH')
 
+  // Dmail API Integration
+  const dmailApiKey = new Config.Secret(stack, 'DMAIL_API_KEY')
+  const dmailApiSecret = new Config.Secret(stack, 'DMAIL_API_SECRET')
+  const dmailJwtSecret = new Config.Secret(stack, 'DMAIL_JWT_SECRET')
+
   const apis = (customDomains ?? [undefined]).map((customDomain, idx) => {
     const hostedZone = customDomain?.hostedZone
     // the first customDomain will be web3.storage, and we don't want the apiId for that domain to have a second part, see PR of this change for context
@@ -147,6 +152,8 @@ export function UploadApiStack({ stack, app }) {
               DMAIL_API_URL: process.env.DMAIL_API_URL ?? '',
               DID: process.env.UPLOAD_API_DID ?? '',
               DISABLE_IPNI_PUBLISHING,
+              DMAIL_API_URL: process.env.DMAIL_API_URL ?? 'https://api.dmail.ai/open/api/storacha/getUserStatus',
+              ENABLE_CUSTOMER_TRIAL_PLAN: process.env.ENABLE_CUSTOMER_TRIAL_PLAN ?? 'false',
               EGRESS_TRAFFIC_QUEUE_URL: egressTrafficQueue.queueUrl,
               FILECOIN_SUBMIT_QUEUE_URL: filecoinSubmitQueue.queueUrl,
               INDEXING_SERVICE_DID,
@@ -185,6 +192,9 @@ export function UploadApiStack({ stack, app }) {
               indexingServiceProof,
               privateKey,
               stripeSecretKey,
+              dmailApiKey,
+              dmailApiSecret,
+              dmailJwtSecret,
             ]
           }
         },
