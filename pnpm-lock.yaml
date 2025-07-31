@@ -82,38 +82,38 @@ catalogs:
       specifier: ^7.74.1
       version: 7.120.3
     '@storacha/access':
-      specifier: ^1.5.0
-      version: 1.5.0
+      specifier: ^1.5.1
+      version: 1.5.1
     '@storacha/blob-index':
-      specifier: ^1.0.5
-      version: 1.0.5
+      specifier: ^1.2.0
+      version: 1.2.0
     '@storacha/capabilities':
-      specifier: ^1.7.0
+      specifier: ^1.8.0
       version: 1.8.0
     '@storacha/client':
-      specifier: ^1.2.6
-      version: 1.7.0
+      specifier: ^1.7.2
+      version: 1.7.2
     '@storacha/did-mailto':
-      specifier: ^1.0.1
+      specifier: ^1.0.2
       version: 1.0.2
     '@storacha/filecoin-api':
-      specifier: ^1.1.6
-      version: 1.1.7
+      specifier: ^1.1.11
+      version: 1.1.11
     '@storacha/filecoin-client':
-      specifier: ^1.0.6
-      version: 1.0.6
+      specifier: ^1.0.10
+      version: 1.0.10
     '@storacha/indexing-service-client':
-      specifier: ^2.3.0
-      version: 2.3.0
+      specifier: ^2.5.0
+      version: 2.5.0
     '@storacha/one-webcrypto':
       specifier: ^1.0.1
       version: 1.0.1
     '@storacha/upload-api':
-      specifier: ^2.1.0
-      version: 2.1.0
+      specifier: ^2.1.2
+      version: 2.1.2
     '@storacha/upload-client':
-      specifier: ^1.0.9
-      version: 1.0.9
+      specifier: ^1.3.0
+      version: 1.3.0
     '@tsconfig/node16':
       specifier: ^1.0.3
       version: 1.0.4
@@ -365,31 +365,31 @@ importers:
         version: 12.4.0
       '@storacha/access':
         specifier: 'catalog:'
-        version: 1.5.0
+        version: 1.5.1
       '@storacha/blob-index':
         specifier: 'catalog:'
-        version: 1.0.5
+        version: 1.2.0
       '@storacha/capabilities':
         specifier: 'catalog:'
         version: 1.8.0
       '@storacha/client':
         specifier: 'catalog:'
-        version: 1.7.0(encoding@0.1.13)
+        version: 1.7.2(encoding@0.1.13)
       '@storacha/did-mailto':
         specifier: 'catalog:'
         version: 1.0.2
       '@storacha/filecoin-client':
         specifier: 'catalog:'
-        version: 1.0.6
+        version: 1.0.10
       '@storacha/indexing-service-client':
         specifier: 'catalog:'
-        version: 2.3.0
+        version: 2.5.0
       '@storacha/upload-api':
         specifier: 'catalog:'
-        version: 2.1.0
+        version: 2.1.2
       '@storacha/upload-client':
         specifier: 'catalog:'
-        version: 1.0.9(encoding@0.1.13)
+        version: 1.3.0(encoding@0.1.13)
       '@tsconfig/node16':
         specifier: 'catalog:'
         version: 1.0.4
@@ -512,7 +512,7 @@ importers:
         version: 6.2.1
       sst:
         specifier: 'catalog:'
-        version: 2.48.5(@jest/transform@29.7.0)(@jest/types@29.6.3)(aws-crt@1.26.2)(babel-jest@29.7.0(@babel/core@7.26.10))(encoding@0.1.13)(typescript@5.8.3)
+        version: 2.48.5(@jest/transform@29.7.0)(@jest/types@29.6.3)(aws-crt@1.26.2)(babel-jest@29.7.0(@babel/core@7.26.10))(encoding@0.1.13)(typescript@3.9.10)
       stripe:
         specifier: 'catalog:'
         version: 14.25.0
@@ -622,13 +622,13 @@ importers:
         version: 7.120.3
       '@storacha/filecoin-api':
         specifier: 'catalog:'
-        version: 1.1.7
+        version: 1.1.11
       '@storacha/filecoin-client':
         specifier: 'catalog:'
-        version: 1.0.6
+        version: 1.0.10
       '@storacha/indexing-service-client':
         specifier: 'catalog:'
-        version: 2.3.0
+        version: 2.5.0
       '@ucanto/client':
         specifier: 'catalog:'
         version: 9.0.1
@@ -827,7 +827,7 @@ importers:
         version: 7.120.3
       '@storacha/indexing-service-client':
         specifier: 'catalog:'
-        version: 2.3.0
+        version: 2.5.0
     devDependencies:
       '@ipld/car':
         specifier: 'catalog:'
@@ -873,7 +873,7 @@ importers:
     dependencies:
       '@storacha/upload-api':
         specifier: 'catalog:'
-        version: 2.1.0
+        version: 2.1.2
     devDependencies:
       '@aws-sdk/client-dynamodb':
         specifier: 'catalog:'
@@ -940,7 +940,7 @@ importers:
         version: 7.120.3
       '@storacha/access':
         specifier: 'catalog:'
-        version: 1.5.0
+        version: 1.5.1
       '@storacha/capabilities':
         specifier: 'catalog:'
         version: 1.8.0
@@ -949,13 +949,13 @@ importers:
         version: 1.0.2
       '@storacha/indexing-service-client':
         specifier: 'catalog:'
-        version: 2.3.0
+        version: 2.5.0
       '@storacha/one-webcrypto':
         specifier: 'catalog:'
         version: 1.0.1
       '@storacha/upload-api':
         specifier: 'catalog:'
-        version: 2.1.0
+        version: 2.1.2
       '@ucanto/client':
         specifier: 'catalog:'
         version: 9.0.1
@@ -4051,16 +4051,8 @@ packages:
     resolution: {integrity: sha512-JtaY3FxmD+te+KSI2FJuEcfNC9T/DGGVf551babM7fAaXhjJUt7oSYurH1Devxd2+BOSUACCgt3buinx4UnmEA==}
     engines: {node: '>=18.0.0'}
 
-  '@storacha/access@1.5.0':
-    resolution: {integrity: sha512-Ow5qKzif1UTbNVJZ61jpEt459mrNtlP9OZsWZ/pvK8rrZQ4+jkNpFh1XLp3+LfGoCNz9d5dNjaAy87g6/fNy3Q==}
-
-  '@storacha/blob-index@1.0.5':
-    resolution: {integrity: sha512-+4BGGM47Ypvx71zkdD2Y4xvkoDXQpZGM4Lawx036EEvQukmKvz/lvWmGFf9VknW3qUE2LYG1iTJWqDjl6waEjw==}
-    engines: {node: '>=16.15'}
-
-  '@storacha/blob-index@1.1.0':
-    resolution: {integrity: sha512-f8+e7N6ww/YJ83Z4GeeGuQevVueRLg3StB0kv36ia/RkOWGBzqzoDQvXnxTY5rTJzcDT712pZdVcdHJX6jwbkg==}
-    engines: {node: '>=16.15'}
+  '@storacha/access@1.5.1':
+    resolution: {integrity: sha512-cfve2KBekPOXwJX8cziEK0Ll+iyBakDLVTTsumr53eyiO3okOs2+d1CBuoU5E9Zy+Ps63i0KgW5eayLsRUC+Vg==}
 
   '@storacha/blob-index@1.1.0-rc.0':
     resolution: {integrity: sha512-LTPfv0POAKbFJAem1Iz7utZzlh2auIhUZ7TQYz9YM9tZOWXwWz4oKXv6v0sXsqK5NGZsnolT5iQbNJ2f8GXZBg==}
@@ -4077,8 +4069,8 @@ packages:
   '@storacha/capabilities@1.8.0':
     resolution: {integrity: sha512-39G/oFqmdmyRDG3GCG1TFkna0jWRPSvT0TPtAgQ0d7LVL0fVwo3Ryu7clnoa6PcdcC8VmsuHN/YC0IvhEdYKug==}
 
-  '@storacha/client@1.7.0':
-    resolution: {integrity: sha512-YqBsXMACXekcjlEhmzluL+oZS1N0xn38PP2kUCBmmBbKcu0KUXTxRQ5OGTlQwFqOrKpHpcb7a6+OmlZOGoDW6g==}
+  '@storacha/client@1.7.2':
+    resolution: {integrity: sha512-ToYIDV/PvSSYY4rQGByQO5T5aqP+Qs4ZXu/rPgq9ypKcWwcuAuVoJ3eLo8TsS8FSqCnGDGdV0d89Y/8jWzQVWw==}
     engines: {node: '>=18'}
 
   '@storacha/did-mailto@1.0.2':
@@ -4089,31 +4081,21 @@ packages:
     resolution: {integrity: sha512-K36jhA9i8ukuWvjK5spkvhl+bxb6sGMuwKSAz3rXmP9eruAa114NVNmwIEk8lyhTuMU5ZCDev+lfvlnf0nl+kQ==}
     engines: {node: '>=16.15'}
 
-  '@storacha/filecoin-api@1.1.7':
-    resolution: {integrity: sha512-g+cd1jOSnEvKK/xSGsyIdZ86iQBKzrEENW6LIo9AlAc3npjZOtv0SD4eE3XibAwGso33L2r1GesB3Pt9Q7eCrg==}
-    engines: {node: '>=16.15'}
-
   '@storacha/filecoin-client@1.0.10':
     resolution: {integrity: sha512-ThsR4le2Uj10Ad2zH/sbk1fF9Gha0WMk1bp4GSh7j0eaSCAdjMgoFjqLAbcR3iQDi/plGtxBRdcPIgc+tYqgmw==}
-
-  '@storacha/filecoin-client@1.0.6':
-    resolution: {integrity: sha512-2ESQNvYqsStjktcn5PDHM97jAUEEUPIgCI9We85NTzMkIUTmSDWWOn3tI15MlwJo9Er+XBoogmQ2znQ/XaW0Dg==}
 
   '@storacha/indexing-service-client@2.2.0-rc.3':
     resolution: {integrity: sha512-eyEW3EVkWBiNim5YEfK4gV/Qbocc8EQcaavuewpz79/+z32ICYvzJVZrNBNxgxvSBiIi8qtuc++1bvgoSNWL5w==}
 
-  '@storacha/indexing-service-client@2.3.0':
-    resolution: {integrity: sha512-BOHUVe63PubgxzRXM80bZ4KzlD/yet/S0xi87KTbhc4rKzcc73XbbVZgGw02zx8uDgazzOU5ucJXdL6dFwkOag==}
+  '@storacha/indexing-service-client@2.5.0':
+    resolution: {integrity: sha512-3HAMr5L7cowTY8y40TUM+QoT+B8JO9pLYnFu3w4uZdSLojIqBHJXGVLnYfYIkV2r2X+zUvXL2C8ROJWlSgE5og==}
 
   '@storacha/one-webcrypto@1.0.1':
     resolution: {integrity: sha512-bD+vWmcgsEBqU0Dz04BR43SA03bBoLTAY29vaKasY9Oe8cb6XIP0/vkm0OS2UwKC13c8uRgFW4rjJUgDCNLejQ==}
 
-  '@storacha/upload-api@2.1.0':
-    resolution: {integrity: sha512-DSWd3cAHDvRuwsRfHwZFajcsYeQV6FDWcYhbgTSKE5k9kJusm4Orl99Dp2DDPofGp5bEXr9gr+OOdmu4FrZnIA==}
+  '@storacha/upload-api@2.1.2':
+    resolution: {integrity: sha512-RsvX1adut8zOpG5PBtFFmKYWM4WfCebaPW2OwUcgfLlr7hBXhqFsyqWPaVZXElGT76m/C10LIgdz4ARyNFIKQQ==}
     engines: {node: '>=16.15'}
-
-  '@storacha/upload-client@1.0.9':
-    resolution: {integrity: sha512-hW0LwhVb22FfmttuaJ1JK6Zw0/02OVS0TiBtmQCoPEhY3C1e/muZ2OYkzbeK2i+hGUUCI+s2l/JyzOIiVWKsjw==}
 
   '@storacha/upload-client@1.3.0':
     resolution: {integrity: sha512-n3A2oQf6jzDzASRIVJmsa9jYzqeS7vpt3TtauwGBj9TWAWX2QqW+bV5QnuoazzKECFRr/q+mjkBR4+51ByOEHw==}
@@ -13923,7 +13905,7 @@ snapshots:
       '@multiformats/murmur3': 2.1.8
       '@perma/map': 1.0.3
       actor: 2.3.1
-      multiformats: 13.3.2
+      multiformats: 13.3.6
       protobufjs: 7.4.0
       rabin-rs: 2.1.0
 
@@ -13956,6 +13938,41 @@ snapshots:
       jest-message-util: 29.7.0
       jest-util: 29.7.0
       slash: 3.0.0
+
+  '@jest/core@29.7.0(ts-node@10.9.2(@types/node@18.19.86)(typescript@3.9.10))':
+    dependencies:
+      '@jest/console': 29.7.0
+      '@jest/reporters': 29.7.0
+      '@jest/test-result': 29.7.0
+      '@jest/transform': 29.7.0
+      '@jest/types': 29.6.3
+      '@types/node': 22.14.0
+      ansi-escapes: 4.3.2
+      chalk: 4.1.2
+      ci-info: 3.9.0
+      exit: 0.1.2
+      graceful-fs: 4.2.11
+      jest-changed-files: 29.7.0
+      jest-config: 29.7.0(@types/node@22.14.0)(ts-node@10.9.2(@types/node@18.19.86)(typescript@3.9.10))
+      jest-haste-map: 29.7.0
+      jest-message-util: 29.7.0
+      jest-regex-util: 29.6.3
+      jest-resolve: 29.7.0
+      jest-resolve-dependencies: 29.7.0
+      jest-runner: 29.7.0
+      jest-runtime: 29.7.0
+      jest-snapshot: 29.7.0
+      jest-util: 29.7.0
+      jest-validate: 29.7.0
+      jest-watcher: 29.7.0
+      micromatch: 4.0.8
+      pretty-format: 29.7.0
+      slash: 3.0.0
+      strip-ansi: 6.0.1
+    transitivePeerDependencies:
+      - babel-plugin-macros
+      - supports-color
+      - ts-node
 
   '@jest/core@29.7.0(ts-node@10.9.2(@types/node@18.19.86)(typescript@5.8.3))':
     dependencies:
@@ -16006,7 +16023,7 @@ snapshots:
       '@smithy/types': 4.2.0
       tslib: 2.8.1
 
-  '@storacha/access@1.5.0':
+  '@storacha/access@1.5.1':
     dependencies:
       '@ipld/car': 5.4.0
       '@ipld/dag-ucan': 3.4.5
@@ -16025,28 +16042,6 @@ snapshots:
       multiformats: 13.3.6
       p-defer: 4.0.1
       type-fest: 4.39.1
-      uint8arrays: 5.1.0
-
-  '@storacha/blob-index@1.0.5':
-    dependencies:
-      '@ipld/dag-cbor': 9.2.2
-      '@storacha/capabilities': 1.8.0
-      '@storacha/one-webcrypto': 1.0.1
-      '@ucanto/core': 10.4.0
-      '@ucanto/interface': 10.3.0
-      carstream: 2.3.0
-      multiformats: 13.3.2
-      uint8arrays: 5.1.0
-
-  '@storacha/blob-index@1.1.0':
-    dependencies:
-      '@ipld/dag-cbor': 9.2.3
-      '@storacha/capabilities': 1.8.0
-      '@storacha/one-webcrypto': 1.0.1
-      '@ucanto/core': 10.4.0
-      '@ucanto/interface': 10.3.0
-      carstream: 2.3.0
-      multiformats: 13.3.6
       uint8arrays: 5.1.0
 
   '@storacha/blob-index@1.1.0-rc.0':
@@ -16092,10 +16087,10 @@ snapshots:
       '@web3-storage/data-segment': 5.3.0
       multiformats: 13.3.6
 
-  '@storacha/client@1.7.0(encoding@0.1.13)':
+  '@storacha/client@1.7.2(encoding@0.1.13)':
     dependencies:
       '@ipld/dag-ucan': 3.4.5
-      '@storacha/access': 1.5.0
+      '@storacha/access': 1.5.1
       '@storacha/blob-index': 1.2.0
       '@storacha/capabilities': 1.8.0
       '@storacha/did-mailto': 1.0.2
@@ -16126,30 +16121,7 @@ snapshots:
       fr32-sha2-256-trunc254-padded-binary-tree-multihash: 3.3.0
       p-map: 6.0.0
 
-  '@storacha/filecoin-api@1.1.7':
-    dependencies:
-      '@ipld/dag-ucan': 3.4.5
-      '@storacha/capabilities': 1.8.0
-      '@ucanto/client': 9.0.1
-      '@ucanto/core': 10.4.0
-      '@ucanto/interface': 10.3.0
-      '@ucanto/server': 10.2.0
-      '@ucanto/transport': 9.2.0
-      '@web3-storage/content-claims': 5.2.1
-      '@web3-storage/data-segment': 5.3.0
-      fr32-sha2-256-trunc254-padded-binary-tree-multihash: 3.3.0
-      p-map: 6.0.0
-
   '@storacha/filecoin-client@1.0.10':
-    dependencies:
-      '@ipld/dag-ucan': 3.4.5
-      '@storacha/capabilities': 1.8.0
-      '@ucanto/client': 9.0.1
-      '@ucanto/core': 10.4.0
-      '@ucanto/interface': 10.3.0
-      '@ucanto/transport': 9.2.0
-
-  '@storacha/filecoin-client@1.0.6':
     dependencies:
       '@ipld/dag-ucan': 3.4.5
       '@storacha/capabilities': 1.8.0
@@ -16167,20 +16139,23 @@ snapshots:
       '@ucanto/interface': 10.3.0
       multiformats: 13.3.6
 
-  '@storacha/indexing-service-client@2.3.0':
+  '@storacha/indexing-service-client@2.5.0':
     dependencies:
       '@ipld/dag-cbor': 9.2.3
-      '@storacha/blob-index': 1.1.0
+      '@ipld/dag-ucan': 3.4.5
+      '@storacha/blob-index': 1.2.0
       '@storacha/capabilities': 1.8.0
+      '@ucanto/client': 9.0.1
       '@ucanto/core': 10.4.0
       '@ucanto/interface': 10.3.0
+      '@ucanto/transport': 9.2.0
       multiformats: 13.3.6
 
   '@storacha/one-webcrypto@1.0.1': {}
 
-  '@storacha/upload-api@2.1.0':
+  '@storacha/upload-api@2.1.2':
     dependencies:
-      '@storacha/access': 1.5.0
+      '@storacha/access': 1.5.1
       '@storacha/blob-index': 1.2.0
       '@storacha/capabilities': 1.8.0
       '@storacha/did-mailto': 1.0.2
@@ -16196,27 +16171,6 @@ snapshots:
       '@web3-storage/upload-api': 19.1.0
       multiformats: 13.3.6
       uint8arrays: 5.1.0
-
-  '@storacha/upload-client@1.0.9(encoding@0.1.13)':
-    dependencies:
-      '@ipld/car': 5.4.0
-      '@ipld/dag-cbor': 9.2.2
-      '@ipld/dag-ucan': 3.4.5
-      '@ipld/unixfs': 3.0.0
-      '@storacha/blob-index': 1.0.5
-      '@storacha/capabilities': 1.8.0
-      '@storacha/filecoin-client': 1.0.6
-      '@ucanto/client': 9.0.1
-      '@ucanto/core': 10.4.0
-      '@ucanto/interface': 10.3.0
-      '@ucanto/transport': 9.2.0
-      '@web3-storage/data-segment': 5.3.0
-      ipfs-utils: 9.0.14(encoding@0.1.13)
-      multiformats: 13.3.2
-      p-retry: 5.1.2
-      varint: 6.0.0
-    transitivePeerDependencies:
-      - encoding
 
   '@storacha/upload-client@1.3.0(encoding@0.1.13)':
     dependencies:
@@ -17946,6 +17900,21 @@ snapshots:
     dependencies:
       crc-32: 1.2.2
       readable-stream: 4.7.0
+
+  create-jest@29.7.0(@types/node@18.19.86)(ts-node@10.9.2(@types/node@18.19.86)(typescript@3.9.10)):
+    dependencies:
+      '@jest/types': 29.6.3
+      chalk: 4.1.2
+      exit: 0.1.2
+      graceful-fs: 4.2.11
+      jest-config: 29.7.0(@types/node@18.19.86)(ts-node@10.9.2(@types/node@18.19.86)(typescript@3.9.10))
+      jest-util: 29.7.0
+      prompts: 2.4.2
+    transitivePeerDependencies:
+      - '@types/node'
+      - babel-plugin-macros
+      - supports-color
+      - ts-node
 
   create-jest@29.7.0(@types/node@18.19.86)(ts-node@10.9.2(@types/node@18.19.86)(typescript@5.8.3)):
     dependencies:
@@ -20133,6 +20102,25 @@ snapshots:
       - babel-plugin-macros
       - supports-color
 
+  jest-cli@29.7.0(@types/node@18.19.86)(ts-node@10.9.2(@types/node@18.19.86)(typescript@3.9.10)):
+    dependencies:
+      '@jest/core': 29.7.0(ts-node@10.9.2(@types/node@18.19.86)(typescript@3.9.10))
+      '@jest/test-result': 29.7.0
+      '@jest/types': 29.6.3
+      chalk: 4.1.2
+      create-jest: 29.7.0(@types/node@18.19.86)(ts-node@10.9.2(@types/node@18.19.86)(typescript@3.9.10))
+      exit: 0.1.2
+      import-local: 3.2.0
+      jest-config: 29.7.0(@types/node@18.19.86)(ts-node@10.9.2(@types/node@18.19.86)(typescript@3.9.10))
+      jest-util: 29.7.0
+      jest-validate: 29.7.0
+      yargs: 17.7.2
+    transitivePeerDependencies:
+      - '@types/node'
+      - babel-plugin-macros
+      - supports-color
+      - ts-node
+
   jest-cli@29.7.0(@types/node@18.19.86)(ts-node@10.9.2(@types/node@18.19.86)(typescript@5.8.3)):
     dependencies:
       '@jest/core': 29.7.0(ts-node@10.9.2(@types/node@18.19.86)(typescript@5.8.3))
@@ -20151,6 +20139,37 @@ snapshots:
       - babel-plugin-macros
       - supports-color
       - ts-node
+
+  jest-config@29.7.0(@types/node@18.19.86)(ts-node@10.9.2(@types/node@18.19.86)(typescript@3.9.10)):
+    dependencies:
+      '@babel/core': 7.26.10
+      '@jest/test-sequencer': 29.7.0
+      '@jest/types': 29.6.3
+      babel-jest: 29.7.0(@babel/core@7.26.10)
+      chalk: 4.1.2
+      ci-info: 3.9.0
+      deepmerge: 4.3.1
+      glob: 7.2.3
+      graceful-fs: 4.2.11
+      jest-circus: 29.7.0
+      jest-environment-node: 29.7.0
+      jest-get-type: 29.6.3
+      jest-regex-util: 29.6.3
+      jest-resolve: 29.7.0
+      jest-runner: 29.7.0
+      jest-util: 29.7.0
+      jest-validate: 29.7.0
+      micromatch: 4.0.8
+      parse-json: 5.2.0
+      pretty-format: 29.7.0
+      slash: 3.0.0
+      strip-json-comments: 3.1.1
+    optionalDependencies:
+      '@types/node': 18.19.86
+      ts-node: 10.9.2(@types/node@18.19.86)(typescript@3.9.10)
+    transitivePeerDependencies:
+      - babel-plugin-macros
+      - supports-color
 
   jest-config@29.7.0(@types/node@18.19.86)(ts-node@10.9.2(@types/node@18.19.86)(typescript@5.8.3)):
     dependencies:
@@ -20179,6 +20198,37 @@ snapshots:
     optionalDependencies:
       '@types/node': 18.19.86
       ts-node: 10.9.2(@types/node@18.19.86)(typescript@5.8.3)
+    transitivePeerDependencies:
+      - babel-plugin-macros
+      - supports-color
+
+  jest-config@29.7.0(@types/node@22.14.0)(ts-node@10.9.2(@types/node@18.19.86)(typescript@3.9.10)):
+    dependencies:
+      '@babel/core': 7.26.10
+      '@jest/test-sequencer': 29.7.0
+      '@jest/types': 29.6.3
+      babel-jest: 29.7.0(@babel/core@7.26.10)
+      chalk: 4.1.2
+      ci-info: 3.9.0
+      deepmerge: 4.3.1
+      glob: 7.2.3
+      graceful-fs: 4.2.11
+      jest-circus: 29.7.0
+      jest-environment-node: 29.7.0
+      jest-get-type: 29.6.3
+      jest-regex-util: 29.6.3
+      jest-resolve: 29.7.0
+      jest-runner: 29.7.0
+      jest-util: 29.7.0
+      jest-validate: 29.7.0
+      micromatch: 4.0.8
+      parse-json: 5.2.0
+      pretty-format: 29.7.0
+      slash: 3.0.0
+      strip-json-comments: 3.1.1
+    optionalDependencies:
+      '@types/node': 22.14.0
+      ts-node: 10.9.2(@types/node@18.19.86)(typescript@3.9.10)
     transitivePeerDependencies:
       - babel-plugin-macros
       - supports-color
@@ -20428,6 +20478,18 @@ snapshots:
       jest-util: 29.7.0
       merge-stream: 2.0.0
       supports-color: 8.1.1
+
+  jest@29.7.0(@types/node@18.19.86)(ts-node@10.9.2(@types/node@18.19.86)(typescript@3.9.10)):
+    dependencies:
+      '@jest/core': 29.7.0(ts-node@10.9.2(@types/node@18.19.86)(typescript@3.9.10))
+      '@jest/types': 29.6.3
+      import-local: 3.2.0
+      jest-cli: 29.7.0(@types/node@18.19.86)(ts-node@10.9.2(@types/node@18.19.86)(typescript@3.9.10))
+    transitivePeerDependencies:
+      - '@types/node'
+      - babel-plugin-macros
+      - supports-color
+      - ts-node
 
   jest@29.7.0(@types/node@18.19.86)(ts-node@10.9.2(@types/node@18.19.86)(typescript@5.8.3)):
     dependencies:
@@ -22480,6 +22542,112 @@ snapshots:
       cpu-features: 0.0.10
       nan: 2.22.2
 
+  sst-aws-cdk@2.179.0-3(@babel/core@7.26.10)(@jest/transform@29.7.0)(@jest/types@29.6.3)(aws-crt@1.26.2)(babel-jest@29.7.0(@babel/core@7.26.10))(encoding@0.1.13)(esbuild@0.18.13)(typescript@3.9.10):
+    dependencies:
+      '@aws-cdk/cli-plugin-contract': 2.179.0
+      '@aws-cdk/cloud-assembly-schema': 39.2.20
+      '@aws-cdk/cloudformation-diff': 2.179.0
+      '@aws-cdk/cx-api': 2.179.0(@aws-cdk/cloud-assembly-schema@39.2.20)
+      '@aws-cdk/region-info': 2.179.0
+      '@aws-sdk/client-appsync': 3.699.0(aws-crt@1.26.2)
+      '@aws-sdk/client-cloudformation': 3.782.0(aws-crt@1.26.2)
+      '@aws-sdk/client-cloudwatch-logs': 3.699.0(aws-crt@1.26.2)
+      '@aws-sdk/client-codebuild': 3.699.0(aws-crt@1.26.2)
+      '@aws-sdk/client-ec2': 3.699.0(aws-crt@1.26.2)
+      '@aws-sdk/client-ecr': 3.782.0(aws-crt@1.26.2)
+      '@aws-sdk/client-ecs': 3.782.0(aws-crt@1.26.2)
+      '@aws-sdk/client-elastic-load-balancing-v2': 3.699.0(aws-crt@1.26.2)
+      '@aws-sdk/client-iam': 3.782.0(aws-crt@1.26.2)
+      '@aws-sdk/client-kms': 3.699.0(aws-crt@1.26.2)
+      '@aws-sdk/client-lambda': 3.782.0(aws-crt@1.26.2)
+      '@aws-sdk/client-route-53': 3.699.0(aws-crt@1.26.2)
+      '@aws-sdk/client-s3': 3.782.0(aws-crt@1.26.2)
+      '@aws-sdk/client-secrets-manager': 3.782.0(aws-crt@1.26.2)
+      '@aws-sdk/client-sfn': 3.699.0(aws-crt@1.26.2)
+      '@aws-sdk/client-ssm': 3.782.0(aws-crt@1.26.2)
+      '@aws-sdk/client-sts': 3.782.0(aws-crt@1.26.2)
+      '@aws-sdk/credential-providers': 3.782.0(aws-crt@1.26.2)
+      '@aws-sdk/ec2-metadata-service': 3.699.0
+      '@aws-sdk/lib-storage': 3.782.0(@aws-sdk/client-s3@3.782.0(aws-crt@1.26.2))
+      '@jsii/check-node': 1.106.0
+      '@octokit/rest': 18.12.0(encoding@0.1.13)
+      '@smithy/middleware-endpoint': 4.1.0
+      '@smithy/node-http-handler': 3.3.3
+      '@smithy/property-provider': 3.1.11
+      '@smithy/shared-ini-file-loader': 3.1.12
+      '@smithy/types': 3.7.2
+      '@smithy/util-retry': 3.0.11
+      '@smithy/util-stream': 3.3.4
+      '@smithy/util-waiter': 3.2.0
+      '@types/archiver': 5.3.4
+      '@types/fs-extra': 9.0.13
+      '@types/glob': 7.2.0
+      '@types/jest': 29.5.14
+      '@types/mockery': 1.4.33
+      '@types/node': 18.19.86
+      '@types/promptly': 3.0.5
+      '@types/semver': 7.7.0
+      '@types/sinon': 9.0.11
+      '@types/table': 6.3.2
+      '@types/uuid': 8.3.4
+      '@types/wrap-ansi': 3.0.0
+      '@types/yargs': 15.0.19
+      archiver: 5.3.2
+      aws-cdk-lib: 2.179.0(constructs@10.3.0)
+      aws-sdk-client-mock: 4.1.0
+      aws-sdk-client-mock-jest: 4.1.0(aws-sdk-client-mock@4.1.0)
+      axios: 1.8.4
+      camelcase: 6.3.0
+      cdk-from-cfn: 0.162.1
+      chalk: 4.1.2
+      chokidar: 3.6.0
+      constructs: 10.3.0
+      decamelize: 5.0.1
+      fast-check: 3.23.2
+      fs-extra: 9.1.0
+      glob: 7.2.3
+      jest: 29.7.0(@types/node@18.19.86)(ts-node@10.9.2(@types/node@18.19.86)(typescript@3.9.10))
+      jest-environment-node: 29.7.0
+      jest-mock: 29.7.0
+      json-diff: 0.10.0
+      madge: 5.0.2
+      make-runnable: 1.4.1
+      minimatch: 9.0.5
+      nock: 13.5.6
+      p-limit: 3.1.0
+      promptly: 3.2.0
+      proxy-agent: 6.5.0
+      semver: 7.7.1
+      sinon: 9.2.4
+      strip-ansi: 6.0.1
+      table: 6.9.0
+      ts-jest: 29.3.1(@babel/core@7.26.10)(@jest/transform@29.7.0)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.26.10))(esbuild@0.18.13)(jest@29.7.0(@types/node@18.19.86)(ts-node@10.9.2(@types/node@18.19.86)(typescript@3.9.10)))(typescript@3.9.10)
+      ts-mock-imports: 1.3.16(sinon@9.2.4)(typescript@3.9.10)
+      ts-node: 10.9.2(@types/node@18.19.86)(typescript@3.9.10)
+      uuid: 8.3.2
+      wrap-ansi: 7.0.0
+      xml-js: 1.6.11
+      yaml: 1.10.2
+      yargs: 16.2.0
+    optionalDependencies:
+      fsevents: 2.3.2
+    transitivePeerDependencies:
+      - '@babel/core'
+      - '@jest/transform'
+      - '@jest/types'
+      - '@swc/core'
+      - '@swc/wasm'
+      - aws-crt
+      - babel-jest
+      - babel-plugin-macros
+      - debug
+      - encoding
+      - esbuild
+      - node-notifier
+      - supports-color
+      - typescript
+      - vitest
+
   sst-aws-cdk@2.179.0-3(@babel/core@7.26.10)(@jest/transform@29.7.0)(@jest/types@29.6.3)(aws-crt@1.26.2)(babel-jest@29.7.0(@babel/core@7.26.10))(encoding@0.1.13)(esbuild@0.18.13)(typescript@5.8.3):
     dependencies:
       '@aws-cdk/cli-plugin-contract': 2.179.0
@@ -22584,6 +22752,97 @@ snapshots:
       - node-notifier
       - supports-color
       - typescript
+      - vitest
+
+  sst@2.48.5(@jest/transform@29.7.0)(@jest/types@29.6.3)(aws-crt@1.26.2)(babel-jest@29.7.0(@babel/core@7.26.10))(encoding@0.1.13)(typescript@3.9.10):
+    dependencies:
+      '@aws-cdk/aws-lambda-python-alpha': 2.179.0-alpha.0(aws-cdk-lib@2.179.0(constructs@10.3.0))(constructs@10.3.0)
+      '@aws-cdk/cloud-assembly-schema': 39.2.20
+      '@aws-cdk/cloudformation-diff': 2.179.0
+      '@aws-cdk/cx-api': 2.179.0(@aws-cdk/cloud-assembly-schema@39.2.20)
+      '@aws-crypto/sha256-js': 5.2.0
+      '@aws-sdk/client-cloudformation': 3.782.0(aws-crt@1.26.2)
+      '@aws-sdk/client-ecs': 3.782.0(aws-crt@1.26.2)
+      '@aws-sdk/client-eventbridge': 3.783.0(aws-crt@1.26.2)
+      '@aws-sdk/client-iam': 3.782.0(aws-crt@1.26.2)
+      '@aws-sdk/client-iot': 3.782.0(aws-crt@1.26.2)
+      '@aws-sdk/client-iot-data-plane': 3.782.0(aws-crt@1.26.2)
+      '@aws-sdk/client-lambda': 3.782.0(aws-crt@1.26.2)
+      '@aws-sdk/client-rds-data': 3.782.0(aws-crt@1.26.2)
+      '@aws-sdk/client-s3': 3.782.0(aws-crt@1.26.2)
+      '@aws-sdk/client-ssm': 3.782.0(aws-crt@1.26.2)
+      '@aws-sdk/client-sts': 3.782.0(aws-crt@1.26.2)
+      '@aws-sdk/config-resolver': 3.374.0
+      '@aws-sdk/credential-providers': 3.782.0(aws-crt@1.26.2)
+      '@aws-sdk/middleware-retry': 3.374.0
+      '@aws-sdk/middleware-signing': 3.775.0
+      '@aws-sdk/signature-v4-crt': 3.782.0
+      '@aws-sdk/smithy-client': 3.374.0
+      '@babel/core': 7.26.10
+      '@babel/generator': 7.27.0
+      '@babel/plugin-syntax-typescript': 7.25.9(@babel/core@7.26.10)
+      '@smithy/signature-v4': 2.3.0
+      '@trpc/server': 9.16.0
+      adm-zip: 0.5.14
+      aws-cdk-lib: 2.179.0(constructs@10.3.0)
+      aws-iot-device-sdk: 2.2.15
+      aws-sdk: 2.1692.0
+      builtin-modules: 3.2.0
+      cdk-assets: 3.0.0-rc.143(aws-crt@1.26.2)
+      chalk: 5.4.1
+      chokidar: 3.6.0
+      ci-info: 3.9.0
+      colorette: 2.0.20
+      conf: 10.2.0
+      constructs: 10.3.0
+      cross-spawn: 7.0.6
+      dendriform-immer-patch-optimiser: 2.1.3(immer@9.0.21)
+      dotenv: 16.4.7
+      esbuild: 0.18.13
+      express: 4.21.2
+      fast-jwt: 5.0.6
+      get-port: 6.1.2
+      glob: 10.4.5
+      graphql: 16.10.0
+      graphql-yoga: 3.9.1(graphql@16.10.0)
+      immer: 9.0.21
+      ink: 4.4.1(react@18.3.1)
+      ink-spinner: 5.0.0(ink@4.4.1(react@18.3.1))(react@18.3.1)
+      kysely: 0.25.0
+      kysely-codegen: 0.10.1(kysely@0.25.0)
+      kysely-data-api: 0.2.1(@aws-sdk/client-rds-data@3.782.0(aws-crt@1.26.2))(kysely@0.25.0)
+      minimatch: 6.2.0
+      openid-client: 5.7.1
+      ora: 6.3.1
+      react: 18.3.1
+      remeda: 1.61.0
+      sst-aws-cdk: 2.179.0-3(@babel/core@7.26.10)(@jest/transform@29.7.0)(@jest/types@29.6.3)(aws-crt@1.26.2)(babel-jest@29.7.0(@babel/core@7.26.10))(encoding@0.1.13)(esbuild@0.18.13)(typescript@3.9.10)
+      tree-kill: 1.2.2
+      undici: 5.29.0
+      uuid: 9.0.1
+      ws: 8.18.1
+      yargs: 17.7.2
+      zod: 3.24.2
+    transitivePeerDependencies:
+      - '@jest/transform'
+      - '@jest/types'
+      - '@swc/core'
+      - '@swc/wasm'
+      - '@types/react'
+      - aws-crt
+      - babel-jest
+      - babel-plugin-macros
+      - better-sqlite3
+      - bufferutil
+      - debug
+      - encoding
+      - mysql2
+      - node-notifier
+      - pg
+      - react-devtools-core
+      - supports-color
+      - typescript
+      - utf-8-validate
       - vitest
 
   sst@2.48.5(@jest/transform@29.7.0)(@jest/types@29.6.3)(aws-crt@1.26.2)(babel-jest@29.7.0(@babel/core@7.26.10))(encoding@0.1.13)(typescript@5.8.3):
@@ -23012,6 +23271,27 @@ snapshots:
     dependencies:
       utf8-byte-length: 1.0.5
 
+  ts-jest@29.3.1(@babel/core@7.26.10)(@jest/transform@29.7.0)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.26.10))(esbuild@0.18.13)(jest@29.7.0(@types/node@18.19.86)(ts-node@10.9.2(@types/node@18.19.86)(typescript@3.9.10)))(typescript@3.9.10):
+    dependencies:
+      bs-logger: 0.2.6
+      ejs: 3.1.10
+      fast-json-stable-stringify: 2.1.0
+      jest: 29.7.0(@types/node@18.19.86)(ts-node@10.9.2(@types/node@18.19.86)(typescript@3.9.10))
+      jest-util: 29.7.0
+      json5: 2.2.3
+      lodash.memoize: 4.1.2
+      make-error: 1.3.6
+      semver: 7.7.1
+      type-fest: 4.39.1
+      typescript: 3.9.10
+      yargs-parser: 21.1.1
+    optionalDependencies:
+      '@babel/core': 7.26.10
+      '@jest/transform': 29.7.0
+      '@jest/types': 29.6.3
+      babel-jest: 29.7.0(@babel/core@7.26.10)
+      esbuild: 0.18.13
+
   ts-jest@29.3.1(@babel/core@7.26.10)(@jest/transform@29.7.0)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.26.10))(esbuild@0.18.13)(jest@29.7.0(@types/node@18.19.86)(ts-node@10.9.2(@types/node@18.19.86)(typescript@5.8.3)))(typescript@5.8.3):
     dependencies:
       bs-logger: 0.2.6
@@ -23033,10 +23313,33 @@ snapshots:
       babel-jest: 29.7.0(@babel/core@7.26.10)
       esbuild: 0.18.13
 
+  ts-mock-imports@1.3.16(sinon@9.2.4)(typescript@3.9.10):
+    dependencies:
+      sinon: 9.2.4
+      typescript: 3.9.10
+
   ts-mock-imports@1.3.16(sinon@9.2.4)(typescript@5.8.3):
     dependencies:
       sinon: 9.2.4
       typescript: 5.8.3
+
+  ts-node@10.9.2(@types/node@18.19.86)(typescript@3.9.10):
+    dependencies:
+      '@cspotcode/source-map-support': 0.8.1
+      '@tsconfig/node10': 1.0.11
+      '@tsconfig/node12': 1.0.11
+      '@tsconfig/node14': 1.0.3
+      '@tsconfig/node16': 1.0.4
+      '@types/node': 18.19.86
+      acorn: 8.14.1
+      acorn-walk: 8.3.4
+      arg: 4.1.3
+      create-require: 1.1.1
+      diff: 4.0.2
+      make-error: 1.3.6
+      typescript: 3.9.10
+      v8-compile-cache-lib: 3.0.1
+      yn: 3.1.1
 
   ts-node@10.9.2(@types/node@18.19.86)(typescript@5.8.3):
     dependencies:
