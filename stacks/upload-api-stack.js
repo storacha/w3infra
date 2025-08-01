@@ -143,6 +143,8 @@ export function UploadApiStack({ stack, app }) {
               DELEGATION_TABLE_NAME: delegationTable.tableName,
               DMAIL_API_KEY: process.env.DMAIL_API_KEY ?? '',
               DMAIL_API_SECRET: process.env.DMAIL_API_SECRET ?? '',
+              DMAIL_JWT_SECRET: process.env.DMAIL_JWT_SECRET ?? '',
+              DMAIL_API_URL: process.env.DMAIL_API_URL ?? '',
               DID: process.env.UPLOAD_API_DID ?? '',
               DISABLE_IPNI_PUBLISHING,
               EGRESS_TRAFFIC_QUEUE_URL: egressTrafficQueue.queueUrl,
