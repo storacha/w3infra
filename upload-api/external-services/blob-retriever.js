@@ -14,7 +14,7 @@ import { equals } from 'multiformats/bytes'
  */
 
 /**
- * @param {import('@storacha/indexing-service-client/api').IndexingServiceClient} client
+ * @param {import('@storacha/indexing-service-client/api').IndexingServiceQueryClient} client
  * @returns {API.BlobRetriever}
  */
 export const create = (client) => {

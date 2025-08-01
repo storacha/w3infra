@@ -167,7 +167,7 @@ const isInvocation = (invocation, capability) => {
     capability: invocation.capabilities[0],
     delegation: invocation,
   })
-  return !!match.ok
+  return Boolean(match.ok)
 }
 
 /**
