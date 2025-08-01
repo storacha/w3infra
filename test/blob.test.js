@@ -17,15 +17,21 @@ import { METRICS_NAMES, SPACE_METRICS_NAMES } from '../upload-api/constants.js'
 import * as Blob from './helpers/blob-client.js'
 import { getStage, getRoundaboutEndpoint, getDynamoDb } from './helpers/deployment.js'
 import { randomFile, randomInt } from './helpers/random.js'
-import { setupNewClient, getServiceProps, receiptsEndpoint } from './helpers/up-client.js'
+import { setupNewClient, getServiceProps, receiptsEndpoint, serviceConf } from './helpers/up-client.js'
 import { getMetrics, getSpaceMetrics } from './helpers/metrics.js'
 import { getUsage } from './helpers/store.js'
 import { addStorageProvider } from './helpers/storage-provider.js'
 import * as IndexingService from './helpers/indexing-service.js'
 
-/** @param {import('multiformats').MultihashDigest} d */
+/**
+ * @import { Connection } from '@ucanto/interface'
+ * @import { UnknownLink, MultihashDigest } from 'multiformats'
+ * @import { CARLink, SliceDigest, Position, AnyLink, BlobService } from '@storacha/upload-client/types'
+ */
+
+/** @param {MultihashDigest} d */
 const b58 = d => base58btc.encode(d.bytes)
-/** @param {import('multiformats').UnknownLink|{ digest: Uint8Array }} c */
+/** @param {UnknownLink|{ digest: Uint8Array }} c */
 const toDigest = c => 'multihash' in c ? c.multihash : Digest.decode(c.digest)
 
 test.before(async t => {
@@ -36,10 +42,6 @@ test.before(async t => {
     spaceMetricsDynamo: getDynamoDb('space-metrics'),
   }
 })
-
-/**
- * @typedef {import('multiformats').UnknownLink} UnknownLink
- */
 
 /**
  * Integration test for all flow from `blob/add` and `index/add`, to read interfaces and kinesis stream.
@@ -86,20 +88,20 @@ test('blob integration flow with receipts validation', withCauseLog(async t => {
   
   // Encode file as Unixfs and perform store/add
   const blocksReadableStream = UnixFS.createFileEncoderStream(file)
-  /** @type {import('@storacha/upload-client/types').CARLink[]} */
+  /** @type {CARLink[]} */
   const shards = []
   /** @type {number[]} */
   const shardSizes = []
   /** @type {Uint8Array[]} */
   const shardBytes = []
-  /** @type {Array<Map<import('@storacha/upload-client/types').SliceDigest, import('@storacha/upload-client/types').Position>>} */
+  /** @type {Array<Map<SliceDigest, Position>>} */
   const shardIndexes = []
-  /** @type {import('@storacha/upload-client/types').AnyLink | undefined} */
+  /** @type {AnyLink | undefined} */
   let root
 
-  /** @type {import('multiformats/hashes/digest').Digest<18, number> | undefined} */
+  /** @type {MultihashDigest<18> | undefined} */
   let multihash
-  /** @type {{ put: any, accept: { task: any }} | undefined} */
+  /** @type {Awaited<ReturnType<typeof Blob.add>>['next'] | undefined} */
   let next
   await blocksReadableStream
     .pipeThrough(new ShardingStream())
@@ -139,6 +141,7 @@ test('blob integration flow with receipts validation', withCauseLog(async t => {
 
   if (root === undefined) throw new Error('missing root CID')
   if (multihash === undefined) throw new Error('missing multihash')
+  if (next === undefined) throw new Error('missing next tasks')
 
   t.is(shards.length, 1)
   t.is(shardBytes.length, 1)
@@ -219,7 +222,11 @@ test('blob integration flow with receipts validation', withCauseLog(async t => {
   console.log(`Index is retrievable at ${indexLocationCommitment.location[0]}`)
 
   // Check receipts were written
-  const receiptOptions = { receiptsEndpoint: receiptsEndpoint.toString(), retries: 10 }
+  const receiptOptions = {
+    receiptsEndpoint: receiptsEndpoint.toString(),
+    retries: 10,
+    connection: /** @type {Connection<BlobService>} */ (Object(serviceConf.upload))
+  }
   // TODO: reinstate when this change lands in `@storacha/upload-client`:
   // https://github.com/storacha/upload-service/pull/278/commits/8aeff82197a5ccd456a2aeaa093ca6bbc9a13b63
   // const getPutTaskReceipt = await Receipt.poll(next?.put.task.link(), receiptOptions)
@@ -227,11 +234,10 @@ test('blob integration flow with receipts validation', withCauseLog(async t => {
   // t.is(getPutTaskReceipt.out.error, undefined)
   // t.deepEqual(getPutTaskReceipt.out.ok, {})
 
-  const getAcceptTaskReceipt = (await Receipt.poll(next?.accept.task.link(), receiptOptions))
-  console.log(`Receipt for ${next?.accept.task.link()} (blob/accept) found: ${getAcceptTaskReceipt.root.cid}`)
+  const getAcceptTaskReceipt = await Receipt.poll(next.accept.task.link(), receiptOptions)
+  console.log(`Receipt for ${next.accept.task.link()} (blob/accept) found: ${getAcceptTaskReceipt.root.cid}`)
   t.is(getAcceptTaskReceipt.out.error, undefined)
   t.truthy(getAcceptTaskReceipt.out.ok)
-  // @ts-expect-error needs better typing
   t.truthy(getAcceptTaskReceipt.out.ok?.site)
 
   // Check delegation

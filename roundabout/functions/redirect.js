@@ -10,7 +10,7 @@ import { getS3Client } from '../../lib/aws/s3.js'
 
 /**
  * @import { UnknownLink } from 'multiformats'
- * @import { IndexingServiceClient } from '@storacha/indexing-service-client/api'
+ * @import { IndexingServiceQueryClient } from '@storacha/indexing-service-client/api'
  */
 
 Sentry.AWSLambda.init({
@@ -94,7 +94,7 @@ async function resolveContent (cid, locateContent) {
  * 
  * @param {UnknownLink} cid
  * @param {(cid: UnknownLink) => Promise<string | undefined> } locateContent
- * @param {IndexingServiceClient} [indexingService]
+ * @param {IndexingServiceQueryClient} [indexingService]
  */
 async function resolvePiece (cid, locateContent, indexingService) {
   const cids = await findEquivalentCids(cid, indexingService)

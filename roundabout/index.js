@@ -5,7 +5,7 @@ import * as Digest from 'multiformats/hashes/digest'
 
 /**
  * @import { UnknownLink } from 'multiformats'
- * @import { IndexingServiceClient } from '@storacha/indexing-service-client/api'
+ * @import { IndexingServiceQueryClient } from '@storacha/indexing-service-client/api'
  * @import { S3Client } from '@aws-sdk/client-s3'
  * @import { RequestPresigningArguments } from '@smithy/types'
  */
@@ -48,7 +48,7 @@ export function getSigner (s3Client, bucketName) {
  * @param {S3Client} config.s3Client
  * @param {string} config.bucket
  * @param {number} config.expiresIn
- * @param {IndexingServiceClient} config.indexingService
+ * @param {IndexingServiceQueryClient} config.indexingService
  */
 export function contentLocationResolver ({ s3Client, bucket, expiresIn, indexingService }) {
   const signer = getSigner(s3Client, bucket)
