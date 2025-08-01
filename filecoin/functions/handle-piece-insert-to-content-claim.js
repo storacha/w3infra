@@ -40,7 +40,6 @@ async function pieceCidReport (event) {
   const record = decodeRecord(storeRecord)
 
   const indexer = new IndexingServiceClient({
-    // @ts-expect-error https://github.com/storacha/js-indexing-service-client/pull/23
     servicePrincipal: DID.parse(indexingServiceDid),
     serviceURL: indexingServiceUrl
   })

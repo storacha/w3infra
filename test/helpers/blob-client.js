@@ -1,8 +1,13 @@
+/**
+ * @import * as UcantoAPI from '@ucanto/interface'
+ * @import { InvocationConfig, Service } from '@storacha/upload-client/types'
+ * @import { SpaceBlobAddSuccess, SpaceBlobAddFailure, BlobAllocateSuccess, BlobAllocateFailure, BlobAcceptSuccess, BlobAcceptFailure } from '@storacha/capabilities/types'
+ */
 import * as SpaceBlobCapabilities from '@storacha/capabilities/space/blob'
 import * as BlobCapabilities from '@storacha/capabilities/blob'
 import * as HTTPCapabilities from '@storacha/capabilities/http'
 import * as UCANCapabilities from '@storacha/capabilities/ucan'
-import { Receipt } from '@ucanto/core'
+import { Receipt, isDelegation } from '@ucanto/core'
 import { ed25519 } from '@ucanto/principal'
 import { sha256 } from 'multiformats/hashes/sha2'
 import { SpaceDID } from '@storacha/capabilities/utils'
@@ -12,26 +17,16 @@ import pRetry from 'p-retry'
 // and enable a more internal testing
 
 /**
- * @typedef {import('@storacha/capabilities/types').SpaceBlobAddSuccess} SpaceBlobAddSuccess
- * @typedef {import('@storacha/capabilities/types').SpaceBlobAddFailure} SpaceBlobAddFailure
- * @typedef {import('@storacha/capabilities/types').BlobAllocateSuccess} BlobAllocateSuccess
- * @typedef {import('@storacha/capabilities/types').BlobAllocateFailure} BlobAllocateFailure
- * @typedef {import('@storacha/capabilities/types').BlobAcceptSuccess} BlobAcceptSuccess
- * @typedef {import('@storacha/capabilities/types').BlobAcceptFailure} BlobAcceptFailure
- * @typedef {import('@ucanto/interface').Failure} Failure
- * @typedef {import('@ucanto/interface').Principal } Principal
- * @typedef {import('@ucanto/interface').Receipt<SpaceBlobAddSuccess, SpaceBlobAddFailure> } SpaceBlobAddReceipt
- * @typedef {import('@ucanto/interface').Receipt<BlobAllocateSuccess, BlobAllocateFailure> } BlobAllocateReceipt
- * @typedef {import('@ucanto/interface').Receipt<BlobAcceptSuccess, BlobAcceptFailure> } BlobAcceptReceipt
- * @typedef {import('@ucanto/interface').Receipt<{}, Failure> } HTTPPutReceipt
- * @typedef {import('@ucanto/interface').ConnectionView<any> } ConnectionView
- * @typedef {import('@storacha/upload-client/types').InvocationConfig} InvocationConfig
+ * @typedef {UcantoAPI.Receipt<SpaceBlobAddSuccess, SpaceBlobAddFailure>} SpaceBlobAddReceipt
+ * @typedef {UcantoAPI.Receipt<BlobAllocateSuccess, BlobAllocateFailure>} BlobAllocateReceipt
+ * @typedef {UcantoAPI.Receipt<BlobAcceptSuccess, BlobAcceptFailure>} BlobAcceptReceipt
+ * @typedef {UcantoAPI.Receipt<{}, UcantoAPI.Failure> } HTTPPutReceipt
  */
 
 /**
- * @param {InvocationConfig & { audience: Principal }} config
+ * @param {InvocationConfig & { audience: UcantoAPI.Principal }} config
  * @param {Uint8Array} data
- * @param {{ connection: ConnectionView, retries?: number }} options
+ * @param {{ connection: UcantoAPI.ConnectionView<Service>, retries?: number }} options
  */
 export async function add(
   { issuer, with: resource, proofs, audience },
@@ -74,8 +69,6 @@ export async function add(
     })
   }
 
-  /** @type {import('@storacha/capabilities/types').BlobAddress} */
-  // @ts-expect-error receipt type is unknown
   const address = next.allocate.receipt.out.ok.address
 
   // Already is uploaded, so we should skip
@@ -163,27 +156,31 @@ export async function add(
 }
 
 /**
- * @param {import('@ucanto/interface').Receipt} receipt
+ * @template {UcantoAPI.CapabilityParser<UcantoAPI.Match<UcantoAPI.ParsedCapability>>} C
+ * @param {UcantoAPI.Invocation} invocation
+ * @param {C} capability
+ * @returns {invocation is UcantoAPI.Invocation<UcantoAPI.InferInvokedCapability<C>>}
+ */
+const isInvocation = (invocation, capability) => {
+  const match = capability.match({
+    // @ts-expect-error
+    capability: invocation.capabilities[0],
+    delegation: invocation,
+  })
+  return Boolean(match.ok)
+}
+
+/**
+ * @param {SpaceBlobAddReceipt} receipt
  */
 export function parseBlobAddReceiptNext(receipt) {
-  // Get invocations next
-  /**
-   * @type {import('@ucanto/interface').Invocation[]}
-   **/
-  // @ts-expect-error read only effect
-  const forkInvocations = receipt.fx.fork
-  const allocateTask = forkInvocations.find(
-    (fork) => fork.capabilities[0].can === BlobCapabilities.allocate.can
-  )
-  const concludefxs = forkInvocations.filter(
-    (fork) => fork.capabilities[0].can === UCANCapabilities.conclude.can
-  )
-  const putTask = forkInvocations.find(
-    (fork) => fork.capabilities[0].can === HTTPCapabilities.put.can
-  )
-  const acceptTask = forkInvocations.find(
-    (fork) => fork.capabilities[0].can === BlobCapabilities.accept.can
-  )
+  /** @type {UcantoAPI.Invocation[]} */
+  const forkInvocations = receipt.fx.fork.filter(f => isDelegation(f))
+  
+  const allocateTask = forkInvocations.find(f => isInvocation(f, BlobCapabilities.allocate))
+  const concludefxs = forkInvocations.filter(f => isInvocation(f, UCANCapabilities.conclude))
+  const putTask = forkInvocations.find(f => isInvocation(f, HTTPCapabilities.put))
+  const acceptTask = forkInvocations.find(f => isInvocation(f, BlobCapabilities.accept))
   if (!allocateTask || !concludefxs.length || !putTask || !acceptTask) {
     console.error({ allocateTask: allocateTask?.cid, concludefxs: concludefxs[0]?.cid, putTask: putTask?.cid, acceptTask: acceptTask?.cid })
     throw new Error('mandatory effects not received')
@@ -228,7 +225,7 @@ export function parseBlobAddReceiptNext(receipt) {
 }
 
 /**
- * @param {import('@ucanto/interface').Invocation} concludeFx
+ * @param {UcantoAPI.Invocation} concludeFx
  */
 export function getConcludeReceipt(concludeFx) {
   const receiptBlocks = new Map()
@@ -243,9 +240,9 @@ export function getConcludeReceipt(concludeFx) {
 }
 
 /**
- * @param {import('@ucanto/interface').Signer} id
- * @param {import('@ucanto/interface').Principal} serviceDid
- * @param {import('@ucanto/interface').Receipt} receipt
+ * @param {UcantoAPI.Signer} id
+ * @param {UcantoAPI.Principal} serviceDid
+ * @param {UcantoAPI.Receipt} receipt
  */
 export function createConcludeInvocation(id, serviceDid, receipt) {
   const receiptBlocks = []

@@ -6,7 +6,7 @@ import { PIECE_V1_CODE, PIECE_V1_MULTIHASH, PIECE_V2_MULTIHASH, RAW_CODE } from 
 
 /**
  * @import { UnknownLink } from 'multiformats'
- * @import { IndexingServiceClient } from '@storacha/indexing-service-client/api'
+ * @import { IndexingServiceQueryClient } from '@storacha/indexing-service-client/api'
  */
 
 /**
@@ -35,7 +35,7 @@ export function asPieceCidV1 (cid) {
  * Find the set of CIDs that are claimed to be equivalent to the Piece CID.
  * 
  * @param {UnknownLink} piece
- * @param {IndexingServiceClient} [indexingService] - returns content claims for a cid
+ * @param {IndexingServiceQueryClient} [indexingService] - returns content claims for a cid
  */
 export async function findEquivalentCids (piece, indexingService = createIndexingServiceClient()) {
   /** @type {Map<string, import('multiformats').UnknownLink>} */

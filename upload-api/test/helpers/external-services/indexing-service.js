@@ -9,7 +9,7 @@ import * as QueryResult from '@storacha/indexing-service-client/query-result'
  *
  * @param {API.IndexingServiceAPI.Client} indexingService
  * @param {API.ClaimReader} claimReader
- * @returns {import('@storacha/indexing-service-client/api').IndexingServiceClient}
+ * @returns {import('@storacha/indexing-service-client/api').IndexingServiceQueryClient}
  */
 export const create = (indexingService, claimReader) => {
   return {
