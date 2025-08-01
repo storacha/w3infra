@@ -50,6 +50,7 @@ import { createEgressTrafficQueue } from '../../billing/queues/egress-traffic.js
 import { create as createRoutingService } from '../external-services/router.js'
 import { create as createBlobRetriever } from '../external-services/blob-retriever.js'
 import { createSSOService, createDmailSSOService } from '../external-services/sso-providers/index.js'
+import { uploadServiceURL } from '@storacha/client/service'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -323,13 +324,19 @@ export async function ucanInvocationRouter(request) {
   const routingService = createRoutingService(storageProviderTable, serviceSigner)
 
   const dmailSSOService = createDmailSSOService({
-    DMAIL_API_KEY: mustGetEnv('DMAIL_API_KEY'),
-    DMAIL_API_SECRET: mustGetEnv('DMAIL_API_SECRET'),
-    DMAIL_JWT_SECRET: process.env.DMAIL_JWT_SECRET || 'unused', // if undefined, we set it to a dummy value to bypass JWT validation
-    DMAIL_API_URL: process.env.DMAIL_API_URL || 'https://api.dmail.ai/open/api/storacha/getUserStatus',
+    apiKey: Config.DMAIL_API_KEY,
+    apiSecret: Config.DMAIL_API_SECRET,
+    jwtSecret: Config.DMAIL_JWT_SECRET || 'unused', // if undefined, we set it to a dummy value to bypass JWT validation
+    apiUrl: process.env.DMAIL_API_URL || 'https://api.dmail.ai/open/api/storacha/getUserStatus',
   })
-  const ssoService = createSSOService(serviceSigner, agentStore, [dmailSSOService])
 
+  // Build service URL from request data since we're in the same ucan server
+  const requestHost = request.headers?.host || request.headers?.Host
+  const serviceUrl = requestHost ? new URL(`https://${requestHost}`) : uploadServiceURL
+  const ssoService = createSSOService(serviceSigner, serviceUrl, agentStore, customerStore, [dmailSSOService],
+    process.env.ENABLE_CUSTOMER_TRIAL_PLAN === 'true'
+  )
+  
   let audience // accept invocations addressed to any alias
   const proofs = [] // accept attestations issued by any alias
   if (UPLOAD_API_ALIAS) {
@@ -419,7 +426,7 @@ export async function ucanInvocationRouter(request) {
   })
 
   const payload = fromLambdaRequest(request)
-  const response = await UploadAPI.handle(server, payload)
+        const response = await UploadAPI.handle(server, payload)
 
   return toLambdaResponse(response)
 }
@@ -509,10 +516,10 @@ function getLambdaEnv() {
       ({ ...knownWebDIDs, ...JSON.parse(process.env.PRINCIPAL_MAPPING || '{}') }),
     // set for testing
     dbEndpoint: process.env.DYNAMO_DB_ENDPOINT,
-    // SSO provider configuration (optional)
-    dmailApiKey: process.env.DMAIL_API_KEY,
-    dmailApiSecret: process.env.DMAIL_API_SECRET,
-    dmailJwtSecret: process.env.DMAIL_JWT_SECRET,
+    // SSO provider configuration
+    dmailApiKey: Config.DMAIL_API_KEY,
+    dmailApiSecret: Config.DMAIL_API_SECRET,
+    dmailJwtSecret: Config.DMAIL_JWT_SECRET,
     dmailApiUrl: process.env.DMAIL_API_URL,
   }
 }

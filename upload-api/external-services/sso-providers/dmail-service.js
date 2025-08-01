@@ -69,8 +69,6 @@ export class DmailSSOService {
    */
   async validate(ssoAuthParams) {
     const { authProvider, email, externalUserId, externalSessionToken } = ssoAuthParams
-
-    // Verify this is a DMAIL request
     if (authProvider !== 'dmail') {
       return error(new Error('Invalid auth provider for DMAIL service'))
     }

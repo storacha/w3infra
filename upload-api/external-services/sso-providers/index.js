@@ -2,11 +2,11 @@ import { DmailSSOService } from './dmail-service.js'
 import { ok, error, Message, Receipt } from '@ucanto/core'
 import * as Access from '@storacha/capabilities/access'
 import * as DidMailto from '@storacha/did-mailto'
-import { uploadServiceConnection } from '@storacha/client/service'
 import * as Transport from '@ucanto/transport/car'
 import * as Validator from '@ucanto/validator'
 import { Verifier } from '@ucanto/principal'
 import { AgentMessage } from '@storacha/upload-api'
+import { uploadServiceConnection } from '@storacha/client/service'
 
 /**
  * @typedef {import('@storacha/upload-api/types').SSOProvider} SSOProvider
@@ -26,13 +26,19 @@ export class SSORouter {
   /**
    *
    * @param {import('@ucanto/interface').Signer} serviceSigner - The service signer
+   * @param {URL} serviceUrl - Optional service URL for internal connections
    * @param {import('@storacha/upload-api').AgentStore} agentStore - The agent store
+   * @param {import('../../../billing/lib/api.js').CustomerStore} customerStore - The customer store
    * @param {Record<string, SSOProvider>} providers - Map of provider name to service instance
+   * @param {boolean} enableCustomerTrialPlan - Feature flag to enable SSO customer trial plan registration
    */
-  constructor(serviceSigner, agentStore, providers = {}) {
+  constructor(serviceSigner, serviceUrl, agentStore, customerStore, providers = {}, enableCustomerTrialPlan = false) {
     this.serviceSigner = serviceSigner
+    this.serviceUrl = serviceUrl
     this.agentStore = agentStore
+    this.customerStore = customerStore
     this.providers = providers
+    this.enableCustomerTrialPlan = enableCustomerTrialPlan
   }
 
   /**
@@ -70,7 +76,6 @@ export class SSORouter {
       validateAuthorization: () => ok({})
     })
     if (accessRes.error) {
-      console.error('validating access/authorize delegation', accessRes.error)
       return error(new Error('failed to validate access/authorize delegation for SSO provider ' + authProvider))
     }
     const capability = invocation.capabilities[0] ?? undefined
@@ -105,11 +110,12 @@ export class SSORouter {
     })
 
     if (messageWriteRes.error) {
-      console.error(messageWriteRes.error)
       return error(new Error('failed to write access/authorize invocation and receipt for SSO provider ' + authProvider))
     }
+    
     const customer = DidMailto.fromEmail(/** @type {`${string}@${string}`} */(result.ok.userData.email))
-        
+    const serviceConnection = uploadServiceConnection({ id: this.serviceSigner, url: this.serviceUrl })
+    
     const confirmRes = await Access.confirm
       .invoke({
         issuer: this.serviceSigner,
@@ -124,16 +130,26 @@ export class SSORouter {
           cause: ssoAuthParams.invocation.cid,
         },
       })
-      .execute(uploadServiceConnection())
+      .execute(serviceConnection)
 
     if (confirmRes.out.error) {
-      console.error('executing access/confirm', confirmRes.out.error)
       return error(new Error('failed to execute access/confirm invocation for SSO provider ' + authProvider))
     }
 
-    // Note: here we can add the customer to the customer store here with a trial plan to eliminate the need of the plan selection step
-    
-    // Step 3: Return the link to the confirmed authorization
+    if (this.enableCustomerTrialPlan) {
+      const customerPutRes = await this.customerStore.put({
+        customer,
+        product: 'did:web:trial.storacha.network',
+        details: JSON.stringify({ [authProvider]: { id: ssoAuthParams.externalUserId, login: ssoAuthParams.email } }),
+        insertedAt: new Date()
+      })
+      if (!customerPutRes.ok) {
+        console.error(`failed to register SSO customer: ${customer}`, customerPutRes.error)
+        return error(new Error('failed to register customer'))
+      }
+    }
+
+    // Return the link to the confirmed authorization
     return ok(confirmRes.link())
   }
 
@@ -151,16 +167,19 @@ export class SSORouter {
  * Create SSO service with configured providers
  *
  * @param {import('@ucanto/interface').Signer} serviceSigner - The service signer
+ * @param {URL} serviceUrl - Optional service URL for internal connections
  * @param {import('@storacha/upload-api').AgentStore} agentStore - The agent store
+ * @param {import('../../../billing/lib/api.js').CustomerStore} customerStore - The customer store
  * @param {Array<SSOProvider & {name: string}>} providers - Array of SSO provider services with name property
+ * @param {boolean} enableCustomerTrialPlan - Feature flag to enable SSO customer trial plan registration
  * @returns {SSORouter}
  */
-export function createSSOService(serviceSigner, agentStore, providers) {
+export function createSSOService(serviceSigner, serviceUrl, agentStore, customerStore, providers, enableCustomerTrialPlan = false) {
   if (!providers || providers.length === 0 || !providers.every(provider => provider && provider.name)) {
     throw new Error('SSO service requires at least one provider with a name')
   }
 
-  const router = new SSORouter(serviceSigner, agentStore)
+  const router = new SSORouter(serviceSigner, serviceUrl, agentStore, customerStore, {}, enableCustomerTrialPlan)
   for (const provider of providers) {
     router.addProvider(provider.name, provider)
   }
@@ -171,14 +190,13 @@ export function createSSOService(serviceSigner, agentStore, providers) {
 /**
  * Create DMAIL SSO service from environment variables
  * 
- * @param {Record<string, string>} env - Environment variables
+ * @param {object} env - Environment variables
+ * @param {string} env.apiKey - DMAIL API key
+ * @param {string} env.apiSecret - DMAIL API secret
+ * @param {string} env.jwtSecret - DMAIL JWT secret
+ * @param {string} env.apiUrl - DMAIL API URL
  * @returns {DmailSSOService}
  */
 export function createDmailSSOService(env) {
-  return new DmailSSOService({
-      apiKey: env.DMAIL_API_KEY,
-      apiSecret: env.DMAIL_API_SECRET,
-      jwtSecret: env.DMAIL_JWT_SECRET,
-      apiUrl: env.DMAIL_API_URL
-    })
+  return new DmailSSOService(env)
 }
