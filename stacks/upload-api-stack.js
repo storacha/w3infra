@@ -141,6 +141,8 @@ export function UploadApiStack({ stack, app }) {
               DEAL_TRACKER_URL: process.env.DEAL_TRACKER_URL ?? '',
               DELEGATION_BUCKET_NAME: delegationBucket.bucketName,
               DELEGATION_TABLE_NAME: delegationTable.tableName,
+              DMAIL_API_KEY: process.env.DMAIL_API_KEY ?? '',
+              DMAIL_API_SECRET: process.env.DMAIL_API_SECRET ?? '',
               DID: process.env.UPLOAD_API_DID ?? '',
               DISABLE_IPNI_PUBLISHING,
               EGRESS_TRAFFIC_QUEUE_URL: egressTrafficQueue.queueUrl,

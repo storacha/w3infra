@@ -322,13 +322,20 @@ export async function ucanInvocationRouter(request) {
   const storageProviderTable = createStorageProviderTable(AWS_REGION, storageProviderTableName, options)
   const routingService = createRoutingService(storageProviderTable, serviceSigner)
 
-  const dmailSSOService = createDmailSSOService({
-    DMAIL_API_KEY: mustGetEnv('DMAIL_API_KEY'),
-    DMAIL_API_SECRET: mustGetEnv('DMAIL_API_SECRET'),
-    DMAIL_JWT_SECRET: process.env.DMAIL_JWT_SECRET || 'unused', // if undefined, we set it to a dummy value to bypass JWT validation
-    DMAIL_API_URL: process.env.DMAIL_API_URL || 'https://api.dmail.ai/open/api/storacha/getUserStatus',
-  })
-  const ssoService = createSSOService(serviceSigner, agentStore, [dmailSSOService])
+  /** @type {Array<import('@storacha/upload-api/types').SSOProvider & { name: string }>} */
+  const ssoProviders = []
+  if (process.env.DMAIL_API_KEY && process.env.DMAIL_API_SECRET) {
+    const dmailSSOService = createDmailSSOService({
+      DMAIL_API_KEY: mustGetEnv('DMAIL_API_KEY'),
+      DMAIL_API_SECRET: mustGetEnv('DMAIL_API_SECRET'),
+      DMAIL_JWT_SECRET: process.env.DMAIL_JWT_SECRET || 'unused', // if undefined, we set it to a dummy value to bypass JWT validation
+      DMAIL_API_URL: process.env.DMAIL_API_URL || 'https://api.dmail.ai/open/api/storacha/getUserStatus',
+    })
+    ssoProviders.push(dmailSSOService)
+  }
+  const ssoService = ssoProviders.length
+    ? createSSOService(serviceSigner, agentStore, ssoProviders)
+    : undefined
 
   let audience // accept invocations addressed to any alias
   const proofs = [] // accept attestations issued by any alias
