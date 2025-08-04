@@ -322,21 +322,30 @@ export async function ucanInvocationRouter(request) {
   const storageProviderTable = createStorageProviderTable(AWS_REGION, storageProviderTableName, options)
   const routingService = createRoutingService(storageProviderTable, serviceSigner)
 
-  /** @type {Array<import('@storacha/upload-api/types').SSOProvider & { name: string }>} */
+  /** @type {Array<import('@storacha/upload-api/types').SSOProvider>} */
   const ssoProviders = []
   if (process.env.DMAIL_API_KEY && process.env.DMAIL_API_SECRET) {
+
     const dmailSSOService = createDmailSSOService({
-      DMAIL_API_KEY: mustGetEnv('DMAIL_API_KEY'),
-      DMAIL_API_SECRET: mustGetEnv('DMAIL_API_SECRET'),
-      DMAIL_JWT_SECRET: process.env.DMAIL_JWT_SECRET || 'unused', // if undefined, we set it to a dummy value to bypass JWT validation
-      DMAIL_API_URL: process.env.DMAIL_API_URL || 'https://api.dmail.ai/open/api/storacha/getUserStatus',
+      apiKey: Config.DMAIL_API_KEY,
+      apiSecret: Config.DMAIL_API_SECRET,
+      jwtSecret: Config.DMAIL_JWT_SECRET || 'unused', // if undefined, we set it to a dummy value to bypass JWT validation
+      apiUrl: process.env.DMAIL_API_URL || 'https://api.dmail.ai/open/api/storacha/getUserStatus',
     })
     ssoProviders.push(dmailSSOService)
   }
-  const ssoService = ssoProviders.length
-    ? createSSOService(serviceSigner, agentStore, ssoProviders)
-    : undefined
 
+  // TODO (fforbeck): if more providers are added, we need to add a feature flag for each provider using a list of providers names
+  // then if the provider is in the list, we enable the customer trial plan for that provider
+  const enableCustomerTrialPlan = process.env.ENABLE_CUSTOMER_TRIAL_PLAN === 'true'
+
+  // Build service URL from request data since we're in the same ucan server
+  const ssoService = ssoProviders.length
+    ? createSSOService(serviceSigner, new URL(accessServiceURL), agentStore, customerStore, ssoProviders,
+      enableCustomerTrialPlan
+    )
+    : undefined
+  
   let audience // accept invocations addressed to any alias
   const proofs = [] // accept attestations issued by any alias
   if (UPLOAD_API_ALIAS) {
@@ -516,10 +525,10 @@ function getLambdaEnv() {
       ({ ...knownWebDIDs, ...JSON.parse(process.env.PRINCIPAL_MAPPING || '{}') }),
     // set for testing
     dbEndpoint: process.env.DYNAMO_DB_ENDPOINT,
-    // SSO provider configuration (optional)
-    dmailApiKey: process.env.DMAIL_API_KEY,
-    dmailApiSecret: process.env.DMAIL_API_SECRET,
-    dmailJwtSecret: process.env.DMAIL_JWT_SECRET,
+    // SSO provider configuration
+    dmailApiKey: Config.DMAIL_API_KEY,
+    dmailApiSecret: Config.DMAIL_API_SECRET,
+    dmailJwtSecret: Config.DMAIL_JWT_SECRET,
     dmailApiUrl: process.env.DMAIL_API_URL,
   }
 }
