@@ -50,7 +50,6 @@ import { createEgressTrafficQueue } from '../../billing/queues/egress-traffic.js
 import { create as createRoutingService } from '../external-services/router.js'
 import { create as createBlobRetriever } from '../external-services/blob-retriever.js'
 import { createSSOService, createDmailSSOService } from '../external-services/sso-providers/index.js'
-import { uploadServiceURL } from '@storacha/client/service'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -341,10 +340,8 @@ export async function ucanInvocationRouter(request) {
   const enableCustomerTrialPlan = process.env.ENABLE_CUSTOMER_TRIAL_PLAN === 'true'
 
   // Build service URL from request data since we're in the same ucan server
-  const requestHost = request.headers?.host || request.headers?.Host
-  const serviceUrl = requestHost ? new URL(`https://${requestHost}`) : uploadServiceURL
   const ssoService = ssoProviders.length
-    ? createSSOService(serviceSigner, serviceUrl, agentStore, customerStore, ssoProviders,
+    ? createSSOService(serviceSigner, new URL(accessServiceURL), agentStore, customerStore, ssoProviders,
       enableCustomerTrialPlan
     )
     : undefined
@@ -438,7 +435,7 @@ export async function ucanInvocationRouter(request) {
   })
 
   const payload = fromLambdaRequest(request)
-        const response = await UploadAPI.handle(server, payload)
+  const response = await UploadAPI.handle(server, payload)
 
   return toLambdaResponse(response)
 }

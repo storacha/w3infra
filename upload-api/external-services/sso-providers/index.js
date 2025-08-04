@@ -192,13 +192,13 @@ export function createSSOService(serviceSigner, serviceUrl, agentStore, customer
 /**
  * Create DMAIL SSO service from environment variables
  * 
- * @param {object} env - Environment variables
- * @param {string} env.apiKey - DMAIL API key
- * @param {string} env.apiSecret - DMAIL API secret
- * @param {string} env.jwtSecret - DMAIL JWT secret
- * @param {string} env.apiUrl - DMAIL API URL
+ * @param {object} config - Service configuration
+ * @param {string} config.apiKey - DMAIL API key
+ * @param {string} config.apiSecret - DMAIL API secret
+ * @param {string} config.jwtSecret - DMAIL JWT secret
+ * @param {string} config.apiUrl - DMAIL API URL
  * @returns {DmailSSOService}
  */
-export function createDmailSSOService(env) {
-  return new DmailSSOService(env)
+export function createDmailSSOService(config) {
+  return new DmailSSOService(config)
 }
