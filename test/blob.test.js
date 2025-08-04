@@ -251,8 +251,6 @@ test('blob integration flow with receipts validation', withCauseLog(async t => {
   const roundaboutResponse = await fetch(
     `${t.context.roundaboutEndpoint}/${rawCid.toString()}`
   )
-  const bodyContent = await roundaboutResponse.text()
-  console.log('Roundabout response:', bodyContent)
   t.is(roundaboutResponse.status, 200)
 
   const fetchedBytes = new Uint8Array(await roundaboutResponse.arrayBuffer())
