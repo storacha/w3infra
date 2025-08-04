@@ -38,6 +38,8 @@ export class SSORouter {
     this.agentStore = agentStore
     this.customerStore = customerStore
     this.providers = providers
+    // TODO (fforbeck): if more providers are added, we need to add a feature flag for each provider using a list of providers names
+    // then if the provider is in the list, we enable the customer trial plan for that provider
     this.enableCustomerTrialPlan = enableCustomerTrialPlan
   }
 
