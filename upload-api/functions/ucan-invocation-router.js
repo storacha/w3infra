@@ -323,7 +323,7 @@ export async function ucanInvocationRouter(request) {
   const storageProviderTable = createStorageProviderTable(AWS_REGION, storageProviderTableName, options)
   const routingService = createRoutingService(storageProviderTable, serviceSigner)
 
-  /** @type {Array<import('@storacha/upload-api/types').SSOProvider & { name: string }>} */
+  /** @type {Array<import('@storacha/upload-api/types').SSOProvider>} */
   const ssoProviders = []
   if (process.env.DMAIL_API_KEY && process.env.DMAIL_API_SECRET) {
 
