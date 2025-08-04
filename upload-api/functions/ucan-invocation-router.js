@@ -50,6 +50,7 @@ import { createEgressTrafficQueue } from '../../billing/queues/egress-traffic.js
 import { create as createRoutingService } from '../external-services/router.js'
 import { create as createBlobRetriever } from '../external-services/blob-retriever.js'
 import { createSSOService, createDmailSSOService } from '../external-services/sso-providers/index.js'
+import { uploadServiceURL } from '@storacha/client/service'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -324,7 +325,8 @@ export async function ucanInvocationRouter(request) {
 
   /** @type {Array<import('@storacha/upload-api/types').SSOProvider>} */
   const ssoProviders = []
-  if (process.env.DMAIL_API_KEY && process.env.DMAIL_API_SECRET) {
+  // Check if DMAIL SSO is configured via SST Config (secrets)
+  if (Config.DMAIL_API_KEY && Config.DMAIL_API_SECRET) {
 
     const dmailSSOService = createDmailSSOService({
       apiKey: Config.DMAIL_API_KEY,
@@ -340,8 +342,10 @@ export async function ucanInvocationRouter(request) {
   const enableCustomerTrialPlan = process.env.ENABLE_CUSTOMER_TRIAL_PLAN === 'true'
 
   // Build service URL from request data since we're in the same ucan server
+  const requestHost = request.headers?.host || request.headers?.Host
+  const serviceUrl = requestHost ? new URL(`https://${requestHost}`) : uploadServiceURL
   const ssoService = ssoProviders.length
-    ? createSSOService(serviceSigner, new URL(accessServiceURL), agentStore, customerStore, ssoProviders,
+    ? createSSOService(serviceSigner, serviceUrl, agentStore, customerStore, ssoProviders,
       enableCustomerTrialPlan
     )
     : undefined
@@ -529,6 +533,6 @@ function getLambdaEnv() {
     dmailApiKey: Config.DMAIL_API_KEY,
     dmailApiSecret: Config.DMAIL_API_SECRET,
     dmailJwtSecret: Config.DMAIL_JWT_SECRET,
-    dmailApiUrl: process.env.DMAIL_API_URL,
+    dmailApiUrl: process.env.DMAIL_API_URL || 'https://api.dmail.ai/open/api/storacha/getUserStatus',
   }
 }
