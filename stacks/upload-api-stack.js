@@ -46,7 +46,7 @@ export function UploadApiStack({ stack, app }) {
 
   // Get references to constructs created in other stacks
   const { carparkBucket } = use(CarparkStack)
-  const { allocationTable, blobRegistryTable, humanodeTable, storeTable, uploadTable, delegationBucket, delegationTable, revocationTable, adminMetricsTable, spaceMetricsTable, consumerTable, subscriptionTable, storageProviderTable, replicaTable, rateLimitTable, pieceTable, privateKey, contentClaimsPrivateKey, indexingServiceProof, githubClientSecret, humanodeClientSecret } = use(UploadDbStack)
+  const { allocationTable, blobRegistryTable, humanodeTable, storeTable, uploadTable, delegationBucket, delegationTable, revocationTable, adminMetricsTable, spaceMetricsTable, consumerTable, subscriptionTable, storageProviderTable, replicaTable, rateLimitTable, pieceTable, privateKey, contentClaimsPrivateKey, indexingServiceProof, githubClientSecret, humanodeClientSecret, dmailApiKey, dmailApiSecret, dmailJwtSecret } = use(UploadDbStack)
   const { agentIndexBucket, agentMessageBucket, ucanStream } = use(UcanInvocationStack)
   const { customerTable, spaceDiffTable, spaceSnapshotTable, egressTrafficTable, stripeSecretKey } = use(BillingDbStack)
   const { pieceOfferQueue, filecoinSubmitQueue } = use(FilecoinStack)
@@ -72,11 +72,6 @@ export function UploadApiStack({ stack, app }) {
   const pkg = getApiPackageJson()
   const git = getGitInfo()
   const ucanInvocationPostbasicAuth = new Config.Secret(stack, 'UCAN_INVOCATION_POST_BASIC_AUTH')
-
-  // Dmail API Integration
-  const dmailApiKey = new Config.Secret(stack, 'DMAIL_API_KEY')
-  const dmailApiSecret = new Config.Secret(stack, 'DMAIL_API_SECRET')
-  const dmailJwtSecret = new Config.Secret(stack, 'DMAIL_JWT_SECRET')
 
   const apis = (customDomains ?? [undefined]).map((customDomain, idx) => {
     const hostedZone = customDomain?.hostedZone
@@ -146,9 +141,6 @@ export function UploadApiStack({ stack, app }) {
               DEAL_TRACKER_URL: process.env.DEAL_TRACKER_URL ?? '',
               DELEGATION_BUCKET_NAME: delegationBucket.bucketName,
               DELEGATION_TABLE_NAME: delegationTable.tableName,
-              DMAIL_API_KEY: process.env.DMAIL_API_KEY ?? '',
-              DMAIL_API_SECRET: process.env.DMAIL_API_SECRET ?? '',
-              DMAIL_JWT_SECRET: process.env.DMAIL_JWT_SECRET ?? '',
               DMAIL_API_URL: process.env.DMAIL_API_URL ?? '',
               DID: process.env.UPLOAD_API_DID ?? '',
               DISABLE_IPNI_PUBLISHING,

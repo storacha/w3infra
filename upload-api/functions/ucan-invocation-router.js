@@ -190,7 +190,7 @@ export async function ucanInvocationRouter(request) {
   }
 
   const { UPLOAD_API_DID, UPLOAD_API_ALIAS, MAX_REPLICAS } = process.env
-  const { PRIVATE_KEY, STRIPE_SECRET_KEY, INDEXING_SERVICE_PROOF, CONTENT_CLAIMS_PRIVATE_KEY } = Config
+  const { PRIVATE_KEY, STRIPE_SECRET_KEY, INDEXING_SERVICE_PROOF, CONTENT_CLAIMS_PRIVATE_KEY, DMAIL_API_KEY, DMAIL_API_SECRET, DMAIL_JWT_SECRET } = Config
   const serviceSigner = getServiceSigner({ did: UPLOAD_API_DID, privateKey: PRIVATE_KEY })
 
   const options = { endpoint: dbEndpoint }
@@ -326,12 +326,12 @@ export async function ucanInvocationRouter(request) {
   /** @type {Array<import('@storacha/upload-api/types').SSOProvider>} */
   const ssoProviders = []
   // Check if DMAIL SSO is configured via SST Config (secrets)
-  if (Config.DMAIL_API_KEY && Config.DMAIL_API_SECRET) {
+  if (DMAIL_API_KEY && DMAIL_API_SECRET) {
 
     const dmailSSOService = createDmailSSOService({
-      apiKey: Config.DMAIL_API_KEY,
-      apiSecret: Config.DMAIL_API_SECRET,
-      jwtSecret: Config.DMAIL_JWT_SECRET || 'unused', // if undefined, we set it to a dummy value to bypass JWT validation
+      apiKey: DMAIL_API_KEY,
+      apiSecret: DMAIL_API_SECRET,
+      jwtSecret: DMAIL_JWT_SECRET || 'unused', // if undefined, we set it to a dummy value to bypass JWT validation
       apiUrl: process.env.DMAIL_API_URL || 'https://api.dmail.ai/open/api/storacha/getUserStatus',
     })
     ssoProviders.push(dmailSSOService)
@@ -529,10 +529,5 @@ function getLambdaEnv() {
       ({ ...knownWebDIDs, ...JSON.parse(process.env.PRINCIPAL_MAPPING || '{}') }),
     // set for testing
     dbEndpoint: process.env.DYNAMO_DB_ENDPOINT,
-    // SSO provider configuration
-    dmailApiKey: Config.DMAIL_API_KEY,
-    dmailApiSecret: Config.DMAIL_API_SECRET,
-    dmailJwtSecret: Config.DMAIL_JWT_SECRET,
-    dmailApiUrl: process.env.DMAIL_API_URL || 'https://api.dmail.ai/open/api/storacha/getUserStatus',
   }
 }

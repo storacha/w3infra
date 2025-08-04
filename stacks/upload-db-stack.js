@@ -41,6 +41,11 @@ export function UploadDbStack({ stack, app }) {
 
   const githubClientSecret = new Config.Secret(stack, 'GITHUB_CLIENT_SECRET')
   const humanodeClientSecret = new Config.Secret(stack, 'HUMANODE_CLIENT_SECRET')
+  
+  // DMAIL SSO secrets
+  const dmailApiKey = new Config.Secret(stack, 'DMAIL_API_KEY')
+  const dmailApiSecret = new Config.Secret(stack, 'DMAIL_API_SECRET')
+  const dmailJwtSecret = new Config.Secret(stack, 'DMAIL_JWT_SECRET')
 
   const humanodeTable = new Table(stack, 'humanode', humanodeTableProps)
 
@@ -155,5 +160,8 @@ export function UploadDbStack({ stack, app }) {
     contentClaimsPrivateKey,
     humanodeClientSecret,
     indexingServiceProof,
+    dmailApiKey,
+    dmailApiSecret,
+    dmailJwtSecret,
   }
 }
