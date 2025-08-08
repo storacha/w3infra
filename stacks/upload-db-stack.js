@@ -40,6 +40,8 @@ export function UploadDbStack({ stack, app }) {
   const indexingServiceProof = new Config.Secret(stack, 'INDEXING_SERVICE_PROOF')
 
   const githubClientSecret = new Config.Secret(stack, 'GITHUB_CLIENT_SECRET')
+  const blueskyClientSecret = new Config.Secret(stack, 'BLUESKY_CLIENT_SECRET')
+  const blueskyPrivateKey = new Config.Secret(stack, 'BLUESKY_PRIVATE_KEY')
   const humanodeClientSecret = new Config.Secret(stack, 'HUMANODE_CLIENT_SECRET')
 
   const humanodeTable = new Table(stack, 'humanode', humanodeTableProps)
@@ -152,6 +154,8 @@ export function UploadDbStack({ stack, app }) {
     replicaTable,
     privateKey,
     githubClientSecret,
+    blueskyClientSecret,
+    blueskyPrivateKey,
     contentClaimsPrivateKey,
     humanodeClientSecret,
     indexingServiceProof,

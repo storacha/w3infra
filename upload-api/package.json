@@ -18,6 +18,8 @@
     "@ipld/dag-json": "catalog:",
     "@ipld/dag-pb": "catalog:",
     "@ipld/dag-ucan": "catalog:",
+    "@atproto/oauth-client-node": "^0.1.4",
+    "@atproto/jwk-jose": "^0.1.2",
     "@sentry/serverless": "catalog:",
     "@storacha/access": "catalog:",
     "@storacha/capabilities": "catalog:",

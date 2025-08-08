@@ -46,7 +46,7 @@ export function UploadApiStack({ stack, app }) {
 
   // Get references to constructs created in other stacks
   const { carparkBucket } = use(CarparkStack)
-  const { allocationTable, blobRegistryTable, humanodeTable, storeTable, uploadTable, delegationBucket, delegationTable, revocationTable, adminMetricsTable, spaceMetricsTable, consumerTable, subscriptionTable, storageProviderTable, replicaTable, rateLimitTable, pieceTable, privateKey, contentClaimsPrivateKey, indexingServiceProof, githubClientSecret, humanodeClientSecret } = use(UploadDbStack)
+  const { allocationTable, blobRegistryTable, humanodeTable, storeTable, uploadTable, delegationBucket, delegationTable, revocationTable, adminMetricsTable, spaceMetricsTable, consumerTable, subscriptionTable, storageProviderTable, replicaTable, rateLimitTable, pieceTable, privateKey, contentClaimsPrivateKey, indexingServiceProof, githubClientSecret, blueskyClientSecret, blueskyPrivateKey, humanodeClientSecret } = use(UploadDbStack)
   const { agentIndexBucket, agentMessageBucket, ucanStream } = use(UcanInvocationStack)
   const { customerTable, spaceDiffTable, spaceSnapshotTable, egressTrafficTable, stripeSecretKey } = use(BillingDbStack)
   const { pieceOfferQueue, filecoinSubmitQueue } = use(FilecoinStack)
@@ -400,6 +400,55 @@ export function UploadApiStack({ stack, app }) {
             },
             bind: [
               githubClientSecret,
+              privateKey,
+            ]
+          }
+        },
+        'GET /oauth/bluesky/callback': {
+          function: {
+            handler: 'upload-api/functions/oauth-bluesky-callback.handler',
+            permissions: [
+              agentIndexBucket,
+              agentMessageBucket,
+              customerTable,
+              ucanStream,
+            ],
+            environment: {
+              AGENT_INDEX_BUCKET_NAME: agentIndexBucket.bucketName,
+              AGENT_MESSAGE_BUCKET_NAME: agentMessageBucket.bucketName,
+              CUSTOMER_TABLE_NAME: customerTable.tableName,
+              BLUESKY_CLIENT_ID: process.env.BLUESKY_CLIENT_ID ?? '',
+              UCAN_LOG_STREAM_NAME: ucanStream.streamName,
+              UPLOAD_API_DID: process.env.UPLOAD_API_DID ?? '',
+              UPLOAD_SERVICE_URL: getServiceURL(stack, customDomain) ?? '',
+            },
+            bind: [
+              blueskyClientSecret,
+              blueskyPrivateKey,
+              privateKey,
+            ]
+          }
+        },
+        'GET /.well-known/client-metadata.json': {
+          function: {
+            handler: 'upload-api/functions/bluesky-client-metadata.handler',
+            environment: {
+              UPLOAD_SERVICE_URL: getServiceURL(stack, customDomain) ?? '',
+            },
+            bind: [
+              blueskyPrivateKey,
+              privateKey,
+            ]
+          }
+        },
+        'GET /.well-known/jwks.json': {
+          function: {
+            handler: 'upload-api/functions/bluesky-jwks.handler',
+            environment: {
+              UPLOAD_SERVICE_URL: getServiceURL(stack, customDomain) ?? '',
+            },
+            bind: [
+              blueskyPrivateKey,
               privateKey,
             ]
           }
