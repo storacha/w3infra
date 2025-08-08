@@ -69,10 +69,15 @@ export const oauthBlueskyCallbackGet = async (request, context) => {
       createdAt: profile.createdAt || new Date().toISOString()
     }
 
+    
+
     if (!user.email) {
       console.error('missing email in user profile', user)
       return { statusCode: 400, body: 'missing email in user profile' }
     }
+
+    // TODO: get "email validated" state from profile and give the user a basic storage allocation
+    // if their email has been validated by Bluesky
 
     // The state should contain the original access/authorize delegation
     const state = searchParams.get('state')
