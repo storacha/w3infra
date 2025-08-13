@@ -376,6 +376,17 @@ export function UploadApiStack({ stack, app }) {
             }
           }
         },
+        'POST /revocations/check': {
+          function: {
+            handler: 'upload-api/functions/revocations-check.handler',
+            permissions: [
+              revocationTable,
+            ],
+            environment: {
+              REVOCATION_TABLE_NAME: revocationTable.tableName,
+            }
+          }
+        },
         'GET /oauth/callback': {
           function: {
             handler: 'upload-api/functions/oauth-callback.handler',
