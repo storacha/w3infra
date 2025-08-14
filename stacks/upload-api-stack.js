@@ -150,6 +150,7 @@ export function UploadApiStack({ stack, app }) {
               INDEXING_SERVICE_DID,
               INDEXING_SERVICE_URL,
               ...(ipniConfig ? ipniConfig.environment : {}),
+              MAX_REPLICAS: process.env.MAX_REPLICAS ?? '',
               PIECE_OFFER_QUEUE_URL: pieceOfferQueue.queueUrl,
               PIECE_TABLE_NAME: pieceTable.tableName,
               POSTMARK_TOKEN: process.env.POSTMARK_TOKEN ?? '',
