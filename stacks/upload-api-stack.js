@@ -376,7 +376,7 @@ export function UploadApiStack({ stack, app }) {
             }
           }
         },
-        'POST /revocations/check': {
+        'GET /revocations/{cid}': {
           function: {
             handler: 'upload-api/functions/revocations-check.handler',
             permissions: [
