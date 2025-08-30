@@ -243,17 +243,17 @@ export async function ucanInvocationRouter(request) {
   const stripe = new Stripe(STRIPE_SECRET_KEY, { apiVersion: '2023-10-16' })
   const plansStorage = usePlansStore(customerStore, createStripeBillingProvider(stripe, customerStore))
   const rateLimitsStorage = createRateLimitTable(AWS_REGION, rateLimitTableName)
-  const spaceMetricsTable = createSpaceMetricsTable(AWS_REGION, spaceMetricsTableName)
-
-  const provisionsStorage = useProvisionStore(subscriptionTable, consumerTable, spaceMetricsTable, parseServiceDids(providers))
-  const subscriptionsStorage = useSubscriptionsStore({ consumerTable })
-  const delegationsStorage = createDelegationsTable(AWS_REGION, delegationTableName, { bucket: delegationBucket })
-  const revocationsStorage = createRevocationsTable(AWS_REGION, revocationTableName)
   const spaceDiffStore = createSpaceDiffStore({ region: AWS_REGION }, { tableName: spaceDiffTableName })
   const spaceSnapshotStore = createSpaceSnapshotStore({ region: AWS_REGION }, { tableName: spaceSnapshotTableName })
   const egressTrafficQueue = createEgressTrafficQueue({ region: AWS_REGION }, { url: new URL(egressTrafficQueueUrl) })
+
   const usageStorage = useUsageStore({ spaceDiffStore, spaceSnapshotStore, egressTrafficQueue })
 
+  const provisionsStorage = useProvisionStore(subscriptionTable, consumerTable, customerStore, usageStorage, parseServiceDids(providers))
+  const subscriptionsStorage = useSubscriptionsStore({ consumerTable })
+  const delegationsStorage = createDelegationsTable(AWS_REGION, delegationTableName, { bucket: delegationBucket })
+  const revocationsStorage = createRevocationsTable(AWS_REGION, revocationTableName)
+  
   const dealTrackerConnection = getServiceConnection({
     did: dealTrackerDid,
     url: dealTrackerUrl

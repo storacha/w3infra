@@ -3,6 +3,7 @@ import { validate, encode, encodeKey, decode } from '../data/customer.js'
 import { UpdateItemCommand } from '@aws-sdk/client-dynamodb'
 import { marshall } from '@aws-sdk/util-dynamodb'
 import { StoreOperationFailure } from './lib.js'
+import { productInfo } from '../lib/product-info.js'
 
 /**
  * Stores customer details.
@@ -46,6 +47,23 @@ export const createCustomerStore = (conf, { tableName }) => ({
     encodeKey: () => ({ ok: {} }),
     decode
   }),
+
+  async planLimit(customer) {
+    const customerRecord = await this.get({ customer })
+    if (customerRecord.error) {
+      if (customerRecord.error.name === 'RecordNotFound') {
+        // no customer found means no plan, means 0 limit
+        return { ok: 0 }
+      }
+      return { error: customerRecord.error }
+    }
+    
+    const plan = productInfo[customerRecord.ok.product]
+    if (!plan) {
+      return { error: { name: 'PlanNotFound', message: `could not find plan for ${customerRecord.ok.product}` } }
+    }
+    return { ok: plan.allowOverages ? 0 : plan.included }
+  },
 
   async updateProduct(customer, product) {
     const client = connectTable(conf)
