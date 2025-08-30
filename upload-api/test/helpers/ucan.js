@@ -7,7 +7,7 @@ import { connect, createServer } from '@storacha/upload-api'
 import { DebugEmail } from '@storacha/upload-api/test'
 import { confirmConfirmationUrl } from '@storacha/upload-api/test/utils'
 import { ClaimsService, IndexingService } from '@storacha/upload-api/test/external-service'
-import { createBucket, createTable } from '../helpers/resources.js'
+import { createBucket, createQueue, createTable } from '../helpers/resources.js'
 import { storeTableProps, uploadTableProps, allocationTableProps, consumerTableProps, delegationTableProps, subscriptionTableProps, rateLimitTableProps, revocationTableProps, spaceMetricsTableProps, storageProviderTableProps, blobRegistryTableProps, adminMetricsTableProps, replicaTableProps } from '../../tables/index.js'
 import { useBlobRegistry, useAllocationTableBlobRegistry } from '../../stores/blob-registry.js'
 import { composeCarStoresWithOrderedHas } from '../../buckets/car-store.js'
@@ -21,7 +21,6 @@ import { useDelegationsTable } from '../../tables/delegations.js'
 import { useRevocationsTable } from '../../stores/revocations.js'
 import { useDelegationsStore } from '../../buckets/delegations-store.js'
 import { useRateLimitTable } from '../../tables/rate-limit.js'
-import { useSpaceMetricsTable } from '../../tables/space-metrics.js'
 import { createCustomerStore, customerTableProps } from '../../../billing/tables/customer.js'
 import { usePlansStore } from '../../stores/plans.js'
 import { useMetricsTable as useAdminMetricsStore } from '../../stores/metrics.js'
@@ -40,8 +39,11 @@ import { create as createBlobRetriever } from '../../external-services/blob-retr
 import { create as createIndexingServiceClient } from './external-services/indexing-service.js'
 import { createTestIPNIService } from './external-services/ipni-service.js'
 import { useStorageProviderTable } from '../../tables/storage-provider.js'
-import { spaceDiffTableProps } from '../../../billing/tables/space-diff.js'
+import { spaceDiffTableProps, createSpaceDiffStore } from '../../../billing/tables/space-diff.js'
+import { spaceSnapshotTableProps, createSpaceSnapshotStore } from '../../../billing/tables/space-snapshot.js'
+import { createEgressTrafficQueue } from '../../../billing/queues/egress-traffic.js'
 import { useReplicaTable } from '../../tables/replica.js'
+import { useUsageStore } from '../../stores/usage.js'
 
 export { API }
 
@@ -246,10 +248,12 @@ export async function executionContextToUcantoTestServerContext(t) {
     admin: useAdminMetricsStore(dynamo, adminMetricsTableName)
   }
   const consumerTableName = await createTable(dynamo, consumerTableProps)
+  const spaceDiffTableName = await createTable(dynamo, spaceDiffTableProps)
+  const spaceSnapshotTableName = await createTable(dynamo, spaceSnapshotTableProps)
   const blobRegistry = useBlobRegistry(
     dynamo,
     await createTable(dynamo, blobRegistryTableProps),
-    await createTable(dynamo, spaceDiffTableProps),
+    spaceDiffTableName,
     consumerTableName,
     metrics
   )
@@ -323,21 +327,29 @@ export async function executionContextToUcantoTestServerContext(t) {
     dynamo,
     consumerTableName
   )
-  const spaceMetricsTable = useSpaceMetricsTable(
-    dynamo,
-    await createTable(dynamo, spaceMetricsTableProps)
-  )
+
   const pieceStore = usePieceTable(
     dynamo,
     await createTable(dynamo, pieceTableProps)
   )
+
+  const customersStore = createCustomerStore(dynamo, { tableName: await createTable(dynamo, customerTableProps) })
+  
+  const spaceDiffStore = createSpaceDiffStore(dynamo, { tableName: spaceDiffTableName })
+  const spaceSnapshotStore = createSpaceSnapshotStore(dynamo, { tableName: spaceSnapshotTableName })
+  const egressTrafficQueueUrl = await createQueue(sqs, 'egress-traffic-queue')
+  const egressTrafficQueue = createEgressTrafficQueue(sqs, { url: egressTrafficQueueUrl })
+  const usageStorage = useUsageStore({ spaceDiffStore, spaceSnapshotStore, egressTrafficQueue })
+   
+  
   const provisionsStorage = useProvisionStore(
     subscriptionTable,
     consumerTable,
-    spaceMetricsTable,
+    customersStore,
+    usageStorage,
     [id.did()]
   )
-  const customersStore = createCustomerStore(dynamo, { tableName: await createTable(dynamo, customerTableProps) })
+  
   const billingProvider = createTestBillingProvider()
   const plansStorage = usePlansStore(customersStore, billingProvider)
   const email = new DebugEmail()
@@ -369,6 +381,7 @@ export async function executionContextToUcantoTestServerContext(t) {
     blobRetriever,
     agentStore,
     getServiceConnection,
+    usageStorage,
     provisionsStorage,
     delegationsStorage,
     rateLimitsStorage,

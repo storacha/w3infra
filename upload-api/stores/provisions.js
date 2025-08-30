@@ -1,6 +1,31 @@
+import { cidrSplitToCfnExpression } from 'aws-cdk-lib/aws-ec2'
 import { ConflictError as ConsumerConflictError } from '../tables/consumer.js'
 import { ConflictError as SubscriptionConflictError } from '../tables/subscription.js'
 import { CBOR, Failure } from '@ucanto/server'
+import { productInfo } from '../../billing/lib/product-info.js'
+
+
+/**
+ * @param {string | number | Date} now 
+ */
+const startOfMonth = (now) => {
+  const d = new Date(now)
+  d.setUTCDate(1)
+  d.setUTCHours(0)
+  d.setUTCMinutes(0)
+  d.setUTCSeconds(0)
+  d.setUTCMilliseconds(0)
+  return d
+}
+
+/**
+ * @param {string | number | Date} now 
+ */
+const startOfLastMonth = (now) => {
+  const d = startOfMonth(now)
+  d.setUTCMonth(d.getUTCMonth() - 1)
+  return d
+}
 
 /**
  * Create a subscription ID for a given provision. Currently 
@@ -16,11 +41,12 @@ export const createProvisionSubscriptionId = async ({ customer, consumer }) =>
 /**
  * @param {import('../types.js').SubscriptionTable} subscriptionTable
  * @param {import('../types.js').ConsumerTable} consumerTable
- * @param {import('../types.js').SpaceMetricsTable} spaceMetricsTable
+ * @param {import("../../billing/lib/api.js").CustomerStore} customerStore
+ * @param {import('@storacha/upload-api').UsageStorage} usageStore
  * @param {import('@ucanto/interface').DID<'web'>[]} services
  * @returns {import('@storacha/upload-api').ProvisionsStorage}
  */
-export function useProvisionStore (subscriptionTable, consumerTable, spaceMetricsTable, services) {
+export function useProvisionStore (subscriptionTable, consumerTable, customerStore, usageStore, services) {
   return {
     services,
     hasStorageProvider: async (consumer) => (
@@ -100,21 +126,40 @@ export function useProvisionStore (subscriptionTable, consumerTable, spaceMetric
     },
 
     getConsumer: async (provider, consumer) => {
-      const [consumerRecord, allocated] = await Promise.all([
-        consumerTable.get(provider, consumer),
-        spaceMetricsTable.getAllocated(consumer)
-      ])
-      return consumerRecord ? ({
+      const consumerRecord = await consumerTable.get(provider, consumer)
+      if (!consumerRecord) {
+        return { error: { name: 'ConsumerNotFound', message: `could not find ${consumer}` } }
+      }
+      const planLimitResult = await customerStore.planLimit(consumerRecord.customer)
+      if (planLimitResult.error) {
+        return { error: planLimitResult.error }
+      }
+      const consumerRecords = await consumerTable.listByCustomer(consumerRecord.customer)
+      let totalUsage = 0
+      for (const consumer of consumerRecords.results) {
+        const now = new Date()
+        const spaceUsage = await usageStore.report(consumer.provider, consumer.consumer, {
+          // we may not have done a snapshot for this month _yet_, so get report
+          // from last month -> now
+          from: startOfLastMonth(now),
+          to: now,
+        })
+
+        if (spaceUsage.error) {
+          return { error: { name: 'UsageReportError', message: `could not get usage report for ${consumer.consumer}`, cause: spaceUsage.error } }
+        }
+        totalUsage += spaceUsage.ok.size.final
+      }
+
+      return ({
         ok: {
           did: consumer,
-          allocated,
-          limit: 1_000_000_000, // set to an arbitrarily high number because we currently don't enforce any limits
+          allocated: totalUsage, // set to 0 because we currently don't track allocated space
+          limit: planLimitResult.ok,
           subscription: consumerRecord.subscription,
           customer: consumerRecord.customer
         }
-      }) : (
-        { error: { name: 'ConsumerNotFound', message: `could not find ${consumer}` } }
-      )
+      })
     },
 
     getSubscription: async (provider, subscription) => {
