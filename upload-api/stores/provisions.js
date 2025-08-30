@@ -1,9 +1,6 @@
-import { cidrSplitToCfnExpression } from 'aws-cdk-lib/aws-ec2'
 import { ConflictError as ConsumerConflictError } from '../tables/consumer.js'
 import { ConflictError as SubscriptionConflictError } from '../tables/subscription.js'
 import { CBOR, Failure } from '@ucanto/server'
-import { productInfo } from '../../billing/lib/product-info.js'
-
 
 /**
  * @param {string | number | Date} now 
