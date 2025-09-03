@@ -36,8 +36,8 @@ export async function revocationsGet(request) {
           'Access-Control-Allow-Headers': 'Accept',
         },
         body: JSON.stringify({
-          error: 'Missing CID parameter',
-          message: 'CID parameter is required in the URL path'
+          error: 'Bad request',
+          message: 'CID parameter is required'
         }),
       }
     }
@@ -55,8 +55,8 @@ export async function revocationsGet(request) {
           'Access-Control-Allow-Headers': 'Accept',
         },
         body: JSON.stringify({
-          error: 'Invalid CID format',
-          message: 'The provided CID is not a valid IPFS CID'
+          error: 'Bad request',
+          message: 'Invalid CID parameter'
         }),
       }
     }
@@ -100,7 +100,7 @@ export async function revocationsGet(request) {
           'Access-Control-Allow-Methods': 'GET',
           'Access-Control-Allow-Headers': 'Accept',
         },
-        body: 'Delegation not revoked',
+        body: 'No revocation record found',
       }
     }
     const carBytes = await createRevocationCAR(normalizedCID, revocations)
@@ -154,10 +154,9 @@ async function createRevocationCAR(delegationCID, revocations) {
   // Since we queried for a specific delegation CID, get its revocations
   const scopeRevocations = revocations[delegationCID]
   if (scopeRevocations) {
-    for (const [scopeDID, revocationData] of Object.entries(scopeRevocations)) {
+    for (const [, revocationData] of Object.entries(scopeRevocations)) {
       const revoked = /** @type {{ cause: import('multiformats/link').Link }} */ (revocationData)
       revocationList.push({
-        scope: scopeDID,
         cause: revoked.cause.toString(),
       })
     }
@@ -167,7 +166,6 @@ async function createRevocationCAR(delegationCID, revocations) {
     "revocations@0.0.1": {
       revocations: revocationList.map(rev => ({
         delegation: { "/": delegationCID },
-        scope: rev.scope,
         cause: { "/": rev.cause }
       }))
     }

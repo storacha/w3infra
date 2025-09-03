@@ -66,7 +66,7 @@ test('revocations endpoint returns 404 for non-revoked delegation', async (t) =>
   
   t.is(response.statusCode, 404)
   t.is(response.headers['Content-Type'], 'text/plain')
-  t.is(response.body, 'Delegation not revoked')
+  t.is(response.body, 'No revocation record found')
 })
 
 test('revocations endpoint returns CAR file with verifiable content', async (t) => {
@@ -191,7 +191,6 @@ test('revocations endpoint returns CAR file with verifiable content', async (t) 
   
   const revocationEntry = revocations[0]
   t.is(revocationEntry.delegation['/'], delegation.cid.toString(), 'Delegation CID should match')
-  t.is(revocationEntry.scope, alice.did(), 'Revocation should be scoped to Alice')
   t.is(revocationEntry.cause['/'], revocation.cid.toString(), 'Revocation cause should match revocation CID')
   
   // Verify that the revocation proof (UCAN) is included in the CAR
@@ -272,8 +271,8 @@ test('revocations endpoint returns 400 for missing CID parameter', async (t) => 
   t.is(response.statusCode, 400)
   t.is(response.headers['Content-Type'], 'application/json')
   const body = JSON.parse(response.body)
-  t.is(body.error, 'Missing CID parameter')
-  t.is(body.message, 'CID parameter is required in the URL path')
+  t.is(body.error, 'Bad request')
+  t.is(body.message, 'CID parameter is required')
 })
 
 test('revocations endpoint returns 400 for invalid CID format', async (t) => {
@@ -293,8 +292,8 @@ test('revocations endpoint returns 400 for invalid CID format', async (t) => {
   t.is(response.statusCode, 400)
   t.is(response.headers['Content-Type'], 'application/json')
   const body = JSON.parse(response.body)
-  t.is(body.error, 'Invalid CID format')
-  t.is(body.message, 'The provided CID is not a valid IPFS CID')
+  t.is(body.error, 'Bad request')
+  t.is(body.message, 'Invalid CID parameter')
 })
 
 test('revocations endpoint returns 500 for DynamoDB query failure', async (t) => {
@@ -510,7 +509,6 @@ test('verify top level delegation chain revocation', async (t) => {
   
   const revocationEntry = revocations[0]
   t.is(revocationEntry.delegation['/'], aliceToBob.cid.toString(), 'Delegation CID should match')
-  t.is(revocationEntry.scope, alice.did(), 'Revocation should be scoped to Alice')
   t.is(revocationEntry.cause['/'], revocation.cid.toString(), 'Revocation cause should match Alice revocation CID')
   
   // Verify that the revocation proof (UCAN) is included in the CAR
@@ -530,10 +528,10 @@ test('verify top level delegation chain revocation', async (t) => {
   // Should return 404 since Bob -> Charlie is not explicitly revoked
   // Client will need to check the proof chain (Alice -> Bob) to determine validity
   t.is(responseBobToCharlie.statusCode, 404)
-  t.is(responseBobToCharlie.body, 'Delegation not revoked')
+  t.is(responseBobToCharlie.body, 'No revocation record found')
   
   // Client-side proof chain verification for Bob -> Charlie
-  const bobToCharlieVerification = await verifyProofChain(bobToCharlie, revocationsGet, lambdaUtils)
+  const bobToCharlieVerification = await isRevoked(bobToCharlie, revocationsGet, lambdaUtils)
   t.false(bobToCharlieVerification.isValid, 'Bob -> Charlie should be invalid due to broken proof chain')
   t.is(bobToCharlieVerification.revokedDelegation, aliceToBob.cid.toString(), 'Should identify Alice -> Bob as the revoked delegation')
   t.truthy(bobToCharlieVerification.reason, 'Should provide reason for invalidity')
@@ -550,10 +548,10 @@ test('verify top level delegation chain revocation', async (t) => {
   // Should return 404 since Charlie -> Dave is not explicitly revoked
   // Client will need to check the proof chain (Alice -> Bob) to determine validity
   t.is(responseCharlieToDave.statusCode, 404)
-  t.is(responseCharlieToDave.body, 'Delegation not revoked')
+  t.is(responseCharlieToDave.body, 'No revocation record found')
   
   // Client-side proof chain verification for Charlie -> Dave
-  const charlieToDaveVerification = await verifyProofChain(charlieToDave, revocationsGet, lambdaUtils)
+  const charlieToDaveVerification = await isRevoked(charlieToDave, revocationsGet, lambdaUtils)
   t.false(charlieToDaveVerification.isValid, 'Charlie -> Dave should be invalid due to broken proof chain')
   t.is(charlieToDaveVerification.revokedDelegation, aliceToBob.cid.toString(), 'Should identify Alice -> Bob as the revoked delegation')
   t.truthy(charlieToDaveVerification.reason, 'Should provide reason for invalidity')
@@ -579,10 +577,10 @@ test('verify top level delegation chain revocation', async (t) => {
   
   // Should return 404 since this delegation is not revoked
   t.is(responseUnrelated.statusCode, 404)
-  t.is(responseUnrelated.body, 'Delegation not revoked')
+  t.is(responseUnrelated.body, 'No revocation record found')
   
   // Client-side proof chain verification for unrelated delegation
-  const unrelatedVerification = await verifyProofChain(unrelatedDelegation, revocationsGet, lambdaUtils)
+  const unrelatedVerification = await isRevoked(unrelatedDelegation, revocationsGet, lambdaUtils)
   t.true(unrelatedVerification.isValid, 'Unrelated delegation should be valid (no revocations in proof chain)')
   t.falsy(unrelatedVerification.revokedDelegation, 'Should not identify any revoked delegation')
   t.falsy(unrelatedVerification.reason, 'Should not provide reason for invalidity')
@@ -712,7 +710,7 @@ test('verify intermediate level delegation chain revocation', async (t) => {
   
   // Should return 404 since Alice->Bob is not revoked
   t.is(responseAliceToBob.statusCode, 404)
-  t.is(responseAliceToBob.body, 'Delegation not revoked')
+  t.is(responseAliceToBob.body, 'No revocation record found')
   
   // Test 2: Verify that Bob -> Charlie delegation is revoked and returns CAR file
   const eventBobToCharlie = lambdaUtils.mockEventCreator.createAPIGatewayEvent({
@@ -739,7 +737,7 @@ test('verify intermediate level delegation chain revocation', async (t) => {
   
   // Returns 404 since Charlie->Dave is not explicitly revoked
   t.is(responseCharlieToDave.statusCode, 404)
-  t.is(responseCharlieToDave.body, 'Delegation not revoked')
+  t.is(responseCharlieToDave.body, 'No revocation record found')
   
   // Client-side proof chain verification
   // 1. Extract proofs from Charlie->Dave delegation
@@ -799,7 +797,6 @@ test('verify intermediate level delegation chain revocation', async (t) => {
   
   const revocationEntry = revocations[0]
   t.is(revocationEntry.delegation['/'], bobToCharlie.cid.toString(), 'Delegation CID should match')
-  t.is(revocationEntry.scope, bob.did(), 'Revocation should be scoped to Bob')
   t.is(revocationEntry.cause['/'], bobRevocation.cid.toString(), 'Revocation cause should match Bob revocation CID')
   
   // Verify that the revocation proof (UCAN) is included in the CAR
@@ -816,44 +813,77 @@ test('verify intermediate level delegation chain revocation', async (t) => {
 
 /**
  * Client-side proof chain verification utility
- * Recursively checks if a delegation is valid by verifying its proof chain
+ * Collects all CIDs in proof chain and checks them in parallel with cancellation
  *
  * @param {any} delegation - The delegation to verify
  * @param {Function} revocationsGet - Function to check revocations
  * @param {any} lambdaUtils - Lambda test utils for creating events
+ * @param {number} concurrencyLimit - Max parallel requests (default: 5)
  * @returns {Promise<{isValid: boolean, revokedDelegation?: string, reason?: string}>}
  */
-async function verifyProofChain(delegation, revocationsGet, lambdaUtils) {
-  // Check if this delegation is explicitly revoked
-  const event = lambdaUtils.mockEventCreator.createAPIGatewayEvent({
-    pathParameters: {
-      cid: delegation.cid.toString()
-    }
-  })
+async function isRevoked(delegation, revocationsGet, lambdaUtils, concurrencyLimit = 5) {
+  // Collect all CIDs in the proof chain (breadth-first)
+  const cidsToCheck = []
+  const queue = [delegation]
+  const visited = new Set()
   
-  const response = await revocationsGet(event)
-  
-  // If explicitly revoked, return invalid
-  if (response.statusCode === 200) {
-    return {
-      isValid: false,
-      revokedDelegation: delegation.cid.toString(),
-      reason: 'Delegation explicitly revoked'
+  while (queue.length > 0) {
+    const current = queue.shift()
+    const cidStr = current.cid.toString()
+    
+    if (visited.has(cidStr)) continue
+    visited.add(cidStr)
+    cidsToCheck.push(cidStr)
+    
+    // Add proofs to queue for traversal
+    if (current.proofs) {
+      queue.push(...current.proofs)
     }
   }
   
-  // Check proof chain recursively
-  for (const proof of delegation.proofs) {
-    const proofResult = await verifyProofChain(proof, revocationsGet, lambdaUtils)
-    if (!proofResult.isValid) {
-      return {
+  // Check all CIDs in parallel with concurrency limit and cancellation
+  const abortController = new AbortController()
+  let foundRevocation = null
+  
+  // @ts-ignore
+  const checkCID = async (cid) => {
+    if (abortController.signal.aborted) return null
+    
+    const event = lambdaUtils.mockEventCreator.createAPIGatewayEvent({
+      pathParameters: { cid }
+    })
+    
+    const response = await revocationsGet(event)
+    if (response.statusCode === 200) {
+      foundRevocation = {
         isValid: false,
-        revokedDelegation: proofResult.revokedDelegation,
-        reason: `Proof chain broken: ${proofResult.reason}`
+        revokedDelegation: cid,
+        reason: 'Delegation explicitly revoked'
       }
+      abortController.abort() // Cancel remaining requests
+      return foundRevocation
+    }
+    
+    return null
+  }
+  
+  // Process CIDs in batches with concurrency limit
+  const promises = []
+  for (let i = 0; i < cidsToCheck.length; i += concurrencyLimit) {
+    const batch = cidsToCheck.slice(i, i + concurrencyLimit)
+    const batchPromises = batch.map(checkCID)
+    promises.push(...batchPromises)
+    
+    // Wait for current batch if we have more to process
+    if (i + concurrencyLimit < cidsToCheck.length) {
+      await Promise.allSettled(batchPromises)
+      if (foundRevocation) break // Early exit if revocation found
     }
   }
   
-  // If no revocations found in chain, delegation is valid
-  return { isValid: true }
+  // Wait for remaining promises
+  await Promise.allSettled(promises)
+  
+  // Return result
+  return foundRevocation || { isValid: true }
 }
