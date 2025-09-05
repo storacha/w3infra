@@ -38,7 +38,7 @@ export class Email {
     const { hostname } = new URL(opts.url)
     const emailParams = hostname.endsWith('web3.storage')
       ? {
-          From: this.sender || 'web3.storage <noreply@web3.storage>',
+          From: this.sender || 'web3.storage <support@web3.storage>',
           TemplateAlias: 'welcome',
           TemplateModel: {
             product_url: 'https://web3.storage',
@@ -48,7 +48,7 @@ export class Email {
           },
         }
       : {
-        From: this.sender || 'Storacha <noreply@storacha.network>',
+        From: this.sender || 'Storacha <support@storacha.network>',
         TemplateAlias: 'welcome-storacha',
           TemplateModel: {
             email: opts.to,
