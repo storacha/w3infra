@@ -70,13 +70,15 @@ test('revocations endpoint returns 404 for non-revoked delegation', async (t) =>
   })
   const delegationsStore = createDelegationsStore('us-west-2', 'test-delegations')
   
-  // @ts-ignore
-  const response = await revocationsGet(event, {}, () => {}, {
-    deps: {
-      revocationsStorage,
-      delegationsStore
+  const response = await revocationsGet(event, {
+    // @ts-ignore
+    clientContext: {
+      Custom: {
+        revocationsStorage,
+        delegationsStore
+      }
     }
-  })
+  }, () => {})
   
   t.is(response.statusCode, 404)
   t.is(response.headers['Content-Type'], 'text/plain')
@@ -164,13 +166,15 @@ test('revocations endpoint returns CAR file with verifiable content', async (t) 
   process.env.AWS_REGION = 'us-west-2'
   process.env.DYNAMO_DB_ENDPOINT = dynamoEndpoint
   
-  // @ts-ignore
-  const response = await revocationsGet(event, {}, () => {}, {
-    deps: {
-      revocationsStorage,
-      delegationsStore
+  const response = await revocationsGet(event, {
+    // @ts-ignore
+    clientContext: {
+      Custom: {
+        revocationsStorage,
+        delegationsStore
+      }
     }
-  })
+  }, () => {})
 
   // Should return 200 with CAR file since revocation was found and S3 mock works
   t.is(response.statusCode, 200)
@@ -500,13 +504,15 @@ test('verify top level delegation chain revocation', async (t) => {
   })
   console.log('Call revocationsGet')
   
-  // @ts-ignore - Mock context for testing
-  const responseAliceToBob = await revocationsGet(eventAliceToBob, {}, () => {}, {
-    deps: {
-      revocationsStorage,
-      delegationsStore
+  const responseAliceToBob = await revocationsGet(eventAliceToBob, {
+    // @ts-ignore - Mock context for testing
+    clientContext: {
+      Custom: {
+        revocationsStorage,
+        delegationsStore
+      }
     }
-  })
+  }, () => {})
   console.log('Response', responseAliceToBob)
   // Should return 200 with CAR file since revocation was found and S3 mock works
   t.is(responseAliceToBob.statusCode, 200)
@@ -559,13 +565,15 @@ test('verify top level delegation chain revocation', async (t) => {
     }
   })
   
-  // @ts-ignore - Mock context for testing
-  const responseBobToCharlie = await revocationsGet(eventBobToCharlie, {}, () => {}, {
-    deps: {
-      revocationsStorage,
-      delegationsStore
+  const responseBobToCharlie = await revocationsGet(eventBobToCharlie, {
+    // @ts-ignore - Mock context for testing
+    clientContext: {
+      Custom: {
+        revocationsStorage,
+        delegationsStore
+      }
     }
-  })
+  }, () => {})
   
   // Should return 404 since Bob -> Charlie is not explicitly revoked
   // Client will need to check the proof chain (Alice -> Bob) to determine validity
@@ -585,13 +593,15 @@ test('verify top level delegation chain revocation', async (t) => {
     }
   })
   
-  // @ts-ignore - Mock context for testing
-  const responseCharlieToDave = await revocationsGet(eventCharlieToDave, {}, () => {}, {
-    deps: {
-      revocationsStorage,
-      delegationsStore
+  const responseCharlieToDave = await revocationsGet(eventCharlieToDave, {
+    // @ts-ignore - Mock context for testing
+    clientContext: {
+      Custom: {
+        revocationsStorage,
+        delegationsStore
+      }
     }
-  })
+  }, () => {})
   
   // Should return 404 since Charlie -> Dave is not explicitly revoked
   // Client will need to check the proof chain (Alice -> Bob) to determine validity
@@ -621,13 +631,15 @@ test('verify top level delegation chain revocation', async (t) => {
     }
   })
   
-  // @ts-ignore - Mock context for testing
-  const responseUnrelated = await revocationsGet(eventUnrelated, {}, () => {}, {
-    deps: {
-      revocationsStorage,
-      delegationsStore
+  const responseUnrelated = await revocationsGet(eventUnrelated, {
+    // @ts-ignore - Mock context for testing
+    clientContext: {
+      Custom: {
+        revocationsStorage,
+        delegationsStore
+      }
     }
-  })
+  }, () => {})
   
   // Should return 404 since this delegation is not revoked
   t.is(responseUnrelated.statusCode, 404)
@@ -757,13 +769,15 @@ test('verify intermediate level delegation chain revocation', async (t) => {
     }
   })
   
-  // @ts-ignore - Mock context for testing
-  const responseAliceToBob = await revocationsGet(eventAliceToBob, {}, () => {}, {
-    deps: {
-      revocationsStorage,
-      delegationsStore
+  const responseAliceToBob = await revocationsGet(eventAliceToBob, {
+    // @ts-ignore - Mock context for testing
+    clientContext: {
+      Custom: {
+        revocationsStorage,
+        delegationsStore
+      }
     }
-  })
+  }, () => {})
   
   // Should return 404 since Alice->Bob is not revoked
   t.is(responseAliceToBob.statusCode, 404)
@@ -776,13 +790,15 @@ test('verify intermediate level delegation chain revocation', async (t) => {
     }
   })
   
-  // @ts-ignore - Mock context for testing
-  const responseBobToCharlie = await revocationsGet(eventBobToCharlie, {}, () => {}, {
-    deps: {
-      revocationsStorage,
-      delegationsStore
+  const responseBobToCharlie = await revocationsGet(eventBobToCharlie, {
+    // @ts-ignore - Mock context for testing
+    clientContext: {
+      Custom: {
+        revocationsStorage,
+        delegationsStore
+      }
     }
-  })
+  }, () => {})
   
   // Should return 200 with CAR file since revocation was found and S3 mock works
   t.is(responseBobToCharlie.statusCode, 200)
@@ -796,13 +812,15 @@ test('verify intermediate level delegation chain revocation', async (t) => {
     }
   })
   
-  // @ts-ignore - Mock context for testing
-  const responseCharlieToDave = await revocationsGet(eventCharlieToDave, {}, () => {}, {
-    deps: {
-      revocationsStorage,
-      delegationsStore
+  const responseCharlieToDave = await revocationsGet(eventCharlieToDave, {
+    // @ts-ignore - Mock context for testing
+    clientContext: {
+      Custom: {
+        revocationsStorage,
+        delegationsStore
+      }
     }
-  })
+  }, () => {})
   
   // Returns 404 since Charlie->Dave is not explicitly revoked
   t.is(responseCharlieToDave.statusCode, 404)
@@ -825,13 +843,15 @@ test('verify intermediate level delegation chain revocation', async (t) => {
     }
   })
   
-  // @ts-ignore - Mock context for testing
-  const responseProofCheck = await revocationsGet(eventProofCheck, {}, () => {}, {
-    deps: {
-      revocationsStorage,
-      delegationsStore
+  const responseProofCheck = await revocationsGet(eventProofCheck, {
+    // @ts-ignore - Mock context for testing
+    clientContext: {
+      Custom: {
+        revocationsStorage,
+        delegationsStore
+      }
     }
-  })
+  }, () => {})
   
   // 3.2. Verify that the proof (Bob->Charlie) is revoked and returns CAR file
   t.is(responseProofCheck.statusCode, 200) // Should return 200 with CAR file since S3 has mock data
@@ -932,12 +952,14 @@ async function isRevoked(delegation, { revocationsGet, lambdaUtils, revocationsS
       pathParameters: { cid }
     })
     
-    const response = await revocationsGet(event, {}, () => {}, {
-    deps: {
-      revocationsStorage,
-      delegationsStore
-    }
-  })
+    const response = await revocationsGet(event, {
+      clientContext: {
+        Custom: {
+          revocationsStorage,
+          delegationsStore
+        }
+      }
+    }, () => {})
     if (response.statusCode === 200) {
       foundRevocation = {
         isValid: false,

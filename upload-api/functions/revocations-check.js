@@ -58,11 +58,13 @@ function createContext(options = {}) {
  * @param {import('aws-lambda').APIGatewayProxyEventV2} request
  * @param {import('aws-lambda').Context} context
  * @param {import('aws-lambda').Callback} callback
- * @param {{ deps?: RevocationsContext, s3?: Partial<import('../../lib/aws/s3.js').Address> }} [options]
+ * @param {{ s3?: Partial<import('../../lib/aws/s3.js').Address> }} [options]
  */
 export async function revocationsGet(request, context, callback, options = {}) {
   try {
-    const ctx = options.deps || createContext(options)
+    /** @type {RevocationsContext|undefined} */
+    const customContext = context?.clientContext?.Custom
+    const ctx = customContext || createContext(options)
     const cid = request.pathParameters?.cid
     if (!cid) {
       return {
