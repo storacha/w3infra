@@ -218,7 +218,7 @@ async function createRevocationCAR(delegationCID, revocations, delegationsStore)
     writer.put({ cid: rootCID, bytes: rootBlockBytes })
     
     // Add additional blocks for trustless verification
-    await addRevocationProofs(writer, delegationCID, revocations, delegationsStore)
+    await addRevocationProofs(writer, revocations, delegationsStore)
 
     // Close writer before reading output
     writer.close()
@@ -253,11 +253,10 @@ async function createRevocationCAR(delegationCID, revocations, delegationsStore)
  * Adds revocation proofs and related data to the CAR file for trustless verification
  *
  * @param {import('@ipld/car').CarWriter} writer - CAR writer instance
- * @param {string} delegationCID - The CID of the revoked delegation
  * @param {import('@storacha/upload-api').MatchingRevocations} revocations - Revocation data from storage
  * @param {import('../types.js').DelegationsBucket} delegationsStore
  */
-async function addRevocationProofs(writer, delegationCID, revocations, delegationsStore) {
+async function addRevocationProofs(writer, revocations, delegationsStore) {
   // For each revocation, we need to add the revocation UCAN proof blocks
   for (const [, scopeRevocations] of Object.entries(revocations)) {
     for (const [, revocationData] of Object.entries(scopeRevocations)) {
