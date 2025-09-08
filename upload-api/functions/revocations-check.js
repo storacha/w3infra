@@ -11,8 +11,42 @@ import { createDelegationsStore } from '../buckets/delegations-store.js'
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
   dsn: process.env.SENTRY_DSN,
-  tracesSampleRate: 0,
+  tracesSampleRate: 1.0,
 })
+
+/**
+ * @typedef {import('@ucanto/interface').Delegation} Delegation
+ * @typedef {import('aws-lambda').APIGatewayProxyEvent} APIGatewayProxyEvent
+ * @typedef {import('@storacha/upload-api/types').MatchingRevocations} MatchingRevocations
+ * @typedef {import('../types.js').DelegationsBucket} DelegationsBucket
+ * @typedef {import('@storacha/upload-api').RevocationsStorage} RevocationsStorage
+ */
+
+/**
+ * @typedef {object} RevocationsContext
+ * @property {RevocationsStorage} revocationsStorage
+ * @property {DelegationsBucket} delegationsStore
+ */
+
+/**
+ * @param {object} [options]
+ * @param {Partial<import('../../lib/aws/s3.js').Address>} [options.s3]
+ * @returns {RevocationsContext}
+ */
+function createContext(options = {}) {
+  const tableName = mustGetEnv('REVOCATION_TABLE_NAME')
+  const delegationBucketName = mustGetEnv('DELEGATION_BUCKET_NAME')
+  const awsRegion = process.env.AWS_REGION || 'us-west-2'
+  const dbEndpoint = process.env.DYNAMO_DB_ENDPOINT
+
+  const revocationsStorage = createRevocationsTable(awsRegion, tableName, {
+    endpoint: dbEndpoint,
+  })
+
+  const delegationsStore = createDelegationsStore(awsRegion, delegationBucketName, options.s3)
+
+  return { revocationsStorage, delegationsStore }
+}
 
 /**
  * AWS HTTP Gateway handler for GET /revocations/{cid}
@@ -22,9 +56,15 @@ Sentry.AWSLambda.init({
  * - 404 with plain text if not revoked
  * 
  * @param {import('aws-lambda').APIGatewayProxyEventV2} request
+ * @param {import('aws-lambda').Context} context
+ * @param {import('aws-lambda').Callback} callback
+ * @param {{ s3?: Partial<import('../../lib/aws/s3.js').Address> }} [options]
  */
-export async function revocationsGet(request) {
+export async function revocationsGet(request, context, callback, options = {}) {
   try {
+    /** @type {RevocationsContext|undefined} */
+    const customContext = context?.clientContext?.Custom
+    const ctx = customContext || createContext(options)
     const cid = request.pathParameters?.cid
     if (!cid) {
       return {
@@ -61,16 +101,9 @@ export async function revocationsGet(request) {
       }
     }
 
-    const revocationTableName = mustGetEnv('REVOCATION_TABLE_NAME')
-    const awsRegion = process.env.AWS_REGION || 'us-west-2'
-    const dbEndpoint = process.env.DYNAMO_DB_ENDPOINT
-    const revocationsStorage = createRevocationsTable(awsRegion, revocationTableName, {
-      endpoint: dbEndpoint
-    })
-
     const normalizedCID = parsedCID.toString()
     const query = { [normalizedCID]: true }
-    const result = await revocationsStorage.query(query)
+    const result = await ctx.revocationsStorage.query(query)
     if (!result.ok) {
       console.error('Failed to query revocations:', result.error)
       return {
@@ -103,7 +136,7 @@ export async function revocationsGet(request) {
         body: 'No revocation record found',
       }
     }
-    const carBytes = await createRevocationCAR(normalizedCID, revocations)
+    const carBytes = await createRevocationCAR(normalizedCID, revocations, ctx.delegationsStore)
     const etag = `"${await generateETag(carBytes)}"`
 
     // Return CAR file with aggressive caching: revoked delegations are immutable
@@ -146,9 +179,10 @@ export async function revocationsGet(request) {
  *
  * @param {string} delegationCID - The CID of the revoked delegation
  * @param {import('@storacha/upload-api').MatchingRevocations} revocations - Revocation data from storage
+ * @param {import('../types.js').DelegationsBucket} delegationsStore
  * @returns {Promise<Uint8Array>} CAR file bytes
  */
-async function createRevocationCAR(delegationCID, revocations) {
+async function createRevocationCAR(delegationCID, revocations, delegationsStore) {
   const revocationList = []
   
   // Since we queried for a specific delegation CID, get its revocations
@@ -186,7 +220,7 @@ async function createRevocationCAR(delegationCID, revocations) {
     writer.put({ cid: rootCID, bytes: rootBlockBytes })
     
     // Add additional blocks for trustless verification
-    await addRevocationProofs(writer, delegationCID, revocations)
+    await addRevocationProofs(writer, revocations, delegationsStore)
 
     // Close writer before reading output
     writer.close()
@@ -221,41 +255,26 @@ async function createRevocationCAR(delegationCID, revocations) {
  * Adds revocation proofs and related data to the CAR file for trustless verification
  *
  * @param {import('@ipld/car').CarWriter} writer - CAR writer instance
- * @param {string} delegationCID - The CID of the revoked delegation
  * @param {import('@storacha/upload-api').MatchingRevocations} revocations - Revocation data from storage
+ * @param {import('../types.js').DelegationsBucket} delegationsStore
  */
-async function addRevocationProofs(writer, delegationCID, revocations) {
-  const delegationBucketName = mustGetEnv('DELEGATION_BUCKET_NAME')
-  const awsRegion = process.env.AWS_REGION || 'us-west-2'
-  const s3Endpoint = process.env.S3_ENDPOINT
-  
-  // For testing, use MinIO credentials when S3_ENDPOINT is set
-  const s3Options = s3Endpoint ? {
-    endpoint: s3Endpoint,
-    forcePathStyle: true,
-    credentials: {
-      accessKeyId: 'minioadmin',
-      secretAccessKey: 'minioadmin',
-    },
-  } : undefined
-  
-  const delegationsStore = createDelegationsStore(awsRegion, delegationBucketName, s3Options)
-  
-  const scopeRevocations = revocations[delegationCID]
-  if (!scopeRevocations) return
-  
-  for (const [, revocationData] of Object.entries(scopeRevocations)) {
-    const revoked = /** @type {{ cause: import('multiformats/cid').CID }} */ (revocationData)
-    const causeCID = revoked.cause
-    
-    // Fetch the actual UCAN revocation proof from delegation store
-    const delegationCarBytes = await delegationsStore.get(/** @type {import('multiformats/cid').CID} */ (causeCID))
-    if (!delegationCarBytes) {
-      throw new Error(`UCAN proof not found for CID ${causeCID}`)
+async function addRevocationProofs(writer, revocations, delegationsStore) {
+  // For each revocation, we need to add the revocation UCAN proof blocks
+  for (const [, scopeRevocations] of Object.entries(revocations)) {
+    for (const [, revocationData] of Object.entries(scopeRevocations)) {
+      const revoked = /** @type {{ cause: import('multiformats/link').Link }} */ (revocationData)
+      const revocationCID = CID.parse(revoked.cause.toString())
+      
+      try {
+        // Get the revocation UCAN from delegations store
+        const revocationBytes = await delegationsStore.get(revocationCID)
+        if (revocationBytes) {
+          writer.put({ cid: revocationCID, bytes: revocationBytes })
+        }
+      } catch (error) {
+        console.warn(`Failed to fetch revocation proof ${revocationCID}:`, error)
+      }
     }
-    // Add the delegation's archive (CAR bytes) to our CAR file
-    // The delegation CAR contains the UCAN proof that clients can verify
-    writer.put({ cid: causeCID, bytes: delegationCarBytes })
   }
 }
 

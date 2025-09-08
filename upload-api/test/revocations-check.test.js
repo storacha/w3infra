@@ -11,6 +11,7 @@ import * as Link from 'multiformats/link'
 import { Signer } from '@ucanto/principal/ed25519'
 import { delegate } from '@ucanto/core'
 import { createRevocationsTable } from '../stores/revocations.js'
+import { createDelegationsStore } from '../buckets/delegations-store.js'
 import { createSpace, createUcanInvocation } from './helpers/ucan.js'
 
 test.before(async (t) => {
@@ -62,7 +63,22 @@ test('revocations endpoint returns 404 for non-revoked delegation', async (t) =>
   const endpoint = await t.context.dynamo.config.endpoint?.()
   process.env.DYNAMO_DB_ENDPOINT = endpoint ? `${endpoint.protocol}//${endpoint.hostname}:${endpoint.port}` : 'http://localhost:8000'
   
-  const response = await revocationsGet(event)
+  const dynamoEndpointConfig = await t.context.dynamo.config.endpoint?.()
+  const dynamoEndpoint = dynamoEndpointConfig ? `${dynamoEndpointConfig.protocol}//${dynamoEndpointConfig.hostname}:${dynamoEndpointConfig.port}` : 'http://localhost:8000'
+  const revocationsStorage = createRevocationsTable('us-west-2', tableName, {
+    endpoint: dynamoEndpoint
+  })
+  const delegationsStore = createDelegationsStore('us-west-2', 'test-delegations')
+  
+  const response = await revocationsGet(event, {
+    // @ts-ignore
+    clientContext: {
+      Custom: {
+        revocationsStorage,
+        delegationsStore
+      }
+    }
+  }, () => {})
   
   t.is(response.statusCode, 404)
   t.is(response.headers['Content-Type'], 'text/plain')
@@ -112,7 +128,6 @@ test('revocations endpoint returns CAR file with verifiable content', async (t) 
   const revocationsStorage = createRevocationsTable('us-west-2', tableName, {
     endpoint: dynamoEndpoint
   })
-  
   // Add revocation to storage
   await revocationsStorage.add({
     revoke: delegation.cid,
@@ -126,10 +141,12 @@ test('revocations endpoint returns CAR file with verifiable content', async (t) 
   const { base32 } = await import('multiformats/bases/base32')
   
   const bucketName = await createBucket(t.context.s3)
+  // Use the same S3 client configuration as the test context for MinIO
+  const { useDelegationsStore } = await import('../buckets/delegations-store.js')
+  const delegationsStore = useDelegationsStore(t.context.s3, bucketName)
   
   // Create a proper UCAN revocation proof CAR file for S3 storage
   const revocationCarBytes = (await revocation.archive()).ok
-  console.log('Revocation CAR bytes length:', revocationCarBytes?.length || 'undefined')
   const delegationKey = `/delegations/${revocation.cid.toString(base32)}.car`
   await t.context.s3.send(new PutObjectCommand({
     Bucket: bucketName,
@@ -149,12 +166,16 @@ test('revocations endpoint returns CAR file with verifiable content', async (t) 
   process.env.AWS_REGION = 'us-west-2'
   process.env.DYNAMO_DB_ENDPOINT = dynamoEndpoint
   
-  // Get S3 endpoint from test context
-  const s3EndpointConfig = await t.context.s3.config.endpoint?.()
-  process.env.S3_ENDPOINT = s3EndpointConfig ? `${s3EndpointConfig.protocol}//${s3EndpointConfig.hostname}:${s3EndpointConfig.port}` : 'http://localhost:9000'
-  
-  const response = await revocationsGet(event)
-  
+  const response = await revocationsGet(event, {
+    // @ts-ignore
+    clientContext: {
+      Custom: {
+        revocationsStorage,
+        delegationsStore
+      }
+    }
+  }, () => {})
+
   // Should return 200 with CAR file since revocation was found and S3 mock works
   t.is(response.statusCode, 200)
   t.is(response.headers['Content-Type'], 'application/vnd.ipld.car')
@@ -228,7 +249,7 @@ test('revocations endpoint returns CAR file with verifiable content', async (t) 
     if (rootBlock) {
       // Decode the root block - it contains a UCAN reference
       const rootData = decode(rootBlock.bytes)
-      
+    
       // The root block contains {'ucan@0.9.1': CID} - follow the CID reference
       const ucanCID = rootData['ucan@0.9.1']
       t.truthy(ucanCID, 'Root block should contain UCAN CID reference')
@@ -266,7 +287,8 @@ test('revocations endpoint returns 400 for missing CID parameter', async (t) => 
     pathParameters: null
   })
   
-  const response = await revocationsGet(event)
+  // @ts-ignore - Mock context for testing
+  const response = await revocationsGet(event, {}, () => {}, {})
   
   t.is(response.statusCode, 400)
   t.is(response.headers['Content-Type'], 'application/json')
@@ -287,7 +309,8 @@ test('revocations endpoint returns 400 for invalid CID format', async (t) => {
     }
   })
   
-  const response = await revocationsGet(event)
+  // @ts-ignore - Mock context for testing
+  const response = await revocationsGet(event, {}, () => {}, {})
   
   t.is(response.statusCode, 400)
   t.is(response.headers['Content-Type'], 'application/json')
@@ -309,12 +332,14 @@ test('revocations endpoint returns 500 for DynamoDB query failure', async (t) =>
   })
   
   // Set environment variables to point to non-existent DynamoDB
+  // This will cause a connection error: ECONNREFUSED
   process.env.REVOCATION_TABLE_NAME = 'non-existent-table'
   process.env.DELEGATION_BUCKET_NAME = 'test-delegations'
   process.env.AWS_REGION = 'us-west-2'
   process.env.DYNAMO_DB_ENDPOINT = 'http://localhost:9999' // Non-existent endpoint
   
-  const response = await revocationsGet(event)
+  // @ts-ignore - Mock context for testing
+  const response = await revocationsGet(event, {}, () => {}, {})
   
   t.is(response.statusCode, 500)
   t.is(response.headers['Content-Type'], 'application/json')
@@ -337,19 +362,26 @@ test('revocations endpoint handles unexpected exceptions', async (t) => {
   })
   
   // Remove required environment variables to cause exception
+  const originalTableName = process.env.REVOCATION_TABLE_NAME
+  const originalBucketName = process.env.DELEGATION_BUCKET_NAME
   delete process.env.REVOCATION_TABLE_NAME
   delete process.env.DELEGATION_BUCKET_NAME
   
-  const response = await revocationsGet(event)
-  
-  t.is(response.statusCode, 500)
-  t.is(response.headers['Content-Type'], 'application/json')
-  const body = JSON.parse(response.body)
-  t.is(body.error, 'Internal server error')
-  t.is(body.message, 'An unexpected error occurred')
+  try {
+    // @ts-ignore - Mock context for testing
+    const response = await revocationsGet(event, {}, () => {}, {})
+    
+    t.is(response.statusCode, 500)
+    t.is(response.headers['Content-Type'], 'application/json')
+    const body = JSON.parse(response.body)
+    t.is(body.error, 'Internal server error')
+    t.is(body.message, 'An unexpected error occurred')
+  } finally {
+    // Restore environment variables
+    if (originalTableName) process.env.REVOCATION_TABLE_NAME = originalTableName
+    if (originalBucketName) process.env.DELEGATION_BUCKET_NAME = originalBucketName
+  }
 })
-
-
 
 /**
  * Delegation chain revocation test: Alice -> Bob -> Charlie -> Dave delegation chain.
@@ -426,20 +458,19 @@ test('verify top level delegation chain revocation', async (t) => {
   const revocationsStorage = createRevocationsTable('us-west-2', tableName, {
     endpoint: dynamoEndpoint
   })
+  // Create bucket first so we can use it for delegations store
+  const { createBucket } = await import('./helpers/resources.js')
   
+  const bucketName = await createBucket(t.context.s3)
+  const { useDelegationsStore } = await import('../buckets/delegations-store.js')
+  const delegationsStore = useDelegationsStore(t.context.s3, bucketName)
+
   // Add revocation for Alice -> Bob delegation
   await revocationsStorage.add({
     revoke: aliceToBob.cid,
     scope: alice.did(),
     cause: revocation.cid
   })
-  
-  // Mock S3 delegation store to return CAR files for revocation proofs
-  const { createBucket } = await import('./helpers/resources.js')
-  const { PutObjectCommand } = await import('@aws-sdk/client-s3')
-  const { base32 } = await import('multiformats/bases/base32')
-  
-  const bucketName = await createBucket(t.context.s3)
   
   // Create actual CAR file with the revocation proof
   const revocationArchive = await revocation.archive()
@@ -448,7 +479,11 @@ test('verify top level delegation chain revocation', async (t) => {
   }
   const revocationCarBytes = revocationArchive.ok
   
-  // Store the actual Alice->Bob revocation proof CAR file
+  // Store the actual Alice->Bob revocation proof CAR file using delegations store
+  const { PutObjectCommand } = await import('@aws-sdk/client-s3')
+  const { base32 } = await import('multiformats/bases/base32')
+  
+  // Create a proper UCAN revocation proof CAR file for S3 storage
   const delegationKey = `/delegations/${revocation.cid.toString(base32)}.car`
   await t.context.s3.send(new PutObjectCommand({
     Bucket: bucketName,
@@ -461,33 +496,39 @@ test('verify top level delegation chain revocation', async (t) => {
   process.env.AWS_REGION = 'us-west-2'
   process.env.DYNAMO_DB_ENDPOINT = dynamoEndpoint
   
-  // Get S3 endpoint from test context
-  const s3EndpointConfig = await t.context.s3.config.endpoint?.()
-  process.env.S3_ENDPOINT = s3EndpointConfig ? `${s3EndpointConfig.protocol}//${s3EndpointConfig.hostname}:${s3EndpointConfig.port}` : 'http://localhost:9000'
-  
   // Test 1: Check that Alice -> Bob delegation is revoked
   const eventAliceToBob = lambdaUtils.mockEventCreator.createAPIGatewayEvent({
     pathParameters: {
       cid: aliceToBob.cid.toString()
     }
   })
+  console.log('Call revocationsGet')
   
-  const responseAliceToBob = await revocationsGet(eventAliceToBob)
-  
+  const responseAliceToBob = await revocationsGet(eventAliceToBob, {
+    // @ts-ignore - Mock context for testing
+    clientContext: {
+      Custom: {
+        revocationsStorage,
+        delegationsStore
+      }
+    }
+  }, () => {})
+  console.log('Response', responseAliceToBob)
   // Should return 200 with CAR file since revocation was found and S3 mock works
   t.is(responseAliceToBob.statusCode, 200)
   t.is(responseAliceToBob.headers['Content-Type'], 'application/vnd.ipld.car')
   
   // Trustless verification: Parse and verify the CAR file contents
-  const { CarReader } = await import('@ipld/car')
+ 
   const { decode } = await import('@ipld/dag-cbor')
   
   const carBytes = Buffer.from(responseAliceToBob.body, 'base64')
+  const { CarReader } = await import('@ipld/car')
   const reader = await CarReader.fromBytes(carBytes)
   
   const roots = await reader.getRoots()
   t.is(roots.length, 1, 'CAR should have exactly one root')
-  
+  console.log('Roots', roots)
   const blocks = []
   for await (const { cid, bytes } of reader.blocks()) {
     blocks.push({ cid, bytes })
@@ -501,6 +542,7 @@ test('verify top level delegation chain revocation', async (t) => {
   }
   
   const revocationData = decode(rootBlock.bytes)
+  console.log('Decoded root block data:', JSON.stringify(revocationData, null, 2))
   t.truthy(revocationData['revocations@0.0.1'], 'Root block should contain revocations@0.0.1 data')
   
   const revocations = revocationData['revocations@0.0.1'].revocations
@@ -523,7 +565,15 @@ test('verify top level delegation chain revocation', async (t) => {
     }
   })
   
-  const responseBobToCharlie = await revocationsGet(eventBobToCharlie)
+  const responseBobToCharlie = await revocationsGet(eventBobToCharlie, {
+    // @ts-ignore - Mock context for testing
+    clientContext: {
+      Custom: {
+        revocationsStorage,
+        delegationsStore
+      }
+    }
+  }, () => {})
   
   // Should return 404 since Bob -> Charlie is not explicitly revoked
   // Client will need to check the proof chain (Alice -> Bob) to determine validity
@@ -531,7 +581,7 @@ test('verify top level delegation chain revocation', async (t) => {
   t.is(responseBobToCharlie.body, 'No revocation record found')
   
   // Client-side proof chain verification for Bob -> Charlie
-  const bobToCharlieVerification = await isRevoked(bobToCharlie, revocationsGet, lambdaUtils)
+  const bobToCharlieVerification = await isRevoked(bobToCharlie, { revocationsGet, lambdaUtils, revocationsStorage, delegationsStore })
   t.false(bobToCharlieVerification.isValid, 'Bob -> Charlie should be invalid due to broken proof chain')
   t.is(bobToCharlieVerification.revokedDelegation, aliceToBob.cid.toString(), 'Should identify Alice -> Bob as the revoked delegation')
   t.truthy(bobToCharlieVerification.reason, 'Should provide reason for invalidity')
@@ -543,7 +593,15 @@ test('verify top level delegation chain revocation', async (t) => {
     }
   })
   
-  const responseCharlieToDave = await revocationsGet(eventCharlieToDave)
+  const responseCharlieToDave = await revocationsGet(eventCharlieToDave, {
+    // @ts-ignore - Mock context for testing
+    clientContext: {
+      Custom: {
+        revocationsStorage,
+        delegationsStore
+      }
+    }
+  }, () => {})
   
   // Should return 404 since Charlie -> Dave is not explicitly revoked
   // Client will need to check the proof chain (Alice -> Bob) to determine validity
@@ -551,7 +609,7 @@ test('verify top level delegation chain revocation', async (t) => {
   t.is(responseCharlieToDave.body, 'No revocation record found')
   
   // Client-side proof chain verification for Charlie -> Dave
-  const charlieToDaveVerification = await isRevoked(charlieToDave, revocationsGet, lambdaUtils)
+  const charlieToDaveVerification = await isRevoked(charlieToDave, { revocationsGet, lambdaUtils, revocationsStorage, delegationsStore })
   t.false(charlieToDaveVerification.isValid, 'Charlie -> Dave should be invalid due to broken proof chain')
   t.is(charlieToDaveVerification.revokedDelegation, aliceToBob.cid.toString(), 'Should identify Alice -> Bob as the revoked delegation')
   t.truthy(charlieToDaveVerification.reason, 'Should provide reason for invalidity')
@@ -573,14 +631,22 @@ test('verify top level delegation chain revocation', async (t) => {
     }
   })
   
-  const responseUnrelated = await revocationsGet(eventUnrelated)
+  const responseUnrelated = await revocationsGet(eventUnrelated, {
+    // @ts-ignore - Mock context for testing
+    clientContext: {
+      Custom: {
+        revocationsStorage,
+        delegationsStore
+      }
+    }
+  }, () => {})
   
   // Should return 404 since this delegation is not revoked
   t.is(responseUnrelated.statusCode, 404)
   t.is(responseUnrelated.body, 'No revocation record found')
   
   // Client-side proof chain verification for unrelated delegation
-  const unrelatedVerification = await isRevoked(unrelatedDelegation, revocationsGet, lambdaUtils)
+  const unrelatedVerification = await isRevoked(unrelatedDelegation, { revocationsGet, lambdaUtils, revocationsStorage, delegationsStore })
   t.true(unrelatedVerification.isValid, 'Unrelated delegation should be valid (no revocations in proof chain)')
   t.falsy(unrelatedVerification.revokedDelegation, 'Should not identify any revoked delegation')
   t.falsy(unrelatedVerification.reason, 'Should not provide reason for invalidity')
@@ -662,7 +728,11 @@ test('verify intermediate level delegation chain revocation', async (t) => {
   const revocationsStorage = createRevocationsTable('us-west-2', tableName, {
     endpoint: dynamoEndpoint
   })
-  
+  const { createBucket } = await import('./helpers/resources.js')
+  const bucketName = await createBucket(t.context.s3)
+  const { useDelegationsStore } = await import('../buckets/delegations-store.js')
+  const delegationsStore = useDelegationsStore(t.context.s3, bucketName)
+
   // Add revocation for Bob -> Charlie delegation only
   // Charlie -> Dave becomes invalid automatically due to broken proof chain
   await revocationsStorage.add({
@@ -675,10 +745,7 @@ test('verify intermediate level delegation chain revocation', async (t) => {
   const mockCarBytes = (await bobRevocation.archive()).ok
   
   // Create the S3 bucket using the helper function and store mock CAR data
-  const { createBucket } = await import('./helpers/resources.js')
   const { PutObjectCommand } = await import('@aws-sdk/client-s3')
-  
-  const bucketName = await createBucket(t.context.s3)
   
   // Store mock CAR data for the revocation proof CID that will be fetched
   // The delegations store expects keys in the format `/delegations/{cid-in-base32}.car`
@@ -694,19 +761,23 @@ test('verify intermediate level delegation chain revocation', async (t) => {
   process.env.DELEGATION_BUCKET_NAME = bucketName
   process.env.AWS_REGION = 'us-west-2'
   process.env.DYNAMO_DB_ENDPOINT = dynamoEndpoint
-  
-  // Get S3 endpoint from test context
-  const s3EndpointConfig = await t.context.s3.config.endpoint?.()
-  process.env.S3_ENDPOINT = s3EndpointConfig ? `${s3EndpointConfig.protocol}//${s3EndpointConfig.hostname}:${s3EndpointConfig.port}` : 'http://localhost:9000'
-  
-  // Test 1: Check that Alice -> Bob delegation is still valid (not revoked)
+
+  // Test 1: Check that Alice -> Bob delegation is NOT revoked
   const eventAliceToBob = lambdaUtils.mockEventCreator.createAPIGatewayEvent({
     pathParameters: {
       cid: aliceToBob.cid.toString()
     }
   })
   
-  const responseAliceToBob = await revocationsGet(eventAliceToBob)
+  const responseAliceToBob = await revocationsGet(eventAliceToBob, {
+    // @ts-ignore - Mock context for testing
+    clientContext: {
+      Custom: {
+        revocationsStorage,
+        delegationsStore
+      }
+    }
+  }, () => {})
   
   // Should return 404 since Alice->Bob is not revoked
   t.is(responseAliceToBob.statusCode, 404)
@@ -719,7 +790,15 @@ test('verify intermediate level delegation chain revocation', async (t) => {
     }
   })
   
-  const responseBobToCharlie = await revocationsGet(eventBobToCharlie)
+  const responseBobToCharlie = await revocationsGet(eventBobToCharlie, {
+    // @ts-ignore - Mock context for testing
+    clientContext: {
+      Custom: {
+        revocationsStorage,
+        delegationsStore
+      }
+    }
+  }, () => {})
   
   // Should return 200 with CAR file since revocation was found and S3 mock works
   t.is(responseBobToCharlie.statusCode, 200)
@@ -733,7 +812,15 @@ test('verify intermediate level delegation chain revocation', async (t) => {
     }
   })
   
-  const responseCharlieToDave = await revocationsGet(eventCharlieToDave)
+  const responseCharlieToDave = await revocationsGet(eventCharlieToDave, {
+    // @ts-ignore - Mock context for testing
+    clientContext: {
+      Custom: {
+        revocationsStorage,
+        delegationsStore
+      }
+    }
+  }, () => {})
   
   // Returns 404 since Charlie->Dave is not explicitly revoked
   t.is(responseCharlieToDave.statusCode, 404)
@@ -756,7 +843,15 @@ test('verify intermediate level delegation chain revocation', async (t) => {
     }
   })
   
-  const responseProofCheck = await revocationsGet(eventProofCheck)
+  const responseProofCheck = await revocationsGet(eventProofCheck, {
+    // @ts-ignore - Mock context for testing
+    clientContext: {
+      Custom: {
+        revocationsStorage,
+        delegationsStore
+      }
+    }
+  }, () => {})
   
   // 3.2. Verify that the proof (Bob->Charlie) is revoked and returns CAR file
   t.is(responseProofCheck.statusCode, 200) // Should return 200 with CAR file since S3 has mock data
@@ -789,6 +884,7 @@ test('verify intermediate level delegation chain revocation', async (t) => {
   }
   
   const revocationData = decode(rootBlock.bytes)
+  console.log('Decoded root block data:', JSON.stringify(revocationData, null, 2))
   t.truthy(revocationData['revocations@0.0.1'], 'Root block should contain revocations@0.0.1 data')
   
   const revocations = revocationData['revocations@0.0.1'].revocations
@@ -816,12 +912,15 @@ test('verify intermediate level delegation chain revocation', async (t) => {
  * Collects all CIDs in proof chain and checks them in parallel with cancellation
  *
  * @param {any} delegation - The delegation to verify
- * @param {Function} revocationsGet - Function to check revocations
- * @param {any} lambdaUtils - Lambda test utils for creating events
- * @param {number} concurrencyLimit - Max parallel requests (default: 5)
+ * @param {object} context
+ * @param {Function} context.revocationsGet - Function to check revocations
+ * @param {any} context.lambdaUtils - Lambda test utils for creating events
+ * @param {any} context.revocationsStorage
+ * @param {any} context.delegationsStore
+ * @param {number} [concurrencyLimit=5] - Max parallel requests
  * @returns {Promise<{isValid: boolean, revokedDelegation?: string, reason?: string}>}
  */
-async function isRevoked(delegation, revocationsGet, lambdaUtils, concurrencyLimit = 5) {
+async function isRevoked(delegation, { revocationsGet, lambdaUtils, revocationsStorage, delegationsStore }, concurrencyLimit = 5) {
   // Collect all CIDs in the proof chain (breadth-first)
   const cidsToCheck = []
   const queue = [delegation]
@@ -853,7 +952,14 @@ async function isRevoked(delegation, revocationsGet, lambdaUtils, concurrencyLim
       pathParameters: { cid }
     })
     
-    const response = await revocationsGet(event)
+    const response = await revocationsGet(event, {
+      clientContext: {
+        Custom: {
+          revocationsStorage,
+          delegationsStore
+        }
+      }
+    }, () => {})
     if (response.statusCode === 200) {
       foundRevocation = {
         isValid: false,
