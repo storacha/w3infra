@@ -384,6 +384,7 @@ export function UploadApiStack({ stack, app }) {
             ],
             environment: {
               REVOCATION_TABLE_NAME: revocationTable.tableName,
+              DELEGATION_BUCKET_NAME: delegationBucket.bucketName,
             }
           }
         },
