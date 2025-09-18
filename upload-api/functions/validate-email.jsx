@@ -20,10 +20,6 @@ import * as htmlStoracha from '../html-storacha'
 import * as htmlW3s from '../html-w3s'
 import { createRateLimitTable } from '../tables/rate-limit.js'
 import { createCustomerStore } from '../../billing/tables/customer.js'
-import { createSpaceDiffStore } from '../../billing/tables/space-diff.js'
-import { createSpaceSnapshotStore } from '../../billing/tables/space-snapshot.js'
-import { createEgressTrafficQueue } from '../../billing/queues/egress-traffic.js'
-import { useUsageStore } from '../stores/usage.js'
 
 const html = process.env.HOSTED_ZONE === 'up.web3.storage' ? htmlW3s : htmlStoracha
 
@@ -98,9 +94,6 @@ function createAuthorizeContext() {
     STRIPE_PUBLISHABLE_KEY = '',
     REFERRALS_ENDPOINT = '',
     UCAN_LOG_STREAM_NAME = '',
-    SPACE_DIFF_TABLE_NAME = '',
-    SPACE_SNAPSHOT_TABLE_NAME = '',
-    EGRESS_TRAFFIC_QUEUE_URL = '',
     SST_STAGE = '',
     // set for testing
     DYNAMO_DB_ENDPOINT: dbEndpoint,
@@ -146,12 +139,6 @@ function createAuthorizeContext() {
     },
   })
 
-  const spaceDiffStore = createSpaceDiffStore({ region: AWS_REGION }, { tableName: SPACE_DIFF_TABLE_NAME })
-  const spaceSnapshotStore = createSpaceSnapshotStore({ region: AWS_REGION }, { tableName: SPACE_SNAPSHOT_TABLE_NAME })
-  const egressTrafficQueue = createEgressTrafficQueue({ region: AWS_REGION }, { url: new URL(EGRESS_TRAFFIC_QUEUE_URL) })
-
-  const usageStorage = useUsageStore({ spaceDiffStore, spaceSnapshotStore, egressTrafficQueue })
-  
   return {
     // TODO: we should set URL from a different env var, doing this for now to avoid that refactor
     url: new URL(ACCESS_SERVICE_URL),
@@ -173,7 +160,6 @@ function createAuthorizeContext() {
       subscriptionTable,
       consumerTable,
       customerStore,
-      usageStorage,
       parseServiceDids(PROVIDERS)
     ),
     rateLimitsStorage: createRateLimitTable(AWS_REGION, RATE_LIMIT_TABLE_NAME),
