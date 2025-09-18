@@ -101,7 +101,6 @@ export type CustomerStore =
   & StoreLister<{}, Customer>
   & {
     updateProduct: (customer: CustomerDID, product: string) => Promise<Result<Unit, Failure>>
-    planLimit: (customer: CustomerDID) => Promise<Result<number, Failure>>
   }
 
 /**

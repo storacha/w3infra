@@ -248,7 +248,7 @@ export async function ucanInvocationRouter(request) {
 
   const usageStorage = useUsageStore({ spaceDiffStore, spaceSnapshotStore, egressTrafficQueue })
 
-  const provisionsStorage = useProvisionStore(subscriptionTable, consumerTable, customerStore, usageStorage, parseServiceDids(providers))
+  const provisionsStorage = useProvisionStore(subscriptionTable, consumerTable, customerStore, parseServiceDids(providers))
   const subscriptionsStorage = useSubscriptionsStore({ consumerTable })
   const delegationsStorage = createDelegationsTable(AWS_REGION, delegationTableName, { bucket: delegationBucket })
   const revocationsStorage = createRevocationsTable(AWS_REGION, revocationTableName)

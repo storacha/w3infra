@@ -39,11 +39,8 @@ import { create as createBlobRetriever } from '../../external-services/blob-retr
 import { create as createIndexingServiceClient } from './external-services/indexing-service.js'
 import { createTestIPNIService } from './external-services/ipni-service.js'
 import { useStorageProviderTable } from '../../tables/storage-provider.js'
-import { spaceDiffTableProps, createSpaceDiffStore } from '../../../billing/tables/space-diff.js'
-import { spaceSnapshotTableProps, createSpaceSnapshotStore } from '../../../billing/tables/space-snapshot.js'
-import { createEgressTrafficQueue } from '../../../billing/queues/egress-traffic.js'
+import { spaceDiffTableProps } from '../../../billing/tables/space-diff.js'
 import { useReplicaTable } from '../../tables/replica.js'
-import { useUsageStore } from '../../stores/usage.js'
 
 export { API }
 
@@ -249,7 +246,6 @@ export async function executionContextToUcantoTestServerContext(t) {
   }
   const consumerTableName = await createTable(dynamo, consumerTableProps)
   const spaceDiffTableName = await createTable(dynamo, spaceDiffTableProps)
-  const spaceSnapshotTableName = await createTable(dynamo, spaceSnapshotTableProps)
   const blobRegistry = useBlobRegistry(
     dynamo,
     await createTable(dynamo, blobRegistryTableProps),
@@ -335,18 +331,10 @@ export async function executionContextToUcantoTestServerContext(t) {
 
   const customersStore = createCustomerStore(dynamo, { tableName: await createTable(dynamo, customerTableProps) })
   
-  const spaceDiffStore = createSpaceDiffStore(dynamo, { tableName: spaceDiffTableName })
-  const spaceSnapshotStore = createSpaceSnapshotStore(dynamo, { tableName: spaceSnapshotTableName })
-  const egressTrafficQueueUrl = await createQueue(sqs, 'egress-traffic-queue')
-  const egressTrafficQueue = createEgressTrafficQueue(sqs, { url: egressTrafficQueueUrl })
-  const usageStorage = useUsageStore({ spaceDiffStore, spaceSnapshotStore, egressTrafficQueue })
-   
-  
   const provisionsStorage = useProvisionStore(
     subscriptionTable,
     consumerTable,
     customersStore,
-    usageStorage,
     [id.did()]
   )
   
@@ -381,7 +369,6 @@ export async function executionContextToUcantoTestServerContext(t) {
     blobRetriever,
     agentStore,
     getServiceConnection,
-    usageStorage,
     provisionsStorage,
     delegationsStorage,
     rateLimitsStorage,
