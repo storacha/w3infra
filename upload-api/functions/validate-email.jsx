@@ -19,7 +19,6 @@ import * as htmlStoracha from '../html-storacha'
 // eslint-disable-next-line import/extensions
 import * as htmlW3s from '../html-w3s'
 import { createRateLimitTable } from '../tables/rate-limit.js'
-import { createSpaceMetricsTable } from '../tables/space-metrics.js'
 import { createCustomerStore } from '../../billing/tables/customer.js'
 
 const html = process.env.HOSTED_ZONE === 'up.web3.storage' ? htmlW3s : htmlStoracha
@@ -78,7 +77,6 @@ function createAuthorizeContext() {
     DELEGATION_TABLE_NAME = '',
     REVOCATION_TABLE_NAME = '',
     RATE_LIMIT_TABLE_NAME = '',
-    SPACE_METRICS_TABLE_NAME = '',
     R2_ENDPOINT = '',
     R2_ACCESS_KEY_ID = '',
     R2_SECRET_ACCESS_KEY = '',
@@ -121,10 +119,6 @@ function createAuthorizeContext() {
     { tableName: CUSTOMER_TABLE_NAME }
   )
   const referralStore = createReferralStore({ endpoint: REFERRALS_ENDPOINT })
-  const spaceMetricsTable = createSpaceMetricsTable(
-    AWS_REGION,
-    SPACE_METRICS_TABLE_NAME
-  )
 
   const agentStore = AgentStore.open({
     store: {
@@ -165,7 +159,7 @@ function createAuthorizeContext() {
     provisionsStorage: useProvisionStore(
       subscriptionTable,
       consumerTable,
-      spaceMetricsTable,
+      customerStore,
       parseServiceDids(PROVIDERS)
     ),
     rateLimitsStorage: createRateLimitTable(AWS_REGION, RATE_LIMIT_TABLE_NAME),

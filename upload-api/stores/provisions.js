@@ -1,6 +1,7 @@
 import { ConflictError as ConsumerConflictError } from '../tables/consumer.js'
 import { ConflictError as SubscriptionConflictError } from '../tables/subscription.js'
 import { CBOR, Failure } from '@ucanto/server'
+import { planLimit } from '../utils.js'
 
 /**
  * Create a subscription ID for a given provision. Currently 
@@ -16,11 +17,11 @@ export const createProvisionSubscriptionId = async ({ customer, consumer }) =>
 /**
  * @param {import('../types.js').SubscriptionTable} subscriptionTable
  * @param {import('../types.js').ConsumerTable} consumerTable
- * @param {import('../types.js').SpaceMetricsTable} spaceMetricsTable
+ * @param {import("../../billing/lib/api.js").CustomerStore} customerStore
  * @param {import('@ucanto/interface').DID<'web'>[]} services
  * @returns {import('@storacha/upload-api').ProvisionsStorage}
  */
-export function useProvisionStore (subscriptionTable, consumerTable, spaceMetricsTable, services) {
+export function useProvisionStore (subscriptionTable, consumerTable, customerStore, services) {
   return {
     services,
     hasStorageProvider: async (consumer) => (
@@ -100,21 +101,29 @@ export function useProvisionStore (subscriptionTable, consumerTable, spaceMetric
     },
 
     getConsumer: async (provider, consumer) => {
-      const [consumerRecord, allocated] = await Promise.all([
-        consumerTable.get(provider, consumer),
-        spaceMetricsTable.getAllocated(consumer)
-      ])
-      return consumerRecord ? ({
+      const consumerRecord = await consumerTable.get(provider, consumer)
+      if (!consumerRecord) {
+        return { error: { name: 'ConsumerNotFound', message: `could not find ${consumer}` } }
+      }
+      const customerRecord = await customerStore.get({ customer: consumerRecord.customer })
+      if (customerRecord.error) {
+        return { error: { name: 'CustomerNotFound', message: `could not find ${consumerRecord.customer}` } }
+      }
+      // get plan limit
+      const planLimitResult = await planLimit(customerRecord.ok)
+      if (planLimitResult.error) {
+        return { error: planLimitResult.error }
+      }
+
+      return ({
         ok: {
           did: consumer,
-          allocated,
-          limit: 1_000_000_000, // set to an arbitrarily high number because we currently don't enforce any limits
+          allocated: 0, // set to 0 because we currently don't track allocated space
+          limit: planLimitResult.ok,
           subscription: consumerRecord.subscription,
           customer: consumerRecord.customer
         }
-      }) : (
-        { error: { name: 'ConsumerNotFound', message: `could not find ${consumer}` } }
-      )
+      })
     },
 
     getSubscription: async (provider, subscription) => {

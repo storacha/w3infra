@@ -25,7 +25,7 @@ This will output a CSV file (`summary-[from]-[to].csv`) with ordered per custome
 
 Much more info is collected, and is output to a JSON file `usage-[from]-[to].json` if you want to do some more spelunking.
 
-Note: this is only as up to date as the `productInfo` found in `helpers.js` which is (at time of writing) set as:
+Note: this is only as up to date as the `productInfo` found in `billing/lib/product-info.js` which is (at time of writing) set as:
 
 - `did:web:trial.storacha.network` cost: 0, overage: 0 / GB, included: 100 \* MB
 - `did:web:starter.web3.storage` cost: $0, overage: 0.15 / GB, included: 5 \* GB
