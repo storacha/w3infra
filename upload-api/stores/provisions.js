@@ -110,7 +110,7 @@ export function useProvisionStore (subscriptionTable, consumerTable, customerSto
         return { error: { name: 'CustomerNotFound', message: `could not find ${consumerRecord.customer}` } }
       }
       // get plan limit
-      const planLimitResult = await planLimit(customerRecord.ok)
+      const planLimitResult = planLimit(customerRecord.ok)
       if (planLimitResult.error) {
         return { error: planLimitResult.error }
       }

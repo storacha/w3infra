@@ -17,10 +17,10 @@ export function hasOkReceipt (ucanInvocation) {
  * @param {import('../billing/lib/api.ts').Customer} customer
  * @returns 
  */
-export  function planLimit(customer) {    
+export function planLimit(customer) {    
   const plan = productInfo[customer.product]
   if (!plan) {
-    return { error: { name: 'PlanNotFound', message: `could not find plan for ${customerRecord.ok.product}` } }
+    return { error: { name: 'PlanNotFound', message: `could not find plan for ${customer.product}` } }
   }
   return { ok: plan.allowOverages ? 0 : plan.included }
 }
