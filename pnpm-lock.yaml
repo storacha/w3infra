@@ -82,26 +82,26 @@ catalogs:
       specifier: ^7.74.1
       version: 7.120.3
     '@storacha/access':
-      specifier: ^1.6.0
-      version: 1.6.0
+      specifier: ^1.6.1
+      version: 1.6.1
     '@storacha/blob-index':
-      specifier: ^1.2.0
-      version: 1.2.0
+      specifier: ^1.2.1
+      version: 1.2.1
     '@storacha/capabilities':
+      specifier: ^1.9.0
+      version: 1.9.0
+    '@storacha/client':
       specifier: ^1.8.0
       version: 1.8.0
-    '@storacha/client':
-      specifier: ^1.7.2
-      version: 1.7.2
     '@storacha/did-mailto':
       specifier: ^1.0.2
       version: 1.0.2
     '@storacha/filecoin-api':
-      specifier: ^1.1.11
-      version: 1.1.11
+      specifier: ^1.1.13
+      version: 1.1.13
     '@storacha/filecoin-client':
-      specifier: ^1.0.10
-      version: 1.0.10
+      specifier: ^1.0.12
+      version: 1.0.12
     '@storacha/indexing-service-client':
       specifier: ^2.5.0
       version: 2.5.0
@@ -109,11 +109,11 @@ catalogs:
       specifier: ^1.0.1
       version: 1.0.1
     '@storacha/upload-api':
-      specifier: ^2.2.4
-      version: 2.2.4
+      specifier: ^2.3.0
+      version: 2.3.0
     '@storacha/upload-client':
-      specifier: ^1.3.1
-      version: 1.3.1
+      specifier: ^1.3.3
+      version: 1.3.3
     '@tsconfig/node16':
       specifier: ^1.0.3
       version: 1.0.4
@@ -365,31 +365,31 @@ importers:
         version: 12.4.0
       '@storacha/access':
         specifier: 'catalog:'
-        version: 1.6.0
+        version: 1.6.1
       '@storacha/blob-index':
         specifier: 'catalog:'
-        version: 1.2.0
+        version: 1.2.1
       '@storacha/capabilities':
         specifier: 'catalog:'
-        version: 1.8.0
+        version: 1.9.0
       '@storacha/client':
         specifier: 'catalog:'
-        version: 1.7.2(encoding@0.1.13)
+        version: 1.8.0(encoding@0.1.13)
       '@storacha/did-mailto':
         specifier: 'catalog:'
         version: 1.0.2
       '@storacha/filecoin-client':
         specifier: 'catalog:'
-        version: 1.0.10
+        version: 1.0.12
       '@storacha/indexing-service-client':
         specifier: 'catalog:'
         version: 2.5.0
       '@storacha/upload-api':
         specifier: 'catalog:'
-        version: 2.2.4
+        version: 2.3.0
       '@storacha/upload-client':
         specifier: 'catalog:'
-        version: 1.3.1(encoding@0.1.13)
+        version: 1.3.3(encoding@0.1.13)
       '@tsconfig/node16':
         specifier: 'catalog:'
         version: 1.0.4
@@ -491,7 +491,7 @@ importers:
         version: 7.120.3
       '@storacha/capabilities':
         specifier: 'catalog:'
-        version: 1.8.0
+        version: 1.9.0
       '@ucanto/interface':
         specifier: 'catalog:'
         version: 10.3.0
@@ -622,10 +622,10 @@ importers:
         version: 7.120.3
       '@storacha/filecoin-api':
         specifier: 'catalog:'
-        version: 1.1.11
+        version: 1.1.13
       '@storacha/filecoin-client':
         specifier: 'catalog:'
-        version: 1.0.10
+        version: 1.0.12
       '@storacha/indexing-service-client':
         specifier: 'catalog:'
         version: 2.5.0
@@ -840,7 +840,7 @@ importers:
         version: 4.3.1
       '@storacha/capabilities':
         specifier: 'catalog:'
-        version: 1.8.0
+        version: 1.9.0
       '@types/aws-lambda':
         specifier: 'catalog:'
         version: 8.10.148
@@ -873,7 +873,7 @@ importers:
     dependencies:
       '@storacha/upload-api':
         specifier: 'catalog:'
-        version: 2.2.4
+        version: 2.3.0
     devDependencies:
       '@aws-sdk/client-dynamodb':
         specifier: 'catalog:'
@@ -886,7 +886,7 @@ importers:
         version: 3.4.5
       '@storacha/capabilities':
         specifier: 'catalog:'
-        version: 1.8.0
+        version: 1.9.0
       '@storacha/did-mailto':
         specifier: 'catalog:'
         version: 1.0.2
@@ -940,10 +940,10 @@ importers:
         version: 7.120.3
       '@storacha/access':
         specifier: 'catalog:'
-        version: 1.6.0
+        version: 1.6.1
       '@storacha/capabilities':
         specifier: 'catalog:'
-        version: 1.8.0
+        version: 1.9.0
       '@storacha/did-mailto':
         specifier: 'catalog:'
         version: 1.0.2
@@ -955,7 +955,7 @@ importers:
         version: 1.0.1
       '@storacha/upload-api':
         specifier: 'catalog:'
-        version: 2.2.4
+        version: 2.3.0
       '@ucanto/client':
         specifier: 'catalog:'
         version: 9.0.1
@@ -4051,42 +4051,38 @@ packages:
     resolution: {integrity: sha512-JtaY3FxmD+te+KSI2FJuEcfNC9T/DGGVf551babM7fAaXhjJUt7oSYurH1Devxd2+BOSUACCgt3buinx4UnmEA==}
     engines: {node: '>=18.0.0'}
 
-  '@storacha/access@1.6.0':
-    resolution: {integrity: sha512-mNCUHdZXdn9bmQh/n3Wkh3DfpxwkHkJryMwsoJVlAAVnT43T8yImOhqYSKT8DFpIkmkPx8oopO2H2s/K3Cjmdw==}
+  '@storacha/access@1.6.1':
+    resolution: {integrity: sha512-lb+vDFW9zLj6AscgplE19aZA6XeKYThf1KUyEfHY2E968o2BxFu3L1mRMtLVzFv/opRZbr0/xN0bPCnITt7MFg==}
 
   '@storacha/blob-index@1.1.0-rc.0':
     resolution: {integrity: sha512-LTPfv0POAKbFJAem1Iz7utZzlh2auIhUZ7TQYz9YM9tZOWXwWz4oKXv6v0sXsqK5NGZsnolT5iQbNJ2f8GXZBg==}
     engines: {node: '>=16.15'}
 
-  '@storacha/blob-index@1.2.0':
-    resolution: {integrity: sha512-73P4eHLDoVvSg9A16Lq2rspg/h0Rpq8EIJ7RrVwgNhbkIqGsPzHLOYZdOiOQEhHYo5O+c1r3+RJ5XKsjz2HKow==}
+  '@storacha/blob-index@1.2.1':
+    resolution: {integrity: sha512-hmT+xj73VGf17700D2aIjEdJdfMRtYCWDxOJ9PusNCeJwihykLW7hCnajenfcccTtfujZsLww5UmoO8xaX/KLQ==}
     engines: {node: '>=16.15'}
     hasBin: true
 
   '@storacha/capabilities@1.7.0-rc.0':
     resolution: {integrity: sha512-y+BhKDY8fem15+4YstC07BQY2jLO5zD8zcsBUpnMmZOmouDfPiq/SK/e8S5FbXS7J+xcqCTamSacXLxCojsAsg==}
 
-  '@storacha/capabilities@1.8.0':
-    resolution: {integrity: sha512-39G/oFqmdmyRDG3GCG1TFkna0jWRPSvT0TPtAgQ0d7LVL0fVwo3Ryu7clnoa6PcdcC8VmsuHN/YC0IvhEdYKug==}
+  '@storacha/capabilities@1.9.0':
+    resolution: {integrity: sha512-vWQ+RRatcRGfsvHKOr8En2K7nahu+uYXigMQvIMDa2kYE8JYEEkdH0O2ti95gOVNLDxYA7cAEAemak2C4g+Row==}
 
-  '@storacha/client@1.7.2':
-    resolution: {integrity: sha512-ToYIDV/PvSSYY4rQGByQO5T5aqP+Qs4ZXu/rPgq9ypKcWwcuAuVoJ3eLo8TsS8FSqCnGDGdV0d89Y/8jWzQVWw==}
+  '@storacha/client@1.8.0':
+    resolution: {integrity: sha512-c2u9AOj9OGAfiuLhH9GmF426Y710FHorALCfOoNVCrKcW8vIaREwYt7JdRXDQBHcE0Cb4hapVZAveaV/wg1w3w==}
     engines: {node: '>=18'}
 
   '@storacha/did-mailto@1.0.2':
     resolution: {integrity: sha512-0ee1t15yG4xdyIYz2iL+wP06VnGQf8zJ/xpszjf4sdP2sTgAVzx92LfEgHcuIbFF4sabcJXzHFAcMi8l8u64Mg==}
     engines: {node: '>=16.15'}
 
-  '@storacha/filecoin-api@1.1.11':
-    resolution: {integrity: sha512-K36jhA9i8ukuWvjK5spkvhl+bxb6sGMuwKSAz3rXmP9eruAa114NVNmwIEk8lyhTuMU5ZCDev+lfvlnf0nl+kQ==}
+  '@storacha/filecoin-api@1.1.13':
+    resolution: {integrity: sha512-uiVuYAo0VzWtry/mwhCBMHketGwUf5biRUj3hY2hQZYMLAI+DckB1vlQWx7Pnj4TWCItHXmmvuImKSx81ws3FA==}
     engines: {node: '>=16.15'}
 
-  '@storacha/filecoin-api@1.1.12':
-    resolution: {integrity: sha512-0UMQYXxEQZonm10uxshHOBnVtBDWrTJrtLKf8v/WyG0A/oQmsok8n91dO4oOvCdhWqb+FWfzgcqjyf0wi/RfRA==}
-    engines: {node: '>=16.15'}
-
-  '@storacha/filecoin-client@1.0.10':
-    resolution: {integrity: sha512-ThsR4le2Uj10Ad2zH/sbk1fF9Gha0WMk1bp4GSh7j0eaSCAdjMgoFjqLAbcR3iQDi/plGtxBRdcPIgc+tYqgmw==}
+  '@storacha/filecoin-client@1.0.12':
+    resolution: {integrity: sha512-cIkY4NSNSaCE/FA4ABM1h8jLpsDsW7BY04pAEq73jtw/Kz38klneViDEjq8T9Q2cp5iOK7gWfgapKhBvYIxIcw==}
 
   '@storacha/indexing-service-client@2.2.0-rc.3':
     resolution: {integrity: sha512-eyEW3EVkWBiNim5YEfK4gV/Qbocc8EQcaavuewpz79/+z32ICYvzJVZrNBNxgxvSBiIi8qtuc++1bvgoSNWL5w==}
@@ -4097,12 +4093,12 @@ packages:
   '@storacha/one-webcrypto@1.0.1':
     resolution: {integrity: sha512-bD+vWmcgsEBqU0Dz04BR43SA03bBoLTAY29vaKasY9Oe8cb6XIP0/vkm0OS2UwKC13c8uRgFW4rjJUgDCNLejQ==}
 
-  '@storacha/upload-api@2.2.4':
-    resolution: {integrity: sha512-A92YTR7SjqyUseQLo5t3ChaCOuAKYzZoLZcfBwE6k7Gp98tghmA/19PWKYeCStuxj8Rwp+2rl0KYg4mY97k6lw==}
+  '@storacha/upload-api@2.3.0':
+    resolution: {integrity: sha512-8vyzIffYuufaX1Ub9p+++dwJZfzXASn2/Kv9jtagyFHOihp7mYfQOk7YXUTRLpokpyolEBuNFjcEoR5i3HD0ig==}
     engines: {node: '>=16.15'}
 
-  '@storacha/upload-client@1.3.1':
-    resolution: {integrity: sha512-QAjhAkMIc1hCqQgCYpnr0aCUD6W/0vJqNRSrcOKiRMeGzfOJgKT7h81PIw3Y7fArrFZ7Oc8yoVK17QgqDFKB2Q==}
+  '@storacha/upload-client@1.3.3':
+    resolution: {integrity: sha512-+96qw6gg3UAbJhcTPPCWpXkbhPBcLBQ6+iber8lq57a5mucOdLQjxcl2Lt/pvQJprqh9q086LNG1rlfSPvYlqA==}
 
   '@tootallnate/quickjs-emscripten@0.23.0':
     resolution: {integrity: sha512-C5Mc6rdnsaJDjO3UpGW/CQTHtCKaYlScZTly4JIu97Jxo/odCiH0ITnDXSJPTOrEKk/ycSZ0AOgTmkDtkOsvIA==}
@@ -15992,12 +15988,12 @@ snapshots:
       '@smithy/types': 4.2.0
       tslib: 2.8.1
 
-  '@storacha/access@1.6.0':
+  '@storacha/access@1.6.1':
     dependencies:
       '@ipld/car': 5.4.0
       '@ipld/dag-ucan': 3.4.5
       '@scure/bip39': 1.5.4
-      '@storacha/capabilities': 1.8.0
+      '@storacha/capabilities': 1.9.0
       '@storacha/did-mailto': 1.0.2
       '@storacha/one-webcrypto': 1.0.1
       '@ucanto/client': 9.0.1
@@ -16016,7 +16012,7 @@ snapshots:
   '@storacha/blob-index@1.1.0-rc.0':
     dependencies:
       '@ipld/dag-cbor': 9.2.3
-      '@storacha/capabilities': 1.8.0
+      '@storacha/capabilities': 1.9.0
       '@storacha/one-webcrypto': 1.0.1
       '@ucanto/core': 10.4.0
       '@ucanto/interface': 10.3.0
@@ -16024,10 +16020,10 @@ snapshots:
       multiformats: 13.3.6
       uint8arrays: 5.1.0
 
-  '@storacha/blob-index@1.2.0':
+  '@storacha/blob-index@1.2.1':
     dependencies:
       '@ipld/dag-cbor': 9.2.3
-      '@storacha/capabilities': 1.8.0
+      '@storacha/capabilities': 1.9.0
       '@storacha/one-webcrypto': 1.0.1
       '@ucanto/core': 10.4.0
       '@ucanto/interface': 10.3.0
@@ -16046,7 +16042,7 @@ snapshots:
       '@web3-storage/data-segment': 5.3.0
       multiformats: 13.3.6
 
-  '@storacha/capabilities@1.8.0':
+  '@storacha/capabilities@1.9.0':
     dependencies:
       '@ucanto/core': 10.4.0
       '@ucanto/interface': 10.3.0
@@ -16056,15 +16052,15 @@ snapshots:
       '@web3-storage/data-segment': 5.3.0
       multiformats: 13.3.6
 
-  '@storacha/client@1.7.2(encoding@0.1.13)':
+  '@storacha/client@1.8.0(encoding@0.1.13)':
     dependencies:
       '@ipld/dag-ucan': 3.4.5
-      '@storacha/access': 1.6.0
-      '@storacha/blob-index': 1.2.0
-      '@storacha/capabilities': 1.8.0
+      '@storacha/access': 1.6.1
+      '@storacha/blob-index': 1.2.1
+      '@storacha/capabilities': 1.9.0
       '@storacha/did-mailto': 1.0.2
-      '@storacha/filecoin-client': 1.0.10
-      '@storacha/upload-client': 1.3.1(encoding@0.1.13)
+      '@storacha/filecoin-client': 1.0.12
+      '@storacha/upload-client': 1.3.3(encoding@0.1.13)
       '@ucanto/client': 9.0.1
       '@ucanto/core': 10.4.0
       '@ucanto/interface': 10.3.0
@@ -16076,10 +16072,10 @@ snapshots:
 
   '@storacha/did-mailto@1.0.2': {}
 
-  '@storacha/filecoin-api@1.1.11':
+  '@storacha/filecoin-api@1.1.13':
     dependencies:
       '@ipld/dag-ucan': 3.4.5
-      '@storacha/capabilities': 1.8.0
+      '@storacha/capabilities': 1.9.0
       '@ucanto/client': 9.0.1
       '@ucanto/core': 10.4.0
       '@ucanto/interface': 10.3.0
@@ -16090,24 +16086,10 @@ snapshots:
       fr32-sha2-256-trunc254-padded-binary-tree-multihash: 3.3.0
       p-map: 6.0.0
 
-  '@storacha/filecoin-api@1.1.12':
+  '@storacha/filecoin-client@1.0.12':
     dependencies:
       '@ipld/dag-ucan': 3.4.5
-      '@storacha/capabilities': 1.8.0
-      '@ucanto/client': 9.0.1
-      '@ucanto/core': 10.4.0
-      '@ucanto/interface': 10.3.0
-      '@ucanto/server': 10.2.0
-      '@ucanto/transport': 9.2.0
-      '@web3-storage/content-claims': 5.2.1
-      '@web3-storage/data-segment': 5.3.0
-      fr32-sha2-256-trunc254-padded-binary-tree-multihash: 3.3.0
-      p-map: 6.0.0
-
-  '@storacha/filecoin-client@1.0.10':
-    dependencies:
-      '@ipld/dag-ucan': 3.4.5
-      '@storacha/capabilities': 1.8.0
+      '@storacha/capabilities': 1.9.0
       '@ucanto/client': 9.0.1
       '@ucanto/core': 10.4.0
       '@ucanto/interface': 10.3.0
@@ -16126,8 +16108,8 @@ snapshots:
     dependencies:
       '@ipld/dag-cbor': 9.2.3
       '@ipld/dag-ucan': 3.4.5
-      '@storacha/blob-index': 1.2.0
-      '@storacha/capabilities': 1.8.0
+      '@storacha/blob-index': 1.2.1
+      '@storacha/capabilities': 1.9.0
       '@ucanto/client': 9.0.1
       '@ucanto/core': 10.4.0
       '@ucanto/interface': 10.3.0
@@ -16136,13 +16118,13 @@ snapshots:
 
   '@storacha/one-webcrypto@1.0.1': {}
 
-  '@storacha/upload-api@2.2.4':
+  '@storacha/upload-api@2.3.0':
     dependencies:
-      '@storacha/access': 1.6.0
-      '@storacha/blob-index': 1.2.0
-      '@storacha/capabilities': 1.8.0
+      '@storacha/access': 1.6.1
+      '@storacha/blob-index': 1.2.1
+      '@storacha/capabilities': 1.9.0
       '@storacha/did-mailto': 1.0.2
-      '@storacha/filecoin-api': 1.1.12
+      '@storacha/filecoin-api': 1.1.13
       '@storacha/indexing-service-client': 2.2.0-rc.3
       '@ucanto/client': 9.0.1
       '@ucanto/interface': 10.3.0
@@ -16155,15 +16137,15 @@ snapshots:
       multiformats: 13.3.6
       uint8arrays: 5.1.0
 
-  '@storacha/upload-client@1.3.1(encoding@0.1.13)':
+  '@storacha/upload-client@1.3.3(encoding@0.1.13)':
     dependencies:
       '@ipld/car': 5.4.0
       '@ipld/dag-cbor': 9.2.3
       '@ipld/dag-ucan': 3.4.5
       '@ipld/unixfs': 3.0.0
-      '@storacha/blob-index': 1.2.0
-      '@storacha/capabilities': 1.8.0
-      '@storacha/filecoin-client': 1.0.10
+      '@storacha/blob-index': 1.2.1
+      '@storacha/capabilities': 1.9.0
+      '@storacha/filecoin-client': 1.0.12
       '@ucanto/client': 9.0.1
       '@ucanto/core': 10.4.0
       '@ucanto/interface': 10.3.0
