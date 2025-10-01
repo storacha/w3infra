@@ -6,10 +6,30 @@ import * as UcantoClient from '@ucanto/client'
 import { connect, createServer } from '@storacha/upload-api'
 import { DebugEmail } from '@storacha/upload-api/test'
 import { confirmConfirmationUrl } from '@storacha/upload-api/test/utils'
-import { ClaimsService, IndexingService } from '@storacha/upload-api/test/external-service'
-import { createBucket, createTable } from '../helpers/resources.js'
-import { storeTableProps, uploadTableProps, allocationTableProps, consumerTableProps, delegationTableProps, subscriptionTableProps, rateLimitTableProps, revocationTableProps, spaceMetricsTableProps, storageProviderTableProps, blobRegistryTableProps, adminMetricsTableProps, replicaTableProps } from '../../tables/index.js'
-import { useBlobRegistry, useAllocationTableBlobRegistry } from '../../stores/blob-registry.js'
+import {
+  ClaimsService,
+  IndexingService,
+} from '@storacha/upload-api/test/external-service'
+import { createBucket, createQueue, createTable } from '../helpers/resources.js'
+import {
+  storeTableProps,
+  uploadTableProps,
+  allocationTableProps,
+  consumerTableProps,
+  delegationTableProps,
+  subscriptionTableProps,
+  rateLimitTableProps,
+  revocationTableProps,
+  spaceMetricsTableProps,
+  storageProviderTableProps,
+  blobRegistryTableProps,
+  adminMetricsTableProps,
+  replicaTableProps,
+} from '../../tables/index.js'
+import {
+  useBlobRegistry,
+  useAllocationTableBlobRegistry,
+} from '../../stores/blob-registry.js'
 import { composeCarStoresWithOrderedHas } from '../../buckets/car-store.js'
 import { composeBlobStoragesWithOrderedHas } from '../../stores/blobs.js'
 import { useStoreTable } from '../../tables/store.js'
@@ -21,8 +41,10 @@ import { useDelegationsTable } from '../../tables/delegations.js'
 import { useRevocationsTable } from '../../stores/revocations.js'
 import { useDelegationsStore } from '../../buckets/delegations-store.js'
 import { useRateLimitTable } from '../../tables/rate-limit.js'
-import { useSpaceMetricsTable } from '../../tables/space-metrics.js'
-import { createCustomerStore, customerTableProps } from '../../../billing/tables/customer.js'
+import {
+  createCustomerStore,
+  customerTableProps,
+} from '../../../billing/tables/customer.js'
 import { usePlansStore } from '../../stores/plans.js'
 import { useMetricsTable as useAdminMetricsStore } from '../../stores/metrics.js'
 import { useMetricsTable as useSpaceMetricsStore } from '../../stores/space-metrics.js'
@@ -40,8 +62,18 @@ import { create as createBlobRetriever } from '../../external-services/blob-retr
 import { create as createIndexingServiceClient } from './external-services/indexing-service.js'
 import { createTestIPNIService } from './external-services/ipni-service.js'
 import { useStorageProviderTable } from '../../tables/storage-provider.js'
-import { spaceDiffTableProps } from '../../../billing/tables/space-diff.js'
+import {
+  spaceDiffTableProps,
+  createSpaceDiffStore,
+} from '../../../billing/tables/space-diff.js'
+import {
+  spaceSnapshotTableProps,
+  createSpaceSnapshotStore,
+} from '../../../billing/tables/space-snapshot.js'
+import { createEgressTrafficQueue } from '../../../billing/queues/egress-traffic.js'
 import { useReplicaTable } from '../../tables/replica.js'
+import { useUsageStore } from '../../stores/usage.js'
+import { useSubscriptionsStore } from '../../stores/subscriptions.js'
 
 export { API }
 
@@ -182,8 +214,6 @@ export const encodeAgentMessage = async (source) => {
   return await CAR.request.encode(message)
 }
 
-
-
 /**
  * @typedef {import('@storacha/upload-api').Assert} Assert
  * @typedef {(assert: Assert, context: TestContext) => unknown} Test
@@ -207,7 +237,7 @@ export const encodeAgentMessage = async (source) => {
  *  message: { name: string }
  * }
  * }} TestContext
- * 
+ *
  * @param {import('ava').ExecutionContext<{
  *   dynamo: import('@aws-sdk/client-dynamodb').DynamoDBClient
  *   sqs: import('@aws-sdk/client-sqs').SQSClient
@@ -239,22 +269,37 @@ export async function executionContextToUcantoTestServerContext(t) {
       name: '',
     },
   })
-  const spaceMetricsTableName = await createTable(dynamo, spaceMetricsTableProps)
-  const adminMetricsTableName = await createTable(dynamo, adminMetricsTableProps)
+  const spaceMetricsTableName = await createTable(
+    dynamo,
+    spaceMetricsTableProps
+  )
+  const adminMetricsTableName = await createTable(
+    dynamo,
+    adminMetricsTableProps
+  )
   const metrics = {
     space: useSpaceMetricsStore(dynamo, spaceMetricsTableName),
-    admin: useAdminMetricsStore(dynamo, adminMetricsTableName)
+    admin: useAdminMetricsStore(dynamo, adminMetricsTableName),
   }
   const consumerTableName = await createTable(dynamo, consumerTableProps)
+  const spaceDiffTableName = await createTable(dynamo, spaceDiffTableProps)
+  const spaceSnapshotTableName = await createTable(
+    dynamo,
+    spaceSnapshotTableProps
+  )
   const blobRegistry = useBlobRegistry(
     dynamo,
     await createTable(dynamo, blobRegistryTableProps),
-    await createTable(dynamo, spaceDiffTableProps),
+    spaceDiffTableName,
     consumerTableName,
     metrics
   )
   const allocationTableName = await createTable(dynamo, allocationTableProps)
-  const allocationBlobRegistry = useAllocationTableBlobRegistry(blobRegistry, dynamo, allocationTableName)
+  const allocationBlobRegistry = useAllocationTableBlobRegistry(
+    blobRegistry,
+    dynamo,
+    allocationTableName
+  )
   const getServiceConnection = () => connection
 
   // To be deprecated
@@ -275,10 +320,7 @@ export async function executionContextToUcantoTestServerContext(t) {
     ? await useTestCarStore(r2, r2CarStoreBucketName)
     : undefined
   const carStoreBucket = r2CarStoreBucket
-    ? composeCarStoresWithOrderedHas(
-      s3CarStoreBucket,
-      r2CarStoreBucket,
-    )
+    ? composeCarStoresWithOrderedHas(s3CarStoreBucket, r2CarStoreBucket)
     : s3CarStoreBucket
 
   const s3BlobsStorageBucket = await useTestBlobsStorage(s3, carStoreBucketName)
@@ -287,9 +329,9 @@ export async function executionContextToUcantoTestServerContext(t) {
     : undefined
   const blobsStorage = r2BlobsStorageBucket
     ? composeBlobStoragesWithOrderedHas(
-      s3BlobsStorageBucket,
-      r2BlobsStorageBucket,
-    )
+        s3BlobsStorageBucket,
+        r2BlobsStorageBucket
+      )
     : s3BlobsStorageBucket
 
   const signer = await Signer.Signer.generate()
@@ -319,32 +361,64 @@ export async function executionContextToUcantoTestServerContext(t) {
     dynamo,
     await createTable(dynamo, subscriptionTableProps)
   )
-  const consumerTable = useConsumerTable(
-    dynamo,
-    consumerTableName
-  )
-  const spaceMetricsTable = useSpaceMetricsTable(
-    dynamo,
-    await createTable(dynamo, spaceMetricsTableProps)
-  )
+  const consumerTable = useConsumerTable(dynamo, consumerTableName)
+
   const pieceStore = usePieceTable(
     dynamo,
     await createTable(dynamo, pieceTableProps)
   )
+
+  const customersStore = createCustomerStore(dynamo, {
+    tableName: await createTable(dynamo, customerTableProps),
+  })
+
+  const spaceDiffStore = createSpaceDiffStore(dynamo, {
+    tableName: spaceDiffTableName,
+  })
+  const spaceSnapshotStore = createSpaceSnapshotStore(dynamo, {
+    tableName: spaceSnapshotTableName,
+  })
+  const egressTrafficQueueUrl = await createQueue(sqs, 'egress-traffic-queue')
+  const egressTrafficQueue = createEgressTrafficQueue(sqs, {
+    url: egressTrafficQueueUrl,
+  })
+  const usageStorage = useUsageStore({
+    spaceDiffStore,
+    spaceSnapshotStore,
+    egressTrafficQueue,
+  })
+
   const provisionsStorage = useProvisionStore(
     subscriptionTable,
     consumerTable,
-    spaceMetricsTable,
-    [id.did()]
+    customersStore,
+    [id.did(), 'did:web:testlimit.up.storacha.network'],
+    {
+      'did:web:test.up.storacha.network': {
+        cost: 0,
+        overage: 0,
+        included: 1000,
+        allowOverages: true,
+      },
+      'did:web:testlimit.up.storacha.network': {
+        cost: 0,
+        overage: 0,
+        included: 1000,
+        allowOverages: false,
+      },
+    }
   )
-  const customersStore = createCustomerStore(dynamo, { tableName: await createTable(dynamo, customerTableProps) })
+
   const billingProvider = createTestBillingProvider()
   const plansStorage = usePlansStore(customersStore, billingProvider)
   const email = new DebugEmail()
   const ipniService = await createTestIPNIService({ sqs }, blobsStorage)
   const claimsService = await ClaimsService.activate()
   const indexingService = await IndexingService.activate()
-  const indexingServiceClient = createIndexingServiceClient(indexingService, claimsService)
+  const indexingServiceClient = createIndexingServiceClient(
+    indexingService,
+    claimsService
+  )
   const blobRetriever = createBlobRetriever(indexingServiceClient)
 
   const storageProviders = await Promise.all([
@@ -369,6 +443,8 @@ export async function executionContextToUcantoTestServerContext(t) {
     blobRetriever,
     agentStore,
     getServiceConnection,
+    usageStorage,
+    subscriptionsStorage: useSubscriptionsStore({ consumerTable }),
     provisionsStorage,
     delegationsStorage,
     rateLimitsStorage,
@@ -393,8 +469,16 @@ export async function executionContextToUcantoTestServerContext(t) {
     // filecoin/*
     aggregatorId: aggregatorSigner,
     pieceStore,
-    taskStore: createFilecoinTaskStore('us-west-2', agentIndexBucketName, agentMessageBucketName),
-    receiptStore: createFilecoinReceiptStore('us-west-2', agentIndexBucketName, agentMessageBucketName),
+    taskStore: createFilecoinTaskStore(
+      'us-west-2',
+      agentIndexBucketName,
+      agentMessageBucketName
+    ),
+    receiptStore: createFilecoinReceiptStore(
+      'us-west-2',
+      agentIndexBucketName,
+      agentMessageBucketName
+    ),
     // @ts-expect-error not tested here
     pieceOfferQueue: {},
     // @ts-expect-error not tested here
@@ -403,12 +487,12 @@ export async function executionContextToUcantoTestServerContext(t) {
     options: {
       // TODO: we compute and put all pieces into the queue on bucket event
       // We may change this to validate user provided piece
-      skipFilecoinSubmitQueue: true
+      skipFilecoinSubmitQueue: true,
     },
   }
   const connection = connect({
     id: serviceContext.id,
-    channel: createServer(serviceContext)
+    channel: createServer(serviceContext),
   })
 
   return {
@@ -427,7 +511,7 @@ export async function executionContextToUcantoTestServerContext(t) {
 
     dynamo,
     sqs: {
-      channel: sqs
+      channel: sqs,
     },
     r2: {
       channel: r2,
