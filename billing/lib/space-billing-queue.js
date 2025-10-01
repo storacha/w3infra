@@ -41,6 +41,7 @@ export const iterateSpaceDiffs = async function * ({ provider, space, from, to }
  *
  * The usage value for the period and the space size at the end of the period
  * are returned to the caller.
+ * The total "usage" is the sum of all bytes stored, multiplied by the amount of time (in ms) they were stored during the billing period.
  *
  * @param {import('./api.js').SpaceBillingInstruction} instruction
  * @param {{
