@@ -5,7 +5,10 @@ import * as DidMailto from '@storacha/did-mailto'
 import { getServiceSigner, parseServiceDids } from '../config.js'
 import { Email } from '../email.js'
 import { createDelegationsTable } from '../tables/delegations.js'
-import { createDelegationsStore, createR2DelegationsStore } from '../buckets/delegations-store.js'
+import {
+  createDelegationsStore,
+  createR2DelegationsStore,
+} from '../buckets/delegations-store.js'
 import { createSubscriptionTable } from '../tables/subscription.js'
 import { createConsumerTable } from '../tables/consumer.js'
 import { createRevocationsTable } from '../stores/revocations.js'
@@ -25,8 +28,10 @@ import { createSpaceSnapshotStore } from '../../billing/tables/space-snapshot.js
 import { createEgressTrafficQueue } from '../../billing/queues/egress-traffic.js'
 import { useSubscriptionsStore } from '../stores/subscriptions.js'
 import { useUsageStore } from '../stores/usage.js'
+import { productInfo } from '../../billing/lib/product-info.js'
 
-const html = process.env.HOSTED_ZONE === 'up.web3.storage' ? htmlW3s : htmlStoracha
+const html =
+  process.env.HOSTED_ZONE === 'up.web3.storage' ? htmlW3s : htmlStoracha
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -109,7 +114,12 @@ function createAuthorizeContext() {
   const { PRIVATE_KEY } = Config
 
   const delegationBucket = R2_DELEGATION_BUCKET_NAME
-    ? createR2DelegationsStore(R2_ENDPOINT, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_DELEGATION_BUCKET_NAME)
+    ? createR2DelegationsStore(
+        R2_ENDPOINT,
+        R2_ACCESS_KEY_ID,
+        R2_SECRET_ACCESS_KEY,
+        R2_DELEGATION_BUCKET_NAME
+      )
     : createDelegationsStore(AWS_REGION, DELEGATION_BUCKET_NAME)
 
   const subscriptionTable = createSubscriptionTable(
@@ -147,11 +157,24 @@ function createAuthorizeContext() {
     },
   })
 
-  const spaceDiffStore = createSpaceDiffStore({ region: AWS_REGION }, { tableName: SPACE_DIFF_TABLE_NAME })
-  const spaceSnapshotStore = createSpaceSnapshotStore({ region: AWS_REGION }, { tableName: SPACE_SNAPSHOT_TABLE_NAME })
-  const egressTrafficQueue = createEgressTrafficQueue({ region: AWS_REGION }, { url: new URL(EGRESS_TRAFFIC_QUEUE_URL) })
+  const spaceDiffStore = createSpaceDiffStore(
+    { region: AWS_REGION },
+    { tableName: SPACE_DIFF_TABLE_NAME }
+  )
+  const spaceSnapshotStore = createSpaceSnapshotStore(
+    { region: AWS_REGION },
+    { tableName: SPACE_SNAPSHOT_TABLE_NAME }
+  )
+  const egressTrafficQueue = createEgressTrafficQueue(
+    { region: AWS_REGION },
+    { url: new URL(EGRESS_TRAFFIC_QUEUE_URL) }
+  )
 
-  const usageStorage = useUsageStore({ spaceDiffStore, spaceSnapshotStore, egressTrafficQueue })
+  const usageStorage = useUsageStore({
+    spaceDiffStore,
+    spaceSnapshotStore,
+    egressTrafficQueue,
+  })
 
   return {
     // TODO: we should set URL from a different env var, doing this for now to avoid that refactor
@@ -174,7 +197,8 @@ function createAuthorizeContext() {
       subscriptionTable,
       consumerTable,
       customerStore,
-      parseServiceDids(PROVIDERS)
+      parseServiceDids(PROVIDERS),
+      productInfo
     ),
     rateLimitsStorage: createRateLimitTable(AWS_REGION, RATE_LIMIT_TABLE_NAME),
     customerStore,
@@ -231,9 +255,11 @@ export async function validateEmailPost(request) {
     if ((await context.referralStore.getReferredBy(email)).refcode) {
       isReferred = true
     }
-  } catch (e){
+  } catch (e) {
     // if we fail here, log the error and move on
-    console.warn('encountered an error checking the referrals service, please see the error logs for more information')
+    console.warn(
+      'encountered an error checking the referrals service, please see the error logs for more information'
+    )
     console.error(e)
   }
   let stripePricingTableId
@@ -241,17 +267,21 @@ export async function validateEmailPost(request) {
 
   // if one of the facts have an 'app' entry, return it
   // if there are more than one this will potentially be nondeterministic
-  const appName = facts.find(fact => fact.appName)?.appName
+  const appName = facts.find((fact) => fact.appName)?.appName
   if (!planCheckResult.ok?.product) {
     stripePublishableKey = context.stripePublishableKey
     // TODO: use AppName.{BskyBackups,TGMiniapp,Console} from @storacha/client/types once we upgrade that dependency
-    // I'd have done it now but upgrading causes linting issues and I want to save 
+    // I'd have done it now but upgrading causes linting issues and I want to save
     // that rabbithole for later
-    if ((appName === 'bsky-backups') || (appName === 'tg-miniapp') || (appName === 'console')) {
+    if (
+      appName === 'bsky-backups' ||
+      appName === 'tg-miniapp' ||
+      appName === 'console'
+    ) {
       // don't show a pricing table to bsky.storage, tg miniapp or console users
       stripePricingTableId = null
     } else if (isReferred) {
-      stripePricingTableId = context.stripeFreeTrialPricingTableId 
+      stripePricingTableId = context.stripeFreeTrialPricingTableId
     } else {
       stripePricingTableId = context.stripePricingTableId
     }

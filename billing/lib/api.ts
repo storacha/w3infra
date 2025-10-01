@@ -443,3 +443,10 @@ export interface CreateStoreListerContext<K,V> {
   decode: Decoder<StoreRecord, V>
   indexName?: string
 }
+
+export interface Product {
+  cost: number
+  overage: number
+  included: number
+  allowOverages: boolean
+}

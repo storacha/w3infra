@@ -11,7 +11,10 @@ import Stripe from 'stripe'
 import { Client as IndexingServiceClient } from '@storacha/indexing-service-client'
 import * as UploadAPI from '@storacha/upload-api'
 import * as UCANCaps from '@storacha/capabilities/ucan'
-import { composeCarStoresWithOrderedHas, createCarStore } from '../buckets/car-store.js'
+import {
+  composeCarStoresWithOrderedHas,
+  createCarStore,
+} from '../buckets/car-store.js'
 import { createStoreTable } from '../tables/store.js'
 import { createUploadTable } from '../tables/upload.js'
 import { createPieceTable } from '../../filecoin/store/piece.js'
@@ -19,16 +22,29 @@ import { createTaskStore as createFilecoinTaskStore } from '../../filecoin/store
 import { createReceiptStore as createFilecoinReceiptStore } from '../../filecoin/store/receipt.js'
 import { createClient as createFilecoinSubmitQueueClient } from '../../filecoin/queue/filecoin-submit-queue.js'
 import { createClient as createPieceOfferQueueClient } from '../../filecoin/queue/piece-offer-queue.js'
-import { getServiceSigner, parseServiceDids, getServiceConnection } from '../config.js'
+import {
+  getServiceSigner,
+  parseServiceDids,
+  getServiceConnection,
+} from '../config.js'
 import { createUcantoServer } from '../service.js'
 import { Email } from '../email.js'
 import * as AgentStore from '../stores/agent.js'
-import { createBlobsStorage, composeBlobStoragesWithOrderedHas } from '../stores/blobs.js'
-import { createAllocationTableBlobRegistry, createBlobRegistry } from '../stores/blob-registry.js'
+import {
+  createBlobsStorage,
+  composeBlobStoragesWithOrderedHas,
+} from '../stores/blobs.js'
+import {
+  createAllocationTableBlobRegistry,
+  createBlobRegistry,
+} from '../stores/blob-registry.js'
 import { useProvisionStore } from '../stores/provisions.js'
 import { useSubscriptionsStore } from '../stores/subscriptions.js'
 import { createDelegationsTable } from '../tables/delegations.js'
-import { createDelegationsStore, createR2DelegationsStore } from '../buckets/delegations-store.js'
+import {
+  createDelegationsStore,
+  createR2DelegationsStore,
+} from '../buckets/delegations-store.js'
 import { createSubscriptionTable } from '../tables/subscription.js'
 import { createConsumerTable } from '../tables/consumer.js'
 import { createRateLimitTable } from '../tables/rate-limit.js'
@@ -48,8 +64,12 @@ import { mustGetEnv } from '../../lib/env.js'
 import { createEgressTrafficQueue } from '../../billing/queues/egress-traffic.js'
 import { create as createRoutingService } from '../external-services/router.js'
 import { create as createBlobRetriever } from '../external-services/blob-retriever.js'
-import { createSSOService, createDmailSSOService } from '../external-services/sso-providers/index.js'
+import {
+  createSSOService,
+  createDmailSSOService,
+} from '../external-services/sso-providers/index.js'
 import { uploadServiceURL } from '@storacha/client/service'
+import { productInfo } from '../../billing/lib/product-info.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -96,21 +116,29 @@ const codec = Codec.inbound({
  * This is used to resolve the DIDKey for known WebDIDs in the `resolveDIDKey` method.
  * It is not a definitive solution, nor a exhaustive list, but rather a stop-gap measure
  * to make it possible for the upload-api to work with Storacha services that use Web DIDs.
- * 
- * @type {Record<`did:web:${string}`, `did:key:${string}`>} 
+ *
+ * @type {Record<`did:web:${string}`, `did:key:${string}`>}
  */
 export const knownWebDIDs = {
   // Production
-  'did:web:up.storacha.network': 'did:key:z6MkqdncRZ1wj8zxCTDUQ8CRT8NQWd63T7mZRvZUX8B7XDFi',
-  'did:web:web3.storage': 'did:key:z6MkqdncRZ1wj8zxCTDUQ8CRT8NQWd63T7mZRvZUX8B7XDFi', // legacy
-  'did:web:w3s.link': 'did:key:z6Mkha3NLZ38QiZXsUHKRHecoumtha3LnbYEL21kXYBFXvo5',
-  'did:web:kms.storacha.network': 'did:key:z6MksQJobJmBfPhjHWgFXVppqM6Fcjc1k7xu4z6xvusVrtKv',
+  'did:web:up.storacha.network':
+    'did:key:z6MkqdncRZ1wj8zxCTDUQ8CRT8NQWd63T7mZRvZUX8B7XDFi',
+  'did:web:web3.storage':
+    'did:key:z6MkqdncRZ1wj8zxCTDUQ8CRT8NQWd63T7mZRvZUX8B7XDFi', // legacy
+  'did:web:w3s.link':
+    'did:key:z6Mkha3NLZ38QiZXsUHKRHecoumtha3LnbYEL21kXYBFXvo5',
+  'did:web:kms.storacha.network':
+    'did:key:z6MksQJobJmBfPhjHWgFXVppqM6Fcjc1k7xu4z6xvusVrtKv',
 
   // Staging
-  'did:web:staging.up.storacha.network': 'did:key:z6MkhcbEpJpEvNVDd3n5RurquVdqs5dPU16JDU5VZTDtFgnn',
-  'did:web:staging.web3.storage': 'did:key:z6MkhcbEpJpEvNVDd3n5RurquVdqs5dPU16JDU5VZTDtFgnn', // legacy
-  'did:web:staging.w3s.link': 'did:key:z6MkqK1d4thaCEXSGZ6EchJw3tDPhQriwynWDuR55ayATMNf',
-  'did:web:staging.kms.storacha.network': 'did:key:z6MkmRf149D6oc9wq9ioXCsT5fgTn6esd7JjB9S5JnM4Y9qj',
+  'did:web:staging.up.storacha.network':
+    'did:key:z6MkhcbEpJpEvNVDd3n5RurquVdqs5dPU16JDU5VZTDtFgnn',
+  'did:web:staging.web3.storage':
+    'did:key:z6MkhcbEpJpEvNVDd3n5RurquVdqs5dPU16JDU5VZTDtFgnn', // legacy
+  'did:web:staging.w3s.link':
+    'did:key:z6MkqK1d4thaCEXSGZ6EchJw3tDPhQriwynWDuR55ayATMNf',
+  'did:web:staging.kms.storacha.network':
+    'did:key:z6MkmRf149D6oc9wq9ioXCsT5fgTn6esd7JjB9S5JnM4Y9qj',
 }
 
 /**
@@ -124,14 +152,18 @@ export const knownWebDIDs = {
 export async function ucanInvocationRouter(request) {
   try {
     // Capture X-Client custom header for analytics
-    const clientId = Object.entries(request.headers)
-      .find(([key]) => key.toLowerCase() === 'x-client')?.[1] ?? 'Storacha/?'
-    console.log(JSON.stringify({
-      message: 'Client request',
-      clientId,
-      requestId: request.requestContext?.requestId || 'unknown',
-      timestamp: new Date().toISOString()
-    }))
+    const clientId =
+      Object.entries(request.headers).find(
+        ([key]) => key.toLowerCase() === 'x-client'
+      )?.[1] ?? 'Storacha/?'
+    console.log(
+      JSON.stringify({
+        message: 'Client request',
+        clientId,
+        requestId: request.requestContext?.requestId || 'unknown',
+        timestamp: new Date().toISOString(),
+      })
+    )
   } catch (error) {
     console.error(error)
   }
@@ -181,7 +213,7 @@ export async function ucanInvocationRouter(request) {
     carparkBucketAccessKeyId,
     carparkBucketSecretAccessKey,
     ipniConfig,
-    sstStage
+    sstStage,
   } = getLambdaEnv()
 
   if (request.body === undefined) {
@@ -191,20 +223,31 @@ export async function ucanInvocationRouter(request) {
   }
 
   const { UPLOAD_API_DID, UPLOAD_API_ALIAS, MAX_REPLICAS } = process.env
-  const { PRIVATE_KEY, STRIPE_SECRET_KEY, INDEXING_SERVICE_PROOF, CONTENT_CLAIMS_PRIVATE_KEY, DMAIL_API_KEY, DMAIL_API_SECRET, DMAIL_JWT_SECRET } = Config
-  const serviceSigner = getServiceSigner({ did: UPLOAD_API_DID, privateKey: PRIVATE_KEY })
+  const {
+    PRIVATE_KEY,
+    STRIPE_SECRET_KEY,
+    INDEXING_SERVICE_PROOF,
+    CONTENT_CLAIMS_PRIVATE_KEY,
+    DMAIL_API_KEY,
+    DMAIL_API_SECRET,
+    DMAIL_JWT_SECRET,
+  } = Config
+  const serviceSigner = getServiceSigner({
+    did: UPLOAD_API_DID,
+    privateKey: PRIVATE_KEY,
+  })
 
   const options = { endpoint: dbEndpoint }
   const metrics = {
     space: createSpaceMetricsStore(AWS_REGION, spaceMetricsTableName, options),
-    admin: createAdminMetricsStore(AWS_REGION, adminMetricsTableName, options)
+    admin: createAdminMetricsStore(AWS_REGION, adminMetricsTableName, options),
   }
 
   const agentStore = AgentStore.open({
     store: {
       connection: {
         address: {
-          region: AWS_REGION
+          region: AWS_REGION,
         },
       },
       region: AWS_REGION,
@@ -227,35 +270,97 @@ export async function ucanInvocationRouter(request) {
         secretAccessKey: carparkBucketSecretAccessKey,
       },
     }),
-    createBlobsStorage(AWS_REGION, storeBucketName),
+    createBlobsStorage(AWS_REGION, storeBucketName)
   )
 
-  const blobRegistry = createBlobRegistry(AWS_REGION, blobRegistryTableName, spaceDiffTableName, consumerTableName, metrics, options)
-  const allocationBlobRegistry = createAllocationTableBlobRegistry(blobRegistry, AWS_REGION, allocationTableName, options)
-  const delegationBucket = r2DelegationBucketName && r2DelegationBucketEndpoint && r2DelegationBucketAccessKeyId && r2DelegationBucketSecretAccessKey && r2DelegationBucketName
-    ? createR2DelegationsStore(r2DelegationBucketEndpoint, r2DelegationBucketAccessKeyId, r2DelegationBucketSecretAccessKey, r2DelegationBucketName)
-    : createDelegationsStore(AWS_REGION, delegationBucketName)
-  const subscriptionTable = createSubscriptionTable(AWS_REGION, subscriptionTableName, options)
-  const consumerTable = createConsumerTable(AWS_REGION, consumerTableName, options)
-  const customerStore = createCustomerStore({ region: AWS_REGION }, { tableName: customerTableName })
+  const blobRegistry = createBlobRegistry(
+    AWS_REGION,
+    blobRegistryTableName,
+    spaceDiffTableName,
+    consumerTableName,
+    metrics,
+    options
+  )
+  const allocationBlobRegistry = createAllocationTableBlobRegistry(
+    blobRegistry,
+    AWS_REGION,
+    allocationTableName,
+    options
+  )
+  const delegationBucket =
+    r2DelegationBucketName &&
+    r2DelegationBucketEndpoint &&
+    r2DelegationBucketAccessKeyId &&
+    r2DelegationBucketSecretAccessKey &&
+    r2DelegationBucketName
+      ? createR2DelegationsStore(
+          r2DelegationBucketEndpoint,
+          r2DelegationBucketAccessKeyId,
+          r2DelegationBucketSecretAccessKey,
+          r2DelegationBucketName
+        )
+      : createDelegationsStore(AWS_REGION, delegationBucketName)
+  const subscriptionTable = createSubscriptionTable(
+    AWS_REGION,
+    subscriptionTableName,
+    options
+  )
+  const consumerTable = createConsumerTable(
+    AWS_REGION,
+    consumerTableName,
+    options
+  )
+  const customerStore = createCustomerStore(
+    { region: AWS_REGION },
+    { tableName: customerTableName }
+  )
   if (!STRIPE_SECRET_KEY) throw new Error('missing secret: STRIPE_SECRET_KEY')
   const stripe = new Stripe(STRIPE_SECRET_KEY, { apiVersion: '2023-10-16' })
-  const plansStorage = usePlansStore(customerStore, createStripeBillingProvider(stripe, customerStore))
+  const plansStorage = usePlansStore(
+    customerStore,
+    createStripeBillingProvider(stripe, customerStore)
+  )
   const rateLimitsStorage = createRateLimitTable(AWS_REGION, rateLimitTableName)
-  const spaceDiffStore = createSpaceDiffStore({ region: AWS_REGION }, { tableName: spaceDiffTableName })
-  const spaceSnapshotStore = createSpaceSnapshotStore({ region: AWS_REGION }, { tableName: spaceSnapshotTableName })
-  const egressTrafficQueue = createEgressTrafficQueue({ region: AWS_REGION }, { url: new URL(egressTrafficQueueUrl) })
+  const spaceDiffStore = createSpaceDiffStore(
+    { region: AWS_REGION },
+    { tableName: spaceDiffTableName }
+  )
+  const spaceSnapshotStore = createSpaceSnapshotStore(
+    { region: AWS_REGION },
+    { tableName: spaceSnapshotTableName }
+  )
+  const egressTrafficQueue = createEgressTrafficQueue(
+    { region: AWS_REGION },
+    { url: new URL(egressTrafficQueueUrl) }
+  )
 
-  const usageStorage = useUsageStore({ spaceDiffStore, spaceSnapshotStore, egressTrafficQueue })
+  const usageStorage = useUsageStore({
+    spaceDiffStore,
+    spaceSnapshotStore,
+    egressTrafficQueue,
+  })
 
-  const provisionsStorage = useProvisionStore(subscriptionTable, consumerTable, customerStore, parseServiceDids(providers))
+  const provisionsStorage = useProvisionStore(
+    subscriptionTable,
+    consumerTable,
+    customerStore,
+    parseServiceDids(providers),
+    productInfo
+  )
   const subscriptionsStorage = useSubscriptionsStore({ consumerTable })
-  const delegationsStorage = createDelegationsTable(AWS_REGION, delegationTableName, { bucket: delegationBucket })
-  const revocationsStorage = createRevocationsTable(AWS_REGION, revocationTableName)
-  
+  const delegationsStorage = createDelegationsTable(
+    AWS_REGION,
+    delegationTableName,
+    { bucket: delegationBucket }
+  )
+  const revocationsStorage = createRevocationsTable(
+    AWS_REGION,
+    revocationTableName
+  )
+
   const dealTrackerConnection = getServiceConnection({
     did: dealTrackerDid,
-    url: dealTrackerUrl
+    url: dealTrackerUrl,
   })
 
   let ipniService
@@ -270,12 +375,15 @@ export async function ucanInvocationRouter(request) {
   const claimsServicePrincipal = DID.parse(mustGetEnv('CONTENT_CLAIMS_DID'))
   const claimsServiceURL = new URL(mustGetEnv('CONTENT_CLAIMS_URL'))
 
-  let claimsIssuer = getServiceSigner({ privateKey: CONTENT_CLAIMS_PRIVATE_KEY })
+  let claimsIssuer = getServiceSigner({
+    privateKey: CONTENT_CLAIMS_PRIVATE_KEY,
+  })
   const claimsProofs = []
   if (process.env.CONTENT_CLAIMS_PROOF) {
     const cid = Link.parse(process.env.CONTENT_CLAIMS_PROOF, base64)
     const proof = await Delegation.extract(cid.multihash.digest)
-    if (!proof.ok) throw new Error('failed to extract proof', { cause: proof.error })
+    if (!proof.ok)
+      throw new Error('failed to extract proof', { cause: proof.error })
     claimsProofs.push(proof.ok)
   } else {
     // if no proofs, we must be using the service private key to sign
@@ -286,12 +394,12 @@ export async function ucanInvocationRouter(request) {
       issuer: claimsIssuer,
       audience: claimsServicePrincipal,
       with: claimsIssuer.did(),
-      proofs: claimsProofs
+      proofs: claimsProofs,
     },
     connection: getServiceConnection({
       did: claimsServicePrincipal.did(),
-      url: claimsServiceURL.toString()
-    })
+      url: claimsServiceURL.toString(),
+    }),
   }
 
   const indexingServicePrincipal = DID.parse(mustGetEnv('INDEXING_SERVICE_DID'))
@@ -312,58 +420,84 @@ export async function ucanInvocationRouter(request) {
       issuer: serviceSigner,
       audience: indexingServicePrincipal,
       with: indexingServicePrincipal.did(),
-      proofs: [indexingServiceProof]
+      proofs: [indexingServiceProof],
     },
     connection: getServiceConnection({
       did: indexingServicePrincipal.did(),
-      url: new URL('/claims', indexingServiceURL).toString()
-    })
+      url: new URL('/claims', indexingServiceURL).toString(),
+    }),
   }
-  const indexingServiceClient = new IndexingServiceClient({ serviceURL: indexingServiceURL })
+  const indexingServiceClient = new IndexingServiceClient({
+    serviceURL: indexingServiceURL,
+  })
   const blobRetriever = createBlobRetriever(indexingServiceClient)
-  const storageProviderTable = createStorageProviderTable(AWS_REGION, storageProviderTableName, options)
-  const routingService = createRoutingService(storageProviderTable, serviceSigner)
+  const storageProviderTable = createStorageProviderTable(
+    AWS_REGION,
+    storageProviderTableName,
+    options
+  )
+  const routingService = createRoutingService(
+    storageProviderTable,
+    serviceSigner
+  )
 
   /** @type {Array<import('@storacha/upload-api/types').SSOProvider>} */
   const ssoProviders = []
   // Check if DMAIL SSO is configured via SST Config (secrets)
   if (DMAIL_API_KEY && DMAIL_API_SECRET) {
-
     const dmailSSOService = createDmailSSOService({
       apiKey: DMAIL_API_KEY,
       apiSecret: DMAIL_API_SECRET,
       jwtSecret: DMAIL_JWT_SECRET || 'unused', // if undefined, we set it to a dummy value to bypass JWT validation
-      apiUrl: process.env.DMAIL_API_URL || 'https://api.dmail.ai/open/api/storacha/getUserStatus',
+      apiUrl:
+        process.env.DMAIL_API_URL ||
+        'https://api.dmail.ai/open/api/storacha/getUserStatus',
     })
     ssoProviders.push(dmailSSOService)
   }
 
   // TODO (fforbeck): if more providers are added, we need to add a feature flag for each provider using a list of providers names
   // then if the provider is in the list, we enable the customer trial plan for that provider
-  const enableCustomerTrialPlan = process.env.ENABLE_CUSTOMER_TRIAL_PLAN === 'true'
+  const enableCustomerTrialPlan =
+    process.env.ENABLE_CUSTOMER_TRIAL_PLAN === 'true'
 
   // Build service URL from request data since we're in the same ucan server
   const requestHost = request.headers?.host || request.headers?.Host
-  const serviceUrl = requestHost ? new URL(`https://${requestHost}`) : uploadServiceURL
+  const serviceUrl = requestHost
+    ? new URL(`https://${requestHost}`)
+    : uploadServiceURL
   const ssoService = ssoProviders.length
-    ? createSSOService(serviceSigner, serviceUrl, agentStore, customerStore, ssoProviders,
-      enableCustomerTrialPlan
-    )
+    ? createSSOService(
+        serviceSigner,
+        serviceUrl,
+        agentStore,
+        customerStore,
+        ssoProviders,
+        enableCustomerTrialPlan
+      )
     : undefined
-  
+
   let audience // accept invocations addressed to any alias
   const proofs = [] // accept attestations issued by any alias
   if (UPLOAD_API_ALIAS) {
-    const aliases = new Set(UPLOAD_API_ALIAS.split(',').map(s => s.trim()).filter(s => s !== serviceSigner.did()))
+    const aliases = new Set(
+      UPLOAD_API_ALIAS.split(',')
+        .map((s) => s.trim())
+        .filter((s) => s !== serviceSigner.did())
+    )
     for (const did of aliases) {
-      proofs.push(await Delegation.delegate({
-        issuer: serviceSigner,
-        audience: DID.parse(did),
-        capabilities: [{ can: UCANCaps.attest.can, with: serviceSigner.did() }]
-      }))
+      proofs.push(
+        await Delegation.delegate({
+          issuer: serviceSigner,
+          audience: DID.parse(did),
+          capabilities: [
+            { can: UCANCaps.attest.can, with: serviceSigner.did() },
+          ],
+        })
+      )
     }
     const audiences = new Set([serviceSigner.did(), ...aliases])
-    const audSchemas = [...audiences].map(did => Schema.literal(did))
+    const audSchemas = [...audiences].map((did) => Schema.literal(did))
     if (audSchemas.length > 1) {
       audience = Schema.union([audSchemas[0], ...audSchemas.slice(1)])
     }
@@ -396,13 +530,21 @@ export async function ucanInvocationRouter(request) {
           accessKeyId: carparkBucketAccessKeyId,
           secretAccessKey: carparkBucketSecretAccessKey,
         },
-      }),
+      })
     ),
-    uploadTable: createUploadTable(AWS_REGION, uploadTableName, metrics, options),
+    uploadTable: createUploadTable(
+      AWS_REGION,
+      uploadTableName,
+      metrics,
+      options
+    ),
     signer: serviceSigner,
     // TODO: we should set URL from a different env var, doing this for now to avoid that refactor - tracking in https://github.com/web3-storage/w3infra/issues/209
     url: new URL(accessServiceURL),
-    email: new Email({ token: postmarkToken, environment: sstStage === 'prod' ? undefined : sstStage, }),
+    email: new Email({
+      token: postmarkToken,
+      environment: sstStage === 'prod' ? undefined : sstStage,
+    }),
     agentStore,
     provisionsStorage,
     subscriptionsStorage,
@@ -411,17 +553,34 @@ export async function ucanInvocationRouter(request) {
     rateLimitsStorage,
     aggregatorId: DID.parse(aggregatorDid),
     pieceStore: createPieceTable(AWS_REGION, pieceTableName),
-    taskStore: createFilecoinTaskStore(AWS_REGION, agentIndexBucketName, agentMessageBucketName),
-    receiptStore: createFilecoinReceiptStore(AWS_REGION, agentIndexBucketName, agentMessageBucketName),
-    pieceOfferQueue: createPieceOfferQueueClient({ region: AWS_REGION }, { queueUrl: pieceOfferQueueUrl }),
-    filecoinSubmitQueue: createFilecoinSubmitQueueClient({ region: AWS_REGION }, { queueUrl: filecoinSubmitQueueUrl }),
+    taskStore: createFilecoinTaskStore(
+      AWS_REGION,
+      agentIndexBucketName,
+      agentMessageBucketName
+    ),
+    receiptStore: createFilecoinReceiptStore(
+      AWS_REGION,
+      agentIndexBucketName,
+      agentMessageBucketName
+    ),
+    pieceOfferQueue: createPieceOfferQueueClient(
+      { region: AWS_REGION },
+      { queueUrl: pieceOfferQueueUrl }
+    ),
+    filecoinSubmitQueue: createFilecoinSubmitQueueClient(
+      { region: AWS_REGION },
+      { queueUrl: filecoinSubmitQueueUrl }
+    ),
     dealTrackerService: {
       connection: dealTrackerConnection,
       invocationConfig: {
-        issuer: getServiceSigner({ privateKey: PRIVATE_KEY, did: dealTrackerDid }),
+        issuer: getServiceSigner({
+          privateKey: PRIVATE_KEY,
+          did: dealTrackerDid,
+        }),
         audience: dealTrackerConnection.id,
-        with: dealTrackerConnection.id.did()
-      }
+        with: dealTrackerConnection.id.did(),
+      },
     },
     plansStorage,
     requirePaymentPlan,
@@ -503,7 +662,7 @@ function getLambdaEnv() {
     accessServiceURL: mustGetEnv('ACCESS_SERVICE_URL'),
     uploadServiceURL: mustGetEnv('UPLOAD_SERVICE_URL'),
     aggregatorDid: mustGetEnv('AGGREGATOR_DID'),
-    requirePaymentPlan: (process.env.REQUIRE_PAYMENT_PLAN === 'true'),
+    requirePaymentPlan: process.env.REQUIRE_PAYMENT_PLAN === 'true',
     dealTrackerDid: mustGetEnv('DEAL_TRACKER_DID'),
     dealTrackerUrl: mustGetEnv('DEAL_TRACKER_URL'),
     // carpark bucket - CAR file bytes may be found here with keys like {cid}/{cid}.car
@@ -512,22 +671,26 @@ function getLambdaEnv() {
     carparkBucketAccessKeyId: mustGetEnv('R2_ACCESS_KEY_ID'),
     carparkBucketSecretAccessKey: mustGetEnv('R2_SECRET_ACCESS_KEY'),
     // IPNI service
-    ipniConfig: process.env.DISABLE_IPNI_PUBLISHING === 'true' 
-      ? null
-      : {
-        blockAdvertisementPublisherQueue: {
-          url: new URL(mustGetEnv('BLOCK_ADVERT_PUBLISHER_QUEUE_URL')),
-          region: AWS_REGION
-        },
-        blockIndexWriterQueue: {
-          url: new URL(mustGetEnv('BLOCK_INDEX_WRITER_QUEUE_URL')),
-          region: AWS_REGION
-        }
-      },
+    ipniConfig:
+      process.env.DISABLE_IPNI_PUBLISHING === 'true'
+        ? null
+        : {
+            blockAdvertisementPublisherQueue: {
+              url: new URL(mustGetEnv('BLOCK_ADVERT_PUBLISHER_QUEUE_URL')),
+              region: AWS_REGION,
+            },
+            blockIndexWriterQueue: {
+              url: new URL(mustGetEnv('BLOCK_INDEX_WRITER_QUEUE_URL')),
+              region: AWS_REGION,
+            },
+          },
     sstStage: mustGetEnv('SST_STAGE'),
     principalMapping:
       /** @type {Record<`did:web:${string}`, `did:key:${string}`>} */
-      ({ ...knownWebDIDs, ...JSON.parse(process.env.PRINCIPAL_MAPPING || '{}') }),
+      ({
+        ...knownWebDIDs,
+        ...JSON.parse(process.env.PRINCIPAL_MAPPING || '{}'),
+      }),
     // set for testing
     dbEndpoint: process.env.DYNAMO_DB_ENDPOINT,
   }
