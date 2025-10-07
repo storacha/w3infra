@@ -275,6 +275,7 @@ export async function handleBridgeRequest(request, context) {
       }
     }
     const tasks = parseBodyResult.ok.tasks
+    console.log(`executing ${JSON.stringify(tasks)} on behalf of ${issuer.did()}`)
     const receipts = await invokeAndExecuteTasks(
       issuer,
       context.serviceDID,
