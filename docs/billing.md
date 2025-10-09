@@ -8,7 +8,7 @@
    * After each (`blob/accept`) and `blob/remove` is accepted by the storage node we register this blob addition or removal into the blog register table. We also insert space usage deltas directly to `space-diff` from the BlobRegistry at the point where items are added or removed.
    * Each diff record contains: `provider`, `space`, `subscription`, `cause`, `delta` (bytes), `receiptAt`, `insertedAt`
 
-2. **Monthly Billing Trigger**: Every month on the 2nd at midnight UTC, a cron job triggers the billing process.
+2. **Monthly Billing Trigger**: Every month on the 1st at midnight UTC, a cron job triggers the billing process.
    * Lambda lists ALL customers from the `customer` store
    * Only customers with a valid `account` (Stripe account) are processed
    * Customer billing instructions are added to the `customer-billing-queue` with:
@@ -49,4 +49,4 @@
 - **Usage Units**: Calculated in byte-milliseconds, then converted to GiB/month for reporting
 - **Error Handling**: Customers without Stripe accounts are skipped, failed items go to dead letter queues
 - **Billing Period**: Typically from start of previous month to start of current month
-- **Schedule**: Runs on the 2nd of each month
+- **Schedule**: Runs on the 1st of each month
