@@ -70,6 +70,10 @@ export const oauthCallbackGet = async (request, context) => {
     )
   })
   const tokenResult = await tokenResponse.json()
+  if (!tokenResult.id_token) {
+    console.error(`Error getting token from ${HUMANODE_TOKEN_ENDPOINT} - got: ${JSON.stringify(tokenResult)}`)
+    return htmlResponse(500, getUnexpectedErrorResponseHTML('Error communicating with Humanode'))
+  }
   const humanodeIdToken = jwtDecode(tokenResult.id_token)
   const humanodeId = humanodeIdToken.sub
   if (!humanodeId) {
