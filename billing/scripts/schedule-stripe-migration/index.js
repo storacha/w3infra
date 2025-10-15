@@ -9,16 +9,6 @@ const STRIPE_API_KEY = mustGetEnv('STRIPE_API_KEY')
 
 const stripe = new Stripe(STRIPE_API_KEY)
 
-// let _stripe: Stripe | null = null
-// const getStripe = (): Stripe => {
-//   if (!_stripe) {
-//     _stripe = new Stripe(STRIPE_API_KEY, {
-//       // ...
-//     });
-//   }
-//   return _stripe;
-// }
-
 const STARTER_PRICE_ID = 'price_1QPQUzFLBc8xGwvUcZnO7sxY' // $0 + $0.15 per GB
 const LITE_PRICE_ID = 'price_1QPRLcFLBc8xGwvUQEGdzJF0' // $10 + $0.05 per GB
 const BUSINESS_PRICE_ID = 'price_1QPRO4FLBc8xGwvUcnEdzOnY' // $100 + $0.03 per GB
@@ -31,7 +21,7 @@ const oldPricesNames = {
 
 /**
  * @typedef {'price_1QPQUzFLBc8xGwvUcZnO7sxY' | 'price_1QPRLcFLBc8xGwvUQEGdzJF0' | 'price_1QPRO4FLBc8xGwvUcnEdzOnY'} OldPriceId
- * @typedef {{ flatFee: string, overageFee: string }} PriceCombo
+ * @typedef {{ flatFee: string, overageFee: string, egressFee: string }} PriceCombo
  */
 
 // Mapping of old prices to new price combinations
@@ -40,14 +30,17 @@ const oldToNewPrices = {
   [STARTER_PRICE_ID]: {
     flatFee: 'price_1SDXxgFLBc8xGwvUH3YfRMwM',
     overageFee: 'price_1SDY0iFLBc8xGwvUrlV18Heb',
+    egressFee: 'price_1SIa2lFLBc8xGwvUE7Qas74l'
   },
   [LITE_PRICE_ID]: {
     flatFee: 'price_1SDY3fFLBc8xGwvUkghmC77u',
     overageFee: 'price_1SDY5BFLBc8xGwvUWysDI2NO',
+    egressFee: 'price_1SIa5TFLBc8xGwvUXTzVF6n9'
   },
   [BUSINESS_PRICE_ID]: {
     flatFee: 'price_1SDY5yFLBc8xGwvUTGQJ548z',
     overageFee: 'price_1SDY7iFLBc8xGwvUNTlL50aK',
+    egressFee: 'price_1SIa7JFLBc8xGwvU0il2JRSE'
   },
 }
 
@@ -65,7 +58,7 @@ console.log(
 )
 
 // Process each old price
-for (const oldPriceId of [oldPriceIds[0]]) {
+for (const oldPriceId of oldPriceIds) {
   console.log(`----------------------------------------------------------------------------------------------------`)
   console.log(`Processing subscriptions with price: ${oldPricesNames[oldPriceId]} (${oldPriceId})`)
 
@@ -80,7 +73,7 @@ for (const oldPriceId of [oldPriceIds[0]]) {
   )
 
   // Process each subscription
-  for (const subscription of [subscriptions.data[0]]) {
+  for (const subscription of subscriptions.data) {
     try {
       console.log(`\n------> Processing subscription: ${subscription.id}`)
 
@@ -128,6 +121,9 @@ for (const oldPriceId of [oldPriceIds[0]]) {
                 },
                 {
                   price: oldToNewPrices[oldPriceId].overageFee,
+                },
+                {
+                  price: oldToNewPrices[oldPriceId].egressFee,
                 },
               ],
               billing_cycle_anchor: 'phase_start', // Reset billing anchor to the 1st
