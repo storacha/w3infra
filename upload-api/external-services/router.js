@@ -67,6 +67,7 @@ export const create = (storageProviderTable, serviceID) => ({
  */
 const getWeightedRandomInt = (weights) => {
   const totalWeight = weights.reduce((sum, weight) => sum + weight, 0)
+  if (totalWeight === 0) throw new Error('No weighted candidates available')
   let random = Math.random() * totalWeight
 
   for (let i = 0; i < weights.length; i++) {
