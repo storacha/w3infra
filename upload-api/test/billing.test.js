@@ -142,12 +142,29 @@ test('stripe plan can be updated', async (t) => {
   })
 })
 
-test('stripe billing session can be generated', async (t) => {
+test('stripe billing admin session can be generated', async (t) => {
   const context = /** @type {typeof t.context & BillingContext } */(t.context)
   const { billingProvider } = context
 
   await withCustomer(context, async () => {
     const response = await billingProvider.createAdminSession(customerDID, 'https://example.com/return-url')
+    t.assert(response.ok)
+    t.assert(response.ok?.url)
+  })
+})
+
+test('stripe checkout session can be generated', async (t) => {
+  const context = /** @type {typeof t.context & BillingContext } */(t.context)
+  const { billingProvider } = context
+
+  await withCustomer(context, async () => {
+    const response = await billingProvider.createCheckoutSession(
+      customerDID,
+      'did:web:testplan',
+       {
+        successURL: 'https://example.com/return-url', 
+        cancelURL: 'https://example.com/cancel-url'
+      })
     t.assert(response.ok)
     t.assert(response.ok?.url)
   })

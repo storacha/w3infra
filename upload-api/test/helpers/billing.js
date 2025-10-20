@@ -18,6 +18,10 @@ export function createTestBillingProvider() {
 
     async createAdminSession(customer) {
       return { ok: { url: 'https://example/test-billing-admin-session' } }
+    },
+
+    async createCheckoutSession(customer) {
+      return { ok: { url: 'https://example/test-billing-admin-session' } }
     }
   }
 }
