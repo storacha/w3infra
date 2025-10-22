@@ -34,4 +34,28 @@ export const productInfo = {
     included: 0,
     allowOverages: true,
   },
+  'did:web:starter.staging.web3.storage': {
+    cost: 0,
+    overage: 0.15 / GB,
+    included: 5 * GB,
+    allowOverages: true,
+  },
+  'did:web:lite.staging.web3.storage': {
+    cost: 10,
+    overage: 0.05 / GB,
+    included: 100 * GB,
+    allowOverages: true,
+  },
+  'did:web:business.staging.web3.storage': {
+    cost: 100,
+    overage: 0.03 / GB,
+    included: 2 * TB,
+    allowOverages: true,
+  },
+  'did:web:free.staging.web3.storage': {
+    cost: 0,
+    overage: 0 / GB,
+    included: 0,
+    allowOverages: true,
+  },
 }
