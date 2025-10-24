@@ -19,7 +19,7 @@ export const create = async (storageProviderTable, indexingService, serviceID) =
   if (serviceID.did().startsWith('did:web')) {
     principalResolver.resolveDIDKey = (did) =>
       did === serviceID.did()
-        ? ok(serviceID.toDIDKey())
+        ? ok([serviceID.toDIDKey()])
         : error(new DIDResolutionError(did))
   }
 
