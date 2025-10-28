@@ -166,10 +166,10 @@ function getPieceTableName(env) {
  */
 function getAgentIndexTableName(env) {
   if (env === 'staging') {
-    return 'staging-w3infra-invocation-table'
+    return 'staging-w3infra-agent-index'
   }
 
-  return 'prod-w3infra-invocation-table'
+  return 'prod-w3infra-agent-index'
 }
 
 /**

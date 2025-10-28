@@ -1,14 +1,10 @@
-import {
-  Bucket,
-  KinesisStream,
-  Table,
-} from 'sst/constructs'
+import { Bucket, KinesisStream, Table } from 'sst/constructs'
 import { PolicyStatement, StarPrincipal, Effect } from 'aws-cdk-lib/aws-iam'
 
 import {
   getBucketConfig,
   getKinesisStreamConfig,
-  setupSentry
+  setupSentry,
 } from './config.js'
 import { agentIndexTableProps } from '../upload-api/tables/index.js'
 
@@ -30,9 +26,9 @@ export function UcanInvocationStack({ stack, app }) {
           ignorePublicAcls: true,
           restrictPublicBuckets: false,
           blockPublicPolicy: false,
-        }
+        },
       },
-    }
+    },
   })
   // Make bucket public for `s3:GetObject` command
   agentMessageBucket.cdk.bucket.addToResourcePolicy(
@@ -43,22 +39,22 @@ export function UcanInvocationStack({ stack, app }) {
       resources: [agentMessageBucket.cdk.bucket.arnForObjects('*')],
     })
   )
-  
+
   const agentIndexBucket = new Bucket(stack, 'invocation-store', {
     cors: true,
     cdk: {
-      bucket: getBucketConfig('invocation-store', app.stage, app.name)
-    }
+      bucket: getBucketConfig('invocation-store', app.stage, app.name),
+    },
   })
 
-  const agentIndexTable = new Table(stack, 'invocation-table', agentIndexTableProps)
+  const agentIndexTable = new Table(stack, 'agent-index', agentIndexTableProps)
 
   // TODO: keep for historical content that we might want to process
   new Bucket(stack, 'ucan-store', {
     cors: true,
     cdk: {
-      bucket: getBucketConfig('ucan-store', app.stage, app.name)
-    }
+      bucket: getBucketConfig('ucan-store', app.stage, app.name),
+    },
   })
 
   // TODO: keep for historical content that we might want to process
@@ -66,7 +62,7 @@ export function UcanInvocationStack({ stack, app }) {
   if (stack.stage === 'production' || stack.stage === 'staging') {
     new KinesisStream(stack, 'ucan-stream', {
       cdk: {
-        stream: getKinesisStreamConfig(stack)
+        stream: getKinesisStreamConfig(stack),
       },
     })
   }
@@ -74,8 +70,8 @@ export function UcanInvocationStack({ stack, app }) {
   // create a kinesis stream
   const ucanStream = new KinesisStream(stack, 'ucan-stream-v2', {
     cdk: {
-      stream: getKinesisStreamConfig(stack)
-    }
+      stream: getKinesisStreamConfig(stack),
+    },
   })
 
   stack.addOutputs({
@@ -87,6 +83,6 @@ export function UcanInvocationStack({ stack, app }) {
     agentIndexTable,
     agentIndexBucket,
     agentMessageBucket,
-    ucanStream
+    ucanStream,
   }
 }
