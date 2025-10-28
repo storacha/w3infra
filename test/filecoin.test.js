@@ -194,7 +194,7 @@ test(
           body: agentMessageBytes,
           headers: {},
         })
-	// @ts-expect-error
+        // @ts-expect-error
         const receipt = agentMessage.receipts.get(
           filecoinOfferInvCid.toString()
         )
@@ -225,7 +225,7 @@ test(
             dynamoDBConnection: { channel: dynamoClient },
             s3Connection: { channel: s3Client },
             tables: {
-              index: { name: `${getStackName()}-invocation-table` },
+              index: { name: `${getStackName()}-agent-index` },
             },
             buckets: {
               message: { name: getBucketName('workflow-store') },
