@@ -23,10 +23,9 @@ import {
   encodeAgentMessage,
 } from './helpers/ucan.js'
 
-
 import {
   processUcanLogRequest,
-  replaceAllLinkValues
+  replaceAllLinkValues,
 } from '../ucan-invocation.js'
 import { createDynamoTable } from '../../filecoin/test/helpers/tables.js'
 import { agentIndexTableProps } from '../tables/index.js'
@@ -41,7 +40,7 @@ test.before(async (t) => {
     port: 9000,
   })
   const dynamo = await createDynamodDb({
-    port: 9001,
+    port: 8000,
   })
   t.context.s3 = s3
   t.context.dynamo = dynamo
@@ -51,7 +50,7 @@ test('processes agent message as CAR with multiple invocations', async (t) => {
   t.plan(18)
   const kinesis = {
     /**
-     * @param {any} input 
+     * @param {any} input
      */
     putRecords: (input) => {
       t.is(input.StreamName, agentStore.connection.stream.name)
@@ -63,27 +62,24 @@ test('processes agent message as CAR with multiple invocations', async (t) => {
         const invocation = JSON.parse(toString(record.Data))
         t.truthy(invocation)
         t.truthy(invocation.ts)
-        t.is(invocation.type,  Stream.defaults.workflow.type)
+        t.is(invocation.type, Stream.defaults.workflow.type)
         t.is(invocation.carCid, agentMessageCarCid)
 
         const cap = capabilities.find(
           (cap) => cap.can === invocation.value.att[0].can
         )
         t.truthy(cap)
-        t.deepEqual(
-          replaceAllLinkValues(cap?.nb),
-          invocation.value.att[0].nb
-        )
+        t.deepEqual(replaceAllLinkValues(cap?.nb), invocation.value.att[0].nb)
       }
 
       return Promise.resolve()
-    }
+    },
   }
 
   const { agentStore } = await getStores({
     ...t.context,
     streamName: 'stream-name',
-    kinesis: { channel: kinesis }
+    kinesis: { channel: kinesis },
   })
   const basicAuth = 'test-token'
 
@@ -136,7 +132,7 @@ test('processes agent message as CAR with multiple invocations', async (t) => {
   await t.notThrowsAsync(() =>
     processUcanLogRequest(carRequest, {
       agentStore,
-      basicAuth
+      basicAuth,
     })
   )
 
@@ -177,13 +173,13 @@ test('processes agent message as CAR with receipt', async (t) => {
         kinesisWorkflowInvocations?.push(JSON.parse(toString(record.Data)))
       }
       return Promise.resolve()
-    }
+    },
   }
 
   const { agentStore } = await getStores({
     ...t.context,
     streamName: 'stream-name',
-    kinesis: { channel: kinesis }
+    kinesis: { channel: kinesis },
   })
   const basicAuth = 'test-token'
 
@@ -295,8 +291,9 @@ test('processes agent message as CAR with receipt', async (t) => {
   await t.notThrowsAsync(() =>
     processUcanLogRequest(carReceiptsRequest, {
       agentStore,
-      basicAuth
-  }))
+      basicAuth,
+    })
+  )
 
   // Verify CAR agent message persisted
   const cmd = new HeadObjectCommand({
@@ -417,7 +414,7 @@ test('can process ucan log request for given receipt after its invocation stored
   const { agentStore } = await getStores({
     ...t.context,
     streamName: 'stream-name',
-    kinesis: { channel: kinesis }
+    kinesis: { channel: kinesis },
   })
   const basicAuth = 'test-token'
   const uploadService = await Signer.generate()
@@ -455,7 +452,7 @@ test('can process ucan log request for given receipt after its invocation stored
   await t.notThrowsAsync(() =>
     processUcanLogRequest(workflowRequest, {
       agentStore,
-      basicAuth
+      basicAuth,
     })
   )
 
@@ -469,7 +466,7 @@ test('can process ucan log request for given receipt after its invocation stored
   const receiptWorkflow = await encodeAgentMessage({ receipts: [receipt] })
   const receiptArchive = await CAR.request.decode(receiptWorkflow)
   const decodedCarReceipts = await CAR.codec.decode(
-    /** @type {Uint8Array} */(receiptWorkflow.body)
+    /** @type {Uint8Array} */ (receiptWorkflow.body)
   )
   const agentMessageCarReceiptsCid = decodedCarReceipts.roots[0].cid.toString()
   const receiptRequest = lambdaUtils.mockEventCreator.createAPIGatewayEvent({
@@ -485,9 +482,7 @@ test('can process ucan log request for given receipt after its invocation stored
     t.is(input.Records?.length, 1)
 
     const [record] = input.Records || []
-    const data = JSON.parse(
-      toString(/** @type {Uint8Array} */(record.Data))
-    )
+    const data = JSON.parse(toString(/** @type {Uint8Array} */ (record.Data)))
     t.truthy(data)
     t.is(data.carCid, receiptArchive.root.cid.toString())
     t.is(data.task, invocationCid.toString())
@@ -501,7 +496,7 @@ test('can process ucan log request for given receipt after its invocation stored
   await t.notThrowsAsync(() =>
     processUcanLogRequest(receiptRequest, {
       agentStore,
-      basicAuth
+      basicAuth,
     })
   )
 
@@ -516,7 +511,7 @@ test('can process ucan log request for given receipt after its invocation stored
   // Verify receipt symlink for car agent message stored
   const cmdInvocationStored = new HeadObjectCommand({
     Key: `${invocationCid}/${receipt.link()}@${agentMessageCarReceiptsCid}.out`,
-    Bucket: agentStore.connection.store.buckets.index.name
+    Bucket: agentStore.connection.store.buckets.index.name,
   })
   const s3ResponseInvocationStored = await t.context.s3.send(
     cmdInvocationStored
@@ -528,7 +523,7 @@ test('fails to process ucan log request with no Authorization header', async (t)
   const { agentStore } = await getStores({
     ...t.context,
     streamName: 'name',
-    kinesis: { disable: {} }
+    kinesis: { disable: {} },
   })
   const basicAuth = 'test-token'
   const request = lambdaUtils.mockEventCreator.createAPIGatewayEvent()
@@ -545,7 +540,7 @@ test('fails to process ucan log request with no Authorization basic header', asy
   const { agentStore } = await getStores({
     ...t.context,
     streamName: 'name',
-    kinesis: { disable: {} }
+    kinesis: { disable: {} },
   })
 
   const basicAuth = 'test-token'
@@ -567,7 +562,7 @@ test('fails to process ucan log request with Authorization basic token empty', a
   const { agentStore } = await getStores({
     ...t.context,
     streamName: 'name',
-    kinesis: { disable: {} }
+    kinesis: { disable: {} },
   })
   const basicAuth = 'test-token'
   const request = lambdaUtils.mockEventCreator.createAPIGatewayEvent({
@@ -588,7 +583,7 @@ test('fails to process ucan log request with invalid Authorization basic token',
   const { agentStore } = await getStores({
     ...t.context,
     streamName: 'name',
-    kinesis: { disable: {} }
+    kinesis: { disable: {} },
   })
   const basicAuth = 'test-token'
   const request = lambdaUtils.mockEventCreator.createAPIGatewayEvent({
@@ -658,24 +653,24 @@ async function getStores(ctx) {
   const agentStore = AgentStore.open({
     store: {
       dynamoDBConnection: {
-        channel: ctx.dynamo
-      }, 
+        channel: ctx.dynamo,
+      },
       s3Connection: {
-        channel: ctx.s3
+        channel: ctx.s3,
       },
       region: 'us-west-2',
       buckets: {
         message: { name: workflowBucketName },
-        index: { name: invocationBucketName }
+        index: { name: invocationBucketName },
       },
       tables: {
-        index: { name: invocationTableName }
-      }
+        index: { name: invocationTableName },
+      },
     },
     stream: {
       name: ctx.streamName ?? 'stream-name',
-      connection: ctx.kinesis
-    }
+      connection: ctx.kinesis,
+    },
   })
 
   return {
@@ -688,7 +683,10 @@ async function getStores(ctx) {
  * @param {import("@aws-sdk/client-s3").S3Client} s3Client
  */
 async function prepareResources(dynamoClient, s3Client) {
-  const invocationTableName = await createDynamoTable(dynamoClient, agentIndexTableProps)
+  const invocationTableName = await createDynamoTable(
+    dynamoClient,
+    agentIndexTableProps
+  )
   const invocationBucketName = await createBucket(s3Client)
   const workflowBucketName = await createBucket(s3Client)
 

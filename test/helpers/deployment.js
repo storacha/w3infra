@@ -7,7 +7,7 @@ import { mustGetEnv } from '../../lib/env.js'
 
 // Either seed.run deployment, or development deploy outputs-file
 // https://seed.run/docs/adding-a-post-deploy-phase.html#post-deploy-phase-environment
-export function getStage () {
+export function getStage() {
   const stage = process.env.SST_STAGE || process.env.SEED_STAGE_NAME
   if (stage) {
     return stage
@@ -20,23 +20,29 @@ export const getAppName = () =>
   // what is configured in sst.config :(
   process.env.SEED_SERVICE_NAME === 'upload-api'
     ? 'w3infra'
-    : (process.env.SEED_SERVICE_NAME ?? 'w3infra')
+    : process.env.SEED_SERVICE_NAME ?? 'w3infra'
 
 export const getStackName = () => `${getStage()}-${getAppName()}`
 
-export const getCloudflareBucketClient = () => new S3Client({
-  region: 'auto',
-  endpoint: process.env.R2_ENDPOINT || '',
-  credentials: {
-    accessKeyId: process.env.R2_ACCESS_KEY_ID || '',
-    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY || '',
-  },
-})
+export const getCloudflareBucketClient = () =>
+  new S3Client({
+    region: 'auto',
+    endpoint: process.env.R2_ENDPOINT || '',
+    credentials: {
+      accessKeyId: process.env.R2_ACCESS_KEY_ID || '',
+      secretAccessKey: process.env.R2_SECRET_ACCESS_KEY || '',
+    },
+  })
 
-export const getAwsBucketClient = (region = getAwsRegion()) => new S3Client({
-  region
-})
+export const getAwsBucketClient = (region = getAwsRegion()) =>
+  new S3Client({
+    region,
+  })
 
+export const getDynamoClient = (region = getAwsRegion()) =>
+  new DynamoDBClient({
+    region,
+  })
 export const getApiEndpoint = () => {
   // CI/CD deployment
   if (process.env.SEED_APP_NAME) {
@@ -45,10 +51,7 @@ export const getApiEndpoint = () => {
   }
 
   const require = createRequire(import.meta.url)
-  const testEnv = require(path.join(
-    process.cwd(),
-    '.sst/outputs.json'
-  ))
+  const testEnv = require(path.join(process.cwd(), '.sst/outputs.json'))
 
   // Get Upload API endpoint
   const id = 'UploadApiStack'
@@ -63,10 +66,7 @@ export const getRoundaboutEndpoint = () => {
   }
 
   const require = createRequire(import.meta.url)
-  const testEnv = require(path.join(
-    process.cwd(),
-    '.sst/outputs.json'
-  ))
+  const testEnv = require(path.join(process.cwd(), '.sst/outputs.json'))
 
   // Get Roundabout API endpoint
   const id = 'RoundaboutStack'
@@ -83,15 +83,12 @@ export const getCarparkBucketInfo = () => {
     const stage = getStage()
     return {
       Bucket: `carpark-${stage}-0`,
-      Region: 'us-east-2'
+      Region: 'us-east-2',
     }
   }
 
   const require = createRequire(import.meta.url)
-  const testEnv = require(path.join(
-    process.cwd(),
-    '.sst/outputs.json'
-  ))
+  const testEnv = require(path.join(process.cwd(), '.sst/outputs.json'))
 
   // Get Carpark metadata
   const id = 'CarparkStack'
@@ -111,7 +108,7 @@ export const getAwsRegion = () => {
 }
 
 /**
- * @param {string} tableName 
+ * @param {string} tableName
  */
 export const getDynamoDb = (tableName) => {
   const region = getAwsRegion()
@@ -120,11 +117,11 @@ export const getDynamoDb = (tableName) => {
   return {
     client: new DynamoDBClient({
       region,
-      endpoint
+      endpoint,
     }),
     tableName: `${getStackName()}-${tableName}`,
     region,
-    endpoint
+    endpoint,
   }
 }
 
