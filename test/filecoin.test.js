@@ -194,8 +194,8 @@ test(
           body: agentMessageBytes,
           headers: {},
         })
-        // @ts-expect-error
         const receipt = agentMessage.receipts.get(
+          // @ts-expect-error
           filecoinOfferInvCid.toString()
         )
         if (!receipt) {
