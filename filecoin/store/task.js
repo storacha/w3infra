@@ -12,11 +12,17 @@ import { getDynamoClient } from '../../lib/aws/dynamo.js'
  * @param {string} agentIndexBucketName
  * @param {string} agentMessageBucketName
  * @param {{
-*   s3Address?: Partial<import('../../lib/aws/s3.js').Address>
-*   dynamoAddress?: Partial<import('../../lib/aws/dynamo.js').Address>
-* }} [options]
+ *   s3Address?: Partial<import('../../lib/aws/s3.js').Address>
+ *   dynamoAddress?: Partial<import('../../lib/aws/dynamo.js').Address>
+ * }} [options]
  */
-export function createTaskStore(region, agentIndexTableName, agentIndexBucketName, agentMessageBucketName, options = {}) {
+export function createTaskStore(
+  region,
+  agentIndexTableName,
+  agentIndexBucketName,
+  agentMessageBucketName,
+  options = {}
+) {
   const dynamoDBClient = getDynamoClient({
     region,
     ...options.dynamoAddress,
@@ -25,7 +31,13 @@ export function createTaskStore(region, agentIndexTableName, agentIndexBucketNam
     region,
     ...options,
   })
-  return useTaskStore(dynamoDBClient, s3client, agentIndexTableName, agentIndexBucketName, agentMessageBucketName)
+  return useTaskStore(
+    dynamoDBClient,
+    s3client,
+    agentIndexTableName,
+    agentIndexBucketName,
+    agentMessageBucketName
+  )
 }
 
 /**
@@ -36,33 +48,44 @@ export function createTaskStore(region, agentIndexTableName, agentIndexBucketNam
  * @param {string} agentMessageBucketName
  * @returns {import('@storacha/filecoin-api/storefront/api').TaskStore}
  */
-export const useTaskStore = (dynamoDBClient, s3client, agentIndexTableName, agentIndexBucketName, agentMessageBucketName) => {
+export const useTaskStore = (
+  dynamoDBClient,
+  s3client,
+  agentIndexTableName,
+  agentIndexBucketName,
+  agentMessageBucketName
+) => {
   const store = Store.open({
     dynamoDBConnection: { channel: dynamoDBClient },
     s3Connection: { channel: s3client },
-    region: typeof s3client.config.region === 'string' ? s3client.config.region : 'us-west-2',
+    region:
+      typeof s3client.config.region === 'string'
+        ? s3client.config.region
+        : 'us-west-2',
     buckets: {
       index: { name: agentIndexBucketName },
       message: { name: agentMessageBucketName },
     },
     tables: {
-      index: { name: agentIndexTableName }
-    }
+      index: { name: agentIndexTableName },
+    },
   })
 
   return {
     put: async (record) => {
       return {
-        error: new StoreOperationFailed('no new task should be put by storefront')
+        error: new StoreOperationFailed(
+          'no new task should be put by storefront'
+        ),
       }
     },
     get: (taskCid) =>
-        // @ts-expect-error - need to align RecordNotFoundError
-        Store.getInvocation(store, taskCid),
+      // @ts-expect-error - need to align RecordNotFoundError
+      Store.getInvocation(store, taskCid),
     has: async (record) => {
       return {
-        error: new StoreOperationFailed('no task should checked by storefront')
+        error: new StoreOperationFailed('no task should checked by storefront'),
       }
-    }
+    },
   }
 }

@@ -25,7 +25,7 @@ import {
   blobRegistryTableProps,
   adminMetricsTableProps,
   replicaTableProps,
-  agentIndexTableProps, 
+  agentIndexTableProps,
 } from '../../tables/index.js'
 import {
   useBlobRegistry,
@@ -236,7 +236,10 @@ export const encodeAgentMessage = async (source) => {
  * buckets: {
  *  index: { name: string }
  *  message: { name: string }
- * }
+ * },
+ * tables: {
+ *   index: { name: string }
+ * },
  * }} TestContext
  *
  * @param {import('ava').ExecutionContext<{
@@ -267,8 +270,8 @@ export async function executionContextToUcantoTestServerContext(t) {
         index: { name: agentIndexBucketName },
       },
       tables: {
-        index: { name: agentIndexTableName }
-      }
+        index: { name: agentIndexTableName },
+      },
     },
     stream: {
       connection: { disable: {} },
@@ -532,6 +535,9 @@ export async function executionContextToUcantoTestServerContext(t) {
     buckets: {
       index: { name: agentIndexBucketName },
       message: { name: agentMessageBucketName },
+    },
+    tables: {
+      index: { name: agentIndexTableName },
     },
   }
 }
