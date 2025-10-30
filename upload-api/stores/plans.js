@@ -89,6 +89,7 @@ export function usePlansStore(customerStore, billingProvider) {
       return { ok: {} }
     },
 
-    createAdminSession: async (account, returnURL) => billingProvider.createAdminSession(account, returnURL)
+    createAdminSession: async (account, returnURL) => billingProvider.createAdminSession(account, returnURL),
+    createCheckoutSession: async (account, planID, options) => billingProvider.createCheckoutSession(account, planID, options)
   }
 }
