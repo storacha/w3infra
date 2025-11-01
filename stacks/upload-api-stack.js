@@ -78,8 +78,12 @@ export function UploadApiStack({ stack, app }) {
     dmailApiSecret,
     dmailJwtSecret,
   } = use(UploadDbStack)
-  const { agentIndexBucket, agentMessageBucket, ucanStream } =
-    use(UcanInvocationStack)
+  const { 
+    agentIndexTable,
+    agentIndexBucket,
+    agentMessageBucket,
+    ucanStream 
+  } = use(UcanInvocationStack)
   const {
     customerTable,
     spaceDiffTable,
@@ -143,6 +147,7 @@ export function UploadApiStack({ stack, app }) {
             permissions: [
               adminMetricsTable,
               agentIndexBucket,
+              agentIndexTable,
               agentMessageBucket,
               allocationTable, // legacy
               blobRegistryTable,
@@ -173,6 +178,7 @@ export function UploadApiStack({ stack, app }) {
               ACCESS_SERVICE_URL: getServiceURL(stack, customDomain) ?? '',
               ADMIN_METRICS_TABLE_NAME: adminMetricsTable.tableName,
               AGENT_INDEX_BUCKET_NAME: agentIndexBucket.bucketName,
+              AGENT_INDEX_TABLE_NAME: agentIndexTable.tableName,
               AGENT_MESSAGE_BUCKET_NAME: agentMessageBucket.bucketName,
               AGGREGATOR_DID,
               ALLOCATION_TABLE_NAME: allocationTable.tableName,
