@@ -40,7 +40,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(
     }
 
     const ctx = {
-      stripe: new Stripe(stripeSecretKey, { apiVersion: '2023-10-16' })
+      stripe: new Stripe(stripeSecretKey, { apiVersion: '2025-02-24.acacia' })
     }
     for (const usage of records) {
       expect(
@@ -106,8 +106,10 @@ const reportUsage = async (usage, ctx) => {
     return { error: new Error('unknown payment system') }
   }
 
+  const customer = usage.account.replace('stripe:', '')
+
   const { data: subs } = await ctx.stripe.subscriptions.list({
-    customer: usage.account.replace('stripe:', ''),
+    customer,
     status: 'all',
     limit: 1
   })
@@ -126,6 +128,9 @@ const reportUsage = async (usage, ctx) => {
 
   const duration = usage.to.getTime() - usage.from.getTime()
   const quantity = Math.floor(new Big(usage.usage.toString()).div(duration).div(1024 * 1024 * 1024).toNumber())
+
+  console.log(`Reporting usage of ${usage.usage} byte-ms for ${usage.space} as quantity: ${quantity} bytes/month`)
+
   const idempotencyKey = await createIdempotencyKey(usage)
   const usageRecord = await ctx.stripe.subscriptionItems.createUsageRecord(
     subItem.id,
@@ -134,5 +139,46 @@ const reportUsage = async (usage, ctx) => {
   )
 
   console.log(`Created Stripe usage record with ID: ${usageRecord.id}`)
+
+  const byteQuantity = Math.floor(new Big(usage.usage.toString()).div(duration).toNumber())
+
+  /*
+   * Billing migration: dual reporting (usage records + billing meters)
+   *
+   * We are migrating from Stripe Subscription Usage Records to Stripe Billing Meters.
+   * During the migration window we intentionally report usage via BOTH mechanisms:
+   *
+   * - Current (charging) path: create a Usage Record on the subscription item.
+   *   This is how customers are billed today and MUST remain until we fully cut over.
+   *
+   * - Migration (shadow) path: emit a Billing Meter event (event_name: 'usage-billing-meter').
+   *   This lets us observe and compare meter-based totals against our existing
+   *   usage-record-based totals without impacting invoices.
+   *
+   * Important:
+   * - If the customer does NOT have the new meter-based price configured in Stripe,
+   *   Stripe will NOT charge based on the meter events. That’s expected and desired
+   *   during the shadow phase so we can safely compare numbers from both methods.
+   * - We timestamp the meter event at the end of the previous month (UTC 23:59:59),
+   *   aligning the event with the finalized period we just reported via usage record.
+   *
+   * Once parity is confirmed, we can stop sending usage records and rely solely on
+   * Billing Meters for storage billing.
+   */
+
+  // Calculate the timestamp for the last day of the previous month at 23:59:59 UTC
+  const now = new Date()
+  const referenceDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 0, 23, 59, 59))
+
+  const meterEvent = await ctx.stripe.billing.meterEvents.create({
+    event_name: 'usage-billing-meter',
+    timestamp: Math.floor(referenceDate.getTime() / 1000),
+    identifier: idempotencyKey,
+    payload: {
+      stripe_customer_id: customer,
+      value: byteQuantity.toString(),
+    },
+  })
+  console.log(`Created Stripe billing meter event: ${meterEvent}`)
   return { ok: usageRecord }
 }

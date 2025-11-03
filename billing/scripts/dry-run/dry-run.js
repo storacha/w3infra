@@ -7,7 +7,8 @@ import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
 import * as CSV from 'csv-stringify/sync'
 import fs from 'node:fs'
 import all from 'p-all'
-import { startOfMonth } from '../../lib/util.js'
+import { startOfMonth, GB } from '../../lib/util.js'
+import Big from 'big.js'
 import {
   calculateCost,
   createMemoryQueue,
@@ -24,8 +25,6 @@ import { createSubscriptionStore } from '../../tables/subscription.js'
 import { createConsumerStore } from '../../tables/consumer.js'
 import { createSpaceDiffStore } from '../../tables/space-diff.js'
 import { createSpaceSnapshotStore } from '../../tables/space-snapshot.js'
-import * as Usage from '../../data/usage.js'
-import * as SpaceSnapshot from '../../data/space-snapshot.js'
 import { mustGetEnv } from '../../../lib/env.js'
 import { parseArgs } from '../utils.js'
 
@@ -200,13 +199,58 @@ for (const usage of usages) {
   usageSnapshots.push({ ...usage, ...snap })
 }
 
+// Aggregate view keyed by customer with per-space entries and totals
+/**
+ * @typedef {{ size: string, usage: string }} SpaceUsage
+ * @typedef {{
+ *   account: string,
+ *   product: string,
+ *   provider: string,
+ *   from: string,
+ *   to: string,
+ *   spaces: Array<Record<string, SpaceUsage>>,
+ *   totalSize: bigint,
+ *   totalUsage: bigint,
+ * }} AggregatedCustomer
+ */
+/** @type {Record<string, AggregatedCustomer>} */
+const aggregatedByCustomer = {}
+for (const u of usageSnapshots) {
+  const key = u.customer
+  if (!aggregatedByCustomer[key]) {
+    aggregatedByCustomer[key] = {
+      account: u.account,
+      product: u.product,
+      provider: u.provider,
+      from: from.toISOString(),
+      to: to.toISOString(),
+      spaces: [],
+      totalSize: 0n,
+      totalUsage: 0n,
+    }
+  } else {
+    // Basic consistency check: warn if mismatched metadata for same customer
+    const agg = aggregatedByCustomer[key]
+    if (agg.account !== u.account) console.warn(`customer ${key} has multiple accounts: ${agg.account} vs ${u.account}`)
+    if (agg.product !== u.product) console.warn(`customer ${key} has multiple products: ${agg.product} vs ${u.product}`)
+    if (agg.provider !== u.provider) console.warn(`customer ${key} has multiple providers: ${agg.provider} vs ${u.provider}`)
+  }
+
+  aggregatedByCustomer[key].spaces.push({
+    [u.space]: {
+      size: u.size.toString(),
+      usage: u.usage.toString(),
+    },
+  })
+  aggregatedByCustomer[key].totalSize += u.size
+  aggregatedByCustomer[key].totalUsage += u.usage
+}
+
 await fs.promises.writeFile(
   `./usage-${fileID}.json`,
   JSON.stringify(
-    usageSnapshots.map((r) => ({
-      ...Usage.encode(r).ok,
-      ...SpaceSnapshot.encode(r).ok,
-    }))
+    aggregatedByCustomer,
+    (_key, value) => (typeof value === 'bigint' ? value.toString() : value)
   )
 )
 
@@ -221,7 +265,7 @@ for (const usage of usageSnapshots) {
   customerUsages.push(usage)
 }
 
-/** @type {Array<[string, string, string, number]>} */
+/** @type {Array<[string, string, string, string, string, number]>} */
 const data = []
 const duration = to.getTime() - from.getTime()
 
@@ -236,22 +280,35 @@ for (const [customer, usages] of usageByCustomer.entries()) {
   }
   if (!product) throw new Error('missing product')
   try {
+    // Compute average GiB across the period from totalUsage (byte·ms)
+    const usageGiBPerMonth = new Big(totalUsage.toString()).div(duration).div(GB).toFixed(2)
+    const usageByteMs = totalUsage.toString()
     data.push([
       customer,
       product,
-      size.toString(),
+      size.toString(), // Total Size (bytes)
+      usageByteMs,     // Usage (byte/ms)
+      usageGiBPerMonth, // Usage (GiB/month)
       calculateCost(product, totalUsage, duration),
     ])
   } catch (err) {
     console.warn(`failed to calculate cost for: ${customer}`, err)
   }
 }
-data.sort((a, b) => b[3] - a[3])
+// Sort by Cost ($) descending. Cost is now at index 5.
+data.sort((a, b) => b[5] - a[5])
 
 await fs.promises.writeFile(
   `./summary-${fileID}.csv`,
   CSV.stringify(data, {
     header: true,
-    columns: ['Customer', 'Product', 'Bytes', 'Cost ($)'],
+    columns: [
+      'Customer',
+      'Product',
+      'Total Size (bytes)',
+      'Usage (byte/ms)',
+      'Usage (GiB/month)',
+      'Cost ($)'
+    ],
   })
 )

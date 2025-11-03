@@ -58,7 +58,7 @@ const createStripeService = () => {
   if (!billingMeterId) {
     throw new Error('STRIPE_BILLING_METER_ID environment variable is not set')
   }
-  const stripe = new Stripe(stripeSecretKey, { apiVersion: "2023-10-16" })
+  const stripe = new Stripe(stripeSecretKey, { apiVersion: "2025-02-24.acacia" })
   return { stripe, stripeSecretKey, billingMeterEventName, billingMeterId }
 }
 

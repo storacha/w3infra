@@ -107,7 +107,7 @@ catalog:
   sade: ^1.8.1
   sqs-consumer: ^7.4.0
   sst: 2.48.5
-  stripe: ^14.2.0
+  stripe: ^17.7.0
   testcontainers: ^10.7.1
   typescript: ^5.5.4
   uint8arrays: ^5.1.0
