@@ -129,7 +129,7 @@ const reportUsage = async (usage, ctx) => {
   const duration = usage.to.getTime() - usage.from.getTime()
   const quantity = Math.floor(new Big(usage.usage.toString()).div(duration).div(1024 * 1024 * 1024).toNumber())
 
-  console.log(`Reporting usage of ${usage.usage} byte-ms for ${usage.space} as quantity: ${quantity} bytes/month`)
+  console.log(`Reporting usage of ${usage.usage} byte-ms for ${usage.space} as quantity: ${quantity} GiB/month`)
 
   const idempotencyKey = await createIdempotencyKey(usage)
   const usageRecord = await ctx.stripe.subscriptionItems.createUsageRecord(
