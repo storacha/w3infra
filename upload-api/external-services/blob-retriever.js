@@ -39,6 +39,13 @@ export const create = (client) => {
               )
             }
             const res = await fetch(claim.location[0], { headers })
+            if (!res.ok) {
+              throw new Error(
+                `failed to fetch blob from ${claim.location[0]}: ${
+                  res.status
+                } ${res.statusText}: ${await res.text()}`
+              )
+            }
             if (!res.body) throw new Error('missing response body')
             return ok(res.body)
           }
