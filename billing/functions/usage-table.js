@@ -129,7 +129,7 @@ const reportUsage = async (usage, ctx) => {
   const duration = usage.to.getTime() - usage.from.getTime()
   const quantity = Math.floor(new Big(usage.usage.toString()).div(duration).div(1024 * 1024 * 1024).toNumber())
 
-  console.log(`Reporting usage of ${usage.usage} byte-ms for ${usage.space} as quantity: ${quantity} GiB/month`)
+  console.log(`Reporting usage of ${usage.usage} byte-ms for ${usage.space} as quantity: ${quantity} bytes/month`)
 
   const idempotencyKey = await createIdempotencyKey(usage)
   const usageRecord = await ctx.stripe.subscriptionItems.createUsageRecord(
@@ -139,6 +139,8 @@ const reportUsage = async (usage, ctx) => {
   )
 
   console.log(`Created Stripe usage record with ID: ${usageRecord.id}`)
+
+  const byteQuantity = Math.floor(new Big(usage.usage.toString()).div(duration).toNumber())
 
   /*
    * Billing migration: dual reporting (usage records + billing meters)
@@ -174,7 +176,7 @@ const reportUsage = async (usage, ctx) => {
     identifier: idempotencyKey,
     payload: {
       stripe_customer_id: customer,
-      value: quantity.toString(),
+      value: byteQuantity.toString(),
     },
   })
 
