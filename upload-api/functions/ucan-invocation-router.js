@@ -514,7 +514,7 @@ export async function ucanInvocationRouter(request) {
     blobRetriever,
     resolveDIDKey: (did) =>
       Schema.did({ method: 'web' }).is(did) && principalMapping[did]
-        ? ok(principalMapping[did])
+        ? ok([principalMapping[did]])
         : error(new DIDResolutionError(did)),
     getServiceConnection: () => connection,
     // TODO: to be deprecated with `store/*` protocol

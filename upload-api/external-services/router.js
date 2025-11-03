@@ -15,7 +15,8 @@ import { connect } from '@ucanto/client'
  */
 export const create = (storageProviderTable, serviceID) => ({
   selectStorageProvider: async () => {
-    const ids = await storageProviderTable.list()
+    const ids = (await storageProviderTable.list())
+      .filter(p => p.weight > 0)
     if (!ids.length) return error(new CandidateUnavailableError())
     const provider = parse(ids[getWeightedRandomInt(ids.map(id => id.weight ?? 0))].provider)
     return ok(provider)
@@ -42,6 +43,7 @@ export const create = (storageProviderTable, serviceID) => ({
   selectReplicationProviders: async (primary, count, digest, size, options) => {
     const exclude = options?.exclude ?? []
     const providers = (await storageProviderTable.list())
+      .filter(p => p.weight > 0)
       .filter(p => p.provider !== primary.did())
       .filter(p => !exclude.some(e => e.did() === p.provider))
 
