@@ -40,7 +40,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(
     }
 
     const ctx = {
-      stripe: new Stripe(stripeSecretKey, { apiVersion: '2023-10-16' })
+      stripe: new Stripe(stripeSecretKey, { apiVersion: '2025-02-24.acacia' })
     }
     for (const usage of records) {
       expect(

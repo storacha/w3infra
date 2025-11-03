@@ -110,7 +110,7 @@ test.before(async t => {
   }
   const { client: dynamo } = await createDynamoDB()
 
-  const stripe = new Stripe(stripeSecretKey, { apiVersion: '2023-10-16' })
+  const stripe = new Stripe(stripeSecretKey, { apiVersion: '2025-02-24.acacia' })
 
   const customerStore = createCustomerStore(dynamo, { tableName: await createTable(dynamo, customerTableProps) })
   const billingProvider = createStripeBillingProvider(stripe, customerStore)

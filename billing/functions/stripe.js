@@ -42,7 +42,7 @@ export const webhook = Sentry.AWSLambda.wrapHandler(
 
     const stripeSecretKey = customContext?.stripeSecretKey ?? Config.STRIPE_SECRET_KEY
     if (!stripeSecretKey) throw new Error('missing secret: STRIPE_SECRET_KEY')
-    const stripe = new Stripe(stripeSecretKey, { apiVersion: '2023-10-16' })
+    const stripe = new Stripe(stripeSecretKey, { apiVersion: '2025-02-24.acacia' })
 
     // construct the event object - constructEvent will throw an error if the signature is incorrect
     const stripeEndpointSecret = customContext?.stripeEndpointSecret ?? Config.STRIPE_ENDPOINT_SECRET
