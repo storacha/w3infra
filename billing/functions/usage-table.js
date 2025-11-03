@@ -179,8 +179,6 @@ const reportUsage = async (usage, ctx) => {
       value: byteQuantity.toString(),
     },
   })
-
-  console.log(`Created Stripe billing meter event. `, meterEvent)
-
+  console.log(`Created Stripe billing meter event: ${meterEvent}`)
   return { ok: usageRecord }
 }
