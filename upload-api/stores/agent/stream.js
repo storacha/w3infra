@@ -50,20 +50,20 @@ export const open = ({ connection, name, ...settings }) => ({
 
 /**
  *
- * @param {object} connection
- * @param {Store.Store} connection.store
- * @param {Stream} connection.stream
+ * @param {object} s3Connection
+ * @param {Store.Store} s3Connection.store
+ * @param {Stream} s3Connection.stream
  * @param {API.ParsedAgentMessage} message
  * @returns {Promise<API.Result<API.Unit, Error>>}
  */
-export const write = async (connection, message) => {
-  const { stream } = connection
+export const write = async (s3Connection, message) => {
+  const { stream } = s3Connection
 
   try {
     if (stream.channel) {
       await stream.channel.putRecords({
-        Records: await assert(message, connection),
-        StreamName: connection.stream.name,
+        Records: await assert(message, s3Connection),
+        StreamName: s3Connection.stream.name,
       })
     }
     return { ok: {} }
@@ -142,7 +142,13 @@ export const assert = async (message, { stream, store }) => {
       try {
         JSON.stringify(receipt.out)
       } catch (error) {
-        console.warn("receipt will not serialize to JSON", "receipt", receipt.out, "error", error)
+        console.warn(
+          'receipt will not serialize to JSON',
+          'receipt',
+          receipt.out,
+          'error',
+          error
+        )
       }
 
       const data = JSON.stringify(
@@ -176,7 +182,7 @@ export const assert = async (message, { stream, store }) => {
 /**
  * Determines the partition key for the passed record. A partition key is used
  * to group data by shard within a stream.
- * 
+ *
  * @see https://docs.aws.amazon.com/streams/latest/dev/key-concepts.html
  *
  * If the Kinesis stream is configured with a single shard (the state of things
@@ -190,11 +196,11 @@ export const assert = async (message, { stream, store }) => {
  * > processed concurrently.
  * >
  * > https://stackoverflow.com/questions/71194144/parallelization-factor-aws-kinesis-data-streams-to-lambda
- * 
+ *
  * Here we use the task CID as a partition key, which at least orders
  * invocations and receipts by a given task.
  *
  * @param {API.AgentMessageIndexRecord} record
  */
-const partitionKey = record =>
+const partitionKey = (record) =>
   (record.invocation ? record.invocation.task : record.receipt.task).toString()

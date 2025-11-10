@@ -14,7 +14,7 @@ import { Piece } from '@web3-storage/data-segment'
 import { updateAggregateOfferTotal } from '../metrics.js'
 import { METRICS_NAMES, STREAM_TYPE } from '../constants.js'
 
-import { adminMetricsTableProps } from '../../upload-api/tables/index.js'
+import { adminMetricsTableProps, agentIndexTableProps } from '../../upload-api/tables/index.js'
 import { createFilecoinMetricsTable } from '../store/metrics.js'
 import { createWorkflowStore } from '../store/workflow.js'
 import { createInvocationStore } from '../store/invocation.js'
@@ -39,11 +39,12 @@ test.before(async t => {
   // Dynamo DB
   const {
     client: dynamo,
+    region,
     endpoint: dbEndpoint
   } = await createDynamodDb({ port: 8000 })
   t.context.dbEndpoint = dbEndpoint
   t.context.dynamoClient = dynamo
-
+  t.context.dynamoOpts = { region, endpoint: dbEndpoint}
   // S3
   const { client, clientOpts } = await createS3()
   t.context.s3Client = client
@@ -51,14 +52,14 @@ test.before(async t => {
 })
 
 test('handles a batch of single invocation with aggregate/offer', async t => {
-  const { tableName, workflowBucketName, invocationBucketName } = await prepareResources(t.context.dynamoClient, t.context.s3Client)
+  const { tableName, workflowBucketName, invocationBucketName, invocationTableName } = await prepareResources(t.context.dynamoClient, t.context.s3Client)
 
   // Context
   const filecoinMetricsStore = createFilecoinMetricsTable(REGION, tableName, {
     endpoint: t.context.dbEndpoint
   })
   const workflowStore = createWorkflowStore(REGION, workflowBucketName, t.context.s3Opts)
-  const invocationStore = createInvocationStore(REGION, invocationBucketName, t.context.s3Opts)
+  const invocationStore = createInvocationStore(REGION, invocationTableName, invocationBucketName, { s3Address: t.context.s3Opts, dynamoAddress: t.context.dynamoOpts })
 
   // Generate aggregate for test
   const { pieces, aggregate } = await randomAggregate(100, 128)
@@ -106,14 +107,14 @@ test('handles a batch of single invocation with aggregate/offer', async t => {
 })
 
 test('handles a batch of single invocation with multiple aggregate/offer attributes', async t => {
-  const { tableName, workflowBucketName, invocationBucketName } = await prepareResources(t.context.dynamoClient, t.context.s3Client)
+  const { tableName, workflowBucketName, invocationBucketName, invocationTableName } = await prepareResources(t.context.dynamoClient, t.context.s3Client)
 
   // Context
   const filecoinMetricsStore = createFilecoinMetricsTable(REGION, tableName, {
     endpoint: t.context.dbEndpoint
   })
   const workflowStore = createWorkflowStore(REGION, workflowBucketName, t.context.s3Opts)
-  const invocationStore = createInvocationStore(REGION, invocationBucketName, t.context.s3Opts)
+  const invocationStore = createInvocationStore(REGION, invocationTableName, invocationBucketName, { s3Address: t.context.s3Opts, dynamoAddress: t.context.dynamoOpts })
 
   // Generate aggregate for test
   const aggregateOffers = await Promise.all([
@@ -167,14 +168,14 @@ test('handles a batch of single invocation with multiple aggregate/offer attribu
 })
 
 test('handles a batch of multiple invocations with single aggregate/offer attribute', async t => {
-  const { tableName, workflowBucketName, invocationBucketName } = await prepareResources(t.context.dynamoClient, t.context.s3Client)
+  const { tableName, workflowBucketName, invocationBucketName, invocationTableName } = await prepareResources(t.context.dynamoClient, t.context.s3Client)
 
   // Context
   const filecoinMetricsStore = createFilecoinMetricsTable(REGION, tableName, {
     endpoint: t.context.dbEndpoint
   })
   const workflowStore = createWorkflowStore(REGION, workflowBucketName, t.context.s3Opts)
-  const invocationStore = createInvocationStore(REGION, invocationBucketName, t.context.s3Opts)
+  const invocationStore = createInvocationStore(REGION, invocationTableName, invocationBucketName, { s3Address: t.context.s3Opts, dynamoAddress: t.context.dynamoOpts })
 
   // Generate aggregate for test
   const aggregateOffers = await Promise.all([
@@ -228,14 +229,14 @@ test('handles a batch of multiple invocations with single aggregate/offer attrib
 })
 
 test('handles a batch of single invocation without aggregate/offer', async t => {
-  const { tableName, workflowBucketName, invocationBucketName } = await prepareResources(t.context.dynamoClient, t.context.s3Client)
+  const { tableName, workflowBucketName, invocationBucketName, invocationTableName } = await prepareResources(t.context.dynamoClient, t.context.s3Client)
 
   // Context
   const filecoinMetricsStore = createFilecoinMetricsTable(REGION, tableName, {
     endpoint: t.context.dbEndpoint
   })
   const workflowStore = createWorkflowStore(REGION, workflowBucketName, t.context.s3Opts)
-  const invocationStore = createInvocationStore(REGION, invocationBucketName, t.context.s3Opts)
+  const invocationStore = createInvocationStore(REGION, invocationTableName, invocationBucketName, { s3Address: t.context.s3Opts, dynamoAddress: t.context.dynamoOpts })
 
   // Get unrelated invocation
   const uploadService = await Signer.generate()
@@ -290,14 +291,14 @@ test('handles a batch of single invocation without aggregate/offer', async t => 
 })
 
 test('skips invocation with aggregate/offer if before start epoch ms', async t => {
-  const { tableName, workflowBucketName, invocationBucketName } = await prepareResources(t.context.dynamoClient, t.context.s3Client)
+  const { tableName, workflowBucketName, invocationBucketName, invocationTableName } = await prepareResources(t.context.dynamoClient, t.context.s3Client)
 
   // Context
   const filecoinMetricsStore = createFilecoinMetricsTable(REGION, tableName, {
     endpoint: t.context.dbEndpoint
   })
   const workflowStore = createWorkflowStore(REGION, workflowBucketName, t.context.s3Opts)
-  const invocationStore = createInvocationStore(REGION, invocationBucketName, t.context.s3Opts)
+  const invocationStore = createInvocationStore(REGION, invocationTableName, invocationBucketName, { s3Address: t.context.s3Opts, dynamoAddress: t.context.dynamoOpts })
 
   // Generate aggregate for test
   const { pieces, aggregate } = await randomAggregate(100, 128)
@@ -421,15 +422,17 @@ async function prepareUcanStream (workflows, ctx) {
  * @param {import('@aws-sdk/client-s3').S3Client} s3Client
  */
 async function prepareResources (dynamoClient, s3Client) {
-  const [ tableName, workflowBucketName, invocationBucketName ] = await Promise.all([
+  const [ tableName, workflowBucketName, invocationBucketName, invocationTableName ] = await Promise.all([
     createDynamoTable(dynamoClient, adminMetricsTableProps),
     createBucket(s3Client),
     createBucket(s3Client),
+    createDynamoTable(dynamoClient, agentIndexTableProps)
   ])
 
   return {
     workflowBucketName,
     invocationBucketName,
-    tableName
+    tableName, 
+    invocationTableName
   }
 }
