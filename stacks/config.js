@@ -46,7 +46,7 @@ export function getCdkNames (name, stage, app, version = 0) {
  */
 export function isProd (stage) {
   if (!stage) throw new Error('stage must be provided')
-  return stage === 'prod' || stage === 'forge-prod'
+  return stage.startsWith('prod-') || stage === 'prod' || stage.endsWith('-prod')
 }
 
 /**
@@ -54,7 +54,7 @@ export function isProd (stage) {
  */
 export function isStaging (stage) {
   if (!stage) throw new Error('stage must be provided')
-  return stage === 'staging' || stage === 'forge-staging'
+  return stage.startsWith('staging-') || stage === 'staging' || stage.endsWith('-staging')
 }
 
 /**
