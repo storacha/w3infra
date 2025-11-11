@@ -9,7 +9,7 @@ import { CarparkStack } from '../../stacks/carpark-stack.js'
 import { FilecoinStack } from '../../stacks/filecoin-stack.js'
 import { UcanFirehoseStack } from '../../stacks/firehose-stack.js'
 import { RoundaboutStack } from '../../stacks/roundabout-stack.js'
-import { isPrBuild } from '../../stacks/config.js'
+import { isProd } from '../../stacks/config.js'
 
 /** @type {import('sst').SSTConfig} */
 export default {
@@ -35,7 +35,7 @@ export default {
         format: 'esm',
         sourcemap: true,
       },
-      tracing: app.stage === 'staging' || isPrBuild(app.stage)
+      tracing: !isProd(app.stage)
         ? 'active'
         : 'disabled'
     })
