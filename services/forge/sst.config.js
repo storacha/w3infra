@@ -9,7 +9,7 @@ import { CarparkStack } from '../../stacks/carpark-stack.js'
 import { FilecoinStack } from '../../stacks/filecoin-stack.js'
 import { UcanFirehoseStack } from '../../stacks/firehose-stack.js'
 import { RoundaboutStack } from '../../stacks/roundabout-stack.js'
-import { isProd } from '../../stacks/config.js'
+import { isProd, isPrBuild } from '../../stacks/config.js'
 
 /** @type {import('sst').SSTConfig} */
 export default {
