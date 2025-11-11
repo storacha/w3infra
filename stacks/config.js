@@ -42,13 +42,29 @@ export function getCdkNames (name, stage, app, version = 0) {
 }
 
 /**
+ * @param {string} stage
+ */
+export function isProd (stage) {
+  if (!stage) throw new Error('stage must be provided')
+  return stage === 'prod' || stage === 'forge-prod'
+}
+
+/**
+ * @param {string} stage
+ */
+export function isStaging (stage) {
+  if (!stage) throw new Error('stage must be provided')
+  return stage === 'staging' || stage === 'forge-staging'
+}
+
+/**
  * Is an ephemeral build?
  *
  * @param {string} stage
  */
 export function isPrBuild (stage) {
   if (!stage) throw new Error('stage must be provided')
-  return stage !== 'prod' && stage !== 'staging'
+  return !isProd(stage) && !isStaging(stage)
 }
 
 /**
@@ -114,7 +130,7 @@ export function getCustomDomain (stage, hostedZone) {
  * @param {Stack} stack
  */
 export function getEventSourceConfig (stack) {
-  if (stack.stage !== 'prod') {
+  if (!isProd(stack.stage)) {
     return {
       batchSize: 10,
       // The maximum amount of time to gather records before invoking the function.
@@ -143,7 +159,7 @@ export function getEventSourceConfig (stack) {
  * @param {Stack} stack
  */
 export function getKinesisStreamConfig (stack) {
-  if (stack.stage !== 'prod' && stack.stage !== 'staging') {
+  if (!isProd(stack.stage) && !isStaging(stack.stage)) {
     return {
       retentionPeriod: Duration.hours(24)
     }
