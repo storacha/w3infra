@@ -34,7 +34,7 @@ export async function randomCAR(size) {
   for await (const chunk of out) {
     chunks.push(chunk)
   }
-  const blob = new Blob(chunks)
+  const blob = new Blob(/** @type {BlobPart[]} */ (chunks))
   const cid = await CAR.codec.link(new Uint8Array(await blob.arrayBuffer()))
 
   return Object.assign(blob, { cid, roots: [root] })

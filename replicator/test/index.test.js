@@ -34,7 +34,7 @@ test('copy CARs from origin bucket to replicator bucket', async t => {
     codec: pb,
     hasher,
   })
-  const car = CarBufferWriter.createWriter(Buffer.alloc(1000), {
+  const car = CarBufferWriter.createWriter(Buffer.alloc(1000).buffer, {
     roots: [parent.cid],
   })
   car.write(parent)
@@ -91,7 +91,7 @@ test('write to bucket fails with invalid md5', async t => {
     codec: pb,
     hasher,
   })
-  const car = CarBufferWriter.createWriter(Buffer.alloc(1000), {
+  const car = CarBufferWriter.createWriter(Buffer.alloc(1000).buffer, {
     roots: [parent.cid],
   })
   car.write(parent)

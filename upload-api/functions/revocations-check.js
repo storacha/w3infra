@@ -180,7 +180,7 @@ export async function revocationsGet(request, context, callback, options = {}) {
  * @param {string} delegationCID - The CID of the revoked delegation
  * @param {import('@storacha/upload-api').MatchingRevocations} revocations - Revocation data from storage
  * @param {import('../types.js').DelegationsBucket} delegationsStore
- * @returns {Promise<Uint8Array>} CAR file bytes
+ * @returns {Promise<Uint8Array<ArrayBuffer>>} CAR file bytes
  */
 async function createRevocationCAR(delegationCID, revocations, delegationsStore) {
   const revocationList = []
@@ -254,7 +254,7 @@ async function createRevocationCAR(delegationCID, revocations, delegationsStore)
 /**
  * Adds revocation proofs and related data to the CAR file for trustless verification
  *
- * @param {import('@ipld/car').CarWriter} writer - CAR writer instance
+ * @param {import('@ipld/car/writer').BlockWriter} writer - CAR writer instance
  * @param {import('@storacha/upload-api').MatchingRevocations} revocations - Revocation data from storage
  * @param {import('../types.js').DelegationsBucket} delegationsStore
  */
@@ -281,7 +281,7 @@ async function addRevocationProofs(writer, revocations, delegationsStore) {
 /**
  * Generates an ETag for the CAR file content
  *
- * @param {Uint8Array} carBytes - CAR file bytes
+ * @param {Uint8Array<ArrayBuffer>} carBytes - CAR file bytes
  * @returns {Promise<string>} ETag hash
  */
 async function generateETag(carBytes) {

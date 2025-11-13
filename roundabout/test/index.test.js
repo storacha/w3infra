@@ -97,7 +97,7 @@ test('can create signed url for Blob in bucket and get it', async t => {
   }
 
   const indexingService = new Client({
-    fetch: async () => new Response(queryArchiveRes.ok)
+    fetch: async () => new Response(/** @type {BodyInit} */ (queryArchiveRes.ok))
   })
 
   const locateContent = contentLocationResolver({ 
@@ -227,7 +227,7 @@ async function putBlobToBucket (s3Client, bucketName) {
 async function putCarToBucket (s3Client, bucketName) {
   // Write original car to origin bucket
   const content = await getContent()
-  const car = CarBufferWriter.createWriter(Buffer.alloc(1000), {
+  const car = CarBufferWriter.createWriter(Buffer.alloc(1000).buffer, {
     roots: [content.cid],
   })
   car.write(content)

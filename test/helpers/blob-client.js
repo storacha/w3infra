@@ -85,7 +85,7 @@ export async function add(
       const res = await fetch(address.url, {
         method: 'PUT',
         mode: 'cors',
-        body: data,
+        body: /** @type {BodyInit} */ (data),
         headers: address.headers,
       })
       if (!res.ok) {

@@ -259,6 +259,7 @@ test('revocations endpoint returns CAR file with verifiable content', async (t) 
       t.true(ucanBlock != null, 'UCAN block should exist')
       
       // Decode and validate the actual proof structure
+      // @ts-expect-error ucanBlock will always be defined because of the check above, but TS doesn't know that
       const proofData = decode(ucanBlock.bytes)
       t.truthy(proofData.v, 'Should have version (v)')
       t.is(proofData.v, '0.9.1', 'Should be UCAN version 0.9.1')

@@ -70,7 +70,7 @@ const PLANS_TO_LINE_ITEMS = {
       price: 'price_1SKRGrF6A5ufQX5v2XXj8FwQ',
     },
   ],
-    'did:web:business.storacha.network': [
+  'did:web:business.storacha.network': [
     // flat fee
     {
       price: 'price_1SKRJSF6A5ufQX5vXZrDTvW8',
@@ -95,6 +95,21 @@ const PLANS_TO_LINE_ITEMS = {
 function plansToLineItems(planID) {
   return PLANS_TO_LINE_ITEMS[planID]
 }
+
+/**
+ * Calculate the "billing cycle anchor" - ie, the start of the next month
+ * 
+ * Ideally Stripe would do this, but the "billing_cycle_anchor_config" parameter
+ * is apparently not available in the subscription_data property of the checkout
+ * session creation data, sad.
+ *
+ * @returns {number} Unix timestamp (seconds since epoch) of the next billing cycle anchor
+ */
+function billingCycleAnchor(){
+  const now = new Date()
+  return Math.floor(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1, 0, 0, 0, 0) / 1000)
+}
+
 
 /**
  * @param {import('stripe').Stripe} stripe
@@ -192,48 +207,59 @@ export function createStripeBillingProvider(stripe, customerStore) {
      * @type {import('./types.js').BillingProvider['createCheckoutSession']}
      */
     async createCheckoutSession(account, planID, options) {
-      const response = await customerStore.get({ customer: account })
-      const customer = response.ok?.account?.slice('stripe:'.length)
-      const lineItems = plansToLineItems(planID)
-      if (lineItems.length === 0) {
-        return {
-          error: {
-            name: 'PlanNotFound',
-            message: `Could not find ${planID}`,
-            cause: response.error
+      const customerResponse = await customerStore.get({ customer: account })
+      if (customerResponse.error && customerResponse.error.name === 'RecordNotFound') {
+        const lineItems = plansToLineItems(planID)
+        if (lineItems.length === 0) {
+          return {
+            error: {
+              name: 'PlanNotFound',
+              message: `Could not find ${planID}`,
+              cause: customerResponse.error
+            }
           }
         }
-      }
-      /** @type {import('stripe').Stripe.Checkout.SessionCreateParams} */
-      const sessionCreateParams = {
-        mode: 'subscription',
-        // if the customer exists already, pass it here so Stripe doesn't create a duplicate user
-        customer: customer,
-        customer_email: DIDMailto.toEmail(/** @type {import('@storacha/did-mailto').DidMailto} */(account)),
-        success_url: options.successURL,
-        cancel_url: options.cancelURL,
-        line_items: plansToLineItems(planID)
-      }
-      console.log("OPTOINS", options)
-      if (options.freeTrial) {
-        console.log("FREE TRIAL!!!")
-        sessionCreateParams.subscription_data = {
-          trial_period_days: 30
+        /** @type {import('stripe').Stripe.Checkout.SessionCreateParams} */
+        const sessionCreateParams = {
+          mode: 'subscription',
+          customer_email: DIDMailto.toEmail(/** @type {import('@storacha/did-mailto').DidMailto} */(account)),
+          success_url: options.successURL,
+          cancel_url: options.cancelURL,
+          line_items: plansToLineItems(planID),
+          subscription_data: {
+            billing_cycle_anchor: billingCycleAnchor(),
+            trial_period_days: options.freeTrial ? 30 : undefined
+          }
         }
-      }
 
-      const session = await stripe.checkout.sessions.create(sessionCreateParams)
-      if (!session.url) {
-        return {
-          error: {
-            name: 'SessionCreationError',
-            message: `Error creating session: did not receive URL from Stripe`,
+        const session = await stripe.checkout.sessions.create(sessionCreateParams)
+        if (!session.url) {
+          return {
+            error: {
+              name: 'SessionCreationError',
+              message: `Error creating session: did not receive URL from Stripe`,
+            }
           }
         }
-      }
-      return {
-        ok: {
-          url: session.url
+        return {
+          ok: {
+            url: session.url
+          }
+        }
+      } else if (customerResponse.ok) {
+        return {
+          error: {
+            name: 'CustomerExists',
+            message: `Sorry, ${account} is already a customer - cannot create another checkout session for them.`
+          }
+        }
+      } else {
+        return {
+          error: {
+            name: 'UnexpectedError',
+            message: `Unexpected error looking up ${account}`,
+            cause: customerResponse.error
+          }
         }
       }
     }
