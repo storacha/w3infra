@@ -205,6 +205,7 @@ export async function ucanInvocationRouter(request) {
     egressTrafficQueueUrl,
     requirePaymentPlan,
     principalMapping,
+    plansToLineItemsMapping,
     // set for testing
     dbEndpoint,
     accessServiceURL,
@@ -318,7 +319,7 @@ export async function ucanInvocationRouter(request) {
   const stripe = new Stripe(STRIPE_SECRET_KEY, { apiVersion: '2025-02-24.acacia' })
   const plansStorage = usePlansStore(
     customerStore,
-    createStripeBillingProvider(stripe, customerStore)
+    createStripeBillingProvider(stripe, customerStore, plansToLineItemsMapping)
   )
   const rateLimitsStorage = createRateLimitTable(AWS_REGION, rateLimitTableName)
   const spaceDiffStore = createSpaceDiffStore(
@@ -691,6 +692,7 @@ function getLambdaEnv() {
         ...knownWebDIDs,
         ...JSON.parse(process.env.PRINCIPAL_MAPPING || '{}'),
       }),
+    plansToLineItemsMapping: JSON.parse(process.env.PLANS_TO_LINE_ITEMS_MAPPING || '{}'),
     // set for testing
     dbEndpoint: process.env.DYNAMO_DB_ENDPOINT,
   }

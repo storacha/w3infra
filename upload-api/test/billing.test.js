@@ -113,7 +113,8 @@ test.before(async t => {
   const stripe = new Stripe(stripeSecretKey, { apiVersion: '2025-02-24.acacia' })
 
   const customerStore = createCustomerStore(dynamo, { tableName: await createTable(dynamo, customerTableProps) })
-  const billingProvider = createStripeBillingProvider(stripe, customerStore)
+  const plansToLineItemsMapping = JSON.parse(process.env.PLANS_TO_LINE_ITEMS_MAPPING || '{}')
+  const billingProvider = createStripeBillingProvider(stripe, customerStore, plansToLineItemsMapping)
 
   Object.assign(t.context, {
     dynamo,

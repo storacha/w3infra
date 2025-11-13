@@ -112,11 +112,13 @@ function billingCycleAnchor(){
 
 
 /**
+ * @typedef {Record<string, import('stripe').Stripe.Checkout.SessionCreateParams.LineItem[]>} PlansToLineItems
  * @param {import('stripe').Stripe} stripe
  * @param {import('../billing/lib/api.js').CustomerStore} customerStore
+ * @param {PlansToLineItems} plansToLineItemsMapping
  * @returns {import('./types.js').BillingProvider}
  */
-export function createStripeBillingProvider(stripe, customerStore) {
+export function createStripeBillingProvider(stripe, customerStore, plansToLineItemsMapping) {
   return {
     /** @type {import('./types.js').BillingProvider['hasCustomer']} */
     async hasCustomer(customer) {
@@ -209,8 +211,8 @@ export function createStripeBillingProvider(stripe, customerStore) {
     async createCheckoutSession(account, planID, options) {
       const customerResponse = await customerStore.get({ customer: account })
       if (customerResponse.error && customerResponse.error.name === 'RecordNotFound') {
-        const lineItems = plansToLineItems(planID)
-        if (lineItems.length === 0) {
+        const lineItems = plansToLineItemsMapping[planID]
+        if (!lineItems || (lineItems.length === 0)) {
           return {
             error: {
               name: 'PlanNotFound',
