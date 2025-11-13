@@ -118,10 +118,16 @@ export function getCustomDomain (stage, hostedZone) {
   if (!hostedZone) {
     return 
   }
-  /** @type Record<string,string> */
-  const domainMap = { prod: hostedZone }
-  const domainName = domainMap[stage] ?? `${stage}.${hostedZone}`
-  return { domainName, hostedZone }
+
+  if (isProd(stage)) {
+    return { domainName: hostedZone, hostedZone }
+  }
+
+  if (isStaging(stage)) {
+    return { domainName: `staging.${hostedZone}`, hostedZone }
+  }
+
+  return { domainName: `${stage}.${hostedZone}`, hostedZone }
 }
 
 
