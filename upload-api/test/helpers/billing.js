@@ -21,6 +21,7 @@ export function createTestBillingProvider() {
     },
 
     async createCheckoutSession(customer) {
+      console.log("CHECKOUT!")
       return { ok: { url: 'https://example/test-billing-admin-session' } }
     }
   }

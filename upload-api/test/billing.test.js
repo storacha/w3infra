@@ -55,7 +55,7 @@ async function setupCustomer(stripe, email, customerStore) {
     product: initialPlan,
     insertedAt: new Date()
   })
-  if (!customerCreation.ok){
+  if (!customerCreation.ok) {
     throw customerCreation.error
   }
 
@@ -160,12 +160,22 @@ test('stripe checkout session can be generated', async (t) => {
   await withCustomer(context, async () => {
     const response = await billingProvider.createCheckoutSession(
       customerDID,
-      'did:web:testplan',
-       {
-        successURL: 'https://example.com/return-url', 
+      'did:web:starter.storacha.network',
+      {
+        successURL: 'https://example.com/return-url',
         cancelURL: 'https://example.com/cancel-url'
       })
-    t.assert(response.ok)
-    t.assert(response.ok?.url)
+    t.assert(response.error)
+    t.is(response.error?.name, 'CustomerExists')
   })
+
+  const response = await billingProvider.createCheckoutSession(
+    'did:mailto:example.com:notacustomer',
+    'did:web:starter.storacha.network',
+    {
+      successURL: 'https://example.com/return-url',
+      cancelURL: 'https://example.com/cancel-url'
+    })
+  t.assert(response.ok)
+  t.assert(response.ok?.url)
 })
