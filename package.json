@@ -75,13 +75,6 @@
     "jwt-decode": "^4.0.0",
     "sst": "catalog:"
   },
-  "pnpm": {
-    "overrides": {
-      "@ucanto/interface": "^11.0.1",
-      "@ucanto/server": "^11.0.3",
-      "@ucanto/validator": "^10.0.1"
-    }
-  },
   "simple-git-hooks": {
     "pre-commit": "npx lint-staged"
   },
