@@ -315,7 +315,7 @@ export async function ucanInvocationRouter(request) {
     { tableName: customerTableName }
   )
   if (!STRIPE_SECRET_KEY) throw new Error('missing secret: STRIPE_SECRET_KEY')
-  const stripe = new Stripe(STRIPE_SECRET_KEY, { apiVersion: '2023-10-16' })
+  const stripe = new Stripe(STRIPE_SECRET_KEY, { apiVersion: '2025-02-24.acacia' })
   const plansStorage = usePlansStore(
     customerStore,
     createStripeBillingProvider(stripe, customerStore)

@@ -145,5 +145,16 @@
     "singleQuote": true,
     "trailingComma": "es5",
     "semi": false
+  },
+  "pnpm": {
+    "overrides": {
+      "@ucanto/client": "catalog:",
+      "@ucanto/core": "catalog:",
+      "@ucanto/interface": "catalog:",
+      "@ucanto/principal": "catalog:",
+      "@ucanto/server": "catalog:",
+      "@ucanto/transport": "catalog:",
+      "@ucanto/validator": "catalog:"
+    }
   }
 }

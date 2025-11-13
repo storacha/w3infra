@@ -53,7 +53,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(
     const billingMeterName = customContext?.billingMeterName ?? mustGetEnv('STRIPE_BILLING_METER_EVENT_NAME')
     if (!billingMeterName) throw new Error('missing secret: STRIPE_BILLING_METER_EVENT_NAME')
 
-    const stripe = new Stripe(stripeSecretKey, { apiVersion: '2023-10-16' })
+    const stripe = new Stripe(stripeSecretKey, { apiVersion: '2025-02-24.acacia' })
     const batchItemFailures = []
     for (const record of event.Records) {
       try {

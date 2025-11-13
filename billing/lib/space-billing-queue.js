@@ -19,6 +19,7 @@ export const iterateSpaceDiffs = async function * ({ provider, space, from, to }
 
     const diffs = []
     for (const diff of spaceDiffList.ok.results) {
+      // NOTE: the interval is [from, to) where `to` is exclusive
       if (diff.receiptAt.getTime() >= to.getTime()) {
         done = true
         break
@@ -35,9 +36,12 @@ export const iterateSpaceDiffs = async function * ({ provider, space, from, to }
  * Calculates total usage for the given space, customer, and billing period.
  * If a size snapshot for the given `from` date is not found then the space is
  * assumed to be empty.
+ * Iterates over all space diffs in the given period to calculate the total
+ * usage for the period. It assumes the interval is [from, to) where `to` is exclusive.
  *
  * The usage value for the period and the space size at the end of the period
  * are returned to the caller.
+ * The total "usage" is the sum of all bytes stored, multiplied by the amount of time (in ms) they were stored during the billing period.
  *
  * @param {import('./api.js').SpaceBillingInstruction} instruction
  * @param {{
