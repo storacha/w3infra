@@ -204,8 +204,6 @@ export function createStripeBillingProvider(stripe, customerStore, plansToLineIt
      * Create a Stripe checkout session with the appropriate line items
      * for the given planID.
      * 
-     * TODO: handle free trials
-     * 
      * @type {import('./types.js').BillingProvider['createCheckoutSession']}
      */
     async createCheckoutSession(account, planID, options) {
