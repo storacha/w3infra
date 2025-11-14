@@ -82,6 +82,7 @@ export const delegationTableProps = {
   primaryIndex: { partitionKey: 'link' },
   globalIndexes: {
     audience: { partitionKey: 'audience', projection: ['link'] },
+    issuer: { partitionKey: 'issuer', projection: ['link', 'audience'] },
   }
 }
 
