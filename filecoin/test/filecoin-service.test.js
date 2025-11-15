@@ -1,6 +1,12 @@
 import { testService as test } from './helpers/context.js'
 import { test as filecoinApiTest } from '@storacha/filecoin-api/test'
-import { getMockService, getConnection } from '@storacha/filecoin-api/test/context/service'
+import {
+  getMockService,
+  getConnection,
+  createRouter,
+  StorageNode,
+  createPDPStore,
+} from '@storacha/filecoin-api/test/context/service'
 import * as Signer from '@ucanto/principal/ed25519'
 import { Consumer } from 'sqs-consumer'
 import pWaitFor from 'p-wait-for'
@@ -8,7 +14,12 @@ import delay from 'delay'
 import { fromString } from 'uint8arrays/from-string'
 import { decode as JSONdecode } from '@ipld/dag-json'
 
-import { createDynamodDb, createS3, createSQS, createQueue } from './helpers/resources.js'
+import {
+  createDynamodDb,
+  createS3,
+  createSQS,
+  createQueue,
+} from './helpers/resources.js'
 import { getQueues, getStores } from './helpers/service-context.js'
 
 /**
@@ -22,7 +33,7 @@ test.before(async (t) => {
 
   const { client: sqsClient } = await createSQS()
   const { client: s3Client, stop: s3Stop } = await createS3({ port: 9000 })
-  const { client: dynamoClient, stop: dynamoStop} = await createDynamodDb()
+  const { client: dynamoClient, stop: dynamoStop } = await createDynamodDb()
 
   Object.assign(t.context, {
     s3Client,
@@ -31,11 +42,11 @@ test.before(async (t) => {
     stop: async () => {
       await s3Stop()
       await dynamoStop()
-    }
+    },
   })
 })
 
-test.beforeEach(async t => {
+test.beforeEach(async (t) => {
   await delay(1000)
 
   /** @type {Record<string, QueueContext>} */
@@ -58,7 +69,7 @@ test.beforeEach(async t => {
         const messages = queuedMessages.get(name) || []
         messages.push(decodedMessage)
         return Promise.resolve()
-      }
+      },
     })
 
     queues[name] = {
@@ -75,30 +86,32 @@ test.beforeEach(async t => {
 
   Object.assign(t.context, {
     queues,
-    queuedMessages
+    queuedMessages,
   })
 })
 
-test.afterEach(async t => {
+test.afterEach(async (t) => {
   for (const [, q] of Object.entries(t.context.queues)) {
     q.queueConsumer.stop()
     await delay(1000)
   }
 })
 
-test.after(async t => {
+test.after(async (t) => {
   await t.context.stop()
 })
 
-for (const [title, unit] of Object.entries(filecoinApiTest.service.storefront)) {
-  let define;
+for (const [title, unit] of Object.entries(
+  filecoinApiTest.service.storefront
+)) {
+  let define
   if (title.startsWith('only ')) {
     // eslint-disable-next-line no-only-tests/no-only-tests
-    define = test.only;
+    define = test.only
   } else if (title.startsWith('skip ')) {
-    define = test.skip;
+    define = test.skip
   } else {
-    define = test;
+    define = test
   }
 
   define(title, async (t) => {
@@ -115,7 +128,9 @@ for (const [title, unit] of Object.entries(filecoinApiTest.service.storefront)) 
       dealTrackerSigner,
       service
     ).connection
-
+    const pdpStore = createPDPStore()
+    const storageProviders = [await StorageNode.activate({ pdpStore })]
+    const router = createRouter(storefrontSigner, storageProviders)
     await unit(
       {
         ok: (actual, message) => t.truthy(actual, message),
@@ -135,6 +150,8 @@ for (const [title, unit] of Object.entries(filecoinApiTest.service.storefront)) 
             audience: dealTrackerSigner,
           },
         },
+        router,
+        storageProviders,
         ...stores,
         ...queues,
         errorReporter: {
@@ -143,7 +160,7 @@ for (const [title, unit] of Object.entries(filecoinApiTest.service.storefront)) 
           },
         },
         queuedMessages: t.context.queuedMessages,
-        validateAuthorization: () => ({ ok: {} })
+        validateAuthorization: () => ({ ok: {} }),
       }
     )
   })

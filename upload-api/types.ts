@@ -3,7 +3,7 @@ import { DID, Delegation, UCANLink, ByteView, DIDKey, Result, Failure, Unit } fr
 import { UnknownLink } from 'multiformats'
 import { CID } from 'multiformats/cid'
 import { CarStoreBucket } from '@web3-storage/upload-api'
-import { AccountDID, ProviderDID, Service, SpaceDID, PlanCreateAdminSessionSuccess, PlanCreateAdminSessionFailure, AgentStore, UnexpectedError } from '@storacha/upload-api'
+import { AccountDID, ProviderDID, Service, SpaceDID, PlanCreateAdminSessionSuccess, PlanCreateAdminSessionFailure, AgentStore, UnexpectedError, PlanID, PlanCreateCheckoutSessionOptions, PlanCreateCheckoutSessionSuccess, PlanCreateCheckoutSessionFailure } from '@storacha/upload-api'
 
 export type {
   UnknownLink,
@@ -212,10 +212,10 @@ export interface StorageProviderRecord {
 }
 
 export interface StorageProviderTable {
-  put (input: StorageProviderInput): Promise<void>
-  get (provider: DID): Promise<StorageProviderRecord|undefined>
-  del (provider: DID): Promise<void>
-  list (): Promise<{ provider: DID, weight: number }[]>
+  put: (input: StorageProviderInput) => Promise<void>
+  get: (provider: DID) => Promise<StorageProviderRecord|undefined>
+  del: (provider: DID) => Promise<void>
+  list: () => Promise<Array<{ provider: DID, weight: number }>>
 }
 
 export type SpaceService = Pick<Service, "space">
@@ -290,6 +290,7 @@ export interface BillingProvider {
   hasCustomer: (customer: AccountDID) => Promise<Result<boolean, Failure>>
   setPlan: (customer: AccountDID, plan: DID) => Promise<Result<Unit, SetPlanFailure>>
   createAdminSession: (customer: AccountDID, returnURL: string) => Promise<Result<PlanCreateAdminSessionSuccess, PlanCreateAdminSessionFailure>>
+  createCheckoutSession: (customer: AccountDID, planID: PlanID, options: PlanCreateCheckoutSessionOptions) => Promise<Result<PlanCreateCheckoutSessionSuccess, PlanCreateCheckoutSessionFailure>>
 }
 
 export interface Referral {
