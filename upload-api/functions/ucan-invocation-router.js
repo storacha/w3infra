@@ -9,7 +9,9 @@ import * as Sentry from '@sentry/serverless'
 import * as DID from '@ipld/dag-ucan/did'
 import Stripe from 'stripe'
 import { Client as IndexingServiceClient } from '@storacha/indexing-service-client'
-import * as UploadAPI from '@storacha/upload-api'
+import * as UploadAPI from '../uapi/lib.js'
+// Direct import from source to bypass exports field (temporary debug)
+import { VIC_DEBUG_VERSION } from '../uapi/debug-version.js'
 import * as UCANCaps from '@storacha/capabilities/ucan'
 import {
   composeCarStoresWithOrderedHas,
@@ -150,6 +152,7 @@ export const knownWebDIDs = {
  * @param {import('aws-lambda').APIGatewayProxyEventV2} request
  */
 export async function ucanInvocationRouter(request) {
+  console.error('VIC_DEBUG_VERSION:', VIC_DEBUG_VERSION)
   try {
     // Capture X-Client custom header for analytics
     const clientId =

@@ -935,6 +935,9 @@ importers:
       '@storacha/did-mailto':
         specifier: 'catalog:'
         version: 1.0.2
+      '@storacha/filecoin-api':
+        specifier: 'catalog:'
+        version: 1.1.14
       '@storacha/indexing-service-client':
         specifier: 'catalog:'
         version: 2.6.9
@@ -974,6 +977,9 @@ importers:
       aws-cdk-lib:
         specifier: 'catalog:'
         version: 2.179.0(constructs@10.3.0)
+      carstream:
+        specifier: ^2.3.0
+        version: 2.3.0
       multiformats:
         specifier: 'catalog:'
         version: 13.3.2
@@ -1000,7 +1006,7 @@ importers:
         version: 15.1.3
       sst:
         specifier: 'catalog:'
-        version: 2.48.5(@jest/transform@29.7.0)(@jest/types@29.6.3)(aws-crt@1.26.2)(babel-jest@29.7.0(@babel/core@7.26.10))(encoding@0.1.13)(typescript@5.8.3)
+        version: 2.48.5(@jest/transform@29.7.0)(@jest/types@29.6.3)(aws-crt@1.26.2)(babel-jest@29.7.0(@babel/core@7.26.10))(encoding@0.1.13)(typescript@3.9.10)
       stripe:
         specifier: 'catalog:'
         version: 17.7.0
@@ -13734,7 +13740,7 @@ snapshots:
       '@multiformats/multiaddr-to-uri': 10.1.2
       interface-blockstore: 5.3.1
       interface-store: 5.1.8
-      multiformats: 13.3.2
+      multiformats: 13.3.6
       progress-events: 1.0.1
 
   '@helia/delegated-routing-v1-http-api-client@3.0.2':
@@ -13749,7 +13755,7 @@ snapshots:
       it-first: 3.0.7
       it-map: 3.1.2
       it-ndjson: 1.1.2
-      multiformats: 13.3.2
+      multiformats: 13.3.6
       p-defer: 4.0.1
       p-queue: 8.1.0
       uint8arrays: 5.1.0
@@ -13761,7 +13767,7 @@ snapshots:
       interface-blockstore: 5.3.1
       interface-datastore: 8.3.1
       interface-store: 5.1.8
-      multiformats: 13.3.2
+      multiformats: 13.3.6
       progress-events: 1.0.1
 
   '@helia/routers@1.1.1':
@@ -13773,7 +13779,7 @@ snapshots:
       ipns: 9.1.2
       it-first: 3.0.7
       it-map: 3.1.2
-      multiformats: 13.3.2
+      multiformats: 13.3.6
       uint8arrays: 5.1.0
 
   '@helia/unixfs@3.0.7(encoding@0.1.13)':
@@ -13804,7 +13810,7 @@ snapshots:
   '@helia/utils@0.3.3':
     dependencies:
       '@helia/interface': 4.3.1
-      '@ipld/dag-cbor': 9.2.2
+      '@ipld/dag-cbor': 9.2.3
       '@ipld/dag-json': 10.2.3
       '@ipld/dag-pb': 4.1.3
       '@libp2p/crypto': 4.1.9
@@ -13824,7 +13830,7 @@ snapshots:
       it-foreach: 2.1.2
       it-merge: 3.0.9
       mortice: 3.0.6
-      multiformats: 13.3.2
+      multiformats: 13.3.6
       murmurhash3js-revisited: 3.0.0
       p-defer: 4.0.1
       progress-events: 1.0.1
@@ -13928,6 +13934,41 @@ snapshots:
       jest-message-util: 29.7.0
       jest-util: 29.7.0
       slash: 3.0.0
+
+  '@jest/core@29.7.0(ts-node@10.9.2(@types/node@18.19.86)(typescript@3.9.10))':
+    dependencies:
+      '@jest/console': 29.7.0
+      '@jest/reporters': 29.7.0
+      '@jest/test-result': 29.7.0
+      '@jest/transform': 29.7.0
+      '@jest/types': 29.6.3
+      '@types/node': 22.14.0
+      ansi-escapes: 4.3.2
+      chalk: 4.1.2
+      ci-info: 3.9.0
+      exit: 0.1.2
+      graceful-fs: 4.2.11
+      jest-changed-files: 29.7.0
+      jest-config: 29.7.0(@types/node@22.14.0)(ts-node@10.9.2(@types/node@18.19.86)(typescript@3.9.10))
+      jest-haste-map: 29.7.0
+      jest-message-util: 29.7.0
+      jest-regex-util: 29.6.3
+      jest-resolve: 29.7.0
+      jest-resolve-dependencies: 29.7.0
+      jest-runner: 29.7.0
+      jest-runtime: 29.7.0
+      jest-snapshot: 29.7.0
+      jest-util: 29.7.0
+      jest-validate: 29.7.0
+      jest-watcher: 29.7.0
+      micromatch: 4.0.8
+      pretty-format: 29.7.0
+      slash: 3.0.0
+      strip-ansi: 6.0.1
+    transitivePeerDependencies:
+      - babel-plugin-macros
+      - supports-color
+      - ts-node
 
   '@jest/core@29.7.0(ts-node@10.9.2(@types/node@18.19.86)(typescript@5.8.3))':
     dependencies:
@@ -14157,7 +14198,7 @@ snapshots:
       any-signal: 4.1.1
       it-protobuf-stream: 1.1.6
       it-stream-types: 2.0.2
-      multiformats: 13.3.2
+      multiformats: 13.3.6
       p-defer: 4.0.1
       progress-events: 1.0.1
       protons-runtime: 5.5.0
@@ -14171,7 +14212,7 @@ snapshots:
       '@noble/curves': 1.8.1
       '@noble/hashes': 1.7.1
       asn1js: 3.0.6
-      multiformats: 13.3.2
+      multiformats: 13.3.6
       protons-runtime: 5.5.0
       uint8arraylist: 2.4.8
       uint8arrays: 5.1.0
@@ -14217,7 +14258,7 @@ snapshots:
       '@multiformats/multiaddr': 12.4.0
       it-pushable: 3.2.3
       it-stream-types: 2.0.2
-      multiformats: 13.3.2
+      multiformats: 13.3.6
       progress-events: 1.0.1
       uint8arraylist: 2.4.8
 
@@ -14252,7 +14293,7 @@ snapshots:
       it-pipe: 3.0.1
       it-protobuf-stream: 1.1.6
       it-take: 3.0.7
-      multiformats: 13.3.2
+      multiformats: 13.3.6
       p-defer: 4.0.1
       p-event: 6.0.1
       p-queue: 8.1.0
@@ -14270,7 +14311,7 @@ snapshots:
       '@libp2p/peer-id': 4.2.4
       interface-datastore: 8.3.1
       merge-options: 3.0.4
-      multiformats: 13.3.2
+      multiformats: 13.3.6
       sanitize-filename: 1.6.3
       uint8arrays: 5.1.0
 
@@ -14279,7 +14320,7 @@ snapshots:
       '@libp2p/interface': 1.7.0
       '@multiformats/multiaddr': 12.4.0
       interface-datastore: 8.3.1
-      multiformats: 13.3.2
+      multiformats: 13.3.6
       weald: 1.0.4
 
   '@libp2p/logger@5.1.13':
@@ -14342,7 +14383,7 @@ snapshots:
   '@libp2p/peer-id@4.2.4':
     dependencies:
       '@libp2p/interface': 1.7.0
-      multiformats: 13.3.2
+      multiformats: 13.3.6
       uint8arrays: 5.1.0
 
   '@libp2p/peer-record@7.0.25':
@@ -14367,7 +14408,7 @@ snapshots:
       interface-datastore: 8.3.1
       it-all: 3.0.7
       mortice: 3.0.6
-      multiformats: 13.3.2
+      multiformats: 13.3.6
       protons-runtime: 5.5.0
       uint8arraylist: 2.4.8
       uint8arrays: 5.1.0
@@ -14446,7 +14487,7 @@ snapshots:
       it-protobuf-stream: 1.1.6
       it-pushable: 3.2.3
       it-stream-types: 2.0.2
-      multiformats: 13.3.2
+      multiformats: 13.3.6
       node-datachannel: 0.11.0
       p-defer: 4.0.1
       p-event: 6.0.1
@@ -14489,7 +14530,7 @@ snapshots:
       '@multiformats/multiaddr': 12.4.0
       '@multiformats/multiaddr-matcher': 1.7.0
       it-stream-types: 2.0.2
-      multiformats: 13.3.2
+      multiformats: 13.3.6
       progress-events: 1.0.1
       race-signal: 1.1.3
       uint8arraylist: 2.4.8
@@ -14515,7 +14556,7 @@ snapshots:
     dependencies:
       '@chainsafe/is-ip': 2.1.0
       '@multiformats/multiaddr': 12.4.0
-      multiformats: 13.3.2
+      multiformats: 13.3.6
 
   '@multiformats/multiaddr-to-uri@10.1.2':
     dependencies:
@@ -14532,7 +14573,7 @@ snapshots:
 
   '@multiformats/murmur3@2.1.8':
     dependencies:
-      multiformats: 13.3.2
+      multiformats: 13.3.6
       murmurhash3js-revisited: 3.0.0
 
   '@multiformats/uri-to-multiaddr@8.1.0':
@@ -17343,7 +17384,7 @@ snapshots:
       it-filter: 3.1.2
       it-merge: 3.0.9
       it-pushable: 3.2.3
-      multiformats: 13.3.2
+      multiformats: 13.3.6
 
   bluebird@3.7.2: {}
 
@@ -17844,6 +17885,21 @@ snapshots:
     dependencies:
       crc-32: 1.2.2
       readable-stream: 4.7.0
+
+  create-jest@29.7.0(@types/node@18.19.86)(ts-node@10.9.2(@types/node@18.19.86)(typescript@3.9.10)):
+    dependencies:
+      '@jest/types': 29.6.3
+      chalk: 4.1.2
+      exit: 0.1.2
+      graceful-fs: 4.2.11
+      jest-config: 29.7.0(@types/node@18.19.86)(ts-node@10.9.2(@types/node@18.19.86)(typescript@3.9.10))
+      jest-util: 29.7.0
+      prompts: 2.4.2
+    transitivePeerDependencies:
+      - '@types/node'
+      - babel-plugin-macros
+      - supports-color
+      - ts-node
 
   create-jest@29.7.0(@types/node@18.19.86)(ts-node@10.9.2(@types/node@18.19.86)(typescript@5.8.3)):
     dependencies:
@@ -19461,7 +19517,7 @@ snapshots:
   interface-blockstore@5.3.1:
     dependencies:
       interface-store: 6.0.2
-      multiformats: 13.3.2
+      multiformats: 13.3.6
 
   interface-datastore@8.3.1:
     dependencies:
@@ -19495,7 +19551,7 @@ snapshots:
 
   ipfs-unixfs-exporter@13.6.2:
     dependencies:
-      '@ipld/dag-cbor': 9.2.2
+      '@ipld/dag-cbor': 9.2.3
       '@ipld/dag-json': 10.2.3
       '@ipld/dag-pb': 4.1.3
       '@multiformats/murmur3': 2.1.8
@@ -19508,7 +19564,7 @@ snapshots:
       it-parallel: 3.0.9
       it-pipe: 3.0.1
       it-pushable: 3.2.3
-      multiformats: 13.3.2
+      multiformats: 13.3.6
       p-queue: 8.1.0
       progress-events: 1.0.1
 
@@ -19524,7 +19580,7 @@ snapshots:
       it-batch: 3.0.7
       it-first: 3.0.7
       it-parallel-batch: 3.0.7
-      multiformats: 13.3.2
+      multiformats: 13.3.6
       progress-events: 1.0.1
       rabin-wasm: 0.1.5(encoding@0.1.13)
       uint8arraylist: 2.4.8
@@ -19568,7 +19624,7 @@ snapshots:
       cborg: 4.2.9
       err-code: 3.0.1
       interface-datastore: 8.3.1
-      multiformats: 13.3.2
+      multiformats: 13.3.6
       protons-runtime: 5.5.0
       timestamp-nano: 1.0.1
       uint8arraylist: 2.4.8
@@ -20031,6 +20087,25 @@ snapshots:
       - babel-plugin-macros
       - supports-color
 
+  jest-cli@29.7.0(@types/node@18.19.86)(ts-node@10.9.2(@types/node@18.19.86)(typescript@3.9.10)):
+    dependencies:
+      '@jest/core': 29.7.0(ts-node@10.9.2(@types/node@18.19.86)(typescript@3.9.10))
+      '@jest/test-result': 29.7.0
+      '@jest/types': 29.6.3
+      chalk: 4.1.2
+      create-jest: 29.7.0(@types/node@18.19.86)(ts-node@10.9.2(@types/node@18.19.86)(typescript@3.9.10))
+      exit: 0.1.2
+      import-local: 3.2.0
+      jest-config: 29.7.0(@types/node@18.19.86)(ts-node@10.9.2(@types/node@18.19.86)(typescript@3.9.10))
+      jest-util: 29.7.0
+      jest-validate: 29.7.0
+      yargs: 17.7.2
+    transitivePeerDependencies:
+      - '@types/node'
+      - babel-plugin-macros
+      - supports-color
+      - ts-node
+
   jest-cli@29.7.0(@types/node@18.19.86)(ts-node@10.9.2(@types/node@18.19.86)(typescript@5.8.3)):
     dependencies:
       '@jest/core': 29.7.0(ts-node@10.9.2(@types/node@18.19.86)(typescript@5.8.3))
@@ -20049,6 +20124,37 @@ snapshots:
       - babel-plugin-macros
       - supports-color
       - ts-node
+
+  jest-config@29.7.0(@types/node@18.19.86)(ts-node@10.9.2(@types/node@18.19.86)(typescript@3.9.10)):
+    dependencies:
+      '@babel/core': 7.26.10
+      '@jest/test-sequencer': 29.7.0
+      '@jest/types': 29.6.3
+      babel-jest: 29.7.0(@babel/core@7.26.10)
+      chalk: 4.1.2
+      ci-info: 3.9.0
+      deepmerge: 4.3.1
+      glob: 7.2.3
+      graceful-fs: 4.2.11
+      jest-circus: 29.7.0
+      jest-environment-node: 29.7.0
+      jest-get-type: 29.6.3
+      jest-regex-util: 29.6.3
+      jest-resolve: 29.7.0
+      jest-runner: 29.7.0
+      jest-util: 29.7.0
+      jest-validate: 29.7.0
+      micromatch: 4.0.8
+      parse-json: 5.2.0
+      pretty-format: 29.7.0
+      slash: 3.0.0
+      strip-json-comments: 3.1.1
+    optionalDependencies:
+      '@types/node': 18.19.86
+      ts-node: 10.9.2(@types/node@18.19.86)(typescript@3.9.10)
+    transitivePeerDependencies:
+      - babel-plugin-macros
+      - supports-color
 
   jest-config@29.7.0(@types/node@18.19.86)(ts-node@10.9.2(@types/node@18.19.86)(typescript@5.8.3)):
     dependencies:
@@ -20077,6 +20183,37 @@ snapshots:
     optionalDependencies:
       '@types/node': 18.19.86
       ts-node: 10.9.2(@types/node@18.19.86)(typescript@5.8.3)
+    transitivePeerDependencies:
+      - babel-plugin-macros
+      - supports-color
+
+  jest-config@29.7.0(@types/node@22.14.0)(ts-node@10.9.2(@types/node@18.19.86)(typescript@3.9.10)):
+    dependencies:
+      '@babel/core': 7.26.10
+      '@jest/test-sequencer': 29.7.0
+      '@jest/types': 29.6.3
+      babel-jest: 29.7.0(@babel/core@7.26.10)
+      chalk: 4.1.2
+      ci-info: 3.9.0
+      deepmerge: 4.3.1
+      glob: 7.2.3
+      graceful-fs: 4.2.11
+      jest-circus: 29.7.0
+      jest-environment-node: 29.7.0
+      jest-get-type: 29.6.3
+      jest-regex-util: 29.6.3
+      jest-resolve: 29.7.0
+      jest-runner: 29.7.0
+      jest-util: 29.7.0
+      jest-validate: 29.7.0
+      micromatch: 4.0.8
+      parse-json: 5.2.0
+      pretty-format: 29.7.0
+      slash: 3.0.0
+      strip-json-comments: 3.1.1
+    optionalDependencies:
+      '@types/node': 22.14.0
+      ts-node: 10.9.2(@types/node@18.19.86)(typescript@3.9.10)
     transitivePeerDependencies:
       - babel-plugin-macros
       - supports-color
@@ -20326,6 +20463,18 @@ snapshots:
       jest-util: 29.7.0
       merge-stream: 2.0.0
       supports-color: 8.1.1
+
+  jest@29.7.0(@types/node@18.19.86)(ts-node@10.9.2(@types/node@18.19.86)(typescript@3.9.10)):
+    dependencies:
+      '@jest/core': 29.7.0(ts-node@10.9.2(@types/node@18.19.86)(typescript@3.9.10))
+      '@jest/types': 29.6.3
+      import-local: 3.2.0
+      jest-cli: 29.7.0(@types/node@18.19.86)(ts-node@10.9.2(@types/node@18.19.86)(typescript@3.9.10))
+    transitivePeerDependencies:
+      - '@types/node'
+      - babel-plugin-macros
+      - supports-color
+      - ts-node
 
   jest@29.7.0(@types/node@18.19.86)(ts-node@10.9.2(@types/node@18.19.86)(typescript@5.8.3)):
     dependencies:
@@ -22378,6 +22527,112 @@ snapshots:
       cpu-features: 0.0.10
       nan: 2.22.2
 
+  sst-aws-cdk@2.179.0-3(@babel/core@7.26.10)(@jest/transform@29.7.0)(@jest/types@29.6.3)(aws-crt@1.26.2)(babel-jest@29.7.0(@babel/core@7.26.10))(encoding@0.1.13)(esbuild@0.18.13)(typescript@3.9.10):
+    dependencies:
+      '@aws-cdk/cli-plugin-contract': 2.179.0
+      '@aws-cdk/cloud-assembly-schema': 39.2.20
+      '@aws-cdk/cloudformation-diff': 2.179.0
+      '@aws-cdk/cx-api': 2.179.0(@aws-cdk/cloud-assembly-schema@39.2.20)
+      '@aws-cdk/region-info': 2.179.0
+      '@aws-sdk/client-appsync': 3.699.0(aws-crt@1.26.2)
+      '@aws-sdk/client-cloudformation': 3.782.0(aws-crt@1.26.2)
+      '@aws-sdk/client-cloudwatch-logs': 3.699.0(aws-crt@1.26.2)
+      '@aws-sdk/client-codebuild': 3.699.0(aws-crt@1.26.2)
+      '@aws-sdk/client-ec2': 3.699.0(aws-crt@1.26.2)
+      '@aws-sdk/client-ecr': 3.782.0(aws-crt@1.26.2)
+      '@aws-sdk/client-ecs': 3.782.0(aws-crt@1.26.2)
+      '@aws-sdk/client-elastic-load-balancing-v2': 3.699.0(aws-crt@1.26.2)
+      '@aws-sdk/client-iam': 3.782.0(aws-crt@1.26.2)
+      '@aws-sdk/client-kms': 3.699.0(aws-crt@1.26.2)
+      '@aws-sdk/client-lambda': 3.782.0(aws-crt@1.26.2)
+      '@aws-sdk/client-route-53': 3.699.0(aws-crt@1.26.2)
+      '@aws-sdk/client-s3': 3.782.0(aws-crt@1.26.2)
+      '@aws-sdk/client-secrets-manager': 3.782.0(aws-crt@1.26.2)
+      '@aws-sdk/client-sfn': 3.699.0(aws-crt@1.26.2)
+      '@aws-sdk/client-ssm': 3.782.0(aws-crt@1.26.2)
+      '@aws-sdk/client-sts': 3.782.0(aws-crt@1.26.2)
+      '@aws-sdk/credential-providers': 3.782.0(aws-crt@1.26.2)
+      '@aws-sdk/ec2-metadata-service': 3.699.0
+      '@aws-sdk/lib-storage': 3.782.0(@aws-sdk/client-s3@3.782.0(aws-crt@1.26.2))
+      '@jsii/check-node': 1.106.0
+      '@octokit/rest': 18.12.0(encoding@0.1.13)
+      '@smithy/middleware-endpoint': 4.1.0
+      '@smithy/node-http-handler': 3.3.3
+      '@smithy/property-provider': 3.1.11
+      '@smithy/shared-ini-file-loader': 3.1.12
+      '@smithy/types': 3.7.2
+      '@smithy/util-retry': 3.0.11
+      '@smithy/util-stream': 3.3.4
+      '@smithy/util-waiter': 3.2.0
+      '@types/archiver': 5.3.4
+      '@types/fs-extra': 9.0.13
+      '@types/glob': 7.2.0
+      '@types/jest': 29.5.14
+      '@types/mockery': 1.4.33
+      '@types/node': 18.19.86
+      '@types/promptly': 3.0.5
+      '@types/semver': 7.7.0
+      '@types/sinon': 9.0.11
+      '@types/table': 6.3.2
+      '@types/uuid': 8.3.4
+      '@types/wrap-ansi': 3.0.0
+      '@types/yargs': 15.0.19
+      archiver: 5.3.2
+      aws-cdk-lib: 2.179.0(constructs@10.3.0)
+      aws-sdk-client-mock: 4.1.0
+      aws-sdk-client-mock-jest: 4.1.0(aws-sdk-client-mock@4.1.0)
+      axios: 1.8.4
+      camelcase: 6.3.0
+      cdk-from-cfn: 0.162.1
+      chalk: 4.1.2
+      chokidar: 3.6.0
+      constructs: 10.3.0
+      decamelize: 5.0.1
+      fast-check: 3.23.2
+      fs-extra: 9.1.0
+      glob: 7.2.3
+      jest: 29.7.0(@types/node@18.19.86)(ts-node@10.9.2(@types/node@18.19.86)(typescript@3.9.10))
+      jest-environment-node: 29.7.0
+      jest-mock: 29.7.0
+      json-diff: 0.10.0
+      madge: 5.0.2
+      make-runnable: 1.4.1
+      minimatch: 9.0.5
+      nock: 13.5.6
+      p-limit: 3.1.0
+      promptly: 3.2.0
+      proxy-agent: 6.5.0
+      semver: 7.7.1
+      sinon: 9.2.4
+      strip-ansi: 6.0.1
+      table: 6.9.0
+      ts-jest: 29.3.1(@babel/core@7.26.10)(@jest/transform@29.7.0)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.26.10))(esbuild@0.18.13)(jest@29.7.0(@types/node@18.19.86)(ts-node@10.9.2(@types/node@18.19.86)(typescript@3.9.10)))(typescript@3.9.10)
+      ts-mock-imports: 1.3.16(sinon@9.2.4)(typescript@3.9.10)
+      ts-node: 10.9.2(@types/node@18.19.86)(typescript@3.9.10)
+      uuid: 8.3.2
+      wrap-ansi: 7.0.0
+      xml-js: 1.6.11
+      yaml: 1.10.2
+      yargs: 16.2.0
+    optionalDependencies:
+      fsevents: 2.3.2
+    transitivePeerDependencies:
+      - '@babel/core'
+      - '@jest/transform'
+      - '@jest/types'
+      - '@swc/core'
+      - '@swc/wasm'
+      - aws-crt
+      - babel-jest
+      - babel-plugin-macros
+      - debug
+      - encoding
+      - esbuild
+      - node-notifier
+      - supports-color
+      - typescript
+      - vitest
+
   sst-aws-cdk@2.179.0-3(@babel/core@7.26.10)(@jest/transform@29.7.0)(@jest/types@29.6.3)(aws-crt@1.26.2)(babel-jest@29.7.0(@babel/core@7.26.10))(encoding@0.1.13)(esbuild@0.18.13)(typescript@5.8.3):
     dependencies:
       '@aws-cdk/cli-plugin-contract': 2.179.0
@@ -22482,6 +22737,97 @@ snapshots:
       - node-notifier
       - supports-color
       - typescript
+      - vitest
+
+  sst@2.48.5(@jest/transform@29.7.0)(@jest/types@29.6.3)(aws-crt@1.26.2)(babel-jest@29.7.0(@babel/core@7.26.10))(encoding@0.1.13)(typescript@3.9.10):
+    dependencies:
+      '@aws-cdk/aws-lambda-python-alpha': 2.179.0-alpha.0(aws-cdk-lib@2.179.0(constructs@10.3.0))(constructs@10.3.0)
+      '@aws-cdk/cloud-assembly-schema': 39.2.20
+      '@aws-cdk/cloudformation-diff': 2.179.0
+      '@aws-cdk/cx-api': 2.179.0(@aws-cdk/cloud-assembly-schema@39.2.20)
+      '@aws-crypto/sha256-js': 5.2.0
+      '@aws-sdk/client-cloudformation': 3.782.0(aws-crt@1.26.2)
+      '@aws-sdk/client-ecs': 3.782.0(aws-crt@1.26.2)
+      '@aws-sdk/client-eventbridge': 3.783.0(aws-crt@1.26.2)
+      '@aws-sdk/client-iam': 3.782.0(aws-crt@1.26.2)
+      '@aws-sdk/client-iot': 3.782.0(aws-crt@1.26.2)
+      '@aws-sdk/client-iot-data-plane': 3.782.0(aws-crt@1.26.2)
+      '@aws-sdk/client-lambda': 3.782.0(aws-crt@1.26.2)
+      '@aws-sdk/client-rds-data': 3.782.0(aws-crt@1.26.2)
+      '@aws-sdk/client-s3': 3.782.0(aws-crt@1.26.2)
+      '@aws-sdk/client-ssm': 3.782.0(aws-crt@1.26.2)
+      '@aws-sdk/client-sts': 3.782.0(aws-crt@1.26.2)
+      '@aws-sdk/config-resolver': 3.374.0
+      '@aws-sdk/credential-providers': 3.782.0(aws-crt@1.26.2)
+      '@aws-sdk/middleware-retry': 3.374.0
+      '@aws-sdk/middleware-signing': 3.775.0
+      '@aws-sdk/signature-v4-crt': 3.782.0
+      '@aws-sdk/smithy-client': 3.374.0
+      '@babel/core': 7.26.10
+      '@babel/generator': 7.27.0
+      '@babel/plugin-syntax-typescript': 7.25.9(@babel/core@7.26.10)
+      '@smithy/signature-v4': 2.3.0
+      '@trpc/server': 9.16.0
+      adm-zip: 0.5.14
+      aws-cdk-lib: 2.179.0(constructs@10.3.0)
+      aws-iot-device-sdk: 2.2.15
+      aws-sdk: 2.1692.0
+      builtin-modules: 3.2.0
+      cdk-assets: 3.0.0-rc.143(aws-crt@1.26.2)
+      chalk: 5.4.1
+      chokidar: 3.6.0
+      ci-info: 3.9.0
+      colorette: 2.0.20
+      conf: 10.2.0
+      constructs: 10.3.0
+      cross-spawn: 7.0.6
+      dendriform-immer-patch-optimiser: 2.1.3(immer@9.0.21)
+      dotenv: 16.4.7
+      esbuild: 0.18.13
+      express: 4.21.2
+      fast-jwt: 5.0.6
+      get-port: 6.1.2
+      glob: 10.4.5
+      graphql: 16.10.0
+      graphql-yoga: 3.9.1(graphql@16.10.0)
+      immer: 9.0.21
+      ink: 4.4.1(react@18.3.1)
+      ink-spinner: 5.0.0(ink@4.4.1(react@18.3.1))(react@18.3.1)
+      kysely: 0.25.0
+      kysely-codegen: 0.10.1(kysely@0.25.0)
+      kysely-data-api: 0.2.1(@aws-sdk/client-rds-data@3.782.0(aws-crt@1.26.2))(kysely@0.25.0)
+      minimatch: 6.2.0
+      openid-client: 5.7.1
+      ora: 6.3.1
+      react: 18.3.1
+      remeda: 1.61.0
+      sst-aws-cdk: 2.179.0-3(@babel/core@7.26.10)(@jest/transform@29.7.0)(@jest/types@29.6.3)(aws-crt@1.26.2)(babel-jest@29.7.0(@babel/core@7.26.10))(encoding@0.1.13)(esbuild@0.18.13)(typescript@3.9.10)
+      tree-kill: 1.2.2
+      undici: 5.29.0
+      uuid: 9.0.1
+      ws: 8.18.1
+      yargs: 17.7.2
+      zod: 3.24.2
+    transitivePeerDependencies:
+      - '@jest/transform'
+      - '@jest/types'
+      - '@swc/core'
+      - '@swc/wasm'
+      - '@types/react'
+      - aws-crt
+      - babel-jest
+      - babel-plugin-macros
+      - better-sqlite3
+      - bufferutil
+      - debug
+      - encoding
+      - mysql2
+      - node-notifier
+      - pg
+      - react-devtools-core
+      - supports-color
+      - typescript
+      - utf-8-validate
       - vitest
 
   sst@2.48.5(@jest/transform@29.7.0)(@jest/types@29.6.3)(aws-crt@1.26.2)(babel-jest@29.7.0(@babel/core@7.26.10))(encoding@0.1.13)(typescript@5.8.3):
@@ -22910,6 +23256,27 @@ snapshots:
     dependencies:
       utf8-byte-length: 1.0.5
 
+  ts-jest@29.3.1(@babel/core@7.26.10)(@jest/transform@29.7.0)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.26.10))(esbuild@0.18.13)(jest@29.7.0(@types/node@18.19.86)(ts-node@10.9.2(@types/node@18.19.86)(typescript@3.9.10)))(typescript@3.9.10):
+    dependencies:
+      bs-logger: 0.2.6
+      ejs: 3.1.10
+      fast-json-stable-stringify: 2.1.0
+      jest: 29.7.0(@types/node@18.19.86)(ts-node@10.9.2(@types/node@18.19.86)(typescript@3.9.10))
+      jest-util: 29.7.0
+      json5: 2.2.3
+      lodash.memoize: 4.1.2
+      make-error: 1.3.6
+      semver: 7.7.1
+      type-fest: 4.39.1
+      typescript: 3.9.10
+      yargs-parser: 21.1.1
+    optionalDependencies:
+      '@babel/core': 7.26.10
+      '@jest/transform': 29.7.0
+      '@jest/types': 29.6.3
+      babel-jest: 29.7.0(@babel/core@7.26.10)
+      esbuild: 0.18.13
+
   ts-jest@29.3.1(@babel/core@7.26.10)(@jest/transform@29.7.0)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.26.10))(esbuild@0.18.13)(jest@29.7.0(@types/node@18.19.86)(ts-node@10.9.2(@types/node@18.19.86)(typescript@5.8.3)))(typescript@5.8.3):
     dependencies:
       bs-logger: 0.2.6
@@ -22931,10 +23298,33 @@ snapshots:
       babel-jest: 29.7.0(@babel/core@7.26.10)
       esbuild: 0.18.13
 
+  ts-mock-imports@1.3.16(sinon@9.2.4)(typescript@3.9.10):
+    dependencies:
+      sinon: 9.2.4
+      typescript: 3.9.10
+
   ts-mock-imports@1.3.16(sinon@9.2.4)(typescript@5.8.3):
     dependencies:
       sinon: 9.2.4
       typescript: 5.8.3
+
+  ts-node@10.9.2(@types/node@18.19.86)(typescript@3.9.10):
+    dependencies:
+      '@cspotcode/source-map-support': 0.8.1
+      '@tsconfig/node10': 1.0.11
+      '@tsconfig/node12': 1.0.11
+      '@tsconfig/node14': 1.0.3
+      '@tsconfig/node16': 1.0.4
+      '@types/node': 18.19.86
+      acorn: 8.14.1
+      acorn-walk: 8.3.4
+      arg: 4.1.3
+      create-require: 1.1.1
+      diff: 4.0.2
+      make-error: 1.3.6
+      typescript: 3.9.10
+      v8-compile-cache-lib: 3.0.1
+      yn: 3.1.1
 
   ts-node@10.9.2(@types/node@18.19.86)(typescript@5.8.3):
     dependencies:

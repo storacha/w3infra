@@ -21,6 +21,7 @@ export const create = (client) => {
   return {
     /** @type {API.BlobRetriever['stream']} */
     async stream(digest) {
+      console.error('querying the indexer for digest ', digest)
       const result = await client.queryClaims({ hashes: [digest] })
       if (result.error) {
         // @ts-expect-error need to align blob retriever error types
@@ -29,14 +30,17 @@ export const create = (client) => {
 
       for (const claim of result.ok.claims.values()) {
         if (claim.type === 'assert/location') {
+          console.error('indexer returned a location claim: ', claim)
           const contentDigest = toDigest(claim.content)
           if (equals(contentDigest.bytes, digest.bytes)) {
             const headers = new Headers()
             if (claim.range) {
               headers.set('Range', `bytes=${claim.range.offset}-${claim.range.length || ''}`)
             }
+            console.error('fetching the blob from: ', claim.location[0], ' with headers: ', headers)
             const res = await fetch(claim.location[0], { headers })
             if (!res.body) throw new Error('missing response body')
+            console.error('fetched the blob: ', res)
             return ok(res.body)
           }
         }
