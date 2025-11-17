@@ -230,6 +230,9 @@ import {
   PlanCreateAdminSession,
   PlanCreateAdminSessionSuccess,
   PlanCreateAdminSessionFailure,
+  PlanCreateCheckoutSession,
+  PlanCreateCheckoutSessionSuccess,
+  PlanCreateCheckoutSessionFailure,
   SpaceIndexAdd,
   SpaceIndexAddSuccess,
   SpaceIndexAddFailure,
@@ -263,7 +266,11 @@ export type {
 } from './types/revocations.js'
 export type { RateLimitsStorage, RateLimit } from './types/rate-limits.js'
 import { PlansStorage } from './types/plans.js'
-export type { PlansStorage } from './types/plans.js'
+export type {
+  PlansStorage,
+  PlanCreateCheckoutSessionOptions,
+  PlanID,
+} from './types/plans.js'
 import { SubscriptionsStorage } from './types/subscriptions.js'
 export type { SubscriptionsStorage }
 import { UsageStorage } from './types/usage.js'
@@ -441,6 +448,11 @@ export interface Service extends StorefrontService {
       PlanCreateAdminSessionSuccess,
       PlanCreateAdminSessionFailure
     >
+    'create-checkout-session': ServiceMethod<
+      PlanCreateCheckoutSession,
+      PlanCreateCheckoutSessionSuccess,
+      PlanCreateCheckoutSessionFailure
+    >
   }
   usage: {
     report: ServiceMethod<UsageReport, UsageReportSuccess, UsageReportFailure>
@@ -491,9 +503,10 @@ export interface LegacyStoreAddInput extends LegacyUploadAPI.StoreAddInput {}
 /** @deprecated */
 export type LegacyBlobServiceContext = Omit<
   LegacyUploadAPI.BlobServiceContext,
-  'allocationsStorage'
+  'allocationsStorage' | 'getServiceConnection'
 > & {
   registry: BlobRegistry
+  getServiceConnection: () => ConnectionView<Service>
 }
 
 /** @deprecated */
@@ -603,11 +616,9 @@ export interface RevocationServiceContext {
 
 /** @deprecated */
 export interface LegacyConcludeServiceContext
-  extends Pick<
-    LegacyUploadAPI.ConcludeServiceContext,
-    'id' | 'getServiceConnection'
-  > {
+  extends Pick<LegacyUploadAPI.ConcludeServiceContext, 'id'> {
   registry: BlobRegistry
+  getServiceConnection: () => ConnectionView<Service>
 }
 
 export interface ConcludeServiceContext {

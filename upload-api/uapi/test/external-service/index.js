@@ -5,7 +5,7 @@ import * as ClaimsService from './content-claims.js'
 import * as IndexingService from './indexing-service.js'
 import { BrowserStorageNode, StorageNode } from './storage-node.js'
 import * as BlobRetriever from './blob-retriever.js'
-import * as RoutingService from './router.js'
+import * as RoutingService from '@storacha/router/test/router'
 
 export {
   ClaimsService,
@@ -27,7 +27,7 @@ export const getExternalServiceImplementations = async (config) => {
   if (config.serviceID.did().startsWith('did:web')) {
     principalResolver.resolveDIDKey = (did) =>
       did === config.serviceID.did()
-        ? ok(config.serviceID.toDIDKey())
+        ? ok([config.serviceID.toDIDKey()])
         : error(new DIDResolutionError(did))
   }
 
