@@ -4,6 +4,7 @@ import { UnknownLink } from 'multiformats'
 import { CID } from 'multiformats/cid'
 import { CarStoreBucket } from '@web3-storage/upload-api'
 import { AccountDID, ProviderDID, Service, SpaceDID, PlanCreateAdminSessionSuccess, PlanCreateAdminSessionFailure, AgentStore, UnexpectedError, PlanID, PlanCreateCheckoutSessionOptions, PlanCreateCheckoutSessionSuccess, PlanCreateCheckoutSessionFailure } from '@storacha/upload-api'
+import type Stripe from 'stripe'
 
 export type {
   UnknownLink,
@@ -305,6 +306,9 @@ export interface HumanodeStore {
   add: (sub: string, account: string) => Promise<Result<Unit, UnexpectedError>>
   exists: (sub: string) => Promise<Result<boolean, UnexpectedError>>
 }
+
+export type PlansToLineItems = Record<string, Stripe.Checkout.SessionCreateParams.LineItem[]>
+
 
 export {}
 

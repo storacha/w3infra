@@ -51,10 +51,9 @@ function billingCycleAnchor() {
 }
 
 /**
- * @typedef {Record<string, import('stripe').Stripe.Checkout.SessionCreateParams.LineItem[]>} PlansToLineItems
  * @param {import('stripe').Stripe} stripe
  * @param {import('../billing/lib/api.js').CustomerStore} customerStore
- * @param {PlansToLineItems} plansToLineItemsMapping
+ * @param {import('./types.js').PlansToLineItems} plansToLineItemsMapping
  * @returns {import('./types.js').BillingProvider}
  */
 export function createStripeBillingProvider(

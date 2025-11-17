@@ -65,7 +65,6 @@ STRIPE_PUBLISHABLE_KEY = 'pk_test_51LO87hF6A5ufQX5viNsPTbuErzfavdrEFoBuaJJPfoIhz
 STRIPE_TEST_SECRET_KEY = ''
 STRIPE_BILLING_METER_ID = ''
 STRIPE_BILLING_METER_EVENT_NAME = ''
-PLANS_TO_LINE_ITEMS_MAPPING = '{"did:web:starter.storacha.network":[{"price":"price_1SJMcVF6A5ufQX5voRJSNUWT","quantity":1},{"price":"price_1SJMfPF6A5ufQX5vdfInsdls"},{"price":"price_1SJMgMF6A5ufQX5vVX927Uvx"}],"did:web:lite.storacha.network":[{"price":"price_1SKRC5F6A5ufQX5vRpsfsnAV","quantity":1},{"price":"price_1SKRFHF6A5ufQX5vE4YQ0dk2"},{"price":"price_1SKRGrF6A5ufQX5v2XXj8FwQ"}],"did:web:business.storacha.network":[{"price":"price_1SKRJSF6A5ufQX5vXZrDTvW8","quantity":1},{"price":"price_1SKRRkF6A5ufQX5vLlfGHtG1"},{"price":"price_1SKRWCF6A5ufQX5vlkNUeTBz"}]}'
 
 # Feature flags
 REQUIRE_PAYMENT_PLAN = 'true'

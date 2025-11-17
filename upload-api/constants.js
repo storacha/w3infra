@@ -1,4 +1,4 @@
-import { 
+import {
   add as storeAdd,
   remove as storeRemove
 } from '@storacha/capabilities/store'
@@ -55,4 +55,45 @@ export const SPACE_METRICS_NAMES = {
   STORE_REMOVE_TOTAL: `${STORE_REMOVE}-total`,
   /** @deprecated */
   STORE_REMOVE_SIZE_TOTAL: `${STORE_REMOVE}-size-total`,
+}
+
+/**
+ * @type {Record<string, import('./types.js').PlansToLineItems>}
+ */
+export const PLANS_TO_LINE_ITEMS_MAPPING = {
+  "staging": {
+    "did:web:starter.storacha.network": [
+      { "price": "price_1SJMcVF6A5ufQX5voRJSNUWT", "quantity": 1 },
+      { "price": "price_1SJMfPF6A5ufQX5vdfInsdls" },
+      { "price": "price_1SJMgMF6A5ufQX5vVX927Uvx" }
+    ],
+    "did:web:lite.storacha.network": [
+      { "price": "price_1SKRC5F6A5ufQX5vRpsfsnAV", "quantity": 1 },
+      { "price": "price_1SKRFHF6A5ufQX5vE4YQ0dk2" },
+      { "price": "price_1SKRGrF6A5ufQX5v2XXj8FwQ" }
+    ],
+    "did:web:business.storacha.network": [
+      { "price": "price_1SKRJSF6A5ufQX5vXZrDTvW8", "quantity": 1 },
+      { "price": "price_1SKRRkF6A5ufQX5vLlfGHtG1" },
+      { "price": "price_1SKRWCF6A5ufQX5vlkNUeTBz" }
+    ]
+  },
+  // TODO: replace with real production values
+  "production": {
+    "did:web:starter.storacha.network": [
+      { "price": "price_1SJMcVF6A5ufQX5voRJSNUWT", "quantity": 1 },
+      { "price": "price_1SJMfPF6A5ufQX5vdfInsdls" },
+      { "price": "price_1SJMgMF6A5ufQX5vVX927Uvx" }
+    ],
+    "did:web:lite.storacha.network": [
+      { "price": "price_1SKRC5F6A5ufQX5vRpsfsnAV", "quantity": 1 },
+      { "price": "price_1SKRFHF6A5ufQX5vE4YQ0dk2" },
+      { "price": "price_1SKRGrF6A5ufQX5v2XXj8FwQ" }
+    ],
+    "did:web:business.storacha.network": [
+      { "price": "price_1SKRJSF6A5ufQX5vXZrDTvW8", "quantity": 1 },
+      { "price": "price_1SKRRkF6A5ufQX5vLlfGHtG1" },
+      { "price": "price_1SKRWCF6A5ufQX5vlkNUeTBz" }
+    ]
+  }
 }

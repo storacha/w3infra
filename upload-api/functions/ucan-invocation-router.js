@@ -70,6 +70,7 @@ import {
 } from '../external-services/sso-providers/index.js'
 import { uploadServiceURL } from '@storacha/client/service'
 import { productInfo } from '../../billing/lib/product-info.js'
+import { PLANS_TO_LINE_ITEMS_MAPPING } from '../constants.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -692,7 +693,8 @@ function getLambdaEnv() {
         ...knownWebDIDs,
         ...JSON.parse(process.env.PRINCIPAL_MAPPING || '{}'),
       }),
-    plansToLineItemsMapping: JSON.parse(process.env.PLANS_TO_LINE_ITEMS_MAPPING || '{}'),
+    // default to staging values for line items since that's the default Stripe sandbox
+    plansToLineItemsMapping: PLANS_TO_LINE_ITEMS_MAPPING[mustGetEnv('SST_STAGE')] ?? PLANS_TO_LINE_ITEMS_MAPPING.staging,
     // set for testing
     dbEndpoint: process.env.DYNAMO_DB_ENDPOINT,
   }

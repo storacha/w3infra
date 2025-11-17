@@ -198,7 +198,6 @@ export function UploadApiStack({ stack, app }) {
               MAX_REPLICAS: process.env.MAX_REPLICAS ?? '',
               PIECE_OFFER_QUEUE_URL: pieceOfferQueue.queueUrl,
               PIECE_TABLE_NAME: pieceTable.tableName,
-              PLANS_TO_LINE_ITEMS_MAPPING: process.env.PLANS_TO_LINE_ITEMS_MAPPING ?? '',
               POSTMARK_TOKEN: process.env.POSTMARK_TOKEN ?? '',
               PRINCIPAL_MAPPING: process.env.PRINCIPAL_MAPPING ?? '',
               PROVIDERS: process.env.PROVIDERS ?? '',
