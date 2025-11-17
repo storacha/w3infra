@@ -156,8 +156,34 @@ for (const oldPriceId of oldPriceIds) {
 /**
  * @typedef {import('stripe').Stripe.Subscription} StripeSubscription
  * @typedef {import('stripe').Stripe.SubscriptionSchedule} StripeSchedule
- * @typedef {{ customer: string, amount: number, currency: string, description: string }} InvoiceItemParams
+ * @typedef {import('stripe').Stripe.SubscriptionSchedule.Phase} StripePhase
+ * @typedef {{ price: string, quantity?: number } | { 
+ *    price_data: { 
+ *      currency: string, 
+ *      product: string, 
+ *      recurring: { interval: string }, 
+ *      unit_amount: number 
+ *    }, 
+ *      quantity?: number 
+ * }} SchedulePhaseItemInput
+ * @typedef {{ start: number, end: number }} InvoiceItemPeriod
+ * @typedef {import('stripe').Stripe.Customer | import('stripe').Stripe.DeletedCustomer | string} ExpandableCustomer
+ * @typedef {{
+ *   customer: ExpandableCustomer,
+ *   amount: number,
+ *   currency: string,
+ *   description: string,
+ *   period?: InvoiceItemPeriod
+ * }} InvoiceItemParams
  * @typedef {{ endsBefore: boolean, totalDays: number, deltaDays: number, ratio: number }} ProrationInfo
+ * @typedef {{
+ *   start_date: number,
+ *   end_date?: number,
+ *   items: Array<SchedulePhaseItemInput>,
+ *   proration_behavior?: 'none' | 'always_invoice' | 'create_prorations',
+ *   trial?: boolean,
+ *   billing_cycle_anchor?: 'phase_start'
+ * }} StripeSchedulePhaseInput
  */
 
 /**
@@ -190,13 +216,15 @@ async function createFreshScheduleFromSubscription(subscription) {
  * @returns {Promise<import('stripe').Stripe.InvoiceItem | null>}
  */
 async function safeCreateInvoiceItem(params) {
-  const { customer, amount, currency, description } = params
+  const { customer, amount, currency, description, period } = params
   if (!amount || amount === 0) return null
+  const customerId = typeof customer === 'string' ? customer : customer.id
   return stripe.invoiceItems.create({
-    customer,
+    customer: customerId,
     amount,
     currency,
     description,
+    ...(period ? { period } : {})
   })
 }
 
@@ -241,42 +269,38 @@ async function applyProrationAdjustments(subscription, regularAmount, proration)
   // daily rate in cents (may be fractional)
   const dailyRate = regularAmount / totalDays;
 
-  for (const item of subscription.items.data) {
-    if (endsBefore) {
-      // Extension: any partial day -> bill as a full day
-      const daysToBill = Math.ceil(deltaDays);
-      const adjustmentAmount = Math.round(dailyRate * daysToBill);
-      if (adjustmentAmount <= 0) continue;
+  if (endsBefore) {
+    // Extension: any partial day -> bill as a full day
+    const daysToBill = Math.ceil(deltaDays);
+    const adjustmentAmount = Math.round(dailyRate * daysToBill);
+    if (adjustmentAmount <= 0) return;
 
-      const startReadable = formatShortMonthDay(subscription.current_period_end);
-      const endReadable = formatShortMonthDay(nextMonthTimestamp);
-      const desc = `Prorated extension charge for ${daysToBill} day${daysToBill === 1 ? '' : 's'} of service, from ${startReadable} to ${endReadable}.`
-      await safeCreateInvoiceItem({
-        customer: subscription.customer,
-        amount: adjustmentAmount,
-        currency: subscription.currency,
-        description: desc,
-        period: {
-          start: subscription.current_period_end,
-          end: nextMonthTimestamp
-        }
-      })
-      console.log(`\tCreated extension invoice item: ${adjustmentAmount} (${desc})`)
-    } else {
-      // Credit: only full unused days are credited
-      const daysToCredit = Math.floor(Math.abs(deltaDays));
-      const adjustmentAmount = Math.round(dailyRate * daysToCredit);
-      if (adjustmentAmount <= 0) continue;
+    const desc = `Prorated extension charge for ${daysToBill} day${daysToBill === 1 ? '' : 's'} of service.`
+    await safeCreateInvoiceItem({
+      customer: subscription.customer,
+      amount: adjustmentAmount,
+      currency: subscription.currency,
+      description: desc,
+      period: {
+        start: subscription.current_period_end,
+        end: nextMonthTimestamp
+      }
+    })
+    console.log(`\tCreated extension invoice item: ${adjustmentAmount} (${desc})`)
+  } else {
+    // Credit: only full unused days are credited
+    const daysToCredit = Math.floor(Math.abs(deltaDays));
+    const adjustmentAmount = Math.round(dailyRate * daysToCredit);
+    if (adjustmentAmount <= 0) return;
 
-      const desc = `Credit for ${daysToCredit} unused day${daysToCredit === 1 ? '' : 's'} of subscription.`
-      await safeCreateInvoiceItem({
-        customer: subscription.customer,
-        amount: -adjustmentAmount,
-        currency: subscription.currency,
-        description: desc,
-      })
-      console.log(`\tCreated credit invoice item: -${adjustmentAmount} (${desc})`)
-    }
+    const desc = `Credit for ${daysToCredit} unused day${daysToCredit === 1 ? '' : 's'} of subscription.`
+    await safeCreateInvoiceItem({
+      customer: subscription.customer,
+      amount: -adjustmentAmount,
+      currency: subscription.currency,
+      description: desc,
+    })
+    console.log(`\tCreated credit invoice item: -${adjustmentAmount} (${desc})`)
   }
 }
 
@@ -285,8 +309,8 @@ async function applyProrationAdjustments(subscription, regularAmount, proration)
  *
  * @param {StripeSubscription} subscription
  * @param {ProrationInfo} proration
- * @param {Array<Object>} newPhaseItems
- * @returns {Array<Object>}
+ * @param {Array<SchedulePhaseItemInput>} newPhaseItems
+ * @returns {Array<Stripe.SubscriptionScheduleCreateParams.Phase>}
  */
 function buildPhases(subscription, proration, newPhaseItems) {
   const { endsBefore } = proration
@@ -305,6 +329,7 @@ function buildPhases(subscription, proration, newPhaseItems) {
     },
     quantity: item.quantity
   }))
+
 
   const phases = [
     {
@@ -327,17 +352,5 @@ function buildPhases(subscription, proration, newPhaseItems) {
       proration_behavior: 'none'
     }
   ]
-
-  return phases
-}
-
-/**
- * Format a date string from epoch seconds to a short month/day format.
- *
- * @param {number} epochSeconds
- * @returns {string}
- */
-function formatShortMonthDay(epochSeconds) {
-  return new Date(epochSeconds * 1000)
-    .toLocaleString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+  return /** @type {Array<Stripe.SubscriptionScheduleCreateParams.Phase>} */ (phases)
 }
