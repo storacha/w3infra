@@ -125,7 +125,7 @@ for (const oldPriceId of oldPriceIds) {
       const newPhaseItems = [
         { price: oldToNewPrices[oldPriceId].flatFee },
         { price: oldToNewPrices[oldPriceId].overageFee },
-        { price: oldToNewPrices[oldPriceId].egressFee },
+        { price: oldToNewPrices[oldPriceId].egressFee }, 
       ]
 
       // Update the subscription schedule with consolidated phases
@@ -211,7 +211,7 @@ async function safeCreateInvoiceItem(params) {
  */
 function computeProration(subscription) {
   const secondsInDay = 60 * 60 * 24
-  const currentPeriodStart = 1761645600 //subscription.current_period_start
+  const currentPeriodStart = subscription.current_period_start
   const currentPeriodEnd = subscription.current_period_end
   const totalDays = (currentPeriodEnd - currentPeriodStart) / secondsInDay
   const deltaSeconds = nextMonthTimestamp - currentPeriodEnd
@@ -232,20 +232,25 @@ function computeProration(subscription) {
  * @returns {Promise<void>}
  */
 async function applyProrationAdjustments(subscription, regularAmount, proration) {
-  const { endsBefore, deltaDays, ratio } = proration
-  if (ratio <= 0 || regularAmount === 0) {
-    // nothing to do (either no days to adjust or free plan)
+  const { endsBefore, deltaDays, totalDays } = proration
+  if (totalDays <= 0 || regularAmount === 0) {
+    // nothing to do (invalid period or free plan)
     return
   }
 
-  for (const item of subscription.items.data) {
-    const adjustmentAmount = Math.round(regularAmount * ratio)
-    if (adjustmentAmount <= 0) continue
+  // daily rate in cents (may be fractional)
+  const dailyRate = regularAmount / totalDays;
 
+  for (const item of subscription.items.data) {
     if (endsBefore) {
+      // Extension: any partial day -> bill as a full day
+      const daysToBill = Math.ceil(deltaDays);
+      const adjustmentAmount = Math.round(dailyRate * daysToBill);
+      if (adjustmentAmount <= 0) continue;
+
       const startReadable = formatShortMonthDay(subscription.current_period_end);
       const endReadable = formatShortMonthDay(nextMonthTimestamp);
-      const desc = `Prorated extension charge for ${deltaDays.toFixed(1)} days of service, from ${startReadable} to ${endReadable}.`
+      const desc = `Prorated extension charge for ${daysToBill} day${daysToBill === 1 ? '' : 's'} of service, from ${startReadable} to ${endReadable}.`
       await safeCreateInvoiceItem({
         customer: subscription.customer,
         amount: adjustmentAmount,
@@ -258,7 +263,12 @@ async function applyProrationAdjustments(subscription, regularAmount, proration)
       })
       console.log(`\tCreated extension invoice item: ${adjustmentAmount} (${desc})`)
     } else {
-      const desc = `Credit for ${Math.abs(deltaDays).toFixed(1)} unused days of subscription`
+      // Credit: only full unused days are credited
+      const daysToCredit = Math.floor(Math.abs(deltaDays));
+      const adjustmentAmount = Math.round(dailyRate * daysToCredit);
+      if (adjustmentAmount <= 0) continue;
+
+      const desc = `Credit for ${daysToCredit} unused day${daysToCredit === 1 ? '' : 's'} of subscription.`
       await safeCreateInvoiceItem({
         customer: subscription.customer,
         amount: -adjustmentAmount,
