@@ -17,16 +17,16 @@ export const randomBlock = () => {
  * @param {import('multiformats').Block[]} blocks
  */
 export const encodeCAR = (root, blocks) => {
-  const roots = [root]
+  const roots = /** @type {import('multiformats').CID[]} */([root])
   const headerSize = CarBufferWriter.headerLength({ roots })
   let blocksSize = 0
   for (const b of blocks) {
-    blocksSize += CarBufferWriter.blockLength(b)
+    blocksSize += CarBufferWriter.blockLength(/** @type {import('@ipld/car/buffer-reader').Block} */ (b))
   }
-  const writer = CarBufferWriter.createWriter(new Uint8Array(headerSize + blocksSize), { roots })
+  const writer = CarBufferWriter.createWriter(new Uint8Array(headerSize + blocksSize).buffer, { roots })
 
   for (const b of blocks) {
-    writer.write(b)
+    writer.write(/** @type {import('@ipld/car/buffer-reader').Block} */ (b))
   }
   const bytes = writer.close()
   const mh = sha256.digest(bytes)

@@ -55,7 +55,7 @@ async function setupCustomer(stripe, email, customerStore) {
     product: initialPlan,
     insertedAt: new Date()
   })
-  if (!customerCreation.ok){
+  if (!customerCreation.ok) {
     throw customerCreation.error
   }
 
@@ -113,7 +113,8 @@ test.before(async t => {
   const stripe = new Stripe(stripeSecretKey, { apiVersion: '2025-02-24.acacia' })
 
   const customerStore = createCustomerStore(dynamo, { tableName: await createTable(dynamo, customerTableProps) })
-  const billingProvider = createStripeBillingProvider(stripe, customerStore)
+  const plansToLineItemsMapping = JSON.parse(process.env.PLANS_TO_LINE_ITEMS_MAPPING || '{}')
+  const billingProvider = createStripeBillingProvider(stripe, customerStore, plansToLineItemsMapping)
 
   Object.assign(t.context, {
     dynamo,
@@ -142,7 +143,7 @@ test('stripe plan can be updated', async (t) => {
   })
 })
 
-test('stripe billing session can be generated', async (t) => {
+test('stripe billing admin session can be generated', async (t) => {
   const context = /** @type {typeof t.context & BillingContext } */(t.context)
   const { billingProvider } = context
 
@@ -151,4 +152,31 @@ test('stripe billing session can be generated', async (t) => {
     t.assert(response.ok)
     t.assert(response.ok?.url)
   })
+})
+
+test('stripe checkout session can be generated', async (t) => {
+  const context = /** @type {typeof t.context & BillingContext } */(t.context)
+  const { billingProvider } = context
+
+  await withCustomer(context, async () => {
+    const response = await billingProvider.createCheckoutSession(
+      customerDID,
+      'did:web:starter.storacha.network',
+      {
+        successURL: 'https://example.com/return-url',
+        cancelURL: 'https://example.com/cancel-url'
+      })
+    t.assert(response.error)
+    t.is(response.error?.name, 'CustomerExists')
+  })
+
+  const response = await billingProvider.createCheckoutSession(
+    'did:mailto:example.com:notacustomer',
+    'did:web:starter.storacha.network',
+    {
+      successURL: 'https://example.com/return-url',
+      cancelURL: 'https://example.com/cancel-url'
+    })
+  t.assert(response.ok)
+  t.assert(response.ok?.url)
 })

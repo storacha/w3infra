@@ -60,7 +60,7 @@ test('findEquivalentCids', async t => {
       const archive = await QueryResult.archive(result.ok)
       t.assert(archive.ok)
 
-      return new Response(archive.ok)
+      return new Response(/** @type {BodyInit} */ (archive.ok))
     }
   })
   const carSet = await findEquivalentCids(pieceCid, client)
@@ -103,7 +103,7 @@ test('findEquivalentCids from indexing service', async t => {
   }
 
   const indexingService = new Client({
-    fetch: async () => new Response(queryArchiveRes.ok)
+    fetch: async () => new Response(/** @type {BodyInit} */ (queryArchiveRes.ok))
   })
 
   const carSet = await findEquivalentCids(pieceCid, indexingService)

@@ -42,7 +42,7 @@ catalog:
   "@storacha/did-mailto": ^1.0.2
   "@storacha/filecoin-api": ^1.2.0
   "@storacha/filecoin-client": ^1.0.15
-  "@storacha/indexing-service-client": ^2.6.5
+  "@storacha/indexing-service-client": ^2.6.9
   "@storacha/one-webcrypto": ^1.0.1
   "@storacha/router": ^1.0.0
   "@storacha/upload-api": ^2.6.0
@@ -54,7 +54,7 @@ catalog:
   "@types/git-rev-sync": ^2.0.0
   "@types/reload": ^3.2.3
   "@ucanto/client": ^9.0.2
-  "@ucanto/core": ^10.4.5
+  "@ucanto/core": ^10.4.6
   "@ucanto/interface": ^11.0.1
   "@ucanto/principal": ^9.0.3
   "@ucanto/server": ^11.0.3
@@ -63,7 +63,7 @@ catalog:
   "@web-std/blob": ^3.0.5
   "@web-std/fetch": ^4.1.0
   "@web-std/stream": ^1.0.3
-  "@web3-storage/content-claims": ^5.2.2
+  "@web3-storage/content-claims": ^5.2.4
   "@web3-storage/content-claims-infra": ^1.2.1
   "@web3-storage/data-segment": ^5.3.0
   "@web3-storage/sigv4": ^1.0.2

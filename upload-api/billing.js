@@ -1,5 +1,6 @@
 import { Failure } from '@ucanto/core'
 import { toEmail } from '@storacha/did-mailto'
+import { DIDMailto } from '@storacha/client/capability/access'
 
 export class InvalidSubscriptionState extends Failure {
   /**
@@ -34,11 +35,33 @@ export class BillingProviderUpdateError extends Failure {
 }
 
 /**
+ * Calculate the "billing cycle anchor" - ie, the start of the next month
+ *
+ * Ideally Stripe would do this, but the "billing_cycle_anchor_config" parameter
+ * is apparently not available in the subscription_data property of the checkout
+ * session creation data, sad.
+ *
+ * @returns {number} Unix timestamp (seconds since epoch) of the next billing cycle anchor
+ */
+function billingCycleAnchor() {
+  const now = new Date()
+  return Math.floor(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1, 0, 0, 0, 0) / 1000
+  )
+}
+
+/**
+ * @typedef {Record<string, import('stripe').Stripe.Checkout.SessionCreateParams.LineItem[]>} PlansToLineItems
  * @param {import('stripe').Stripe} stripe
  * @param {import('../billing/lib/api.js').CustomerStore} customerStore
+ * @param {PlansToLineItems} plansToLineItemsMapping
  * @returns {import('./types.js').BillingProvider}
  */
-export function createStripeBillingProvider(stripe, customerStore) {
+export function createStripeBillingProvider(
+  stripe,
+  customerStore,
+  plansToLineItemsMapping
+) {
   return {
     /** @type {import('./types.js').BillingProvider['hasCustomer']} */
     async hasCustomer(customer) {
@@ -147,8 +170,74 @@ export function createStripeBillingProvider(stripe, customerStore) {
       }
     },
 
-    async createCheckoutSession(customer) {
-      return { ok: { url: 'https://example/test-billing-admin-session' } }
+    /**
+     * Create a Stripe checkout session with the appropriate line items
+     * for the given planID.
+     *
+     * @type {import('./types.js').BillingProvider['createCheckoutSession']}
+     */
+    async createCheckoutSession(account, planID, options) {
+      const customerResponse = await customerStore.get({ customer: account })
+      if (
+        customerResponse.error &&
+        customerResponse.error.name === 'RecordNotFound'
+      ) {
+        const lineItems = plansToLineItemsMapping[planID]
+        if (!lineItems || lineItems.length === 0) {
+          return {
+            error: {
+              name: 'PlanNotFound',
+              message: `Could not find ${planID}`,
+              cause: customerResponse.error,
+            },
+          }
+        }
+        /** @type {import('stripe').Stripe.Checkout.SessionCreateParams} */
+        const sessionCreateParams = {
+          mode: 'subscription',
+          customer_email: DIDMailto.toEmail(
+            /** @type {import('@storacha/did-mailto').DidMailto} */ (account)
+          ),
+          success_url: options.successURL,
+          cancel_url: options.cancelURL,
+          line_items: plansToLineItemsMapping[planID],
+          subscription_data: {
+            billing_cycle_anchor: billingCycleAnchor(),
+            trial_period_days: options.freeTrial ? 30 : undefined,
+          },
+        }
+
+        const session =
+          await stripe.checkout.sessions.create(sessionCreateParams)
+        if (!session.url) {
+          return {
+            error: {
+              name: 'SessionCreationError',
+              message: `Error creating session: did not receive URL from Stripe`,
+            },
+          }
+        }
+        return {
+          ok: {
+            url: session.url,
+          },
+        }
+      } else if (customerResponse.ok) {
+        return {
+          error: {
+            name: 'CustomerExists',
+            message: `Sorry, ${account} is already a customer - cannot create another checkout session for them.`,
+          },
+        }
+      } else {
+        return {
+          error: {
+            name: 'UnexpectedError',
+            message: `Unexpected error looking up ${account}`,
+            cause: customerResponse.error,
+          },
+        }
+      }
     },
   }
 }

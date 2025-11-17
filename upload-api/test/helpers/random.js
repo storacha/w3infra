@@ -47,9 +47,10 @@ export async function randomCAR(size) {
   writer.put({ cid: root, bytes })
   writer.close()
 
+  /** @type {Uint8Array<ArrayBuffer>[]} */
   const chunks = []
   for await (const chunk of out) {
-    chunks.push(chunk)
+    chunks.push(/** @type {Uint8Array<ArrayBuffer>} */(chunk))
   }
   const blob = new Blob(chunks)
   const cid = await CAR.codec.link(new Uint8Array(await blob.arrayBuffer()))

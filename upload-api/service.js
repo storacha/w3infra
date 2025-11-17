@@ -18,6 +18,7 @@ export const MAX_UPLOAD_SIZE = 127*(1<<25)
 /**
  * @param {import('@ucanto/interface').Signer} servicePrincipal
  * @param {Omit<UploadAPI.UcantoServerContext, 'errorReporter'|'id'|'maxUploadSize'|'validateAuthorization'>} context
+ * @returns {UploadAPI.Agent<UploadAPI.Service>}
  */
 export const createUcantoServer = (servicePrincipal, context) =>
   UploadAPI.createServer({
