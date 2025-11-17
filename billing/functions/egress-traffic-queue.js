@@ -46,7 +46,8 @@ export const handler = Sentry.AWSLambda.wrapHandler(
     const customerStore = customContext?.customerStore ?? createCustomerStore({ region }, { tableName: customerTable })
     const egressTrafficTable = customContext?.egressTrafficTable ?? mustGetEnv('EGRESS_TRAFFIC_TABLE_NAME')
     const egressTrafficEventStore = customContext?.egressTrafficEventStore ?? createEgressTrafficEventStore({ region }, { tableName: egressTrafficTable })
-    
+    const skipStripeEgressTracking = (process.env.SKIP_STRIPE_EGRESS_TRACKING === 'true')
+
     const stripeSecretKey = customContext?.stripeSecretKey ?? Config.STRIPE_SECRET_KEY
     if (!stripeSecretKey) throw new Error('missing secret: STRIPE_SECRET_KEY')
 
@@ -68,10 +69,16 @@ export const handler = Sentry.AWSLambda.wrapHandler(
 
         const customerAccount = response.ok.account
         if (customerAccount) {
-          expect(
-            await recordBillingMeterEvent(stripe, billingMeterName, egressData, customerAccount),
-            `Failed to record egress event in Stripe API for customer: ${egressData.customer}, account: ${customerAccount}, bytes: ${egressData.bytes}, servedAt: ${egressData.servedAt.toISOString()}, resource: ${egressData.resource}`
-          )
+          if (!skipStripeEgressTracking) {
+            expect(
+              await recordBillingMeterEvent(stripe, billingMeterName, egressData, customerAccount),
+              `Failed to record egress event in Stripe API for customer: ${egressData.customer}, account: ${customerAccount}, bytes: ${egressData.bytes}, servedAt: ${egressData.servedAt.toISOString()}, resource: ${egressData.resource}`
+            )
+          } else {
+            console.warn('Stripe egress reporting feature flagged off, skipping Stripe API call.')
+          }
+        } else {
+          console.warn(`Received egress event but could not find ${egressData.customer} in our database - this is very strange!`)
         }
       } catch (error) {
         console.error('Error processing egress event:', error)
