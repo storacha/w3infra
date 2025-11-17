@@ -8,17 +8,20 @@ import { createQueueClient } from './client.js'
  */
 
 /**
- * @param {FilecoinSubmitMessage} pieceMessage 
+ * @param {FilecoinSubmitMessage} pieceMessage
  * @returns {ClientEncodedMessage}
  */
 const encodeMessage = (pieceMessage) => {
+  if (!pieceMessage.pdpInfoSuccess) {
+    delete pieceMessage.pdpInfoSuccess
+  }
   return {
     MessageBody: dagJSON.stringify(pieceMessage),
   }
 }
 
 /**
- * @param {{ 'MessageBody': string }} message 
+ * @param {{ 'MessageBody': string }} message
  * @returns {FilecoinSubmitMessage}
  */
 export const decodeMessage = (message) => {
@@ -26,16 +29,15 @@ export const decodeMessage = (message) => {
 }
 
 /**
- * 
+ *
  * @param {import('./types.js').QueueConnect | import('@aws-sdk/client-sqs').SQSClient} conf
  * @param {object} context
  * @param {string} context.queueUrl
  * @returns {import('@storacha/filecoin-api/storefront/api').FilecoinSubmitQueue}
  */
-export function createClient (conf, context) {
-  return createQueueClient(conf,
-    {
-      queueUrl: context.queueUrl,
-      encodeMessage
-    })
+export function createClient(conf, context) {
+  return createQueueClient(conf, {
+    queueUrl: context.queueUrl,
+    encodeMessage,
+  })
 }

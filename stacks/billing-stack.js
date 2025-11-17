@@ -191,7 +191,8 @@ export function BillingStack ({ stack, app }) {
       CUSTOMER_TABLE_NAME: customerTable.tableName,
       EGRESS_TRAFFIC_TABLE_NAME: egressTrafficTable.tableName,
       // Billing Meter Event Name for Stripe Test and Production APIs
-      STRIPE_BILLING_METER_EVENT_NAME: 'gateway-egress-traffic'
+      STRIPE_BILLING_METER_EVENT_NAME: 'gateway-egress-traffic',
+      SKIP_STRIPE_EGRESS_TRACKING: process.env.SKIP_STRIPE_EGRESS_TRACKING || ''
     }
   })
 
