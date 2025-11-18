@@ -259,6 +259,9 @@ declare module 'sst/node/config' {
     INDEXING_SERVICE_PROOF: {
       value: string
     },
+    DEAL_TRACKER_SERVICE_PROOF: {
+      value: string
+    },
     /** @deprecated */
     CONTENT_CLAIMS_PRIVATE_KEY: {
       value: string

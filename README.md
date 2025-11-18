@@ -316,6 +316,10 @@ GitHub OAuth client secret, for login via OAuth. This is optional, but necessary
 
 Proof that the upload service can publish claims to the [indexing service](https://github.com/storacha/indexing-service).
 
+#### `DEAL_TRACKER_SERVICE_PROOF`
+
+Proof that the upload service can invoke `deal/info` on the deal tracker service.
+
 ## HTTP API
 
 A UCAN based [RPC] API over HTTP.
