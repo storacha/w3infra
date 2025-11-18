@@ -1,8 +1,7 @@
 import * as Sentry from '@sentry/serverless'
 import { Config } from 'sst/node/config'
 import { unmarshall } from '@aws-sdk/util-dynamodb'
-import * as Delegation from '@ucanto/core/delegation'
-import { fromString } from 'uint8arrays/from-string'
+import * as Proof from '@storacha/client/proof'
 import * as DID from '@ipld/dag-ucan/did'
 
 import * as storefrontEvents from '@storacha/filecoin-api/storefront/events'
@@ -56,9 +55,8 @@ async function handlePieceStatusUpdate (event) {
   })
   const storefrontProofs = []
   if (storefrontProof) {
-    const proof = await Delegation.extract(fromString(storefrontProof, 'base64pad'))
-    if (!proof.ok) throw new Error('failed to extract proof', { cause: proof.error })
-    storefrontProofs.push(proof.ok)
+    const proof = await Proof.parse(storefrontProof)
+    storefrontProofs.push(proof)
   } else {
     // if no proofs, we must be using the service private key to sign
     storefrontSigner = storefrontSigner.withDID(DID.parse(storefrontDid).did())

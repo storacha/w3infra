@@ -2,9 +2,7 @@ import * as Sentry from '@sentry/serverless'
 import { Config } from 'sst/node/config'
 import * as storefrontEvents from '@storacha/filecoin-api/storefront/events'
 import * as DID from '@ipld/dag-ucan/did'
-import * as Delegation from '@ucanto/core/delegation'
-import { fromString } from 'uint8arrays/from-string'
-
+import * as Proof from '@storacha/client/proof'
 import { createPieceTable } from '../store/piece.js'
 import { createTaskStore } from '../store/task.js'
 import { createReceiptStore } from '../store/receipt.js'
@@ -29,9 +27,8 @@ export async function handleCronTick () {
   })
   const storefrontServiceProofs = []
   if (storefrontProof) {
-    const proof = await Delegation.extract(fromString(storefrontProof, 'base64pad'))
-    if (!proof.ok) throw new Error('failed to extract proof', { cause: proof.error })
-    storefrontServiceProofs.push(proof.ok)
+    const proof = await Proof.parse(storefrontProof)
+    storefrontServiceProofs.push(proof)
   } else {
     // if no proofs, we must be using the service private key to sign
     id = id.withDID(DID.parse(did).did())
