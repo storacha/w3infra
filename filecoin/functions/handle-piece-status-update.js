@@ -44,8 +44,8 @@ async function handlePieceStatusUpdate (event) {
   const record = decodeRecord(storeReecord)
 
   // Create context
-  const { PRIVATE_KEY: privateKey } = Config
-  const { storefrontDid, storefrontUrl, storefrontProof } = getEnv()
+  const { PRIVATE_KEY: privateKey, STOREFRONT_PROOF: storefrontProof } = Config
+  const { storefrontDid, storefrontUrl } = getEnv()
   let storefrontSigner = getServiceSigner({
     privateKey
   })
@@ -94,7 +94,6 @@ function getEnv () {
   return {
     storefrontDid: mustGetEnv('STOREFRONT_DID'),
     storefrontUrl: mustGetEnv('STOREFRONT_URL'),
-    storefrontProof: process.env.PROOF,
   }
 }
 

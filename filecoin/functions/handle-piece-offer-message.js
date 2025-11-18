@@ -35,8 +35,8 @@ async function handlePieceOfferMessage (sqsEvent) {
   })
 
   // Create context
-  const { PRIVATE_KEY: privateKey } = Config
-  const { aggregatorDid, aggregatorUrl, did, storefrontProof } = getEnv()
+  const { PRIVATE_KEY: privateKey, STOREFRONT_PROOF: storefrontProof } = Config
+  const { aggregatorDid, aggregatorUrl, did } = getEnv()
   let storefrontSigner = getServiceSigner({
     privateKey
   })
@@ -87,7 +87,6 @@ function getEnv () {
     did: mustGetEnv('DID'),
     aggregatorDid: mustGetEnv('AGGREGATOR_DID'),
     aggregatorUrl: mustGetEnv('AGGREGATOR_URL'),
-    storefrontProof: process.env.PROOF,
   }
 }
 

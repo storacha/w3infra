@@ -18,8 +18,8 @@ Sentry.AWSLambda.init({
 const AWS_REGION = process.env.AWS_REGION || 'us-west-2'
 
 export async function handleCronTick () {
-  const { did, pieceTableName, agentMessageBucketName, agentIndexBucketName, aggregatorDid, storefrontProof } = getEnv()
-  const { PRIVATE_KEY: privateKey } = Config
+  const { did, pieceTableName, agentMessageBucketName, agentIndexBucketName, aggregatorDid } = getEnv()
+  const { PRIVATE_KEY: privateKey, STOREFRONT_PROOF: storefrontProof } = Config
 
   // create context
   let id = getServiceSigner({
@@ -64,7 +64,6 @@ function getEnv () {
     agentMessageBucketName: mustGetEnv('AGENT_MESSAGE_BUCKET_NAME'),
     agentIndexBucketName: mustGetEnv('AGENT_INDEX_BUCKET_NAME'),
     aggregatorDid: mustGetEnv('AGGREGATOR_DID'),
-    storefrontProof: process.env.PROOF,
   }
 }
 
