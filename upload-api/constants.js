@@ -78,22 +78,21 @@ export const PLANS_TO_LINE_ITEMS_MAPPING = {
       { "price": "price_1SKRWCF6A5ufQX5vlkNUeTBz" }
     ]
   },
-  // TODO: replace with real production values
   "production": {
     "did:web:starter.storacha.network": [
-      { "price": "price_1SJMcVF6A5ufQX5voRJSNUWT", "quantity": 1 },
-      { "price": "price_1SJMfPF6A5ufQX5vdfInsdls" },
-      { "price": "price_1SJMgMF6A5ufQX5vVX927Uvx" }
+      { "price": "price_1SUtuZF6A5ufQX5vLdJgK8gW", "quantity": 1 },
+      { "price": "price_1SUtv3F6A5ufQX5vTZHG0J7s" },
+      { "price": "price_1SUtv6F6A5ufQX5v4w4JmhoU" }
     ],
     "did:web:lite.storacha.network": [
-      { "price": "price_1SKRC5F6A5ufQX5vRpsfsnAV", "quantity": 1 },
-      { "price": "price_1SKRFHF6A5ufQX5vE4YQ0dk2" },
-      { "price": "price_1SKRGrF6A5ufQX5v2XXj8FwQ" }
+      { "price": "price_1SUtvAF6A5ufQX5vM1Dc3Kpl", "quantity": 1 },
+      { "price": "price_1SUtvEF6A5ufQX5vI9ReH4wb" },
+      { "price": "price_1SUtvIF6A5ufQX5v2AKQcSKf" }
     ],
     "did:web:business.storacha.network": [
-      { "price": "price_1SKRJSF6A5ufQX5vXZrDTvW8", "quantity": 1 },
-      { "price": "price_1SKRRkF6A5ufQX5vLlfGHtG1" },
-      { "price": "price_1SKRWCF6A5ufQX5vlkNUeTBz" }
+      { "price": "price_1SUtvLF6A5ufQX5vjHMdUcHh", "quantity": 1 },
+      { "price": "price_1SUtvOF6A5ufQX5vO9WL1jF7" },
+      { "price": "price_1SUtvSF6A5ufQX5vaTkB55xm" }
     ]
   }
 }
