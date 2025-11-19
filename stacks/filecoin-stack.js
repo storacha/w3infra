@@ -1,4 +1,5 @@
 import {
+  Config,
   Cron,
   Function,
   Queue,
@@ -29,10 +30,12 @@ export function FilecoinStack({ stack, app }) {
     CONTENT_CLAIMS_URL,
     DISABLE_PIECE_CID_COMPUTE,
     UPLOAD_API_DID,
-    STOREFRONT_PROOF,
     START_FILECOIN_METRICS_EPOCH_MS
   } = getEnv()
   const storefrontCustomDomain = getCustomDomain(stack.stage, process.env.HOSTED_ZONES?.split(",")[0])
+
+  // Not strictly a secret, but it makes the env vars exceed the 4kb limit...
+  const storefrontProof = new Config.Secret(stack, 'STOREFRONT_PROOF')
 
   // Setup app monitoring with Sentry
   setupSentry(app, stack)
@@ -94,13 +97,13 @@ export function FilecoinStack({ stack, app }) {
     function: {
       handler: 'filecoin/functions/handle-piece-offer-message.main',
       environment: {
-        DID: STOREFRONT_PROOF ? UPLOAD_API_DID : AGGREGATOR_DID,
+        DID: storefrontProof ? UPLOAD_API_DID : AGGREGATOR_DID,
         AGGREGATOR_DID,
         AGGREGATOR_URL,
-        PROOF: STOREFRONT_PROOF,
       },
       bind: [
-        privateKey
+        privateKey,
+        storefrontProof
       ]
     },
     deadLetterQueue: pieceOfferQueueDLQ.cdk.queue,
@@ -122,15 +125,14 @@ export function FilecoinStack({ stack, app }) {
       function: {
         handler: 'filecoin/functions/handle-cron-tick.main',
         environment : {
-          DID: STOREFRONT_PROOF ? UPLOAD_API_DID : AGGREGATOR_DID,
+          DID: storefrontProof ? UPLOAD_API_DID : AGGREGATOR_DID,
           PIECE_TABLE_NAME: pieceTable.tableName,
           AGENT_MESSAGE_BUCKET_NAME: agentMessageBucket.bucketName,
           AGENT_INDEX_BUCKET_NAME: agentIndexBucket.bucketName,
           AGGREGATOR_DID,
-          PROOF: STOREFRONT_PROOF,
         },
         timeout: '6 minutes',
-        bind: [privateKey],
+        bind: [privateKey, storefrontProof],
         permissions: [pieceTable, agentMessageBucket, agentIndexBucket],
       }
     }
@@ -189,6 +191,7 @@ export function FilecoinStack({ stack, app }) {
         timeout: 3 * 60,
         bind: [
           privateKey,
+          storefrontProof
         ]
       },
       deadLetterQueue: pieceTableHandleInserToFilecoinSubmitDLQ.cdk.queue,
@@ -216,6 +219,7 @@ export function FilecoinStack({ stack, app }) {
         timeout: 3 * 60,
         bind: [
           privateKey,
+          storefrontProof
         ]
       },
       deadLetterQueue: pieceTableHandleStatusUpdateDLQ.cdk.queue,
@@ -253,7 +257,8 @@ export function FilecoinStack({ stack, app }) {
         STOREFRONT_URL: storefrontCustomDomain?.domainName ? `https://${storefrontCustomDomain?.domainName}` : '',
       },
       bind: [
-        privateKey
+        privateKey,
+        storefrontProof
       ],
       permissions: [pieceTable, carparkBucket],
       timeout: '5 minutes',
