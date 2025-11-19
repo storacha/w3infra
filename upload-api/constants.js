@@ -78,7 +78,7 @@ export const PLANS_TO_LINE_ITEMS_MAPPING = {
       { "price": "price_1SKRWCF6A5ufQX5vlkNUeTBz" }
     ]
   },
-  "production": {
+  "prod": {
     "did:web:starter.storacha.network": [
       // flat fee
       { "price": "price_1SUtuZF6A5ufQX5vLdJgK8gW", "quantity": 1 },
