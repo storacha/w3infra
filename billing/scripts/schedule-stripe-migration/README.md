@@ -1,13 +1,14 @@
 # Stripe Subscription Migration Script
 
-This script updates customer subscriptions from the legacy single-price plans to the new split pricing model (flat monthly fee + usage overage price) as part of the billing migration to Stripe Billing Meters.
+This script updates customer subscriptions from the legacy single-price plans to the new split pricing model (flat monthly fee + usage overage price + egress overage price) as part of the billing migration to Stripe Billing Meters.
 
 It uses Subscription Schedules to:
 
 - Keep the current price active through the end of the current month (with explicit phasing).
 - Switch on the first of the next month to the new price combination:
   - Flat fee price (base monthly charge)
-  - Overage price (usage-based, reported via Billing Meters)
+  - Usage Overage price (usage-based, reported via usage Billing Meters)
+  - Egress Overage price (usage-based, reported via egress Billing Meters)
 - Reset the billing cycle anchor to the first of the month.
 
 ## What the script does
@@ -18,17 +19,18 @@ For each legacy price ID configured in the script:
 2. Ensures the subscription has a fresh schedule:
    - If a schedule exists, it is released first to avoid conflicting phases
    - A new schedule is created from the subscription
-3. Configures two phases on the schedule:
-   - Phase A: from now to the end of the current month
+3. Configures two or three phases on the schedule:
+   - Phase 1: from now to the end of the current month
      - Keeps the existing price (no change for the remainder of the month)
-     - Uses `proration_behavior: create_prorations` so extending to month end is properly accounted
-   - Phase B: starts at the first of next month
-     - Replaces items with the new price pair: `flatFee` and `overageFee`
+     - Manually calculates proration so extending or shortening the current billing cycle is properly accounted for
+   - Phase 1.5: if we need to extend the customer’s billing cycle, there's an extra phase to account for that.
+   - Phase 2: starts at the first of next month
+     - Replaces items with the new prices: `flatFee`, `overageFee`, `egressFee`
      - Uses `billing_cycle_anchor: 'phase_start'` to anchor billing on the 1st
 
 ## Safety considerations
 
-- Proration: During Phase A, prorations are created to cover any extension to the end of the month. During Phase B, no proration is applied.
+- Proration: During Phase 1, prorations are created to cover any extension or shortening of the current billing cycle to the end of the month. During Phase 2, no proration is applied.
 - Idempotency: The script releases any existing schedule and creates a new one before applying changes — this makes re-runs predictable.
 
 ## Prerequisites
@@ -58,4 +60,4 @@ node index.js
 - Mapping to new prices:
   - `oldToNewPrices[<OLD_PRICE_ID>] = { flatFee: '<NEW_PRICE_ID>', overageFee: '<NEW_PRICE_ID>' }`
 - Billing anchor:
-  - Phase B starts at the first of next month; the script computes this with `startOfMonth(new Date())` and sets `billing_cycle_anchor: 'phase_start'`.
+  - Phase 2 starts at the first of next month; the script computes this with `startOfMonth(new Date())` and sets `billing_cycle_anchor: 'phase_start'`.

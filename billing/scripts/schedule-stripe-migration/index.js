@@ -9,9 +9,9 @@ const STRIPE_API_KEY = mustGetEnv('STRIPE_API_KEY')
 
 const stripe = new Stripe(STRIPE_API_KEY)
 
-const STARTER_PRICE_ID = 'price_1QPQUzFLBc8xGwvUcZnO7sxY' // $0 + $0.15 per GB
-const LITE_PRICE_ID = 'price_1QPRLcFLBc8xGwvUQEGdzJF0' // $10 + $0.05 per GB
-const BUSINESS_PRICE_ID = 'price_1QPRO4FLBc8xGwvUcnEdzOnY' // $100 + $0.03 per GB
+const STARTER_PRICE_ID = 'price_1OCGzeF6A5ufQX5v1EDCK765' // $0 + $0.15 per GB
+const LITE_PRICE_ID = 'price_1OCH4DF6A5ufQX5vQYB8fyDh' // $10 + $0.05 per GB
+const BUSINESS_PRICE_ID = 'price_1OCHHeF6A5ufQX5veYO8Q4xQ' // $100 + $0.03 per GB
 
 const oldPricesNames = {
   [STARTER_PRICE_ID]: 'STARTER',
@@ -34,19 +34,19 @@ const oldPricesValue = {
 /** @type {Record<OldPriceId, PriceCombo>} */
 const oldToNewPrices = {
   [STARTER_PRICE_ID]: {
-    flatFee: 'price_1SDXxgFLBc8xGwvUH3YfRMwM',
-    overageFee: 'price_1SDY0iFLBc8xGwvUrlV18Heb',
-    egressFee: 'price_1SIa2lFLBc8xGwvUE7Qas74l'
+    flatFee: 'price_1SUtuZF6A5ufQX5vLdJgK8gW',
+    overageFee: 'price_1SUtv3F6A5ufQX5vTZHG0J7s',
+    egressFee: 'price_1SUtv6F6A5ufQX5v4w4JmhoU'
   },
   [LITE_PRICE_ID]: {
-    flatFee: 'price_1SDY3fFLBc8xGwvUkghmC77u',
-    overageFee: 'price_1SDY5BFLBc8xGwvUWysDI2NO',
-    egressFee: 'price_1SIa5TFLBc8xGwvUXTzVF6n9',
+    flatFee: 'price_1SUtvAF6A5ufQX5vM1Dc3Kpl',
+    overageFee: 'price_1SUtvEF6A5ufQX5vI9ReH4wb',
+    egressFee: 'price_1SUtvIF6A5ufQX5v2AKQcSKf',
   },
   [BUSINESS_PRICE_ID]: {
-    flatFee: 'price_1SDY5yFLBc8xGwvUTGQJ548z',
-    overageFee: 'price_1SKjiEFLBc8xGwvUCKbHlreL',
-    egressFee: 'price_1SKjeCFLBc8xGwvUvHUqEEmd'
+    flatFee: 'price_1SUtvLF6A5ufQX5vjHMdUcHh',
+    overageFee: 'price_1SUtvOF6A5ufQX5vO9WL1jF7',
+    egressFee: 'price_1SUtvSF6A5ufQX5vaTkB55xm'
   },
 }
 
