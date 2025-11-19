@@ -80,18 +80,27 @@ export const PLANS_TO_LINE_ITEMS_MAPPING = {
   },
   "production": {
     "did:web:starter.storacha.network": [
+      // flat fee
       { "price": "price_1SUtuZF6A5ufQX5vLdJgK8gW", "quantity": 1 },
+      // storage overage
       { "price": "price_1SUtv3F6A5ufQX5vTZHG0J7s" },
+      // egress overage
       { "price": "price_1SUtv6F6A5ufQX5v4w4JmhoU" }
     ],
     "did:web:lite.storacha.network": [
+      // flat fee
       { "price": "price_1SUtvAF6A5ufQX5vM1Dc3Kpl", "quantity": 1 },
+      // storage overage
       { "price": "price_1SUtvEF6A5ufQX5vI9ReH4wb" },
+      // egress overage
       { "price": "price_1SUtvIF6A5ufQX5v2AKQcSKf" }
     ],
     "did:web:business.storacha.network": [
+      // flat fee
       { "price": "price_1SUtvLF6A5ufQX5vjHMdUcHh", "quantity": 1 },
+      // storage overage
       { "price": "price_1SUtvOF6A5ufQX5vO9WL1jF7" },
+      // egress overage
       { "price": "price_1SUtvSF6A5ufQX5vaTkB55xm" }
     ]
   }
