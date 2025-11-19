@@ -26,7 +26,7 @@ const oldPricesValue = {
 }
 
 /**
- * @typedef {'price_1QPQUzFLBc8xGwvUcZnO7sxY' | 'price_1QPRLcFLBc8xGwvUQEGdzJF0' | 'price_1QPRO4FLBc8xGwvUcnEdzOnY'} OldPriceId
+ * @typedef {'price_1OCGzeF6A5ufQX5v1EDCK765' | 'price_1OCH4DF6A5ufQX5vQYB8fyDh' | 'price_1OCHHeF6A5ufQX5veYO8Q4xQ'} OldPriceId
  * @typedef {{ flatFee: string, overageFee: string, egressFee: string }} PriceCombo
  */
 
