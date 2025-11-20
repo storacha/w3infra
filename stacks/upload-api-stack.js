@@ -16,6 +16,7 @@ import { UcanInvocationStack } from './ucan-invocation-stack.js'
 import { IndexerStack } from './indexer-stack.js'
 
 import { getCustomDomain, getApiPackageJson, getGitInfo, setupSentry, getEnv, getEventSourceConfig, getServiceURL } from './config.js'
+import { mustGetEnv } from '../lib/env.js'
 
 /**
  * @param {import('sst/constructs').StackContext} properties
@@ -37,6 +38,10 @@ export function UploadApiStack({ stack, app }) {
     INDEXING_SERVICE_DID,
     INDEXING_SERVICE_URL,
   } = getEnv()
+
+  const OTEL_EXPORTER_OTLP_ENDPOINT = mustGetEnv('OTEL_EXPORTER_OTLP_ENDPOINT')
+  const OTEL_TRACES_SAMPLER = mustGetEnv('OTEL_TRACES_SAMPLER')
+  const OTEL_TRACES_SAMPLER_ARG = mustGetEnv('OTEL_TRACES_SAMPLER_ARG')
 
   // Setup app monitoring with Sentry
   setupSentry(app, stack)
@@ -154,7 +159,10 @@ export function UploadApiStack({ stack, app }) {
             GITHUB_CLIENT_ID: process.env.GITHUB_CLIENT_ID ?? '',
             PRINCIPAL_MAPPING: process.env.PRINCIPAL_MAPPING ?? '',
             HUMANODE_TOKEN_ENDPOINT: process.env.HUMANODE_TOKEN_ENDPOINT ?? '',
-            HUMANODE_CLIENT_ID: process.env.HUMANODE_CLIENT_ID ?? ''
+            HUMANODE_CLIENT_ID: process.env.HUMANODE_CLIENT_ID ?? '',
+            OTEL_EXPORTER_OTLP_ENDPOINT,
+            OTEL_TRACES_SAMPLER,
+            OTEL_TRACES_SAMPLER_ARG,
           },
           bind: [
             privateKey,

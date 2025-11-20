@@ -33,6 +33,17 @@ To try out a change submit a PR and you'll get temporary infra rolled out for yo
 
 [`sst`](https://sst.dev) is the framework we use to define what to deploy. Read the docs! https://sst.dev
 
+## Tracing (OTEL)
+
+Upload API Lambdas emit OTEL traces via the OTLP/HTTP exporter. You must set these env vars (the SST stack enforces them):
+
+- `OTEL_EXPORTER_OTLP_ENDPOINT` e.g. `https://telemetry.storacha.network:443`
+- `OTEL_TRACES_SAMPLER` e.g. `parentbased_traceidratio`
+- `OTEL_TRACES_SAMPLER_ARG` e.g. `1` for 100% (or `0.01` for 1%)
+- Optional: `OTEL_EXPORTER_OTLP_HEADERS` for auth (comma-separated `key=value`)
+
+Handlers continue incoming W3C trace headers and return `traceparent`/`tracestate` headers so callers can keep the same trace.
+
 ## Deployment
 
 Deployments are managed by [seed.run].

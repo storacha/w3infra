@@ -15,8 +15,6 @@ import {
   SEMRESATTRS_SERVICE_VERSION,
 } from '@opentelemetry/semantic-conventions'
 
-const defaultEndpoint = 'https://telemetry.storacha.network:443'
-
 const resource = new Resource({
   [SEMRESATTRS_SERVICE_NAME]: 'upload-api',
   [SEMRESATTRS_DEPLOYMENT_ENVIRONMENT]:
@@ -26,7 +24,7 @@ const resource = new Resource({
 
 const sampler = createSampler()
 const exporter = new OTLPTraceExporter({
-  url: `${(process.env.OTEL_EXPORTER_OTLP_ENDPOINT || defaultEndpoint).replace(/\/$/, '')}/v1/traces`,
+  url: `${getRequiredEnv('OTEL_EXPORTER_OTLP_ENDPOINT').replace(/\/$/, '')}/v1/traces`,
   headers: parseHeaders(process.env.OTEL_EXPORTER_OTLP_HEADERS),
 })
 
@@ -105,9 +103,9 @@ function attachTraceContextToResponse(response, ctx) {
 }
 
 function createSampler() {
-  const samplerName = (process.env.OTEL_TRACES_SAMPLER || 'parentbased_traceidratio').toLowerCase()
-  const ratioArg = Number.parseFloat(process.env.OTEL_TRACES_SAMPLER_ARG || '1')
-  const ratio = Number.isFinite(ratioArg) ? clamp(ratioArg, 0, 1) : 1
+  const samplerName = getRequiredEnv('OTEL_TRACES_SAMPLER').toLowerCase()
+  const ratioArg = Number.parseFloat(getRequiredEnv('OTEL_TRACES_SAMPLER_ARG'))
+  const ratio = clamp(ratioArg, 0, 1)
 
   switch (samplerName) {
     case 'always_on':
@@ -148,4 +146,15 @@ function parseHeaders(headerString) {
  */
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value))
+}
+
+/**
+ * @param {string} name
+ */
+function getRequiredEnv(name) {
+  const value = process.env[name]
+  if (!value) {
+    throw new Error(`Missing required environment variable: ${name}`)
+  }
+  return value
 }
