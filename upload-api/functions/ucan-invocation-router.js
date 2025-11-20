@@ -48,6 +48,7 @@ import { mustGetEnv } from '../../lib/env.js'
 import { createEgressTrafficQueue } from '../../billing/queues/egress-traffic.js'
 import { create as createRoutingService } from '../external-services/router.js'
 import { create as createBlobRetriever } from '../external-services/blob-retriever.js'
+import { wrapLambdaHandler } from '../otel.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -372,7 +373,9 @@ export async function ucanInvocationRouter(request) {
   return toLambdaResponse(response)
 }
 
-export const handler = Sentry.AWSLambda.wrapHandler(ucanInvocationRouter)
+export const handler = Sentry.AWSLambda.wrapHandler(
+  wrapLambdaHandler('ucan-invocation-router', ucanInvocationRouter)
+)
 
 /**
  * @param {API.HTTPResponse} response

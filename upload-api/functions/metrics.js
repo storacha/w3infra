@@ -1,5 +1,6 @@
 import * as Sentry from '@sentry/serverless'
 import * as Prom from 'prom-client'
+import { wrapLambdaHandler } from '../otel.js'
 
 import {
   METRICS_NAMES,
@@ -134,4 +135,6 @@ function createRegistry (ns = 'w3up', filecoinNs = 'w3filecoin') {
   }
 }
 
-export const handler = Sentry.AWSLambda.wrapHandler(metricsGet)
+export const handler = Sentry.AWSLambda.wrapHandler(
+  wrapLambdaHandler('metrics', metricsGet)
+)

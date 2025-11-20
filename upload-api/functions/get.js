@@ -2,6 +2,7 @@ import * as Sentry from '@sentry/serverless'
 import { Config } from 'sst/node/config'
 
 import { getServiceSigner } from '../config.js'
+import { wrapLambdaHandler } from '../otel.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -37,7 +38,9 @@ export async function versionGet(request) {
   }
 }
 
-export const version = Sentry.AWSLambda.wrapHandler(versionGet)
+export const version = Sentry.AWSLambda.wrapHandler(
+  wrapLambdaHandler('version', versionGet)
+)
 
 /** AWS HTTP Gateway handler for GET / */
 export async function homeGet() {
@@ -56,7 +59,9 @@ export async function homeGet() {
   }
 }
 
-export const home = Sentry.AWSLambda.wrapHandler(homeGet)
+export const home = Sentry.AWSLambda.wrapHandler(
+  wrapLambdaHandler('home', homeGet)
+)
 
 /**
  * AWS HTTP Gateway handler for GET /error
@@ -65,4 +70,6 @@ export async function errorGet() {
   throw new Error('API Error')
 }
 
-export const error = Sentry.AWSLambda.wrapHandler(errorGet)
+export const error = Sentry.AWSLambda.wrapHandler(
+  wrapLambdaHandler('error', errorGet)
+)

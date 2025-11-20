@@ -21,6 +21,7 @@ import * as htmlW3s from '../html-w3s'
 import { createRateLimitTable } from '../tables/rate-limit.js'
 import { createSpaceMetricsTable } from '../tables/space-metrics.js'
 import { createCustomerStore } from '../../billing/tables/customer.js'
+import { wrapLambdaHandler } from '../otel.js'
 
 const html = process.env.HOSTED_ZONE === 'up.web3.storage' ? htmlW3s : htmlStoracha
 
@@ -68,7 +69,9 @@ export async function validateEmailGet(request) {
   )
 }
 
-export const preValidateEmail = Sentry.AWSLambda.wrapHandler(validateEmailGet)
+export const preValidateEmail = Sentry.AWSLambda.wrapHandler(
+  wrapLambdaHandler('pre-validate-email', validateEmailGet)
+)
 
 function createAuthorizeContext() {
   const {
@@ -250,4 +253,6 @@ export async function validateEmailPost(request) {
   )
 }
 
-export const validateEmail = Sentry.AWSLambda.wrapHandler(validateEmailPost)
+export const validateEmail = Sentry.AWSLambda.wrapHandler(
+  wrapLambdaHandler('validate-email', validateEmailPost)
+)
