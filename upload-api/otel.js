@@ -64,9 +64,10 @@ export const wrapLambdaHandler = (name, handler) =>
     const parentCtx = propagation.extract(otContext.active(), carrier || {}, headerGetter)
     const span = tracer.startSpan(name, undefined, parentCtx)
     const ctxWithSpan = trace.setSpan(parentCtx, span)
+    let response
 
     try {
-      return await otContext.with(ctxWithSpan, () => handler(...args))
+      response = await otContext.with(ctxWithSpan, () => handler(...args))
     } catch (/** @type {any} */ err) {
       span.recordException(err)
       span.setStatus({ code: SpanStatusCode.ERROR, message: err?.message })
@@ -74,7 +75,34 @@ export const wrapLambdaHandler = (name, handler) =>
     } finally {
       span.end()
     }
+
+    return attachTraceContextToResponse(response, ctxWithSpan)
   })
+
+/**
+ * Add trace context headers to a Lambda response so callers can continue the trace.
+ * 
+ * @template T
+ * @param {T} response
+ * @param {import('@opentelemetry/api').Context} ctx
+ * @returns {T}
+ */
+function attachTraceContextToResponse(response, ctx) {
+  if (!response || typeof response !== 'object') return response
+
+  /** @type {Record<string, string>} */
+  const carrier = {}
+  propagation.inject(ctx, carrier)
+
+  // Merge headers without mutating original object references.
+  return {
+    ...response,
+    headers: {
+      ...(/** @type {any} */ (response)).headers,
+      ...carrier,
+    },
+  }
+}
 
 function createSampler() {
   const samplerName = (process.env.OTEL_TRACES_SAMPLER || 'parentbased_traceidratio').toLowerCase()
