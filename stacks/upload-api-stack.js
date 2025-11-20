@@ -72,6 +72,7 @@ export function UploadApiStack({ stack, app }) {
     privateKey,
     contentClaimsPrivateKey,
     indexingServiceProof,
+    dealTrackerServiceProof,
     githubClientSecret,
     humanodeClientSecret,
     dmailApiKey,
@@ -228,6 +229,7 @@ export function UploadApiStack({ stack, app }) {
             bind: [
               contentClaimsPrivateKey,
               indexingServiceProof,
+              dealTrackerServiceProof,
               privateKey,
               stripeSecretKey,
               dmailApiKey,

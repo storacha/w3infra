@@ -8,6 +8,7 @@ import { base64 } from 'multiformats/bases/base64'
 import * as Sentry from '@sentry/serverless'
 import * as DID from '@ipld/dag-ucan/did'
 import Stripe from 'stripe'
+import * as Proof from '@storacha/client/proof'
 import { Client as IndexingServiceClient } from '@storacha/indexing-service-client'
 import * as UploadAPI from '@storacha/upload-api'
 import * as UCANCaps from '@storacha/capabilities/ucan'
@@ -229,6 +230,7 @@ export async function ucanInvocationRouter(request) {
     PRIVATE_KEY,
     STRIPE_SECRET_KEY,
     INDEXING_SERVICE_PROOF,
+    DEAL_TRACKER_SERVICE_PROOF,
     CONTENT_CLAIMS_PRIVATE_KEY,
     DMAIL_API_KEY,
     DMAIL_API_SECRET,
@@ -359,6 +361,12 @@ export async function ucanInvocationRouter(request) {
     AWS_REGION,
     revocationTableName
   )
+
+  const dealTrackerProofs = []
+  if (DEAL_TRACKER_SERVICE_PROOF) {
+    const proof = await Proof.parse(DEAL_TRACKER_SERVICE_PROOF)
+    dealTrackerProofs.push(proof)
+  }
 
   const dealTrackerConnection = getServiceConnection({
     did: dealTrackerDid,
@@ -576,12 +584,15 @@ export async function ucanInvocationRouter(request) {
     dealTrackerService: {
       connection: dealTrackerConnection,
       invocationConfig: {
-        issuer: getServiceSigner({
-          privateKey: PRIVATE_KEY,
-          did: dealTrackerDid,
-        }),
+        issuer: dealTrackerProofs.length
+          ? serviceSigner
+          : getServiceSigner({
+              privateKey: PRIVATE_KEY,
+              did: dealTrackerDid,
+            }),
         audience: dealTrackerConnection.id,
         with: dealTrackerConnection.id.did(),
+        proofs: dealTrackerProofs
       },
     },
     plansStorage,

@@ -39,6 +39,9 @@ export function UploadDbStack({ stack, app }) {
   // Not strictly a secret, but it makes the env vars exceed the 4kb limit...
   const indexingServiceProof = new Config.Secret(stack, 'INDEXING_SERVICE_PROOF')
 
+  // Not strictly a secret, but it makes the env vars exceed the 4kb limit...
+  const dealTrackerServiceProof = new Config.Secret(stack, 'DEAL_TRACKER_SERVICE_PROOF')
+
   const githubClientSecret = new Config.Secret(stack, 'GITHUB_CLIENT_SECRET')
   const humanodeClientSecret = new Config.Secret(stack, 'HUMANODE_CLIENT_SECRET')
   
@@ -160,6 +163,7 @@ export function UploadDbStack({ stack, app }) {
     contentClaimsPrivateKey,
     humanodeClientSecret,
     indexingServiceProof,
+    dealTrackerServiceProof,
     dmailApiKey,
     dmailApiSecret,
     dmailJwtSecret,
