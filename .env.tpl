@@ -65,6 +65,8 @@ STRIPE_PUBLISHABLE_KEY = 'pk_test_51LO87hF6A5ufQX5viNsPTbuErzfavdrEFoBuaJJPfoIhz
 STRIPE_TEST_SECRET_KEY = ''
 STRIPE_BILLING_METER_ID = ''
 STRIPE_BILLING_METER_EVENT_NAME = ''
+# default URL to redirect users to after Stripe checkout
+STRIPE_DEFAULT_SUCCESS_URL = 'http://localhost:3000/public-checkout-success'
 
 # Feature flags
 REQUIRE_PAYMENT_PLAN = 'true'

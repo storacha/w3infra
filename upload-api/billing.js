@@ -199,7 +199,7 @@ export function createStripeBillingProvider(
           customer_email: DIDMailto.toEmail(
             /** @type {import('@storacha/did-mailto').DidMailto} */(account)
           ),
-          success_url: options.successURL,
+          success_url: options.successURL || process.env.STRIPE_DEFAULT_SUCCESS_URL,
           cancel_url: options.cancelURL,
           line_items: plansToLineItemsMapping[planID],
           subscription_data: {
