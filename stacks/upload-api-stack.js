@@ -227,6 +227,7 @@ export function UploadApiStack({ stack, app }) {
               STORAGE_PROVIDER_TABLE_NAME: storageProviderTable.tableName,
               STORE_BUCKET_NAME: carparkBucket.bucketName,
               STORE_TABLE_NAME: storeTable.tableName,
+              STRIPE_DEFAULT_SUCCESS_URL: process.env.STRIPE_DEFAULT_SUCCESS_URL ?? '',
               SUBSCRIPTION_TABLE_NAME: subscriptionTable.tableName,
               UCAN_LOG_STREAM_NAME: ucanStream.streamName,
               UPLOAD_API_ALIAS: process.env.UPLOAD_API_ALIAS ?? '',
