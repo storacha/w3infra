@@ -29,7 +29,6 @@ import { createEgressTrafficQueue } from '../../billing/queues/egress-traffic.js
 import { useSubscriptionsStore } from '../stores/subscriptions.js'
 import { useUsageStore } from '../stores/usage.js'
 import { productInfo } from '../../billing/lib/product-info.js'
-import { wrapLambdaHandler } from '../otel.js'
 
 const html =
   process.env.HOSTED_ZONE === 'up.web3.storage' ? htmlW3s : htmlStoracha
@@ -78,9 +77,7 @@ export async function validateEmailGet(request) {
   )
 }
 
-export const preValidateEmail = Sentry.AWSLambda.wrapHandler(
-  wrapLambdaHandler('pre-validate-email', validateEmailGet)
-)
+export const preValidateEmail = Sentry.AWSLambda.wrapHandler(validateEmailGet)
 
 function createAuthorizeContext() {
   const {
@@ -305,6 +302,4 @@ export async function validateEmailPost(request) {
   )
 }
 
-export const validateEmail = Sentry.AWSLambda.wrapHandler(
-  wrapLambdaHandler('validate-email', validateEmailPost)
-)
+export const validateEmail = Sentry.AWSLambda.wrapHandler(validateEmailPost)

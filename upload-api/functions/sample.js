@@ -3,7 +3,6 @@ import * as dagJSON from '@ipld/dag-json'
 import * as Monitor from '../monitor.js'
 import { mustGetEnv } from '../../lib/env.js'
 import { getDynamoClient } from '../../lib/aws/dynamo.js'
-import { wrapLambdaHandler } from '../otel.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -39,6 +38,4 @@ export const sampleGet = async (event) => {
   }
 }
 
-export const handler = Sentry.AWSLambda.wrapHandler(
-  wrapLambdaHandler('sample', sampleGet)
-)
+export const handler = Sentry.AWSLambda.wrapHandler((event) => sampleGet(event))

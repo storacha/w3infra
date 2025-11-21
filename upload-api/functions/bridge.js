@@ -9,7 +9,6 @@ import { base64url } from 'multiformats/bases/base64'
 import * as dagJSON from '@ipld/dag-json'
 import * as dagCBOR from '@ipld/dag-cbor'
 import { streamToArrayBuffer, stringToStream } from '../bridge/streams.js'
-import { wrapLambdaHandler } from '../otel.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -332,6 +331,4 @@ function createBridgeHandler() {
   return (request) => handleBridgeRequest(request, context)
 }
 
-export const handler = Sentry.AWSLambda.wrapHandler(
-  wrapLambdaHandler('bridge', createBridgeHandler())
-)
+export const handler = Sentry.AWSLambda.wrapHandler(createBridgeHandler())
