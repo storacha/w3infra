@@ -27,6 +27,8 @@ import {
  * @param {import('sst/constructs').StackContext} properties
  */
 export function UploadApiStack({ stack, app }) {
+  const telemetryEnv = getTelemetryEnv()
+
   // For loading the Storacha logo
   stack.setDefaultFunctionProps({
     nodejs: {
@@ -36,6 +38,13 @@ export function UploadApiStack({ stack, app }) {
         },
       },
     },
+    environment: telemetryEnv
+      ? {
+          OTEL_EXPORTER_OTLP_ENDPOINT: telemetryEnv.endpoint,
+          OTEL_TRACES_SAMPLER: telemetryEnv.sampler,
+          OTEL_TRACES_SAMPLER_ARG: telemetryEnv.samplerArg,
+        }
+      : {},
   })
 
   const {
@@ -46,8 +55,6 @@ export function UploadApiStack({ stack, app }) {
     CONTENT_CLAIMS_URL,
     DISABLE_IPNI_PUBLISHING,
   } = getEnv()
-
- const telemetryEnv = getTelemetryEnv()
 
   // Setup app monitoring with Sentry
   setupSentry(app, stack)
