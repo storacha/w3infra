@@ -27,8 +27,6 @@ import {
  * @param {import('sst/constructs').StackContext} properties
  */
 export function UploadApiStack({ stack, app }) {
-  const telemetryEnv = getTelemetryEnv()
-
   // For loading the Storacha logo
   stack.setDefaultFunctionProps({
     nodejs: {
@@ -38,13 +36,6 @@ export function UploadApiStack({ stack, app }) {
         },
       },
     },
-    environment: telemetryEnv
-      ? {
-          OTEL_EXPORTER_OTLP_ENDPOINT: telemetryEnv.endpoint,
-          OTEL_TRACES_SAMPLER: telemetryEnv.sampler,
-          OTEL_TRACES_SAMPLER_ARG: telemetryEnv.samplerArg,
-        }
-      : {},
   })
 
   const {
@@ -234,13 +225,6 @@ export function UploadApiStack({ stack, app }) {
               UPLOAD_API_DID: process.env.UPLOAD_API_DID ?? '',
               UPLOAD_SERVICE_URL: getServiceURL(stack, customDomain) ?? '',
               UPLOAD_TABLE_NAME: uploadTable.tableName,
-              ...(telemetryEnv
-                ? {
-                    OTEL_EXPORTER_OTLP_ENDPOINT: telemetryEnv.endpoint,
-                    OTEL_TRACES_SAMPLER: telemetryEnv.sampler,
-                    OTEL_TRACES_SAMPLER_ARG: telemetryEnv.samplerArg,
-                  }
-                : {}),
             },
             bind: [
               contentClaimsPrivateKey,
@@ -563,14 +547,4 @@ export function UploadApiStack({ stack, app }) {
         )
       : 'Set HOSTED_ZONES in env to deploy to a custom domain',
   })
-}
-
-function getTelemetryEnv() {
-  const endpoint = process.env.OTEL_EXPORTER_OTLP_ENDPOINT
-  const sampler = process.env.OTEL_TRACES_SAMPLER
-  const samplerArg = process.env.OTEL_TRACES_SAMPLER_ARG
-
-  if (endpoint && sampler && samplerArg) {
-    return { endpoint, sampler, samplerArg }
-  }
 }
