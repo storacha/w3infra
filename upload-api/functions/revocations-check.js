@@ -7,6 +7,7 @@ import { encode } from '@ipld/dag-cbor'
 import { sha256 } from 'multiformats/hashes/sha2'
 import { CID } from 'multiformats/cid'
 import { createDelegationsStore } from '../buckets/delegations-store.js'
+import { wrapLambdaHandler } from '../otel.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -294,4 +295,6 @@ async function generateETag(carBytes) {
     .slice(0, 16) // Truncate for shorter ETag
 }
 
-export const handler = Sentry.AWSLambda.wrapHandler(revocationsGet)
+export const handler = Sentry.AWSLambda.wrapHandler(
+  wrapLambdaHandler('revocations-check', revocationsGet)
+)

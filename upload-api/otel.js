@@ -1,0 +1,222 @@
+import { context as otContext, propagation, trace, SpanStatusCode } from '@opentelemetry/api'
+import { NodeTracerProvider } from '@opentelemetry/sdk-trace-node'
+import {
+  AlwaysOffSampler,
+  AlwaysOnSampler,
+  BatchSpanProcessor,
+  ParentBasedSampler,
+  TraceIdRatioBasedSampler,
+} from '@opentelemetry/sdk-trace-base'
+import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http'
+import { Resource } from '@opentelemetry/resources'
+import {
+  SEMRESATTRS_DEPLOYMENT_ENVIRONMENT,
+  SEMRESATTRS_SERVICE_NAME,
+  SEMRESATTRS_SERVICE_VERSION,
+} from '@opentelemetry/semantic-conventions'
+
+const resource = new Resource({
+  [SEMRESATTRS_SERVICE_NAME]: 'upload-api',
+  [SEMRESATTRS_DEPLOYMENT_ENVIRONMENT]:
+    process.env.SST_STAGE || process.env.NODE_ENV || 'development',
+  [SEMRESATTRS_SERVICE_VERSION]: process.env.VERSION || process.env.COMMIT,
+})
+
+const telemetryEnabled = isTelemetryEnabled()
+let tracer
+
+if (telemetryEnabled) {
+  const sampler = createSampler()
+  const exporter = new OTLPTraceExporter({
+    url: `${getRequiredEnv('OTEL_EXPORTER_OTLP_ENDPOINT').replace(/\/$/, '')}/v1/traces`,
+    headers: parseHeaders(process.env.OTEL_EXPORTER_OTLP_HEADERS),
+  })
+
+  const provider = new NodeTracerProvider({ resource, sampler })
+  provider.addSpanProcessor(new BatchSpanProcessor(exporter))
+  provider.register()
+
+  tracer = trace.getTracer('upload-api')
+} else {
+  tracer = trace.getTracer('upload-api')
+}
+
+/** @typedef {Record<string, string | string[] | undefined>} Carrier */
+
+const headerGetter = {
+  /** @param {Carrier | undefined} carrier */
+  keys: (carrier) => (carrier ? Object.keys(carrier) : []),
+  /**
+   * @param {Carrier | undefined} carrier
+   * @param {string} key
+   */
+  get: (carrier, key) => {
+    if (!carrier) return []
+    const needle = key.toLowerCase()
+    const values = Object.entries(carrier)
+      .filter(([k]) => k.toLowerCase() === needle)
+      .flatMap(([, v]) => (Array.isArray(v) ? v : [v]))
+      .filter(Boolean)
+    return values.length ? /** @type {string[]} */ (values) : undefined
+  },
+}
+
+/**
+ * Wrap a Lambda handler with a root span.
+ *
+ * @template {(...args: any[]) => any} Fn
+ * @param {string} name
+ * @param {Fn} handler
+ * @returns {Fn}
+ */
+export const wrapLambdaHandler = (name, handler) =>
+  /** @type {Fn} */ (async (...args) => {
+    if (!telemetryEnabled) return handler(...args)
+
+    const [event] = args
+    // Pick up parent trace context from request headers when present.
+    const carrier = event && typeof event === 'object' ? event.headers : undefined
+    const parentCtx = propagation.extract(otContext.active(), carrier || {}, headerGetter)
+    const span = tracer.startSpan(name, undefined, parentCtx)
+    const ctxWithSpan = trace.setSpan(parentCtx, span)
+    let response
+
+    try {
+      response = await otContext.with(ctxWithSpan, () => handler(...args))
+    } catch (/** @type {any} */ err) {
+      span.recordException(err)
+      span.setStatus({ code: SpanStatusCode.ERROR, message: err?.message })
+      throw err
+    } finally {
+      span.end()
+    }
+
+    return attachTraceContextToResponse(response, ctxWithSpan)
+  })
+
+/**
+ * Add trace context headers to a Lambda response so callers can continue the trace.
+ * 
+ * @template T
+ * @param {T} response
+ * @param {import('@opentelemetry/api').Context} ctx
+ * @returns {T}
+ */
+function attachTraceContextToResponse(response, ctx) {
+  if (!response || typeof response !== 'object') return response
+
+  /** @type {Record<string, string>} */
+  const carrier = {}
+  propagation.inject(ctx, carrier)
+
+  // Merge headers without mutating original object references.
+  return {
+    ...response,
+    headers: {
+      ...(/** @type {any} */ (response)).headers,
+      ...carrier,
+    },
+  }
+}
+
+function createSampler() {
+  const samplerName = getRequiredEnv('OTEL_TRACES_SAMPLER').toLowerCase()
+  const ratioArg = Number.parseFloat(getRequiredEnv('OTEL_TRACES_SAMPLER_ARG'))
+  const ratio = clamp(ratioArg, 0, 1)
+
+  switch (samplerName) {
+    case 'always_on': {
+      return new AlwaysOnSampler()
+    }
+    case 'always_off': {
+      return new AlwaysOffSampler()
+    }
+    case 'traceidratio': {
+      return new TraceIdRatioBasedSampler(ratio)
+    }
+    case 'parentbased_always_on': {
+      return new ParentBasedSampler({ root: new AlwaysOnSampler() })
+    }
+    case 'parentbased_always_off': {
+      return new ParentBasedSampler({ root: new AlwaysOffSampler() })
+    }
+    case 'parentbased_traceidratio': {
+      return new ParentBasedSampler({ root: new TraceIdRatioBasedSampler(ratio) })
+    }
+    default: {
+      throw new Error(`Unsupported OTEL_TRACES_SAMPLER value: ${samplerName}`)
+    }
+  }
+}
+
+function isTelemetryEnabled() {
+  return Boolean(
+    process.env.OTEL_EXPORTER_OTLP_ENDPOINT &&
+      process.env.OTEL_TRACES_SAMPLER &&
+      process.env.OTEL_TRACES_SAMPLER_ARG
+  )
+}
+
+/**
+ * @param {string | undefined} headerString
+ */
+function parseHeaders(headerString) {
+  if (!headerString) return undefined
+  return Object.fromEntries(
+    headerString
+      .split(',')
+      .map((pair) => pair.trim())
+      .filter(Boolean)
+      .map((pair) => {
+        const [key, ...rest] = pair.split('=')
+        return [key.trim(), rest.join('=').trim()]
+      })
+      .filter(([key, value]) => key && value)
+  )
+}
+
+/**
+ * @param {number} value
+ * @param {number} min
+ * @param {number} max
+ */
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value))
+}
+
+/**
+ * @param {string} name
+ */
+function getRequiredEnv(name) {
+  const value = process.env[name]
+  if (value) return value
+
+  if (process.env.NODE_ENV === 'test') {
+    const fallback = getTestFallback(name)
+    if (fallback !== undefined) return fallback
+  }
+
+  throw new Error(`Missing required environment variable: ${name}`)
+}
+
+/**
+ * Provide safe defaults in test runs so telemetry wiring does not crash locally.
+ *
+ * @param {string} name
+ */
+function getTestFallback(name) {
+  switch (name) {
+    case 'OTEL_TRACES_SAMPLER': {
+      return 'always_off'
+    }
+    case 'OTEL_TRACES_SAMPLER_ARG': {
+      return '1'
+    }
+    case 'OTEL_EXPORTER_OTLP_ENDPOINT': {
+      return 'http://localhost:4318'
+    }
+    default: {
+      return undefined
+    }
+  }
+}

@@ -18,6 +18,7 @@ import {
 } from '../../filecoin/constants.js'
 
 import { createMetricsTable } from '../tables/metrics.js'
+import { wrapLambdaHandler } from '../otel.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -140,4 +141,6 @@ function createRegistry (ns = 'w3up', filecoinNs = 'w3filecoin') {
   }
 }
 
-export const handler = Sentry.AWSLambda.wrapHandler(metricsGet)
+export const handler = Sentry.AWSLambda.wrapHandler(
+  wrapLambdaHandler('metrics', metricsGet)
+)

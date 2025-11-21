@@ -2,6 +2,7 @@ import { Config } from 'sst/node/config'
 import * as Sentry from '@sentry/serverless'
 import { processUcanLogRequest } from '../ucan-invocation.js'
 import * as AgentStore from '../stores/agent.js'
+import { wrapLambdaHandler } from '../otel.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -65,4 +66,6 @@ async function handlerFn(request) {
   }
 }
 
-export const handler = Sentry.AWSLambda.wrapHandler(handlerFn)
+export const handler = Sentry.AWSLambda.wrapHandler(
+  wrapLambdaHandler('ucan', handlerFn)
+)
