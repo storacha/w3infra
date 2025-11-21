@@ -12,7 +12,6 @@ import { mustGetEnv } from '../../lib/env.js'
 import { open as openAgentStore } from '../stores/agent.js'
 import { createCustomerStore } from '../../billing/tables/customer.js'
 import { getServiceSigner, getServiceConnection } from '../config.js'
-import { wrapLambdaHandler } from '../otel.js'
 
 /**
  * @import { Endpoints } from '@octokit/types'
@@ -203,9 +202,7 @@ export const oauthCallbackGet = async (request, context) => {
   }
 }
 
-export const handler = Sentry.AWSLambda.wrapHandler(
-  wrapLambdaHandler('oauth-callback', oauthCallbackGet)
-)
+export const handler = Sentry.AWSLambda.wrapHandler((event) => oauthCallbackGet(event))
 
 /**
  * @param {Context} [customContext]
