@@ -7,6 +7,7 @@ import { updateSpaceMetrics } from '../metrics.js'
 import { createMetricsTable } from '../stores/space-metrics.js'
 import { createCarStore } from '../buckets/car-store.js'
 import { mustGetEnv } from '../../lib/env.js'
+import { wrapLambdaHandler } from '../otel.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -39,7 +40,9 @@ function getLambdaEnv () {
   }
 }
 
-export const consumer = Sentry.AWSLambda.wrapHandler(handler)
+export const consumer = Sentry.AWSLambda.wrapHandler(
+  wrapLambdaHandler('space-metrics-consumer', handler)
+)
 
 /**
  * @param {import('aws-lambda').KinesisStreamEvent} event
