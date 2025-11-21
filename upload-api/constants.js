@@ -105,3 +105,21 @@ export const PLANS_TO_LINE_ITEMS_MAPPING = {
     ]
   }
 }
+
+/**
+ * @type {Record<string, Record<string, string?>>}
+ */
+export const FREE_TRIAL_COUPONS = {
+  "staging": {
+    // no coupons for starter, it has no subscription fee anyway
+    "did:web:starter.storacha.network": null,
+    "did:web:lite.storacha.network":  "ezGFDDGl",
+    "did:web:business.storacha.network": "9lb527n3"
+  },
+  
+  "prod": {
+    "did:web:starter.storacha.network": null,
+    "did:web:lite.storacha.network":  "HUzxFTsy",
+    "did:web:business.storacha.network": "HaWdvmvf"
+  }
+}

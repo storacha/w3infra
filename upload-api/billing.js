@@ -54,19 +54,21 @@ function billingCycleAnchor() {
  * @param {import('stripe').Stripe} stripe
  * @param {import('../billing/lib/api.js').CustomerStore} customerStore
  * @param {import('./types.js').PlansToLineItems} plansToLineItemsMapping
+ * @param {Record<string, string?>} couponIds
  * @returns {import('./types.js').BillingProvider}
  */
 export function createStripeBillingProvider(
   stripe,
   customerStore,
-  plansToLineItemsMapping
+  plansToLineItemsMapping,
+  couponIds
 ) {
   return {
     /** @type {import('./types.js').BillingProvider['hasCustomer']} */
     async hasCustomer(customer) {
       const customersResponse = await stripe.customers.list({
         email: toEmail(
-          /** @type {import('@storacha/did-mailto').DidMailto} */ (customer)
+          /** @type {import('@storacha/did-mailto').DidMailto} */(customer)
         ),
       })
       return { ok: customersResponse.data.length > 0 }
@@ -89,7 +91,7 @@ export function createStripeBillingProvider(
           }
 
         const email = toEmail(
-          /** @type {import('@storacha/did-mailto').DidMailto} */ (customerDID)
+          /** @type {import('@storacha/did-mailto').DidMailto} */(customerDID)
         )
         const customers = await stripe.customers.list({
           email,
@@ -195,15 +197,23 @@ export function createStripeBillingProvider(
         const sessionCreateParams = {
           mode: 'subscription',
           customer_email: DIDMailto.toEmail(
-            /** @type {import('@storacha/did-mailto').DidMailto} */ (account)
+            /** @type {import('@storacha/did-mailto').DidMailto} */(account)
           ),
           success_url: options.successURL,
           cancel_url: options.cancelURL,
           line_items: plansToLineItemsMapping[planID],
           subscription_data: {
             billing_cycle_anchor: billingCycleAnchor(),
-            trial_period_days: options.freeTrial ? 30 : undefined,
           },
+        }
+
+        if (options.freeTrial) {
+          const couponID = couponIds[planID]
+          if (couponID) {
+            sessionCreateParams.discounts = [{
+              coupon: couponID
+            }]
+          }
         }
 
         const session =

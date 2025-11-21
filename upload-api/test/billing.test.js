@@ -9,7 +9,7 @@ import { createCustomerStore, customerTableProps } from '../../billing/tables/cu
 import { createTable } from './helpers/resources.js'
 import { createDynamoDB } from '../../billing/test/helpers/aws.js'
 import { stripeIDToAccountID } from '../../billing/utils/stripe.js'
-import { PLANS_TO_LINE_ITEMS_MAPPING } from '../constants.js'
+import { FREE_TRIAL_COUPONS, PLANS_TO_LINE_ITEMS_MAPPING } from '../constants.js'
 
 dotenv.config({ path: fileURLToPath(new URL('../../.env.local', import.meta.url)) })
 
@@ -116,7 +116,8 @@ test.before(async t => {
   const customerStore = createCustomerStore(dynamo, { tableName: await createTable(dynamo, customerTableProps) })
   // use the staging config in test because staging points at the Stripe sandbox
   const plansToLineItemsMapping = PLANS_TO_LINE_ITEMS_MAPPING.staging
-  const billingProvider = createStripeBillingProvider(stripe, customerStore, plansToLineItemsMapping)
+  const couponIds = FREE_TRIAL_COUPONS.staging
+  const billingProvider = createStripeBillingProvider(stripe, customerStore, plansToLineItemsMapping, couponIds)
 
   Object.assign(t.context, {
     dynamo,

@@ -70,7 +70,7 @@ import {
 } from '../external-services/sso-providers/index.js'
 import { uploadServiceURL } from '@storacha/client/service'
 import { productInfo } from '../../billing/lib/product-info.js'
-import { PLANS_TO_LINE_ITEMS_MAPPING } from '../constants.js'
+import { FREE_TRIAL_COUPONS, PLANS_TO_LINE_ITEMS_MAPPING } from '../constants.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -207,6 +207,7 @@ export async function ucanInvocationRouter(request) {
     requirePaymentPlan,
     principalMapping,
     plansToLineItemsMapping,
+    couponIds,
     // set for testing
     dbEndpoint,
     accessServiceURL,
@@ -320,7 +321,7 @@ export async function ucanInvocationRouter(request) {
   const stripe = new Stripe(STRIPE_SECRET_KEY, { apiVersion: '2025-02-24.acacia' })
   const plansStorage = usePlansStore(
     customerStore,
-    createStripeBillingProvider(stripe, customerStore, plansToLineItemsMapping)
+    createStripeBillingProvider(stripe, customerStore, plansToLineItemsMapping, couponIds)
   )
   const rateLimitsStorage = createRateLimitTable(AWS_REGION, rateLimitTableName)
   const spaceDiffStore = createSpaceDiffStore(
@@ -695,6 +696,7 @@ function getLambdaEnv() {
       }),
     // default to staging values for line items since that's the default Stripe sandbox
     plansToLineItemsMapping: PLANS_TO_LINE_ITEMS_MAPPING[mustGetEnv('SST_STAGE')] ?? PLANS_TO_LINE_ITEMS_MAPPING.staging,
+    couponIds: FREE_TRIAL_COUPONS[mustGetEnv('SST_STAGE')] ?? FREE_TRIAL_COUPONS.staging,
     // set for testing
     dbEndpoint: process.env.DYNAMO_DB_ENDPOINT,
   }
