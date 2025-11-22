@@ -20,6 +20,7 @@
     "big.js": "catalog:",
     "lru-cache": "catalog:",
     "multiformats": "catalog:",
+    "p-map": "catalog:",
     "p-retry": "catalog:",
     "sst": "catalog:",
     "stripe": "catalog:",
