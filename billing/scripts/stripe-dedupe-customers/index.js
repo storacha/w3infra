@@ -33,17 +33,15 @@ const CHECKPOINT_FILE = CHECKPOINT_ARG ? CHECKPOINT_ARG.split('=')[1] : 'dedupe-
 // Args: node index.js <sigma-duplicates.csv>
 const inputCsvPath = process.argv.find(a => a.endsWith('.csv'))
 if (!inputCsvPath) {
-  console.error('Usage: node index.js <sigma-duplicates.csv> [--apply] [--resume] [--start=<n>] [--checkpoint=<file>]')
-  process.exit(1)
+  throw new Error('Usage: node index.js <sigma-duplicates.csv> [--apply] [--resume] [--start=<n>] [--checkpoint=<file>]')
 }
 
 const stripe = new Stripe(STRIPE_API_KEY)
 const dynamo = new DynamoDBClient()
 const customerStore = createCustomerStore(dynamo, { tableName: CUSTOMER_TABLE_NAME })
 
-/** Sleep helper */
 /** @param {number} ms */
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
 /** Read checkpoint file -> set of processed emails */
 /** @param {string} filePath */
@@ -58,6 +56,7 @@ function readCheckpoint(filePath) {
  * Parse Stripe Sigma CSV assuming fixed column order: email, aggregated_ids, count.
  * We ignore header names and validate by type instead (email contains '@', count is integer, ids parseable list).
  * Supported aggregated_ids formats: {cus_1,cus_2}, [cus_1,cus_2], cus_1,cus_2
+ *
  * @param {string} filePath
  * @returns {{ email: string, ids: string[] }[]}
  */
@@ -89,7 +88,7 @@ function parseStripeSigmaCsv(filePath) {
     }
     const ids = inner.split(/\s*,\s*/).filter(Boolean)
     // Basic validation: each id starts with cus_
-    const filtered = ids.filter(id => /^cus_/.test(id))
+    const filtered = ids.filter(id => id.startsWith('cus_'))
     if (filtered.length < 2) continue
     // Optional: ensure count matches parsed length (allow mismatch but log)
     if (filtered.length !== count) {
@@ -101,6 +100,7 @@ function parseStripeSigmaCsv(filePath) {
 }
 
 /** Get mapped Stripe customer ID for an email via Dynamo (primary key is DID mailto)
+ *
  * @param {string} email
  * @returns {Promise<string|null>}
  */
@@ -123,9 +123,11 @@ async function getDynamoStripeIdForEmail(email) {
 
 /** Fetch Stripe metrics for a customer ID */
 /**
- * @typedef {Object} CustomerMetrics
+ * Customer metrics for deduplication logic.
+ *
+ * @typedef {object} CustomerMetrics
  * @property {string} id
- * @property {Date} created
+ * @property {Date|null} created
  * @property {string|null} defaultPaymentMethod
  * @property {number} balance
  * @property {number} activeSubCount
@@ -156,7 +158,7 @@ async function fetchStripeCustomersDetails(customerId) {
     do {
       // Cast status to allowed literal union
       // @ts-ignore Stripe type inference for list params union
-      const inv = await stripe.invoices.list({ customer: customerId, status: /** @type {'paid'|'open'|'draft'} */ (status), limit: 100, starting_after: startingAfter })
+      const inv = await stripe.invoices.list({ customer: customerId, status, limit: 100, starting_after: startingAfter })
       for (const invoice of inv.data) {
         if (status === 'paid') lifetimePaidTotal += invoice.amount_paid || 0
         else if (status === 'open' || status === 'draft') {
@@ -170,7 +172,7 @@ async function fetchStripeCustomersDetails(customerId) {
 
   return {
     id: customerId,
-    created: new Date(customer.created * 1000),
+    created: customer.created ? new Date(customer.created * 1000) : null,
     defaultPaymentMethod: (() => {
       const pm = customer.invoice_settings?.default_payment_method
       if (!pm) return null
@@ -185,6 +187,8 @@ async function fetchStripeCustomersDetails(customerId) {
 
 /** Determine if a customer is zero-footprint (eligible for deletion) */
 /**
+ * Determine if a customer is zero-footprint (eligible for deletion).
+ *
  * @param {CustomerMetrics} metrics
  */
 function isZeroFootprint(metrics) {
@@ -197,6 +201,8 @@ function isZeroFootprint(metrics) {
 
 /** Select canonical stripe ID within group */
 /**
+ * Select canonical stripe ID within group.
+ *
  * @param {CustomerMetrics[]} groupMetrics
  * @param {string|null} dynamoStripeId
  * @returns {string}
@@ -214,11 +220,18 @@ function selectCanonical(groupMetrics, dynamoStripeId) {
   const withPM = groupMetrics.find(m => m.defaultPaymentMethod)
   if (withPM) return withPM.id
   // 4. Newest created
-  return groupMetrics.sort((a, b) => b.created.getTime() - a.created.getTime())[0].id
+  return groupMetrics
+    .sort((a, b) => {
+      const aTime = a.created instanceof Date ? a.created.getTime() : -Infinity
+      const bTime = b.created instanceof Date ? b.created.getTime() : -Infinity
+      return bTime - aTime
+    })[0].id
 }
 
 /** Reason classification for manual review */
 /**
+ * Reason classification for manual review.
+ *
  * @param {CustomerMetrics} metrics
  * @param {string} canonicalId
  * @returns {string|null}
@@ -256,6 +269,7 @@ async function processGroup(group) {
 }
 
 /** Build Stripe dashboard URL for a customer id.
+ *
  * @param {string} id
  * @returns {string}
  */
@@ -265,6 +279,7 @@ function stripeCustomerUrl(id) {
 }
 
 /** Write manual review CSV.
+ *
  * @param {{ email: string, canonicalId: string, reason: string, metrics: CustomerMetrics }[]} rows
  */
 function writeManualCsv(rows) {
@@ -297,7 +312,7 @@ function writeManualCsv(rows) {
       m.openOrDraftAmountDue,
       m.balance,
       m.defaultPaymentMethod || '',
-      m.created?.toISOString() || ''
+      (m.created ? m.created.toISOString() : '')
     ].join(','))
   }
   const outPath = path.resolve(process.cwd(), 'manual-review.csv')
@@ -399,7 +414,7 @@ function logDuration(label = 'Duration') {
  * @param {{ email: string, canonicalId: string, reason: string, metrics: CustomerMetrics }[]} manualRows
  * @param {Set<string>} processedThisRun
  * @param {Set<string>} processedEmails
-*/
+ */
 function flushOnFailure(reason, manualRows, processedThisRun, processedEmails) {
   try {
     if (manualRows.length) {
@@ -420,12 +435,12 @@ function flushOnFailure(reason, manualRows, processedThisRun, processedEmails) {
 process.on('SIGINT', () => {
   console.error('\nReceived SIGINT, flushing partial state...')
   flushOnFailure('SIGINT', manualRows, processedThisRun, globalProcessedEmails)
-  process.exit(1)
+  throw new Error('Process interrupted by SIGINT')
 })
 process.on('SIGTERM', () => {
   console.error('\nReceived SIGTERM, flushing partial state...')
   flushOnFailure('SIGTERM', manualRows, processedThisRun, globalProcessedEmails)
-  process.exit(1)
+  throw new Error('Process interrupted by SIGTERM')
 })
 
 try {
@@ -433,5 +448,5 @@ try {
 } catch (e) {
   console.error(e)
   logDuration('Error after')
-  process.exit(1)
+  throw e
 }
