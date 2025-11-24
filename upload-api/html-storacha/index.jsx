@@ -191,7 +191,6 @@ export const PendingValidateEmail = ({ autoApprove }) => (
  * @param {string} props.ucan
  * @param {string} props.email
  * @param {string} props.audience
- * @param {boolean} [props.isReferred]
  */
 export const ValidateEmail = ({
   ucan,
