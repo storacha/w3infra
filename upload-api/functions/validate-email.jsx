@@ -1,7 +1,6 @@
 import * as Sentry from '@sentry/serverless'
 import { authorize } from '@storacha/upload-api/validate'
 import { Config } from 'sst/node/config'
-import * as DidMailto from '@storacha/did-mailto'
 import { getServiceSigner, parseServiceDids } from '../config.js'
 import { Email } from '../email.js'
 import { createDelegationsTable } from '../tables/delegations.js'
@@ -102,9 +101,6 @@ function createAuthorizeContext() {
     CUSTOMER_TABLE_NAME = '',
     UPLOAD_API_DID = '',
     PROVIDERS = '',
-    STRIPE_PRICING_TABLE_ID = '',
-    STRIPE_FREE_TRIAL_PRICING_TABLE_ID = '',
-    STRIPE_PUBLISHABLE_KEY = '',
     REFERRALS_ENDPOINT = '',
     UCAN_LOG_STREAM_NAME = '',
     SPACE_DIFF_TABLE_NAME = '',
@@ -209,9 +205,6 @@ function createAuthorizeContext() {
     agentStore,
     usageStorage,
     subscriptionsStorage: useSubscriptionsStore({ consumerTable }),
-    stripePricingTableId: STRIPE_PRICING_TABLE_ID,
-    stripeFreeTrialPricingTableId: STRIPE_FREE_TRIAL_PRICING_TABLE_ID,
-    stripePublishableKey: STRIPE_PUBLISHABLE_KEY,
   }
 }
 
@@ -247,48 +240,8 @@ export async function validateEmailPost(request) {
     )
   }
 
-  const { email, audience, ucan, facts } = authorizeResult.ok
+  const { email, audience, ucan } = authorizeResult.ok
 
-  const planCheckResult = await context.customerStore.get({
-    customer: DidMailto.fromEmail(email),
-  })
-  let isReferred = false
-  try {
-    // if we can find a referral code for this user, offer them a free trial
-    if ((await context.referralStore.getReferredBy(email)).refcode) {
-      isReferred = true
-    }
-  } catch (e) {
-    // if we fail here, log the error and move on
-    console.warn(
-      'encountered an error checking the referrals service, please see the error logs for more information'
-    )
-    console.error(e)
-  }
-  let stripePricingTableId
-  let stripePublishableKey
-
-  // if one of the facts have an 'app' entry, return it
-  // if there are more than one this will potentially be nondeterministic
-  const appName = facts.find((fact) => fact.appName)?.appName
-  if (!planCheckResult.ok?.product) {
-    stripePublishableKey = context.stripePublishableKey
-    // TODO: use AppName.{BskyBackups,TGMiniapp,Console} from @storacha/client/types once we upgrade that dependency
-    // I'd have done it now but upgrading causes linting issues and I want to save
-    // that rabbithole for later
-    if (
-      appName === 'bsky-backups' ||
-      appName === 'tg-miniapp' ||
-      appName === 'console'
-    ) {
-      // don't show a pricing table to bsky.storage, tg miniapp or console users
-      stripePricingTableId = null
-    } else if (isReferred) {
-      stripePricingTableId = context.stripeFreeTrialPricingTableId
-    } else {
-      stripePricingTableId = context.stripePricingTableId
-    }
-  }
   return toLambdaResponse(
     new html.HtmlResponse(
       (
@@ -296,9 +249,6 @@ export async function validateEmailPost(request) {
           email={email}
           audience={audience}
           ucan={ucan}
-          stripePricingTableId={stripePricingTableId}
-          stripePublishableKey={stripePublishableKey}
-          isReferred={isReferred}
         />
       )
     )

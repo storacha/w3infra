@@ -22,7 +22,6 @@ export function buildDocument(body) {
   <title>w3up Email Validation</title>
   <meta name="description" content="">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <script async src="https://js.stripe.com/v3/pricing-table.js"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@acab/reset.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/dark.min.css">
   <style>
@@ -157,12 +156,9 @@ export const PendingValidateEmail = ({ autoApprove }) => (
  * @param {string} param0.ucan
  * @param {string} param0.email
  * @param {string} param0.audience
- * @param {string} [param0.stripePricingTableId]
- * @param {string} [param0.stripePublishableKey]
  * @param {string} [param0.qrcode]
  */
-export const ValidateEmail = ({ ucan, qrcode, email, audience, stripePricingTableId, stripePublishableKey }) => {
-  const showPricingTable = stripePricingTableId && stripePublishableKey
+export const ValidateEmail = ({ ucan, qrcode, email, audience }) => {
   return (
     <div style={{ paddingTop: '50px', margin: '0 auto', width: '100%', maxWidth: '72rem' }}>
       <header style={{ textAlign: 'center', color: 'white' }}>
@@ -171,19 +167,9 @@ export const ValidateEmail = ({ ucan, qrcode, email, audience, stripePricingTabl
         </div>
         <h1>Email Validated</h1>
         <p style={{ paddingBottom: '30px', color: 'white' }}>
-          {email} was confirmed. {showPricingTable ? '' : 'You may close this window.'}
+          {email} was confirmed. You may close this window.
         </p>
       </header>
-      {showPricingTable && (
-        <div class="box wide">
-          <p style={{ textAlign: 'center', color: 'white', fontSize: '20px', fontWeight: 'bold' }}>In order to <span style={{ textDecoration: 'underline' }}>upload data</span> you need to sign up for a billing plan:</p>
-          {preact.createElement('stripe-pricing-table', {
-              'pricing-table-id': stripePricingTableId,
-              'publishable-key': stripePublishableKey,
-              'customer-email': email,
-            }, '')}
-        </div>
-      )}
       <div class="box" style={{ fontSize: '14px' }}>
         <p style={{ fontSize: '14px' }}>By registering with web3.storage you agree to the web3.storage <a href="https://console.web3.storage/terms">Terms of Service</a>.</p>
       </div>
