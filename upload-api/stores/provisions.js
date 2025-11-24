@@ -115,7 +115,21 @@ export function useProvisionStore(
     },
 
     getConsumer: async (provider, consumer) => {
-      const consumerRecord = await consumerTable.get(provider, consumer)
+      // Try the requested provider first
+      let consumerRecord = await consumerTable.get(provider, consumer)
+      
+      // TODO (fforbeck): remove this after the migration of the legacy spaces and update provider DIDs
+      // If not found, try the alternate provider as fallback
+      // This handles the transition from legacy did:web:web3.storage to did:web:up.storacha.network
+      if (!consumerRecord) {
+        const alternateProvider = provider === 'did:web:up.storacha.network'
+          ? 'did:web:web3.storage'
+          : 'did:web:up.storacha.network'
+        
+        console.log(`Consumer not found with provider ${provider}, trying alternate provider ${alternateProvider}`)
+        consumerRecord = await consumerTable.get(alternateProvider, consumer)
+      }
+      
       if (!consumerRecord) {
         return {
           error: {
