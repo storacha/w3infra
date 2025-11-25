@@ -1,7 +1,8 @@
-import { ok, error, Failure, Invocation } from '@ucanto/core'
+import { ok, error, Invocation } from '@ucanto/core'
 import { parse } from '@ipld/dag-ucan/did'
 import { CAR, HTTP } from '@ucanto/transport'
 import { connect } from '@ucanto/client'
+import { CandidateUnavailableError, ProofUnavailableError } from '@storacha/router'
 
 /**
  * @import * as API from '../types.js'
@@ -80,40 +81,4 @@ const getWeightedRandomInt = (weights) => {
     }
   }
   throw new Error("did not find a weight - should never reach here")
-}
-
-export class ProofUnavailableError extends Failure {
-  static name = /** @type {const} */ ('ProofUnavailable')
-
-  get name() {
-    return ProofUnavailableError.name
-  }
-
-  /** @param {string} [reason] */
-  constructor(reason) {
-    super()
-    this.reason = reason
-  }
-
-  describe() {
-    return this.reason ?? 'proof unavailable'
-  }
-}
-
-export class CandidateUnavailableError extends Failure {
-  static name = /** @type {const} */ ('CandidateUnavailable')
-
-  get name() {
-    return CandidateUnavailableError.name
-  }
-
-  /** @param {string} [reason] */
-  constructor(reason) {
-    super()
-    this.reason = reason
-  }
-
-  describe() {
-    return this.reason ?? 'no candidates available for blob allocation'
-  }
 }
