@@ -1,7 +1,8 @@
-import { ok, error, Failure, Invocation } from '@ucanto/core'
+import { ok, error, Invocation } from '@ucanto/core'
 import { parse } from '@ipld/dag-ucan/did'
 import { CAR, HTTP } from '@ucanto/transport'
 import { connect } from '@ucanto/client'
+import { CandidateUnavailableError, ProofUnavailableError } from '@storacha/router'
 
 /**
  * @import * as API from '../types.js'
@@ -14,9 +15,11 @@ import { connect } from '@ucanto/client'
  * @returns {BlobAPI.RoutingService}
  */
 export const create = (storageProviderTable, serviceID) => ({
-  selectStorageProvider: async () => {
+  selectStorageProvider: async (digest, size, options) => {
+    const exclude = options?.exclude ?? []
     const ids = (await storageProviderTable.list())
       .filter(p => p.weight > 0)
+      .filter(p => !exclude.some(e => e.did() === p.provider))
     if (!ids.length) return error(new CandidateUnavailableError())
     const provider = parse(ids[getWeightedRandomInt(ids.map(id => id.weight ?? 0))].provider)
     return ok(provider)
@@ -35,7 +38,7 @@ export const create = (storageProviderTable, serviceID) => ({
       capability,
       proofs: [proof],
     })
-    const channel = HTTP.open({ url: endpoint, method: 'POST' })
+    const channel = HTTP.open({ url: endpoint, method: 'POST', ...options?.channel })
     const connection = connect({ id: provider, codec: CAR.outbound, channel })
 
     return ok({ invocation, connection })
@@ -78,40 +81,4 @@ const getWeightedRandomInt = (weights) => {
     }
   }
   throw new Error("did not find a weight - should never reach here")
-}
-
-export class ProofUnavailableError extends Failure {
-  static name = /** @type {const} */ ('ProofUnavailable')
-
-  get name() {
-    return ProofUnavailableError.name
-  }
-
-  /** @param {string} [reason] */
-  constructor(reason) {
-    super()
-    this.reason = reason
-  }
-
-  describe() {
-    return this.reason ?? 'proof unavailable'
-  }
-}
-
-export class CandidateUnavailableError extends Failure {
-  static name = /** @type {const} */ ('CandidateUnavailable')
-
-  get name() {
-    return CandidateUnavailableError.name
-  }
-
-  /** @param {string} [reason] */
-  constructor(reason) {
-    super()
-    this.reason = reason
-  }
-
-  describe() {
-    return this.reason ?? 'no candidates available for blob allocation'
-  }
 }

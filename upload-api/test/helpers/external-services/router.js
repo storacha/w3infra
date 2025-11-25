@@ -17,20 +17,22 @@ const stickySelect = new Map()
 export const create = (storageProviderTable, serviceID) => {
   const router = RoutingService.create(storageProviderTable, serviceID)
   return ({
-    selectStorageProvider: async (digest, size) => {
+    selectStorageProvider: async (digest, size, options) => {
+      const exclude = options?.exclude ?? []
       // ensure we pick the same provider for a given digest within a test
       const key = base58btc.encode(digest.bytes)
 
       let provider = stickySelect.get(key)
       if (provider) {
         const exists = await storageProviderTable.get(provider.did())
-        if (exists) {
+        const isExcluded = exclude.some(e => e.did() === provider?.did())
+        if (exists && !isExcluded) {
           return { ok: provider }
         }
         provider = undefined
       }
 
-      const result = await router.selectStorageProvider(digest, size)
+      const result = await router.selectStorageProvider(digest, size, options)
       if (!result.ok) return result
 
       stickySelect.set(key, result.ok)
