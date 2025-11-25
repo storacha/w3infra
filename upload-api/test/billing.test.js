@@ -24,20 +24,20 @@ const customerDID = /** @type {import('@storacha/did-mailto').DidMailto} */(
   `did:mailto:example.com:w3up-billing-test-${Date.now()}`
 )
 const email = toEmail(customerDID)
-const initialPlan = 'did:web:starter.web3.storage'
+const initialPlan = 'did:web:starter.storacha.network'
 
 /**
  * 
  * @param {Stripe} stripe 
  * @param {string} email 
- * @returns {Promise<string | null | undefined>}
+ * @returns {Promise<string[] | undefined>}
  */
-async function getCustomerPlanByEmail(stripe, email) {
+async function getCustomerSubscriptionPricesByEmail(stripe, email) {
   const customers = await stripe.customers.list({ email, expand: ['data.subscriptions'] })
   if (customers.data.length > 1) throw new Error(`found more than one customer with email ${email}`)
   const customer = customers.data[0]
   if (customer) {
-    return customer.subscriptions?.data[0].items.data[0].price.lookup_key
+    return customer.subscriptions?.data[0].items.data.map(i => i.price.id)
   }
 }
 
@@ -73,13 +73,11 @@ async function setupCustomer(stripe, email, customerStore) {
   )
   const paymentMethod = /** @type {string} */(setupIntent.payment_method)
   await stripe.customers.update(customer.id, { invoice_settings: { default_payment_method: paymentMethod } })
-  // create a subscription to initialPlan
-  const prices = await stripe.prices.list({ lookup_keys: [initialPlan] })
-  const initialPriceID = prices.data.find(price => price.lookup_key === initialPlan)?.id
-  if (!initialPriceID) {
-    throw new Error(`could not find priceID ${initialPlan} in Stripe`)
-  }
-  await stripe.subscriptions.create({ customer: customer.id, items: [{ price: initialPriceID }] })
+  await stripe.subscriptions.create({
+     customer: customer.id, 
+     // @ts-expect-error type conversion error here but it should be harmless
+     items: PLANS_TO_LINE_ITEMS_MAPPING.staging[initialPlan] || [] 
+    })
   return customer
 }
 
@@ -127,22 +125,32 @@ test.before(async t => {
   })
 })
 
+/**
+ * 
+ * @param {string} planID 
+ */
+function expectedPriceIdsByPlanId(planID){
+  return PLANS_TO_LINE_ITEMS_MAPPING.staging[planID].map(i => i.price)
+}
+
 test('stripe plan can be updated', async (t) => {
   const context = /** @type {typeof t.context & BillingContext } */(t.context)
   const { stripe, billingProvider } = context
 
   await withCustomer(context, async () => {
     // use the stripe API to verify plan has been initialized correctly
-    const initialStripePlan = await getCustomerPlanByEmail(stripe, email)
-    t.deepEqual(initialPlan, initialStripePlan)
+    const initialStripePrices = await getCustomerSubscriptionPricesByEmail(stripe, email)
+    t.deepEqual(expectedPriceIdsByPlanId(initialPlan), initialStripePrices)
 
     // this is the actual code under test!
-    const updatedPlan = 'did:web:lite.web3.storage'
-    await billingProvider.setPlan(customerDID, updatedPlan)
+    const updatedPlan = 'did:web:lite.storacha.network'
+    const result = await billingProvider.setPlan(customerDID, updatedPlan)
+    console.log(result)
+    t.assert(result.ok)
 
     // use the stripe API to verify plan has been updated
-    const updatedStripePlan = await getCustomerPlanByEmail(stripe, email)
-    t.deepEqual(updatedPlan, updatedStripePlan)
+    const updatedStripePrices = await getCustomerSubscriptionPricesByEmail(stripe, email)
+    t.deepEqual(expectedPriceIdsByPlanId(updatedPlan), updatedStripePrices)
   })
 })
 
