@@ -307,7 +307,7 @@ export interface HumanodeStore {
   exists: (sub: string) => Promise<Result<boolean, UnexpectedError>>
 }
 
-export type PlansToLineItems = Record<string, Stripe.Checkout.SessionCreateParams.LineItem[]>
+export type PlansToLineItems = Record<string, Stripe.SubscriptionUpdateParams.Item[] & Stripe.Checkout.SessionCreateParams.LineItem[]>
 
 
 export {}
