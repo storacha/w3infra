@@ -14,9 +14,11 @@ import { connect } from '@ucanto/client'
  * @returns {BlobAPI.RoutingService}
  */
 export const create = (storageProviderTable, serviceID) => ({
-  selectStorageProvider: async () => {
+  selectStorageProvider: async (digest, size, options) => {
+    const exclude = options?.exclude ?? []
     const ids = (await storageProviderTable.list())
       .filter(p => p.weight > 0)
+      .filter(p => !exclude.some(e => e.did() === p.provider))
     if (!ids.length) return error(new CandidateUnavailableError())
     const provider = parse(ids[getWeightedRandomInt(ids.map(id => id.weight ?? 0))].provider)
     return ok(provider)
@@ -35,7 +37,7 @@ export const create = (storageProviderTable, serviceID) => ({
       capability,
       proofs: [proof],
     })
-    const channel = HTTP.open({ url: endpoint, method: 'POST' })
+    const channel = HTTP.open({ url: endpoint, method: 'POST', ...options?.channel })
     const connection = connect({ id: provider, codec: CAR.outbound, channel })
 
     return ok({ invocation, connection })
