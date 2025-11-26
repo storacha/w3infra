@@ -58,7 +58,7 @@ export const productInfo = {
     included: 0,
     allowOverages: true,
   },
-    'did:web:starter.storacha.network': {
+  'did:web:starter.storacha.network': {
     cost: 0,
     overage: 0.15 / GB,
     included: 5 * GB,
