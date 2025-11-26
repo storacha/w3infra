@@ -114,9 +114,9 @@ export const PRICES_TO_PLANS_MAPPING = Object.entries(PLANS_TO_LINE_ITEMS_MAPPIN
       }
     }
     return n
-  }, /** @type{Record<string, string>} */({}))
+  }, /** @type { Record<string, string> } */({}))
   return m
-}, /** @type{Record<string, Record<string, string>>} */({}))
+}, /** @type { Record<string, Record<string, string>> } */({}))
 
 console.log("PRICES TO PLANS", PRICES_TO_PLANS_MAPPING)
 
