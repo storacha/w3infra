@@ -13,6 +13,7 @@ export const test = {
     const product = 'did:web:test-product'
     const email = 'travis@example.com'
     const customer = DidMailto.fromEmail(/** @type {`${string}@${string}`} */(email))
+    const priceId = 'price_test'
 
     const getResult = await ctx.customerStore.get({ customer })
     assert.equal(getResult.error?.name, 'RecordNotFound')
@@ -35,7 +36,7 @@ export const test = {
               data: [
                 {
                   price: {
-                    lookup_key: product
+                    id: priceId
                   }
                 }
               ]
@@ -43,7 +44,8 @@ export const test = {
           }
         }
       },
-      ctx.customerStore
+      ctx.customerStore,
+      {[priceId]: product}
     )
     assert.ok(result.ok)
     const customerRecord = await ctx.customerStore.get({ customer })
@@ -70,6 +72,7 @@ export const test = {
     assert.equal(getResult.ok?.account, stripeAccountId)
 
     const updatedProduct = 'did:web:updated-test-product'
+    const priceId = 'price_test'
     const result = await handleCustomerSubscriptionCreated(
       {
         customers: {
@@ -88,7 +91,7 @@ export const test = {
               data: [
                 {
                   price: {
-                    lookup_key: updatedProduct
+                    id: priceId
                   }
                 }
               ]
@@ -96,7 +99,8 @@ export const test = {
           }
         }
       },
-      ctx.customerStore
+      ctx.customerStore,
+      {[priceId]: updatedProduct}
     )
     assert.ok(result.ok)
     const customerRecord = await ctx.customerStore.get({ customer })
@@ -121,6 +125,7 @@ export const test = {
     assert.equal(getResult.ok?.account, undefined)
 
     const updatedProduct = 'did:web:updated-test-product'
+    const priceId = 'price_test'
     const result = await handleCustomerSubscriptionCreated(
       {
         customers: {
@@ -139,7 +144,7 @@ export const test = {
               data: [
                 {
                   price: {
-                    lookup_key: updatedProduct
+                    id: priceId
                   }
                 }
               ]
@@ -147,7 +152,8 @@ export const test = {
           }
         }
       },
-      ctx.customerStore
+      ctx.customerStore,
+      {[priceId]: updatedProduct}
     )
     assert.ok(result.ok)
     const customerRecord = await ctx.customerStore.get({ customer })
@@ -176,6 +182,7 @@ export const test = {
 
     const updatedProduct = 'did:web:updated-test-product'
     const updatedStripeCustomerId = 'updated-stripe-customer-id'
+    const priceId = 'price_test'
     const result = await handleCustomerSubscriptionCreated(
       {
         customers: {
@@ -194,7 +201,7 @@ export const test = {
               data: [
                 {
                   price: {
-                    lookup_key: updatedProduct
+                    id: priceId
                   }
                 }
               ]
@@ -202,7 +209,8 @@ export const test = {
           }
         }
       },
-      ctx.customerStore
+      ctx.customerStore,
+      {[priceId]: updatedProduct}
     )
     assert.ok(result.error)
     assert.equal(result.error.message, 'expected did:mailto:example.com:travis to have account stripe:stripe-customer-id but got stripe:updated-stripe-customer-id')

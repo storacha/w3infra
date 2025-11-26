@@ -106,6 +106,20 @@ export const PLANS_TO_LINE_ITEMS_MAPPING = {
   }
 }
 
+export const PRICES_TO_PLANS_MAPPING = Object.entries(PLANS_TO_LINE_ITEMS_MAPPING).reduce((m, [env, v]) => {
+  m[env] = Object.entries(v).reduce((n, [plan, lineItems]) => {
+    for (const item of lineItems) {
+      if (item.price) {
+        n[item.price] = plan
+      }
+    }
+    return n
+  }, /** @type { Record<string, string> } */({}))
+  return m
+}, /** @type { Record<string, Record<string, string>> } */({}))
+
+console.log("PRICES TO PLANS", PRICES_TO_PLANS_MAPPING)
+
 /**
  * @type {Record<string, Record<string, string?>>}
  */
