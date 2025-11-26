@@ -69,7 +69,7 @@ export const accountIDToStripeCustomerID = (accountID) => accountID.slice('strip
 export async function handleCustomerSubscriptionCreated(stripe, event, customerStore, pricesToPlansMapping) {
   // per https://stripe.com/docs/expand#with-webhooks these attributes will always be a string in a webhook, so these typecasts are safe
   const customerId = String(event.data.object.customer)
-  const product = pricesToPlansMapping[event.data.object.items.data[0].price.id]
+  const product = pricesToPlansMapping[event.data.object.items.data[0].price.id] || String(event.data.object.items.data[0].price.lookup_key)
   if (!product.startsWith('did:web:')) {
     return { error: new Error(`Invalid product: ${product}`) }
   }
