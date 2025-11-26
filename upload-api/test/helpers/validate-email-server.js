@@ -83,8 +83,6 @@ Object.entries(HTMLS).forEach(([htmlName, html]) => {
         ucan: randomString(1000),
         email: 'test@example.org',
         audience: `did:key:${randomString(400)}`,
-        stripePricingTableId: process.env.STRIPE_PRICING_TABLE_ID,
-        stripePublishableKey: process.env.STRIPE_PUBLISHABLE_KEY,
         msg: 'Missing delegation in the URL, or some such problem.',
         autoApprove: false,
         qrcode: '<div>QR code goes here</div>',

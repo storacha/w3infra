@@ -319,11 +319,6 @@ export function UploadApiStack({ stack, app }) {
               SPACE_DIFF_TABLE_NAME: spaceDiffTable.tableName,
               SPACE_METRICS_TABLE_NAME: spaceMetricsTable.tableName,
               SPACE_SNAPSHOT_TABLE_NAME: spaceSnapshotTable.tableName,
-              STRIPE_FREE_TRIAL_PRICING_TABLE_ID:
-                process.env.STRIPE_FREE_TRIAL_PRICING_TABLE_ID ?? '',
-              STRIPE_PRICING_TABLE_ID:
-                process.env.STRIPE_PRICING_TABLE_ID ?? '',
-              STRIPE_PUBLISHABLE_KEY: process.env.STRIPE_PUBLISHABLE_KEY ?? '',
               SUBSCRIPTION_TABLE_NAME: subscriptionTable.tableName,
               UCAN_LOG_STREAM_NAME: ucanStream.streamName,
               UPLOAD_API_DID: process.env.UPLOAD_API_DID ?? '',

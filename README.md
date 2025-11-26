@@ -81,7 +81,7 @@ stripe trigger checkout.session.completed
 
 ##### Stripe Sandbox
 
-Setting up a sandbox is similar to the regular setup but includes a few additional steps for the pricing table configuration.
+Setting up a sandbox is similar to the regular setup.
 
 1. **Create a Sandbox:** Start by creating a new sandbox in the Stripe interface.
 2. **Configure the Environment:** Follow the previous steps to set up the environment variables and the webhook.
@@ -102,11 +102,6 @@ Setting up a sandbox is similar to the regular setup but includes a few addition
 |          |    101     |         ∞ |     0.05 |     0.00 |
 | Business |     0      |      2000 |     0.00 |   100.00 |
 |          |    2001    |         ∞ |     0.03 |     0.00 |
-
-4. **Create the Pricing Table:**
-   - Go to the **Pricing Tables** section in the navigation bar.
-   - Create a new table using the three products you set up earlier.
-5. Set the new `STRIPE_PRICING_TABLE_ID` value using `npx sst secrets set`.
 
 Once these steps are complete, your sandbox should be ready to use.
 

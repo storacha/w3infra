@@ -22,7 +22,6 @@ export function buildDocument(body) {
       <title>Storacha Email Validation</title>
       <meta name="description" content="">
       <meta name="viewport" content="width=device-width, initial-scale=1">
-      <script async src="https://js.stripe.com/v3/pricing-table.js"></script>
       <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@acab/reset.css">
       <link href="https://fonts.googleapis.com/css2?family=Epilogue:ital,wght@0,100..900;1,100..900&family=Fira+Code:wght@300..700&display=swap" rel="stylesheet">
       <style>
@@ -192,19 +191,12 @@ export const PendingValidateEmail = ({ autoApprove }) => (
  * @param {string} props.ucan
  * @param {string} props.email
  * @param {string} props.audience
- * @param {string} [props.stripePricingTableId]
- * @param {string} [props.stripePublishableKey]
- * @param {boolean} [props.isReferred]
  */
 export const ValidateEmail = ({
   ucan,
   email,
   audience,
-  stripePricingTableId,
-  stripePublishableKey,
-  isReferred
 }) => {
-  const showPricingTable = stripePricingTableId && stripePublishableKey
   return (
     <>
       <header
@@ -217,36 +209,9 @@ export const ValidateEmail = ({
           <h1>Email Validated</h1>
           <p>
             <code>{email}</code> was confirmed.{' '}
-            {showPricingTable ? '' : 'You may close this window.'}
+            You may close this window.
           </p>
         </div>
-        {showPricingTable && (
-          <div class="box">
-            {isReferred ? (
-              <>
-                <p>
-                  Congratulations! You are eligible for a free trial of our Lite or Business subscriptions. That means
-                  we won&apos;t charge you anything today.
-                  If you choose a Lite plan, you will get two months for free! If you choose Business, you will get one month for free!
-                  We do need you to provide a valid credit card before we can start your
-                  trial - pick a plan below and complete the checkout flow to get started!
-                </p>
-                <p>
-                  Please note that after your free trial ends, you will be charged 10 USD per month for Lite or 100 USD per month for Business tier.
-                </p>
-              </>
-            ) : (
-              <p>
-                In order to upload data you need to sign up for a billing plan:
-              </p>
-            )}
-            <stripe-pricing-table
-              pricing-table-id={stripePricingTableId}
-              publishable-key={stripePublishableKey}
-              customer-email={email}
-            />
-          </div>
-        )}
         <div class="box">
           <p>
             By registering with Storacha you agree to the Storacha{' '}
