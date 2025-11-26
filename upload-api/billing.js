@@ -78,18 +78,8 @@ export function createStripeBillingProvider(
     async setPlan(customerDID, plan) {
       /** @type {import('stripe').Stripe.SubscriptionItem[] | undefined} */
       let subscriptionItems
-      /** @type {string | undefined} */
-      let priceID
+      let subscription
       try {
-        const prices = await stripe.prices.list({ lookup_keys: [plan] })
-        priceID = prices.data.find((price) => price.lookup_key === plan)?.id
-        if (!priceID)
-          return {
-            error: new InvalidSubscriptionState(
-              `could not find Stripe price with lookup_key ${plan} - cannot set plan`
-            ),
-          }
-
         const email = toEmail(
           /** @type {import('@storacha/did-mailto').DidMailto} */(customerDID)
         )
@@ -112,14 +102,9 @@ export function createStripeBillingProvider(
               `found ${subscriptions?.length} Stripe subscriptions(s) for customer with email ${email} - cannot set plan`
             ),
           }
+        subscription = customer.subscriptions?.data[0]
+        subscriptionItems = subscription?.items.data
 
-        subscriptionItems = customer.subscriptions?.data[0].items.data
-        if (subscriptionItems?.length !== 1)
-          return {
-            error: new InvalidSubscriptionState(
-              `found ${subscriptionItems?.length} Stripe subscriptions item(s) for customer with email ${email} - cannot set plan`
-            ),
-          }
       } catch (/** @type {any} */ err) {
         return {
           error: new InvalidSubscriptionState(err.message, { cause: err }),
@@ -127,9 +112,25 @@ export function createStripeBillingProvider(
       }
 
       try {
-        await stripe.subscriptionItems.update(subscriptionItems[0].id, {
-          price: priceID,
-        })
+        if (subscription) {
+          /** @type {import('stripe').Stripe.SubscriptionItem[]} */
+          const oldItems = subscriptionItems || []
+          /** @type {import('stripe').Stripe.SubscriptionUpdateParams.Item[]} */
+          const newItems = plansToLineItemsMapping[plan]
+          await stripe.subscriptions.update(
+            subscription.id,
+            {
+              items: [
+                ...(oldItems?.map(si => ({ id: si.id, deleted: true }))),
+                ...newItems              
+              ]
+            }
+          )
+        } else {
+          return {
+            error: new BillingProviderUpdateError(`Could not find subscription for ${customerDID}`)
+          }
+        }
 
         return { ok: {} }
       } catch (/** @type {any} */ err) {
