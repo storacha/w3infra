@@ -63,12 +63,13 @@ export const accountIDToStripeCustomerID = (accountID) => accountID.slice('strip
  * @param {Stripe} stripe
  * @param {CustomerSubscriptionCreatedEvent} event
  * @param {import('../lib/api.js').CustomerStore} customerStore
+ * @param {Record<string, string>} pricesToPlansMapping
  * @returns {Promise<import('@ucanto/interface').Result<import('@ucanto/interface').Unit, import('@ucanto/interface').Failure>>}
  */
-export async function handleCustomerSubscriptionCreated(stripe, event, customerStore) {
+export async function handleCustomerSubscriptionCreated(stripe, event, customerStore, pricesToPlansMapping) {
   // per https://stripe.com/docs/expand#with-webhooks these attributes will always be a string in a webhook, so these typecasts are safe
   const customerId = String(event.data.object.customer)
-  const product = String(event.data.object.items.data[0].price.lookup_key)
+  const product = pricesToPlansMapping[event.data.object.items.data[0].price.id]
   if (!product.startsWith('did:web:')) {
     return { error: new Error(`Invalid product: ${product}`) }
   }

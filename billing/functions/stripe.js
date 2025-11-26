@@ -5,6 +5,7 @@ import { expect } from './lib.js'
 import { createCustomerStore } from '../tables/customer.js'
 import { handleCustomerSubscriptionCreated } from '../utils/stripe.js'
 import { mustGetEnv } from '../../lib/env.js'
+import { PRICES_TO_PLANS_MAPPING } from '../../upload-api/constants.js'
 
 /**
  * @typedef {import('../lib/api.js').AccountID} AccountID
@@ -55,9 +56,11 @@ export const webhook = Sentry.AWSLambda.wrapHandler(
       const region = customContext?.region ?? mustGetEnv('AWS_REGION')
       const customerTable = customContext?.customerTable ?? mustGetEnv('CUSTOMER_TABLE_NAME')
       const customerStore = createCustomerStore({ region }, { tableName: customerTable })
+      const storachaEnv = mustGetEnv('SST_STAGE')
+      const pricesToPlans = PRICES_TO_PLANS_MAPPING[storachaEnv]
       // TODO: move this out to a separate lambda per best practices here: https://stripe.com/docs/webhooks#acknowledge-events-immediately
       expect(
-        await handleCustomerSubscriptionCreated(stripe, event, customerStore),
+        await handleCustomerSubscriptionCreated(stripe, event, customerStore, pricesToPlans),
         'handling customer subscription created Stripe event'
       )
     }
