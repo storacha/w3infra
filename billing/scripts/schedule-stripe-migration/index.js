@@ -1,56 +1,43 @@
+import pMap from 'p-map'
+import fs from 'node:fs'
+import path from 'node:path'
 import dotenv from 'dotenv'
 import Stripe from 'stripe'
+import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
+import * as DidMailto from '@storacha/did-mailto'
 import { startOfMonth } from '../../lib/util.js'
-
 import { mustGetEnv } from '../../../lib/env.js'
+import { createCustomerStore } from '../../tables/customer.js'
+import { oldPriceIds, oldPricesNames, oldPricesValue, oldToNewPrices } from './prices-config.js'
+import { PRICES_TO_PLANS_MAPPING } from '../../../upload-api/constants.js'
+
 dotenv.config({ path: '.env.local' })
 
+// Required env vars
 const STRIPE_API_KEY = mustGetEnv('STRIPE_API_KEY')
+const STORACHA_ENV = /** @type {'prod' | 'staging'} */ (mustGetEnv('STORACHA_ENV'))
+const CUSTOMER_TABLE_NAME = `${STORACHA_ENV}-w3infra-customer`
+
+const MAX_PARALLEL = Number(process.env.DUPE_MAX_PARALLEL || 5)
 
 const stripe = new Stripe(STRIPE_API_KEY)
-
-const STARTER_PRICE_ID = 'price_1OCGzeF6A5ufQX5v1EDCK765' // $0 + $0.15 per GB
-const LITE_PRICE_ID = 'price_1OCH4DF6A5ufQX5vQYB8fyDh' // $10 + $0.05 per GB
-const BUSINESS_PRICE_ID = 'price_1OCHHeF6A5ufQX5veYO8Q4xQ' // $100 + $0.03 per GB
-
-const oldPricesNames = {
-  [STARTER_PRICE_ID]: 'STARTER',
-  [LITE_PRICE_ID]: 'LITE',
-  [BUSINESS_PRICE_ID]: 'BUSINESS',
-}
-
-const oldPricesValue = {
-  [STARTER_PRICE_ID]: 0,
-  [LITE_PRICE_ID]: 10 * 100,
-  [BUSINESS_PRICE_ID]: 100 * 100,
-}
+const dynamo = new DynamoDBClient()
+const customerStore = createCustomerStore(dynamo, { tableName: CUSTOMER_TABLE_NAME })
 
 /**
- * @typedef {'price_1OCGzeF6A5ufQX5v1EDCK765' | 'price_1OCH4DF6A5ufQX5vQYB8fyDh' | 'price_1OCHHeF6A5ufQX5veYO8Q4xQ'} OldPriceId
- * @typedef {{ flatFee: string, overageFee: string, egressFee: string }} PriceCombo
+ * Manual Attention Record
+ *
+ * @typedef {object} ManualAttentionRecord
+ * @property {string|null} customerEmail
+ * @property {string} plan
+ * @property {string} subscriptionId
+ * @property {string} subscriptionStatus
+ * @property {string|null} customerStripeUrl
+ * @property {string|null} customerDid
+ * @property {string} reason
  */
-
-// Mapping of old prices to new price combinations
-/** @type {Record<OldPriceId, PriceCombo>} */
-const oldToNewPrices = {
-  [STARTER_PRICE_ID]: {
-    flatFee: 'price_1SUtuZF6A5ufQX5vLdJgK8gW',
-    overageFee: 'price_1SUtv3F6A5ufQX5vTZHG0J7s',
-    egressFee: 'price_1SUtv6F6A5ufQX5v4w4JmhoU'
-  },
-  [LITE_PRICE_ID]: {
-    flatFee: 'price_1SUtvAF6A5ufQX5vM1Dc3Kpl',
-    overageFee: 'price_1SUtvEF6A5ufQX5vI9ReH4wb',
-    egressFee: 'price_1SUtvIF6A5ufQX5v2AKQcSKf',
-  },
-  [BUSINESS_PRICE_ID]: {
-    flatFee: 'price_1SUtvLF6A5ufQX5vjHMdUcHh',
-    overageFee: 'price_1SUtvOF6A5ufQX5vO9WL1jF7',
-    egressFee: 'price_1SUtvSF6A5ufQX5vaTkB55xm'
-  },
-}
-
-const oldPriceIds = /** @type {OldPriceId[]} */ (Object.keys(oldToNewPrices))
+/** @type {ManualAttentionRecord[]} */
+const manualAttention = []
 
 // Get the current date and calculate the next first of the month
 const nextMonth = startOfMonth(new Date())
@@ -63,89 +50,202 @@ console.log(
   `\nPlanning to migrate all subscriptions to bill on the 1st of each month starting on ${nextMonth.toISOString()}\n`
 )
 
-// Process each old price
-for (const oldPriceId of oldPriceIds) {
-  console.log(
-    `----------------------------------------------------------------------------------------------------`
-  )
-  console.log(
-    `Processing subscriptions with price: ${oldPricesNames[oldPriceId]} (${oldPriceId})`
-  )
+const startMs = Date.now()
 
-  // Fetch all subscriptions with this price
-  const subscriptions = await stripe.subscriptions.list({
-    price: oldPriceId,
-    expand: ['data.schedule', 'data.items'],
-  })
+// --- Batch Processing, Progress Reporting, Configurable Start Point ---
+const LAST_ID_ARG = process.argv.find(a => a.startsWith('--lastId='))
+const lastId = LAST_ID_ARG ? LAST_ID_ARG.split('=')[1] : null
 
-  console.log(`\nFound ${subscriptions.data.length} subscriptions`)
+const PRICE_ID_ARG = process.argv.find(a => a.startsWith('--priceId='))
+const singlePriceId = PRICE_ID_ARG ? PRICE_ID_ARG.split('=')[1] : null
 
-  // Process each subscription
-  for (const subscription of subscriptions.data) {
-    try {
-      console.log(`\n------> Processing subscription: ${subscription.id}`)
+let lastProcessedId = lastId || null
+const priceIdsToProcess = singlePriceId ? [singlePriceId] : oldPriceIds[STORACHA_ENV];
 
-      // Create or retrieve a fresh schedule
-      const schedule = await createFreshScheduleFromSubscription(subscription)
+async function main() {
+  for (const oldPriceId of priceIdsToProcess) {
+    console.log(
+      `----------------------------------------------------------------------------------------------------`
+    )
+    console.log(
+      `Processing subscriptions with price: ${oldPricesNames[oldPriceId]} (${oldPriceId})`
+    )
 
-      console.log(`\tUpdating subscription schedule...`)
-
-      // Determine proration info
-      const proration = computeProration(subscription)
-      console.log(
-        `\tSubscription ends ${
-          proration.endsBefore ? 'before' : 'after'
-        } the 1st of next month.`
-      )
-      console.log(`\tPeriod total days: ${proration.totalDays.toFixed(1)}`)
-
-      // Use flat fee from mapping (usage-based unit_amount may be null, so we keep the explicit flat fee)
-      const regularAmount = oldPricesValue[oldPriceId]
-
-      if (proration.deltaDays > 0) {
-        console.log(
-          `\tUser should pay for additional days: ${proration.deltaDays.toFixed(
-            1
-          )}`
-        )
-        console.log(`\tExtension ratio per day: ${proration.ratio.toFixed(4)}`)
-      } else if (proration.deltaDays < 0) {
-        console.log(
-          `\tUser should receive credits for unused days: ${Math.abs(
-            proration.deltaDays
-          ).toFixed(1)}`
-        )
-        console.log(`\tUnused ratio per day: ${proration.ratio.toFixed(4)}`)
-      }
-
-      // Apply adjustments (credits or charges)
-      await applyProrationAdjustments(subscription, regularAmount, proration)
-
-      // Build new phase items from mapping
-      const newPhaseItems = [
-        { price: oldToNewPrices[oldPriceId].flatFee },
-        { price: oldToNewPrices[oldPriceId].overageFee },
-        { price: oldToNewPrices[oldPriceId].egressFee }, 
-      ]
-
-      // Update the subscription schedule with consolidated phases
-      const updatedSchedule = await stripe.subscriptionSchedules.update(
-        schedule.id,
-        {
-          phases: buildPhases(subscription, proration, newPhaseItems),
-        }
-      )
-
-      console.log(
-        `\tSuccessfully updated schedule ${updatedSchedule.id} for subscription: ${subscription.id}\n`
-      )
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error)
-      console.error(
-        `\t!!! Error processing subscription ${subscription.id}: ${message}\n`
-      )
+    let processedCount = 0
+    const filters = {
+      price: oldPriceId,
+      expand: ['data.schedule', 'data.items'],
     }
+
+    let batchNum = 0
+    let more = true
+    while (more) {
+      batchNum++
+      const paginationParams = lastProcessedId ? { starting_after: lastProcessedId } : {}
+
+      const subscriptionBatch = await stripe.subscriptions.list({
+        ...filters,
+        ...paginationParams,
+        limit: 100,
+      })
+      const batch = subscriptionBatch.data
+
+      if (!batch.length || batch.length < 1) break
+
+      console.log(`\nProcessing batch ${batchNum} (${batch[0]?.id} - ${batch[batch.length-1]?.id})`)
+
+      await pMap(batch, async (subscription) => {
+        try {
+          const customerId = /** @type {string} */ (subscription.customer)
+          const customer = await stripe.customers.retrieve(customerId)
+
+          if(!customer || customer.deleted || !customer.email) {
+            console.log(`\t!!! Customer ${customerId} not found or deleted, skipping subscription ${subscription.id}\n`)
+            manualAttention.push({
+              customerEmail: '',
+              plan: oldPricesNames[oldPriceId],
+              subscriptionId: subscription.id,
+              subscriptionStatus: subscription.status,
+              customerStripeUrl: stripeCustomerUrl(customerId),
+              customerDid: '',
+              reason: 'Customer not found or deleted'
+            })
+            return
+          }
+
+          const customerEmail = customer.email
+          const customerDid = emailToDid(customerEmail)
+
+          if(subscription.status !== 'active') {
+            console.log(`\t!!! Subscription ${subscription.id} is not active, skipping...`)
+            manualAttention.push({
+              customerEmail,
+              plan: oldPricesNames[oldPriceId],
+              subscriptionId: subscription.id,
+              subscriptionStatus: subscription.status,
+              customerStripeUrl: stripeCustomerUrl(customerId),
+              customerDid,
+              reason: 'Subscription is not active'
+            })
+            return
+          }
+
+          // skip if schedule is already set up
+          if (subscription.schedule && typeof subscription.schedule !== 'string') {
+            console.log(`\tSubscription already has a schedule ${subscription.schedule.id}, skipping...`)
+            manualAttention.push({
+              customerEmail,
+              plan: oldPricesNames[oldPriceId],
+              subscriptionId: subscription.id,
+              subscriptionStatus: subscription.status,
+              customerStripeUrl: stripeCustomerUrl(customerId),
+              customerDid,
+              reason: 'Subscription already has a schedule'
+            })
+            return
+          }
+
+          console.log(`\n------> Processing subscription: ${subscription.id}`)
+
+          const schedule = await stripe.subscriptionSchedules.create({ from_subscription: subscription.id })
+
+          console.log(`\t[${subscription.id}] Created new schedule: ${schedule.id}`)
+          console.log(`\t[${subscription.id}] Updating subscription schedule...`)
+
+          // Determine proration info
+          const proration = computeProration(subscription)
+
+          console.log(`\t[${subscription.id}] Subscription ends ${proration.endsBefore ? 'before' : 'after'} the 1st of next month.`)
+          console.log(`\t[${subscription.id}] Period total days: ${proration.totalDays.toFixed(0)}`)
+
+          // Use flat fee from mapping (usage-based unit_amount may be null)
+          const regularAmount = oldPricesValue[oldPriceId]
+
+          if (proration.deltaDays > 0) {
+            console.log(`\t[${subscription.id}] User should pay for additional days: ${proration.deltaDays.toFixed(0)}`)
+            console.log(`\t[${subscription.id}] Extension ratio per day: ${proration.ratio.toFixed(4)}`)
+          } else if (proration.deltaDays < 0) {
+            console.log(`\t[${subscription.id}] User should receive credits for unused days: ${Math.abs(proration.deltaDays).toFixed(0)}`)
+            console.log(`\t[${subscription.id}] Unused ratio per day: ${proration.ratio.toFixed(4)}`)
+          }
+
+          // Apply adjustments (credits or charges)
+          await applyProrationAdjustments(subscription, regularAmount, proration)
+
+          // Build new phase items from mapping
+          const newPhaseItems = [
+            { price: oldToNewPrices[STORACHA_ENV][oldPriceId].flatFee },
+            { price: oldToNewPrices[STORACHA_ENV][oldPriceId].overageFee },
+            { price: oldToNewPrices[STORACHA_ENV][oldPriceId].egressFee }, 
+          ]
+
+          // Update the subscription schedule with consolidated phases
+          const updatedSchedule = await stripe.subscriptionSchedules.update(
+            schedule.id,
+            {
+              phases: buildPhases(subscription, proration, newPhaseItems),
+            }
+          )
+
+          console.log(`\t[${subscription.id}] Successfully updated schedule ${updatedSchedule.id}`)
+
+          const priceId = oldToNewPrices[STORACHA_ENV][oldPriceId].flatFee
+          const productName = PRICES_TO_PLANS_MAPPING[STORACHA_ENV][priceId]
+          await updateDynamoCustomerProduct(customerDid, productName)
+        
+
+          console.log(`\t[${subscription.id}] Successfully updated customer ${customerDid} to product: ${productName}\n`)
+
+          processedCount++
+          console.log(`\n[${oldPricesNames[oldPriceId]}] batch ${batchNum}: processed=${processedCount} / total=${batch.length}\n`)
+          lastProcessedId = subscription.id
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error)
+          console.error(`\t!!! Error processing subscription ${subscription.id}: ${message}\n`)
+          manualAttention.push({
+            customerEmail:'',
+            plan: oldPricesNames[oldPriceId],
+            subscriptionId: subscription.id,
+            subscriptionStatus: subscription.status,
+            customerStripeUrl: stripeCustomerUrl(/** @type {string} */ (subscription.customer)),
+            customerDid: '',
+            reason: `Error: ${message}`
+          })
+        }
+      }, { concurrency: MAX_PARALLEL })
+
+      logDuration('Batch duration')
+      writeManualAttentionCsv(manualAttention)
+      console.log(`Batch ${batchNum} complete.`)
+      more = subscriptionBatch.has_more
+    }
+
+    console.log('All subscriptions processed for price:', oldPricesNames[oldPriceId])
+    logDuration('Total duration')
+    writeManualAttentionCsv(manualAttention)
   }
+} 
+
+process.on('SIGINT', () => {
+  console.error('\nReceived SIGINT, flushing partial state...')
+  console.log('lastProcessedId:', lastProcessedId)
+  writeManualAttentionCsv(manualAttention)
+  throw new Error('Process interrupted by SIGINT')
+})
+
+process.on('SIGTERM', () => {
+  console.error('\nReceived SIGTERM, flushing partial state...')
+  console.log('lastProcessedId:', lastProcessedId)
+  writeManualAttentionCsv(manualAttention)
+  throw new Error('Process interrupted by SIGTERM')
+})
+
+try {
+  await main()
+} catch(err) {
+  console.log('lastProcessedId:', lastProcessedId)
+  console.error('Error while listing batches:',err)
+  writeManualAttentionCsv(manualAttention)
 }
 
 
@@ -186,27 +286,85 @@ for (const oldPriceId of oldPriceIds) {
  * }} StripeSchedulePhaseInput
  */
 
-/**
- * Create or recreate a schedule from a subscription.
- * If the subscription has an object schedule, release it and create a new one.
- * Returns the newly created schedule object.
+/** Build Stripe dashboard URL for a customer id.
  *
- * @param {StripeSubscription} subscription
- * @returns {Promise<StripeSchedule>}
+ * @param {string} id
+ * @returns {string}
  */
-async function createFreshScheduleFromSubscription(subscription) {
-  if (subscription.schedule && typeof subscription.schedule !== 'string') {
-    const existing = subscription.schedule
-    console.log(`\tSubscription already has a schedule ${existing.id}. Releasing it first...`)
-    const released = await stripe.subscriptionSchedules.release(existing.id)
-    const created = await stripe.subscriptionSchedules.create({ from_subscription: subscription.id })
-    console.log(`\tReleased old schedule: ${released.id} and created new schedule: ${created.id}`)
-    return created
-  } else {
-    const created = await stripe.subscriptionSchedules.create({ from_subscription: subscription.id })
-    console.log(`\tCreated new schedule: ${created.id}`)
-    return created
+function stripeCustomerUrl(id) {
+  return `https://dashboard.stripe.com/acct_1LO87hF6A5ufQX5v/customers/${id}`
+}
+
+function logDuration(label = 'Duration') {
+  const elapsedMs = Date.now() - startMs
+  const hours = Math.floor(elapsedMs / 3600000)
+  const minutes = Math.floor((elapsedMs % 3600000) / 60000)
+  const seconds = Math.floor((elapsedMs % 60000) / 1000)
+  const formatted = `${String(hours).padStart(2,'0')}:${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}`
+  console.log(`${label}: ${formatted}`)
+}
+
+/**
+ * Convert email to DID Mailto 
+ * 
+ * @param {string} email 
+ * @returns {`did:mailto:${string}`}
+ */
+function emailToDid(email) {
+  const [rawLocal, domain] = email.split('@')
+  const encodedLocal = encodeURIComponent(rawLocal)
+  const normalizedEmail = `${encodedLocal}@${domain}`
+  const customerDid = DidMailto.fromEmail(/** @type {`${string}@${string}`} */(normalizedEmail))
+  return customerDid
+}
+
+/** Update dynamo customer table with the new product name
+ *
+ * @param {`did:mailto:${string}`} emailDid
+ * @param {string} product
+ * @returns {Promise<void>}
+ */
+async function updateDynamoCustomerProduct(emailDid, product) {
+  try {
+    const res = await customerStore.updateProduct(emailDid, product)
+    if (res.error) throw res.error
+  } catch (err) {
+    console.error(`\t!!! Error updating customer product ${product} for ${emailDid}:`,err)
+    throw new Error(`Error updating customer product ${product} for ${emailDid}`, {cause: err})
   }
+}
+
+/**
+ * Write manual attention records to CSV file
+ * 
+ * @param {ManualAttentionRecord[]} rows
+ */
+function writeManualAttentionCsv(rows) {
+  if(rows.length === 0) return
+  const header = [
+    'customer_email',
+    'plan',
+    'subscription_id',
+    'subscription_status',
+    'customer_stripe_url',
+    'customer_did',
+    'reason'
+  ]
+  const lines = [header.join(',')]
+  for (const r of rows) {
+    lines.push([
+      r.customerEmail || '',
+      r.plan,
+      r.subscriptionId,
+      r.subscriptionStatus,
+      r.customerStripeUrl || '',
+      r.customerDid || '',
+      r.reason
+    ].join(','))
+  }
+  const outPath = path.resolve(process.cwd(), 'manual-attention.csv')
+  fs.writeFileSync(outPath, lines.join('\n'))
+  console.log(`\nManual attention CSV written: ${outPath} (${rows.length} rows)`)
 }
 
 /**
@@ -286,7 +444,7 @@ async function applyProrationAdjustments(subscription, regularAmount, proration)
         end: nextMonthTimestamp
       }
     })
-    console.log(`\tCreated extension invoice item: ${adjustmentAmount} (${desc})`)
+    console.log(`\t[${subscription.id}] Created extension invoice item: ${adjustmentAmount} (${desc})`)
   } else {
     // Credit: only full unused days are credited
     const daysToCredit = Math.floor(Math.abs(deltaDays));
@@ -300,7 +458,7 @@ async function applyProrationAdjustments(subscription, regularAmount, proration)
       currency: subscription.currency,
       description: desc,
     })
-    console.log(`\tCreated credit invoice item: -${adjustmentAmount} (${desc})`)
+    console.log(`\t[${subscription.id}] Created credit invoice item: -${adjustmentAmount} (${desc})`)
   }
 }
 
