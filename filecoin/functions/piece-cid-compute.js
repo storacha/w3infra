@@ -22,8 +22,8 @@ Sentry.AWSLambda.init({
  * @param {import('aws-lambda').SQSEvent} event
  */
 async function computeHandler (event) {
-  const { PRIVATE_KEY: privateKey } = Config
-  const { storefrontDid, storefrontUrl, storefrontProof, disablePieceCidCompute } = getEnv()
+  const { PRIVATE_KEY: privateKey, STOREFRONT_PROOF: storefrontProof } = Config
+  const { storefrontDid, storefrontUrl, disablePieceCidCompute } = getEnv()
 
   if (disablePieceCidCompute) {
     const body = 'piece cid computation is disabled'
@@ -111,7 +111,6 @@ function getEnv () {
   return {
     storefrontDid: mustGetEnv('STOREFRONT_DID'),
     storefrontUrl: mustGetEnv('STOREFRONT_URL'),
-    storefrontProof: process.env.PROOF,
     disablePieceCidCompute: process.env.DISABLE_PIECE_CID_COMPUTE === 'true'
   }
 }
