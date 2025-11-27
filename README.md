@@ -318,7 +318,7 @@ Proof that the upload service can publish claims to the [indexing service](https
 
 #### `DEAL_TRACKER_SERVICE_PROOF`
 
-Proof that the upload service can invoke `deal/info` on the deal tracker service.
+Proof that the upload service can invoke `deal/info` on the deal tracker service. Set to `none` if no proof is required.
 
 ## HTTP API
 

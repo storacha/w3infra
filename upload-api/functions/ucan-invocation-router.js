@@ -362,7 +362,7 @@ export async function ucanInvocationRouter(request) {
   )
 
   const dealTrackerProofs = []
-  if (DEAL_TRACKER_SERVICE_PROOF) {
+  if (DEAL_TRACKER_SERVICE_PROOF && DEAL_TRACKER_SERVICE_PROOF !== 'none') {
     const proof = await Proof.parse(DEAL_TRACKER_SERVICE_PROOF)
     dealTrackerProofs.push(proof)
   }
