@@ -114,7 +114,7 @@ async function main() {
           }
 
           const customerEmail = customer.email
-          const customerDid = emailToDid(customerEmail)
+          const customerDid = DidMailto.fromEmail(/** @type {`${string}@${string}`} */ (customerEmail))
 
           if(subscription.status !== 'active') {
             console.log(`\t!!! Subscription ${subscription.id} is not active, skipping...`)
@@ -191,9 +191,8 @@ async function main() {
 
           const priceId = oldToNewPrices[STORACHA_ENV][oldPriceId].flatFee
           const productName = PRICES_TO_PLANS_MAPPING[STORACHA_ENV][priceId]
-          await updateDynamoCustomerProduct(customerDid, productName)
+          await updateDynamoCustomerProduct(customerDid, customerId, productName)
         
-
           console.log(`\t[${subscription.id}] Successfully updated customer ${customerDid} to product: ${productName}\n`)
 
           processedCount++
@@ -304,28 +303,23 @@ function logDuration(label = 'Duration') {
   console.log(`${label}: ${formatted}`)
 }
 
-/**
- * Convert email to DID Mailto 
- * 
- * @param {string} email 
- * @returns {`did:mailto:${string}`}
- */
-function emailToDid(email) {
-  const [rawLocal, domain] = email.split('@')
-  const encodedLocal = encodeURIComponent(rawLocal)
-  const normalizedEmail = `${encodedLocal}@${domain}`
-  const customerDid = DidMailto.fromEmail(/** @type {`${string}@${string}`} */(normalizedEmail))
-  return customerDid
-}
-
 /** Update dynamo customer table with the new product name
  *
  * @param {`did:mailto:${string}`} emailDid
+ * @param {string} customerId
  * @param {string} product
  * @returns {Promise<void>}
  */
-async function updateDynamoCustomerProduct(emailDid, product) {
+async function updateDynamoCustomerProduct(emailDid, customerId, product) {
   try {
+    const customerResponse = await customerStore.get({customer: emailDid})
+    if (customerResponse.error) throw customerResponse.error
+
+    if(customerResponse.ok.customer !== customerId) {
+      console.log(`\t!!! Customer ID mismatch for ${emailDid}: expected ${customerId}, found ${customerResponse.ok.customer}`)
+      throw new Error(`Customer ID mismatch for ${emailDid}: expected ${customerId}, found ${customerResponse.ok.customer}`)
+    }
+
     const res = await customerStore.updateProduct(emailDid, product)
     if (res.error) throw res.error
   } catch (err) {
