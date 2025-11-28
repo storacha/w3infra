@@ -116,7 +116,7 @@ async function main() {
           const customerEmail = customer.email
           const customerDid = DidMailto.fromEmail(/** @type {`${string}@${string}`} */ (customerEmail))
 
-          if(subscription.status !== 'active') {
+          if(subscription.status === 'canceled') {
             console.log(`\t!!! Subscription ${subscription.id} is not active, skipping...`)
             manualAttention.push({
               customerEmail,
@@ -220,6 +220,7 @@ async function main() {
     }
 
     console.log('All subscriptions processed for price:', oldPricesNames[oldPriceId])
+    console.log('lastProcessedId:', lastProcessedId)
     logDuration('Total duration')
     writeManualAttentionCsv(manualAttention)
   }
@@ -315,9 +316,9 @@ async function updateDynamoCustomerProduct(emailDid, customerId, product) {
     const customerResponse = await customerStore.get({customer: emailDid})
     if (customerResponse.error) throw customerResponse.error
 
-    if(customerResponse.ok.customer !== customerId) {
-      console.log(`\t!!! Customer ID mismatch for ${emailDid}: expected ${customerId}, found ${customerResponse.ok.customer}`)
-      throw new Error(`Customer ID mismatch for ${emailDid}: expected ${customerId}, found ${customerResponse.ok.customer}`)
+    const stripeAccount = customerResponse.ok.account?.replace('stripe:', '')
+    if (stripeAccount !== customerId) {
+      throw new Error(`Customer ID mismatch for ${emailDid}: expected ${customerId}, found ${stripeAccount}`)
     }
 
     const res = await customerStore.updateProduct(emailDid, product)
