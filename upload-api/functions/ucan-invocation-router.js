@@ -1,8 +1,8 @@
 import { Config } from 'sst/node/config'
-import { API, error, ok } from '@ucanto/core'
+import { API } from '@ucanto/core'
 import * as Delegation from '@ucanto/core/delegation'
 import { CAR, Legacy, Codec } from '@ucanto/transport'
-import { DIDResolutionError, Schema } from '@ucanto/validator'
+import { Schema } from '@ucanto/validator'
 import * as Link from 'multiformats/link'
 import { base64 } from 'multiformats/bases/base64'
 import * as Sentry from '@sentry/serverless'
@@ -12,6 +12,7 @@ import * as Proof from '@storacha/client/proof'
 import { Client as IndexingServiceClient } from '@storacha/indexing-service-client'
 import * as UploadAPI from '@storacha/upload-api'
 import * as UCANCaps from '@storacha/capabilities/ucan'
+import { HTTPResolver, CacheResolver, MapResolver, TieredResolver } from '@storacha/principal-resolver'
 import {
   composeCarStoresWithOrderedHas,
   createCarStore,
@@ -514,6 +515,13 @@ export async function ucanInvocationRouter(request) {
     }
   }
 
+  const principalResolver = TieredResolver.create([
+    MapResolver.create(principalMapping),
+    CacheResolver.create(
+      HTTPResolver.create([/^did:web:.*\.storacha\.network$/])
+    ),
+  ])
+
   const server = createUcantoServer(serviceSigner, {
     codec,
     // @ts-expect-error needs update of upload-api
@@ -523,10 +531,7 @@ export async function ucanInvocationRouter(request) {
     registry: allocationBlobRegistry,
     blobsStorage,
     blobRetriever,
-    resolveDIDKey: (did) =>
-      Schema.did({ method: 'web' }).is(did) && principalMapping[did]
-        ? ok([principalMapping[did]])
-        : error(new DIDResolutionError(did)),
+    ...principalResolver,
     getServiceConnection: () => connection,
     // TODO: to be deprecated with `store/*` protocol
     storeTable: createStoreTable(AWS_REGION, storeTableName, {
