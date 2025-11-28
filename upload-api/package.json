@@ -24,6 +24,7 @@
     "@storacha/did-mailto": "catalog:",
     "@storacha/indexing-service-client": "catalog:",
     "@storacha/one-webcrypto": "catalog:",
+    "@storacha/principal-resolver": "catalog:",
     "@storacha/router": "catalog:",
     "@storacha/upload-api": "catalog:",
     "@ucanto/client": "catalog:",
