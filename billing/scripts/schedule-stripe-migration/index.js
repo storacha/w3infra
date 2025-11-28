@@ -273,7 +273,8 @@ try {
  *   amount: number,
  *   currency: string,
  *   description: string,
- *   period?: InvoiceItemPeriod
+ *   period?: InvoiceItemPeriod,
+ *   taxBehavior?: 'inclusive' | 'exclusive'
  * }} InvoiceItemParams
  * @typedef {{ endsBefore: boolean, totalDays: number, deltaDays: number, ratio: number }} ProrationInfo
  * @typedef {{
@@ -369,7 +370,7 @@ function writeManualAttentionCsv(rows) {
  * @returns {Promise<import('stripe').Stripe.InvoiceItem | null>}
  */
 async function safeCreateInvoiceItem(params) {
-  const { customer, amount, currency, description, period } = params
+  const { customer, amount, currency, description, period, taxBehavior } = params
   if (!amount || amount === 0) return null
   const customerId = typeof customer === 'string' ? customer : customer.id
   return stripe.invoiceItems.create({
@@ -377,7 +378,8 @@ async function safeCreateInvoiceItem(params) {
     amount,
     currency,
     description,
-    ...(period ? { period } : {})
+    ...(period ? { period } : {}),
+    tax_behavior: taxBehavior || 'unspecified'
   })
 }
 
@@ -421,6 +423,7 @@ async function applyProrationAdjustments(subscription, regularAmount, proration)
 
   // daily rate in cents (may be fractional)
   const dailyRate = regularAmount / totalDays;
+  const taxBehavior = subscription.items.data[0].price.tax_behavior;
 
   if (endsBefore) {
     // Extension: any partial day -> bill as a full day
@@ -434,6 +437,7 @@ async function applyProrationAdjustments(subscription, regularAmount, proration)
       amount: adjustmentAmount,
       currency: subscription.currency,
       description: desc,
+      taxBehavior,
       period: {
         start: subscription.current_period_end,
         end: nextMonthTimestamp
@@ -451,6 +455,7 @@ async function applyProrationAdjustments(subscription, regularAmount, proration)
       customer: subscription.customer,
       amount: -adjustmentAmount,
       currency: subscription.currency,
+      taxBehavior,
       description: desc,
     })
     console.log(`\t[${subscription.id}] Created credit invoice item: -${adjustmentAmount} (${desc})`)
