@@ -27,6 +27,7 @@ For each legacy price ID configured in the script:
    - Phase 2: starts at the first of next month
      - Replaces items with the new prices: `flatFee`, `overageFee`, `egressFee`
      - Uses `billing_cycle_anchor: 'phase_start'` to anchor billing on the 1st
+4. Updates the product name in dynamo to the new one
 
 ## Safety considerations
 
@@ -37,10 +38,12 @@ For each legacy price ID configured in the script:
 
 - Node.js 18+
 - A Stripe API key with permissions to manage subscriptions and schedules
-- Correct mapping of legacy price IDs to new `flatFee` and `overageFee` price IDs in `index.js`
+- Correct mapping of legacy price IDs to new `flatFee` and `overageFee` price IDs in `prices-config.js`
 - Environment file at `billing/scripts/schedule-stripe-migration/.env.local` with:
 
 ```bash
+AWS_REGION='us-west-2'
+STORACHA_ENV='staging'
 STRIPE_API_KEY=sk_live_or_test_...
 ```
 
@@ -50,14 +53,15 @@ Run the script (from repository root):
 
 ```bash
 cd billing/scripts/schedule-stripe-migration
-node index.js
+node index.js 
 ```
+
+### Script Arguments
+
+- `--priceId=<PRICE_ID>`: Limits processing to subscriptions associated with the specified legacy price ID.
+- `--lastId=<SUBSCRIPTION_ID>`: Resumes processing from the given subscription ID. Use in combination with `--priceId` for partial or interrupted runs.
 
 ## Configuration
 
-- Legacy price IDs (the old single-price SKUs):
-  - `STARTER_PRICE_ID`, `LITE_PRICE_ID`, `BUSINESS_PRICE_ID`
-- Mapping to new prices:
-  - `oldToNewPrices[<OLD_PRICE_ID>] = { flatFee: '<NEW_PRICE_ID>', overageFee: '<NEW_PRICE_ID>' }`
 - Billing anchor:
   - Phase 2 starts at the first of next month; the script computes this with `startOfMonth(new Date())` and sets `billing_cycle_anchor: 'phase_start'`.
