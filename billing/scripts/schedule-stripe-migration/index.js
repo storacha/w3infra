@@ -191,9 +191,22 @@ async function main() {
 
           const priceId = oldToNewPrices[STORACHA_ENV][oldPriceId].flatFee
           const productName = PRICES_TO_PLANS_MAPPING[STORACHA_ENV][priceId]
-          await updateDynamoCustomerProduct(customerDid, customerId, productName)
-        
-          console.log(`\t[${subscription.id}] Successfully updated customer ${customerDid} to product: ${productName}\n`)
+          
+          try {
+            await updateDynamoCustomerProduct(customerDid, customerId, productName)
+            console.log(`\t[${subscription.id}] Successfully updated customer ${customerDid} to product: ${productName}\n`)
+          } catch (error) {
+            const message = error instanceof Error ? error.message : String(error)
+            manualAttention.push({
+              customerEmail,
+              plan: oldPricesNames[oldPriceId],
+              subscriptionId: subscription.id,
+              subscriptionStatus: subscription.status,
+              customerStripeUrl: stripeCustomerUrl(customerId),
+              customerDid,
+              reason: `Error: ${message}`
+            })
+          }
 
           processedCount++
           console.log(`\n[${oldPricesNames[oldPriceId]}] batch ${batchNum}: processed=${processedCount} / total=${batch.length}\n`)
@@ -274,7 +287,7 @@ try {
  *   currency: string,
  *   description: string,
  *   period?: InvoiceItemPeriod,
- *   taxBehavior?: 'inclusive' | 'exclusive'
+ *   taxBehavior: 'inclusive' | 'exclusive' | 'unspecified'
  * }} InvoiceItemParams
  * @typedef {{ endsBefore: boolean, totalDays: number, deltaDays: number, ratio: number }} ProrationInfo
  * @typedef {{
@@ -379,7 +392,7 @@ async function safeCreateInvoiceItem(params) {
     currency,
     description,
     ...(period ? { period } : {}),
-    tax_behavior: taxBehavior || 'unspecified'
+    tax_behavior: taxBehavior
   })
 }
 
@@ -423,7 +436,7 @@ async function applyProrationAdjustments(subscription, regularAmount, proration)
 
   // daily rate in cents (may be fractional)
   const dailyRate = regularAmount / totalDays;
-  const taxBehavior = subscription.items.data[0].price.tax_behavior;
+  const taxBehavior = subscription.items.data[0].price.tax_behavior || 'unspecified';
 
   if (endsBefore) {
     // Extension: any partial day -> bill as a full day
@@ -483,6 +496,7 @@ function buildPhases(subscription, proration, newPhaseItems) {
       currency: item.price.currency,
       product: item.price.product,
       recurring: { interval: 'day' },
+      tax_behavior: item.price.tax_behavior,
       unit_amount: 0
     },
     quantity: item.quantity
