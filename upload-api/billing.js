@@ -80,54 +80,35 @@ export function createStripeBillingProvider(
       let subscriptionItems
       let subscription
       try {
-        const email = toEmail(
-          /** @type {import('@storacha/did-mailto').DidMailto} */(customerDID)
-        )
-        const customers = await stripe.customers.list({
-          email,
-          expand: ['data.subscriptions'],
-        })
-        if (customers.data.length > 1) {
-          return {
-            error: new InvalidSubscriptionState(
-              `found ${customers.data.length} Stripe customer(s) with email ${email} - cannot set plan`
-            ),
-          }
+        const cusRes = await customerStore.get({ customer: customerDID })
+        if (cusRes.error) {
+          return error(new InvalidSubscriptionState(`failed to get customer from store: ${cusRes.error.message}`))
         }
 
-        let customer = customers.data[0]
-        if (!customer) {
-          // Customer may have updated their billing email in stripe, try to
-          // find by Stripe ID instead.
-          const cusRes = await customerStore.get({ customer: customerDID })
-          if (cusRes.error) {
-            return error(new InvalidSubscriptionState(`customer not found in Stripe and failed to get from customer store: ${cusRes.error.message}`))
-          }
+        const stripeID = cusRes.ok.account ?? ''
+        if (!stripeID.startsWith('stripe:')) {
+          return error(new InvalidSubscriptionState(`customer does not have a Stripe account: ${customerDID}`))
+        }
 
-          const stripeID = cusRes.ok.account ?? ''
-          if (!stripeID.startsWith('stripe:')) {
-            return error(new InvalidSubscriptionState(`customer does not have a Stripe account: ${customerDID}`))
+        let customer
+        try {
+          const cust = await stripe.customers.retrieve(
+            stripeID.replace('stripe:', ''),
+            { expand: ['subscriptions'] }
+          )
+          if (cust.deleted) {
+            return error(new InvalidSubscriptionState(`Stripe customer is deleted: ${customerDID}`))
           }
-
-          try {
-            const cust = await stripe.customers.retrieve(
-              stripeID.replace('stripe:', ''),
-              { expand: ['subscriptions'] }
-            )
-            if (cust.deleted) {
-              return error(new InvalidSubscriptionState(`Stripe customer is deleted: ${customerDID}`))
-            }
-            customer = cust
-          } catch (/** @type {any} */ err) {
-            return error(new InvalidSubscriptionState(`failed to get customer ${customerDID} from Stripe by ID: ${err.message}`))
-          }
+          customer = cust
+        } catch (/** @type {any} */ err) {
+          return error(new InvalidSubscriptionState(`failed to get customer ${customerDID} from Stripe by ID: ${err.message}`))
         }
 
         const subscriptions = customer.subscriptions?.data
         if (subscriptions?.length !== 1)
           return {
             error: new InvalidSubscriptionState(
-              `found ${subscriptions?.length} Stripe subscriptions(s) for customer with email ${email} - cannot set plan`
+              `found ${subscriptions?.length} Stripe subscriptions(s) for customer ${customerDID} - cannot set plan`
             ),
           }
         subscription = customer.subscriptions?.data[0]
