@@ -13,6 +13,8 @@ import { FREE_TRIAL_COUPONS, PLANS_TO_LINE_ITEMS_MAPPING } from '../constants.js
 
 dotenv.config({ path: fileURLToPath(new URL('../../.env.local', import.meta.url)) })
 
+/** @import { DidMailto as AccountDID } from '@storacha/did-mailto' */
+
 /**
  * @typedef {object} BillingContext
  * @property {import('../../billing/lib/api.js').CustomerStore} BillingContext.customerStore
@@ -20,10 +22,8 @@ dotenv.config({ path: fileURLToPath(new URL('../../.env.local', import.meta.url)
  * @property {import('../types.js').BillingProvider} BillingContext.billingProvider
  */
 
-const customerDID = /** @type {import('@storacha/did-mailto').DidMailto} */(
-  `did:mailto:example.com:w3up-billing-test-${Date.now()}`
-)
-const email = toEmail(customerDID)
+/** @returns {AccountDID} */
+const randomAccount = () => `did:mailto:example.com:w3up-billing-test-${Date.now()}`
 const initialPlan = 'did:web:starter.storacha.network'
 
 /**
@@ -42,16 +42,16 @@ async function getCustomerSubscriptionPricesByEmail(stripe, email) {
 }
 
 /**
- * 
- * @param {Stripe} stripe 
- * @param {string} email 
+ * @param {Stripe} stripe
+ * @param {AccountDID} account
  * @param {import('../../billing/lib/api.js').CustomerStore} customerStore
  * @returns {Promise<Stripe.Customer>}
  */
-async function setupCustomer(stripe, email, customerStore) {
+async function setupCustomer(stripe, account, customerStore) {
+  const email = toEmail(account)
   const customer = await stripe.customers.create({ email })
   const customerCreation = await customerStore.put({
-    customer: customerDID,
+    customer: account,
     account: stripeIDToAccountID(customer.id),
     product: initialPlan,
     insertedAt: new Date()
@@ -84,15 +84,16 @@ async function setupCustomer(stripe, email, customerStore) {
 /**
  * 
  * @param {BillingContext} context 
- * @param {(c: BillingContext) => Promise<void>} testFn 
+ * @param {(c: BillingContext & { account: AccountDID, customer: Stripe.Customer }) => Promise<void>} testFn 
  */
 async function withCustomer(context, testFn) {
   const { stripe, customerStore } = context
   let customer
   try {
+    const account = randomAccount()
     // create a new customer and set up its subscription with "initialPlan"
-    customer = await setupCustomer(stripe, email, customerStore)
-    await testFn(context)
+    customer = await setupCustomer(stripe, account, customerStore)
+    await testFn({ ...context, account, customer })
   } finally {
     if (customer) {
       // clean up the user we created
@@ -137,19 +138,39 @@ test('stripe plan can be updated', async (t) => {
   const context = /** @type {typeof t.context & BillingContext } */(t.context)
   const { stripe, billingProvider } = context
 
-  await withCustomer(context, async () => {
+  await withCustomer(context, async ({ account }) => {
     // use the stripe API to verify plan has been initialized correctly
-    const initialStripePrices = await getCustomerSubscriptionPricesByEmail(stripe, email)
+    const initialStripePrices = await getCustomerSubscriptionPricesByEmail(stripe, toEmail(account))
     t.deepEqual(expectedPriceIdsByPlanId(initialPlan), initialStripePrices)
 
     // this is the actual code under test!
     const updatedPlan = 'did:web:lite.storacha.network'
-    const result = await billingProvider.setPlan(customerDID, updatedPlan)
+    const result = await billingProvider.setPlan(account, updatedPlan)
     console.log(result)
     t.assert(result.ok)
 
     // use the stripe API to verify plan has been updated
-    const updatedStripePrices = await getCustomerSubscriptionPricesByEmail(stripe, email)
+    const updatedStripePrices = await getCustomerSubscriptionPricesByEmail(stripe, toEmail(account))
+    t.deepEqual(expectedPriceIdsByPlanId(updatedPlan), updatedStripePrices)
+  })
+})
+
+test('stripe plan can be updated when customer has updated their email address', async (t) => {
+  const context = /** @type {typeof t.context & BillingContext } */(t.context)
+  const { stripe, billingProvider } = context
+
+  await withCustomer(context, async ({ customer, account }) => {
+    const updatedEmail = toEmail(randomAccount())
+    await stripe.customers.update(customer.id, { email: updatedEmail })
+
+    const updatedPlan = 'did:web:lite.storacha.network'
+    // use the account ID with the old email
+    const result = await billingProvider.setPlan(account, updatedPlan)
+    console.log(result)
+    t.assert(result.ok)
+
+    // use the stripe API to verify plan has been updated
+    const updatedStripePrices = await getCustomerSubscriptionPricesByEmail(stripe, toEmail(account))
     t.deepEqual(expectedPriceIdsByPlanId(updatedPlan), updatedStripePrices)
   })
 })
@@ -158,8 +179,8 @@ test('stripe billing admin session can be generated', async (t) => {
   const context = /** @type {typeof t.context & BillingContext } */(t.context)
   const { billingProvider } = context
 
-  await withCustomer(context, async () => {
-    const response = await billingProvider.createAdminSession(customerDID, 'https://example.com/return-url')
+  await withCustomer(context, async ({ account }) => {
+    const response = await billingProvider.createAdminSession(account, 'https://example.com/return-url')
     t.assert(response.ok)
     t.assert(response.ok?.url)
   })
@@ -169,9 +190,9 @@ test('stripe checkout session can be generated', async (t) => {
   const context = /** @type {typeof t.context & BillingContext } */(t.context)
   const { billingProvider } = context
 
-  await withCustomer(context, async () => {
+  await withCustomer(context, async ({ account }) => {
     const response = await billingProvider.createCheckoutSession(
-      customerDID,
+      account,
       'did:web:starter.storacha.network',
       {
         successURL: 'https://example.com/return-url',
