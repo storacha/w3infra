@@ -109,8 +109,8 @@ catalogs:
       specifier: ^1.0.1
       version: 1.0.1
     '@storacha/principal-resolver':
-      specifier: ^1.0.0-rc.1
-      version: 1.0.0-rc.1
+      specifier: ^1.0.0
+      version: 1.0.0
     '@storacha/router':
       specifier: ^1.1.1
       version: 1.1.1
@@ -952,7 +952,7 @@ importers:
         version: 1.0.1
       '@storacha/principal-resolver':
         specifier: 'catalog:'
-        version: 1.0.0-rc.1
+        version: 1.0.0
       '@storacha/router':
         specifier: 'catalog:'
         version: 1.1.1
@@ -3443,8 +3443,8 @@ packages:
   '@storacha/one-webcrypto@1.0.1':
     resolution: {integrity: sha512-bD+vWmcgsEBqU0Dz04BR43SA03bBoLTAY29vaKasY9Oe8cb6XIP0/vkm0OS2UwKC13c8uRgFW4rjJUgDCNLejQ==}
 
-  '@storacha/principal-resolver@1.0.0-rc.1':
-    resolution: {integrity: sha512-9pe/LMKFQ1OQYQz14TFGgqiP+ZvQ2g0IdkS4UMPA7il9hb0NlwQQXUsTcfEFSIajOZYD1UMGN+3IGLwcH/nEZw==}
+  '@storacha/principal-resolver@1.0.0':
+    resolution: {integrity: sha512-arw/iRf4PKWL7qty5ZjzNLB+Tf9onoMNB7g0JxoA8p5JZZ0lm/vKgxETDI2OXlO5PqlfFlwDZ0/ZohZUseZ3ug==}
 
   '@storacha/router@1.1.1':
     resolution: {integrity: sha512-B/+T8J6WWGl8akE9yt5TwhEgqjQ2bQdr793rQfN7TWwZEsLp/tSdRRRRaGMmGl6J+42D8oOb5QZIpK1BSJHQuA==}
@@ -14259,7 +14259,7 @@ snapshots:
 
   '@storacha/one-webcrypto@1.0.1': {}
 
-  '@storacha/principal-resolver@1.0.0-rc.1':
+  '@storacha/principal-resolver@1.0.0':
     dependencies:
       '@ipld/dag-ucan': 3.4.5
       '@ucanto/interface': 11.0.1
