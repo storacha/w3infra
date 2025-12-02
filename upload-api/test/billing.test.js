@@ -170,7 +170,7 @@ test('stripe plan can be updated when customer has updated their email address',
     t.assert(result.ok)
 
     // use the stripe API to verify plan has been updated
-    const updatedStripePrices = await getCustomerSubscriptionPricesByEmail(stripe, toEmail(account))
+    const updatedStripePrices = await getCustomerSubscriptionPricesByEmail(stripe, updatedEmail)
     t.deepEqual(expectedPriceIdsByPlanId(updatedPlan), updatedStripePrices)
   })
 })
