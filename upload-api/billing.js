@@ -92,14 +92,13 @@ export function createStripeBillingProvider(
 
         let customer
         try {
-          const cust = await stripe.customers.retrieve(
+          customer = await stripe.customers.retrieve(
             stripeID.replace('stripe:', ''),
             { expand: ['subscriptions'] }
           )
-          if (cust.deleted) {
+          if (customer.deleted) {
             return error(new InvalidSubscriptionState(`Stripe customer is deleted: ${customerDID}`))
           }
-          customer = cust
         } catch (/** @type {any} */ err) {
           return error(new InvalidSubscriptionState(`failed to get customer ${customerDID} from Stripe by ID: ${err.message}`))
         }
