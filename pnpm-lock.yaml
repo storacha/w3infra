@@ -97,8 +97,8 @@ catalogs:
       specifier: ^1.0.2
       version: 1.0.2
     '@storacha/filecoin-api':
-      specifier: ^1.2.0
-      version: 1.3.0
+      specifier: ^1.3.4
+      version: 1.3.4
     '@storacha/filecoin-client':
       specifier: ^1.0.15
       version: 1.0.15
@@ -619,7 +619,7 @@ importers:
         version: 7.120.4
       '@storacha/filecoin-api':
         specifier: 'catalog:'
-        version: 1.3.0
+        version: 1.3.4
       '@storacha/filecoin-client':
         specifier: 'catalog:'
         version: 1.0.15
@@ -3426,12 +3426,12 @@ packages:
     resolution: {integrity: sha512-0ee1t15yG4xdyIYz2iL+wP06VnGQf8zJ/xpszjf4sdP2sTgAVzx92LfEgHcuIbFF4sabcJXzHFAcMi8l8u64Mg==}
     engines: {node: '>=16.15'}
 
-  '@storacha/filecoin-api@1.3.0':
-    resolution: {integrity: sha512-3/ZHfAOvjAb2NAXrUvucN0JZbUucd6/iZDjYe6LsBdEX2pGFlCwcTedxyHHbmkqdNcruXRFRiGEr5wvYf/i8bQ==}
-    engines: {node: '>=16.15'}
-
   '@storacha/filecoin-api@1.3.3':
     resolution: {integrity: sha512-FCWyKPKlsFPYF9vD5dk38dYcxKg9M/DgAs/qKUroj4blGfnbuyp5C9ZIvPyHTRjcqVP6U4+LN7I+7J9t47X+YQ==}
+    engines: {node: '>=16.15'}
+
+  '@storacha/filecoin-api@1.3.4':
+    resolution: {integrity: sha512-Rhn8jiOdVSXiBfOP283VCvDiV1lMdVzNkBXSZM0uOylFPb0ZMN4xHuU/boXKcpA/f36+Hmiwy+gOFpVTxqNs7w==}
     engines: {node: '>=16.15'}
 
   '@storacha/filecoin-client@1.0.15':
@@ -14208,7 +14208,7 @@ snapshots:
 
   '@storacha/did-mailto@1.0.2': {}
 
-  '@storacha/filecoin-api@1.3.0':
+  '@storacha/filecoin-api@1.3.3':
     dependencies:
       '@ipld/dag-ucan': 3.4.5
       '@storacha/capabilities': 1.12.0
@@ -14222,7 +14222,7 @@ snapshots:
       fr32-sha2-256-trunc254-padded-binary-tree-multihash: 3.3.0
       p-map: 6.0.0
 
-  '@storacha/filecoin-api@1.3.3':
+  '@storacha/filecoin-api@1.3.4':
     dependencies:
       '@ipld/dag-ucan': 3.4.5
       '@storacha/capabilities': 1.12.0
