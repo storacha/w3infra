@@ -61,7 +61,7 @@ import { createSpaceSnapshotStore } from '../../billing/tables/space-snapshot.js
 import { useUsageStore } from '../stores/usage.js'
 import { createStripeBillingProvider } from '../billing.js'
 import { createIPNIService } from '../external-services/ipni-service.js'
-import { mustGetEnv } from '../../lib/env.js'
+import { mustGetEnv, mustGetVal } from '../../lib/env.js'
 import { createEgressTrafficQueue } from '../../billing/queues/egress-traffic.js'
 import { create as createRoutingService } from '../external-services/router.js'
 import { create as createBlobRetriever } from '../external-services/blob-retriever.js'
@@ -643,35 +643,37 @@ export const fromLambdaRequest = (request) => ({
 })
 
 function getLambdaEnv() {
+  const tableNames = JSON.parse(Config.TABLE_NAMES)
+  const bucketNames = JSON.parse(Config.BUCKET_NAMES)
   return {
-    storeTableName: mustGetEnv('STORE_TABLE_NAME'),
-    storeBucketName: mustGetEnv('STORE_BUCKET_NAME'),
-    uploadTableName: mustGetEnv('UPLOAD_TABLE_NAME'),
-    allocationTableName: mustGetEnv('ALLOCATION_TABLE_NAME'),
-    blobRegistryTableName: mustGetEnv('BLOB_REGISTRY_TABLE_NAME'),
-    consumerTableName: mustGetEnv('CONSUMER_TABLE_NAME'),
-    customerTableName: mustGetEnv('CUSTOMER_TABLE_NAME'),
-    subscriptionTableName: mustGetEnv('SUBSCRIPTION_TABLE_NAME'),
-    delegationBucketName: mustGetEnv('DELEGATION_BUCKET_NAME'),
-    delegationTableName: mustGetEnv('DELEGATION_TABLE_NAME'),
-    revocationTableName: mustGetEnv('REVOCATION_TABLE_NAME'),
-    spaceMetricsTableName: mustGetEnv('SPACE_METRICS_TABLE_NAME'),
-    adminMetricsTableName: mustGetEnv('ADMIN_METRICS_TABLE_NAME'),
-    rateLimitTableName: mustGetEnv('RATE_LIMIT_TABLE_NAME'),
-    pieceTableName: mustGetEnv('PIECE_TABLE_NAME'),
-    spaceDiffTableName: mustGetEnv('SPACE_DIFF_TABLE_NAME'),
-    spaceSnapshotTableName: mustGetEnv('SPACE_SNAPSHOT_TABLE_NAME'),
-    storageProviderTableName: mustGetEnv('STORAGE_PROVIDER_TABLE_NAME'),
-    replicaTableName: mustGetEnv('REPLICA_TABLE_NAME'),
+    storeTableName: mustGetVal(tableNames, 'STORE_TABLE_NAME'),
+    storeBucketName: mustGetVal(bucketNames, 'STORE_BUCKET_NAME'),
+    uploadTableName: mustGetVal(tableNames, 'UPLOAD_TABLE_NAME'),
+    allocationTableName: mustGetVal(tableNames, 'ALLOCATION_TABLE_NAME'),
+    blobRegistryTableName: mustGetVal(tableNames, 'BLOB_REGISTRY_TABLE_NAME'),
+    consumerTableName: mustGetVal(tableNames, 'CONSUMER_TABLE_NAME'),
+    customerTableName: mustGetVal(tableNames, 'CUSTOMER_TABLE_NAME'),
+    subscriptionTableName: mustGetVal(tableNames, 'SUBSCRIPTION_TABLE_NAME'),
+    delegationBucketName: mustGetVal(bucketNames, 'DELEGATION_BUCKET_NAME'),
+    delegationTableName: mustGetVal(tableNames, 'DELEGATION_TABLE_NAME'),
+    revocationTableName: mustGetVal(tableNames, 'REVOCATION_TABLE_NAME'),
+    spaceMetricsTableName: mustGetVal(tableNames, 'SPACE_METRICS_TABLE_NAME'),
+    adminMetricsTableName: mustGetVal(tableNames, 'ADMIN_METRICS_TABLE_NAME'),
+    rateLimitTableName: mustGetVal(tableNames, 'RATE_LIMIT_TABLE_NAME'),
+    pieceTableName: mustGetVal(tableNames, 'PIECE_TABLE_NAME'),
+    spaceDiffTableName: mustGetVal(tableNames, 'SPACE_DIFF_TABLE_NAME'),
+    spaceSnapshotTableName: mustGetVal(tableNames, 'SPACE_SNAPSHOT_TABLE_NAME'),
+    storageProviderTableName: mustGetVal(tableNames, 'STORAGE_PROVIDER_TABLE_NAME'),
+    replicaTableName: mustGetVal(tableNames, 'REPLICA_TABLE_NAME'),
     pieceOfferQueueUrl: mustGetEnv('PIECE_OFFER_QUEUE_URL'),
     filecoinSubmitQueueUrl: mustGetEnv('FILECOIN_SUBMIT_QUEUE_URL'),
     egressTrafficQueueUrl: mustGetEnv('EGRESS_TRAFFIC_QUEUE_URL'),
     r2DelegationBucketEndpoint: process.env.R2_ENDPOINT,
     r2DelegationBucketAccessKeyId: process.env.R2_ACCESS_KEY_ID,
     r2DelegationBucketSecretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
-    r2DelegationBucketName: process.env.R2_DELEGATION_BUCKET_NAME,
-    agentIndexBucketName: mustGetEnv('AGENT_INDEX_BUCKET_NAME'),
-    agentMessageBucketName: mustGetEnv('AGENT_MESSAGE_BUCKET_NAME'),
+    r2DelegationBucketName: bucketNames['R2_DELEGATION_BUCKET_NAME'],
+    agentIndexBucketName: mustGetVal(bucketNames, 'AGENT_INDEX_BUCKET_NAME'),
+    agentMessageBucketName: mustGetVal(bucketNames, 'AGENT_MESSAGE_BUCKET_NAME'),
     streamName: mustGetEnv('UCAN_LOG_STREAM_NAME'),
     postmarkToken: mustGetEnv('POSTMARK_TOKEN'),
     providers: mustGetEnv('PROVIDERS'),
@@ -682,7 +684,7 @@ function getLambdaEnv() {
     dealTrackerDid: mustGetEnv('DEAL_TRACKER_DID'),
     dealTrackerUrl: mustGetEnv('DEAL_TRACKER_URL'),
     // carpark bucket - CAR file bytes may be found here with keys like {cid}/{cid}.car
-    carparkBucketName: mustGetEnv('R2_CARPARK_BUCKET_NAME'),
+    carparkBucketName: mustGetVal(bucketNames, 'R2_CARPARK_BUCKET_NAME'),
     carparkBucketEndpoint: mustGetEnv('R2_ENDPOINT'),
     carparkBucketAccessKeyId: mustGetEnv('R2_ACCESS_KEY_ID'),
     carparkBucketSecretAccessKey: mustGetEnv('R2_SECRET_ACCESS_KEY'),
