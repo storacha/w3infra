@@ -554,7 +554,9 @@ export async function ucanInvocationRouter(request) {
     url: new URL(accessServiceURL),
     email: new Email({
       token: postmarkToken,
-      environment: sstStage === 'prod' ? undefined : sstStage,
+      environment: ['prod', 'forge-prod'].includes(sstStage)
+        ? undefined
+        : sstStage,
     }),
     agentStore,
     provisionsStorage,
