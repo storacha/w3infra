@@ -12,7 +12,6 @@ import { CarparkStack } from './carpark-stack.js'
 import { FilecoinStack } from './filecoin-stack.js'
 import { UcanInvocationStack } from './ucan-invocation-stack.js'
 import { IndexerStack } from './indexer-stack.js'
-
 import {
   getCustomDomain,
   getApiPackageJson,
@@ -134,6 +133,9 @@ export function UploadApiStack({ stack, app }) {
             VERSION: pkg.version,
             COMMIT: git.commmit,
             STAGE: stack.stage,
+            OTEL_EXPORTER_OTLP_ENDPOINT: process.env.OTEL_EXPORTER_OTLP_ENDPOINT ?? '',
+            OTEL_TRACES_SAMPLER: process.env.OTEL_TRACES_SAMPLER ?? '',
+            OTEL_TRACES_SAMPLER_ARG: process.env.OTEL_TRACES_SAMPLER_ARG ?? '',
           },
         },
       },

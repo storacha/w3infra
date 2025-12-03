@@ -72,6 +72,7 @@ import {
 import { uploadServiceURL } from '@storacha/client/service'
 import { productInfo } from '../../billing/lib/product-info.js'
 import { FREE_TRIAL_COUPONS, PLANS_TO_LINE_ITEMS_MAPPING } from '../constants.js'
+import { wrapLambdaHandler } from '../otel.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -620,7 +621,9 @@ export async function ucanInvocationRouter(request) {
   return toLambdaResponse(response)
 }
 
-export const handler = Sentry.AWSLambda.wrapHandler(ucanInvocationRouter)
+export const handler = Sentry.AWSLambda.wrapHandler(
+  wrapLambdaHandler('ucan-invocation-router', ucanInvocationRouter)
+)
 
 /**
  * @param {API.HTTPResponse} response
