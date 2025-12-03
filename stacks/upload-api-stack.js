@@ -115,6 +115,39 @@ export function UploadApiStack({ stack, app }) {
     'UCAN_INVOCATION_POST_BASIC_AUTH'
   )
 
+  const UCAN_INVOCATION_ROUTER_TABLE_NAMES = new Config.Parameter(stack, 'TABLE_NAMES', {
+    value: JSON.stringify({
+      ADMIN_METRICS_TABLE_NAME: adminMetricsTable.tableName,
+      ALLOCATION_TABLE_NAME: allocationTable.tableName,
+      BLOB_REGISTRY_TABLE_NAME: blobRegistryTable.tableName,
+      CONSUMER_TABLE_NAME: consumerTable.tableName,
+      CUSTOMER_TABLE_NAME: customerTable.tableName,
+      DELEGATION_TABLE_NAME: delegationTable.tableName,
+      PIECE_TABLE_NAME: pieceTable.tableName,
+      RATE_LIMIT_TABLE_NAME: rateLimitTable.tableName,
+      REPLICA_TABLE_NAME: replicaTable.tableName,
+      REVOCATION_TABLE_NAME: revocationTable.tableName,
+      SPACE_DIFF_TABLE_NAME: spaceDiffTable.tableName,
+      SPACE_METRICS_TABLE_NAME: spaceMetricsTable.tableName,
+      SPACE_SNAPSHOT_TABLE_NAME: spaceSnapshotTable.tableName,
+      STORAGE_PROVIDER_TABLE_NAME: storageProviderTable.tableName,
+      STORE_TABLE_NAME: storeTable.tableName,
+      SUBSCRIPTION_TABLE_NAME: subscriptionTable.tableName,
+      UPLOAD_TABLE_NAME: uploadTable.tableName,
+    })
+  })
+
+  const UCAN_INVOCATION_ROUTER_BUCKET_NAMES = new Config.Parameter(stack, 'BUCKET_NAMES', {
+    value: JSON.stringify({
+      AGENT_INDEX_BUCKET_NAME: agentIndexBucket.bucketName,
+      AGENT_MESSAGE_BUCKET_NAME: agentMessageBucket.bucketName,
+      DELEGATION_BUCKET_NAME: delegationBucket.bucketName,
+      R2_CARPARK_BUCKET_NAME: process.env.R2_CARPARK_BUCKET_NAME ?? '',
+      R2_DELEGATION_BUCKET_NAME: process.env.R2_DELEGATION_BUCKET_NAME ?? '',
+      STORE_BUCKET_NAME: carparkBucket.bucketName,
+    })
+  })
+
   const apis = (customDomains ?? [undefined]).map((customDomain, idx) => {
     const hostedZone = customDomain?.hostedZone
     // the first customDomain will be web3.storage, and we don't want the apiId for that domain to have a second part, see PR of this change for context
@@ -212,37 +245,8 @@ export function UploadApiStack({ stack, app }) {
               dmailApiKey,
               dmailApiSecret,
               dmailJwtSecret,
-              new Config.Parameter(stack, 'TABLE_NAMES', {
-                value: JSON.stringify({
-                  ADMIN_METRICS_TABLE_NAME: adminMetricsTable.tableName,
-                  ALLOCATION_TABLE_NAME: allocationTable.tableName,
-                  BLOB_REGISTRY_TABLE_NAME: blobRegistryTable.tableName,
-                  CONSUMER_TABLE_NAME: consumerTable.tableName,
-                  CUSTOMER_TABLE_NAME: customerTable.tableName,
-                  DELEGATION_TABLE_NAME: delegationTable.tableName,
-                  PIECE_TABLE_NAME: pieceTable.tableName,
-                  RATE_LIMIT_TABLE_NAME: rateLimitTable.tableName,
-                  REPLICA_TABLE_NAME: replicaTable.tableName,
-                  REVOCATION_TABLE_NAME: revocationTable.tableName,
-                  SPACE_DIFF_TABLE_NAME: spaceDiffTable.tableName,
-                  SPACE_METRICS_TABLE_NAME: spaceMetricsTable.tableName,
-                  SPACE_SNAPSHOT_TABLE_NAME: spaceSnapshotTable.tableName,
-                  STORAGE_PROVIDER_TABLE_NAME: storageProviderTable.tableName,
-                  STORE_TABLE_NAME: storeTable.tableName,
-                  SUBSCRIPTION_TABLE_NAME: subscriptionTable.tableName,
-                  UPLOAD_TABLE_NAME: uploadTable.tableName,
-                })
-              }),
-              new Config.Parameter(stack, 'BUCKET_NAMES', {
-                value: JSON.stringify({
-                  AGENT_INDEX_BUCKET_NAME: agentIndexBucket.bucketName,
-                  AGENT_MESSAGE_BUCKET_NAME: agentMessageBucket.bucketName,
-                  DELEGATION_BUCKET_NAME: delegationBucket.bucketName,
-                  R2_CARPARK_BUCKET_NAME: process.env.R2_CARPARK_BUCKET_NAME ?? '',
-                  R2_DELEGATION_BUCKET_NAME: process.env.R2_DELEGATION_BUCKET_NAME ?? '',
-                  STORE_BUCKET_NAME: carparkBucket.bucketName,
-                })
-              }),
+              UCAN_INVOCATION_ROUTER_TABLE_NAMES,
+              UCAN_INVOCATION_ROUTER_BUCKET_NAMES,
             ],
           },
         },
