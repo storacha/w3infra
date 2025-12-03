@@ -1,8 +1,6 @@
 import * as Sentry from '@sentry/serverless'
 import { Config } from 'sst/node/config'
 import { unmarshall } from '@aws-sdk/util-dynamodb'
-import * as Proof from '@storacha/client/proof'
-import * as DID from '@ipld/dag-ucan/did'
 
 import * as storefrontEvents from '@storacha/filecoin-api/storefront/events'
 
@@ -44,23 +42,17 @@ async function handlePieceStatusUpdate (event) {
   const record = decodeRecord(storeReecord)
 
   // Create context
-  const { PRIVATE_KEY: privateKey, STOREFRONT_PROOF: storefrontProof } = Config
+  const { PRIVATE_KEY: privateKey } = Config
   const { storefrontDid, storefrontUrl } = getEnv()
   let storefrontSigner = getServiceSigner({
+    did: storefrontDid,
     privateKey
   })
   const connection = getServiceConnection({
     did: storefrontDid,
     url: storefrontUrl
   })
-  const storefrontProofs = []
-  if (storefrontProof) {
-    const proof = await Proof.parse(storefrontProof)
-    storefrontProofs.push(proof)
-  } else {
-    // if no proofs, we must be using the service private key to sign
-    storefrontSigner = storefrontSigner.withDID(DID.parse(storefrontDid).did())
-  }
+
   const context = {
     storefrontService: {
       connection,
@@ -68,7 +60,6 @@ async function handlePieceStatusUpdate (event) {
         issuer: storefrontSigner,
         with: storefrontSigner.did(),
         audience: storefrontSigner,
-        proofs: storefrontProofs
       },
     },
   }

@@ -200,6 +200,7 @@ export async function ucanInvocationRouter(request) {
     postmarkToken,
     providers,
     aggregatorDid,
+    aggregatorUrl,
     dealTrackerDid,
     dealTrackerUrl,
     pieceOfferQueueUrl,
@@ -362,6 +363,41 @@ export async function ucanInvocationRouter(request) {
     AWS_REGION,
     revocationTableName
   )
+
+  // AGGREGATOR_SERVICE_PROOF is optional
+  let aggregatorProof
+    try {
+      aggregatorProof = Config.AGGREGATOR_SERVICE_PROOF
+    } catch (error) {
+      // AGGREGATOR_SERVICE_PROOF is not set for this environment
+      aggregatorProof = undefined
+    }
+
+    const aggregatorConnection = getServiceConnection({
+      did: aggregatorDid,
+      url: aggregatorUrl
+    })
+
+    const aggregatorServiceProofs = []
+    if (aggregatorProof) {
+      const proof = await Proof.parse(aggregatorProof)
+      aggregatorServiceProofs.push(proof)
+    }
+
+    const aggregatorServiceConfig = {
+      invocationConfig: {
+        issuer: aggregatorServiceProofs.length
+        ? serviceSigner
+        : getServiceSigner({
+          did: aggregatorDid,
+          privateKey: PRIVATE_KEY,
+        }),
+        audience: aggregatorConnection.id,
+        with: aggregatorConnection.id.did(),
+        proofs: aggregatorServiceProofs
+      },
+      connection: aggregatorConnection,
+    }
 
   const dealTrackerProofs = []
   if (DEAL_TRACKER_SERVICE_PROOF && DEAL_TRACKER_SERVICE_PROOF !== 'none') {
@@ -562,7 +598,6 @@ export async function ucanInvocationRouter(request) {
     delegationsStorage,
     revocationsStorage,
     rateLimitsStorage,
-    aggregatorId: DID.parse(aggregatorDid),
     pieceStore: createPieceTable(AWS_REGION, pieceTableName),
     taskStore: createFilecoinTaskStore(
       AWS_REGION,
@@ -582,6 +617,7 @@ export async function ucanInvocationRouter(request) {
       { region: AWS_REGION },
       { queueUrl: filecoinSubmitQueueUrl }
     ),
+    aggregatorService: aggregatorServiceConfig,
     dealTrackerService: {
       connection: dealTrackerConnection,
       invocationConfig: {
@@ -676,6 +712,7 @@ function getLambdaEnv() {
     accessServiceURL: mustGetEnv('ACCESS_SERVICE_URL'),
     uploadServiceURL: mustGetEnv('UPLOAD_SERVICE_URL'),
     aggregatorDid: mustGetEnv('AGGREGATOR_DID'),
+    aggregatorUrl: mustGetEnv('AGGREGATOR_URL'),
     requirePaymentPlan: process.env.REQUIRE_PAYMENT_PLAN === 'true',
     dealTrackerDid: mustGetEnv('DEAL_TRACKER_DID'),
     dealTrackerUrl: mustGetEnv('DEAL_TRACKER_URL'),

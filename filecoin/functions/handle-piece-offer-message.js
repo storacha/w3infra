@@ -1,7 +1,6 @@
 import * as Sentry from '@sentry/serverless'
 import { Config } from 'sst/node/config'
 import * as Proof from '@storacha/client/proof'
-import * as DID from '@ipld/dag-ucan/did'
 
 import * as storefrontEvents from '@storacha/filecoin-api/storefront/events'
 
@@ -35,31 +34,46 @@ async function handlePieceOfferMessage (sqsEvent) {
   })
 
   // Create context
-  const { PRIVATE_KEY: privateKey, STOREFRONT_PROOF: storefrontProof } = Config
-  const { aggregatorDid, aggregatorUrl, did } = getEnv()
-  let storefrontSigner = getServiceSigner({
-    privateKey
+  const { did, aggregatorDid, aggregatorUrl } = getEnv()
+  const { PRIVATE_KEY: privateKey } = Config
+
+  // AGGREGATOR_SERVICE_PROOF is optional
+  let aggregatorProof
+  try {
+    aggregatorProof = Config.AGGREGATOR_SERVICE_PROOF
+  } catch (error) {
+    // AGGREGATOR_SERVICE_PROOF is not set for this environment
+    aggregatorProof = undefined
+  }
+
+  const storefrontSigner = getServiceSigner({
+    did,
+    privateKey,
   })
-  const connection = getServiceConnection({
+
+  const aggregatorConnection = getServiceConnection({
     did: aggregatorDid,
     url: aggregatorUrl
   })
+
   const aggregatorServiceProofs = []
-  if (storefrontProof) {
-    const proof = await Proof.parse(storefrontProof)
+  if (aggregatorProof) {
+    const proof = await Proof.parse(aggregatorProof)
     aggregatorServiceProofs.push(proof)
-  } else {
-    // if no proofs, we must be using the service private key to sign
-    storefrontSigner = storefrontSigner.withDID(DID.parse(did).did())
   }
 
   const context = {
     aggregatorService: {
-      connection,
+      connection: aggregatorConnection,
       invocationConfig: {
-        issuer: storefrontSigner,
-        with: storefrontSigner.did(),
-        audience: connection.id,
+        issuer: aggregatorServiceProofs.length
+          ? storefrontSigner
+          : getServiceSigner({
+            did: aggregatorDid,
+            privateKey: privateKey,
+          }),
+        audience: aggregatorConnection.id,
+        with: aggregatorConnection.id.did(),
         proofs: aggregatorServiceProofs
       },
     }

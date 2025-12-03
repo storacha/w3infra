@@ -78,8 +78,8 @@ declare module 'sst/node/config' {
     PRIVATE_KEY: {
       value: string
     },
-    STOREFRONT_PROOF: {
+    AGGREGATOR_SERVICE_PROOF: {
       value: string
-    }
+    },
   }
 }

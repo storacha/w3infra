@@ -19,27 +19,47 @@ const AWS_REGION = process.env.AWS_REGION || 'us-west-2'
 
 export async function handleCronTick () {
   const { did, pieceTableName, agentMessageBucketName, agentIndexBucketName, aggregatorDid } = getEnv()
-  const { PRIVATE_KEY: privateKey, STOREFRONT_PROOF: storefrontProof } = Config
+  const { PRIVATE_KEY: privateKey } = Config
 
-  // create context
-  let id = getServiceSigner({
-    privateKey
-  })
-  const storefrontServiceProofs = []
-  if (storefrontProof) {
-    const proof = await Proof.parse(storefrontProof)
-    storefrontServiceProofs.push(proof)
-  } else {
-    // if no proofs, we must be using the service private key to sign
-    id = id.withDID(DID.parse(did).did())
+  let aggregatorProof
+  try {
+    aggregatorProof = Config.AGGREGATOR_SERVICE_PROOF
+  } catch (error) {
+    // AGGREGATOR_SERVICE_PROOF is not set for this environment
+    aggregatorProof = undefined
   }
 
+  // create context
+  const storefrontSigner = getServiceSigner({
+    did,
+    privateKey,
+  })
+
+  const aggregatorServiceProofs = []
+  if (aggregatorProof) {
+    const proof = await Proof.parse(aggregatorProof)
+    aggregatorServiceProofs.push(proof)
+  }
+
+  const aggregatorServiceSigner = getServiceSigner({
+    did: aggregatorDid,
+    privateKey: privateKey,
+  })
+
   const context = {
-    id,
     pieceStore: createPieceTable(AWS_REGION, pieceTableName),
     taskStore: createTaskStore(AWS_REGION, agentIndexBucketName, agentMessageBucketName),
     receiptStore: createReceiptStore(AWS_REGION, agentIndexBucketName, agentMessageBucketName),
-    aggregatorId: DID.parse(aggregatorDid),
+    aggregatorService: {
+      invocationConfig: {
+        issuer: aggregatorServiceProofs.length
+          ? storefrontSigner
+          : aggregatorServiceSigner,
+        audience: aggregatorServiceSigner,
+        with: aggregatorServiceSigner.did(),
+        proofs: aggregatorServiceProofs
+      },
+    }
   }
 
   const { ok, error } = await storefrontEvents.handleCronTick(context)
