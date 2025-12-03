@@ -671,7 +671,7 @@ function getLambdaEnv() {
     r2DelegationBucketEndpoint: process.env.R2_ENDPOINT,
     r2DelegationBucketAccessKeyId: process.env.R2_ACCESS_KEY_ID,
     r2DelegationBucketSecretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
-    r2DelegationBucketName: bucketNames['R2_DELEGATION_BUCKET_NAME'],
+    r2DelegationBucketName: bucketNames.R2_DELEGATION_BUCKET_NAME,
     agentIndexBucketName: mustGetVal(bucketNames, 'AGENT_INDEX_BUCKET_NAME'),
     agentMessageBucketName: mustGetVal(bucketNames, 'AGENT_MESSAGE_BUCKET_NAME'),
     streamName: mustGetEnv('UCAN_LOG_STREAM_NAME'),
