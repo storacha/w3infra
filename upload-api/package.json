@@ -93,7 +93,9 @@
     "rules": {
       "unicorn/consistent-destructuring": "off",
       "unicorn/prefer-array-flat-map": "off",
-      "unicorn/no-useless-undefined": "off"
+      "unicorn/no-useless-undefined": "off",
+      "unicorn/switch-case-braces": "off",
+      "unicorn/no-useless-switch-case": "off"
     }
   }
 }
