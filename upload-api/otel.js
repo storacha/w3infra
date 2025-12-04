@@ -25,8 +25,9 @@ const resource = new Resource({
 })
 
 const sampler = createSampler()
+const endpoint = (process.env.OTEL_EXPORTER_OTLP_ENDPOINT || 'http://localhost:4318').replace(/\/$/, '')
 const exporter = new OTLPTraceExporter({
-  url: `${getRequiredEnv('OTEL_EXPORTER_OTLP_ENDPOINT').replace(/\/$/, '')}/v1/traces`,
+  url: `${endpoint}/v1/traces`,
   headers: parseHeaders(process.env.OTEL_EXPORTER_OTLP_HEADERS),
 })
 
@@ -110,8 +111,8 @@ function attachTraceContextToResponse(response, ctx) {
 }
 
 function createSampler() {
-  const samplerName = getRequiredEnv('OTEL_TRACES_SAMPLER').toLowerCase()
-  const ratioArg = Number.parseFloat(getRequiredEnv('OTEL_TRACES_SAMPLER_ARG'))
+  const samplerName = (process.env.OTEL_TRACES_SAMPLER || 'always_off').toLowerCase()
+  const ratioArg = Number.parseFloat(process.env.OTEL_TRACES_SAMPLER_ARG || '1')
   const ratio = clamp(ratioArg, 0, 1)
 
   switch (samplerName) {
@@ -157,15 +158,4 @@ function parseHeaders(headerString) {
  */
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value))
-}
-
-/**
- * @param {string} name
- */
-function getRequiredEnv(name) {
-  const value = process.env[name]
-  if (!value) {
-    throw new Error(`Missing required environment variable: ${name}`)
-  }
-  return value
 }
