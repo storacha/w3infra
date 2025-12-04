@@ -11,6 +11,7 @@ import { createCustomerStore } from '../../billing/tables/customer.js'
 import { getServiceSigner } from '../config.js'
 import { jwtDecode } from "jwt-decode"
 import { createHumanodesTable } from '../stores/humanodes.js'
+import { wrapLambdaHandler } from '../otel.js'
 
 
 /**
@@ -139,7 +140,9 @@ export const oauthCallbackGet = async (request, context) => {
   return htmlResponse(200, getResponseHTML())
 }
 
-export const handler = Sentry.AWSLambda.wrapHandler((event) => oauthCallbackGet(event))
+export const handler = Sentry.AWSLambda.wrapHandler(
+  wrapLambdaHandler('oauth-humanode-callback', (event) => oauthCallbackGet(event))
+)
 
 /**
  * @param {Context} [customContext]
