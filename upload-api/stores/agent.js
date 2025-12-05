@@ -1,8 +1,12 @@
+import { trace } from '@opentelemetry/api'
 import * as API from '../types.js'
 import * as Store from './agent/store.js'
 import * as Stream from './agent/stream.js'
+import { instrumentFn } from '../lib/otel/instrument.js'
 
 export { API }
+
+const tracer = trace.getTracer('upload-api')
 
 /**
  * @typedef {object} Options
@@ -34,6 +38,8 @@ class AgentMessageStore {
     this.invocations = new InvocationsIndex(connection.store)
     
     this.receipts = new ReceiptsIndex(connection.store)
+
+    this.write = instrumentFn(tracer, 'AgentStore.write', this.write.bind(this))
   }
 
   get messages() {
@@ -102,6 +108,7 @@ class InvocationsIndex {
    */
   constructor(connection) {
     this.connection = connection
+    this.get = instrumentFn(tracer, 'AgentStore.invocations.get', this.get.bind(this))
   }
 
   /**
@@ -121,6 +128,7 @@ class ReceiptsIndex {
    */
   constructor(connection) {
     this.connection = connection
+    this.get = instrumentFn(tracer, 'AgentStore.receipts.get', this.get.bind(this))
   }
 
   /**

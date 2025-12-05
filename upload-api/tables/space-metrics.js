@@ -1,5 +1,8 @@
+import { trace } from '@opentelemetry/api'
 import { getDynamoClient } from '../../lib/aws/dynamo.js'
+import { instrumentMethods } from '../lib/otel/instrument.js'
 
+const tracer = trace.getTracer('upload-api')
 
 /**
  * Abstraction layer to handle operations on space metrics Table.
@@ -24,7 +27,7 @@ export function createSpaceMetricsTable(region, tableName, options = {}) {
  * @returns {import('../types.js').SpaceMetricsTable}
  */
 export function useSpaceMetricsTable(dynamoDb, tableName) {
-  return {
+  return instrumentMethods(tracer, 'SpaceMetricsTable', {
     /**
      * Return the total amount of of storage a space has used.
      * 
@@ -47,5 +50,5 @@ export function useSpaceMetricsTable(dynamoDb, tableName) {
       // return response.Item ? unmarshall(response.Item).value : 0
       return 0
     }
-  }
+  })
 }

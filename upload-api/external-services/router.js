@@ -1,8 +1,12 @@
+import { trace } from '@opentelemetry/api'
 import { ok, error, Invocation } from '@ucanto/core'
 import { parse } from '@ipld/dag-ucan/did'
 import { CAR, HTTP } from '@ucanto/transport'
 import { connect } from '@ucanto/client'
 import { CandidateUnavailableError, ProofUnavailableError } from '@storacha/router'
+import { instrumentMethods } from '../lib/otel/instrument.js'
+
+const tracer = trace.getTracer('upload-api')
 
 /**
  * @import * as API from '../types.js'
@@ -14,55 +18,56 @@ import { CandidateUnavailableError, ProofUnavailableError } from '@storacha/rout
  * @param {import('@ucanto/interface').Signer} serviceID
  * @returns {BlobAPI.RoutingService}
  */
-export const create = (storageProviderTable, serviceID) => ({
-  selectStorageProvider: async (digest, size, options) => {
-    const exclude = options?.exclude ?? []
-    const ids = (await storageProviderTable.list())
-      .filter(p => p.weight > 0)
-      .filter(p => !exclude.some(e => e.did() === p.provider))
-    if (!ids.length) return error(new CandidateUnavailableError())
-    const provider = parse(ids[getWeightedRandomInt(ids.map(id => id.weight ?? 0))].provider)
-    return ok(provider)
-  },
-  configureInvocation: async (provider, capability, options) => {
-    const record = await storageProviderTable.get(provider.did())
-    if (!record) {
-      return error(new ProofUnavailableError(`provider not found: ${provider.did()}`))
+export const create = (storageProviderTable, serviceID) =>
+  instrumentMethods(tracer, 'RoutingService', {
+    selectStorageProvider: async (digest, size, options) => {
+      const exclude = options?.exclude ?? []
+      const ids = (await storageProviderTable.list())
+        .filter(p => p.weight > 0)
+        .filter(p => !exclude.some(e => e.did() === p.provider))
+      if (!ids.length) return error(new CandidateUnavailableError())
+      const provider = parse(ids[getWeightedRandomInt(ids.map(id => id.weight ?? 0))].provider)
+      return ok(provider)
+    },
+    configureInvocation: async (provider, capability, options) => {
+      const record = await storageProviderTable.get(provider.did())
+      if (!record) {
+        return error(new ProofUnavailableError(`provider not found: ${provider.did()}`))
+      }
+      const { endpoint, proof } = record
+
+      const invocation = Invocation.invoke({
+        ...options,
+        issuer: serviceID,
+        audience: provider,
+        capability,
+        proofs: [proof],
+      })
+      const channel = HTTP.open({ url: endpoint, method: 'POST', ...options?.channel })
+      const connection = connect({ id: provider, codec: CAR.outbound, channel })
+
+      return ok({ invocation, connection })
+    },
+    selectReplicationProviders: async (primary, count, digest, size, options) => {
+      const exclude = options?.exclude ?? []
+      const providers = (await storageProviderTable.list())
+        .filter(p => p.weight > 0)
+        .filter(p => p.provider !== primary.did())
+        .filter(p => !exclude.some(e => e.did() === p.provider))
+
+      if (providers.length < count) {
+        return error(new CandidateUnavailableError())
+      }
+
+      const selection = []
+      for (let i = 0; i < count; i++) {
+        const index = getWeightedRandomInt(providers.map(p => p.weight ?? 0))
+        selection.push(parse(providers[index].provider))
+        providers.splice(index, 1)
+      }
+      return ok(selection)
     }
-    const { endpoint, proof } = record
-
-    const invocation = Invocation.invoke({
-      ...options,
-      issuer: serviceID,
-      audience: provider,
-      capability,
-      proofs: [proof],
-    })
-    const channel = HTTP.open({ url: endpoint, method: 'POST', ...options?.channel })
-    const connection = connect({ id: provider, codec: CAR.outbound, channel })
-
-    return ok({ invocation, connection })
-  },
-  selectReplicationProviders: async (primary, count, digest, size, options) => {
-    const exclude = options?.exclude ?? []
-    const providers = (await storageProviderTable.list())
-      .filter(p => p.weight > 0)
-      .filter(p => p.provider !== primary.did())
-      .filter(p => !exclude.some(e => e.did() === p.provider))
-
-    if (providers.length < count) {
-      return error(new CandidateUnavailableError())
-    }
-
-    const selection = []
-    for (let i = 0; i < count; i++) {
-      const index = getWeightedRandomInt(providers.map(p => p.weight ?? 0))
-      selection.push(parse(providers[index].provider))
-      providers.splice(index, 1)
-    }
-    return ok(selection)
-  }
-})
+  })
 
 /**
  * Generates a weighted random index based on the provided weights.

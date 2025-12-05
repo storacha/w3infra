@@ -1,6 +1,10 @@
+import { trace } from '@opentelemetry/api'
 import { ScanCommand } from '@aws-sdk/client-dynamodb'
 import { unmarshall } from '@aws-sdk/util-dynamodb'
 import { getDynamoClient } from '../../lib/aws/dynamo.js'
+import { instrumentMethods } from '../lib/otel/instrument.js'
+
+const tracer = trace.getTracer('upload-api')
 
 /**
  * Abstraction layer to handle operations on admin metrics Table.
@@ -25,7 +29,7 @@ export function createMetricsTable(region, tableName, options = {}) {
  * @returns {import('../types.js').MetricsTable}
  */
 export function useMetricsTable(dynamoDb, tableName) {
-  return {
+  return instrumentMethods(tracer, 'MetricsTable', {
     /**
      * Get all metrics from table.
      */
@@ -37,5 +41,5 @@ export function useMetricsTable(dynamoDb, tableName) {
       const response = await dynamoDb.send(updateCmd)
       return response.Items?.map(i => unmarshall(i)) || []
     }
-  }
+  })
 }

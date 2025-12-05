@@ -1,4 +1,5 @@
 
+import { trace } from '@opentelemetry/api'
 import { GetItemCommand, ScanCommand, PutItemCommand, DeleteItemCommand } from '@aws-sdk/client-dynamodb'
 import { marshall, unmarshall } from '@aws-sdk/util-dynamodb'
 import * as Link from 'multiformats/link'
@@ -7,6 +8,9 @@ import { identity } from 'multiformats/hashes/identity'
 import { getDynamoClient } from '../../lib/aws/dynamo.js'
 import { parse } from '@ipld/dag-ucan/did'
 import { extract } from '@ucanto/core/delegation'
+import { instrumentMethods } from '../lib/otel/instrument.js'
+
+const tracer = trace.getTracer('upload-api')
 
 /** @import * as API from '../types.js' */
 
@@ -27,61 +31,62 @@ export const createStorageProviderTable = (region, tableName, options) => {
  * @param {string} tableName
  * @returns {API.StorageProviderTable}
  */
-export const useStorageProviderTable = (dynamo, tableName) => ({
-  /** @type {API.StorageProviderTable['put']} */
-  async put (input) {
-    const cmd = new PutItemCommand({
-      TableName: tableName,
-      Item: marshall(await encode(input))
-    })
-    await dynamo.send(cmd)
-  },
-
-  /** @type {API.StorageProviderTable['get']} */
-  async get (provider) {
-    const cmd = new GetItemCommand({
-      TableName: tableName,
-      Key: marshall({ provider })
-    })
-    const res = await dynamo.send(cmd)
-    return res.Item && decode(res.Item)
-  },
-
-  /** @type {API.StorageProviderTable['del']} */
-  async del (provider) {
-    const cmd = new DeleteItemCommand({
-      TableName: tableName,
-      Key: marshall({ provider })
-    })
-    await dynamo.send(cmd)
-  },
-
-  /** @type {API.StorageProviderTable['list']} */
-  async list () {
-    /** @type {{ provider: import('@ucanto/interface').DID; weight: number }[]} */
-    const ids = []
-    /** @type {Record<string, import('@aws-sdk/client-dynamodb').AttributeValue>|undefined} */
-    let cursor
-    while (true) {
-      const cmd = new ScanCommand({
+export const useStorageProviderTable = (dynamo, tableName) => 
+  instrumentMethods(tracer, 'StorageProviderTable', {
+    /** @type {API.StorageProviderTable['put']} */
+    async put (input) {
+      const cmd = new PutItemCommand({
         TableName: tableName,
-        ExclusiveStartKey: cursor,
-        AttributesToGet: ['provider', 'weight']
+        Item: marshall(await encode(input))
+      })
+      await dynamo.send(cmd)
+    },
+
+    /** @type {API.StorageProviderTable['get']} */
+    async get (provider) {
+      const cmd = new GetItemCommand({
+        TableName: tableName,
+        Key: marshall({ provider })
       })
       const res = await dynamo.send(cmd)
-      for (const item of res.Items ?? []) {
-        const raw = unmarshall(item)
-        ids.push({
-          provider: parse(raw.provider).did(),
-          weight: raw.weight
+      return res.Item && decode(res.Item)
+    },
+
+    /** @type {API.StorageProviderTable['del']} */
+    async del (provider) {
+      const cmd = new DeleteItemCommand({
+        TableName: tableName,
+        Key: marshall({ provider })
+      })
+      await dynamo.send(cmd)
+    },
+
+    /** @type {API.StorageProviderTable['list']} */
+    async list () {
+      /** @type {{ provider: import('@ucanto/interface').DID; weight: number }[]} */
+      const ids = []
+      /** @type {Record<string, import('@aws-sdk/client-dynamodb').AttributeValue>|undefined} */
+      let cursor
+      while (true) {
+        const cmd = new ScanCommand({
+          TableName: tableName,
+          ExclusiveStartKey: cursor,
+          AttributesToGet: ['provider', 'weight']
         })
+        const res = await dynamo.send(cmd)
+        for (const item of res.Items ?? []) {
+          const raw = unmarshall(item)
+          ids.push({
+            provider: parse(raw.provider).did(),
+            weight: raw.weight
+          })
+        }
+        cursor = res.LastEvaluatedKey
+        if (!cursor) break
       }
-      cursor = res.LastEvaluatedKey
-      if (!cursor) break
+      return ids
     }
-    return ids
-  }
-})
+  })
 
 /**
  * @param {API.StorageProviderInput} input

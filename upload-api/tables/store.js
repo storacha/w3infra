@@ -1,3 +1,4 @@
+import { trace } from '@opentelemetry/api'
 import {
   GetItemCommand,
   PutItemCommand,
@@ -9,6 +10,9 @@ import { CID } from 'multiformats/cid'
 import * as Link from 'multiformats/link'
 import { RecordKeyConflict, RecordNotFound } from './lib.js'
 import { getDynamoClient } from '../../lib/aws/dynamo.js'
+import { instrumentMethods } from '../lib/otel/instrument.js'
+
+const tracer = trace.getTracer('upload-api')
 
 /**
  * @typedef {import('@web3-storage/upload-api').StoreTable} StoreTable
@@ -43,7 +47,7 @@ export function createStoreTable(region, tableName, options = {}) {
  * @returns {StoreTable}
  */
 export function useStoreTable(dynamoDb, tableName) {
-  return {
+  return instrumentMethods(tracer, 'StoreTable', {
     /**
      * Check if the given link CID is bound to the uploader account
      *
@@ -249,7 +253,7 @@ export function useStoreTable(dynamoDb, tableName) {
         }
       }
     }
-  }
+  })
 }
 
 /**

@@ -1,9 +1,13 @@
+import { trace } from '@opentelemetry/api'
 import {
   GetItemCommand,
   PutItemCommand,
 } from '@aws-sdk/client-dynamodb'
 import { marshall } from '@aws-sdk/util-dynamodb'
 import { getDynamoClient } from '../../lib/aws/dynamo.js'
+import { instrumentMethods } from '../lib/otel/instrument.js'
+
+const tracer = trace.getTracer('upload-api')
 
 /**
  * Abstraction layer to handle operations on humanodes table.
@@ -37,7 +41,7 @@ export function createHumanodesTable(region, tableName, options = {}) {
  * @returns {import('../types.ts').HumanodeStore}
  */
 export function useHumanodesTable(dynamoDb, tableName) {
-  return {
+  return instrumentMethods(tracer, 'HumanodesTable', {
     async add(sub, account) {
       try {
         await dynamoDb.send(new PutItemCommand({
@@ -78,5 +82,5 @@ export function useHumanodesTable(dynamoDb, tableName) {
         }
       }
     }
-  }
+  })
 }

@@ -1,3 +1,4 @@
+import { trace } from '@opentelemetry/api'
 import {
   BatchGetItemCommand,
   PutItemCommand,
@@ -7,6 +8,9 @@ import { marshall, unmarshall } from '@aws-sdk/util-dynamodb'
 import { parseLink } from '@ucanto/core'
 import { revocationTableProps } from '../tables/index.js'
 import { getDynamoClient } from '../../lib/aws/dynamo.js'
+import { instrumentMethods } from '../lib/otel/instrument.js'
+
+const tracer = trace.getTracer('upload-api')
 
 /** @typedef {import('@ucanto/interface').UCANLink} UCANLink */
 /** @typedef {import('@ucanto/interface').DID} DID */
@@ -36,7 +40,7 @@ const staticRevocationKeys = new Set(Object.keys(revocationTableProps?.fields ||
  * @returns {import('@storacha/upload-api').RevocationsStorage}
  */
 export function useRevocationsTable (dynamoDb, tableName) {
-  return {
+  return instrumentMethods(tracer, 'RevocationsStorage', {
     async add (revocation) {
       await dynamoDb.send(new UpdateItemCommand({
         TableName: tableName,
@@ -116,5 +120,5 @@ export function useRevocationsTable (dynamoDb, tableName) {
       }, /** @type {import('@storacha/upload-api').MatchingRevocations} */({}))
       return { ok: revocations }
     }
-  }
+  })
 }

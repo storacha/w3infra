@@ -1,3 +1,4 @@
+import { trace } from '@opentelemetry/api'
 import { base32 } from 'multiformats/bases/base32'
 import {
   QueryCommand,
@@ -16,6 +17,9 @@ import * as Ucanto from '@ucanto/interface'
 import { Failure } from '@ucanto/server'
 import { parseLink } from '@ucanto/core'
 import { getDynamoClient } from '../../lib/aws/dynamo.js'
+import { instrumentMethods } from '../lib/otel/instrument.js'
+
+const tracer = trace.getTracer('upload-api')
 
 // Feature flag for looking up delegations in the invocations in which
 // they were originally embeded.
@@ -57,7 +61,7 @@ export function createDelegationsTable (region, tableName, { bucket }, options =
  * @returns {import('@storacha/upload-api').DelegationsStorage}
  */
 export function useDelegationsTable (dynamoDb, tableName, { bucket }) {
-  return {
+  return instrumentMethods(tracer, 'DelegationsTable', {
     putMany: async (delegations, options = {}) => {
       if (delegations.length === 0) {
         return {
@@ -150,7 +154,7 @@ export function useDelegationsTable (dynamoDb, tableName, { bucket }) {
         ok: delegations
       }
     },
-  }
+  })
 }
 
 /**

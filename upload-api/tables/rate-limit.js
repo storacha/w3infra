@@ -1,3 +1,4 @@
+import { trace } from '@opentelemetry/api'
 import {
   DeleteItemCommand,
   PutItemCommand,
@@ -6,6 +7,9 @@ import {
 import { marshall, unmarshall } from '@aws-sdk/util-dynamodb'
 import { nanoid } from 'nanoid'
 import { getDynamoClient } from '../../lib/aws/dynamo.js'
+import { instrumentMethods } from '../lib/otel/instrument.js'
+
+const tracer = trace.getTracer('upload-api')
 
 /**
  * Abstraction layer to handle operations on Store Table.
@@ -30,7 +34,7 @@ export function createRateLimitTable (region, tableName, options = {}) {
  * @returns {import('@storacha/upload-api').RateLimitsStorage}
  */
 export function useRateLimitTable (dynamoDb, tableName) {
-  return {
+  return instrumentMethods(tracer, 'RateLimitTable', {
     add: async (subject, rate) => {
       const insertedAt = new Date().toISOString()
       const id = nanoid()
@@ -73,5 +77,5 @@ export function useRateLimitTable (dynamoDb, tableName) {
         }) : []
       }
     }
-  }
+  })
 }
