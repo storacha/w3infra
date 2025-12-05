@@ -1,3 +1,5 @@
+import { SpanStatusCode } from '@opentelemetry/api'
+
 /** @import { Tracer } from '@opentelemetry/api' */
 
 /**
@@ -13,12 +15,20 @@ export const instrumentFn = (tracer, name, fn) =>
       let ret
       try {
         ret = fn(...args)
-      } catch (err) {
+      } catch (/** @type {any} */ err) {
+        span.recordException(err)
+        span.setStatus({ code: SpanStatusCode.ERROR, message: err?.message })
         span.end()
         throw err
       }
       if (ret instanceof Promise) {
-        return ret.finally(() => span.end())
+        return ret
+          .catch(err => {
+            span.recordException(err)
+            span.setStatus({ code: SpanStatusCode.ERROR, message: err?.message })
+            throw err
+          })
+          .finally(() => span.end())
       }
       span.end()
       return ret
