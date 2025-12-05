@@ -1,4 +1,5 @@
 import { Config } from 'sst/node/config'
+import { trace } from '@opentelemetry/api'
 import { API } from '@ucanto/core'
 import * as Delegation from '@ucanto/core/delegation'
 import { CAR, Legacy, Codec } from '@ucanto/transport'
@@ -74,6 +75,7 @@ import { uploadServiceURL } from '@storacha/client/service'
 import { productInfo } from '../../billing/lib/product-info.js'
 import { FREE_TRIAL_COUPONS, PLANS_TO_LINE_ITEMS_MAPPING } from '../constants.js'
 import { wrapLambdaHandler } from '../otel.js'
+import { instrumentServiceMethods } from '../lib/otel/ucanto.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -614,6 +616,12 @@ export async function ucanInvocationRouter(request) {
     replicaStore: createReplicaTable(AWS_REGION, replicaTableName),
     ssoService,
   })
+
+  const tracer = trace.getTracer('upload-api')
+  Object.assign(
+    server.service,
+    instrumentServiceMethods(tracer, server.service)
+  )
 
   const connection = UploadAPI.connect({
     id: serviceSigner,
