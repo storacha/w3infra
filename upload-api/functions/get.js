@@ -18,7 +18,6 @@ const repo = 'https://github.com/storacha/w3infra'
  * @param {import('aws-lambda').APIGatewayProxyEventV2} request
  */
 export async function versionGet(request) {
-  console.log(request.headers)
   const {
     NAME: name,
     VERSION: version,

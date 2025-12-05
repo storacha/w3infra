@@ -82,6 +82,15 @@ export const wrapLambdaHandler = (name, handler) =>
       span.end()
     }
 
+    // if the span is recording, then force flush, waiting for it to complete
+    if (span.isRecording()) {
+      try {
+        await provider.forceFlush()
+      } catch (err) {
+        console.error('force flushing', err)
+      }
+    }
+
     return attachTraceContextToResponse(response, ctxWithSpan)
   })
 
