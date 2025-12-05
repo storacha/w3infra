@@ -1,9 +1,13 @@
+import { trace } from '@opentelemetry/api'
 import { PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3'
 import pRetry from 'p-retry'
 import { base32 } from 'multiformats/bases/base32'
 import { getS3Client } from '../../lib/aws/s3.js'
+import { instrumentMethods } from '../lib/otel/instrument.js'
 
 /** @typedef {import('multiformats/cid').CID} CID */
+
+const tracer = trace.getTracer('upload-api')
 
 /**
  * Abstraction layer with Factory to perform operations on bucket.
@@ -53,7 +57,7 @@ function createDelegationsBucketKey (cid) {
  * @returns {import('../types.js').DelegationsBucket}
  */
 export const useDelegationsStore = (s3client, bucketName) => {
-  return {
+  return instrumentMethods(tracer, 'DelegationsStore', {
     /**
      * Put Delegation into bucket.
      *
@@ -101,5 +105,5 @@ export const useDelegationsStore = (s3client, bucketName) => {
 
       return bytes
     }
-  }
+  })
 }

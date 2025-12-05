@@ -1,10 +1,15 @@
+import { trace } from '@opentelemetry/api'
+import { instrumentMethods } from '../lib/otel/instrument.js'
+
+const tracer = trace.getTracer('upload-api')
+
 /**
  * @param {import("../../billing/lib/api.js").CustomerStore} customerStore
  * @param {import('../types.js').BillingProvider} billingProvider
  * @returns {import("@storacha/upload-api").PlansStorage}
  */
 export function usePlansStore(customerStore, billingProvider) {
-  return {
+  return instrumentMethods(tracer, 'PlansStorage', {
     initialize: async (account, externalID, plan) => {
       const getResult = await customerStore.get({ customer: account })
       if (getResult.ok) {
@@ -108,5 +113,5 @@ export function usePlansStore(customerStore, billingProvider) {
       billingProvider.createAdminSession(account, returnURL),
     createCheckoutSession: async (account, planID, options) =>
       billingProvider.createCheckoutSession(account, planID, options),
-  }
+  })
 }

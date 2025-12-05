@@ -1,4 +1,8 @@
+import { trace } from '@opentelemetry/api'
 import { iterateSpaceDiffs } from '../../billing/lib/space-billing-queue.js'
+import { instrumentMethods } from '../lib/otel/instrument.js'
+
+const tracer = trace.getTracer('upload-api')
 
 /**
  * @param {object} conf
@@ -7,7 +11,7 @@ import { iterateSpaceDiffs } from '../../billing/lib/space-billing-queue.js'
  * @param {import('../../billing/lib/api.js').EgressTrafficQueue} conf.egressTrafficQueue
  */
 export function useUsageStore({ spaceSnapshotStore, spaceDiffStore, egressTrafficQueue }) {
-  return {
+  return instrumentMethods(tracer, 'UsageStorage', {
     /**
      * @param {import('@storacha/upload-api').ProviderDID} provider
      * @param {import('@storacha/upload-api').SpaceDID} space
@@ -89,5 +93,5 @@ export function useUsageStore({ spaceSnapshotStore, spaceDiffStore, egressTraffi
 
       return { ok: { ...record, servedAt: servedAt.toISOString() } }
     }
-  }
+  })
 }
