@@ -69,6 +69,7 @@ export const wrapLambdaHandler = (name, handler) =>
     const carrier = event && typeof event === 'object' ? event.headers : undefined
     const parentCtx = propagation.extract(otContext.active(), carrier || {}, headerGetter)
     const span = tracer.startSpan(name, undefined, parentCtx)
+    const recording = span.isRecording()
     const ctxWithSpan = trace.setSpan(parentCtx, span)
     let response
 
@@ -83,7 +84,7 @@ export const wrapLambdaHandler = (name, handler) =>
     }
 
     // if the span is recording, then force flush, waiting for it to complete
-    if (span.isRecording()) {
+    if (recording) {
       try {
         await provider.forceFlush()
       } catch (err) {
