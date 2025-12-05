@@ -33,7 +33,7 @@ export function useProvisionStore(
   services,
   productInfo
 ) {
-  return {
+  return instrumentMethods(tracer, 'ProvisionsStorage', {
     services,
     hasStorageProvider: async (consumer) => ({
       ok: await consumerTable.hasStorageProvider(consumer),
@@ -201,5 +201,5 @@ export function useProvisionStore(
         }
       }
     },
-  }
+  })
 }
