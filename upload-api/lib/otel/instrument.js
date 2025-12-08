@@ -43,13 +43,14 @@ export const instrumentFn = (tracer, name, fn) =>
  * @returns {T}
  */
 export const instrumentMethods = (tracer, name, obj, methods) => {
-  /** @type {Record<string, any>} */
-  const instObj = { ...obj }
-  for (const method of methods ?? Object.keys(obj)) {
-    const fn = obj[method]
-    if (typeof fn === 'function') {
-      instObj[method] = instrumentFn(tracer, `${name}.${method}`, fn.bind(obj))
-    }
-  }
-  return /** @type {T} */ (instObj)
+  // /** @type {Record<string, any>} */
+  // const instObj = { ...obj }
+  // for (const method of methods ?? Object.keys(obj)) {
+  //   const fn = obj[method]
+  //   if (typeof fn === 'function') {
+  //     instObj[method] = instrumentFn(tracer, `${name}.${method}`, fn.bind(obj))
+  //   }
+  // }
+  // return /** @type {T} */ (instObj)
+  return { ...obj }
 }
