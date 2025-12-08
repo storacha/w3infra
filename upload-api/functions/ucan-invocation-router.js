@@ -14,6 +14,7 @@ import { Client as IndexingServiceClient } from '@storacha/indexing-service-clie
 import * as UploadAPI from '@storacha/upload-api'
 import * as UCANCaps from '@storacha/capabilities/ucan'
 import { HTTPResolver, CacheResolver, MapResolver, TieredResolver } from '@storacha/principal-resolver'
+import { wrapLambdaHandler } from '../otel.js'
 import {
   composeCarStoresWithOrderedHas,
   createCarStore,
@@ -74,7 +75,6 @@ import {
 import { uploadServiceURL } from '@storacha/client/service'
 import { productInfo } from '../../billing/lib/product-info.js'
 import { FREE_TRIAL_COUPONS, PLANS_TO_LINE_ITEMS_MAPPING } from '../constants.js'
-import { wrapLambdaHandler } from '../otel.js'
 import { instrumentServiceMethods } from '../lib/otel/ucanto.js'
 
 Sentry.AWSLambda.init({

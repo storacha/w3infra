@@ -1,7 +1,11 @@
+import { trace } from '@opentelemetry/api'
 import { ConflictError as ConsumerConflictError } from '../tables/consumer.js'
 import { ConflictError as SubscriptionConflictError } from '../tables/subscription.js'
 import { CBOR, Failure } from '@ucanto/server'
 import { planLimit } from '../utils.js'
+import { instrumentMethods } from '../lib/otel/instrument.js'
+
+const tracer = trace.getTracer('upload-api')
 
 /**
  * Create a subscription ID for a given provision. Currently
@@ -29,7 +33,7 @@ export function useProvisionStore(
   services,
   productInfo
 ) {
-  return {
+  return instrumentMethods(tracer, 'ProvisionsStorage', {
     services,
     hasStorageProvider: async (consumer) => ({
       ok: await consumerTable.hasStorageProvider(consumer),
@@ -197,5 +201,5 @@ export function useProvisionStore(
         }
       }
     },
-  }
+  })
 }

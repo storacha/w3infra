@@ -1,10 +1,15 @@
+import { trace } from '@opentelemetry/api'
+import { instrumentMethods } from '../lib/otel/instrument.js'
+
+const tracer = trace.getTracer('upload-api')
+
 /**
  * @param {object} conf
  * @param {import('../types.js').ConsumerTable} conf.consumerTable
  * @returns {import('@storacha/upload-api').SubscriptionsStorage}
  */
 export function useSubscriptionsStore({ consumerTable }) {
-  return {
+  return instrumentMethods(tracer, 'SubscriptionsStorage', {
     list: async (customer) => {
       const { results: consumers } = await consumerTable.listByCustomer(customer)
 
@@ -27,5 +32,5 @@ export function useSubscriptionsStore({ consumerTable }) {
 
       return { ok: { results: subscriptions } }
     },
-  }
+  })
 }

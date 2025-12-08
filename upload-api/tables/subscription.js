@@ -1,3 +1,4 @@
+import { trace } from '@opentelemetry/api'
 import {
   DescribeTableCommand,
   GetItemCommand,
@@ -7,6 +8,9 @@ import {
 import { Failure } from '@ucanto/server'
 import { marshall, unmarshall } from '@aws-sdk/util-dynamodb'
 import { getDynamoClient } from '../../lib/aws/dynamo.js'
+import { instrumentMethods } from '../lib/otel/instrument.js'
+
+const tracer = trace.getTracer('upload-api')
 
 /**
  * @typedef {import('../types.js').SubscriptionTable} SubscriptionTable
@@ -47,7 +51,7 @@ export function createSubscriptionTable (region, tableName, options = {}) {
  * @returns {SubscriptionTable}
  */
 export function useSubscriptionTable (dynamoDb, tableName) {
-  return {
+  return instrumentMethods(tracer, 'SubscriptionTable', {
     /**
      * Record the fact that a subscription is consuming a provider via a subscription
      *
@@ -128,5 +132,5 @@ export function useSubscriptionTable (dynamoDb, tableName) {
         }
       }) : []
     }
-  }
+  })
 }

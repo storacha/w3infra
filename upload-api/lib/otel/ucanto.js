@@ -34,8 +34,13 @@ export const instrumentServiceMethods = (tracer, service) => {
  */
 export const instrumentServiceMethod = (tracer, method) =>
   async (invocation, context) => {
-    const ability = invocation.capabilities[0]?.can ?? 'unknown'
-    return tracer.startActiveSpan(ability, async span => {
+    const cap = invocation.capabilities[0]
+    const name = `${cap?.can ?? 'unknown'} handler`
+    return tracer.startActiveSpan(name, async span => {
+      span.setAttributes({
+        iss: invocation.issuer.did(),
+        with: cap?.with ?? ''
+      })
       try {
         const result = await method(invocation, context)
         if (result.error) {
