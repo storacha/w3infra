@@ -16,6 +16,8 @@ import {
 import {
   ATTR_DEPLOYMENT_ENVIRONMENT_NAME
 } from '@opentelemetry/semantic-conventions/incubating'
+import { registerInstrumentations } from '@opentelemetry/instrumentation'
+import { UndiciInstrumentation } from '@opentelemetry/instrumentation-undici'
 
 const resource = new Resource({
   [ATTR_SERVICE_NAME]: 'upload-api',
@@ -34,6 +36,8 @@ const exporter = new OTLPTraceExporter({
 const provider = new NodeTracerProvider({ resource, sampler })
 provider.addSpanProcessor(new BatchSpanProcessor(exporter))
 provider.register()
+
+registerInstrumentations({ instrumentations: [new UndiciInstrumentation()] })
 
 const tracer = trace.getTracer('upload-api')
 
