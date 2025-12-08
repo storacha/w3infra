@@ -21,8 +21,8 @@ export const instrumentFn = (tracer, name, fn) =>
         span.end()
         throw err
       }
-      if (ret instanceof Promise) {
-        return ret
+      if (ret && typeof ret.then == 'function') {
+        return Promise.resolve(ret)
           .catch(err => {
             span.recordException(err)
             span.setStatus({ code: SpanStatusCode.ERROR, message: err?.message })
@@ -43,14 +43,13 @@ export const instrumentFn = (tracer, name, fn) =>
  * @returns {T}
  */
 export const instrumentMethods = (tracer, name, obj, methods) => {
-  // /** @type {Record<string, any>} */
-  // const instObj = { ...obj }
-  // for (const method of methods ?? Object.keys(obj)) {
-  //   const fn = obj[method]
-  //   if (typeof fn === 'function') {
-  //     instObj[method] = instrumentFn(tracer, `${name}.${method}`, fn.bind(obj))
-  //   }
-  // }
-  // return /** @type {T} */ (instObj)
-  return { ...obj }
+  /** @type {Record<string, any>} */
+  const instObj = { ...obj }
+  for (const method of methods ?? Object.keys(obj)) {
+    const fn = obj[method]
+    if (typeof fn === 'function') {
+      instObj[method] = instrumentFn(tracer, `${name}.${method}`, fn.bind(obj))
+    }
+  }
+  return /** @type {T} */ (instObj)
 }
