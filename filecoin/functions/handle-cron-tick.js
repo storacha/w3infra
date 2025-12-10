@@ -1,6 +1,7 @@
 import * as Sentry from '@sentry/serverless'
 import { Config } from 'sst/node/config'
 import * as storefrontEvents from '@storacha/filecoin-api/storefront/events'
+import * as DID from '@ipld/dag-ucan/did'
 import * as Proof from '@storacha/client/proof'
 import { createPieceTable } from '../store/piece.js'
 import { createTaskStore } from '../store/task.js'
@@ -39,11 +40,9 @@ export async function handleCronTick () {
     aggregatorServiceProofs.push(proof)
   }
 
-  const aggregatorServiceSigner = getServiceSigner({
-    did: aggregatorDid,
-    privateKey: privateKey,
-  })
-
+  // Note that we need a self-signed invocation if we don't have a proof to invoke piece/offer on the aggregator service.
+  // Thus, we always use the storefront/upload-service key as the issuer, but wrap it with the upload-service DID web if
+  // there is a proof, and the aggregator service DID web if we don't have one.
   const context = {
     pieceStore: createPieceTable(AWS_REGION, pieceTableName),
     taskStore: createTaskStore(AWS_REGION, agentIndexBucketName, agentMessageBucketName),
@@ -51,9 +50,12 @@ export async function handleCronTick () {
     aggregatorInvocationConfig: {
       issuer: aggregatorServiceProofs.length
         ? storefrontSigner
-        : aggregatorServiceSigner,
-      audience: aggregatorServiceSigner,
-      with: aggregatorServiceSigner.did(),
+        : getServiceSigner({
+          did: aggregatorDid,
+          privateKey: privateKey,
+        }),
+      audience: DID.parse(aggregatorDid),
+      with: aggregatorDid,
       proofs: aggregatorServiceProofs
     }
   }
