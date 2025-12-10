@@ -226,6 +226,9 @@ async function setupProducts() {
   // First create the billing meters
   const { storageMeter, egressMeter } = await createBillingMeters()
 
+  /**
+   * @type {Record<string, Record<string, {product: Stripe.Response<Stripe.Product>, price: Stripe.Response<Stripe.Price>}>>}
+   */
   const results = {}
 
   for (const [tierKey, tier] of Object.entries(TIERS)) {
