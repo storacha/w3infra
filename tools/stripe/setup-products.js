@@ -38,6 +38,7 @@ const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY
 
 if (!STRIPE_SECRET_KEY) {
   console.error('Error: STRIPE_SECRET_KEY environment variable is required')
+  // eslint-disable-next-line unicorn/no-process-exit
   process.exit(1)
 }
 
@@ -70,6 +71,7 @@ const TIERS = {
 /**
  * Converts GiB rate to bytes rate
  * 1 GiB = 1,073,741,824 bytes (2^30)
+ * 
  * @param {number} gibRate
  * @returns {number}
  */
@@ -80,6 +82,7 @@ function gibToBytesRate(gibRate) {
 
 /**
  * Creates a Stripe product with its associated price
+ * 
  * @param {string} tierKey
  * @param {{ name: string, flatFee: number, storageRate: number, egressRate: number }} tier
  * @param {string} productType
@@ -101,6 +104,7 @@ async function createProduct(tierKey, tier, productType, meter = null) {
   /** @type {import('stripe').Stripe.PriceCreateParams} */
   let priceData
 
+  // eslint-disable-next-line unicorn/prefer-switch
   if (productType === 'flat-fee') {
     // Flat monthly subscription fee
     priceData = {
@@ -303,7 +307,4 @@ async function setupProducts() {
 }
 
 // Run the setup
-setupProducts().catch((error) => {
-  console.error('Error setting up products:', error)
-  process.exit(1)
-})
+await setupProducts()
