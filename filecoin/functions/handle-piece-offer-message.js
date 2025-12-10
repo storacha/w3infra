@@ -42,8 +42,7 @@ async function handlePieceOfferMessage (sqsEvent) {
   try {
     aggregatorProof = Config.AGGREGATOR_SERVICE_PROOF
   } catch (error) {
-    // AGGREGATOR_SERVICE_PROOF is not set for this environment
-    aggregatorProof = undefined
+    // AGGREGATOR_SERVICE_PROOF not set for this environment
   }
 
   const storefrontSigner = getServiceSigner({

@@ -366,38 +366,37 @@ export async function ucanInvocationRouter(request) {
 
   // AGGREGATOR_SERVICE_PROOF is optional
   let aggregatorProof
-    try {
-      aggregatorProof = Config.AGGREGATOR_SERVICE_PROOF
-    } catch (error) {
-      // AGGREGATOR_SERVICE_PROOF is not set for this environment
-      aggregatorProof = undefined
-    }
+  try {
+    aggregatorProof = Config.AGGREGATOR_SERVICE_PROOF
+  } catch (error) {
+    // AGGREGATOR_SERVICE_PROOF not set for this environment
+  }
 
-    const aggregatorConnection = getServiceConnection({
-      did: aggregatorDid,
-      url: aggregatorUrl
-    })
+  const aggregatorConnection = getServiceConnection({
+    did: aggregatorDid,
+    url: aggregatorUrl
+  })
 
-    const aggregatorServiceProofs = []
-    if (aggregatorProof) {
-      const proof = await Proof.parse(aggregatorProof)
-      aggregatorServiceProofs.push(proof)
-    }
+  const aggregatorServiceProofs = []
+  if (aggregatorProof) {
+    const proof = await Proof.parse(aggregatorProof)
+    aggregatorServiceProofs.push(proof)
+  }
 
-    const aggregatorServiceConfig = {
-      invocationConfig: {
-        issuer: aggregatorServiceProofs.length
+  const aggregatorServiceConfig = {
+    invocationConfig: {
+      issuer: aggregatorServiceProofs.length
         ? serviceSigner
         : getServiceSigner({
           did: aggregatorDid,
           privateKey: PRIVATE_KEY,
         }),
-        audience: aggregatorConnection.id,
-        with: aggregatorConnection.id.did(),
-        proofs: aggregatorServiceProofs
-      },
-      connection: aggregatorConnection,
-    }
+      audience: aggregatorConnection.id,
+      with: aggregatorConnection.id.did(),
+      proofs: aggregatorServiceProofs
+    },
+    connection: aggregatorConnection,
+  }
 
   const dealTrackerProofs = []
   if (DEAL_TRACKER_SERVICE_PROOF && DEAL_TRACKER_SERVICE_PROOF !== 'none') {

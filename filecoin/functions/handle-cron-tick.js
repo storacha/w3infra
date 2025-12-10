@@ -1,7 +1,6 @@
 import * as Sentry from '@sentry/serverless'
 import { Config } from 'sst/node/config'
 import * as storefrontEvents from '@storacha/filecoin-api/storefront/events'
-import * as DID from '@ipld/dag-ucan/did'
 import * as Proof from '@storacha/client/proof'
 import { createPieceTable } from '../store/piece.js'
 import { createTaskStore } from '../store/task.js'
@@ -25,8 +24,7 @@ export async function handleCronTick () {
   try {
     aggregatorProof = Config.AGGREGATOR_SERVICE_PROOF
   } catch (error) {
-    // AGGREGATOR_SERVICE_PROOF is not set for this environment
-    aggregatorProof = undefined
+    // AGGREGATOR_SERVICE_PROOF not set for this environment
   }
 
   // create context
@@ -50,15 +48,13 @@ export async function handleCronTick () {
     pieceStore: createPieceTable(AWS_REGION, pieceTableName),
     taskStore: createTaskStore(AWS_REGION, agentIndexBucketName, agentMessageBucketName),
     receiptStore: createReceiptStore(AWS_REGION, agentIndexBucketName, agentMessageBucketName),
-    aggregatorService: {
-      invocationConfig: {
-        issuer: aggregatorServiceProofs.length
-          ? storefrontSigner
-          : aggregatorServiceSigner,
-        audience: aggregatorServiceSigner,
-        with: aggregatorServiceSigner.did(),
-        proofs: aggregatorServiceProofs
-      },
+    aggregatorInvocationConfig: {
+      issuer: aggregatorServiceProofs.length
+        ? storefrontSigner
+        : aggregatorServiceSigner,
+      audience: aggregatorServiceSigner,
+      with: aggregatorServiceSigner.did(),
+      proofs: aggregatorServiceProofs
     }
   }
 
