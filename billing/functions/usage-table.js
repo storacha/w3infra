@@ -171,14 +171,14 @@ const reportUsage = async (usage, ctx) => {
   const referenceDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 0, 23, 59, 59))
 
   const meterEvent = await ctx.stripe.billing.meterEvents.create({
-    event_name: 'usage-billing-meter',
+    event_name: 'storage_in_bytes_per_month',
     timestamp: Math.floor(referenceDate.getTime() / 1000),
     identifier: idempotencyKey,
     payload: {
       stripe_customer_id: customer,
-      value: byteQuantity.toString(),
+      bytes: byteQuantity.toString(),
     },
   })
-  console.log(`Created Stripe billing meter event: ${meterEvent}`)
+  console.log(`Created Stripe billing meter event: ${JSON.stringify(meterEvent)}`)
   return { ok: usageRecord }
 }

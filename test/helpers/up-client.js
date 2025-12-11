@@ -127,7 +127,13 @@ export async function setupNewClient (options = {}) {
     console.log(`  Space: ${space.did()}`)
     console.log('Provisioning space...')
     console.log(`  Account: ${account.did()}`)
-    await account.provision(space.did())
+    const provRes = await account.provision(space.did())
+    if (provRes.error) {
+      throw new Error(
+        `provisioning space: ${provRes.error.message}`,
+        { cause: provRes.error }
+      )
+    }
     console.log('Authorizing gateway...')
     console.log(`  Gateway Service: ${gatewayServicePrincipal.did()}`)
     console.log(`    URL: ${gatewayServiceURL}`)

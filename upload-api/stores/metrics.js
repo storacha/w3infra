@@ -1,6 +1,10 @@
+import { trace } from '@opentelemetry/api'
 import { TransactWriteItemsCommand } from '@aws-sdk/client-dynamodb'
 import { marshall } from '@aws-sdk/util-dynamodb'
 import { getDynamoClient } from '../../lib/aws/dynamo.js'
+import { instrumentMethods } from '../lib/otel/instrument.js'
+
+const tracer = trace.getTracer('upload-api')
 
 /**
  * Abstraction layer to handle operations on metrics table.
@@ -25,7 +29,7 @@ export function createMetricsTable (region, tableName, options = {}) {
  * @returns {import('../types.js').MetricsStore}
  */
 export function useMetricsTable (dynamoDb, tableName) {
-  return {
+  return instrumentMethods(tracer, 'MetricsTable', {
     /**
      * Increment total values of the given metrics.
      *
@@ -58,5 +62,5 @@ export function useMetricsTable (dynamoDb, tableName) {
 
       await dynamoDb.send(cmd)
     }
-  }
+  })
 }

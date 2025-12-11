@@ -1,3 +1,4 @@
+import { trace } from '@opentelemetry/api'
 import {
   GetItemCommand,
   PutItemCommand,
@@ -15,8 +16,11 @@ import { createConsumerStore } from '../../billing/tables/consumer.js'
 
 import { getDynamoClient } from '../../lib/aws/dynamo.js'
 import { METRICS_NAMES, SPACE_METRICS_NAMES } from '../constants.js'
+import { instrumentMethods } from '../lib/otel/instrument.js'
 
 /** @import { BlobAPI } from '@storacha/upload-api/types' */
+
+const tracer = trace.getTracer('upload-api')
 
 /**
  * @param {string} region
@@ -109,7 +113,7 @@ export const useBlobRegistry = (
     return { ok: diffs, error: undefined }
   }
 
-  return {
+  return instrumentMethods(tracer, 'BlobRegistry', {
     /** @type {BlobAPI.Registry['find']} */
     async find(space, digest) {
       const key = getKey(space, digest)
@@ -333,7 +337,7 @@ export const useBlobRegistry = (
         }
       }
     },
-  }
+  })
 }
 
 /**
@@ -378,130 +382,131 @@ export const createAllocationTableBlobRegistry = (registry, region, tableName, o
  * @param {string} tableName
  * @returns {BlobAPI.Registry}
  */
-export const useAllocationTableBlobRegistry = (registry, dynamoDb, tableName) => ({
-  /** @type {BlobAPI.Registry['find']} */
-  async find (space, digest) {
-    const key = getAllocationTableKey(space, digest)
-    const cmd = new GetItemCommand({
-      TableName: tableName,
-      Key: key,
-      // Enable consistent reads since `find` is typically called when we need
-      // to know 100% if a blob is registered or not, e.g. when registering an
-      // index.
-      ConsistentRead: true,
-    })
+export const useAllocationTableBlobRegistry = (registry, dynamoDb, tableName) => 
+  instrumentMethods(tracer, 'AllocationBlobRegistry', {
+    /** @type {BlobAPI.Registry['find']} */
+    async find (space, digest) {
+      const key = getAllocationTableKey(space, digest)
+      const cmd = new GetItemCommand({
+        TableName: tableName,
+        Key: key,
+        // Enable consistent reads since `find` is typically called when we need
+        // to know 100% if a blob is registered or not, e.g. when registering an
+        // index.
+        ConsistentRead: true,
+      })
 
-    const response = await dynamoDb.send(cmd)
-    if (!response.Item) {
-      return error(new EntryNotFound())
-    }
-
-    const raw = unmarshall(response.Item)
-    return ok({
-      blob: {
-        digest: Digest.decode(base58btc.decode(raw.multihash)),
-        size: raw.size
-      },
-      cause: Link.parse(raw.cause ?? raw.invocation).toV1(),
-      insertedAt: new Date(raw.insertedAt)
-    })
-  },
-
-  /** @type {BlobAPI.Registry['register']} */
-  register: async ({ space, blob, cause }) => {
-    const item = {
-      space,
-      multihash: base58btc.encode(blob.digest.bytes),
-      size: blob.size,
-      cause: cause.toString(),
-      insertedAt: new Date().toISOString(),
-    }
-    const cmd = new PutItemCommand({
-      TableName: tableName,
-      Item: marshall(item, { removeUndefinedValues: true }),
-      ConditionExpression: 'attribute_not_exists(#S) AND attribute_not_exists(#M)',
-      ExpressionAttributeNames: { '#S': 'space', '#M': 'multihash' }
-    })
-
-    try {
-      await dynamoDb.send(cmd)
-      return registry.register({ space, blob, cause })
-    } catch (/** @type {any} */ err) {
-      if (err.name === 'ConditionalCheckFailedException') {
-        return error(new EntryExists())
-      }
-      return error(err)
-    }
-  },
-
-  /** @type {BlobAPI.Registry['deregister']} */
-  async deregister({space, digest, cause}) {
-    const key = getAllocationTableKey(space, digest)
-    const cmd = new DeleteItemCommand({
-      TableName: tableName,
-      Key: key,
-      ConditionExpression: 'attribute_exists(#S) AND attribute_exists(#M)',
-      ExpressionAttributeNames: { '#S': 'space', '#M': 'multihash' },
-      ReturnValues: 'ALL_OLD'
-    })
-
-    try {
-      const res = await dynamoDb.send(cmd)
-      if (!res.Attributes) {
-        throw new Error('missing return values')
-      }
-      return registry.deregister({space, digest, cause})
-    } catch (/** @type {any} */ err) {
-      if (err.name === 'ConditionalCheckFailedException') {
+      const response = await dynamoDb.send(cmd)
+      if (!response.Item) {
         return error(new EntryNotFound())
       }
-      return error(err)
-    }
-  },
 
-  /** @type {BlobAPI.Registry['entries']} */
-  entries: async (space, options = {}) => {
-    const exclusiveStartKey = options.cursor
-      ? marshall({ space, multihash: options.cursor })
-      : undefined
-
-    const cmd = new QueryCommand({
-      TableName: tableName,
-      Limit: options.size || 20,
-      KeyConditions: {
-        space: {
-          ComparisonOperator: 'EQ',
-          AttributeValueList: [{ S: space }],
+      const raw = unmarshall(response.Item)
+      return ok({
+        blob: {
+          digest: Digest.decode(base58btc.decode(raw.multihash)),
+          size: raw.size
         },
-      },
-      ExclusiveStartKey: exclusiveStartKey,
-      AttributesToGet: ['multihash', 'size', 'cause', 'invocation', 'insertedAt'],
-    })
-    const response = await dynamoDb.send(cmd)
+        cause: Link.parse(raw.cause ?? raw.invocation).toV1(),
+        insertedAt: new Date(raw.insertedAt)
+      })
+    },
 
-    const results =
-      response.Items?.map((i) => allocationToEntry(unmarshall(i))) ?? []
-    const firstDigest = results[0] ? base58btc.encode(results[0].blob.digest.bytes) : undefined
-    // Get cursor of the item where list operation stopped (inclusive).
-    // This value can be used to start a new operation to continue listing.
-    const lastKey =
-      response.LastEvaluatedKey && unmarshall(response.LastEvaluatedKey)
-    const lastDigest = lastKey ? lastKey.multihash : undefined
-
-    const before = firstDigest
-    const after = lastDigest
-
-    return {
-      ok: {
-        size: results.length,
-        before,
-        after,
-        cursor: after,
-        results,
+    /** @type {BlobAPI.Registry['register']} */
+    register: async ({ space, blob, cause }) => {
+      const item = {
+        space,
+        multihash: base58btc.encode(blob.digest.bytes),
+        size: blob.size,
+        cause: cause.toString(),
+        insertedAt: new Date().toISOString(),
       }
-    }
-  },
-})
+      const cmd = new PutItemCommand({
+        TableName: tableName,
+        Item: marshall(item, { removeUndefinedValues: true }),
+        ConditionExpression: 'attribute_not_exists(#S) AND attribute_not_exists(#M)',
+        ExpressionAttributeNames: { '#S': 'space', '#M': 'multihash' }
+      })
+
+      try {
+        await dynamoDb.send(cmd)
+        return registry.register({ space, blob, cause })
+      } catch (/** @type {any} */ err) {
+        if (err.name === 'ConditionalCheckFailedException') {
+          return error(new EntryExists())
+        }
+        return error(err)
+      }
+    },
+
+    /** @type {BlobAPI.Registry['deregister']} */
+    async deregister({space, digest, cause}) {
+      const key = getAllocationTableKey(space, digest)
+      const cmd = new DeleteItemCommand({
+        TableName: tableName,
+        Key: key,
+        ConditionExpression: 'attribute_exists(#S) AND attribute_exists(#M)',
+        ExpressionAttributeNames: { '#S': 'space', '#M': 'multihash' },
+        ReturnValues: 'ALL_OLD'
+      })
+
+      try {
+        const res = await dynamoDb.send(cmd)
+        if (!res.Attributes) {
+          throw new Error('missing return values')
+        }
+        return registry.deregister({space, digest, cause})
+      } catch (/** @type {any} */ err) {
+        if (err.name === 'ConditionalCheckFailedException') {
+          return error(new EntryNotFound())
+        }
+        return error(err)
+      }
+    },
+
+    /** @type {BlobAPI.Registry['entries']} */
+    entries: async (space, options = {}) => {
+      const exclusiveStartKey = options.cursor
+        ? marshall({ space, multihash: options.cursor })
+        : undefined
+
+      const cmd = new QueryCommand({
+        TableName: tableName,
+        Limit: options.size || 20,
+        KeyConditions: {
+          space: {
+            ComparisonOperator: 'EQ',
+            AttributeValueList: [{ S: space }],
+          },
+        },
+        ExclusiveStartKey: exclusiveStartKey,
+        AttributesToGet: ['multihash', 'size', 'cause', 'invocation', 'insertedAt'],
+      })
+      const response = await dynamoDb.send(cmd)
+
+      const results =
+        response.Items?.map((i) => allocationToEntry(unmarshall(i))) ?? []
+      const firstDigest = results[0] ? base58btc.encode(results[0].blob.digest.bytes) : undefined
+      // Get cursor of the item where list operation stopped (inclusive).
+      // This value can be used to start a new operation to continue listing.
+      const lastKey =
+        response.LastEvaluatedKey && unmarshall(response.LastEvaluatedKey)
+      const lastDigest = lastKey ? lastKey.multihash : undefined
+
+      const before = firstDigest
+      const after = lastDigest
+
+      return {
+        ok: {
+          size: results.length,
+          before,
+          after,
+          cursor: after,
+          results,
+        }
+      }
+    },
+  })
 
 /**
  * Upgrade from the db representation

@@ -1,3 +1,4 @@
+import { trace } from '@opentelemetry/api'
 import { base64pad } from 'multiformats/bases/base64'
 import { base58btc } from 'multiformats/bases/base58'
 import { ok } from '@ucanto/server'
@@ -7,6 +8,9 @@ import {
 } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { getS3Client } from '../../lib/aws/s3.js'
+import { instrumentMethods } from '../lib/otel/instrument.js'
+
+const tracer = trace.getTracer('upload-api')
 
 /**
  * @typedef {import('@storacha/upload-api').LegacyBlobsStorage} LegacyBlobsStorage
@@ -53,7 +57,7 @@ export function createBlobsStorage(region, bucketName, options) {
  * @returns {LegacyBlobsStorage}
  */
 export function useBlobsStorage(s3, bucketName) {
-  return {
+  return instrumentMethods(tracer, 'BlobsStorage', {
     /**
      * @param {import('multiformats').MultihashDigest} digest
      */
@@ -114,7 +118,7 @@ export function useBlobsStorage(s3, bucketName) {
         (`https://${bucketName}.r2.w3s.link/${contentKey(digest)}`)
       )
     }
-  }
+  })
 }
 
 /**

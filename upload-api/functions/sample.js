@@ -1,4 +1,5 @@
 import * as Sentry from '@sentry/serverless'
+import { wrapLambdaHandler } from '../otel.js'
 import * as dagJSON from '@ipld/dag-json'
 import * as Monitor from '../monitor.js'
 import { mustGetEnv } from '../../lib/env.js'
@@ -38,4 +39,6 @@ export const sampleGet = async (event) => {
   }
 }
 
-export const handler = Sentry.AWSLambda.wrapHandler((event) => sampleGet(event))
+export const handler = Sentry.AWSLambda.wrapHandler(
+  wrapLambdaHandler('sample', (event) => sampleGet(event))
+)

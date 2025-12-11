@@ -1,8 +1,9 @@
 import { Config } from 'sst/node/config'
-import { API, error, ok } from '@ucanto/core'
+import { trace } from '@opentelemetry/api'
+import { API } from '@ucanto/core'
 import * as Delegation from '@ucanto/core/delegation'
 import { CAR, Legacy, Codec } from '@ucanto/transport'
-import { DIDResolutionError, Schema } from '@ucanto/validator'
+import { Schema } from '@ucanto/validator'
 import * as Link from 'multiformats/link'
 import { base64 } from 'multiformats/bases/base64'
 import * as Sentry from '@sentry/serverless'
@@ -12,6 +13,8 @@ import * as Proof from '@storacha/client/proof'
 import { Client as IndexingServiceClient } from '@storacha/indexing-service-client'
 import * as UploadAPI from '@storacha/upload-api'
 import * as UCANCaps from '@storacha/capabilities/ucan'
+import { HTTPResolver, CacheResolver, MapResolver, TieredResolver } from '@storacha/principal-resolver'
+import { wrapLambdaHandler } from '../otel.js'
 import {
   composeCarStoresWithOrderedHas,
   createCarStore,
@@ -72,6 +75,7 @@ import {
 import { uploadServiceURL } from '@storacha/client/service'
 import { productInfo } from '../../billing/lib/product-info.js'
 import { FREE_TRIAL_COUPONS, PLANS_TO_LINE_ITEMS_MAPPING } from '../constants.js'
+import { instrumentServiceMethods } from '../lib/otel/ucanto.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -540,6 +544,13 @@ export async function ucanInvocationRouter(request) {
     }
   }
 
+  const principalResolver = TieredResolver.create([
+    MapResolver.create(principalMapping),
+    CacheResolver.create(
+      HTTPResolver.create([/^did:web:.*\.storacha\.network$/])
+    ),
+  ])
+
   const server = createUcantoServer(serviceSigner, {
     codec,
     // @ts-expect-error needs update of upload-api
@@ -549,10 +560,7 @@ export async function ucanInvocationRouter(request) {
     registry: allocationBlobRegistry,
     blobsStorage,
     blobRetriever,
-    resolveDIDKey: (did) =>
-      Schema.did({ method: 'web' }).is(did) && principalMapping[did]
-        ? ok([principalMapping[did]])
-        : error(new DIDResolutionError(did)),
+    ...principalResolver,
     getServiceConnection: () => connection,
     // TODO: to be deprecated with `store/*` protocol
     storeTable: createStoreTable(AWS_REGION, storeTableName, {
@@ -580,7 +588,9 @@ export async function ucanInvocationRouter(request) {
     url: new URL(accessServiceURL),
     email: new Email({
       token: postmarkToken,
-      environment: sstStage === 'prod' ? undefined : sstStage,
+      environment: ['prod', 'forge-prod'].includes(sstStage)
+        ? undefined
+        : sstStage,
     }),
     agentStore,
     provisionsStorage,
@@ -633,6 +643,12 @@ export async function ucanInvocationRouter(request) {
     ssoService,
   })
 
+  const tracer = trace.getTracer('upload-api')
+  Object.assign(
+    server.service,
+    instrumentServiceMethods(tracer, server.service)
+  )
+
   const connection = UploadAPI.connect({
     id: serviceSigner,
     channel: server,
@@ -644,7 +660,9 @@ export async function ucanInvocationRouter(request) {
   return toLambdaResponse(response)
 }
 
-export const handler = Sentry.AWSLambda.wrapHandler(ucanInvocationRouter)
+export const handler = Sentry.AWSLambda.wrapHandler(
+  wrapLambdaHandler('ucan-invocation-router', ucanInvocationRouter)
+)
 
 /**
  * @param {API.HTTPResponse} response
@@ -668,45 +686,45 @@ export const fromLambdaRequest = (request) => ({
 
 function getLambdaEnv() {
   return {
-    storeTableName: mustGetEnv('STORE_TABLE_NAME'),
-    storeBucketName: mustGetEnv('STORE_BUCKET_NAME'),
-    uploadTableName: mustGetEnv('UPLOAD_TABLE_NAME'),
-    allocationTableName: mustGetEnv('ALLOCATION_TABLE_NAME'),
-    blobRegistryTableName: mustGetEnv('BLOB_REGISTRY_TABLE_NAME'),
-    consumerTableName: mustGetEnv('CONSUMER_TABLE_NAME'),
-    customerTableName: mustGetEnv('CUSTOMER_TABLE_NAME'),
-    subscriptionTableName: mustGetEnv('SUBSCRIPTION_TABLE_NAME'),
-    delegationBucketName: mustGetEnv('DELEGATION_BUCKET_NAME'),
-    delegationTableName: mustGetEnv('DELEGATION_TABLE_NAME'),
-    revocationTableName: mustGetEnv('REVOCATION_TABLE_NAME'),
-    spaceMetricsTableName: mustGetEnv('SPACE_METRICS_TABLE_NAME'),
-    adminMetricsTableName: mustGetEnv('ADMIN_METRICS_TABLE_NAME'),
-    rateLimitTableName: mustGetEnv('RATE_LIMIT_TABLE_NAME'),
-    pieceTableName: mustGetEnv('PIECE_TABLE_NAME'),
-    spaceDiffTableName: mustGetEnv('SPACE_DIFF_TABLE_NAME'),
-    spaceSnapshotTableName: mustGetEnv('SPACE_SNAPSHOT_TABLE_NAME'),
-    storageProviderTableName: mustGetEnv('STORAGE_PROVIDER_TABLE_NAME'),
-    replicaTableName: mustGetEnv('REPLICA_TABLE_NAME'),
+    storeTableName: mustGetEnv('STORE_TABLE'),
+    storeBucketName: mustGetEnv('STORE_BUCKET'),
+    uploadTableName: mustGetEnv('UPLOAD_TABLE'),
+    allocationTableName: mustGetEnv('ALLOCATION_TABLE'),
+    blobRegistryTableName: mustGetEnv('BLOB_REGISTRY_TABLE'),
+    consumerTableName: mustGetEnv('CONSUMER_TABLE'),
+    customerTableName: mustGetEnv('CUSTOMER_TABLE'),
+    subscriptionTableName: mustGetEnv('SUBSCRIPTION_TABLE'),
+    delegationBucketName: mustGetEnv('DELEGATION_BUCKET'),
+    delegationTableName: mustGetEnv('DELEGATION_TABLE'),
+    revocationTableName: mustGetEnv('REVOCATION_TABLE'),
+    spaceMetricsTableName: mustGetEnv('SPACE_METRICS_TABLE'),
+    adminMetricsTableName: mustGetEnv('ADMIN_METRICS_TABLE'),
+    rateLimitTableName: mustGetEnv('RATE_LIMIT_TABLE'),
+    pieceTableName: mustGetEnv('PIECE_TABLE'),
+    spaceDiffTableName: mustGetEnv('SPACE_DIFF_TABLE'),
+    spaceSnapshotTableName: mustGetEnv('SPACE_SNAPSHOT_TABLE'),
+    storageProviderTableName: mustGetEnv('STORAGE_PROVIDER_TABLE'),
+    replicaTableName: mustGetEnv('REPLICA_TABLE'),
     pieceOfferQueueUrl: mustGetEnv('PIECE_OFFER_QUEUE_URL'),
     filecoinSubmitQueueUrl: mustGetEnv('FILECOIN_SUBMIT_QUEUE_URL'),
     egressTrafficQueueUrl: mustGetEnv('EGRESS_TRAFFIC_QUEUE_URL'),
     r2DelegationBucketEndpoint: process.env.R2_ENDPOINT,
     r2DelegationBucketAccessKeyId: process.env.R2_ACCESS_KEY_ID,
     r2DelegationBucketSecretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
-    r2DelegationBucketName: process.env.R2_DELEGATION_BUCKET_NAME,
-    agentIndexBucketName: mustGetEnv('AGENT_INDEX_BUCKET_NAME'),
-    agentMessageBucketName: mustGetEnv('AGENT_MESSAGE_BUCKET_NAME'),
-    streamName: mustGetEnv('UCAN_LOG_STREAM_NAME'),
+    r2DelegationBucketName: process.env.R2_DELEGATION_BUCKET,
+    agentIndexBucketName: mustGetEnv('AGENT_INDEX_BUCKET'),
+    agentMessageBucketName: mustGetEnv('AGENT_MESSAGE_BUCKET'),
+    streamName: mustGetEnv('UCAN_LOG_STREAM'),
     postmarkToken: mustGetEnv('POSTMARK_TOKEN'),
     providers: mustGetEnv('PROVIDERS'),
-    accessServiceURL: mustGetEnv('ACCESS_SERVICE_URL'),
+    accessServiceURL: mustGetEnv('UPLOAD_SERVICE_URL'),
     uploadServiceURL: mustGetEnv('UPLOAD_SERVICE_URL'),
     aggregatorDid: mustGetEnv('AGGREGATOR_DID'),
     requirePaymentPlan: process.env.REQUIRE_PAYMENT_PLAN === 'true',
     dealTrackerDid: mustGetEnv('DEAL_TRACKER_DID'),
     dealTrackerUrl: mustGetEnv('DEAL_TRACKER_URL'),
     // carpark bucket - CAR file bytes may be found here with keys like {cid}/{cid}.car
-    carparkBucketName: mustGetEnv('R2_CARPARK_BUCKET_NAME'),
+    carparkBucketName: mustGetEnv('R2_CARPARK_BUCKET'),
     carparkBucketEndpoint: mustGetEnv('R2_ENDPOINT'),
     carparkBucketAccessKeyId: mustGetEnv('R2_ACCESS_KEY_ID'),
     carparkBucketSecretAccessKey: mustGetEnv('R2_SECRET_ACCESS_KEY'),

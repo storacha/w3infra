@@ -1,3 +1,4 @@
+import { trace } from '@opentelemetry/api'
 import {
   UpdateItemCommand,
   GetItemCommand,
@@ -9,6 +10,9 @@ import { CID } from 'multiformats/cid'
 import { RecordNotFound } from './lib.js'
 import { getDynamoClient } from '../../lib/aws/dynamo.js'
 import { METRICS_NAMES, SPACE_METRICS_NAMES } from '../constants.js'
+import { instrumentMethods } from '../lib/otel/instrument.js'
+
+const tracer = trace.getTracer('upload-api')
 
 /**
  * @typedef {import('@storacha/upload-api').UploadTable} UploadTable
@@ -47,7 +51,7 @@ export function createUploadTable(region, tableName, metrics, options = {}) {
  * @returns {UploadTable}
  */
 export function useUploadTable(dynamoDb, tableName, metrics) {
-  return {
+  return instrumentMethods(tracer, 'UploadTable', {
     /**
      * Fetch a single upload
      *
@@ -281,7 +285,7 @@ export function useUploadTable(dynamoDb, tableName, metrics) {
         }
       }
     }
-  }
+  })
 }
 
 /**

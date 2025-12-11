@@ -3,6 +3,7 @@ import { parseLink } from '@ucanto/server'
 
 import * as Store from '../stores/agent/store.js'
 import { mustGetEnv } from '../../lib/env.js'
+import { wrapLambdaHandler } from '../otel.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -63,4 +64,6 @@ export function implicitContext () {
   }
 }
 
-export const handler = Sentry.AWSLambda.wrapHandler((event) => receiptGet(event))
+export const handler = Sentry.AWSLambda.wrapHandler(
+  wrapLambdaHandler('receipt', (event) => receiptGet(event))
+)
