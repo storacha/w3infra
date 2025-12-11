@@ -1,6 +1,7 @@
 import { testService as test } from './helpers/context.js'
 import { test as filecoinApiTest } from '@storacha/filecoin-api/test'
 import * as Signer from '@ucanto/principal/ed25519'
+import * as AggregatorCaps from '@storacha/capabilities/filecoin/aggregator'
 import { Consumer } from 'sqs-consumer'
 import pWaitFor from 'p-wait-for'
 import delay from 'delay'
@@ -114,10 +115,26 @@ for (const [title, unit] of Object.entries(filecoinApiTest.events.storefront)) {
       storefrontSigner,
       service
     ).connection
+
     const aggregatorConnection = getConnection(
       aggregatorSigner,
       service
     ).connection
+    const aggregatorServiceProof = await AggregatorCaps.pieceOffer.delegate(
+      {
+        issuer: aggregatorSigner,
+        audience: storefrontSigner,
+        with: aggregatorSigner.did(),
+        expiration: Infinity,
+      }
+    )
+    const aggregatorInvocationConfig = {
+      issuer: storefrontSigner,
+      audience: aggregatorSigner,
+      with: aggregatorSigner.did(),
+      proofs: [aggregatorServiceProof],
+    }
+
     const claimsConnection = getConnection(claimsSigner, service).connection
 
     await unit(
@@ -142,13 +159,10 @@ for (const [title, unit] of Object.entries(filecoinApiTest.events.storefront)) {
             audience: storefrontSigner,
           },
         },
+        aggregatorInvocationConfig,
         aggregatorService: {
+          invocationConfig: aggregatorInvocationConfig,
           connection: aggregatorConnection,
-          invocationConfig: {
-            issuer: storefrontSigner,
-            with: storefrontSigner.did(),
-            audience: aggregatorSigner,
-          },
         },
         claimsService: {
           connection: claimsConnection,
