@@ -1,7 +1,6 @@
 import * as Sentry from '@sentry/serverless'
 import { Config } from 'sst/node/config'
 import * as Proof from '@storacha/client/proof'
-import * as DID from '@ipld/dag-ucan/did'
 
 import * as storefrontEvents from '@storacha/filecoin-api/storefront/events'
 
@@ -35,31 +34,45 @@ async function handlePieceOfferMessage (sqsEvent) {
   })
 
   // Create context
-  const { PRIVATE_KEY: privateKey } = Config
-  const { aggregatorDid, aggregatorUrl, did, storefrontProof } = getEnv()
-  let storefrontSigner = getServiceSigner({
-    privateKey
+  const { did, aggregatorDid, aggregatorUrl } = getEnv()
+  const privateKey = Config.PRIVATE_KEY
+
+  // AGGREGATOR_SERVICE_PROOF is optional
+  let aggregatorProof
+  try {
+    aggregatorProof = Config.AGGREGATOR_SERVICE_PROOF
+  } catch {
+    // AGGREGATOR_SERVICE_PROOF not set for this environment
+  }
+
+  const storefrontSigner = getServiceSigner({
+    did,
+    privateKey,
   })
-  const connection = getServiceConnection({
+
+  const aggregatorConnection = getServiceConnection({
     did: aggregatorDid,
     url: aggregatorUrl
   })
+
   const aggregatorServiceProofs = []
-  if (storefrontProof) {
-    const proof = await Proof.parse(storefrontProof)
+  if (aggregatorProof) {
+    const proof = await Proof.parse(aggregatorProof)
     aggregatorServiceProofs.push(proof)
-  } else {
-    // if no proofs, we must be using the service private key to sign
-    storefrontSigner = storefrontSigner.withDID(DID.parse(did).did())
   }
 
   const context = {
     aggregatorService: {
-      connection,
+      connection: aggregatorConnection,
       invocationConfig: {
-        issuer: storefrontSigner,
-        with: storefrontSigner.did(),
-        audience: connection.id,
+        issuer: aggregatorServiceProofs.length
+          ? storefrontSigner
+          : getServiceSigner({
+            did: aggregatorDid,
+            privateKey,
+          }),
+        audience: aggregatorConnection.id,
+        with: aggregatorConnection.id.did(),
         proofs: aggregatorServiceProofs
       },
     }
@@ -87,7 +100,6 @@ function getEnv () {
     did: mustGetEnv('DID'),
     aggregatorDid: mustGetEnv('AGGREGATOR_DID'),
     aggregatorUrl: mustGetEnv('AGGREGATOR_URL'),
-    storefrontProof: process.env.PROOF,
   }
 }
 

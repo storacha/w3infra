@@ -367,6 +367,32 @@ export async function ucanInvocationRouter(request) {
     revocationTableName
   )
 
+  // AGGREGATOR_SERVICE_PROOF is optional
+  let aggregatorProof
+  try {
+    aggregatorProof = Config.AGGREGATOR_SERVICE_PROOF
+  } catch {
+    // AGGREGATOR_SERVICE_PROOF not set for this environment
+  }
+
+  const aggregatorServicePrincipal = DID.parse(aggregatorDid)
+  const aggregatorServiceProofs = []
+  if (aggregatorProof) {
+    const proof = await Proof.parse(aggregatorProof)
+    aggregatorServiceProofs.push(proof)
+  }
+  const aggregatorInvocationConfig = {
+    issuer: aggregatorServiceProofs.length
+      ? serviceSigner
+      : getServiceSigner({
+        did: aggregatorDid,
+        privateKey: PRIVATE_KEY,
+      }),
+    audience: aggregatorServicePrincipal,
+    with: aggregatorServicePrincipal.did(),
+    proofs: aggregatorServiceProofs
+  }
+
   const dealTrackerProofs = []
   if (DEAL_TRACKER_SERVICE_PROOF && DEAL_TRACKER_SERVICE_PROOF !== 'none') {
     const proof = await Proof.parse(DEAL_TRACKER_SERVICE_PROOF)
@@ -572,7 +598,6 @@ export async function ucanInvocationRouter(request) {
     delegationsStorage,
     revocationsStorage,
     rateLimitsStorage,
-    aggregatorId: DID.parse(aggregatorDid),
     pieceStore: createPieceTable(AWS_REGION, pieceTableName),
     taskStore: createFilecoinTaskStore(
       AWS_REGION,
@@ -592,6 +617,7 @@ export async function ucanInvocationRouter(request) {
       { region: AWS_REGION },
       { queueUrl: filecoinSubmitQueueUrl }
     ),
+    aggregatorInvocationConfig,
     dealTrackerService: {
       connection: dealTrackerConnection,
       invocationConfig: {

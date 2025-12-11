@@ -8,6 +8,7 @@ import {
   createPDPStore,
 } from '@storacha/filecoin-api/test/context/service'
 import * as Signer from '@ucanto/principal/ed25519'
+import * as AggregatorCaps from '@storacha/capabilities/filecoin/aggregator'
 import { Consumer } from 'sqs-consumer'
 import pWaitFor from 'p-wait-for'
 import delay from 'delay'
@@ -123,6 +124,21 @@ for (const [title, unit] of Object.entries(
     const aggregatorSigner = await Signer.generate()
     const dealTrackerSigner = await Signer.generate()
 
+    const aggregatorServiceProof = await AggregatorCaps.pieceOffer.delegate(
+      {
+        issuer: aggregatorSigner,
+        audience: storefrontSigner,
+        with: aggregatorSigner.did(),
+        expiration: Infinity,
+      }
+    )
+    const aggregatorInvocationConfig = {
+      issuer: storefrontSigner,
+      audience: aggregatorSigner,
+      with: aggregatorSigner.did(),
+      proofs: [aggregatorServiceProof],
+    }
+
     const service = getMockService()
     const dealTrackerConnection = getConnection(
       dealTrackerSigner,
@@ -142,6 +158,7 @@ for (const [title, unit] of Object.entries(
       {
         id: storefrontSigner,
         aggregatorId: aggregatorSigner,
+        aggregatorInvocationConfig,
         dealTrackerService: {
           connection: dealTrackerConnection,
           invocationConfig: {

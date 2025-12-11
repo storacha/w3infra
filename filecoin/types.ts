@@ -26,11 +26,11 @@ export interface FilecoinAggregateOfferMetricsCtx extends FilecoinMetricsCtx {
 }
 
 export interface WorkflowBucket {
-  get: (Cid: string) => Promise<Uint8Array|undefined>
+  get: (Cid: string) => Promise<Uint8Array | undefined>
 }
 
 export interface InvocationBucket {
-  getInLink: (cid: string) => Promise<string|undefined>
+  getInLink: (cid: string) => Promise<string | undefined>
 }
 
 
@@ -62,7 +62,7 @@ export interface PieceStoreRecord extends Omit<InferStoreRecord<PieceRecord>, 's
   stat: number
 }
 
-export interface PieceStoreRecordKey extends InferStoreRecord<PieceRecordKey> {}
+export interface PieceStoreRecordKey extends InferStoreRecord<PieceRecordKey> { }
 
 export enum PieceStoreRecordStatus {
   Submitted = 0,
@@ -77,6 +77,9 @@ declare module 'sst/node/config' {
   export interface SecretResources {
     PRIVATE_KEY: {
       value: string
-    }
+    },
+    AGGREGATOR_SERVICE_PROOF: {
+      value: string
+    },
   }
 }

@@ -326,6 +326,11 @@ Proof that the upload service can publish claims to the [indexing service](https
 
 Proof that the upload service can invoke `deal/info` on the deal tracker service. Set to `none` if no proof is required.
 
+#### `AGGREGATOR_SERVICE_PROOF`
+
+Proof that the upload service can invoke `piece/offer` on the aggregator service. Only required if the upload service and
+the aggregator service are using different private keys.
+
 ## HTTP API
 
 A UCAN based [RPC] API over HTTP.

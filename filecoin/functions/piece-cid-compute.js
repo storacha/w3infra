@@ -1,8 +1,6 @@
 import * as Sentry from '@sentry/serverless'
 import { Config } from 'sst/node/config'
-import * as Proof from '@storacha/client/proof'
 import { Storefront } from '@storacha/filecoin-client'
-import * as DID from '@ipld/dag-ucan/did'
 
 import { computePieceCid } from '../index.js'
 import { getServiceConnection, getServiceSigner } from '../service.js'
@@ -23,7 +21,7 @@ Sentry.AWSLambda.init({
  */
 async function computeHandler (event) {
   const { PRIVATE_KEY: privateKey } = Config
-  const { storefrontDid, storefrontUrl, storefrontProof, disablePieceCidCompute } = getEnv()
+  const { storefrontDid, storefrontUrl, disablePieceCidCompute } = getEnv()
 
   if (disablePieceCidCompute) {
     const body = 'piece cid computation is disabled'
@@ -35,29 +33,22 @@ async function computeHandler (event) {
   }
 
   // Create context
-  let storefrontSigner = getServiceSigner({
+  const storefrontSigner = getServiceSigner({
+    did: storefrontDid,
     privateKey
   })
   const connection = getServiceConnection({
     did: storefrontDid,
     url: storefrontUrl
   })
-  const storefrontServiceProofs = []
-  if (storefrontProof) {
-    const proof = await Proof.parse(storefrontProof)
-    storefrontServiceProofs.push(proof)
-  } else {
-    // if no proofs, we must be using the service private key to sign
-    storefrontSigner = storefrontSigner.withDID(DID.parse(storefrontDid).did())
-  }
+
   const storefrontService = {
     connection,
-      invocationConfig: {
-        issuer: storefrontSigner,
-        with: storefrontSigner.did(),
-        audience: storefrontSigner,
-        proofs: storefrontServiceProofs
-      },
+    invocationConfig: {
+      issuer: storefrontSigner,
+      with: storefrontSigner.did(),
+      audience: storefrontSigner,
+    },
   }
 
   // Decode record
@@ -111,7 +102,6 @@ function getEnv () {
   return {
     storefrontDid: mustGetEnv('STOREFRONT_DID'),
     storefrontUrl: mustGetEnv('STOREFRONT_URL'),
-    storefrontProof: process.env.PROOF,
     disablePieceCidCompute: process.env.DISABLE_PIECE_CID_COMPUTE === 'true'
   }
 }

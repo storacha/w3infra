@@ -18,28 +18,47 @@ Sentry.AWSLambda.init({
 const AWS_REGION = process.env.AWS_REGION || 'us-west-2'
 
 export async function handleCronTick () {
-  const { did, pieceTableName, agentMessageBucketName, agentIndexBucketName, aggregatorDid, storefrontProof } = getEnv()
-  const { PRIVATE_KEY: privateKey } = Config
+  const { did, pieceTableName, agentMessageBucketName, agentIndexBucketName, aggregatorDid } = getEnv()
+  const privateKey = Config.PRIVATE_KEY
 
-  // create context
-  let id = getServiceSigner({
-    privateKey
-  })
-  const storefrontServiceProofs = []
-  if (storefrontProof) {
-    const proof = await Proof.parse(storefrontProof)
-    storefrontServiceProofs.push(proof)
-  } else {
-    // if no proofs, we must be using the service private key to sign
-    id = id.withDID(DID.parse(did).did())
+  let aggregatorProof
+  try {
+    aggregatorProof = Config.AGGREGATOR_SERVICE_PROOF
+  } catch {
+    // AGGREGATOR_SERVICE_PROOF not set for this environment
   }
 
+  // create context
+  const storefrontSigner = getServiceSigner({
+    did,
+    privateKey,
+  })
+
+  const aggregatorServicePrincipal = DID.parse(aggregatorDid)
+  const aggregatorServiceProofs = []
+  if (aggregatorProof) {
+    const proof = await Proof.parse(aggregatorProof)
+    aggregatorServiceProofs.push(proof)
+  }
+
+  // Note that we need a self-signed invocation if we don't have a proof to invoke piece/offer on the aggregator service.
+  // Thus, we always use the storefront/upload-service key as the issuer, but wrap it with the upload-service DID web if
+  // there is a proof, and the aggregator service DID web if we don't have one.
   const context = {
-    id,
     pieceStore: createPieceTable(AWS_REGION, pieceTableName),
     taskStore: createTaskStore(AWS_REGION, agentIndexBucketName, agentMessageBucketName),
     receiptStore: createReceiptStore(AWS_REGION, agentIndexBucketName, agentMessageBucketName),
-    aggregatorId: DID.parse(aggregatorDid),
+    aggregatorInvocationConfig: {
+      issuer: aggregatorServiceProofs.length
+        ? storefrontSigner
+        : getServiceSigner({
+          did: aggregatorDid,
+          privateKey,
+        }),
+      audience: aggregatorServicePrincipal,
+      with: aggregatorServicePrincipal.did(),
+      proofs: aggregatorServiceProofs
+    }
   }
 
   const { ok, error } = await storefrontEvents.handleCronTick(context)
@@ -64,7 +83,6 @@ function getEnv () {
     agentMessageBucketName: mustGetEnv('AGENT_MESSAGE_BUCKET_NAME'),
     agentIndexBucketName: mustGetEnv('AGENT_INDEX_BUCKET_NAME'),
     aggregatorDid: mustGetEnv('AGGREGATOR_DID'),
-    storefrontProof: process.env.PROOF,
   }
 }
 
