@@ -34,6 +34,7 @@ export async function handleCronTick () {
     privateKey,
   })
 
+  const aggregatorServicePrincipal = DID.parse(aggregatorDid)
   const aggregatorServiceProofs = []
   if (aggregatorProof) {
     const proof = await Proof.parse(aggregatorProof)
@@ -54,8 +55,8 @@ export async function handleCronTick () {
           did: aggregatorDid,
           privateKey: privateKey,
         }),
-      audience: DID.parse(aggregatorDid),
-      with: aggregatorDid,
+      audience: aggregatorServicePrincipal,
+      with: aggregatorServicePrincipal.did(),
       proofs: aggregatorServiceProofs
     }
   }

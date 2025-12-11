@@ -40,12 +40,12 @@ catalog:
   "@storacha/capabilities": ^1.12.0
   "@storacha/client": ^1.8.17
   "@storacha/did-mailto": ^1.0.2
-  "@storacha/filecoin-api": ^1.2.0
+  "@storacha/filecoin-api": ^2.0.0
   "@storacha/filecoin-client": ^1.0.15
   "@storacha/indexing-service-client": ^2.6.9
   "@storacha/one-webcrypto": ^1.0.1
   "@storacha/router": ^1.1.1
-  "@storacha/upload-api": ^2.8.0-rc.0
+  "@storacha/upload-api": ^2.8.1
   "@storacha/upload-client": ^1.3.6
   "@tsconfig/node16": ^1.0.3
   "@types/aws-lambda": ^8.10.108
