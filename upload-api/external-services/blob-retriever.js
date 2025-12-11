@@ -33,9 +33,19 @@ export const create = (client) => {
           if (equals(contentDigest.bytes, digest.bytes)) {
             const headers = new Headers()
             if (claim.range) {
-              headers.set('Range', `bytes=${claim.range.offset}-${claim.range.length || ''}`)
+              headers.set(
+                'Range',
+                `bytes=${claim.range.offset}-${claim.range.length || ''}`
+              )
             }
             const res = await fetch(claim.location[0], { headers })
+            if (!res.ok) {
+              throw new Error(
+                `failed to fetch blob from ${claim.location[0]}: ${
+                  res.status
+                } ${res.statusText}: ${await res.text()}`
+              )
+            }
             if (!res.body) throw new Error('missing response body')
             return ok(res.body)
           }
@@ -47,5 +57,5 @@ export const create = (client) => {
 }
 
 /** @param {LinkOrDigest} input */
-const toDigest = input =>
+const toDigest = (input) =>
   'digest' in input ? Digest.decode(input.digest) : input.multihash
