@@ -44,7 +44,7 @@ async function handlePieceInsertToFilecoinSubmit (event) {
   // Create context
   const { PRIVATE_KEY: privateKey } = Config
   const { storefrontDid, storefrontUrl } = getEnv()
-  let storefrontSigner = getServiceSigner({
+  const storefrontSigner = getServiceSigner({
     did: storefrontDid,
     privateKey
   })

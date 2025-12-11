@@ -19,12 +19,12 @@ const AWS_REGION = process.env.AWS_REGION || 'us-west-2'
 
 export async function handleCronTick () {
   const { did, pieceTableName, agentMessageBucketName, agentIndexBucketName, aggregatorDid } = getEnv()
-  const { PRIVATE_KEY: privateKey } = Config
+  const privateKey = Config.PRIVATE_KEY
 
   let aggregatorProof
   try {
     aggregatorProof = Config.AGGREGATOR_SERVICE_PROOF
-  } catch (error) {
+  } catch {
     // AGGREGATOR_SERVICE_PROOF not set for this environment
   }
 
@@ -53,7 +53,7 @@ export async function handleCronTick () {
         ? storefrontSigner
         : getServiceSigner({
           did: aggregatorDid,
-          privateKey: privateKey,
+          privateKey,
         }),
       audience: aggregatorServicePrincipal,
       with: aggregatorServicePrincipal.did(),

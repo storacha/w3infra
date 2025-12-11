@@ -371,7 +371,7 @@ export async function ucanInvocationRouter(request) {
   let aggregatorProof
   try {
     aggregatorProof = Config.AGGREGATOR_SERVICE_PROOF
-  } catch (error) {
+  } catch {
     // AGGREGATOR_SERVICE_PROOF not set for this environment
   }
 

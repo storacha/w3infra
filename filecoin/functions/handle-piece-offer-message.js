@@ -35,13 +35,13 @@ async function handlePieceOfferMessage (sqsEvent) {
 
   // Create context
   const { did, aggregatorDid, aggregatorUrl } = getEnv()
-  const { PRIVATE_KEY: privateKey } = Config
+  const privateKey = Config.PRIVATE_KEY
 
   // AGGREGATOR_SERVICE_PROOF is optional
   let aggregatorProof
   try {
     aggregatorProof = Config.AGGREGATOR_SERVICE_PROOF
-  } catch (error) {
+  } catch {
     // AGGREGATOR_SERVICE_PROOF not set for this environment
   }
 
@@ -69,7 +69,7 @@ async function handlePieceOfferMessage (sqsEvent) {
           ? storefrontSigner
           : getServiceSigner({
             did: aggregatorDid,
-            privateKey: privateKey,
+            privateKey,
           }),
         audience: aggregatorConnection.id,
         with: aggregatorConnection.id.did(),

@@ -33,7 +33,7 @@ async function computeHandler (event) {
   }
 
   // Create context
-  let storefrontSigner = getServiceSigner({
+  const storefrontSigner = getServiceSigner({
     did: storefrontDid,
     privateKey
   })
