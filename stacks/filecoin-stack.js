@@ -58,7 +58,11 @@ export function FilecoinStack({ stack, app }) {
   const filecoinSubmitQueue = new Queue(stack, filecoinSubmitQueueName, {
     cdk: {
       queue: {
-        visibilityTimeout: Duration.seconds(15 * 60)
+        visibilityTimeout: Duration.seconds(15 * 60),
+        deadLetterQueue: {
+          queue: filecoinSubmitQueueDLQ.cdk.queue,
+          maxReceiveCount: 3
+        },
       }
     }
   })
@@ -73,7 +77,6 @@ export function FilecoinStack({ stack, app }) {
       // piece is computed in this lambda
       timeout: 15 * 60,
     },
-    deadLetterQueue: filecoinSubmitQueueDLQ.cdk.queue,
     cdk: {
       eventSource: {
         batchSize: 1
@@ -89,7 +92,16 @@ export function FilecoinStack({ stack, app }) {
   const pieceOfferQueueDLQ = new Queue(stack, `${pieceOfferQueueName}-dlq`, {
     cdk: { queue: { retentionPeriod: Duration.days(14) } }
    })
-  const pieceOfferQueue = new Queue(stack, pieceOfferQueueName)
+  const pieceOfferQueue = new Queue(stack, pieceOfferQueueName, {
+    cdk: {
+      queue: {
+        deadLetterQueue: {
+          queue: pieceOfferQueueDLQ.cdk.queue,
+          maxReceiveCount: 3
+        },
+      }
+    }
+  })
   pieceOfferQueue.addConsumer(stack, {
     function: {
       handler: 'filecoin/functions/handle-piece-offer-message.main',
@@ -103,7 +115,6 @@ export function FilecoinStack({ stack, app }) {
         privateKey
       ]
     },
-    deadLetterQueue: pieceOfferQueueDLQ.cdk.queue,
     cdk: {
       eventSource: {
         batchSize: 1
@@ -267,7 +278,6 @@ export function FilecoinStack({ stack, app }) {
   const pieceCidComputeQueue = new Queue(stack, 'piece-cid-compute-queue', {
     consumer: {
       function: pieceCidComputeHandler,
-      deadLetterQueue: pieceCidComputeQueueDLQ.cdk.queue,
       cdk: {
         eventSource: {
           batchSize: 1,
@@ -278,6 +288,10 @@ export function FilecoinStack({ stack, app }) {
       queue: {
         // Needs to be set as less or equal than consumer function
         visibilityTimeout: Duration.seconds(15 * 60),
+        deadLetterQueue: {
+          queue: pieceCidComputeQueueDLQ.cdk.queue,
+          maxReceiveCount: 3
+        },
       },
     },
   })

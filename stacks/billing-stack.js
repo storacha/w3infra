@@ -42,10 +42,17 @@ export function BillingStack ({ stack, app }) {
   const spaceBillingQueue = new Queue(stack, 'space-billing-queue', {
     consumer: {
       function: spaceBillingQueueHandler,
-      deadLetterQueue: spaceBillingDLQ.cdk.queue,
       cdk: { eventSource: { batchSize: 1 } }
     },
-    cdk: { queue: { visibilityTimeout: Duration.minutes(15) } }
+    cdk: {
+      queue: {
+        visibilityTimeout: Duration.minutes(15),
+        deadLetterQueue: {
+          queue: spaceBillingDLQ.cdk.queue,
+          maxReceiveCount: 3
+        }
+      }
+    }
   })
 
   // Lambda that does a billing run for a given customer
@@ -67,10 +74,17 @@ export function BillingStack ({ stack, app }) {
   const customerBillingQueue = new Queue(stack, 'customer-billing-queue', {
     consumer: {
       function: customerBillingQueueHandler,
-      deadLetterQueue: customerBillingDLQ.cdk.queue,
       cdk: { eventSource: { batchSize: 1 } }
     },
-    cdk: { queue: { visibilityTimeout: Duration.minutes(15) } }
+    cdk: {
+      queue: {
+        visibilityTimeout: Duration.minutes(15),
+        deadLetterQueue: {
+          queue: customerBillingDLQ.cdk.queue,
+          maxReceiveCount: 3
+        }
+      }
+    }
   })
 
   // Lambda that queues account DIDs to be billed
@@ -203,10 +217,17 @@ export function BillingStack ({ stack, app }) {
   const egressTrafficQueue = new Queue(stack, 'egress-traffic-queue', {
     consumer: {
       function: egressTrafficQueueHandler,
-      deadLetterQueue: egressTrafficDLQ.cdk.queue,
       cdk: { eventSource: { batchSize: 10 } }
     },
-    cdk: { queue: { visibilityTimeout: Duration.minutes(15) } }
+    cdk: {
+      queue: {
+        visibilityTimeout: Duration.minutes(15),
+        deadLetterQueue: {
+          queue: egressTrafficDLQ.cdk.queue,
+          maxReceiveCount: 3
+        }
+      }
+    }
   })
 
   stack.addOutputs({
