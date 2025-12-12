@@ -134,7 +134,7 @@ async function createProduct(tierKey, tier, productType, meter = null) {
         usage_type: 'metered',
         meter: meter.id, // Reference the billing meter
       },
-      billing_scheme: 'per_unit',
+      billing_scheme: 'tiered',
       unit_amount_decimal: bytesRate.toFixed(12), // High precision for tiny per-byte amounts
       metadata: {
         tier: tierKey,
@@ -156,7 +156,7 @@ async function createProduct(tierKey, tier, productType, meter = null) {
         usage_type: 'metered',
         meter: meter.id, // Reference the billing meter
       },
-      billing_scheme: 'per_unit',
+      billing_scheme: 'tiered',
       unit_amount_decimal: bytesRate.toFixed(12), // High precision for tiny per-byte amounts
       metadata: {
         tier: tierKey,
