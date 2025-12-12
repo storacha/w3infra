@@ -61,6 +61,32 @@ export const SPACE_METRICS_NAMES = {
  * @type {Record<string, import('./types.js').PlansToLineItems>}
  */
 export const PLANS_TO_LINE_ITEMS_MAPPING = {
+  "travis": {
+    "did:web:starter.storacha.network": [
+      // flat fee
+      { "price": "price_1ScEvtFQJHYcRqrRUhRAbbvU", "quantity": 1 },
+      // storage overage
+      { "price": "price_1ScEvtFQJHYcRqrRMniV2kMz" },
+      // egress overage
+      { "price": "price_1ScEvuFQJHYcRqrRzuKyXvd4" }
+    ],
+    "did:web:lite.storacha.network": [
+      // flat fee
+      { "price": "price_1ScEvuFQJHYcRqrRghLWAc7y", "quantity": 1 },
+      // storage overage
+      { "price": "price_1ScEvuFQJHYcRqrRHhUlGXt7" },
+      // egress overage
+      { "price": "price_1ScEvvFQJHYcRqrRow9EHcQG" }
+    ],
+    "did:web:business.storacha.network": [
+      // flat fee
+      { "price": "price_1ScEvvFQJHYcRqrRX71ehhYS", "quantity": 1 },
+      // storage overage
+      { "price": "price_1ScEvwFQJHYcRqrRKCkA4vkv" },
+      // egress overage
+      { "price": "price_1ScEvwFQJHYcRqrR9WUZuTe9" }
+    ],
+  },
   "staging": {
     "did:web:starter.storacha.network": [
       { "price": "price_1SJMcVF6A5ufQX5voRJSNUWT", "quantity": 1 },
@@ -125,13 +151,13 @@ export const FREE_TRIAL_COUPONS = {
   "staging": {
     // no coupons for starter, it has no subscription fee anyway
     "did:web:starter.storacha.network": null,
-    "did:web:lite.storacha.network":  "ezGFDDGl",
+    "did:web:lite.storacha.network": "ezGFDDGl",
     "did:web:business.storacha.network": "9lb527n3"
   },
-  
+
   "prod": {
     "did:web:starter.storacha.network": null,
-    "did:web:lite.storacha.network":  "HUzxFTsy",
+    "did:web:lite.storacha.network": "HUzxFTsy",
     "did:web:business.storacha.network": "HaWdvmvf"
   }
 }
