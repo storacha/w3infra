@@ -8,6 +8,7 @@ import { migrateFromD1ToDynamo } from './d1-migration/add-to-dynamo.js'
 import { printD1ProvisionsEmails } from './d1-migration/print-d1-emails.js'
 import { verifyD1DynamoMigration } from './d1-migration/verify-d1-dynamo-migration.js'
 import { getOldestPiecesPendingDeals } from './get-oldest-pieces-pending-deals.js'
+import { reFilecoinSubmitPieces } from './re-filecoin-submit-pieces.js'
 
 dotenv.config({ path: ['.env', '../.env'] })
 
@@ -38,5 +39,10 @@ cli
 cli
   .command('verify-d1-migration', 'Verify D1 data has migrated successfully to Dynamo')
   .action(verifyD1DynamoMigration)
+
+cli
+  .command('re-filecoin-submit-pieces', 'Invoke filecoin/submit on pieces older than a given date')
+  .option('--cutoff-date', 'ISO date string (e.g., 2024-01-01T00:00:00Z). Defaults to CUTOFF_DATE env var.')
+  .action((opts) => reFilecoinSubmitPieces({ cutoffDate: opts['cutoff-date'] }))
 
 cli.parse(process.argv)
