@@ -209,32 +209,37 @@ function getConfig(options = {}) {
   let storefrontUrl
 
   switch (env) {
-    case 'prod':
+    case 'prod': {
       awsRegion = 'us-west-2'
       pieceTableName = 'prod-w3infra-piece-v2'
       storefrontDid = 'did:web:up.storacha.network'
       storefrontUrl = 'https://up.storacha.network'
       break
-    case 'staging':
+    }
+    case 'staging': {
       awsRegion = 'us-east-2'
       pieceTableName = 'staging-w3infra-piece-v2'
       storefrontDid = 'did:web:staging.up.storacha.network'
       storefrontUrl = 'https://staging.up.storacha.network'
       break
-    case 'forge-prod':
+    }
+    case 'forge-prod': {
       awsRegion = 'us-west-2'
       pieceTableName = 'forge-prod-upload-api-piece-v2'
       storefrontDid = 'did:web:up.forge.storacha.network'
       storefrontUrl = 'https://up.forge.storacha.network'
       break
-    case 'staging-warm':
+    }
+    case 'staging-warm': {
       awsRegion = 'us-east-2'
       pieceTableName = 'staging-warm-upload-api-piece-v2'
       storefrontDid = 'did:web:staging.up.warm.storacha.network'
       storefrontUrl = 'https://staging.up.warm.storacha.network'
       break
-    default:
+    }
+    default: {
       throw new Error(`Invalid env: ${env}`)
+    }
   }
 
   return {
