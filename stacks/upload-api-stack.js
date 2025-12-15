@@ -87,7 +87,7 @@ export function UploadApiStack({ stack, app }) {
     egressTrafficTable,
     stripeSecretKey,
   } = use(BillingDbStack)
-  const { pieceOfferQueue, filecoinSubmitQueue } = use(FilecoinStack)
+  const { aggregatorServiceProof, pieceOfferQueue, filecoinSubmitQueue } = use(FilecoinStack)
   /** @type {{ permissions: import('sst/constructs').Permissions, environment: Record<string, string> } | undefined} */
   let ipniConfig
   if (DISABLE_IPNI_PUBLISHING !== 'true') {
@@ -231,7 +231,7 @@ export function UploadApiStack({ stack, app }) {
             bind: [
               contentClaimsPrivateKey,
               indexingServiceProof,
-              dealTrackerServiceProof,
+              ...(process.env.FILECOIN_PROOFS_NOT_REQUIRED === 'true' ? [] : [aggregatorServiceProof, dealTrackerServiceProof]),
               privateKey,
               stripeSecretKey,
               dmailApiKey,

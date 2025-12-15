@@ -21,11 +21,12 @@ export async function handleCronTick () {
   const { did, pieceTableName, agentMessageBucketName, agentIndexBucketName, aggregatorDid } = getEnv()
   const privateKey = Config.PRIVATE_KEY
 
+  // AGGREGATOR_SERVICE_PROOF is only required in some environments
   let aggregatorProof
   try {
     aggregatorProof = Config.AGGREGATOR_SERVICE_PROOF
   } catch {
-    // AGGREGATOR_SERVICE_PROOF not set for this environment
+    // AGGREGATOR_SERVICE_PROOF not bound for this environment
   }
 
   // create context
