@@ -235,7 +235,6 @@ export async function ucanInvocationRouter(request) {
     PRIVATE_KEY,
     STRIPE_SECRET_KEY,
     INDEXING_SERVICE_PROOF,
-    DEAL_TRACKER_SERVICE_PROOF,
     CONTENT_CLAIMS_PRIVATE_KEY,
     DMAIL_API_KEY,
     DMAIL_API_SECRET,
@@ -367,12 +366,12 @@ export async function ucanInvocationRouter(request) {
     revocationTableName
   )
 
-  // AGGREGATOR_SERVICE_PROOF is optional
+  // AGGREGATOR_SERVICE_PROOF is only required in some environments
   let aggregatorProof
   try {
     aggregatorProof = Config.AGGREGATOR_SERVICE_PROOF
   } catch {
-    // AGGREGATOR_SERVICE_PROOF not set for this environment
+    // AGGREGATOR_SERVICE_PROOF not bound for this environment
   }
 
   const aggregatorServicePrincipal = DID.parse(aggregatorDid)
@@ -393,9 +392,17 @@ export async function ucanInvocationRouter(request) {
     proofs: aggregatorServiceProofs
   }
 
+  // DEAL_TRACKER_SERVICE_PROOF is only required in some environments
+  let dealTrackerProof
+  try {
+    dealTrackerProof = Config.DEAL_TRACKER_SERVICE_PROOF
+  } catch {
+    // DEAL_TRACKER_SERVICE_PROOF not bound for this environment
+  }
+
   const dealTrackerProofs = []
-  if (DEAL_TRACKER_SERVICE_PROOF && DEAL_TRACKER_SERVICE_PROOF !== 'none') {
-    const proof = await Proof.parse(DEAL_TRACKER_SERVICE_PROOF)
+  if (dealTrackerProof) {
+    const proof = await Proof.parse(dealTrackerProof)
     dealTrackerProofs.push(proof)
   }
 

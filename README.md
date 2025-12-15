@@ -324,12 +324,15 @@ Proof that the upload service can publish claims to the [indexing service](https
 
 #### `DEAL_TRACKER_SERVICE_PROOF`
 
-Proof that the upload service can invoke `deal/info` on the deal tracker service. Set to `none` if no proof is required.
+Proof that the upload service can invoke `deal/info` on the deal tracker service. Only required if the upload service and
+the deal tracker service are using different private keys. If a proof is not provided, the `FILECOIN_PROOFS_NOT_REQUIRED`
+variable must be set to `true`.
 
 #### `AGGREGATOR_SERVICE_PROOF`
 
 Proof that the upload service can invoke `piece/offer` on the aggregator service. Only required if the upload service and
-the aggregator service are using different private keys.
+the aggregator service are using different private keys. If a proof is not provided, the `FILECOIN_PROOFS_NOT_REQUIRED`
+variable must be set to `true`.
 
 ## HTTP API
 

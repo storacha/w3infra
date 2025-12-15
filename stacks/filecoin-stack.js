@@ -103,7 +103,7 @@ export function FilecoinStack({ stack, app }) {
       },
       bind: [
         privateKey,
-        aggregatorServiceProof,
+        ...(process.env.FILECOIN_PROOFS_NOT_REQUIRED === 'true' ? [] : [aggregatorServiceProof]),
       ]
     },
     deadLetterQueue: pieceOfferQueueDLQ.cdk.queue,
@@ -134,7 +134,7 @@ export function FilecoinStack({ stack, app }) {
         timeout: '6 minutes',
         bind: [
           privateKey,
-          aggregatorServiceProof,
+          ...(process.env.FILECOIN_PROOFS_NOT_REQUIRED === 'true' ? [] : [aggregatorServiceProof]),
         ],
         permissions: [pieceTable, agentMessageBucket, agentIndexBucket],
       }
@@ -334,6 +334,7 @@ export function FilecoinStack({ stack, app }) {
   })
 
   return {
+    aggregatorServiceProof,
     filecoinSubmitQueue,
     pieceOfferQueue
   }
