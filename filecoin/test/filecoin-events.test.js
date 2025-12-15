@@ -7,7 +7,13 @@ import pWaitFor from 'p-wait-for'
 import delay from 'delay'
 import { fromString } from 'uint8arrays/from-string'
 import { decode as JSONdecode } from '@ipld/dag-json'
-import { getMockService, getConnection } from '@storacha/filecoin-api/test/context/service'
+import {
+  getMockService,
+  getConnection,
+  createPDPStore,
+  StorageNode,
+  createRouter,
+} from '@storacha/filecoin-api/test/context/service'
 
 import { createDynamodDb, createS3, createSQS, createQueue } from './helpers/resources.js'
 import { getQueues, getStores } from './helpers/service-context.js'
@@ -136,7 +142,9 @@ for (const [title, unit] of Object.entries(filecoinApiTest.events.storefront)) {
     }
 
     const claimsConnection = getConnection(claimsSigner, service).connection
-
+    const pdpStore = createPDPStore()
+    const storageProviders = [await StorageNode.activate({ pdpStore })]
+    const router = createRouter(storefrontSigner, storageProviders)
     await unit(
       {
         ok: (actual, message) => t.truthy(actual, message),
@@ -178,7 +186,9 @@ for (const [title, unit] of Object.entries(filecoinApiTest.events.storefront)) {
           },
         },
         queuedMessages: t.context.queuedMessages,
-        validateAuthorization: () => ({ ok: {} })
+        validateAuthorization: () => ({ ok: {} }),
+        router,
+        storageProviders,
       }
     )
   })
