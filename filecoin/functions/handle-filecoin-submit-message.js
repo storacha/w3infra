@@ -6,6 +6,10 @@ import { createPieceTable } from '../store/piece.js'
 import { useContentStore } from '../store/content.js'
 import { decodeMessage } from '../queue/filecoin-submit-queue.js'
 import { mustGetEnv } from '../../lib/env.js'
+import { createStorageProviderTable } from '../../upload-api/tables/storage-provider.js'
+import { Config } from 'sst/node/config'
+import { getServiceSigner } from '../service.js'
+import { create as createRoutingService } from '../../upload-api/external-services/router.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -33,16 +37,34 @@ async function handleFilecoinSubmitMessage (sqsEvent) {
   const record = decodeMessage({
     MessageBody: sqsEvent.Records[0].body
   })
+  const privateKey = Config.PRIVATE_KEY
 
   // create context
   const {
     pieceTableName,
-    contentStoreHttpEndpoint
-    
+    storageProviderTableName,
+    contentStoreHttpEndpoint,
+    did
   } = getEnv()
+
+  const storefrontSigner = getServiceSigner({
+    did,
+    privateKey
+  })
+
+  const storageProviderTable = createStorageProviderTable(
+    AWS_REGION,
+    storageProviderTableName
+  )
+  const routingService = createRoutingService(
+    storageProviderTable,
+    storefrontSigner
+  )
+
   const context = {
     pieceStore: createPieceTable(AWS_REGION, pieceTableName),
-    contentStore: useContentStore(contentStoreHttpEndpoint)
+    contentStore: useContentStore(contentStoreHttpEndpoint),
+    router: routingService
   }
 
   const { ok, error } = await storefrontEvents.handleFilecoinSubmitMessage(context, record)
@@ -65,7 +87,11 @@ async function handleFilecoinSubmitMessage (sqsEvent) {
 function getEnv () {
   return {
     pieceTableName: mustGetEnv('PIECE_TABLE_NAME'),
-    contentStoreHttpEndpoint: new URL(mustGetEnv('CONTENT_STORE_HTTP_ENDPOINT'))
+    storageProviderTableName: mustGetEnv('STORAGE_PROVIDER_TABLE_NAME'),
+    contentStoreHttpEndpoint: new URL(
+      mustGetEnv('CONTENT_STORE_HTTP_ENDPOINT')
+    ),
+    did: mustGetEnv('DID')
   }
 }
 

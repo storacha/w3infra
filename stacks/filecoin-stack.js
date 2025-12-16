@@ -45,7 +45,7 @@ export function FilecoinStack({ stack, app }) {
   // Get eventBus reference
   const { eventBus } = use(BusStack)
   // Get store table reference
-  const { pieceTable, privateKey, adminMetricsTable, indexingServiceProof, contentClaimsPrivateKey } = use(UploadDbStack)
+  const { pieceTable, privateKey, adminMetricsTable, indexingServiceProof, contentClaimsPrivateKey, storageProviderTable } = use(UploadDbStack)
   // Get UCAN store references
   const { agentMessageBucket, agentIndexBucket, ucanStream } = use(UcanInvocationStack)
   const { roundaboutApiUrl } = use(RoundaboutStack)
@@ -70,8 +70,11 @@ export function FilecoinStack({ stack, app }) {
       handler: 'filecoin/functions/handle-filecoin-submit-message.main',
       environment : {
         PIECE_TABLE_NAME: pieceTable.tableName,
+        STORAGE_PROVIDER_TABLE_NAME: storageProviderTable.tableName,
+        DID: UPLOAD_API_DID,
         CONTENT_STORE_HTTP_ENDPOINT: roundaboutApiUrl
       },
+      bind: [privateKey],
       permissions: [pieceTable],
       // piece is computed in this lambda
       timeout: 15 * 60,

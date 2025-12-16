@@ -15,6 +15,9 @@ const encodeMessage = (pieceMessage) => {
   if (!pieceMessage.pdpInfoSuccess) {
     delete pieceMessage.pdpInfoSuccess
   }
+  if (!pieceMessage.pdpIssuer) {
+    delete pieceMessage.pdpIssuer
+  }
   return {
     MessageBody: dagJSON.stringify(pieceMessage),
   }
