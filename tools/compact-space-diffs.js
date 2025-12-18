@@ -7,6 +7,7 @@ import { createConsumerStore } from '../billing/tables/consumer.js'
 
 /**
  * Compacts space diffs for a given space by creating a summation diff and archiving old diffs.
+ *
  * @param {string} spaceDid - The space DID to compact
  */
 export async function compactSpaceDiffs(spaceDid) {
@@ -79,9 +80,9 @@ export async function compactSpaceDiffs(spaceDid) {
   // Step 2: Query all diffs since the snapshot
   const diffs = []
   /** @type {Record<string, import('@aws-sdk/client-dynamodb').AttributeValue> | undefined} */
-  let exclusiveStartKey = undefined
+  let exclusiveStartKey
   /** @type {import('@aws-sdk/client-dynamodb').QueryCommandOutput | undefined} */
-  let queryResult = undefined
+  let queryResult
 
   do {
     queryResult = await dynamoDb.send(new QueryCommand({
