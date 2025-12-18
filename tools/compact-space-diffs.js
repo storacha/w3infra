@@ -1,4 +1,4 @@
-import { QueryCommand, BatchWriteItemCommand } from '@aws-sdk/client-dynamodb'
+import { QueryCommand, BatchWriteItemCommand, PutItemCommand } from '@aws-sdk/client-dynamodb'
 import { marshall, unmarshall } from '@aws-sdk/util-dynamodb'
 import { getDynamoClient } from '../lib/aws/dynamo.js'
 import { mustGetEnv } from '../lib/env.js'
@@ -210,14 +210,9 @@ export async function compactSpaceDiffs(spaceDid) {
 
   if (!DRY_RUN) {
     // Step 5: Write the summation diff to the space-diff table
-    await dynamoDb.send(new BatchWriteItemCommand({
-      RequestItems: {
-        [spaceDiffTableName]: [{
-          PutRequest: {
-            Item: marshall(summationDiff, { removeUndefinedValues: true })
-          }
-        }]
-      }
+    await dynamoDb.send(new PutItemCommand({
+      TableName: spaceDiffTableName,
+      Item: marshall(summationDiff, { removeUndefinedValues: true })
     }))
     console.log('✓ Summation diff created')
 
