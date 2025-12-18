@@ -4,6 +4,26 @@ import { getDynamoClient } from '../lib/aws/dynamo.js'
 import { mustGetEnv } from '../lib/env.js'
 import { randomUUID } from 'crypto'
 import { createConsumerStore } from '../billing/tables/consumer.js'
+import { writeFileSync } from 'fs'
+import path from 'path'
+
+/**
+ * Logs an error message and details to a timestamped file.
+ *
+ * @param {string} message - The error message
+ * @param {Error} error - The error object
+ */
+function logError(message, error) {
+  const errorLogPath = path.join(process.cwd(), `compact-errors-${Date.now()}.log`)
+  const errorDetails = `${new Date().toISOString()} - ${message}\n\nError: ${error.message}\n\nStack:\n${error.stack}\n`
+
+  try {
+    writeFileSync(errorLogPath, errorDetails)
+    console.error(`Error details written to: ${errorLogPath}`)
+  } catch (writeError) {
+    console.error('Failed to write error log file:', writeError)
+  }
+}
 
 /**
  * Compacts space diffs for a given space by creating a summation diff and archiving old diffs.
@@ -11,40 +31,45 @@ import { createConsumerStore } from '../billing/tables/consumer.js'
  * @param {string} spaceDid - The space DID to compact
  */
 export async function compactSpaceDiffs(spaceDid) {
-  const {
-    ENV,
-    DRY_RUN,
-  } = getEnv()
+  try {
+    const {
+      ENV,
+      DRY_RUN,
+    } = getEnv()
 
-  const SPACE_DID = spaceDid
+    const SPACE_DID = spaceDid
 
-  const region = getRegion(ENV)
-  const dynamoDb = getDynamoClient({ region })
-  const spaceDiffTableName = getSpaceDiffTableName(ENV)
-  const spaceDiffArchiveTableName = getSpaceDiffArchiveTableName(ENV)
-  const spaceSnapshotTableName = getSpaceSnapshotTableName(ENV)
-  const consumerTableName = getConsumerTableName(ENV)
+    const region = getRegion(ENV)
+    const dynamoDb = getDynamoClient({ region })
+    const spaceDiffTableName = getSpaceDiffTableName(ENV)
+    const spaceDiffArchiveTableName = getSpaceDiffArchiveTableName(ENV)
+    const spaceSnapshotTableName = getSpaceSnapshotTableName(ENV)
+    const consumerTableName = getConsumerTableName(ENV)
 
-  if (DRY_RUN) {
-    console.log('🔍 DRY RUN MODE - No records will be modified')
-  }
+    if (DRY_RUN) {
+      console.log('🔍 DRY RUN MODE - No records will be modified')
+    }
 
-  console.log(`Compacting space diffs for space: ${SPACE_DID}`)
+    console.log(`Compacting space diffs for space: ${SPACE_DID}`)
 
-  // Look up the provider from the consumer table
-  const consumerStore = createConsumerStore({ region }, { tableName: consumerTableName })
-  const consumerListResult = await consumerStore.list({ consumer: /** @type {import('@ucanto/interface').DID} */ (SPACE_DID) })
+    // Look up the provider from the consumer table
+    const consumerStore = createConsumerStore({ region }, { tableName: consumerTableName })
+    const consumerListResult = await consumerStore.list({ consumer: /** @type {import('@ucanto/interface').DID} */ (SPACE_DID) })
 
-  if (consumerListResult.error) {
-    console.error('❌ ERROR: Failed to look up consumer for space:', consumerListResult.error)
-    throw new Error(`Failed to look up consumer: ${consumerListResult.error.message}`)
-  }
+    if (consumerListResult.error) {
+      console.error('❌ ERROR: Failed to look up consumer for space:', consumerListResult.error)
+      const error = new Error(`Failed to look up consumer: ${consumerListResult.error.message}`)
+      logError('Failed to look up consumer for space', error)
+      throw error
+    }
 
-  if (consumerListResult.ok.results.length === 0) {
-    console.error('❌ ERROR: No consumer found for space:', SPACE_DID)
-    console.error('This space may not have any subscriptions')
-    throw new Error('No consumer found for space')
-  }
+    if (consumerListResult.ok.results.length === 0) {
+      console.error('❌ ERROR: No consumer found for space:', SPACE_DID)
+      console.error('This space may not have any subscriptions')
+      const error = new Error('No consumer found for space')
+      logError('No consumer found for space', error)
+      throw error
+    }
 
   // Use the first consumer's provider (there should typically be only one)
   const providerDID = consumerListResult.ok.results[0].provider
@@ -210,6 +235,7 @@ export async function compactSpaceDiffs(spaceDid) {
       console.error('This is a critical error - the diffs have been archived but not removed from the main table. This could result in the user being double charged for usage!')
       console.error('Manual cleanup may be required')
       console.error('Error details:', error.message)
+      logError('Failed to delete original diffs from space-diff table', error)
       throw error
     }
   } else {
@@ -219,6 +245,13 @@ export async function compactSpaceDiffs(spaceDid) {
   }
 
   console.log('✅ Compaction complete')
+  } catch (/** @type {any} */ error) {
+    // Log any uncaught errors
+    if (!error.logged) {
+      logError('Compaction failed with unexpected error', error)
+    }
+    throw error
+  }
 }
 
 /**
