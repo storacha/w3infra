@@ -79,7 +79,7 @@ export function FilecoinStack({ stack, app }) {
         CONTENT_STORE_HTTP_ENDPOINT: roundaboutApiUrl
       },
       bind: [privateKey],
-      permissions: [pieceTable],
+      permissions: [pieceTable, storageProviderTable],
       // piece is computed in this lambda
       timeout: 15 * 60,
     },
