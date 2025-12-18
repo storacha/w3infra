@@ -110,10 +110,18 @@ export const reportUsage = async (usage, ctx) => {
   const customer = usage.account.replace('stripe:', '')
 
   const duration = usage.to.getTime() - usage.from.getTime()
-  const idempotencyKey = await createIdempotencyKey(usage)
-
   const byteQuantity = Math.floor(new Big(usage.usage.toString()).div(duration).toNumber())
-  console.log(`Reporting usage of ${usage.usage} byte-ms for ${usage.space} as quantity: ${byteQuantity} GiB/month`)
+  const gibQuantity = byteQuantity / (1024 * 1024 * 1024)
+
+  console.log(`Space ${usage.space}: \n
+    \t customer: ${usage.customer} \n
+    \t stripe customer: ${customer} \n
+    \t usage (bytes/month): ${byteQuantity}
+    \t usage (GiB/month): ${gibQuantity} \n
+    \t total usage (byte/ms): ${usage.usage} \n
+  `)
+
+  const idempotencyKey = await createIdempotencyKey(usage)
 
   // Calculate the timestamp for the last day of the previous month at 23:59:59 UTC
   const now = new Date()
