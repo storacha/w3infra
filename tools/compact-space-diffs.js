@@ -26,6 +26,41 @@ function logError(message, error) {
 }
 
 /**
+ * Creates a simple progress bar for console output.
+ *
+ * @param {number} total - Total number of items
+ * @param {string} label - Label for the progress bar
+ * @returns {{ update: (value: number) => void, complete: () => void }} Progress bar object with update and complete methods
+ */
+function createProgressBar(total, label) {
+  let current = 0
+  const barLength = 40
+
+  return {
+    /**
+     * Update progress bar
+     *
+     * @param {number} value - Current value
+     */
+    update: (value) => {
+      current = value
+      const percentage = Math.floor((current / total) * 100)
+      const filled = Math.floor((current / total) * barLength)
+      const empty = barLength - filled
+      const bar = '█'.repeat(filled) + '░'.repeat(empty)
+      process.stdout.write(`\r${label}: [${bar}] ${percentage}% (${current}/${total})`)
+    },
+    /**
+     * Complete the progress bar
+     */
+    complete: () => {
+      const bar = '█'.repeat(barLength)
+      process.stdout.write(`\r${label}: [${bar}] 100% (${total}/${total})\n`)
+    }
+  }
+}
+
+/**
  * Compacts space diffs for a given space by creating a summation diff and archiving old diffs.
  *
  * @param {string} spaceDid - The space DID to compact
@@ -103,11 +138,13 @@ export async function compactSpaceDiffs(spaceDid) {
   }
 
   // Step 2: Query all diffs since the snapshot
+  console.log('Reading diffs from database...')
   const diffs = []
   /** @type {Record<string, import('@aws-sdk/client-dynamodb').AttributeValue> | undefined} */
   let exclusiveStartKey
   /** @type {import('@aws-sdk/client-dynamodb').QueryCommandOutput | undefined} */
   let queryResult
+  let pageCount = 0
 
   do {
     queryResult = await dynamoDb.send(new QueryCommand({
@@ -122,12 +159,14 @@ export async function compactSpaceDiffs(spaceDid) {
 
     if (queryResult.Items) {
       diffs.push(...queryResult.Items.map(/** @param {any} item */ item => unmarshall(item)))
+      pageCount++
+      process.stdout.write(`\rReading diffs: ${diffs.length} records (${pageCount} pages)...`)
     }
 
     exclusiveStartKey = queryResult.LastEvaluatedKey
   } while (exclusiveStartKey)
 
-  console.log(`Found ${diffs.length} diffs to compact`)
+  console.log(`\n✓ Found ${diffs.length} diffs to compact`)
 
   if (diffs.length === 0) {
     console.log('No diffs to compact')
@@ -188,6 +227,9 @@ export async function compactSpaceDiffs(spaceDid) {
       archiveBatches.push(diffs.slice(i, i + 25))
     }
 
+    const archiveProgress = createProgressBar(diffs.length, 'Archiving diffs')
+    let archivedCount = 0
+
     for (const batch of archiveBatches) {
       const archiveWrites = batch.map(diff => ({
         PutRequest: {
@@ -203,14 +245,20 @@ export async function compactSpaceDiffs(spaceDid) {
           [spaceDiffArchiveTableName]: archiveWrites
         }
       }))
+
+      archivedCount += batch.length
+      archiveProgress.update(archivedCount)
     }
-    console.log(`✓ Archived ${diffs.length} diffs`)
+    archiveProgress.complete()
 
     // Step 7: Delete original diffs from space-diff table in batches
     const deleteBatches = []
     for (let i = 0; i < diffs.length; i += 25) {
       deleteBatches.push(diffs.slice(i, i + 25))
     }
+
+    const deleteProgress = createProgressBar(diffs.length, 'Deleting original diffs')
+    let deletedCount = 0
 
     try {
       for (const batch of deleteBatches) {
@@ -228,8 +276,11 @@ export async function compactSpaceDiffs(spaceDid) {
             [spaceDiffTableName]: deleteWrites
           }
         }))
+
+        deletedCount += batch.length
+        deleteProgress.update(deletedCount)
       }
-      console.log(`✓ Deleted ${diffs.length} original diffs`)
+      deleteProgress.complete()
     } catch (/** @type {any} */ error) {
       console.error('❌ ERROR: Failed to delete original diffs from space-diff table')
       console.error('This is a critical error - the diffs have been archived but not removed from the main table. This could result in the user being double charged for usage!')
