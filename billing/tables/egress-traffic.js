@@ -1,4 +1,6 @@
-import { createStorePutterClient, createStoreListerClient } from './client.js'
+import { QueryCommand } from '@aws-sdk/client-dynamodb'
+import { unmarshall } from '@aws-sdk/util-dynamodb'
+import { createStorePutterClient, createStoreListerClient, connectTable } from './client.js'
 import { validate, encode, lister, decode } from '../data/egress.js'
 
 /**
@@ -31,6 +33,11 @@ export const egressTrafficTableProps = {
       partitionKey: 'customer',
       sortKey: 'sk',
       projection: ['space', 'resource', 'bytes', 'cause', 'servedAt']
+    },
+    space: {
+      partitionKey: 'space',
+      sortKey: 'servedAt',
+      projection: ['resource', 'bytes']
     }
   }
 }
@@ -40,7 +47,54 @@ export const egressTrafficTableProps = {
  * @param {{ tableName: string }} context
  * @returns {import('../lib/api.js').EgressTrafficEventStore}
  */
-export const createEgressTrafficEventStore = (conf, { tableName }) => ({
-  ...createStorePutterClient(conf, { tableName, validate, encode }),
-  ...createStoreListerClient(conf, { tableName, encodeKey: lister.encodeKey, decode })
-})
+export const createEgressTrafficEventStore = (conf, { tableName }) => {
+  const client = connectTable(conf)
+
+  return {
+    ...createStorePutterClient(conf, { tableName, validate, encode }),
+    ...createStoreListerClient(conf, { tableName, encodeKey: lister.encodeKey, decode }),
+
+    /**
+     * Sum total egress bytes for a space within a time period
+     *
+     * @param {import('@ucanto/interface').DID} space - The space DID
+     * @param {{ from: Date, to: Date }} period - Time period to query
+     * @returns {Promise<import('@ucanto/interface').Result<number, Error>>}
+     */
+    async sumBySpace(space, period) {
+      let total = 0
+      /** @type {Record<string, import('@aws-sdk/client-dynamodb').AttributeValue> | undefined} */
+      let exclusiveStartKey
+
+      try {
+        // Query the space GSI to efficiently find all egress events for this space within the time period
+        do {
+          const queryResult = await client.send(new QueryCommand({
+            TableName: tableName,
+            IndexName: 'space',
+            KeyConditionExpression: 'space = :space AND servedAt BETWEEN :from AND :to',
+            ExpressionAttributeValues: {
+              ':space': { S: space },
+              ':from': { S: period.from.toISOString() },
+              ':to': { S: period.to.toISOString() }
+            },
+            ExclusiveStartKey: exclusiveStartKey
+          }))
+
+          if (queryResult.Items) {
+            for (const item of queryResult.Items) {
+              const record = unmarshall(item)
+              total += Number(record.bytes)
+            }
+          }
+
+          exclusiveStartKey = queryResult.LastEvaluatedKey
+        } while (exclusiveStartKey)
+
+        return { ok: total }
+      } catch (/** @type {any} */ error) {
+        return { error: new Error(`Failed to sum egress by space: ${error.message}`, { cause: error }) }
+      }
+    }
+  }
+}

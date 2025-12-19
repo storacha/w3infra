@@ -139,7 +139,12 @@ export type UsageStore = StorePutter<Usage>
 /**
  * Store for egress traffic data.
  */
-export type EgressTrafficEventStore = StorePutter<EgressTrafficData> & StoreLister<EgressTrafficEventListKey, EgressTrafficData>
+export type EgressTrafficEventStore = StorePutter<EgressTrafficData> & StoreLister<EgressTrafficEventListKey, EgressTrafficData> & {
+  /**
+   * Sum total egress bytes for a space within a time period
+   */
+  sumBySpace: (space: ConsumerDID, period: { from: Date, to: Date }) => Promise<Result<number, Failure>>
+}
 
 export interface Allocation {
   /** Space DID (did:key:...). */

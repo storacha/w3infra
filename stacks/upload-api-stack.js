@@ -193,6 +193,7 @@ export function UploadApiStack({ stack, app }) {
               ENABLE_CUSTOMER_TRIAL_PLAN:
                 process.env.ENABLE_CUSTOMER_TRIAL_PLAN ?? 'false',
               EGRESS_TRAFFIC_QUEUE_URL: egressTrafficQueue.queueUrl,
+              EGRESS_TRAFFIC_TABLE: egressTrafficTable.tableName,
               FILECOIN_SUBMIT_QUEUE_URL: filecoinSubmitQueue.queueUrl,
               INDEXING_SERVICE_DID,
               INDEXING_SERVICE_URL,
