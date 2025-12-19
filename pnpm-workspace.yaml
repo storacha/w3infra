@@ -38,7 +38,7 @@ catalog:
   "@storacha/access": ^1.6.4
   "@storacha/blob-index": ^1.2.4
   "@storacha/capabilities": ^1.12.0
-  "@storacha/client": ^1.8.25
+  "@storacha/client": ^1.8.26
   "@storacha/did-mailto": ^1.0.2
   "@storacha/filecoin-api": ^2.1.0
   "@storacha/filecoin-client": ^1.0.15
@@ -46,7 +46,7 @@ catalog:
   "@storacha/one-webcrypto": ^1.0.1
   "@storacha/principal-resolver": ^1.0.0
   "@storacha/router": ^1.1.1
-  "@storacha/upload-api": ^2.8.3
+  "@storacha/upload-api": ^2.8.4
   "@storacha/upload-client": ^1.3.6
   "@tsconfig/node16": ^1.0.3
   "@types/aws-lambda": ^8.10.108
