@@ -235,11 +235,29 @@ export async function compactSpaceDiffs(spaceDid) {
         }
       }))
 
-      await dynamoDb.send(new BatchWriteItemCommand({
+      const response = await dynamoDb.send(new BatchWriteItemCommand({
         RequestItems: {
           [spaceDiffArchiveTableName]: archiveWrites
         }
       }))
+
+      // Retry unprocessed items once
+      if (response.UnprocessedItems && Object.keys(response.UnprocessedItems).length > 0) {
+        console.log(`\nRetrying ${response.UnprocessedItems[spaceDiffArchiveTableName]?.length || 0} unprocessed archive items...`)
+        const retryResponse = await dynamoDb.send(new BatchWriteItemCommand({
+          RequestItems: response.UnprocessedItems
+        }))
+
+        if (retryResponse.UnprocessedItems && Object.keys(retryResponse.UnprocessedItems).length > 0) {
+          const unprocessedCount = retryResponse.UnprocessedItems[spaceDiffArchiveTableName]?.length || 0
+          console.error('\n❌ CRITICAL ERROR: Failed to archive all diffs after retry')
+          console.error(`${unprocessedCount} items could not be archived`)
+          console.error('The compaction is incomplete - some diffs may not be properly archived!')
+          const error = new Error(`Failed to archive ${unprocessedCount} items after retry`)
+          logError('Failed to archive all diffs to space-diff-archive table', error)
+          throw error
+        }
+      }
 
       archivedCount += batch.length
       archiveProgress.update(archivedCount)
@@ -266,11 +284,31 @@ export async function compactSpaceDiffs(spaceDid) {
           }
         }))
 
-        await dynamoDb.send(new BatchWriteItemCommand({
+        const response = await dynamoDb.send(new BatchWriteItemCommand({
           RequestItems: {
             [spaceDiffTableName]: deleteWrites
           }
         }))
+
+        // Retry unprocessed items once
+        if (response.UnprocessedItems && Object.keys(response.UnprocessedItems).length > 0) {
+          console.log(`\nRetrying ${response.UnprocessedItems[spaceDiffTableName]?.length || 0} unprocessed delete items...`)
+          const retryResponse = await dynamoDb.send(new BatchWriteItemCommand({
+            RequestItems: response.UnprocessedItems
+          }))
+
+          if (retryResponse.UnprocessedItems && Object.keys(retryResponse.UnprocessedItems).length > 0) {
+            const unprocessedCount = retryResponse.UnprocessedItems[spaceDiffTableName]?.length || 0
+            console.error('\n❌ CRITICAL ERROR: Failed to delete all original diffs after retry')
+            console.error(`${unprocessedCount} items could not be deleted from the space-diff table`)
+            console.error('⚠️  WARNING: These diffs have been archived but NOT removed from the main table!')
+            console.error('⚠️  This WILL result in double-charging for usage!')
+            console.error('⚠️  Manual cleanup is REQUIRED immediately!')
+            const error = new Error(`Failed to delete ${unprocessedCount} items after retry`)
+            logError('Failed to delete all original diffs from space-diff table after retry', error)
+            throw error
+          }
+        }
 
         deletedCount += batch.length
         deleteProgress.update(deletedCount)
