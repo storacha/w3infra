@@ -63,6 +63,28 @@ export const useReplicaTable = (dynamo, tableName) =>
       return ok({})
     },
 
+
+    /** @type {API.BlobAPI.ReplicaStorage['retry']} */
+    async retry (data) {
+      const cmd = new UpdateItemCommand({
+        TableName: tableName,
+        Key: marshall({ pk: encodePartitionKey(data), provider: data.provider }),
+        UpdateExpression: 'SET #S = :s, #C = :c, updatedAt = :t',
+        ExpressionAttributeNames: { '#S': 'status', '#C': 'cause' },
+        ExpressionAttributeValues: {
+          ':s': convertToAttr(data.status),
+          ':c': convertToAttr(data.cause.toString()),
+          ':t': convertToAttr(new Date().toISOString())
+        },
+      })
+      try {
+        await dynamo.send(cmd)
+      } catch (/** @type {any} */ err) {
+        return error(err)
+      }
+      return ok({})
+    },
+
     /** @type {API.BlobAPI.ReplicaStorage['setStatus']} */
     async setStatus (key, status) {
       const cmd = new UpdateItemCommand({
