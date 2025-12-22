@@ -41,6 +41,7 @@ cli
 
 cli
   .command('compact-space-diffs <space-did>', 'Compact space diffs for a given space into a summation diff')
+  .option('--previous-month', 'Compact diffs between the two most recent snapshots (previous billing period)', false)
   .action(compactSpaceDiffs)
 
 cli.parse(process.argv)
