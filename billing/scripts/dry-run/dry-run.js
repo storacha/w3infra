@@ -265,7 +265,7 @@ for (const usage of usageSnapshots) {
   customerUsages.push(usage)
 }
 
-/** @type {Array<[string, string, string, string, string, number]>} */
+/** @type {Array<[string, string, string, string, string, string, number]>} */
 const data = []
 const duration = to.getTime() - from.getTime()
 
@@ -280,14 +280,16 @@ for (const [customer, usages] of usageByCustomer.entries()) {
   }
   if (!product) throw new Error('missing product')
   try {
-    // Compute average GiB across the period from totalUsage (byte·ms)
-    const usageGiBPerMonth = new Big(totalUsage.toString()).div(duration).div(GB).toFixed(2)
+    // Compute average usage (bytes and GiB) across the period from totalUsage (byte·ms)
+    const usageBytesPerMonth = Math.floor(new Big(totalUsage.toString()).div(duration).toNumber())
+    const usageGiBPerMonth = (usageBytesPerMonth / GB).toFixed(2)
     const usageByteMs = totalUsage.toString()
     data.push([
       customer,
       product,
       size.toString(), // Total Size (bytes)
       usageByteMs,     // Usage (byte/ms)
+      usageBytesPerMonth.toString(), // Usage (bytes/month)
       usageGiBPerMonth, // Usage (GiB/month)
       calculateCost(product, totalUsage, duration),
     ])
@@ -295,8 +297,8 @@ for (const [customer, usages] of usageByCustomer.entries()) {
     console.warn(`failed to calculate cost for: ${customer}`, err)
   }
 }
-// Sort by Cost ($) descending. Cost is now at index 5.
-data.sort((a, b) => b[5] - a[5])
+// Sort by Cost ($) descending. Cost is now at index 6.
+data.sort((a, b) => b[6] - a[6])
 
 await fs.promises.writeFile(
   `./summary-${fileID}.csv`,
@@ -307,6 +309,7 @@ await fs.promises.writeFile(
       'Product',
       'Total Size (bytes)',
       'Usage (byte/ms)',
+      'Usage (bytes/month)',
       'Usage (GiB/month)',
       'Cost ($)'
     ],
