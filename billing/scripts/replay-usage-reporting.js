@@ -18,6 +18,7 @@ import dotenv from 'dotenv'
 import { DynamoDBClient, ScanCommand, QueryCommand } from '@aws-sdk/client-dynamodb'
 import { unmarshall } from '@aws-sdk/util-dynamodb'
 import Stripe from 'stripe'
+import fs from 'node:fs'
 import { mustGetEnv } from '../../lib/env.js'
 import * as Usage from '../data/usage.js'
 import { reportUsage } from '../functions/usage-table.js'
@@ -112,6 +113,30 @@ async function* scanUsageRecords() {
   } while (lastKey)
 }
 
+/**
+ * Writes a failed usage record to the errors file.
+ *
+ * @param {string} filename
+ * @param {import('../lib/api.js').Usage} usage
+ * @param {any} error
+ */
+async function writeFailure(filename, usage, error) {
+  const failure = {
+    usage,
+    error: error instanceof Error ? {
+      name: error.name,
+      message: error.message,
+      stack: error.stack
+    } : error,
+    timestamp: new Date().toISOString()
+  }
+
+  await fs.promises.appendFile(
+    filename,
+    JSON.stringify(failure) + '\n'
+  )
+}
+
 async function main() {
   console.log(`Scanning usage table for records with to=${TARGET_TO_DATE}`)
   console.log(`Table: ${USAGE_TABLE_NAME}`)
@@ -124,6 +149,9 @@ async function main() {
   let succeeded = 0
   let failed = 0
 
+  const timestamp = new Date().toISOString().replace(/[.:]/g, '-')
+  const errorsFilename = `./replay-failures-${timestamp}.jsonl`
+
   const ctx = { stripe }
 
   const records = CUSTOMER ? queryUsageRecordsForCustomer(CUSTOMER) : scanUsageRecords()
@@ -135,6 +163,7 @@ async function main() {
       const result = await reportUsage(usage, ctx)
       if (result.error) {
         console.error(`  ERROR:`, result.error)
+        await writeFailure(errorsFilename, usage, result.error)
         failed++
       } else {
         console.log(`  SUCCESS`)
@@ -142,6 +171,7 @@ async function main() {
       }
     } catch (err) {
       console.error(`  EXCEPTION:`, err)
+      await writeFailure(errorsFilename, usage, err)
       failed++
     }
   }
@@ -151,6 +181,10 @@ async function main() {
   console.log(`  Processed: ${processed}`)
   console.log(`  Succeeded: ${succeeded}`)
   console.log(`  Failed: ${failed}`)
+
+  if (failed > 0) {
+    console.log(`\nFailed records written to: ${errorsFilename}`)
+  }
 }
 
 try {

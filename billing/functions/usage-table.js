@@ -81,51 +81,6 @@ async function createIdempotencyKey(usage){
 }
 
 /**
- * Computes the Stripe price lookup key for storage billing.
- * Normalizes legacy web3.storage product DIDs to storacha.network.
- *
- * @param {string} product - The product/plan DID (e.g., 'did:web:starter.web3.storage' or 'did:web:starter.storacha.network')
- * @returns {string} The storage price lookup key (e.g., 'did:web:starter.storacha.network/storage')
- */
-const getStoragePriceLookupKey = (product) => {
-  const normalizedProduct = product.replace('web3.storage', 'storacha.network')
-  return `${normalizedProduct}/storage`
-}
-
-/**
- * Finds the subscription item for metered storage billing using price lookup keys.
- *
- * @param {Stripe.Subscription} sub - The subscription to search
- * @param {string} product - The product/plan DID (e.g., 'did:web:starter.storacha.network')
- * @param {Stripe} stripe - Stripe client
- * @returns {Promise<import('@ucanto/interface').Result<Stripe.SubscriptionItem>>}
- */
-const findStorageSubscriptionItem = async (sub, product, stripe) => {
-  const storageLookupKey = getStoragePriceLookupKey(product)
-
-  // Get the price by lookup key to find the price ID
-  const { data: prices } = await stripe.prices.list({
-    lookup_keys: [storageLookupKey],
-    limit: 1
-  })
-
-  if (prices.length === 0) {
-    return { error: new Error(`no price found for lookup key: ${storageLookupKey}`) }
-  }
-
-  const storagePriceId = prices[0].id
-  console.log(`Found storage price ${storagePriceId} for lookup key: ${storageLookupKey}`)
-
-  // Find the subscription item with this price
-  const subItem = sub.items.data.find(item => item.price.id === storagePriceId)
-  if (!subItem) {
-    return { error: new Error(`no subscription item found for storage price ${storagePriceId} in subscription ${sub.id}`) }
-  }
-
-  return { ok: subItem }
-}
-
-/**
  * Reports usage to Stripe. Note we use an `idempotencyKey` but this is only
  * retained by Stripe for 24 hours. Thus, retries should not be attempted for
  * the same usage record after 24 hours. The default DynamoDB stream retention
@@ -154,64 +109,11 @@ export const reportUsage = async (usage, ctx) => {
 
   const customer = usage.account.replace('stripe:', '')
 
-  const { data: subs } = await ctx.stripe.subscriptions.list({
-    customer,
-    status: 'all',
-    limit: 1
-  })
-
-  const sub = subs.find(s => s.status === 'active') ?? subs[0]
-  if (!sub) {
-    return { error: new Error(`no subscriptions: ${usage.account}`) }
-  }
-  console.log(`Found Stripe subscription: ${sub.id}`)
-
-  const subItemResult = await findStorageSubscriptionItem(sub, usage.product, ctx.stripe)
-  if (subItemResult.error) {
-    return subItemResult
-  }
-  const subItem = /** @type {Stripe.SubscriptionItem} */ (subItemResult.ok)
-  console.log(`Found Stripe subscription item: ${subItem.id}`)
-
   const duration = usage.to.getTime() - usage.from.getTime()
-  const quantity = Math.floor(new Big(usage.usage.toString()).div(duration).div(1024 * 1024 * 1024).toNumber())
-
-  console.log(`Reporting usage of ${usage.usage} byte-ms for ${usage.space} as quantity: ${quantity} GiB/month`)
-
   const idempotencyKey = await createIdempotencyKey(usage)
-  const usageRecord = await ctx.stripe.subscriptionItems.createUsageRecord(
-    subItem.id,
-    { quantity, action: 'increment' },
-    { idempotencyKey }
-  )
-
-  console.log(`Created Stripe usage record with ID: ${usageRecord.id}`)
 
   const byteQuantity = Math.floor(new Big(usage.usage.toString()).div(duration).toNumber())
-
-  /*
-   * Billing migration: dual reporting (usage records + billing meters)
-   *
-   * We are migrating from Stripe Subscription Usage Records to Stripe Billing Meters.
-   * During the migration window we intentionally report usage via BOTH mechanisms:
-   *
-   * - Current (charging) path: create a Usage Record on the subscription item.
-   *   This is how customers are billed today and MUST remain until we fully cut over.
-   *
-   * - Migration (shadow) path: emit a Billing Meter event (event_name: 'usage-billing-meter').
-   *   This lets us observe and compare meter-based totals against our existing
-   *   usage-record-based totals without impacting invoices.
-   *
-   * Important:
-   * - If the customer does NOT have the new meter-based price configured in Stripe,
-   *   Stripe will NOT charge based on the meter events. That’s expected and desired
-   *   during the shadow phase so we can safely compare numbers from both methods.
-   * - We timestamp the meter event at the end of the previous month (UTC 23:59:59),
-   *   aligning the event with the finalized period we just reported via usage record.
-   *
-   * Once parity is confirmed, we can stop sending usage records and rely solely on
-   * Billing Meters for storage billing.
-   */
+  console.log(`Reporting usage of ${usage.usage} byte-ms for ${usage.space} as quantity: ${byteQuantity} GiB/month`)
 
   // Calculate the timestamp for the last day of the previous month at 23:59:59 UTC
   const now = new Date()
@@ -227,5 +129,5 @@ export const reportUsage = async (usage, ctx) => {
     },
   })
   console.log(`Created Stripe billing meter event: ${JSON.stringify(meterEvent)}`)
-  return { ok: usageRecord }
+  return { ok: meterEvent }
 }
