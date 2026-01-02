@@ -81,12 +81,57 @@ async function createIdempotencyKey(usage){
 }
 
 /**
+ * Computes the Stripe price lookup key for storage billing.
+ * Normalizes legacy web3.storage product DIDs to storacha.network.
+ *
+ * @param {string} product - The product/plan DID (e.g., 'did:web:starter.web3.storage' or 'did:web:starter.storacha.network')
+ * @returns {string} The storage price lookup key (e.g., 'did:web:starter.storacha.network/storage')
+ */
+const getStoragePriceLookupKey = (product) => {
+  const normalizedProduct = product.replace('web3.storage', 'storacha.network')
+  return `${normalizedProduct}/storage`
+}
+
+/**
+ * Finds the subscription item for metered storage billing using price lookup keys.
+ *
+ * @param {Stripe.Subscription} sub - The subscription to search
+ * @param {string} product - The product/plan DID (e.g., 'did:web:starter.storacha.network')
+ * @param {Stripe} stripe - Stripe client
+ * @returns {Promise<import('@ucanto/interface').Result<Stripe.SubscriptionItem>>}
+ */
+const findStorageSubscriptionItem = async (sub, product, stripe) => {
+  const storageLookupKey = getStoragePriceLookupKey(product)
+
+  // Get the price by lookup key to find the price ID
+  const { data: prices } = await stripe.prices.list({
+    lookup_keys: [storageLookupKey],
+    limit: 1
+  })
+
+  if (prices.length === 0) {
+    return { error: new Error(`no price found for lookup key: ${storageLookupKey}`) }
+  }
+
+  const storagePriceId = prices[0].id
+  console.log(`Found storage price ${storagePriceId} for lookup key: ${storageLookupKey}`)
+
+  // Find the subscription item with this price
+  const subItem = sub.items.data.find(item => item.price.id === storagePriceId)
+  if (!subItem) {
+    return { error: new Error(`no subscription item found for storage price ${storagePriceId} in subscription ${sub.id}`) }
+  }
+
+  return { ok: subItem }
+}
+
+/**
  * Reports usage to Stripe. Note we use an `idempotencyKey` but this is only
  * retained by Stripe for 24 hours. Thus, retries should not be attempted for
  * the same usage record after 24 hours. The default DynamoDB stream retention
  * is 24 hours so this should be fine for intermittent failures.
  *
- * @param {import('../lib/api.js').Usage} usage 
+ * @param {import('../lib/api.js').Usage} usage
  * @param {{ stripe: Stripe }} ctx
  * @returns {Promise<import('@ucanto/interface').Result<import('@ucanto/interface').Unit>>}
  */
@@ -95,6 +140,7 @@ const reportUsage = async (usage, ctx) => {
   console.log(`Provider: ${usage.provider}`)
   console.log(`Customer: ${usage.customer}`)
   console.log(`Account: ${usage.account}`)
+  console.log(`Product: ${usage.product}`)
   console.log(`Period: ${usage.from.toISOString()} - ${usage.to.toISOString()}`)
 
   if (usage.space === 'did:key:z6Mkj8ynPJNkKc1e6S9VXpVDfQd8M1bPxZTgDg2Uhhjt9LoV') {
@@ -120,10 +166,11 @@ const reportUsage = async (usage, ctx) => {
   }
   console.log(`Found Stripe subscription: ${sub.id}`)
 
-  const subItem = sub.items.data[0]
-  if (!subItem) {
-    return { error: new Error(`no subscription items: ${sub.id}`) }
+  const subItemResult = await findStorageSubscriptionItem(sub, usage.product, ctx.stripe)
+  if (subItemResult.error) {
+    return subItemResult
   }
+  const subItem = /** @type {Stripe.SubscriptionItem} */ (subItemResult.ok)
   console.log(`Found Stripe subscription item: ${subItem.id}`)
 
   const duration = usage.to.getTime() - usage.from.getTime()
