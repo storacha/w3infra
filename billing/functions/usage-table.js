@@ -135,7 +135,7 @@ const findStorageSubscriptionItem = async (sub, product, stripe) => {
  * @param {{ stripe: Stripe }} ctx
  * @returns {Promise<import('@ucanto/interface').Result<import('@ucanto/interface').Unit>>}
  */
-const reportUsage = async (usage, ctx) => {
+export const reportUsage = async (usage, ctx) => {
   console.log(`Processing usage for: ${usage.space}`)
   console.log(`Provider: ${usage.provider}`)
   console.log(`Customer: ${usage.customer}`)
