@@ -1,5 +1,6 @@
 import { connectTable, createStoreGetterClient, createStoreListerClient, createStorePutterClient } from './client.js'
 import { validate, encode, encodeKey, decode } from '../data/customer.js'
+import { RecordNotFound } from './lib.js'
 import { UpdateItemCommand } from '@aws-sdk/client-dynamodb'
 import { marshall } from '@aws-sdk/util-dynamodb'
 import { StoreOperationFailure } from './lib.js'
@@ -30,13 +31,16 @@ export const customerTableProps = {
     /** ISO timestamp record was updated. */
     updatedAt: 'string'
   },
-  primaryIndex: { partitionKey: 'customer' }
+  primaryIndex: { partitionKey: 'customer' },
+  globalIndexes: {
+    account: {partitionKey: 'account' , projection: ['customer', 'product', 'insertedAt', 'updatedAt'] }
+  }
 }
 
 /**
  * @param {{ region: string } | import('@aws-sdk/client-dynamodb').DynamoDBClient} conf
  * @param {{ tableName: string }} context
- * @returns {import('../lib/api.js').CustomerStore}
+ * @returns {import('../lib/api.js').CustomerStore & { getByAccount: (account: import('../lib/api.js').AccountID) => Promise<any> }}
  */
 export const createCustomerStore = (conf, { tableName }) => ({
   ...createStoreGetterClient(conf, { tableName, encodeKey, decode }),
@@ -46,6 +50,30 @@ export const createCustomerStore = (conf, { tableName }) => ({
     encodeKey: () => ({ ok: {} }),
     decode
   }),
+
+  /**
+   * Lookup a customer by payment account (via the `account` GSI).
+   * Returns the first matching record if present.
+   *
+   * @param {import('../lib/api.js').AccountID} account
+   * @returns {Promise<any>}
+   */
+  async getByAccount(account) {
+    const lister = createStoreListerClient(conf, {
+      tableName,
+      indexName: 'account',
+      encodeKey: (input) => ({ ok: { account: /** @type {import('../lib/api.js').AccountID} */(input) } }),
+      decode
+    })
+
+    const res = await lister.list({ account })
+    if (res.error) return res
+    const first = res.ok.results[0]
+    if (!first) {
+      return { error: new RecordNotFound({ account }) }
+    }
+    return { ok: first }
+  },
 
   async updateProduct(customer, product) {
     const client = connectTable(conf)

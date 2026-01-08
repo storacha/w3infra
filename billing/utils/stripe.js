@@ -81,36 +81,52 @@ export async function handleCustomerSubscriptionCreated(stripe, event, customerS
       error: new Error(`Could not update subscription information - user appears to have been deleted`)
     }
   } else {
-    const customer = DidMailto.fromEmail(/** @type {`${string}@${string}`} */(
-      stripeCustomer.email
-    ))
-
-    const customerResult = await customerStore.get({ customer })
-    if (customerResult.ok) {
-      const customerRecord = customerResult.ok
-      if (customerRecord.account && (customerRecord.account !== account)) {
-        return {
-          error: new CustomerFoundWithDifferentStripeAccount(customer, customerRecord.account, account)
-        }
-      }
-
+    // First, try to locate by Stripe account to avoid email changes creating duplicates.
+  const byAccount = await /** @type {any} */ (customerStore).getByAccount(account)
+    if (byAccount.ok) {
+      const customerRecord = byAccount.ok
       return customerStore.put({
         ...customerRecord,
-        account,
+        // Keep the existing DID from our DB to maintain linkage even if Stripe email changed.
         product,
         updatedAt: new Date()
       })
-    } else if (customerResult.error instanceof RecordNotFound) {
-      return customerStore.put({
-        customer,
-        account,
-        product,
-        insertedAt: new Date(),
-        updatedAt: new Date()
-      })
+    } else if (byAccount.error instanceof RecordNotFound) {
+      // No record by account — fall back to DID derived from Stripe email.
+      const customer = DidMailto.fromEmail(/** @type {`${string}@${string}`} */(
+        stripeCustomer.email
+      ))
+
+      const customerResult = await customerStore.get({ customer })
+      if (customerResult.ok) {
+        const customerRecord = customerResult.ok
+        if (customerRecord.account && (customerRecord.account !== account)) {
+          return {
+            error: new CustomerFoundWithDifferentStripeAccount(customer, customerRecord.account, account)
+          }
+        }
+
+        return customerStore.put({
+          ...customerRecord,
+          account,
+          product,
+          updatedAt: new Date()
+        })
+      } else if (customerResult.error instanceof RecordNotFound) {
+        return customerStore.put({
+          customer,
+          account,
+          product,
+          insertedAt: new Date(),
+          updatedAt: new Date()
+        })
+      } else {
+        // it's an error result but we don't know how to handle it - propagate it!
+        return customerResult
+      }
     } else {
-      // it's an error result but we don't know how to handle it - propagate it!
-      return customerResult
+      // Unexpected error when listing by account — propagate it.
+      return byAccount
     }
   }
 }
