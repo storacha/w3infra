@@ -3,10 +3,7 @@ import {
   GetObjectCommand,
   ListObjectsV2Command,
 } from '@aws-sdk/client-s3'
-import {
-  GetItemCommand,
-  PutItemCommand
-} from '@aws-sdk/client-dynamodb'
+import { PutItemCommand, QueryCommand } from '@aws-sdk/client-dynamodb'
 import {
   RecordNotFound,
   StorageOperationFailed,
@@ -26,22 +23,22 @@ export { API }
  *   channel: S3Channel
  *   address: S3Address
  * }>} S3Connection
- * 
+ *
  * @typedef {import('../../../lib/aws/dynamo.js').Address} DynamoDBAddress
  * @typedef {import('@aws-sdk/client-dynamodb').DynamoDBClient} DynamoDBChannel
- * 
+ *
  * @typedef {API.Variant<{
  *   channel: DynamoDBChannel
  *   address: DynamoDBAddress
  * }>} DynamoDBConnection
- * 
+ *
  * @typedef {object} Buckets
  * @property {{name:string}} index
  * @property {{name:string}} message
  *
  * @typedef {object} Tables
  * @property {{name:string}} index
- * 
+ *
  * @typedef {object} Options
  * @property {S3Connection} s3Connection
  * @property {DynamoDBConnection} dynamoDBConnection
@@ -61,12 +58,21 @@ export { API }
  * @param {Options} options
  * @returns {Store}
  */
-export const open = ({ s3Connection, dynamoDBConnection, region, buckets, tables }) => ({
-  s3Channel: s3Connection.channel ?? getS3Client({ ...s3Connection.address, region }),
-  dynamoDBChannel: dynamoDBConnection.channel ?? getDynamoClient({ ...dynamoDBConnection.address, region}),
+export const open = ({
+  s3Connection,
+  dynamoDBConnection,
   region,
   buckets,
-  tables
+  tables,
+}) => ({
+  s3Channel:
+    s3Connection.channel ?? getS3Client({ ...s3Connection.address, region }),
+  dynamoDBChannel:
+    dynamoDBConnection.channel ??
+    getDynamoClient({ ...dynamoDBConnection.address, region }),
+  region,
+  buckets,
+  tables,
 })
 
 /**
@@ -84,7 +90,13 @@ export const open = ({ s3Connection, dynamoDBConnection, region, buckets, tables
 export const write = async (store, message) => {
   const [...commands] = assert(store, message)
   try {
-    await Promise.all(commands.map((command) => command.s3Command ? store.s3Channel.send(command.s3Command) : store.dynamoDBChannel.send(command.dynamoCommand)))
+    await Promise.all(
+      commands.map((command) =>
+        command.s3Command
+          ? store.s3Channel.send(command.s3Command)
+          : store.dynamoDBChannel.send(command.dynamoCommand)
+      )
+    )
     return { ok: {} }
   } catch (cause) {
     return {
@@ -112,13 +124,13 @@ export function* assert({ buckets, tables }, input) {
       : CAR.response.encode(input.data)
 
   // Store a message in the message object store under the key `${id}/${id}`
-  yield { 
+  yield {
     s3Command: new PutObjectCommand({
       Bucket: buckets.message.name,
       Key: toMessagePath({ message }),
       Body: body,
       ContentLength: body.byteLength,
-    }) 
+    }),
   }
 
   // Index all the invocations and receipts enclosed in the agent message
@@ -127,19 +139,16 @@ export function* assert({ buckets, tables }, input) {
       const { task, invocation, message } = entry.invocation
       // Index invoked task by the task CID so it could be looked up and
       // loaded later.
-      yield { 
-        s3Command: new PutObjectCommand({
-          Bucket: buckets.index.name,
-          Key: toInvocationPath({ task, invocation: invocation.link(), message }),
-          ContentLength: 0,
-        })
-      }
       // Write to dynamo table
       yield {
         dynamoCommand: new PutItemCommand({
           TableName: tables.index.name,
-          Item: toInvocationItem({ task, invocation: invocation.link(), message })
-        })
+          Item: toInvocationItem({
+            task,
+            invocation: invocation.link(),
+            message,
+          }),
+        }),
       }
     }
 
@@ -150,20 +159,12 @@ export function* assert({ buckets, tables }, input) {
       // `${invocation.cid}/${message.cid}.out` to track where each receipt
       // lives in a agent message file. As a pseudo symlink, it is an empty
       // object.
-      // Write to legacy S3 Bucket
-      yield {
-        s3Command: new PutObjectCommand({
-          Bucket: buckets.index.name,
-          Key: toReceiptPath({ task, receipt: receipt.link(), message }),
-          ContentLength: 0,
-        })
-      }
       // Write to dynamo table
       yield {
         dynamoCommand: new PutItemCommand({
           TableName: tables.index.name,
-          Item: toReceiptItem({ task, receipt: receipt.link(), message })
-        })
+          Item: toReceiptItem({ task, receipt: receipt.link(), message }),
+        }),
       }
     }
   }
@@ -283,8 +284,8 @@ export const resolve = async (store, { invocation, receipt }) => {
   // which get `.in` suffix. If we are looking for a receipt we need to find
   // an OUTgoing message which get `.out` suffix.
   const [prefix, suffix] = invocation
-    ? [`${invocation}/`, '.in']
-    : [`${receipt}/`, '.out']
+    ? [`${invocation}`, '.in']
+    : [`${receipt}`, '.out']
 
   // Previously we used to treat task and invocation as a same and used
   // following indexing using following pseudo symlinks
@@ -379,27 +380,32 @@ const toIndexEntry = (path) => {
 const list = async (connection, { prefix, suffix }) => {
   try {
     // attempt to read first from dynamo
-    const dynamoCommand = new GetItemCommand({
+    const dynamoCommand = new QueryCommand({
       TableName: connection.tables.index.name,
-      Key: {
-        "task": {
-          S: prefix
+      KeyConditionExpression: 'taskkind = :taskkind',
+      ExpressionAttributeValues: {
+        ':taskkind': {
+          S: prefix + suffix,
         },
-        "kind": {
-          S: suffix.slice(1)
-        }
       },
     })
-    const { Item }= await connection.dynamoDBChannel.send(dynamoCommand)
+    const { Items } = await connection.dynamoDBChannel.send(dynamoCommand)
 
-    if (Item) {
-      // Reassemble index entry -- invocation is nullable to support migration of legacy entrys in S3
-      return { ok: [ `${Item.task.S}/${Item.invocation.NULL ? Item.message.S : `${Item.invocation.S}@${Item.message.S}`}.${Item.kind}` ] }
+    if (Items && Items.length > 0) {
+      // Reassemble index entries
+      return {
+        ok: /** @type {[string, ...string[]]} */ (
+          Items.map((item) => {
+            const identifier = item.identifier.S || ''
+            return `${prefix}/${identifier}${suffix}`
+          })
+        ),
+      }
     }
 
     const command = new ListObjectsV2Command({
       Bucket: connection.buckets.index.name,
-      Prefix: prefix,
+      Prefix: prefix + '/',
     })
 
     const { Contents } = await connection.s3Channel.send(command)
@@ -411,14 +417,14 @@ const list = async (connection, { prefix, suffix }) => {
       ? { ok: /** @type {[string, ...string[]]} */ (entries) }
       : {
           error: new RecordNotFound(
-            `no pseudo symlink matching query ${prefix}*${suffix} was found`
+            `no pseudo symlink matching query ${prefix}/*${suffix} was found`
           ),
         }
   } catch (/** @type {any} */ error) {
     if (error?.$metadata?.httpStatusCode === 404) {
       return {
         error: new RecordNotFound(
-          `no pseudo symlink matching query ${prefix}*${suffix} was found`
+          `no pseudo symlink matching query ${prefix}/*${suffix} was found`
         ),
       }
     }
@@ -474,16 +480,18 @@ const read = async ({ buckets, s3Channel: channel }, message) => {
  * @param {API.Link} message
  */
 export const toMessageURL = (store, message) =>
-  new URL(`https://${store.buckets.message.name}.s3.${store.region}.amazonaws.com/${toMessagePath({message})}`)
-
+  new URL(
+    `https://${store.buckets.message.name}.s3.${
+      store.region
+    }.amazonaws.com/${toMessagePath({ message })}`
+  )
 
 /**
  * @param {object} source
- * @param {API.Link} source.message 
+ * @param {API.Link} source.message
  */
 
-export const toMessagePath = ({message}) =>
-  `${message}/${message}`
+export const toMessagePath = ({ message }) => `${message}/${message}`
 
 /**
  * @param {object} source
@@ -491,7 +499,7 @@ export const toMessagePath = ({message}) =>
  * @param {API.Link} source.task
  * @param {API.Link} source.invocation
  */
-export const toInvocationPath = ({message, task, invocation}) =>
+export const toInvocationPath = ({ message, task, invocation }) =>
   `${task}/${invocation}@${message}.in`
 
 /**
@@ -501,21 +509,14 @@ export const toInvocationPath = ({message, task, invocation}) =>
  * @param {API.Link} source.invocation
  * @returns {Record<string, import('@aws-sdk/client-dynamodb').AttributeValue>}
  */
-export const toInvocationItem = ({message, task, invocation}) => 
-  ({
-    "task": {
-      S: `${task}`
-    },
-    "kind": {
-      S: "in"
-    },
-    "invocation": {
-      S: `${invocation}`
-    },
-    "message": {
-      S: `${message}`
-    }
-  })
+export const toInvocationItem = ({ message, task, invocation }) => ({
+  taskkind: {
+    S: `${task}.in`,
+  },
+  identifier: {
+    S: `${invocation ? `${invocation}@${message}` : message}`,
+  },
+})
 
 /**
  * @param {object} source
@@ -523,7 +524,7 @@ export const toInvocationItem = ({message, task, invocation}) =>
  * @param {API.Link} source.task
  * @param {API.Link} source.receipt
  */
-export const toReceiptPath = ({message, task, receipt}) =>
+export const toReceiptPath = ({ message, task, receipt }) =>
   `${task}/${receipt}@${message}.out`
 
 /**
@@ -533,18 +534,11 @@ export const toReceiptPath = ({message, task, receipt}) =>
  * @param {API.Link} source.receipt
  * @returns {Record<string, import('@aws-sdk/client-dynamodb').AttributeValue>}
  */
-export const toReceiptItem = ({message, task, receipt}) => 
-  ({
-    "task": {
-      S: `${task}`
-    },
-    "kind": {
-      S: "out"
-    },
-    "invocation": {
-      S: `${receipt}`
-    },
-    "message": {
-      S: `${message}`
-    }
-  })
+export const toReceiptItem = ({ message, task, receipt }) => ({
+  taskkind: {
+    S: `${task}.out`,
+  },
+  identifier: {
+    S: `${receipt ? `${receipt}@${message}` : message}`,
+  },
+})

@@ -29,6 +29,7 @@ import {
 } from '../ucan-invocation.js'
 import { createDynamoTable } from '../../filecoin/test/helpers/tables.js'
 import { agentIndexTableProps } from '../tables/index.js'
+import { GetItemCommand } from '@aws-sdk/client-dynamodb'
 
 /**
  * @typedef {API.IssuedInvocation} IssuedInvocation
@@ -47,7 +48,7 @@ test.before(async (t) => {
 })
 
 test('processes agent message as CAR with multiple invocations', async (t) => {
-  t.plan(18)
+  t.plan(20)
   const kinesis = {
     /**
      * @param {any} input
@@ -149,19 +150,23 @@ test('processes agent message as CAR with multiple invocations', async (t) => {
 
   // Verify invocation symlink for car agent message stored
   for (const invocation of agentMessage.invocations) {
-    const cmdInvocationStored = new HeadObjectCommand({
-      Key: `${invocation.cid}/${invocation.cid}@${agentMessageCarCid}.in`,
-      Bucket: agentStore.connection.store.buckets.index.name,
+    const cmdInvocationStored = new GetItemCommand({
+      TableName: agentStore.connection.store.tables.index.name,
+      Key: {
+        taskkind: { S: `${invocation.cid}.in` },
+        identifier: { S: `${invocation.cid}@${agentMessageCarCid}` },
+      },
     })
-    const s3ResponseInvocationStored = await t.context.s3.send(
+    const dynamoResponseInvocationStore = await t.context.dynamo.send(
       cmdInvocationStored
     )
-    t.is(s3ResponseInvocationStored.$metadata.httpStatusCode, 200)
+    t.is(dynamoResponseInvocationStore.$metadata.httpStatusCode, 200)
+    t.not(dynamoResponseInvocationStore.Item, undefined)
   }
 })
 
 test('processes agent message as CAR with receipt', async (t) => {
-  t.plan(12)
+  t.plan(13)
   const kinesis = {
     // @ts-expect-error not same return type
     putRecords: (input) => {
@@ -308,14 +313,18 @@ test('processes agent message as CAR with receipt', async (t) => {
     const invocationCid = receipt.ran.link().toString()
 
     // Verify receipt symlink for car agent message stored
-    const cmdInvocationStored = new HeadObjectCommand({
-      Key: `${invocationCid}/${receipt.link()}@${agentMessageCarReceiptsCid}.out`,
-      Bucket: agentStore.connection.store.buckets.index.name,
+    const cmdInvocationStored = new GetItemCommand({
+      TableName: agentStore.connection.store.tables.index.name,
+      Key: {
+        taskkind: { S: `${invocationCid}.out` },
+        identifier: { S: `${receipt.link()}@${agentMessageCarReceiptsCid}` },
+      },
     })
-    const s3ResponseInvocationStored = await t.context.s3.send(
+    const dynamoResponseInvocationStore = await t.context.dynamo.send(
       cmdInvocationStored
     )
-    t.is(s3ResponseInvocationStored.$metadata.httpStatusCode, 200)
+    t.is(dynamoResponseInvocationStore.$metadata.httpStatusCode, 200)
+    t.not(dynamoResponseInvocationStore.Item, undefined)
   }
 })
 
@@ -509,14 +518,18 @@ test('can process ucan log request for given receipt after its invocation stored
   t.is(s3Response.$metadata.httpStatusCode, 200)
 
   // Verify receipt symlink for car agent message stored
-  const cmdInvocationStored = new HeadObjectCommand({
-    Key: `${invocationCid}/${receipt.link()}@${agentMessageCarReceiptsCid}.out`,
-    Bucket: agentStore.connection.store.buckets.index.name,
+  const cmdInvocationStored = new GetItemCommand({
+    TableName: agentStore.connection.store.tables.index.name,
+    Key: {
+      taskkind: { S: `${invocationCid}.out` },
+      identifier: { S: `${receipt.link()}@${agentMessageCarReceiptsCid}` },
+    },
   })
-  const s3ResponseInvocationStored = await t.context.s3.send(
+  const dynamoResponseInvocationStore = await t.context.dynamo.send(
     cmdInvocationStored
   )
-  t.is(s3ResponseInvocationStored.$metadata.httpStatusCode, 200)
+  t.is(dynamoResponseInvocationStore.$metadata.httpStatusCode, 200)
+  t.not(dynamoResponseInvocationStore.Item, undefined)
 })
 
 test('fails to process ucan log request with no Authorization header', async (t) => {
