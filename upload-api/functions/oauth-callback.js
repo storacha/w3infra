@@ -53,7 +53,7 @@ export const oauthCallbackGet = async (request, context) => {
     agentStore,
     github,
     customerStore,
-    getServiceConnection
+    getServiceConnection,
   } = getContext(context?.clientContext?.Custom)
 
   const code = request.queryStringParameters?.code
@@ -62,10 +62,15 @@ export const oauthCallbackGet = async (request, context) => {
     return { statusCode: 400, body: 'missing code in query params' }
   }
 
-  const extractRes = await Delegation.extract(base64url.decode(request.queryStringParameters?.state ?? ''))
+  const extractRes = await Delegation.extract(
+    base64url.decode(request.queryStringParameters?.state ?? '')
+  )
   if (extractRes.error) {
     console.error('decoding access/authorize delegation', extractRes.error)
-    return { statusCode: 400, body: 'failed to decode access/authorize delegation' }
+    return {
+      statusCode: 400,
+      body: 'failed to decode access/authorize delegation',
+    }
   }
 
   const authRequest =
@@ -76,11 +81,14 @@ export const oauthCallbackGet = async (request, context) => {
     capability: Access.authorize,
     authority: serviceSigner,
     principal: Verifier,
-    validateAuthorization: () => ok({})
+    validateAuthorization: () => ok({}),
   })
   if (accessRes.error) {
     console.error('validating access/authorize delegation', accessRes.error)
-    return { statusCode: 400, body: 'failed to validate access/authorize delegation' }
+    return {
+      statusCode: 400,
+      body: 'failed to validate access/authorize delegation',
+    }
   }
 
   const accessTokenRes = await github.getOAuthAccessToken({ code })
@@ -92,7 +100,7 @@ export const oauthCallbackGet = async (request, context) => {
 
   const [userRes, userEmailsRes] = await Promise.all([
     github.getUser({ accessToken }),
-    github.getUserEmails({ accessToken })
+    github.getUserEmails({ accessToken }),
   ])
   if (!userRes.ok) {
     console.error(userRes.error)
@@ -105,7 +113,7 @@ export const oauthCallbackGet = async (request, context) => {
 
   const user = userRes.ok
   const emails = userEmailsRes.ok
-  const primary = emails.find(e => e.primary && e.verified)
+  const primary = emails.find((e) => e.primary && e.verified)
   if (!primary) {
     console.error('missing primary verified email', emails)
     return { statusCode: 400, body: 'missing primary verified email' }
@@ -121,22 +129,27 @@ export const oauthCallbackGet = async (request, context) => {
         ran: authRequest,
         result: ok({
           expiration: Math.floor(Date.now() / 1000) + lifetimeInSeconds,
-          request: authRequest.cid
-        })
-      })
-    ]
+          request: authRequest.cid,
+        }),
+      }),
+    ],
   })
   const messageWriteRes = await agentStore.messages.write({
     source: await Transport.outbound.encode(message),
     data: message,
-    index: AgentMessage.index(message)
+    index: AgentMessage.index(message),
   })
   if (messageWriteRes.error) {
     console.error(messageWriteRes.error)
-    return { statusCode: 500, body: 'failed to write access/authorize invocation and receipt' }
+    return {
+      statusCode: 500,
+      body: 'failed to write access/authorize invocation and receipt',
+    }
   }
 
-  const customer = DidMailto.fromEmail(/** @type {`${string}@${string}`} */ (primary.email))
+  const customer = DidMailto.fromEmail(
+    /** @type {`${string}@${string}`} */ (primary.email)
+  )
   const confirmRes = await Access.confirm
     .invoke({
       issuer: serviceSigner,
@@ -162,7 +175,10 @@ export const oauthCallbackGet = async (request, context) => {
 
   if (!confirmRes.out.ok) {
     console.error('executing access/confirm', confirmRes.out.error)
-    return { statusCode: 500, body: 'failed to execute access/confirm invocation' }
+    return {
+      statusCode: 500,
+      body: 'failed to execute access/confirm invocation',
+    }
   }
 
   const customerGetRes = await customerStore.get({ customer })
@@ -188,7 +204,7 @@ export const oauthCallbackGet = async (request, context) => {
     customer,
     product: 'did:web:trial.storacha.network',
     details: JSON.stringify({ github: { id: user.id, login: user.login } }),
-    insertedAt: new Date()
+    insertedAt: new Date(),
   })
   if (!customerPutRes.ok) {
     console.error(`putting customer: ${customer}`, customerPutRes.error)
@@ -218,16 +234,20 @@ const getContext = (customContext) => {
 
   const serviceSigner = getServiceSigner({
     did: process.env.UPLOAD_API_DID,
-    privateKey: Config.PRIVATE_KEY
+    privateKey: Config.PRIVATE_KEY,
   })
 
   const agentStore = openAgentStore({
     store: {
-      connection: { address: { region } },
+      dynamoDBConnection: { address: { region } },
+      s3Connection: { address: { region } },
       region,
       buckets: {
         message: { name: mustGetEnv('AGENT_MESSAGE_BUCKET_NAME') },
         index: { name: mustGetEnv('AGENT_INDEX_BUCKET_NAME') },
+      },
+      tables: {
+        index: { name: mustGetEnv('AGENT_INDEX_TABLE_NAME') },
       },
     },
     stream: {
@@ -238,20 +258,24 @@ const getContext = (customContext) => {
 
   const github = new GitHubClient({
     clientID: mustGetEnv('GITHUB_CLIENT_ID'),
-    clientSecret: Config.GITHUB_CLIENT_SECRET
+    clientSecret: Config.GITHUB_CLIENT_SECRET,
   })
 
-  const customerStore = createCustomerStore({ region }, { tableName: mustGetEnv('CUSTOMER_TABLE_NAME') })
+  const customerStore = createCustomerStore(
+    { region },
+    { tableName: mustGetEnv('CUSTOMER_TABLE_NAME') }
+  )
 
   return {
     serviceSigner,
     agentStore,
     github,
     customerStore,
-    getServiceConnection: () => getServiceConnection({
-      did: serviceSigner.did(),
-      url: mustGetEnv('UPLOAD_SERVICE_URL')
-    })
+    getServiceConnection: () =>
+      getServiceConnection({
+        did: serviceSigner.did(),
+        url: mustGetEnv('UPLOAD_SERVICE_URL'),
+      }),
   }
 }
 
@@ -260,7 +284,7 @@ class GitHubClient {
   #clientSecret
 
   /** @param {{ clientID: string, clientSecret: string }} config */
-  constructor ({ clientID, clientSecret }) {
+  constructor({ clientID, clientSecret }) {
     this.#clientID = clientID
     this.#clientSecret = clientSecret
   }
@@ -271,31 +295,38 @@ class GitHubClient {
     params.set('client_id', this.#clientID)
     params.set('client_secret', this.#clientSecret)
     params.set('code', code)
-  
+
     try {
-      const accessTokenRes = await fetch('https://github.com/login/oauth/access_token', {
-        method: 'POST',
-        headers: { Accept: 'application/json' },
-        body: params
-      })
+      const accessTokenRes = await fetch(
+        'https://github.com/login/oauth/access_token',
+        {
+          method: 'POST',
+          headers: { Accept: 'application/json' },
+          body: params,
+        }
+      )
       if (!accessTokenRes.ok) {
-        return error(new Error(`fetching access token: ${accessTokenRes.status}`))
+        return error(
+          new Error(`fetching access token: ${accessTokenRes.status}`)
+        )
       }
-      return ok(/** @type {{ access_token: string }} */ (await accessTokenRes.json()))
+      return ok(
+        /** @type {{ access_token: string }} */ (await accessTokenRes.json())
+      )
     } catch (/** @type {any} */ err) {
       return error(err)
     }
   }
 
   /** @type {GitHub['getUser']} */
-  async getUser ({ accessToken }) {
+  async getUser({ accessToken }) {
     try {
       const userRes = await fetch('https://api.github.com/user', {
         headers: {
           Accept: 'application/vnd.github+json',
           Authorization: `Bearer ${accessToken}`,
-          'X-GitHub-Api-Version': '2022-11-28'
-        }
+          'X-GitHub-Api-Version': '2022-11-28',
+        },
       })
       if (!userRes.ok) {
         return error(new Error(`fetching user profile: ${userRes.status}`))
@@ -309,14 +340,14 @@ class GitHubClient {
   }
 
   /** @type {GitHub['getUserEmails']} */
-  async getUserEmails ({ accessToken }) {
+  async getUserEmails({ accessToken }) {
     try {
       const userEmailsRes = await fetch('https://api.github.com/user/emails', {
         headers: {
           Accept: 'application/vnd.github+json',
           Authorization: `Bearer ${accessToken}`,
-          'X-GitHub-Api-Version': '2022-11-28'
-        }
+          'X-GitHub-Api-Version': '2022-11-28',
+        },
       })
       if (!userEmailsRes.ok) {
         return error(new Error(`fetching user emails: ${userEmailsRes.status}`))
@@ -330,7 +361,8 @@ class GitHubClient {
   }
 }
 
-const getResponseHTML = () => `
+const getResponseHTML = () =>
+  `
 <!doctype html>
 <html lang="en">
   <head>
