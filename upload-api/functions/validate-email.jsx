@@ -156,8 +156,8 @@ function createAuthorizeContext() {
         index: { name: AGENT_INDEX_BUCKET_NAME },
       },
       tables: {
-        index: { name: AGENT_INDEX_TABLE_NAME}
-      }
+        index: { name: AGENT_INDEX_TABLE_NAME },
+      },
     },
     stream: {
       connection: { address: {} },
@@ -253,13 +253,7 @@ export async function validateEmailPost(request) {
 
   return toLambdaResponse(
     new html.HtmlResponse(
-      (
-        <html.ValidateEmail
-          email={email}
-          audience={audience}
-          ucan={ucan}
-        />
-      )
+      <html.ValidateEmail email={email} audience={audience} ucan={ucan} />
     )
   )
 }

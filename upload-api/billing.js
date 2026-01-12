@@ -68,7 +68,7 @@ export function createStripeBillingProvider(
     async hasCustomer(customer) {
       const customersResponse = await stripe.customers.list({
         email: toEmail(
-          /** @type {import('@storacha/did-mailto').DidMailto} */(customer)
+          /** @type {import('@storacha/did-mailto').DidMailto} */ (customer)
         ),
       })
       return { ok: customersResponse.data.length > 0 }
@@ -82,12 +82,20 @@ export function createStripeBillingProvider(
       try {
         const cusRes = await customerStore.get({ customer: customerDID })
         if (cusRes.error) {
-          return error(new InvalidSubscriptionState(`failed to get customer from store: ${cusRes.error.message}`))
+          return error(
+            new InvalidSubscriptionState(
+              `failed to get customer from store: ${cusRes.error.message}`
+            )
+          )
         }
 
         const stripeID = cusRes.ok.account ?? ''
         if (!stripeID.startsWith('stripe:')) {
-          return error(new InvalidSubscriptionState(`customer does not have a Stripe account: ${customerDID}`))
+          return error(
+            new InvalidSubscriptionState(
+              `customer does not have a Stripe account: ${customerDID}`
+            )
+          )
         }
 
         let customer
@@ -97,10 +105,18 @@ export function createStripeBillingProvider(
             { expand: ['subscriptions'] }
           )
           if (customer.deleted) {
-            return error(new InvalidSubscriptionState(`Stripe customer is deleted: ${customerDID}`))
+            return error(
+              new InvalidSubscriptionState(
+                `Stripe customer is deleted: ${customerDID}`
+              )
+            )
           }
         } catch (/** @type {any} */ err) {
-          return error(new InvalidSubscriptionState(`failed to get customer ${customerDID} from Stripe by ID: ${err.message}`))
+          return error(
+            new InvalidSubscriptionState(
+              `failed to get customer ${customerDID} from Stripe by ID: ${err.message}`
+            )
+          )
         }
 
         const subscriptions = customer.subscriptions?.data
@@ -112,7 +128,6 @@ export function createStripeBillingProvider(
           }
         subscription = customer.subscriptions?.data[0]
         subscriptionItems = subscription?.items.data
-
       } catch (/** @type {any} */ err) {
         return {
           error: new InvalidSubscriptionState(err.message, { cause: err }),
@@ -125,18 +140,17 @@ export function createStripeBillingProvider(
           const oldItems = subscriptionItems || []
           /** @type {import('stripe').Stripe.SubscriptionUpdateParams.Item[]} */
           const newItems = plansToLineItemsMapping[plan]
-          await stripe.subscriptions.update(
-            subscription.id,
-            {
-              items: [
-                ...(oldItems?.map(si => ({ id: si.id, deleted: true }))),
-                ...newItems              
-              ]
-            }
-          )
+          await stripe.subscriptions.update(subscription.id, {
+            items: [
+              ...oldItems?.map((si) => ({ id: si.id, deleted: true })),
+              ...newItems,
+            ],
+          })
         } else {
           return {
-            error: new BillingProviderUpdateError(`Could not find subscription for ${customerDID}`)
+            error: new BillingProviderUpdateError(
+              `Could not find subscription for ${customerDID}`
+            ),
           }
         }
 
@@ -206,9 +220,9 @@ export function createStripeBillingProvider(
         const sessionCreateParams = {
           mode: 'subscription',
           customer_email: DIDMailto.toEmail(
-            /** @type {import('@storacha/did-mailto').DidMailto} */(account)
+            /** @type {import('@storacha/did-mailto').DidMailto} */ (account)
           ),
-          success_url: options.successURL || process.env.STRIPE_DEFAULT_SUCCESS_URL,
+          success_url: options.successURL || process.env.STRIPE_SUCCESS_URL,
           cancel_url: options.cancelURL,
           line_items: plansToLineItemsMapping[planID],
           subscription_data: {
@@ -219,14 +233,17 @@ export function createStripeBillingProvider(
         if (options.freeTrial) {
           const couponID = couponIds[planID]
           if (couponID) {
-            sessionCreateParams.discounts = [{
-              coupon: couponID
-            }]
+            sessionCreateParams.discounts = [
+              {
+                coupon: couponID,
+              },
+            ]
           }
         }
 
-        const session =
-          await stripe.checkout.sessions.create(sessionCreateParams)
+        const session = await stripe.checkout.sessions.create(
+          sessionCreateParams
+        )
         if (!session.url) {
           return {
             error: {

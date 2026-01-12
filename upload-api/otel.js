@@ -1,4 +1,9 @@
-import { context as otContext, propagation, trace, SpanStatusCode } from '@opentelemetry/api'
+import {
+  context as otContext,
+  propagation,
+  trace,
+  SpanStatusCode,
+} from '@opentelemetry/api'
 import { NodeTracerProvider } from '@opentelemetry/sdk-trace-node'
 import {
   AlwaysOffSampler,
@@ -11,11 +16,9 @@ import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http'
 import { Resource } from '@opentelemetry/resources'
 import {
   ATTR_SERVICE_NAME,
-  ATTR_SERVICE_VERSION
+  ATTR_SERVICE_VERSION,
 } from '@opentelemetry/semantic-conventions'
-import {
-  ATTR_DEPLOYMENT_ENVIRONMENT_NAME
-} from '@opentelemetry/semantic-conventions/incubating'
+import { ATTR_DEPLOYMENT_ENVIRONMENT_NAME } from '@opentelemetry/semantic-conventions/incubating'
 import { registerInstrumentations } from '@opentelemetry/instrumentation'
 import { UndiciInstrumentation } from '@opentelemetry/instrumentation-undici'
 
@@ -27,7 +30,9 @@ const resource = new Resource({
 })
 
 const sampler = createSampler()
-const endpoint = (process.env.OTEL_EXPORTER_OTLP_ENDPOINT || 'http://localhost:4318').replace(/\/$/, '')
+const endpoint = (
+  process.env.OTEL_EXPORTER_OTLP_ENDPOINT || 'http://localhost:4318'
+).replace(/\/$/, '')
 const exporter = new OTLPTraceExporter({
   url: `${endpoint}/v1/traces`,
   headers: parseHeaders(process.env.OTEL_EXPORTER_OTLP_HEADERS),
@@ -67,41 +72,48 @@ const headerGetter = {
  * @returns {Fn}
  */
 export const wrapLambdaHandler = (name, handler) =>
-  /** @type {Fn} */ (async (...args) => {
-    const [event] = args
-    // Pick up parent trace context from request headers when present.
-    const carrier = event && typeof event === 'object' ? event.headers : undefined
-    const parentCtx = propagation.extract(otContext.active(), carrier || {}, headerGetter)
-    const span = tracer.startSpan(name, undefined, parentCtx)
-    const recording = span.isRecording()
-    const ctxWithSpan = trace.setSpan(parentCtx, span)
-    let response
+  /** @type {Fn} */ (
+    async (...args) => {
+      const [event] = args
+      // Pick up parent trace context from request headers when present.
+      const carrier =
+        event && typeof event === 'object' ? event.headers : undefined
+      const parentCtx = propagation.extract(
+        otContext.active(),
+        carrier || {},
+        headerGetter
+      )
+      const span = tracer.startSpan(name, undefined, parentCtx)
+      const recording = span.isRecording()
+      const ctxWithSpan = trace.setSpan(parentCtx, span)
+      let response
 
-    try {
-      response = await otContext.with(ctxWithSpan, () => handler(...args))
-    } catch (/** @type {any} */ err) {
-      span.recordException(err)
-      span.setStatus({ code: SpanStatusCode.ERROR, message: err?.message })
-      throw err
-    } finally {
-      span.end()
-    }
-
-    // if the span is recording, then force flush, waiting for it to complete
-    if (recording) {
       try {
-        await provider.forceFlush()
-      } catch (err) {
-        console.error('force flushing', err)
+        response = await otContext.with(ctxWithSpan, () => handler(...args))
+      } catch (/** @type {any} */ err) {
+        span.recordException(err)
+        span.setStatus({ code: SpanStatusCode.ERROR, message: err?.message })
+        throw err
+      } finally {
+        span.end()
       }
-    }
 
-    return attachTraceContextToResponse(response, ctxWithSpan)
-  })
+      // if the span is recording, then force flush, waiting for it to complete
+      if (recording) {
+        try {
+          await provider.forceFlush()
+        } catch (err) {
+          console.error('force flushing', err)
+        }
+      }
+
+      return attachTraceContextToResponse(response, ctxWithSpan)
+    }
+  )
 
 /**
  * Add trace context headers to a Lambda response so callers can continue the trace.
- * 
+ *
  * @template T
  * @param {T} response
  * @param {import('@opentelemetry/api').Context} ctx
@@ -118,14 +130,16 @@ function attachTraceContextToResponse(response, ctx) {
   return {
     ...response,
     headers: {
-      ...(/** @type {any} */ (response)).headers,
+      .../** @type {any} */ (response).headers,
       ...carrier,
     },
   }
 }
 
 function createSampler() {
-  const samplerName = (process.env.OTEL_TRACES_SAMPLER || 'always_off').toLowerCase()
+  const samplerName = (
+    process.env.OTEL_TRACES_SAMPLER || 'always_off'
+  ).toLowerCase()
   const ratioArg = Number.parseFloat(process.env.OTEL_TRACES_SAMPLER_ARG || '1')
   const ratio = clamp(ratioArg, 0, 1)
 
@@ -142,7 +156,9 @@ function createSampler() {
       return new ParentBasedSampler({ root: new AlwaysOffSampler() })
     case 'parentbased_traceidratio':
     default:
-      return new ParentBasedSampler({ root: new TraceIdRatioBasedSampler(ratio) })
+      return new ParentBasedSampler({
+        root: new TraceIdRatioBasedSampler(ratio),
+      })
   }
 }
 

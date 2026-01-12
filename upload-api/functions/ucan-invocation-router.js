@@ -13,7 +13,12 @@ import * as Proof from '@storacha/client/proof'
 import { Client as IndexingServiceClient } from '@storacha/indexing-service-client'
 import * as UploadAPI from '@storacha/upload-api'
 import * as UCANCaps from '@storacha/capabilities/ucan'
-import { HTTPResolver, CacheResolver, MapResolver, TieredResolver } from '@storacha/principal-resolver'
+import {
+  HTTPResolver,
+  CacheResolver,
+  MapResolver,
+  TieredResolver,
+} from '@storacha/principal-resolver'
 import { wrapLambdaHandler } from '../otel.js'
 import {
   composeCarStoresWithOrderedHas,
@@ -74,7 +79,10 @@ import {
 } from '../external-services/sso-providers/index.js'
 import { uploadServiceURL } from '@storacha/client/service'
 import { productInfo } from '../../billing/lib/product-info.js'
-import { FREE_TRIAL_COUPONS, PLANS_TO_LINE_ITEMS_MAPPING } from '../constants.js'
+import {
+  FREE_TRIAL_COUPONS,
+  PLANS_TO_LINE_ITEMS_MAPPING,
+} from '../constants.js'
 import { instrumentServiceMethods } from '../lib/otel/ucanto.js'
 
 Sentry.AWSLambda.init({
@@ -256,8 +264,8 @@ export async function ucanInvocationRouter(request) {
     store: {
       dynamoDBConnection: {
         address: {
-          region: AWS_REGION
-        }
+          region: AWS_REGION,
+        },
       },
       s3Connection: {
         address: {
@@ -270,8 +278,8 @@ export async function ucanInvocationRouter(request) {
         index: { name: agentIndexBucketName },
       },
       tables: {
-        index: { name: agentIndexTableName }
-      }
+        index: { name: agentIndexTableName },
+      },
     },
     stream: {
       connection: { address: {} },
@@ -332,10 +340,17 @@ export async function ucanInvocationRouter(request) {
     { tableName: customerTableName }
   )
   if (!STRIPE_SECRET_KEY) throw new Error('missing secret: STRIPE_SECRET_KEY')
-  const stripe = new Stripe(STRIPE_SECRET_KEY, { apiVersion: '2025-02-24.acacia' })
+  const stripe = new Stripe(STRIPE_SECRET_KEY, {
+    apiVersion: '2025-02-24.acacia',
+  })
   const plansStorage = usePlansStore(
     customerStore,
-    createStripeBillingProvider(stripe, customerStore, plansToLineItemsMapping, couponIds)
+    createStripeBillingProvider(
+      stripe,
+      customerStore,
+      plansToLineItemsMapping,
+      couponIds
+    )
   )
   const rateLimitsStorage = createRateLimitTable(AWS_REGION, rateLimitTableName)
   const spaceDiffStore = createSpaceDiffStore(
@@ -393,12 +408,12 @@ export async function ucanInvocationRouter(request) {
     issuer: aggregatorServiceProofs.length
       ? serviceSigner
       : getServiceSigner({
-        did: aggregatorDid,
-        privateKey: PRIVATE_KEY,
-      }),
+          did: aggregatorDid,
+          privateKey: PRIVATE_KEY,
+        }),
     audience: aggregatorServicePrincipal,
     with: aggregatorServicePrincipal.did(),
-    proofs: aggregatorServiceProofs
+    proofs: aggregatorServiceProofs,
   }
 
   // DEAL_TRACKER_SERVICE_PROOF is only required in some environments
@@ -647,7 +662,7 @@ export async function ucanInvocationRouter(request) {
             }),
         audience: dealTrackerConnection.id,
         with: dealTrackerConnection.id.did(),
-        proofs: dealTrackerProofs
+        proofs: dealTrackerProofs,
       },
     },
     plansStorage,
@@ -723,9 +738,9 @@ function getLambdaEnv() {
     spaceSnapshotTableName: mustGetEnv('SPACE_SNAPSHOT_TABLE'),
     storageProviderTableName: mustGetEnv('STORAGE_PROVIDER_TABLE'),
     replicaTableName: mustGetEnv('REPLICA_TABLE'),
-    pieceOfferQueueUrl: mustGetEnv('PIECE_OFFER_QUEUE_URL'),
-    filecoinSubmitQueueUrl: mustGetEnv('FILECOIN_SUBMIT_QUEUE_URL'),
-    egressTrafficQueueUrl: mustGetEnv('EGRESS_TRAFFIC_QUEUE_URL'),
+    pieceOfferQueueUrl: mustGetEnv('PIECE_OFFER_QUEUE'),
+    filecoinSubmitQueueUrl: mustGetEnv('FILECOIN_SUBMIT_QUEUE'),
+    egressTrafficQueueUrl: mustGetEnv('EGRESS_TRAFFIC_QUEUE'),
     r2DelegationBucketEndpoint: process.env.R2_ENDPOINT,
     r2DelegationBucketAccessKeyId: process.env.R2_ACCESS_KEY_ID,
     r2DelegationBucketSecretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
@@ -733,7 +748,7 @@ function getLambdaEnv() {
     agentIndexTableName: mustGetEnv('AGENT_INDEX_TABLE'),
     agentIndexBucketName: mustGetEnv('AGENT_INDEX_BUCKET'),
     agentMessageBucketName: mustGetEnv('AGENT_MESSAGE_BUCKET'),
-    streamName: mustGetEnv('UCAN_LOG_STREAM'),
+    streamName: mustGetEnv('UCAN_LOGS'),
     postmarkToken: mustGetEnv('POSTMARK_TOKEN'),
     providers: mustGetEnv('PROVIDERS'),
     accessServiceURL: mustGetEnv('UPLOAD_SERVICE_URL'),
@@ -769,8 +784,11 @@ function getLambdaEnv() {
         ...JSON.parse(process.env.PRINCIPAL_MAPPING || '{}'),
       }),
     // default to staging values for line items since that's the default Stripe sandbox
-    plansToLineItemsMapping: PLANS_TO_LINE_ITEMS_MAPPING[mustGetEnv('SST_STAGE')] ?? PLANS_TO_LINE_ITEMS_MAPPING.staging,
-    couponIds: FREE_TRIAL_COUPONS[mustGetEnv('SST_STAGE')] ?? FREE_TRIAL_COUPONS.staging,
+    plansToLineItemsMapping:
+      PLANS_TO_LINE_ITEMS_MAPPING[mustGetEnv('SST_STAGE')] ??
+      PLANS_TO_LINE_ITEMS_MAPPING.staging,
+    couponIds:
+      FREE_TRIAL_COUPONS[mustGetEnv('SST_STAGE')] ?? FREE_TRIAL_COUPONS.staging,
     // set for testing
     dbEndpoint: process.env.DYNAMO_DB_ENDPOINT,
   }
