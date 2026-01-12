@@ -1,9 +1,8 @@
 import { connectTable, createStoreGetterClient, createStoreListerClient, createStorePutterClient } from './client.js'
 import { validate, encode, encodeKey, decode } from '../data/customer.js'
-import { RecordNotFound } from './lib.js'
+import { RecordNotFound, StoreOperationFailure } from './lib.js'
 import { UpdateItemCommand } from '@aws-sdk/client-dynamodb'
 import { marshall } from '@aws-sdk/util-dynamodb'
-import { StoreOperationFailure } from './lib.js'
 
 /**
  * Stores customer details.
@@ -66,7 +65,7 @@ export const createCustomerStore = (conf, { tableName }) => ({
       decode
     })
 
-    const res = await lister.list({ account })
+    const res = await lister.list(account)
     if (res.error) return res
     const first = res.ok.results[0]
     if (!first) {
