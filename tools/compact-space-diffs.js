@@ -6,6 +6,9 @@ import { randomUUID } from 'crypto'
 import { createConsumerStore } from '../billing/tables/consumer.js'
 import { writeFileSync } from 'fs'
 import path from 'path'
+import * as Link from 'multiformats/link'
+import { sha256 } from 'multiformats/hashes/sha2'
+import * as raw from 'multiformats/codecs/raw'
 
 /**
  * Logs an error message and details to a timestamped file.
@@ -190,9 +193,15 @@ export async function compactSpaceDiffs(spaceDid) {
 
   // Step 4: Create a summation diff with a synthetic UUID cause
   // IMPORTANT: Use the last receipt date to accurately represent when the final diff occurred
-  const syntheticCause = randomUUID()
+  const syntheticUUID = randomUUID()
+
+  // Convert UUID to bytes and create a CID from it
+  const uuidBytes = new TextEncoder().encode(syntheticUUID)
+  const hash = await sha256.digest(uuidBytes)
+  const syntheticCauseCID = Link.create(raw.code, hash)
+
   const summationReceiptAt = lastReceiptAt
-  const summationDiffSk = `${summationReceiptAt.toISOString()}#${syntheticCause}`
+  const summationDiffSk = `${summationReceiptAt.toISOString()}#${syntheticCauseCID.toString()}`
 
   const summationDiff = {
     pk,
@@ -200,7 +209,7 @@ export async function compactSpaceDiffs(spaceDid) {
     space: SPACE_DID,
     provider: providerDID,
     subscription,
-    cause: syntheticCause,
+    cause: syntheticCauseCID.toString(),
     delta: totalDelta,
     receiptAt: summationReceiptAt.toISOString(),
     insertedAt: new Date().toISOString()

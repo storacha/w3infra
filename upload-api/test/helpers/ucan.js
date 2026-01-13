@@ -25,6 +25,7 @@ import {
   blobRegistryTableProps,
   adminMetricsTableProps,
   replicaTableProps,
+  agentIndexTableProps,
 } from '../../tables/index.js'
 import {
   useBlobRegistry,
@@ -239,7 +240,10 @@ export const encodeAgentMessage = async (source) => {
  * buckets: {
  *  index: { name: string }
  *  message: { name: string }
- * }
+ * },
+ * tables: {
+ *   index: { name: string }
+ * },
  * }} TestContext
  *
  * @param {import('ava').ExecutionContext<{
@@ -258,14 +262,19 @@ export async function executionContextToUcantoTestServerContext(t) {
   const delegationsBucketName = await createBucket(s3)
   const agentIndexBucketName = await createBucket(s3)
   const agentMessageBucketName = await createBucket(s3)
+  const agentIndexTableName = await createTable(dynamo, agentIndexTableProps)
 
   const agentStore = AgentStore.open({
     store: {
-      connection: { channel: s3 },
+      dynamoDBConnection: { channel: dynamo },
+      s3Connection: { channel: s3 },
       region: 'us-west-2',
       buckets: {
         message: { name: agentMessageBucketName },
         index: { name: agentIndexBucketName },
+      },
+      tables: {
+        index: { name: agentIndexTableName },
       },
     },
     stream: {
@@ -479,11 +488,13 @@ export async function executionContextToUcantoTestServerContext(t) {
     pieceStore,
     taskStore: createFilecoinTaskStore(
       'us-west-2',
+      agentIndexTableName,
       agentIndexBucketName,
       agentMessageBucketName
     ),
     receiptStore: createFilecoinReceiptStore(
       'us-west-2',
+      agentIndexTableName,
       agentIndexBucketName,
       agentMessageBucketName
     ),
@@ -532,6 +543,9 @@ export async function executionContextToUcantoTestServerContext(t) {
     buckets: {
       index: { name: agentIndexBucketName },
       message: { name: agentMessageBucketName },
+    },
+    tables: {
+      index: { name: agentIndexTableName },
     },
   }
 }

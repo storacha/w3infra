@@ -78,7 +78,7 @@ export function UploadApiStack({ stack, app }) {
     dmailApiSecret,
     dmailJwtSecret,
   } = use(UploadDbStack)
-  const { agentIndexBucket, agentMessageBucket, ucanStream } =
+  const { agentIndexTable, agentIndexBucket, agentMessageBucket, ucanStream } =
     use(UcanInvocationStack)
   const {
     customerTable,
@@ -87,7 +87,8 @@ export function UploadApiStack({ stack, app }) {
     egressTrafficTable,
     stripeSecretKey,
   } = use(BillingDbStack)
-  const { aggregatorServiceProof, pieceOfferQueue, filecoinSubmitQueue } = use(FilecoinStack)
+  const { aggregatorServiceProof, pieceOfferQueue, filecoinSubmitQueue } =
+    use(FilecoinStack)
   /** @type {{ permissions: import('sst/constructs').Permissions, environment: Record<string, string> } | undefined} */
   let ipniConfig
   if (DISABLE_IPNI_PUBLISHING !== 'true') {
@@ -133,7 +134,8 @@ export function UploadApiStack({ stack, app }) {
             VERSION: pkg.version,
             COMMIT: git.commmit,
             STAGE: stack.stage,
-            OTEL_EXPORTER_OTLP_ENDPOINT: process.env.OTEL_EXPORTER_OTLP_ENDPOINT ?? '',
+            OTEL_EXPORTER_OTLP_ENDPOINT:
+              process.env.OTEL_EXPORTER_OTLP_ENDPOINT ?? '',
             OTEL_TRACES_SAMPLER: process.env.OTEL_TRACES_SAMPLER ?? '',
             OTEL_TRACES_SAMPLER_ARG: process.env.OTEL_TRACES_SAMPLER_ARG ?? '',
           },
@@ -146,6 +148,7 @@ export function UploadApiStack({ stack, app }) {
             permissions: [
               adminMetricsTable,
               agentIndexBucket,
+              agentIndexTable,
               agentMessageBucket,
               allocationTable, // legacy
               blobRegistryTable,
@@ -175,6 +178,7 @@ export function UploadApiStack({ stack, app }) {
             environment: {
               ADMIN_METRICS_TABLE: adminMetricsTable.tableName,
               AGENT_INDEX_BUCKET: agentIndexBucket.bucketName,
+              AGENT_INDEX_TABLE: agentIndexTable.tableName,
               AGENT_MESSAGE_BUCKET: agentMessageBucket.bucketName,
               AGGREGATOR_DID,
               ALLOCATION_TABLE: allocationTable.tableName,
@@ -192,22 +196,20 @@ export function UploadApiStack({ stack, app }) {
               DISABLE_IPNI_PUBLISHING,
               ENABLE_CUSTOMER_TRIAL_PLAN:
                 process.env.ENABLE_CUSTOMER_TRIAL_PLAN ?? 'false',
-              EGRESS_TRAFFIC_QUEUE_URL: egressTrafficQueue.queueUrl,
-              EGRESS_TRAFFIC_TABLE: egressTrafficTable.tableName,
-              FILECOIN_SUBMIT_QUEUE_URL: filecoinSubmitQueue.queueUrl,
+              EGRESS_TRAFFIC_QUEUE: egressTrafficQueue.queueUrl,
+              FILECOIN_SUBMIT_QUEUE: filecoinSubmitQueue.queueUrl,
               INDEXING_SERVICE_DID,
               INDEXING_SERVICE_URL,
               ...(ipniConfig ? ipniConfig.environment : {}),
               MAX_REPLICAS: process.env.MAX_REPLICAS ?? '',
-              PIECE_OFFER_QUEUE_URL: pieceOfferQueue.queueUrl,
+              PIECE_OFFER_QUEUE: pieceOfferQueue.queueUrl,
               PIECE_TABLE: pieceTable.tableName,
               POSTMARK_TOKEN: process.env.POSTMARK_TOKEN ?? '',
               PRINCIPAL_MAPPING: process.env.PRINCIPAL_MAPPING ?? '',
               PROVIDERS: process.env.PROVIDERS ?? '',
               R2_ACCESS_KEY_ID: process.env.R2_ACCESS_KEY_ID ?? '',
               R2_CARPARK_BUCKET: process.env.R2_CARPARK_BUCKET_NAME ?? '',
-              R2_DELEGATION_BUCKET:
-                process.env.R2_DELEGATION_BUCKET_NAME ?? '',
+              R2_DELEGATION_BUCKET: process.env.R2_DELEGATION_BUCKET_NAME ?? '',
               R2_ENDPOINT: process.env.R2_ENDPOINT ?? '',
               R2_REGION: process.env.R2_REGION ?? '',
               R2_SECRET_ACCESS_KEY: process.env.R2_SECRET_ACCESS_KEY ?? '',
@@ -221,9 +223,9 @@ export function UploadApiStack({ stack, app }) {
               STORAGE_PROVIDER_TABLE: storageProviderTable.tableName,
               STORE_BUCKET: carparkBucket.bucketName,
               STORE_TABLE: storeTable.tableName,
-              STRIPE_DEFAULT_SUCCESS_URL: process.env.STRIPE_DEFAULT_SUCCESS_URL ?? '',
+              STRIPE_SUCCESS_URL: process.env.STRIPE_DEFAULT_SUCCESS_URL ?? '',
               SUBSCRIPTION_TABLE: subscriptionTable.tableName,
-              UCAN_LOG_STREAM: ucanStream.streamName,
+              UCAN_LOGS: ucanStream.streamName,
               UPLOAD_API_ALIAS: process.env.UPLOAD_API_ALIAS ?? '',
               UPLOAD_API_DID: process.env.UPLOAD_API_DID ?? '',
               UPLOAD_SERVICE_URL: getServiceURL(stack, customDomain) ?? '',
@@ -232,7 +234,9 @@ export function UploadApiStack({ stack, app }) {
             bind: [
               contentClaimsPrivateKey,
               indexingServiceProof,
-              ...(process.env.FILECOIN_PROOFS_NOT_REQUIRED === 'true' ? [] : [aggregatorServiceProof, dealTrackerServiceProof]),
+              ...(process.env.FILECOIN_PROOFS_NOT_REQUIRED === 'true'
+                ? []
+                : [aggregatorServiceProof, dealTrackerServiceProof]),
               privateKey,
               stripeSecretKey,
               dmailApiKey,

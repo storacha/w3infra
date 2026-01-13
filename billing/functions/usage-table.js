@@ -86,15 +86,16 @@ async function createIdempotencyKey(usage){
  * the same usage record after 24 hours. The default DynamoDB stream retention
  * is 24 hours so this should be fine for intermittent failures.
  *
- * @param {import('../lib/api.js').Usage} usage 
+ * @param {import('../lib/api.js').Usage} usage
  * @param {{ stripe: Stripe }} ctx
  * @returns {Promise<import('@ucanto/interface').Result<import('@ucanto/interface').Unit>>}
  */
-const reportUsage = async (usage, ctx) => {
+export const reportUsage = async (usage, ctx) => {
   console.log(`Processing usage for: ${usage.space}`)
   console.log(`Provider: ${usage.provider}`)
   console.log(`Customer: ${usage.customer}`)
   console.log(`Account: ${usage.account}`)
+  console.log(`Product: ${usage.product}`)
   console.log(`Period: ${usage.from.toISOString()} - ${usage.to.toISOString()}`)
 
   if (usage.space === 'did:key:z6Mkj8ynPJNkKc1e6S9VXpVDfQd8M1bPxZTgDg2Uhhjt9LoV') {
@@ -108,63 +109,11 @@ const reportUsage = async (usage, ctx) => {
 
   const customer = usage.account.replace('stripe:', '')
 
-  const { data: subs } = await ctx.stripe.subscriptions.list({
-    customer,
-    status: 'all',
-    limit: 1
-  })
-
-  const sub = subs.find(s => s.status === 'active') ?? subs[0]
-  if (!sub) {
-    return { error: new Error(`no subscriptions: ${usage.account}`) }
-  }
-  console.log(`Found Stripe subscription: ${sub.id}`)
-
-  const subItem = sub.items.data[0]
-  if (!subItem) {
-    return { error: new Error(`no subscription items: ${sub.id}`) }
-  }
-  console.log(`Found Stripe subscription item: ${subItem.id}`)
-
   const duration = usage.to.getTime() - usage.from.getTime()
-  const quantity = Math.floor(new Big(usage.usage.toString()).div(duration).div(1024 * 1024 * 1024).toNumber())
-
-  console.log(`Reporting usage of ${usage.usage} byte-ms for ${usage.space} as quantity: ${quantity} GiB/month`)
-
   const idempotencyKey = await createIdempotencyKey(usage)
-  const usageRecord = await ctx.stripe.subscriptionItems.createUsageRecord(
-    subItem.id,
-    { quantity, action: 'increment' },
-    { idempotencyKey }
-  )
-
-  console.log(`Created Stripe usage record with ID: ${usageRecord.id}`)
 
   const byteQuantity = Math.floor(new Big(usage.usage.toString()).div(duration).toNumber())
-
-  /*
-   * Billing migration: dual reporting (usage records + billing meters)
-   *
-   * We are migrating from Stripe Subscription Usage Records to Stripe Billing Meters.
-   * During the migration window we intentionally report usage via BOTH mechanisms:
-   *
-   * - Current (charging) path: create a Usage Record on the subscription item.
-   *   This is how customers are billed today and MUST remain until we fully cut over.
-   *
-   * - Migration (shadow) path: emit a Billing Meter event (event_name: 'usage-billing-meter').
-   *   This lets us observe and compare meter-based totals against our existing
-   *   usage-record-based totals without impacting invoices.
-   *
-   * Important:
-   * - If the customer does NOT have the new meter-based price configured in Stripe,
-   *   Stripe will NOT charge based on the meter events. That’s expected and desired
-   *   during the shadow phase so we can safely compare numbers from both methods.
-   * - We timestamp the meter event at the end of the previous month (UTC 23:59:59),
-   *   aligning the event with the finalized period we just reported via usage record.
-   *
-   * Once parity is confirmed, we can stop sending usage records and rely solely on
-   * Billing Meters for storage billing.
-   */
+  console.log(`Reporting usage of ${usage.usage} byte-ms for ${usage.space} as quantity: ${byteQuantity} GiB/month`)
 
   // Calculate the timestamp for the last day of the previous month at 23:59:59 UTC
   const now = new Date()
@@ -180,5 +129,5 @@ const reportUsage = async (usage, ctx) => {
     },
   })
   console.log(`Created Stripe billing meter event: ${JSON.stringify(meterEvent)}`)
-  return { ok: usageRecord }
+  return { ok: meterEvent }
 }

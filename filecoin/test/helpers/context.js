@@ -13,6 +13,7 @@ import anyTest from 'ava'
  * @typedef {object} DynamoContext
  * @property {string} dbEndpoint
  * @property {import('@aws-sdk/client-dynamodb').DynamoDBClient} dynamoClient
+ * @property {import('../../../lib/aws/dynamo.js').Address} dynamoOpts
  * 
  * @typedef {object} MultipleQueueContext
  * @property {import('@aws-sdk/client-sqs').SQSClient} sqsClient
