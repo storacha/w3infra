@@ -35,7 +35,7 @@ catalog:
   "@multiformats/multiaddr": ^12.2.1
   "@octokit/types": ^13.8.0
   "@sentry/serverless": ^7.74.1
-  "@storacha/access": ^1.6.4
+  "@storacha/access": ^1.6.5
   "@storacha/blob-index": ^1.2.4
   "@storacha/capabilities": ^2.0.0
   "@storacha/client": ^2.0.0

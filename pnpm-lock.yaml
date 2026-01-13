@@ -82,8 +82,8 @@ catalogs:
       specifier: ^7.74.1
       version: 7.120.4
     '@storacha/access':
-      specifier: ^1.6.4
-      version: 1.6.4
+      specifier: ^1.6.5
+      version: 1.6.5
     '@storacha/blob-index':
       specifier: ^1.2.4
       version: 1.2.4
@@ -359,7 +359,7 @@ importers:
         version: 12.5.1
       '@storacha/access':
         specifier: 'catalog:'
-        version: 1.6.4
+        version: 1.6.5
       '@storacha/blob-index':
         specifier: 'catalog:'
         version: 1.2.4
@@ -961,7 +961,7 @@ importers:
         version: 7.120.4
       '@storacha/access':
         specifier: 'catalog:'
-        version: 1.6.4
+        version: 1.6.5
       '@storacha/capabilities':
         specifier: 'catalog:'
         version: 2.0.0
@@ -3559,9 +3559,6 @@ packages:
 
   '@standard-schema/spec@1.0.0':
     resolution: {integrity: sha512-m2bOd0f2RT9k8QJx1JN85cZYyH1RqFBdlwtkSlf4tBDYLCiiZnv1fIIwacK6cqwXavOydf0NPToMQgpKq+dVlA==}
-
-  '@storacha/access@1.6.4':
-    resolution: {integrity: sha512-yhTevN9dGx9y9cnubzpQOGXyTL0C3aAkPRVo2hIdHUXGvJpYF4ZK1s8fcUJo+l2m6GsjxIaxlYRYJZdTyRAwxA==}
 
   '@storacha/access@1.6.5':
     resolution: {integrity: sha512-xpgjqfqAQwob1VqkHqBXFQ2I1wPHietI6Uwh71mY0cQc+25kMrZl9ZZKjXy+IMj/Ls8w4g2LtOtqES/kn4Qkeg==}
@@ -14468,27 +14465,6 @@ snapshots:
       tslib: 2.8.1
 
   '@standard-schema/spec@1.0.0': {}
-
-  '@storacha/access@1.6.4':
-    dependencies:
-      '@ipld/car': 5.4.2
-      '@ipld/dag-ucan': 3.4.5
-      '@scure/bip39': 1.6.0
-      '@storacha/capabilities': 1.12.0
-      '@storacha/did-mailto': 1.0.2
-      '@storacha/one-webcrypto': 1.0.1
-      '@ucanto/client': 9.0.2
-      '@ucanto/core': 10.4.6
-      '@ucanto/interface': 11.0.1
-      '@ucanto/principal': 9.0.3
-      '@ucanto/transport': 9.2.1
-      '@ucanto/validator': 10.0.1
-      bigint-mod-arith: 3.3.1
-      conf: 11.0.2
-      multiformats: 13.4.1
-      p-defer: 4.0.1
-      type-fest: 4.41.0
-      uint8arrays: 5.1.0
 
   '@storacha/access@1.6.5':
     dependencies:
