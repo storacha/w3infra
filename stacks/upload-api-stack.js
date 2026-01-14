@@ -251,6 +251,7 @@ export function UploadApiStack({ stack, app }) {
             permissions: [agentIndexBucket, agentMessageBucket, ucanStream],
             environment: {
               AGENT_INDEX_BUCKET_NAME: agentIndexBucket.bucketName,
+              AGENT_INDEX_TABLE_NAME: agentIndexTable.tableName,
               AGENT_MESSAGE_BUCKET_NAME: agentMessageBucket.bucketName,
               UCAN_LOG_STREAM_NAME: ucanStream.streamName,
             },
@@ -306,6 +307,7 @@ export function UploadApiStack({ stack, app }) {
             environment: {
               ACCESS_SERVICE_URL: getServiceURL(stack, customDomain) ?? '',
               AGENT_INDEX_BUCKET_NAME: agentIndexBucket.bucketName,
+              AGENT_INDEX_TABLE_NAME: agentIndexTable.tableName,
               AGENT_MESSAGE_BUCKET_NAME: agentMessageBucket.bucketName,
               CONSUMER_TABLE_NAME: consumerTable.tableName,
               CUSTOMER_TABLE_NAME: customerTable.tableName,
@@ -362,6 +364,7 @@ export function UploadApiStack({ stack, app }) {
             permissions: [agentIndexBucket, agentMessageBucket],
             environment: {
               AGENT_INDEX_BUCKET_NAME: agentIndexBucket.bucketName,
+              AGENT_INDEX_TABLE_NAME: agentIndexTable.tableName,
               AGENT_MESSAGE_BUCKET_NAME: agentMessageBucket.bucketName,
             },
           },
@@ -372,6 +375,7 @@ export function UploadApiStack({ stack, app }) {
             permissions: [agentIndexBucket, agentMessageBucket, pieceTable],
             environment: {
               AGENT_INDEX_BUCKET_NAME: agentIndexBucket.bucketName,
+              AGENT_INDEX_TABLE_NAME: agentIndexTable.tableName,
               AGENT_MESSAGE_BUCKET_NAME: agentMessageBucket.bucketName,
               AGGREGATOR_DID,
               DID: process.env.UPLOAD_API_DID ?? '',
@@ -429,6 +433,7 @@ export function UploadApiStack({ stack, app }) {
             ],
             environment: {
               AGENT_INDEX_BUCKET_NAME: agentIndexBucket.bucketName,
+              AGENT_INDEX_TABLE_NAME: agentIndexTable.tableName,
               AGENT_MESSAGE_BUCKET_NAME: agentMessageBucket.bucketName,
               CUSTOMER_TABLE_NAME: customerTable.tableName,
               GITHUB_CLIENT_ID: process.env.GITHUB_CLIENT_ID ?? '',
