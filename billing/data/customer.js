@@ -62,3 +62,25 @@ export const decode = input => {
     }
   }
 }
+
+/** @typedef {Pick<Customer, 'customer'|'product'|'account'>} CustomerAccountIndexItem */
+
+// Specialized lister for the `account` GSI: decodes only projected fields.
+export const listerByAccount = {
+  /** @type {import('../lib/api.js').Encoder<import('../lib/api.js').AccountID, import('../types.js').StoreRecord>} */
+  encodeKey: (input) => ({ ok: { account: /** @type {import('../lib/api.js').AccountID} */ (input) } }),
+  /** @type {import('../lib/api.js').Decoder<StoreRecord, CustomerAccountIndexItem>} */
+  decode: (input) => {
+    try {
+      return {
+        ok: {
+          customer: Schema.did({ method: 'mailto' }).from(input.customer),
+          product: /** @type {string} */ (input.product),
+          account: input.account ? Schema.uri({ protocol: 'stripe:' }).from(input.account) : undefined
+        }
+      }
+    } catch (/** @type {any} */ err) {
+      return { error: new DecodeFailure(`decoding customer account index record: ${err.message}`, { cause: err }) }
+    }
+  }
+}

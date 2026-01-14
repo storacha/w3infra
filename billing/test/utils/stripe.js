@@ -229,4 +229,53 @@ export const test = {
     const accountID = stripeIDToAccountID(stripeCustomerId)
     assert.equal(accountID, 'stripe:cus_1234567890')
   }
+  ,
+  'should update a customer record by account even when the Stripe email changes': async (/** @type {import('entail').assert} */ assert, ctx) => {
+    const stripeCustomerId = 'stripe-customer-id'
+    const oldEmail = 'alice@example.com'
+    const newEmail = 'bob@example.com'
+    const oldCustomerDID = DidMailto.fromEmail(/** @type {`${string}@${string}`} */(oldEmail))
+    const newCustomerDID = DidMailto.fromEmail(/** @type {`${string}@${string}`} */(newEmail))
+
+    // Pre-existing customer record linked by Stripe account
+    const initialProduct = 'did:web:starter'
+    const putRes = await ctx.customerStore.put({
+      customer: oldCustomerDID,
+      account: `stripe:${stripeCustomerId}`,
+      product: initialProduct,
+      insertedAt: new Date()
+    })
+    assert.ok(putRes.ok)
+
+    // Subscription created arrives with same Stripe account but a different email
+    const priceId = 'price_pro'
+    const updatedProduct = 'did:web:pro'
+    const result = await handleCustomerSubscriptionCreated(
+      {
+        customers: {
+          // @ts-expect-error minimal shape is sufficient for test
+          retrieve: async () => ({ id: stripeCustomerId, email: newEmail })
+        }
+      },
+      {
+        data: {
+          object: {
+            customer: stripeCustomerId,
+            items: { data: [{ price: { id: priceId } }] }
+          }
+        }
+      },
+      ctx.customerStore,
+      { [priceId]: updatedProduct }
+    )
+    assert.ok(result.ok)
+
+    // Existing record should be updated (except DID which remains the same)
+    const existing = await ctx.customerStore.get({ customer: oldCustomerDID })
+    assert.equal(existing.ok?.product, updatedProduct)
+
+    // No new record should be created for the new email/DID
+    const missing = await ctx.customerStore.get({ customer: newCustomerDID })
+    assert.equal(missing.error?.name, 'RecordNotFound')
+  }
 }
