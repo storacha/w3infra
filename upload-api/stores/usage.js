@@ -8,9 +8,11 @@ const tracer = trace.getTracer('upload-api')
  * @param {object} conf
  * @param {import('../../billing/lib/api.js').SpaceSnapshotStore} conf.spaceSnapshotStore
  * @param {import('../../billing/lib/api.js').SpaceDiffStore} conf.spaceDiffStore
+ * @param {import('../../billing/lib/api.js').EgressTrafficEventStore} conf.egressTrafficStore
  * @param {import('../../billing/lib/api.js').EgressTrafficQueue} conf.egressTrafficQueue
+ * @returns {import('@storacha/upload-api').UsageStorage}
  */
-export function useUsageStore({ spaceSnapshotStore, spaceDiffStore, egressTrafficQueue }) {
+export function useUsageStore({ spaceSnapshotStore, spaceDiffStore, egressTrafficStore, egressTrafficQueue }) {
   return instrumentMethods(tracer, 'UsageStorage', {
     /**
      * @param {import('@storacha/upload-api').ProviderDID} provider
@@ -65,8 +67,33 @@ export function useUsageStore({ spaceSnapshotStore, spaceDiffStore, egressTraffi
     },
 
     /**
+     * @param {import('@storacha/upload-api').ProviderDID} provider
+     * @param {import('@storacha/upload-api').SpaceDID} space
+     * @param {{ from: Date, to: Date }} period
+     */
+    async reportEgress(provider, space, period) {
+      const result = await egressTrafficStore.sumBySpace(space, period)
+      if (result.error) {
+        return result
+      }
+
+      /** @type {import('@storacha/upload-api').EgressUsageData} */
+      const egressReport = {
+        provider,
+        space,
+        period: {
+          from: period.from.toISOString(),
+          to: period.to.toISOString()
+        },
+        total: result.ok
+      }
+
+      return { ok: egressReport }
+    },
+
+    /**
      * Handle egress traffic data and enqueues it, so the billing system can process it and update the Stripe Billing Meter API.
-     * 
+     *
      * @param {import('@storacha/upload-api').SpaceDID} space - The space that the egress traffic is associated with.
      * @param {import('@storacha/upload-api').AccountDID} customer - The customer that will be billed for the egress traffic.
      * @param {import('@storacha/upload-api').UnknownLink} resource - The resource that was served.
