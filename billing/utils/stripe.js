@@ -85,12 +85,8 @@ export async function handleCustomerSubscriptionCreated(stripe, event, customerS
   const byAccount = await /** @type {any} */ (customerStore).getByAccount(account)
     if (byAccount.ok) {
       const customerRecord = byAccount.ok
-      return customerStore.put({
-        ...customerRecord,
-        // Keep the existing DID from our DB to maintain linkage even if Stripe email changed.
-        product,
-        updatedAt: new Date()
-      })
+      // Update only the product to avoid overwriting attributes omitted by GSI projection (like insertedAt)
+      return /** @type {any} */ (customerStore).updateProduct(customerRecord.customer, product)
     } else if (byAccount.error instanceof RecordNotFound) {
       // No record by account — fall back to DID derived from Stripe email.
       const customer = DidMailto.fromEmail(/** @type {`${string}@${string}`} */(

@@ -1,5 +1,5 @@
 import { connectTable, createStoreGetterClient, createStoreListerClient, createStorePutterClient } from './client.js'
-import { validate, encode, encodeKey, decode } from '../data/customer.js'
+import { validate, encode, encodeKey, decode, listerByAccount } from '../data/customer.js'
 import { RecordNotFound, StoreOperationFailure } from './lib.js'
 import { UpdateItemCommand } from '@aws-sdk/client-dynamodb'
 import { marshall } from '@aws-sdk/util-dynamodb'
@@ -32,7 +32,7 @@ export const customerTableProps = {
   },
   primaryIndex: { partitionKey: 'customer' },
   globalIndexes: {
-    account: {partitionKey: 'account' , projection: ['customer', 'product', 'insertedAt', 'updatedAt'] }
+    account: {partitionKey: 'account' , projection: ['customer', 'product'] }
   }
 }
 
@@ -61,8 +61,7 @@ export const createCustomerStore = (conf, { tableName }) => ({
     const lister = createStoreListerClient(conf, {
       tableName,
       indexName: 'account',
-      encodeKey: (input) => ({ ok: { account: /** @type {import('../lib/api.js').AccountID} */(input) } }),
-      decode
+      ...listerByAccount
     })
 
     const res = await lister.list(account)
