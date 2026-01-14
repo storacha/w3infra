@@ -84,6 +84,7 @@ import {
   PLANS_TO_LINE_ITEMS_MAPPING,
 } from '../constants.js'
 import { instrumentServiceMethods } from '../lib/otel/ucanto.js'
+import { createEgressTrafficEventStore } from '../../billing/tables/egress-traffic.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -193,6 +194,7 @@ export async function ucanInvocationRouter(request) {
     subscriptionTableName,
     delegationTableName,
     delegationBucketName,
+    egressTrafficTableName,
     revocationTableName,
     adminMetricsTableName,
     spaceMetricsTableName,
@@ -365,11 +367,17 @@ export async function ucanInvocationRouter(request) {
     { region: AWS_REGION },
     { url: new URL(egressTrafficQueueUrl) }
   )
+  const egressTrafficStore = createEgressTrafficEventStore(
+    { region: AWS_REGION },
+    { tableName: egressTrafficTableName }
+
+  )
 
   const usageStorage = useUsageStore({
     spaceDiffStore,
     spaceSnapshotStore,
     egressTrafficQueue,
+    egressTrafficStore
   })
 
   const provisionsStorage = useProvisionStore(
@@ -729,6 +737,7 @@ function getLambdaEnv() {
     subscriptionTableName: mustGetEnv('SUBSCRIPTION_TABLE'),
     delegationBucketName: mustGetEnv('DELEGATION_BUCKET'),
     delegationTableName: mustGetEnv('DELEGATION_TABLE'),
+    egressTrafficTableName: mustGetEnv('EGRESS_TRAFFIC_TABLE'),
     revocationTableName: mustGetEnv('REVOCATION_TABLE'),
     spaceMetricsTableName: mustGetEnv('SPACE_METRICS_TABLE'),
     adminMetricsTableName: mustGetEnv('ADMIN_METRICS_TABLE'),
