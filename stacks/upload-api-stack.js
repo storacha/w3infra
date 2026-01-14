@@ -249,9 +249,10 @@ export function UploadApiStack({ stack, app }) {
         'POST /ucan': {
           function: {
             handler: 'upload-api/functions/ucan.handler',
-            permissions: [agentIndexBucket, agentMessageBucket, ucanStream],
+            permissions: [agentIndexBucket, agentIndexTable, agentMessageBucket, ucanStream],
             environment: {
               AGENT_INDEX_BUCKET_NAME: agentIndexBucket.bucketName,
+              AGENT_INDEX_TABLE_NAME: agentIndexTable.tableName,
               AGENT_MESSAGE_BUCKET_NAME: agentMessageBucket.bucketName,
               UCAN_LOG_STREAM_NAME: ucanStream.streamName,
             },
@@ -289,6 +290,7 @@ export function UploadApiStack({ stack, app }) {
             handler: 'upload-api/functions/validate-email.validateEmail',
             permissions: [
               agentIndexBucket,
+              agentIndexTable,
               agentMessageBucket,
               consumerTable,
               customerTable,
@@ -307,6 +309,7 @@ export function UploadApiStack({ stack, app }) {
             environment: {
               ACCESS_SERVICE_URL: getServiceURL(stack, customDomain) ?? '',
               AGENT_INDEX_BUCKET_NAME: agentIndexBucket.bucketName,
+              AGENT_INDEX_TABLE_NAME: agentIndexTable.tableName,
               AGENT_MESSAGE_BUCKET_NAME: agentMessageBucket.bucketName,
               CONSUMER_TABLE_NAME: consumerTable.tableName,
               CUSTOMER_TABLE_NAME: customerTable.tableName,
@@ -360,9 +363,10 @@ export function UploadApiStack({ stack, app }) {
         'GET /receipt/{taskCid}': {
           function: {
             handler: 'upload-api/functions/receipt.handler',
-            permissions: [agentIndexBucket, agentMessageBucket],
+            permissions: [agentIndexBucket, agentIndexTable, agentMessageBucket],
             environment: {
               AGENT_INDEX_BUCKET_NAME: agentIndexBucket.bucketName,
+              AGENT_INDEX_TABLE_NAME: agentIndexTable.tableName,
               AGENT_MESSAGE_BUCKET_NAME: agentMessageBucket.bucketName,
             },
           },
@@ -370,9 +374,10 @@ export function UploadApiStack({ stack, app }) {
         'GET /storefront-cron': {
           function: {
             handler: 'upload-api/functions/storefront-cron.handler',
-            permissions: [agentIndexBucket, agentMessageBucket, pieceTable],
+            permissions: [agentIndexBucket, agentIndexTable, agentMessageBucket, pieceTable],
             environment: {
               AGENT_INDEX_BUCKET_NAME: agentIndexBucket.bucketName,
+              AGENT_INDEX_TABLE_NAME: agentIndexTable.tableName,
               AGENT_MESSAGE_BUCKET_NAME: agentMessageBucket.bucketName,
               AGGREGATOR_DID,
               DID: process.env.UPLOAD_API_DID ?? '',
@@ -424,12 +429,14 @@ export function UploadApiStack({ stack, app }) {
             handler: 'upload-api/functions/oauth-callback.handler',
             permissions: [
               agentIndexBucket,
+              agentIndexTable,
               agentMessageBucket,
               customerTable,
               ucanStream,
             ],
             environment: {
               AGENT_INDEX_BUCKET_NAME: agentIndexBucket.bucketName,
+              AGENT_INDEX_TABLE_NAME: agentIndexTable.tableName,
               AGENT_MESSAGE_BUCKET_NAME: agentMessageBucket.bucketName,
               CUSTOMER_TABLE_NAME: customerTable.tableName,
               GITHUB_CLIENT_ID: process.env.GITHUB_CLIENT_ID ?? '',
