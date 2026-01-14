@@ -24,7 +24,6 @@ import { createRateLimitTable } from '../tables/rate-limit.js'
 import { createCustomerStore } from '../../billing/tables/customer.js'
 import { createSpaceDiffStore } from '../../billing/tables/space-diff.js'
 import { createSpaceSnapshotStore } from '../../billing/tables/space-snapshot.js'
-import { createEgressTrafficEventStore } from '../../billing/tables/egress-traffic.js'
 import { createEgressTrafficQueue } from '../../billing/queues/egress-traffic.js'
 import { useSubscriptionsStore } from '../stores/subscriptions.js'
 import { useUsageStore } from '../stores/usage.js'
@@ -107,7 +106,6 @@ function createAuthorizeContext() {
     UCAN_LOG_STREAM_NAME = '',
     SPACE_DIFF_TABLE_NAME = '',
     SPACE_SNAPSHOT_TABLE_NAME = '',
-    EGRESS_TRAFFIC_TABLE_NAME = '',
     EGRESS_TRAFFIC_QUEUE_URL = '',
     SST_STAGE = '',
     // set for testing
@@ -175,10 +173,6 @@ function createAuthorizeContext() {
     { region: AWS_REGION },
     { tableName: SPACE_SNAPSHOT_TABLE_NAME }
   )
-  const egressTrafficStore = createEgressTrafficEventStore(
-    { region: AWS_REGION },
-    { tableName: EGRESS_TRAFFIC_TABLE_NAME }
-  )
   const egressTrafficQueue = createEgressTrafficQueue(
     { region: AWS_REGION },
     { url: new URL(EGRESS_TRAFFIC_QUEUE_URL) }
@@ -187,7 +181,6 @@ function createAuthorizeContext() {
   const usageStorage = useUsageStore({
     spaceDiffStore,
     spaceSnapshotStore,
-    egressTrafficStore,
     egressTrafficQueue,
   })
 

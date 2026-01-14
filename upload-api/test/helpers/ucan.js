@@ -71,10 +71,6 @@ import {
   spaceSnapshotTableProps,
   createSpaceSnapshotStore,
 } from '../../../billing/tables/space-snapshot.js'
-import {
-  egressTrafficTableProps,
-  createEgressTrafficEventStore,
-} from '../../../billing/tables/egress-traffic.js'
 import { createEgressTrafficQueue } from '../../../billing/queues/egress-traffic.js'
 import { useReplicaTable } from '../../tables/replica.js'
 import { useUsageStore } from '../../stores/usage.js'
@@ -391,9 +387,6 @@ export async function executionContextToUcantoTestServerContext(t) {
   const spaceSnapshotStore = createSpaceSnapshotStore(dynamo, {
     tableName: spaceSnapshotTableName,
   })
-  const egressTrafficStore = createEgressTrafficEventStore(dynamo, {
-    tableName: await createTable(dynamo, egressTrafficTableProps),
-  })
   const egressTrafficQueueUrl = await createQueue(sqs, 'egress-traffic-queue')
   const egressTrafficQueue = createEgressTrafficQueue(sqs, {
     url: egressTrafficQueueUrl,
@@ -401,7 +394,6 @@ export async function executionContextToUcantoTestServerContext(t) {
   const usageStorage = useUsageStore({
     spaceDiffStore,
     spaceSnapshotStore,
-    egressTrafficStore,
     egressTrafficQueue,
   })
 
