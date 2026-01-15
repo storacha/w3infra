@@ -68,6 +68,7 @@
     "multiformats": "catalog:",
     "p-retry": "catalog:",
     "p-wait-for": "catalog:",
+    "stripe": "catalog:",
     "typescript": "catalog:"
   },
   "dependencies": {
