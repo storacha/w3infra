@@ -118,21 +118,6 @@ export const useBlobRegistry = (
     return { ok: diffs, error: undefined }
   }
 
-  /**
-   * Map a v1 diff record to v2 schema (cause as sort key).
-   * @param {Record<string, any>} diffItem
-   */
-  const toSpaceDiffV2Item = (diffItem) => ({
-    pk: diffItem.pk,
-    // Sort key is 'cause' in v2
-    cause: diffItem.cause,
-    space: diffItem.space,
-    provider: diffItem.provider,
-    subscription: diffItem.subscription,
-    delta: diffItem.delta,
-    receiptAt: diffItem.receiptAt,
-    insertedAt: diffItem.insertedAt
-  })
 
   return instrumentMethods(tracer, 'BlobRegistry', {
     /** @type {BlobAPI.Registry['find']} */
@@ -383,6 +368,23 @@ export const useBlobRegistry = (
     },
   })
 }
+
+/**
+ * Map a v1 diff record to v2 schema (cause as sort key).
+ * 
+ * @param {Record<string, any>} diffItem
+ */
+const toSpaceDiffV2Item = (diffItem) => ({
+  pk: diffItem.pk,
+  // Sort key is 'cause' in v2
+  cause: diffItem.cause,
+  space: diffItem.space,
+  provider: diffItem.provider,
+  subscription: diffItem.subscription,
+  delta: diffItem.delta,
+  receiptAt: diffItem.receiptAt,
+  insertedAt: diffItem.insertedAt
+})
 
 /**
  * Upgrade from the db representation

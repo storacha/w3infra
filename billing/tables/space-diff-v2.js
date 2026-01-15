@@ -1,5 +1,5 @@
 import { createStoreBatchPutterClient, createStoreListerClient } from './client.js'
-import { validate, encode, lister, decode } from '../data/space-diff.js'
+import { validate, encode, lister, decode } from '../data/space-diff-v2.js'
 
 /**
  * Stores changes to total space size with structural uniqueness by cause.
@@ -26,8 +26,9 @@ export const spaceDiffV2TableProps = {
     /** ISO timestamp the receipt was issued. */
     receiptAt: 'string',
     /** ISO timestamp we recorded the change. */
-    insertedAt: 'string'
-    // Optional future: ttlAt (Number epoch seconds) for DynamoDB TTL
+    insertedAt: 'string',
+    /** Optional: ttlAt (Number epoch seconds) for DynamoDB TTL */
+    ttlAt: 'number'
   },
   primaryIndex: { partitionKey: 'pk', sortKey: 'cause' },
   globalIndexes: {
@@ -45,5 +46,5 @@ export const spaceDiffV2TableProps = {
  */
 export const createSpaceDiffV2Store = (conf, { tableName }) => ({
   ...createStoreBatchPutterClient(conf, { tableName, validate, encode }),
-  ...createStoreListerClient(conf, { tableName, encodeKey: lister.encodeKey, decode })
+  ...createStoreListerClient(conf, { tableName, encodeKey: lister.encodeKey, decode, indexName: 'byReceiptAt' })
 })
