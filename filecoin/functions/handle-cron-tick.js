@@ -7,7 +7,7 @@ import { createPieceTable } from '../store/piece.js'
 import { createTaskStore } from '../store/task.js'
 import { createReceiptStore } from '../store/receipt.js'
 import { getServiceSigner } from '../service.js'
-import { mustGetEnv } from '../../lib/env.js'
+import { mustGetEnv, mustGetConfig } from '../../lib/env.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -84,7 +84,8 @@ function getEnv () {
     agentMessageBucketName: mustGetEnv('AGENT_MESSAGE_BUCKET_NAME'),
     agentIndexBucketName: mustGetEnv('AGENT_INDEX_BUCKET_NAME'),
     agentIndexTableName: mustGetEnv('AGENT_INDEX_TABLE_NAME'),
-    aggregatorDid: mustGetEnv('AGGREGATOR_DID'),
+    // Loaded from SST Config to reduce Lambda env var size
+    aggregatorDid: mustGetConfig('AGGREGATOR_DID'),
   }
 }
 

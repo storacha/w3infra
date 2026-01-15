@@ -1,6 +1,7 @@
 import * as Sentry from '@sentry/serverless'
 import { authorize } from '@storacha/upload-api/validate'
 import { Config } from 'sst/node/config'
+import { mustGetConfig } from '../../lib/env.js'
 import { getServiceSigner, parseServiceDids } from '../config.js'
 import { Email } from '../email.js'
 import { createDelegationsTable } from '../tables/delegations.js'
@@ -90,19 +91,13 @@ function createAuthorizeContext() {
     DELEGATION_TABLE_NAME = '',
     REVOCATION_TABLE_NAME = '',
     RATE_LIMIT_TABLE_NAME = '',
-    R2_ENDPOINT = '',
-    R2_ACCESS_KEY_ID = '',
-    R2_SECRET_ACCESS_KEY = '',
-    R2_DELEGATION_BUCKET_NAME = '',
     AGENT_INDEX_TABLE_NAME = '',
     AGENT_INDEX_BUCKET_NAME = '',
     AGENT_MESSAGE_BUCKET_NAME = '',
-    POSTMARK_TOKEN = '',
     SUBSCRIPTION_TABLE_NAME = '',
     CONSUMER_TABLE_NAME = '',
     CUSTOMER_TABLE_NAME = '',
     UPLOAD_API_DID = '',
-    PROVIDERS = '',
     REFERRALS_ENDPOINT = '',
     UCAN_LOG_STREAM_NAME = '',
     SPACE_DIFF_TABLE_NAME = '',
@@ -113,14 +108,21 @@ function createAuthorizeContext() {
     // set for testing
     DYNAMO_DB_ENDPOINT: dbEndpoint,
   } = process.env
-  const { PRIVATE_KEY } = Config
+  // Config parameters loaded from SST Config to reduce Lambda env var size
+  const PRIVATE_KEY = Config.PRIVATE_KEY
+  const POSTMARK_TOKEN = mustGetConfig('POSTMARK_TOKEN')
+  const PROVIDERS = mustGetConfig('PROVIDERS')
+  const R2_ENDPOINT = mustGetConfig('R2_ENDPOINT')
+  const R2_ACCESS_KEY_ID = mustGetConfig('R2_ACCESS_KEY_ID')
+  const R2_SECRET_ACCESS_KEY = mustGetConfig('R2_SECRET_ACCESS_KEY')
+  const R2_DELEGATION_BUCKET = mustGetConfig('R2_DELEGATION_BUCKET')
 
-  const delegationBucket = R2_DELEGATION_BUCKET_NAME
+  const delegationBucket = R2_DELEGATION_BUCKET
     ? createR2DelegationsStore(
         R2_ENDPOINT,
         R2_ACCESS_KEY_ID,
         R2_SECRET_ACCESS_KEY,
-        R2_DELEGATION_BUCKET_NAME
+        R2_DELEGATION_BUCKET
       )
     : createDelegationsStore(AWS_REGION, DELEGATION_BUCKET_NAME)
 

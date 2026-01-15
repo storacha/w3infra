@@ -22,12 +22,7 @@ import { Status } from '../filecoin/store/piece.js'
  */
 export function FilecoinStack({ stack, app }) {
   const {
-    AGGREGATOR_DID,
     AGGREGATOR_URL,
-    INDEXING_SERVICE_DID,
-    INDEXING_SERVICE_URL,
-    CONTENT_CLAIMS_DID,
-    CONTENT_CLAIMS_URL,
     DISABLE_PIECE_CID_COMPUTE,
     UPLOAD_API_DID,
     START_FILECOIN_METRICS_EPOCH_MS
@@ -45,7 +40,19 @@ export function FilecoinStack({ stack, app }) {
   // Get eventBus reference
   const { eventBus } = use(BusStack)
   // Get store table reference
-  const { pieceTable, privateKey, adminMetricsTable, indexingServiceProof, contentClaimsPrivateKey, storageProviderTable } = use(UploadDbStack)
+  const {
+    pieceTable,
+    privateKey,
+    adminMetricsTable,
+    indexingServiceProof,
+    contentClaimsPrivateKey,
+    storageProviderTable,
+    aggregatorDid,
+    contentClaimsDid,
+    contentClaimsUrl,
+    indexingServiceDid,
+    indexingServiceUrl,
+  } = use(UploadDbStack)
   // Get UCAN store references
   const { agentIndexTable, agentMessageBucket, agentIndexBucket, ucanStream } = use(UcanInvocationStack)
   const { roundaboutApiUrl } = use(RoundaboutStack)
@@ -113,11 +120,11 @@ export function FilecoinStack({ stack, app }) {
       handler: 'filecoin/functions/handle-piece-offer-message.main',
       environment: {
         DID: UPLOAD_API_DID,
-        AGGREGATOR_DID,
         AGGREGATOR_URL,
       },
       bind: [
         privateKey,
+        aggregatorDid,
         ...(process.env.FILECOIN_PROOFS_NOT_REQUIRED === 'true' ? [] : [aggregatorServiceProof]),
       ]
     },
@@ -144,11 +151,11 @@ export function FilecoinStack({ stack, app }) {
           AGENT_INDEX_TABLE_NAME: agentIndexTable.tableName,
           AGENT_MESSAGE_BUCKET_NAME: agentMessageBucket.bucketName,
           AGENT_INDEX_BUCKET_NAME: agentIndexBucket.bucketName,
-          AGGREGATOR_DID,
         },
         timeout: '6 minutes',
         bind: [
           privateKey,
+          aggregatorDid,
           ...(process.env.FILECOIN_PROOFS_NOT_REQUIRED === 'true' ? [] : [aggregatorServiceProof]),
         ],
         permissions: [pieceTable, agentIndexTable, agentMessageBucket, agentIndexBucket],
@@ -172,16 +179,16 @@ export function FilecoinStack({ stack, app }) {
         handler: 'filecoin/functions/handle-piece-insert-to-content-claim.main',
         environment: {
           STOREFRONT_DID: UPLOAD_API_DID,
-          INDEXING_SERVICE_DID,
-          INDEXING_SERVICE_URL,
-          CONTENT_CLAIMS_DID,
-          CONTENT_CLAIMS_URL,
         },
         timeout: 3 * 60,
         bind: [
           privateKey,
           indexingServiceProof,
-          contentClaimsPrivateKey
+          contentClaimsPrivateKey,
+          indexingServiceDid,
+          indexingServiceUrl,
+          contentClaimsDid,
+          contentClaimsUrl,
         ]
       },
       deadLetterQueue: pieceTableHandleInserToClaimtDLQ.cdk.queue,

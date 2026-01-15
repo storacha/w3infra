@@ -6,7 +6,7 @@ import * as storefrontEvents from '@storacha/filecoin-api/storefront/events'
 
 import { decodeMessage } from '../queue/piece-offer-queue.js'
 import { getServiceConnection, getServiceSigner } from '../service.js'
-import { mustGetEnv } from '../../lib/env.js'
+import { mustGetEnv, mustGetConfig } from '../../lib/env.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -98,7 +98,7 @@ async function handlePieceOfferMessage (sqsEvent) {
 function getEnv () {
   return {
     did: mustGetEnv('DID'),
-    aggregatorDid: mustGetEnv('AGGREGATOR_DID'),
+    aggregatorDid: mustGetConfig('AGGREGATOR_DID'),
     aggregatorUrl: mustGetEnv('AGGREGATOR_URL'),
   }
 }

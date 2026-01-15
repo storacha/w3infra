@@ -10,7 +10,7 @@ import { Client as IndexingServiceClient } from '@storacha/indexing-service-clie
 import * as DID from '@ipld/dag-ucan/did'
 import { decodeRecord } from '../store/piece.js'
 import { getServiceConnection, getServiceSigner } from '../service.js'
-import { mustGetEnv } from '../../lib/env.js'
+import { mustGetEnv, mustGetConfig } from '../../lib/env.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -129,10 +129,10 @@ export const main = Sentry.AWSLambda.wrapHandler(pieceCidReport)
 function getEnv() {
   return {
     storefrontDid: mustGetEnv('STOREFRONT_DID'),
-    indexingServiceDid: mustGetEnv('INDEXING_SERVICE_DID'),
-    indexingServiceUrl: new URL(mustGetEnv('INDEXING_SERVICE_URL')),
-    claimsServiceDid: mustGetEnv('CONTENT_CLAIMS_DID'),
-    claimsServiceUrl: new URL(mustGetEnv('CONTENT_CLAIMS_URL')),
+    indexingServiceDid: mustGetConfig('INDEXING_SERVICE_DID'),
+    indexingServiceUrl: new URL(mustGetConfig('INDEXING_SERVICE_URL')),
+    claimsServiceDid: mustGetConfig('CONTENT_CLAIMS_DID'),
+    claimsServiceUrl: new URL(mustGetConfig('CONTENT_CLAIMS_URL')),
   }
 }
 

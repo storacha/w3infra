@@ -69,7 +69,7 @@ import { createSpaceSnapshotStore } from '../../billing/tables/space-snapshot.js
 import { useUsageStore } from '../stores/usage.js'
 import { createStripeBillingProvider } from '../billing.js'
 import { createIPNIService } from '../external-services/ipni-service.js'
-import { mustGetEnv } from '../../lib/env.js'
+import { mustGetEnv, mustGetConfig } from '../../lib/env.js'
 import { createEgressTrafficQueue } from '../../billing/queues/egress-traffic.js'
 import { create as createRoutingService } from '../external-services/router.js'
 import { create as createBlobRetriever } from '../external-services/blob-retriever.js'
@@ -452,8 +452,8 @@ export async function ucanInvocationRouter(request) {
     )
   }
 
-  const claimsServicePrincipal = DID.parse(mustGetEnv('CONTENT_CLAIMS_DID'))
-  const claimsServiceURL = new URL(mustGetEnv('CONTENT_CLAIMS_URL'))
+  const claimsServicePrincipal = DID.parse(mustGetConfig('CONTENT_CLAIMS_DID'))
+  const claimsServiceURL = new URL(mustGetConfig('CONTENT_CLAIMS_URL'))
 
   let claimsIssuer = getServiceSigner({
     privateKey: CONTENT_CLAIMS_PRIVATE_KEY,
@@ -482,8 +482,8 @@ export async function ucanInvocationRouter(request) {
     }),
   }
 
-  const indexingServicePrincipal = DID.parse(mustGetEnv('INDEXING_SERVICE_DID'))
-  const indexingServiceURL = new URL(mustGetEnv('INDEXING_SERVICE_URL'))
+  const indexingServicePrincipal = DID.parse(mustGetConfig('INDEXING_SERVICE_DID'))
+  const indexingServiceURL = new URL(mustGetConfig('INDEXING_SERVICE_URL'))
 
   let indexingServiceProof
   try {
@@ -750,27 +750,27 @@ function getLambdaEnv() {
     pieceOfferQueueUrl: mustGetEnv('PIECE_OFFER_QUEUE'),
     filecoinSubmitQueueUrl: mustGetEnv('FILECOIN_SUBMIT_QUEUE'),
     egressTrafficQueueUrl: mustGetEnv('EGRESS_TRAFFIC_QUEUE'),
-    r2DelegationBucketEndpoint: process.env.R2_ENDPOINT,
-    r2DelegationBucketAccessKeyId: process.env.R2_ACCESS_KEY_ID,
-    r2DelegationBucketSecretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
-    r2DelegationBucketName: process.env.R2_DELEGATION_BUCKET,
+    r2DelegationBucketEndpoint: mustGetConfig('R2_ENDPOINT'),
+    r2DelegationBucketAccessKeyId: mustGetConfig('R2_ACCESS_KEY_ID'),
+    r2DelegationBucketSecretAccessKey: mustGetConfig('R2_SECRET_ACCESS_KEY'),
+    r2DelegationBucketName: mustGetConfig('R2_DELEGATION_BUCKET'),
     agentIndexTableName: mustGetEnv('AGENT_INDEX_TABLE'),
     agentIndexBucketName: mustGetEnv('AGENT_INDEX_BUCKET'),
     agentMessageBucketName: mustGetEnv('AGENT_MESSAGE_BUCKET'),
     streamName: mustGetEnv('UCAN_LOGS'),
-    postmarkToken: mustGetEnv('POSTMARK_TOKEN'),
-    providers: mustGetEnv('PROVIDERS'),
+    postmarkToken: mustGetConfig('POSTMARK_TOKEN'),
+    providers: mustGetConfig('PROVIDERS'),
     accessServiceURL: mustGetEnv('UPLOAD_SERVICE_URL'),
     uploadServiceURL: mustGetEnv('UPLOAD_SERVICE_URL'),
-    aggregatorDid: mustGetEnv('AGGREGATOR_DID'),
+    aggregatorDid: mustGetConfig('AGGREGATOR_DID'),
     requirePaymentPlan: process.env.REQUIRE_PAYMENT_PLAN === 'true',
-    dealTrackerDid: mustGetEnv('DEAL_TRACKER_DID'),
-    dealTrackerUrl: mustGetEnv('DEAL_TRACKER_URL'),
+    dealTrackerDid: mustGetConfig('DEAL_TRACKER_DID'),
+    dealTrackerUrl: mustGetConfig('DEAL_TRACKER_URL'),
     // carpark bucket - CAR file bytes may be found here with keys like {cid}/{cid}.car
-    carparkBucketName: mustGetEnv('R2_CARPARK_BUCKET'),
-    carparkBucketEndpoint: mustGetEnv('R2_ENDPOINT'),
-    carparkBucketAccessKeyId: mustGetEnv('R2_ACCESS_KEY_ID'),
-    carparkBucketSecretAccessKey: mustGetEnv('R2_SECRET_ACCESS_KEY'),
+    carparkBucketName: mustGetConfig('R2_CARPARK_BUCKET'),
+    carparkBucketEndpoint: mustGetConfig('R2_ENDPOINT'),
+    carparkBucketAccessKeyId: mustGetConfig('R2_ACCESS_KEY_ID'),
+    carparkBucketSecretAccessKey: mustGetConfig('R2_SECRET_ACCESS_KEY'),
     // IPNI service
     ipniConfig:
       process.env.DISABLE_IPNI_PUBLISHING === 'true'

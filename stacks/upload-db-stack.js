@@ -50,6 +50,56 @@ export function UploadDbStack({ stack, app }) {
   const dmailApiSecret = new Config.Secret(stack, 'DMAIL_API_SECRET')
   const dmailJwtSecret = new Config.Secret(stack, 'DMAIL_JWT_SECRET')
 
+  // External service configuration - stored as parameters to avoid env var size limits
+  // These are DIDs and URLs that are static per environment
+  const aggregatorDid = new Config.Parameter(stack, 'AGGREGATOR_DID', {
+    value: process.env.AGGREGATOR_DID ?? '',
+  })
+  const contentClaimsDid = new Config.Parameter(stack, 'CONTENT_CLAIMS_DID', {
+    value: process.env.CONTENT_CLAIMS_DID ?? '',
+  })
+  const contentClaimsUrl = new Config.Parameter(stack, 'CONTENT_CLAIMS_URL', {
+    value: process.env.CONTENT_CLAIMS_URL ?? '',
+  })
+  const indexingServiceDid = new Config.Parameter(stack, 'INDEXING_SERVICE_DID', {
+    value: process.env.INDEXING_SERVICE_DID ?? '',
+  })
+  const indexingServiceUrl = new Config.Parameter(stack, 'INDEXING_SERVICE_URL', {
+    value: process.env.INDEXING_SERVICE_URL ?? '',
+  })
+  const dealTrackerDid = new Config.Parameter(stack, 'DEAL_TRACKER_DID', {
+    value: process.env.DEAL_TRACKER_DID ?? '',
+  })
+  const dealTrackerUrl = new Config.Parameter(stack, 'DEAL_TRACKER_URL', {
+    value: process.env.DEAL_TRACKER_URL ?? '',
+  })
+  const postmarkToken = new Config.Parameter(stack, 'POSTMARK_TOKEN', {
+    value: process.env.POSTMARK_TOKEN ?? '',
+  })
+  const providers = new Config.Parameter(stack, 'PROVIDERS', {
+    value: process.env.PROVIDERS ?? '',
+  })
+
+  // R2 configuration - consolidated to reduce env var count
+  const r2Endpoint = new Config.Parameter(stack, 'R2_ENDPOINT', {
+    value: process.env.R2_ENDPOINT ?? '',
+  })
+  const r2AccessKeyId = new Config.Parameter(stack, 'R2_ACCESS_KEY_ID', {
+    value: process.env.R2_ACCESS_KEY_ID ?? '',
+  })
+  const r2SecretAccessKey = new Config.Parameter(stack, 'R2_SECRET_ACCESS_KEY', {
+    value: process.env.R2_SECRET_ACCESS_KEY ?? '',
+  })
+  const r2Region = new Config.Parameter(stack, 'R2_REGION', {
+    value: process.env.R2_REGION ?? '',
+  })
+  const r2CarparkBucket = new Config.Parameter(stack, 'R2_CARPARK_BUCKET', {
+    value: process.env.R2_CARPARK_BUCKET_NAME ?? '',
+  })
+  const r2DelegationBucket = new Config.Parameter(stack, 'R2_DELEGATION_BUCKET', {
+    value: process.env.R2_DELEGATION_BUCKET_NAME ?? '',
+  })
+
   const humanodeTable = new Table(stack, 'humanode', humanodeTableProps)
 
   /**
@@ -167,5 +217,21 @@ export function UploadDbStack({ stack, app }) {
     dmailApiKey,
     dmailApiSecret,
     dmailJwtSecret,
+    // Config parameters for external services (reduces env var size)
+    aggregatorDid,
+    contentClaimsDid,
+    contentClaimsUrl,
+    indexingServiceDid,
+    indexingServiceUrl,
+    dealTrackerDid,
+    dealTrackerUrl,
+    postmarkToken,
+    providers,
+    r2Endpoint,
+    r2AccessKeyId,
+    r2SecretAccessKey,
+    r2Region,
+    r2CarparkBucket,
+    r2DelegationBucket,
   }
 }

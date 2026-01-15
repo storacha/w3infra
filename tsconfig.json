@@ -36,6 +36,7 @@
     "resolveJsonModule": true
   },
   "include": [
+    "sst-env.d.ts",
     "billing",
     "indexer",
     "upload-api",
