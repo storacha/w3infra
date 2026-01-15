@@ -199,6 +199,7 @@ export async function ucanInvocationRouter(request) {
     rateLimitTableName,
     pieceTableName,
     spaceDiffTableName,
+    spaceDiffV2TableName,
     spaceSnapshotTableName,
     storageProviderTableName,
     replicaTableName,
@@ -302,6 +303,7 @@ export async function ucanInvocationRouter(request) {
     AWS_REGION,
     blobRegistryTableName,
     spaceDiffTableName,
+    spaceDiffV2TableName,
     consumerTableName,
     metrics,
     options
@@ -353,10 +355,7 @@ export async function ucanInvocationRouter(request) {
     )
   )
   const rateLimitsStorage = createRateLimitTable(AWS_REGION, rateLimitTableName)
-  const spaceDiffStore = createSpaceDiffStore(
-    { region: AWS_REGION },
-    { tableName: spaceDiffTableName }
-  )
+
   const spaceSnapshotStore = createSpaceSnapshotStore(
     { region: AWS_REGION },
     { tableName: spaceSnapshotTableName }
@@ -364,6 +363,15 @@ export async function ucanInvocationRouter(request) {
   const egressTrafficQueue = createEgressTrafficQueue(
     { region: AWS_REGION },
     { url: new URL(egressTrafficQueueUrl) }
+  )
+  // NOTE: We keep using the v1 space-diff store for reads during the dual-write phase.
+  // After removing dual-write space diff and cutting over readers to v2:
+  //   - switch to createSpaceDiffV2Store({ region: AWS_REGION }, { tableName: spaceDiffV2TableName })
+  //   - update callers that rely on time ordering to use the v2 GSI (byReceiptAt).
+  //   - ensure environment provides SPACE_DIFF_V2_TABLE and deprecate SPACE_DIFF_TABLE for reads.
+  const spaceDiffStore = createSpaceDiffStore(
+    { region: AWS_REGION },
+    { tableName: spaceDiffTableName }
   )
 
   const usageStorage = useUsageStore({
@@ -735,6 +743,7 @@ function getLambdaEnv() {
     rateLimitTableName: mustGetEnv('RATE_LIMIT_TABLE'),
     pieceTableName: mustGetEnv('PIECE_TABLE'),
     spaceDiffTableName: mustGetEnv('SPACE_DIFF_TABLE'),
+    spaceDiffV2TableName: mustGetEnv('SPACE_DIFF_V2_TABLE'),
     spaceSnapshotTableName: mustGetEnv('SPACE_SNAPSHOT_TABLE'),
     storageProviderTableName: mustGetEnv('STORAGE_PROVIDER_TABLE'),
     replicaTableName: mustGetEnv('REPLICA_TABLE'),

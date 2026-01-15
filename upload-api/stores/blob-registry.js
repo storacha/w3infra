@@ -26,6 +26,7 @@ const tracer = trace.getTracer('upload-api')
  * @param {string} region
  * @param {string} blobRegistryTableName
  * @param {string} spaceDiffTableName
+ * @param {string} spaceDiffV2TableName
  * @param {string} consumerTableName
  * @param {{
  *   space: import('../types.js').SpaceMetricsStore
@@ -39,6 +40,7 @@ export const createBlobRegistry = (
   region,
   blobRegistryTableName,
   spaceDiffTableName,
+  spaceDiffV2TableName,
   consumerTableName,
   metrics,
   options = {}
@@ -48,6 +50,7 @@ export const createBlobRegistry = (
     dynamoDb,
     blobRegistryTableName,
     spaceDiffTableName,
+    spaceDiffV2TableName,
     consumerTableName,
     metrics
   )
@@ -57,6 +60,7 @@ export const createBlobRegistry = (
  * @param {import('@aws-sdk/client-dynamodb').DynamoDBClient} dynamoDb
  * @param {string} blobRegistryTableName
  * @param {string} spaceDiffTableName
+ * @param {string} spaceDiffV2TableName
  * @param {string} consumerTableName
  * @param {{
  *   space: import('../types.js').SpaceMetricsStore
@@ -68,6 +72,7 @@ export const useBlobRegistry = (
   dynamoDb,
   blobRegistryTableName,
   spaceDiffTableName,
+  spaceDiffV2TableName,
   consumerTableName,
   metrics
 ) => {
@@ -112,6 +117,22 @@ export const useBlobRegistry = (
     )
     return { ok: diffs, error: undefined }
   }
+
+  /**
+   * Map a v1 diff record to v2 schema (cause as sort key).
+   * @param {Record<string, any>} diffItem
+   */
+  const toSpaceDiffV2Item = (diffItem) => ({
+    pk: diffItem.pk,
+    // Sort key is 'cause' in v2
+    cause: diffItem.cause,
+    space: diffItem.space,
+    provider: diffItem.provider,
+    subscription: diffItem.subscription,
+    delta: diffItem.delta,
+    receiptAt: diffItem.receiptAt,
+    insertedAt: diffItem.insertedAt
+  })
 
   return instrumentMethods(tracer, 'BlobRegistry', {
     /** @type {BlobAPI.Registry['find']} */
@@ -184,10 +205,22 @@ export const useBlobRegistry = (
         }
 
         for (const diffItem of spaceDiffResults.ok ?? []) {
+          // Write to existing v1 table (receiptAt#cause sort key)
           transactWriteItems.push({
             Put: {
               TableName: spaceDiffTableName,
               Item: marshall(diffItem, { removeUndefinedValues: true })
+            }
+          })
+          // Write to v2 table (cause as sort key)
+          const v2Item = toSpaceDiffV2Item(diffItem)
+          transactWriteItems.push({
+            Put: {
+              TableName: spaceDiffV2TableName,
+              Item: marshall(v2Item, { removeUndefinedValues: true }),
+              // ensure we only create new items; prevents overwriting existing (pk,cause)
+              ConditionExpression: 'attribute_not_exists(#SK)',
+              ExpressionAttributeNames: { '#SK': 'cause' }
             }
           })
         }
@@ -263,11 +296,22 @@ export const useBlobRegistry = (
         }
 
         for (const diffItem of spaceDiffResults.ok ?? []) {
+          // V1 write
           transactWriteItems.push({
             Put: {
               TableName: spaceDiffTableName,
               Item: marshall(diffItem, { removeUndefinedValues: true }),
             },
+          })
+          // V2 write with uniqueness guard
+          const v2Item = toSpaceDiffV2Item(diffItem)
+          transactWriteItems.push({
+            Put: {
+              TableName: spaceDiffV2TableName,
+              Item: marshall(v2Item, { removeUndefinedValues: true }),
+              ConditionExpression: 'attribute_not_exists(#SK)',
+              ExpressionAttributeNames: { '#SK': 'cause' }
+            }
           })
         }
 
