@@ -53,52 +53,118 @@ export function UploadDbStack({ stack, app }) {
   // External service configuration - stored as SSM parameters to avoid Lambda env var size limits
   // These are DIDs and URLs that are static per environment. They are NOT exported from this
   // stack - instead, upload-api Lambda functions load them from SSM at cold start. See lib/ssm.js
-  // Calling new Config.Parameter on each of these causes them to be set in AWS SSM.
-  new Config.Parameter(stack, 'AGGREGATOR_DID', {
-    value: process.env.AGGREGATOR_DID ?? '',
-  })
-  new Config.Parameter(stack, 'CONTENT_CLAIMS_DID', {
-    value: process.env.CONTENT_CLAIMS_DID ?? '',
-  })
-  new Config.Parameter(stack, 'CONTENT_CLAIMS_URL', {
-    value: process.env.CONTENT_CLAIMS_URL ?? '',
-  })
-  new Config.Parameter(stack, 'INDEXING_SERVICE_DID', {
-    value: process.env.INDEXING_SERVICE_DID ?? '',
-  })
-  new Config.Parameter(stack, 'INDEXING_SERVICE_URL', {
-    value: process.env.INDEXING_SERVICE_URL ?? '',
-  })
-  new Config.Parameter(stack, 'DEAL_TRACKER_DID', {
-    value: process.env.DEAL_TRACKER_DID ?? '',
-  })
-  new Config.Parameter(stack, 'DEAL_TRACKER_URL', {
-    value: process.env.DEAL_TRACKER_URL ?? '',
-  })
-  new Config.Parameter(stack, 'POSTMARK_TOKEN', {
-    value: process.env.POSTMARK_TOKEN ?? '',
-  })
-  new Config.Parameter(stack, 'PROVIDERS', {
-    value: process.env.PROVIDERS ?? '',
-  })
-  new Config.Parameter(stack, 'R2_ENDPOINT', {
-    value: process.env.R2_ENDPOINT ?? '',
-  })
-  new Config.Parameter(stack, 'R2_ACCESS_KEY_ID', {
-    value: process.env.R2_ACCESS_KEY_ID ?? '',
-  })
-  new Config.Parameter(stack, 'R2_SECRET_ACCESS_KEY', {
-    value: process.env.R2_SECRET_ACCESS_KEY ?? '',
-  })
-  new Config.Parameter(stack, 'R2_REGION', {
-    value: process.env.R2_REGION ?? '',
-  })
-  new Config.Parameter(stack, 'R2_CARPARK_BUCKET', {
-    value: process.env.R2_CARPARK_BUCKET_NAME ?? '',
-  })
-  new Config.Parameter(stack, 'R2_DELEGATION_BUCKET', {
-    value: process.env.R2_DELEGATION_BUCKET_NAME ?? '',
-  })
+  // SSM parameters cannot have empty string values, so we only create them if the env var is set.
+  // Lambda functions handle missing values gracefully via getSSMParameter() which returns ''.
+  if (process.env.AGGREGATOR_DID) {
+    new Config.Parameter(stack, 'AGGREGATOR_DID', {
+      value: process.env.AGGREGATOR_DID,
+    })
+  }
+  if (process.env.CONTENT_CLAIMS_DID) {
+    new Config.Parameter(stack, 'CONTENT_CLAIMS_DID', {
+      value: process.env.CONTENT_CLAIMS_DID,
+    })
+  }
+  if (process.env.CONTENT_CLAIMS_URL) {
+    new Config.Parameter(stack, 'CONTENT_CLAIMS_URL', {
+      value: process.env.CONTENT_CLAIMS_URL,
+    })
+  }
+  if (process.env.INDEXING_SERVICE_DID) {
+    new Config.Parameter(stack, 'INDEXING_SERVICE_DID', {
+      value: process.env.INDEXING_SERVICE_DID,
+    })
+  }
+  if (process.env.INDEXING_SERVICE_URL) {
+    new Config.Parameter(stack, 'INDEXING_SERVICE_URL', {
+      value: process.env.INDEXING_SERVICE_URL,
+    })
+  }
+  if (process.env.DEAL_TRACKER_DID) {
+    new Config.Parameter(stack, 'DEAL_TRACKER_DID', {
+      value: process.env.DEAL_TRACKER_DID,
+    })
+  }
+  if (process.env.DEAL_TRACKER_URL) {
+    new Config.Parameter(stack, 'DEAL_TRACKER_URL', {
+      value: process.env.DEAL_TRACKER_URL,
+    })
+  }
+  if (process.env.POSTMARK_TOKEN) {
+    new Config.Parameter(stack, 'POSTMARK_TOKEN', {
+      value: process.env.POSTMARK_TOKEN,
+    })
+  }
+  if (process.env.PROVIDERS) {
+    new Config.Parameter(stack, 'PROVIDERS', {
+      value: process.env.PROVIDERS,
+    })
+  }
+  if (process.env.R2_ENDPOINT) {
+    new Config.Parameter(stack, 'R2_ENDPOINT', {
+      value: process.env.R2_ENDPOINT,
+    })
+  }
+  if (process.env.R2_ACCESS_KEY_ID) {
+    new Config.Parameter(stack, 'R2_ACCESS_KEY_ID', {
+      value: process.env.R2_ACCESS_KEY_ID,
+    })
+  }
+  if (process.env.R2_SECRET_ACCESS_KEY) {
+    new Config.Parameter(stack, 'R2_SECRET_ACCESS_KEY', {
+      value: process.env.R2_SECRET_ACCESS_KEY,
+    })
+  }
+  if (process.env.R2_REGION) {
+    new Config.Parameter(stack, 'R2_REGION', {
+      value: process.env.R2_REGION,
+    })
+  }
+  if (process.env.R2_CARPARK_BUCKET_NAME) {
+    new Config.Parameter(stack, 'R2_CARPARK_BUCKET', {
+      value: process.env.R2_CARPARK_BUCKET_NAME,
+    })
+  }
+  if (process.env.R2_DELEGATION_BUCKET_NAME) {
+    new Config.Parameter(stack, 'R2_DELEGATION_BUCKET', {
+      value: process.env.R2_DELEGATION_BUCKET_NAME,
+    })
+  }
+  if (process.env.DMAIL_API_URL) {
+    new Config.Parameter(stack, 'DMAIL_API_URL', {
+      value: process.env.DMAIL_API_URL,
+    })
+  }
+  if (process.env.MAX_REPLICAS) {
+    new Config.Parameter(stack, 'MAX_REPLICAS', {
+      value: process.env.MAX_REPLICAS,
+    })
+  }
+  if (process.env.PRINCIPAL_MAPPING) {
+    new Config.Parameter(stack, 'PRINCIPAL_MAPPING', {
+      value: process.env.PRINCIPAL_MAPPING,
+    })
+  }
+  if (process.env.REQUIRE_PAYMENT_PLAN) {
+    new Config.Parameter(stack, 'REQUIRE_PAYMENT_PLAN', {
+      value: process.env.REQUIRE_PAYMENT_PLAN,
+    })
+  }
+  if (process.env.STRIPE_DEFAULT_SUCCESS_URL) {
+    new Config.Parameter(stack, 'STRIPE_SUCCESS_URL', {
+      value: process.env.STRIPE_DEFAULT_SUCCESS_URL,
+    })
+  }
+  if (process.env.UPLOAD_API_ALIAS) {
+    new Config.Parameter(stack, 'UPLOAD_API_ALIAS', {
+      value: process.env.UPLOAD_API_ALIAS,
+    })
+  }
+  if (process.env.UPLOAD_API_DID) {
+    new Config.Parameter(stack, 'UPLOAD_API_DID', {
+      value: process.env.UPLOAD_API_DID,
+    })
+  }
 
   const humanodeTable = new Table(stack, 'humanode', humanodeTableProps)
 
