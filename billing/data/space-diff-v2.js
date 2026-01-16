@@ -3,11 +3,14 @@ import { EncodeFailure, DecodeFailure, Schema } from './lib.js'
 
 /**
  * @typedef {import('../lib/api.js').SpaceDiff} SpaceDiff
- * @typedef {import('../types.js').InferStoreRecord<SpaceDiff> & { pk: string, cause: string }} SpaceDiffV2StoreRecord
+ * @typedef {import('../types.js').InferStoreRecord<SpaceDiff> & { pk: string, cause: string, ttlAt?: number }} SpaceDiffV2StoreRecord
  * @typedef {import('../lib/api.js').SpaceDiffListKey} SpaceDiffListKey 
  * @typedef {{ pk: string, receiptAt: string }} SpaceDiffV2ListStoreRecord
  * @typedef {import('../types.js').StoreRecord} StoreRecord
  */
+
+// Storage-controlled TTL: items expire after this many seconds (default 365 days)
+const SPACE_DIFF_TTL_SECONDS = 60 * 60 * 24 * 365
 
 export const schema = Schema.struct({
   space: Schema.did(),
@@ -34,7 +37,9 @@ export const encode = input => {
         subscription: input.subscription,
         delta: input.delta,
         receiptAt: input.receiptAt.toISOString(),
-        insertedAt: new Date().toISOString()
+        insertedAt: new Date().toISOString(),
+        // DynamoDB TTL (epoch seconds)
+        ttlAt: Math.floor(Date.now() / 1000) + SPACE_DIFF_TTL_SECONDS
       }
     }
   } catch (/** @type {any} */ err) {
