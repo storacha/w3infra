@@ -1,6 +1,6 @@
 import { Config } from 'sst/node/config'
 import { trace } from '@opentelemetry/api'
-import { loadSSMParameters, mustGetSSMParameter } from '../../lib/ssm.js'
+import { loadSSMParameters, mustGetSSMParameter, getSSMParameter } from '../../lib/ssm.js'
 import { API } from '@ucanto/core'
 import * as Delegation from '@ucanto/core/delegation'
 import { CAR, Legacy, Codec } from '@ucanto/transport'
@@ -101,15 +101,21 @@ const SSM_PARAMETERS = [
   'CONTENT_CLAIMS_URL',
   'DEAL_TRACKER_DID',
   'DEAL_TRACKER_URL',
+  'DMAIL_API_URL',
   'INDEXING_SERVICE_DID',
   'INDEXING_SERVICE_URL',
+  'MAX_REPLICAS',
   'POSTMARK_TOKEN',
+  'PRINCIPAL_MAPPING',
   'PROVIDERS',
   'R2_ACCESS_KEY_ID',
   'R2_CARPARK_BUCKET',
   'R2_DELEGATION_BUCKET',
   'R2_ENDPOINT',
   'R2_SECRET_ACCESS_KEY',
+  'REQUIRE_PAYMENT_PLAN',
+  'UPLOAD_API_ALIAS',
+  'UPLOAD_API_DID',
 ]
 
 await loadSSMParameters(SSM_PARAMETERS)
@@ -263,7 +269,11 @@ export async function ucanInvocationRouter(request) {
     }
   }
 
-  const { UPLOAD_API_DID, UPLOAD_API_ALIAS, MAX_REPLICAS } = process.env
+  // SSM parameters loaded at cold start (avoids 4KB env var limit)
+  // These are optional - getSSMParameter returns '' if not set
+  const UPLOAD_API_DID = getSSMParameter('UPLOAD_API_DID')
+  const UPLOAD_API_ALIAS = getSSMParameter('UPLOAD_API_ALIAS')
+  const MAX_REPLICAS = getSSMParameter('MAX_REPLICAS')
   const {
     PRIVATE_KEY,
     STRIPE_SECRET_KEY,
@@ -552,7 +562,7 @@ export async function ucanInvocationRouter(request) {
       apiSecret: DMAIL_API_SECRET,
       jwtSecret: DMAIL_JWT_SECRET || 'unused', // if undefined, we set it to a dummy value to bypass JWT validation
       apiUrl:
-        process.env.DMAIL_API_URL ||
+        getSSMParameter('DMAIL_API_URL') ||
         'https://api.dmail.ai/open/api/storacha/getUserStatus',
     })
     ssoProviders.push(dmailSSOService)
@@ -786,7 +796,7 @@ function getLambdaEnv() {
     accessServiceURL: mustGetEnv('UPLOAD_SERVICE_URL'),
     uploadServiceURL: mustGetEnv('UPLOAD_SERVICE_URL'),
     aggregatorDid: mustGetSSMParameter('AGGREGATOR_DID'),
-    requirePaymentPlan: process.env.REQUIRE_PAYMENT_PLAN === 'true',
+    requirePaymentPlan: getSSMParameter('REQUIRE_PAYMENT_PLAN') === 'true',
     dealTrackerDid: mustGetSSMParameter('DEAL_TRACKER_DID'),
     dealTrackerUrl: mustGetSSMParameter('DEAL_TRACKER_URL'),
     // carpark bucket - CAR file bytes may be found here with keys like {cid}/{cid}.car
@@ -813,7 +823,7 @@ function getLambdaEnv() {
       /** @type {Record<`did:web:${string}`, `did:key:${string}`>} */
       ({
         ...knownWebDIDs,
-        ...JSON.parse(process.env.PRINCIPAL_MAPPING || '{}'),
+        ...JSON.parse(getSSMParameter('PRINCIPAL_MAPPING') || '{}'),
       }),
     // default to staging values for line items since that's the default Stripe sandbox
     plansToLineItemsMapping:

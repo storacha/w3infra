@@ -1,7 +1,7 @@
 import * as Sentry from '@sentry/serverless'
 import { authorize } from '@storacha/upload-api/validate'
 import { Config } from 'sst/node/config'
-import { loadSSMParameters, mustGetSSMParameter } from '../../lib/ssm.js'
+import { loadSSMParameters, mustGetSSMParameter, getSSMParameter } from '../../lib/ssm.js'
 import { getServiceSigner, parseServiceDids } from '../config.js'
 import { Email } from '../email.js'
 import { createDelegationsTable } from '../tables/delegations.js'
@@ -49,6 +49,7 @@ const SSM_PARAMETERS = [
   'R2_DELEGATION_BUCKET',
   'R2_ENDPOINT',
   'R2_SECRET_ACCESS_KEY',
+  'UPLOAD_API_DID',
 ]
 await loadSSMParameters(SSM_PARAMETERS)
 
@@ -108,7 +109,6 @@ async function createAuthorizeContext() {
     SUBSCRIPTION_TABLE_NAME = '',
     CONSUMER_TABLE_NAME = '',
     CUSTOMER_TABLE_NAME = '',
-    UPLOAD_API_DID = '',
     REFERRALS_ENDPOINT = '',
     UCAN_LOG_STREAM_NAME = '',
     SPACE_DIFF_TABLE_NAME = '',
@@ -211,7 +211,7 @@ async function createAuthorizeContext() {
       token: POSTMARK_TOKEN,
       environment: SST_STAGE === 'prod' ? undefined : SST_STAGE,
     }),
-    signer: getServiceSigner({ did: UPLOAD_API_DID, privateKey: PRIVATE_KEY }),
+    signer: getServiceSigner({ did: getSSMParameter('UPLOAD_API_DID'), privateKey: PRIVATE_KEY }),
     delegationsStorage: createDelegationsTable(
       AWS_REGION,
       DELEGATION_TABLE_NAME,
