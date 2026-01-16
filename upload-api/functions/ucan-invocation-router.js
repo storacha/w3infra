@@ -111,7 +111,8 @@ const SSM_PARAMETERS = [
   'R2_ENDPOINT',
   'R2_SECRET_ACCESS_KEY',
 ]
-const ssmParametersPromise = loadSSMParameters(SSM_PARAMETERS)
+
+await loadSSMParameters(SSM_PARAMETERS)
 
 export { API }
 
@@ -186,9 +187,6 @@ export const knownWebDIDs = {
  * @param {import('aws-lambda').APIGatewayProxyEventV2} request
  */
 export async function ucanInvocationRouter(request) {
-  // Wait for SSM parameters to be loaded (usually already loaded at cold start)
-  await ssmParametersPromise
-
   try {
     // Capture X-Client custom header for analytics
     const clientId =

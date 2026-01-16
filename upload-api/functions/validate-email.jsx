@@ -50,7 +50,7 @@ const SSM_PARAMETERS = [
   'R2_ENDPOINT',
   'R2_SECRET_ACCESS_KEY',
 ]
-const ssmParametersPromise = loadSSMParameters(SSM_PARAMETERS)
+await loadSSMParameters(SSM_PARAMETERS)
 
 /**
  * @param {Response & { getStringBody: () => string }} response
@@ -95,8 +95,6 @@ export const preValidateEmail = Sentry.AWSLambda.wrapHandler(
 )
 
 async function createAuthorizeContext() {
-  // Wait for SSM parameters to be loaded (usually already loaded at cold start)
-  await ssmParametersPromise
   const {
     ACCESS_SERVICE_URL = '',
     AWS_REGION = '',
