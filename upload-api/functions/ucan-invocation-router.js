@@ -1,5 +1,6 @@
 import { Config } from 'sst/node/config'
 import { trace } from '@opentelemetry/api'
+import { loadSSMParameters, mustGetSSMParameter } from '../../lib/ssm.js'
 import { API } from '@ucanto/core'
 import * as Delegation from '@ucanto/core/delegation'
 import { CAR, Legacy, Codec } from '@ucanto/transport'
@@ -91,6 +92,27 @@ Sentry.AWSLambda.init({
   dsn: process.env.SENTRY_DSN,
   tracesSampleRate: 1,
 })
+
+// Load SSM parameters at cold start to avoid 4KB Lambda env var limit
+// These parameters are defined in upload-db-stack.js as Config.Parameter
+const SSM_PARAMETERS = [
+  'AGGREGATOR_DID',
+  'CONTENT_CLAIMS_DID',
+  'CONTENT_CLAIMS_URL',
+  'DEAL_TRACKER_DID',
+  'DEAL_TRACKER_URL',
+  'INDEXING_SERVICE_DID',
+  'INDEXING_SERVICE_URL',
+  'POSTMARK_TOKEN',
+  'PROVIDERS',
+  'R2_ACCESS_KEY_ID',
+  'R2_CARPARK_BUCKET',
+  'R2_DELEGATION_BUCKET',
+  'R2_ENDPOINT',
+  'R2_SECRET_ACCESS_KEY',
+]
+
+await loadSSMParameters(SSM_PARAMETERS)
 
 export { API }
 
@@ -452,8 +474,8 @@ export async function ucanInvocationRouter(request) {
     )
   }
 
-  const claimsServicePrincipal = DID.parse(mustGetEnv('CONTENT_CLAIMS_DID'))
-  const claimsServiceURL = new URL(mustGetEnv('CONTENT_CLAIMS_URL'))
+  const claimsServicePrincipal = DID.parse(mustGetSSMParameter('CONTENT_CLAIMS_DID'))
+  const claimsServiceURL = new URL(mustGetSSMParameter('CONTENT_CLAIMS_URL'))
 
   let claimsIssuer = getServiceSigner({
     privateKey: CONTENT_CLAIMS_PRIVATE_KEY,
@@ -482,8 +504,8 @@ export async function ucanInvocationRouter(request) {
     }),
   }
 
-  const indexingServicePrincipal = DID.parse(mustGetEnv('INDEXING_SERVICE_DID'))
-  const indexingServiceURL = new URL(mustGetEnv('INDEXING_SERVICE_URL'))
+  const indexingServicePrincipal = DID.parse(mustGetSSMParameter('INDEXING_SERVICE_DID'))
+  const indexingServiceURL = new URL(mustGetSSMParameter('INDEXING_SERVICE_URL'))
 
   let indexingServiceProof
   try {
@@ -750,27 +772,28 @@ function getLambdaEnv() {
     pieceOfferQueueUrl: mustGetEnv('PIECE_OFFER_QUEUE'),
     filecoinSubmitQueueUrl: mustGetEnv('FILECOIN_SUBMIT_QUEUE'),
     egressTrafficQueueUrl: mustGetEnv('EGRESS_TRAFFIC_QUEUE'),
-    r2DelegationBucketEndpoint: process.env.R2_ENDPOINT,
-    r2DelegationBucketAccessKeyId: process.env.R2_ACCESS_KEY_ID,
-    r2DelegationBucketSecretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
-    r2DelegationBucketName: process.env.R2_DELEGATION_BUCKET,
+    // SSM parameters loaded at cold start (avoids 4KB env var limit)
+    r2DelegationBucketEndpoint: mustGetSSMParameter('R2_ENDPOINT'),
+    r2DelegationBucketAccessKeyId: mustGetSSMParameter('R2_ACCESS_KEY_ID'),
+    r2DelegationBucketSecretAccessKey: mustGetSSMParameter('R2_SECRET_ACCESS_KEY'),
+    r2DelegationBucketName: mustGetSSMParameter('R2_DELEGATION_BUCKET'),
     agentIndexTableName: mustGetEnv('AGENT_INDEX_TABLE'),
     agentIndexBucketName: mustGetEnv('AGENT_INDEX_BUCKET'),
     agentMessageBucketName: mustGetEnv('AGENT_MESSAGE_BUCKET'),
     streamName: mustGetEnv('UCAN_LOGS'),
-    postmarkToken: mustGetEnv('POSTMARK_TOKEN'),
-    providers: mustGetEnv('PROVIDERS'),
+    postmarkToken: mustGetSSMParameter('POSTMARK_TOKEN'),
+    providers: mustGetSSMParameter('PROVIDERS'),
     accessServiceURL: mustGetEnv('UPLOAD_SERVICE_URL'),
     uploadServiceURL: mustGetEnv('UPLOAD_SERVICE_URL'),
-    aggregatorDid: mustGetEnv('AGGREGATOR_DID'),
+    aggregatorDid: mustGetSSMParameter('AGGREGATOR_DID'),
     requirePaymentPlan: process.env.REQUIRE_PAYMENT_PLAN === 'true',
-    dealTrackerDid: mustGetEnv('DEAL_TRACKER_DID'),
-    dealTrackerUrl: mustGetEnv('DEAL_TRACKER_URL'),
+    dealTrackerDid: mustGetSSMParameter('DEAL_TRACKER_DID'),
+    dealTrackerUrl: mustGetSSMParameter('DEAL_TRACKER_URL'),
     // carpark bucket - CAR file bytes may be found here with keys like {cid}/{cid}.car
-    carparkBucketName: mustGetEnv('R2_CARPARK_BUCKET'),
-    carparkBucketEndpoint: mustGetEnv('R2_ENDPOINT'),
-    carparkBucketAccessKeyId: mustGetEnv('R2_ACCESS_KEY_ID'),
-    carparkBucketSecretAccessKey: mustGetEnv('R2_SECRET_ACCESS_KEY'),
+    carparkBucketName: mustGetSSMParameter('R2_CARPARK_BUCKET'),
+    carparkBucketEndpoint: mustGetSSMParameter('R2_ENDPOINT'),
+    carparkBucketAccessKeyId: mustGetSSMParameter('R2_ACCESS_KEY_ID'),
+    carparkBucketSecretAccessKey: mustGetSSMParameter('R2_SECRET_ACCESS_KEY'),
     // IPNI service
     ipniConfig:
       process.env.DISABLE_IPNI_PUBLISHING === 'true'
