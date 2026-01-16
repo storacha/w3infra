@@ -1,6 +1,7 @@
 import * as Sentry from '@sentry/serverless'
 import { authorize } from '@storacha/upload-api/validate'
 import { Config } from 'sst/node/config'
+import { loadSSMParameters, mustGetSSMParameter } from '../../lib/ssm.js'
 import { getServiceSigner, parseServiceDids } from '../config.js'
 import { Email } from '../email.js'
 import { createDelegationsTable } from '../tables/delegations.js'
@@ -39,6 +40,17 @@ Sentry.AWSLambda.init({
   dsn: process.env.SENTRY_DSN,
   tracesSampleRate: 0,
 })
+
+// Load SSM parameters at cold start to avoid 4KB Lambda env var limit
+const SSM_PARAMETERS = [
+  'POSTMARK_TOKEN',
+  'PROVIDERS',
+  'R2_ACCESS_KEY_ID',
+  'R2_DELEGATION_BUCKET',
+  'R2_ENDPOINT',
+  'R2_SECRET_ACCESS_KEY',
+]
+const ssmParametersPromise = loadSSMParameters(SSM_PARAMETERS)
 
 /**
  * @param {Response & { getStringBody: () => string }} response
@@ -82,7 +94,9 @@ export const preValidateEmail = Sentry.AWSLambda.wrapHandler(
   wrapLambdaHandler('pre-validate-email', validateEmailGet)
 )
 
-function createAuthorizeContext() {
+async function createAuthorizeContext() {
+  // Wait for SSM parameters to be loaded (usually already loaded at cold start)
+  await ssmParametersPromise
   const {
     ACCESS_SERVICE_URL = '',
     AWS_REGION = '',
@@ -90,19 +104,13 @@ function createAuthorizeContext() {
     DELEGATION_TABLE_NAME = '',
     REVOCATION_TABLE_NAME = '',
     RATE_LIMIT_TABLE_NAME = '',
-    R2_ENDPOINT = '',
-    R2_ACCESS_KEY_ID = '',
-    R2_SECRET_ACCESS_KEY = '',
-    R2_DELEGATION_BUCKET_NAME = '',
     AGENT_INDEX_TABLE_NAME = '',
     AGENT_INDEX_BUCKET_NAME = '',
     AGENT_MESSAGE_BUCKET_NAME = '',
-    POSTMARK_TOKEN = '',
     SUBSCRIPTION_TABLE_NAME = '',
     CONSUMER_TABLE_NAME = '',
     CUSTOMER_TABLE_NAME = '',
     UPLOAD_API_DID = '',
-    PROVIDERS = '',
     REFERRALS_ENDPOINT = '',
     UCAN_LOG_STREAM_NAME = '',
     SPACE_DIFF_TABLE_NAME = '',
@@ -114,6 +122,13 @@ function createAuthorizeContext() {
     DYNAMO_DB_ENDPOINT: dbEndpoint,
   } = process.env
   const { PRIVATE_KEY } = Config
+  // SSM parameters loaded at cold start (avoids 4KB env var limit)
+  const POSTMARK_TOKEN = mustGetSSMParameter('POSTMARK_TOKEN')
+  const PROVIDERS = mustGetSSMParameter('PROVIDERS')
+  const R2_ENDPOINT = mustGetSSMParameter('R2_ENDPOINT')
+  const R2_ACCESS_KEY_ID = mustGetSSMParameter('R2_ACCESS_KEY_ID')
+  const R2_SECRET_ACCESS_KEY = mustGetSSMParameter('R2_SECRET_ACCESS_KEY')
+  const R2_DELEGATION_BUCKET_NAME = mustGetSSMParameter('R2_DELEGATION_BUCKET_NAME')
 
   const delegationBucket = R2_DELEGATION_BUCKET_NAME
     ? createR2DelegationsStore(
@@ -238,7 +253,7 @@ export async function validateEmailPost(request) {
       )
     )
   }
-  const context = createAuthorizeContext()
+  const context = await createAuthorizeContext()
 
   const authorizeResult = await authorize(encodedUcan, context)
 
