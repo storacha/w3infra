@@ -21,6 +21,14 @@ const tracer = trace.getTracer('upload-api')
 const SHARD_THRESHOLD = 5000
 
 /**
+ * Helper function to get S3 key for shards storage
+ *
+ * @param {string} root
+ * @returns {string}
+ */
+const getS3Key = (root) => `uploads/${root}/shards.cbor`
+
+/**
  * @typedef {import('@storacha/upload-api').UploadTable} UploadTable
  * @typedef {import('@storacha/upload-api').UploadAddSuccess} UploadAddResult
  * @typedef {import('@storacha/upload-api').UploadListItem} UploadListItem
@@ -71,14 +79,8 @@ export function useUploadTable(dynamoDb, tableName, metrics, options = {}) {
   const { s3Client, shardsBucketName } = options
 
   /**
-   * Helper function to get S3 key for shards storage
-   * @param {string} root
-   * @returns {string}
-   */
-  const getS3Key = (root) => `uploads/${root}/shards.cbor`
-
-  /**
    * Helper function to fetch shards from S3
+   *
    * @param {string} s3Key
    * @returns {Promise<string[]>}
    */
@@ -99,6 +101,7 @@ export function useUploadTable(dynamoDb, tableName, metrics, options = {}) {
 
   /**
    * Helper function to store shards in S3
+   *
    * @param {string} s3Key
    * @param {string[]} shards
    * @returns {Promise<void>}
@@ -117,6 +120,7 @@ export function useUploadTable(dynamoDb, tableName, metrics, options = {}) {
 
   /**
    * Helper function to delete shards from S3
+   *
    * @param {string} s3Key
    * @returns {Promise<void>}
    */
@@ -129,7 +133,7 @@ export function useUploadTable(dynamoDb, tableName, metrics, options = {}) {
         Bucket: shardsBucketName,
         Key: s3Key,
       }))
-    } catch (error) {
+    } catch (/** @type {any} */ error) {
       // Ignore errors if object doesn't exist
       if (error.name !== 'NoSuchKey') {
         throw error
@@ -236,7 +240,7 @@ export function useUploadTable(dynamoDb, tableName, metrics, options = {}) {
             existingShards = new Set(existing.shards)
           }
         }
-      } catch (error) {
+      } catch {
         // If the record doesn't exist yet, that's fine
         console.log('No existing record found, creating new one')
       }
