@@ -112,6 +112,16 @@ export function UploadDbStack({ stack, app }) {
   })
 
   /**
+   * This bucket stores large shard lists for uploads with many shards (>5k).
+   */
+  const uploadShardsBucket = new Bucket(stack, 'upload-shards-store', {
+    cors: true,
+    cdk: {
+      bucket: getBucketConfig('upload-shards', app.stage, app.name)
+    }
+  })
+
+  /**
    * This table indexes delegations.
    */
   const delegationTable = new Table(stack, 'delegation', delegationTableProps)
@@ -158,6 +168,7 @@ export function UploadDbStack({ stack, app }) {
     spaceMetricsTable,
     storageProviderTable,
     replicaTable,
+    uploadShardsBucket,
     privateKey,
     githubClientSecret,
     contentClaimsPrivateKey,
