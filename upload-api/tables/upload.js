@@ -23,10 +23,11 @@ const SHARD_THRESHOLD = 5000
 /**
  * Helper function to get S3 key for shards storage
  *
+ * @param {string} space
  * @param {string} root
  * @returns {string}
  */
-const getS3Key = (root) => `uploads/${root}/shards.cbor`
+const getS3Key = (space, root) => `${space}/${root}/shards.cbor`
 
 /**
  * @typedef {import('@storacha/upload-api').UploadTable} UploadTable
@@ -260,7 +261,7 @@ export function useUploadTable(dynamoDb, tableName, metrics, options = {}) {
       // Determine storage strategy based on total shard count
       if (s3Client && shardsBucketName && totalShardCount >= SHARD_THRESHOLD) {
         // Store in S3
-        const s3Key = getS3Key(root.toString())
+        const s3Key = getS3Key(space.toString(), root.toString())
         await storeShardsInS3(s3Key, [...allShards])
 
         // Update DynamoDB to reference S3, and remove inline shards if they exist
