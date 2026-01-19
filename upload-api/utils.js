@@ -20,6 +20,14 @@ export function hasOkReceipt(ucanInvocation) {
  * @returns {import("@ucanto/interface").Result<number, import("@storacha/capabilities/types").PlanNotFound>}
  */
 export function planLimit(customer, productInfo) {
+  // If customer has reserved capacity (forge network), use that as the hard limit
+  if (customer.reservedCapacity !== undefined) {
+    // Reserved capacity is stored in TiB, convert to bytes
+    const TiB = 1024 * 1024 * 1024 * 1024
+    return { ok: customer.reservedCapacity * TiB }
+  }
+
+  // Otherwise, use plan-based logic (hot network)
   const plan = productInfo[customer.product]
   if (!plan) {
     return {
