@@ -83,6 +83,11 @@ export interface Customer {
   product: string
   /** Misc customer details */
   details?: string
+  /**
+   * Reserved capacity in TiB for the customer.
+   * Only used in the forge network, where capacity is not given by the product/plan.
+   */
+  reservedCapacity?: number
   /** Time the record was added to the database. */
   insertedAt: Date
   /** Time the record was updated in the database. */

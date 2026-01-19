@@ -25,6 +25,11 @@ export const customerTableProps = {
     product: 'string',
     /** Misc customer details */
     details: 'string',
+    /**
+     * Reserved capacity in TiB for the customer.
+     * Only used in the forge network, where capacity is not given by the product/plan.
+     */
+    reservedCapacity: 'number',
     /** ISO timestamp record was inserted. */
     insertedAt: 'string',
     /** ISO timestamp record was updated. */
@@ -32,8 +37,8 @@ export const customerTableProps = {
   },
   primaryIndex: { partitionKey: 'customer' },
   globalIndexes: {
-    account: {partitionKey: 'account' , projection: ['customer', 'product'] }
-  }
+    account: { partitionKey: 'account', projection: ['customer', 'product'] },
+  },
 }
 
 /**
@@ -76,15 +81,17 @@ export const createCustomerStore = (conf, { tableName }) => ({
   async updateProduct(customer, product) {
     const client = connectTable(conf)
     try {
-      const res = await client.send(new UpdateItemCommand({
-        TableName: tableName,
-        Key: marshall({ customer }),
-        UpdateExpression: 'SET product = :product, updatedAt = :updatedAt',
-        ExpressionAttributeValues: marshall({
-          ':product': product,
-          ':updatedAt': new Date().toISOString()
+      const res = await client.send(
+        new UpdateItemCommand({
+          TableName: tableName,
+          Key: marshall({ customer }),
+          UpdateExpression: 'SET product = :product, updatedAt = :updatedAt',
+          ExpressionAttributeValues: marshall({
+            ':product': product,
+            ':updatedAt': new Date().toISOString(),
+          }),
         })
-      }))
+      )
       if (res.$metadata.httpStatusCode !== 200) {
         throw new Error(`unexpected status putting item to table: ${res.$metadata.httpStatusCode}`)
       }
