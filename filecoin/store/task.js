@@ -9,7 +9,6 @@ import { getDynamoClient } from '../../lib/aws/dynamo.js'
  *
  * @param {string} region
  * @param {string} agentIndexTableName
- * @param {string} agentIndexBucketName
  * @param {string} agentMessageBucketName
  * @param {{
  *   s3Address?: Partial<import('../../lib/aws/s3.js').Address>
@@ -19,7 +18,6 @@ import { getDynamoClient } from '../../lib/aws/dynamo.js'
 export function createTaskStore(
   region,
   agentIndexTableName,
-  agentIndexBucketName,
   agentMessageBucketName,
   options = {}
 ) {
@@ -35,7 +33,6 @@ export function createTaskStore(
     dynamoDBClient,
     s3client,
     agentIndexTableName,
-    agentIndexBucketName,
     agentMessageBucketName
   )
 }
@@ -44,7 +41,6 @@ export function createTaskStore(
  * @param {import('@aws-sdk/client-dynamodb').DynamoDBClient} dynamoDBClient
  * @param {import('@aws-sdk/client-s3').S3Client} s3client
  * @param {string} agentIndexTableName
- * @param {string} agentIndexBucketName
  * @param {string} agentMessageBucketName
  * @returns {import('@storacha/filecoin-api/storefront/api').TaskStore}
  */
@@ -52,7 +48,6 @@ export const useTaskStore = (
   dynamoDBClient,
   s3client,
   agentIndexTableName,
-  agentIndexBucketName,
   agentMessageBucketName
 ) => {
   const store = Store.open({
@@ -63,7 +58,6 @@ export const useTaskStore = (
         ? s3client.config.region
         : 'us-west-2',
     buckets: {
-      index: { name: agentIndexBucketName },
       message: { name: agentMessageBucketName },
     },
     tables: {

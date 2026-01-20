@@ -22,14 +22,14 @@ export interface FilecoinMetricsCtx {
 }
 
 export interface FilecoinAggregateOfferMetricsCtx extends FilecoinMetricsCtx {
-  invocationStore: InvocationBucket
+  invocationStore: InvocationTable
 }
 
 export interface WorkflowBucket {
   get: (Cid: string) => Promise<Uint8Array | undefined>
 }
 
-export interface InvocationBucket {
+export interface InvocationTable {
   getInLink: (cid: string) => Promise<string | undefined>
 }
 

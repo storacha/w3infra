@@ -40,13 +40,6 @@ export function UcanInvocationStack({ stack, app }) {
     })
   )
 
-  const agentIndexBucket = new Bucket(stack, 'invocation-store', {
-    cors: true,
-    cdk: {
-      bucket: getBucketConfig('invocation-store', app.stage, app.name),
-    },
-  })
-
   const agentIndexTable = new Table(stack, 'agent-index', agentIndexTableProps)
 
   // TODO: keep for historical content that we might want to process
@@ -76,12 +69,10 @@ export function UcanInvocationStack({ stack, app }) {
 
   stack.addOutputs({
     agentMessageBucketName: agentMessageBucket.bucketName,
-    agentIndexBucketName: agentIndexBucket.bucketName,
   })
 
   return {
     agentIndexTable,
-    agentIndexBucket,
     agentMessageBucket,
     ucanStream,
   }
