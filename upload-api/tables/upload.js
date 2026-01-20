@@ -9,6 +9,8 @@ import { marshall, unmarshall } from '@aws-sdk/util-dynamodb'
 import { PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3'
 import { encode, decode } from '@ipld/dag-cbor'
 import { CID } from 'multiformats/cid'
+import { sha256 } from 'multiformats/hashes/sha2'
+import * as raw from 'multiformats/codecs/raw'
 import { RecordNotFound } from './lib.js'
 import { getDynamoClient } from '../../lib/aws/dynamo.js'
 import { getS3Client } from '../../lib/aws/s3.js'
@@ -24,10 +26,14 @@ const SHARD_THRESHOLD = 5000
  * Helper function to get S3 key for shards storage
  *
  * @param {string} space
- * @param {string} root
- * @returns {string}
+ * @param {Uint8Array} cborData
+ * @returns {Promise<string>}
  */
-const getS3Key = (space, root) => `${space}/${root}/shards.cbor`
+const getS3Key = async (space, cborData) => {
+  const hash = await sha256.digest(cborData)
+  const shardsCid = CID.create(1, raw.code, hash)
+  return `${space}/${shardsCid.toString()}`
+}
 
 /**
  * @typedef {import('@storacha/upload-api').UploadTable} UploadTable
@@ -83,7 +89,7 @@ export function useUploadTable(dynamoDb, tableName, metrics, options = {}) {
    * Helper function to fetch shards from S3
    *
    * @param {string} s3Key
-   * @returns {Promise<string[]>}
+   * @returns {Promise<import('@storacha/upload-api').CARLink[]>}
    */
   const fetchShardsFromS3 = async (s3Key) => {
     if (!s3Client || !shardsBucketName) {
@@ -103,20 +109,24 @@ export function useUploadTable(dynamoDb, tableName, metrics, options = {}) {
   /**
    * Helper function to store shards in S3
    *
-   * @param {string} s3Key
-   * @param {string[]} shards
-   * @returns {Promise<void>}
+   * @param {string} space
+   * @param {import('@storacha/upload-api').CARLink[]} shards
+   * @returns {Promise<string>} The S3 key where the shards were stored
    */
-  const storeShardsInS3 = async (s3Key, shards) => {
+  const storeShardsInS3 = async (space, shards) => {
     if (!s3Client || !shardsBucketName) {
       throw new Error('S3 client not configured for large shard storage')
     }
     const cborData = encode(shards)
+    const s3Key = await getS3Key(space, cborData)
+
     await s3Client.send(new PutObjectCommand({
       Bucket: shardsBucketName,
       Key: s3Key,
       Body: cborData,
     }))
+
+    return s3Key
   }
 
   /**
@@ -211,44 +221,48 @@ export function useUploadTable(dynamoDb, tableName, metrics, options = {}) {
      */
     upsert: async ({ space, root, shards = [], issuer, cause }) => {
       const insertedAt = new Date().toISOString()
-      const shardSet = new Set(shards.map((s) => s.toString()))
 
       const Key = {
         space: { S: space.toString() },
         root: { S: root.toString() },
       }
 
-      // First, check if record exists to get existing shards count
-      let existingShards = new Set()
+      // First, check if record exists to get existing shards
+      /** @type {Map<string, import('@storacha/upload-api').CARLink>} */
+      const existingShardsMap = new Map()
       let existingShardsRef = null
-      try {
-        const existingRecord = await dynamoDb.send(
-          new GetItemCommand({
-            TableName: tableName,
-            Key,
-            AttributesToGet: ['shards', 'shardsRef'],
-          })
-        )
-        if (existingRecord.Item) {
-          const existing = unmarshall(existingRecord.Item)
-          if (existing.shardsRef && s3Client && shardsBucketName) {
-            // Existing shards are in S3
-            existingShardsRef = existing.shardsRef
-            const shardsFromS3 = await fetchShardsFromS3(existing.shardsRef)
-            existingShards = new Set(shardsFromS3)
-          } else if (existing.shards) {
-            // Existing shards are in DynamoDB
-            existingShards = new Set(existing.shards)
+      const existingRecord = await dynamoDb.send(
+        new GetItemCommand({
+          TableName: tableName,
+          Key,
+          AttributesToGet: ['shards', 'shardsRef'],
+        })
+      )
+      if (existingRecord.Item) {
+        const existing = unmarshall(existingRecord.Item)
+        if (existing.shardsRef && s3Client && shardsBucketName) {
+          // Existing shards are in S3
+          existingShardsRef = existing.shardsRef
+          const shardsFromS3 = await fetchShardsFromS3(existing.shardsRef)
+          for (const shard of shardsFromS3) {
+            existingShardsMap.set(shard.toString(), shard)
+          }
+        } else if (existing.shards) {
+          // Existing shards are in DynamoDB (as strings)
+          for (const shardStr of existing.shards) {
+            // Parse and cast to CARLink (we trust stored data is valid CAR CIDs)
+            const shard = /** @type {import('@storacha/upload-api').CARLink} */ (CID.parse(shardStr))
+            existingShardsMap.set(shardStr, shard)
           }
         }
-      } catch {
-        // If the record doesn't exist yet, that's fine
-        console.log('No existing record found, creating new one')
       }
 
-      // Merge existing and new shards
-      const allShards = new Set([...existingShards, ...shardSet])
-      const totalShardCount = allShards.size
+      // Merge existing and new shards (use Map for deduplication by CID string)
+      for (const shard of shards) {
+        existingShardsMap.set(shard.toString(), shard)
+      }
+      const allShards = Array.from(existingShardsMap.values())
+      const totalShardCount = allShards.length
 
       let UpdateExpression
       /** @type {Record<string, any>} */
@@ -260,17 +274,16 @@ export function useUploadTable(dynamoDb, tableName, metrics, options = {}) {
 
       // Determine storage strategy based on total shard count
       if (s3Client && shardsBucketName && totalShardCount >= SHARD_THRESHOLD) {
-        // Store in S3
-        const s3Key = getS3Key(space.toString(), root.toString())
-        await storeShardsInS3(s3Key, [...allShards])
+        // Store in S3 with content-addressed key
+        const s3Key = await storeShardsInS3(space.toString(), allShards)
 
         // Update DynamoDB to reference S3, and remove inline shards if they exist
         ExpressionAttributeValues[':ref'] = { S: s3Key }
         UpdateExpression = `SET cause = :ca, insertedAt = if_not_exists(insertedAt, :ia), updatedAt = :ua, shardsRef = :ref REMOVE shards`
       } else {
         // Store inline in DynamoDB
-        if (shardSet.size > 0) {
-          ExpressionAttributeValues[':sh'] = { SS: [...shardSet] }
+        if (shards.length > 0) {
+          ExpressionAttributeValues[':sh'] = { SS: shards.map((s) => s.toString()) }
           const shardExpression = 'ADD shards :sh'
           UpdateExpression = `SET cause = :ca, insertedAt = if_not_exists(insertedAt, :ia), updatedAt = :ua ${shardExpression}`
 
