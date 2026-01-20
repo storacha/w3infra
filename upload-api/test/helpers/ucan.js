@@ -256,7 +256,6 @@ export async function executionContextToUcantoTestServerContext(t) {
   const carStoreBucketName = await createBucket(s3)
   const r2CarStoreBucketName = r2 ? await createBucket(r2) : undefined
   const delegationsBucketName = await createBucket(s3)
-  const agentIndexBucketName = await createBucket(s3)
   const agentMessageBucketName = await createBucket(s3)
   const agentIndexTableName = await createTable(dynamo, agentIndexTableProps)
 
@@ -267,7 +266,6 @@ export async function executionContextToUcantoTestServerContext(t) {
       region: 'us-west-2',
       buckets: {
         message: { name: agentMessageBucketName },
-        index: { name: agentIndexBucketName },
       },
       tables: {
         index: { name: agentIndexTableName },
@@ -481,13 +479,11 @@ export async function executionContextToUcantoTestServerContext(t) {
     taskStore: createFilecoinTaskStore(
       'us-west-2',
       agentIndexTableName,
-      agentIndexBucketName,
       agentMessageBucketName
     ),
     receiptStore: createFilecoinReceiptStore(
       'us-west-2',
       agentIndexTableName,
-      agentIndexBucketName,
       agentMessageBucketName
     ),
     // @ts-expect-error not tested here
@@ -533,7 +529,6 @@ export async function executionContextToUcantoTestServerContext(t) {
       region: 'us-west-2',
     },
     buckets: {
-      index: { name: agentIndexBucketName },
       message: { name: agentMessageBucketName },
     },
     tables: {

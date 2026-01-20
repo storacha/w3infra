@@ -94,7 +94,6 @@ function createAuthorizeContext() {
     R2_SECRET_ACCESS_KEY = '',
     R2_DELEGATION_BUCKET_NAME = '',
     AGENT_INDEX_TABLE_NAME = '',
-    AGENT_INDEX_BUCKET_NAME = '',
     AGENT_MESSAGE_BUCKET_NAME = '',
     POSTMARK_TOKEN = '',
     SUBSCRIPTION_TABLE_NAME = '',
@@ -153,7 +152,6 @@ function createAuthorizeContext() {
       region: AWS_REGION,
       buckets: {
         message: { name: AGENT_MESSAGE_BUCKET_NAME },
-        index: { name: AGENT_INDEX_BUCKET_NAME },
       },
       tables: {
         index: { name: AGENT_INDEX_TABLE_NAME },

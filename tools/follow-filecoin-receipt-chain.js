@@ -14,7 +14,6 @@ export async function followFilecoinReceiptChain() {
   const AWS_REGION = getRegion(ENV)
   const pieceTableName = getPieceTableName(ENV)
   const agentIndexTableName = getAgentIndexTableName(ENV)
-  const agentIndexBucketName = getAgentIndexBucketName(ENV)
   const agentMessageBucketName = getAgentMessageBucketName(ENV)
   const did = getDid(ENV)
 
@@ -27,7 +26,6 @@ export async function followFilecoinReceiptChain() {
   const receiptStore = createFilecoinReceiptStore(
     AWS_REGION,
     agentIndexTableName,
-    agentIndexBucketName,
     agentMessageBucketName
   )
   const pieceStore = createPieceTable(AWS_REGION, pieceTableName)
@@ -170,17 +168,6 @@ function getAgentIndexTableName(env) {
   }
 
   return 'prod-w3infra-agent-index'
-}
-
-/**
- * @param {string} env
- */
-function getAgentIndexBucketName(env) {
-  if (env === 'staging') {
-    return 'invocation-store-staging-0'
-  }
-
-  return 'invocation-store-prod-0'
 }
 
 /**

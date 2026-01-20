@@ -244,7 +244,6 @@ const getContext = (customContext) => {
       region,
       buckets: {
         message: { name: mustGetEnv('AGENT_MESSAGE_BUCKET_NAME') },
-        index: { name: mustGetEnv('AGENT_INDEX_BUCKET_NAME') },
       },
       tables: {
         index: { name: mustGetEnv('AGENT_INDEX_TABLE_NAME') },
