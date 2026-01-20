@@ -85,7 +85,7 @@ export function useUploadTable(dynamoDb, tableName, metrics, options = {}) {
   const { s3Client, shardsBucketName } = options
 
   /**
-   * Helper function to fetch shards from S3
+   * Helper function to fetch shards from S3 as CID objects
    *
    * @param {string} s3Key
    * @returns {Promise<import('@storacha/upload-api').CARLink[]>}
@@ -103,6 +103,17 @@ export function useUploadTable(dynamoDb, tableName, metrics, options = {}) {
     }
     const bytes = await response.Body.transformToByteArray()
     return decode(bytes)
+  }
+
+  /**
+   * Helper function to fetch shards from S3 as strings
+   *
+   * @param {string} s3Key
+   * @returns {Promise<string[]>}
+   */
+  const fetchShardStringsFromS3 = async (s3Key) => {
+    const shards = await fetchShardsFromS3(s3Key)
+    return shards.map(s => s.toString())
   }
 
   /**
@@ -177,7 +188,7 @@ export function useUploadTable(dynamoDb, tableName, metrics, options = {}) {
       // If shards are stored in S3, fetch them
       if (item.shardsRef && s3Client && shardsBucketName) {
         try {
-          item.shards = await fetchShardsFromS3(item.shardsRef)
+          item.shards = await fetchShardStringsFromS3(item.shardsRef)
         } catch (/** @type {any} */ error) {
           console.error('Failed to fetch shards from S3:', error)
           throw error
@@ -318,8 +329,9 @@ export function useUploadTable(dynamoDb, tableName, metrics, options = {}) {
       const raw = unmarshall(res.Attributes)
 
       // If shards were stored in S3, use the allShards we just stored (no need to fetch)
+      // Convert CID objects to strings to match DynamoDB format
       if (raw.shardsRef) {
-        raw.shards = [...allShards]
+        raw.shards = allShards.map(s => s.toString())
       }
 
       // if new, increment total
@@ -365,7 +377,7 @@ export function useUploadTable(dynamoDb, tableName, metrics, options = {}) {
         // If shards were in S3, fetch them for the return value BEFORE deleting
         if (raw.shardsRef && s3Client && shardsBucketName) {
           try {
-            raw.shards = await fetchShardsFromS3(raw.shardsRef)
+            raw.shards = await fetchShardStringsFromS3(raw.shardsRef)
           } catch (/** @type {any} */ error) {
             console.error('Failed to fetch shards from S3 during remove:', error)
             // Continue with empty shards rather than failing
@@ -430,7 +442,7 @@ export function useUploadTable(dynamoDb, tableName, metrics, options = {}) {
           // If shards are in S3, fetch them
           if (item.shardsRef && s3Client && shardsBucketName) {
             try {
-              item.shards = await fetchShardsFromS3(item.shardsRef)
+              item.shards = await fetchShardStringsFromS3(item.shardsRef)
             } catch (/** @type {any} */ error) {
               console.error('Failed to fetch shards from S3 for list:', error)
               // Continue without shards rather than failing the entire list
