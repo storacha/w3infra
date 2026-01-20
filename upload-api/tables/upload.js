@@ -7,10 +7,9 @@ import {
 } from '@aws-sdk/client-dynamodb'
 import { marshall, unmarshall } from '@aws-sdk/util-dynamodb'
 import { PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3'
-import { encode, decode } from '@ipld/dag-cbor'
+import { encode, decode, code as cborCode } from '@ipld/dag-cbor'
 import { CID } from 'multiformats/cid'
 import { sha256 } from 'multiformats/hashes/sha2'
-import * as raw from 'multiformats/codecs/raw'
 import { RecordNotFound } from './lib.js'
 import { getDynamoClient } from '../../lib/aws/dynamo.js'
 import { getS3Client } from '../../lib/aws/s3.js'
@@ -31,7 +30,7 @@ const SHARD_THRESHOLD = 5000
  */
 const getS3Key = async (space, cborData) => {
   const hash = await sha256.digest(cborData)
-  const shardsCid = CID.create(1, raw.code, hash)
+  const shardsCid = CID.create(1, cborCode, hash)
   return `${space}/${shardsCid.toString()}`
 }
 
