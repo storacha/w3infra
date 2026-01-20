@@ -1,10 +1,4 @@
-import {
-  Config,
-  Cron,
-  Function,
-  Queue,
-  use,
-} from 'sst/constructs'
+import { Config, Cron, Function, Queue, use } from 'sst/constructs'
 import { Duration, aws_events as awsEvents } from 'aws-cdk-lib'
 import { StartingPosition } from 'aws-cdk-lib/aws-lambda'
 
@@ -13,7 +7,13 @@ import { CarparkStack } from './carpark-stack.js'
 import { UploadDbStack } from './upload-db-stack.js'
 import { UcanInvocationStack } from './ucan-invocation-stack.js'
 import { RoundaboutStack } from './roundabout-stack.js'
-import { setupSentry, getEnv, getCdkNames, getCustomDomain, getEventSourceConfig } from './config.js'
+import {
+  setupSentry,
+  getEnv,
+  getCdkNames,
+  getCustomDomain,
+  getEventSourceConfig,
+} from './config.js'
 import { CARPARK_EVENT_BRIDGE_SOURCE_EVENT } from '../carpark/event-bus/source.js'
 import { Status } from '../filecoin/store/piece.js'
 
@@ -30,12 +30,18 @@ export function FilecoinStack({ stack, app }) {
     CONTENT_CLAIMS_URL,
     DISABLE_PIECE_CID_COMPUTE,
     UPLOAD_API_DID,
-    START_FILECOIN_METRICS_EPOCH_MS
+    START_FILECOIN_METRICS_EPOCH_MS,
   } = getEnv()
-  const storefrontCustomDomain = getCustomDomain(stack.stage, process.env.HOSTED_ZONES?.split(",")[0])
+  const storefrontCustomDomain = getCustomDomain(
+    stack.stage,
+    process.env.HOSTED_ZONES?.split(',')[0]
+  )
 
   // Not strictly a secret, but it makes the env vars exceed the 4kb limit...
-  const aggregatorServiceProof = new Config.Secret(stack, 'AGGREGATOR_SERVICE_PROOF')
+  const aggregatorServiceProof = new Config.Secret(
+    stack,
+    'AGGREGATOR_SERVICE_PROOF'
+  )
 
   // Setup app monitoring with Sentry
   setupSentry(app, stack)
@@ -45,38 +51,54 @@ export function FilecoinStack({ stack, app }) {
   // Get eventBus reference
   const { eventBus } = use(BusStack)
   // Get store table reference
-  const { pieceTable, privateKey, adminMetricsTable, indexingServiceProof, contentClaimsPrivateKey, storageProviderTable } = use(UploadDbStack)
+  const {
+    pieceTable,
+    privateKey,
+    adminMetricsTable,
+    indexingServiceProof,
+    contentClaimsPrivateKey,
+    storageProviderTable,
+  } = use(UploadDbStack)
   // Get UCAN store references
-  const { agentIndexTable, agentMessageBucket, agentIndexBucket, ucanStream } = use(UcanInvocationStack)
+  const { agentIndexTable, agentMessageBucket, ucanStream } =
+    use(UcanInvocationStack)
   const { roundaboutApiUrl } = use(RoundaboutStack)
 
   /**
    * 1st processor queue - filecoin submit
    * On filecoin submit queue messages, validate piece for given content and store it in store.
    */
-  const filecoinSubmitQueueName = getCdkNames('filecoin-submit-queue', stack.stage, app.name)
-  const filecoinSubmitQueueDLQ = new Queue(stack, `${filecoinSubmitQueueName}-dlq`, {
-    cdk: { queue: { retentionPeriod: Duration.days(14) } }
-   })
+  const filecoinSubmitQueueName = getCdkNames(
+    'filecoin-submit-queue',
+    stack.stage,
+    app.name
+  )
+  const filecoinSubmitQueueDLQ = new Queue(
+    stack,
+    `${filecoinSubmitQueueName}-dlq`,
+    {
+      cdk: { queue: { retentionPeriod: Duration.days(14) } },
+    }
+  )
   const filecoinSubmitQueue = new Queue(stack, filecoinSubmitQueueName, {
     cdk: {
       queue: {
         visibilityTimeout: Duration.seconds(15 * 60),
         deadLetterQueue: {
           queue: filecoinSubmitQueueDLQ.cdk.queue,
-          maxReceiveCount: 3
+          maxReceiveCount: 3,
         },
-      }
-    }
+      },
+    },
   })
   filecoinSubmitQueue.addConsumer(stack, {
     function: {
       handler: 'filecoin/functions/handle-filecoin-submit-message.main',
-      environment : {
+      environment: {
         PIECE_TABLE_NAME: pieceTable.tableName,
         STORAGE_PROVIDER_TABLE_NAME: storageProviderTable.tableName,
         DID: UPLOAD_API_DID,
-        CONTENT_STORE_HTTP_ENDPOINT: roundaboutApiUrl
+        CONTENT_STORE_HTTP_ENDPOINT: roundaboutApiUrl,
       },
       bind: [privateKey],
       permissions: [pieceTable, storageProviderTable],
@@ -85,7 +107,7 @@ export function FilecoinStack({ stack, app }) {
     },
     cdk: {
       eventSource: {
-        batchSize: 1
+        batchSize: 1,
       },
     },
   })
@@ -94,19 +116,23 @@ export function FilecoinStack({ stack, app }) {
    * 2nd processor queue - piece offer invocation
    * On piece offer queue message, offer piece for aggregation.
    */
-  const pieceOfferQueueName = getCdkNames('piece-offer-queue', stack.stage, app.name)
+  const pieceOfferQueueName = getCdkNames(
+    'piece-offer-queue',
+    stack.stage,
+    app.name
+  )
   const pieceOfferQueueDLQ = new Queue(stack, `${pieceOfferQueueName}-dlq`, {
-    cdk: { queue: { retentionPeriod: Duration.days(14) } }
-   })
+    cdk: { queue: { retentionPeriod: Duration.days(14) } },
+  })
   const pieceOfferQueue = new Queue(stack, pieceOfferQueueName, {
     cdk: {
       queue: {
         deadLetterQueue: {
           queue: pieceOfferQueueDLQ.cdk.queue,
-          maxReceiveCount: 3
+          maxReceiveCount: 3,
         },
-      }
-    }
+      },
+    },
   })
   pieceOfferQueue.addConsumer(stack, {
     function: {
@@ -118,12 +144,14 @@ export function FilecoinStack({ stack, app }) {
       },
       bind: [
         privateKey,
-        ...(process.env.FILECOIN_PROOFS_NOT_REQUIRED === 'true' ? [] : [aggregatorServiceProof]),
-      ]
+        ...(process.env.FILECOIN_PROOFS_NOT_REQUIRED === 'true'
+          ? []
+          : [aggregatorServiceProof]),
+      ],
     },
     cdk: {
       eventSource: {
-        batchSize: 1
+        batchSize: 1,
       },
     },
   })
@@ -132,39 +160,56 @@ export function FilecoinStack({ stack, app }) {
    * CRON to track deals pending resolution.
    * On cron tick event, issue `filecoin/accept` receipts for pieces that have a deal.
    */
-  const dealTrackCronName = getCdkNames('deal-track-cron', stack.stage, app.name)
+  const dealTrackCronName = getCdkNames(
+    'deal-track-cron',
+    stack.stage,
+    app.name
+  )
   new Cron(stack, dealTrackCronName, {
     schedule: 'rate(6 minutes)',
     job: {
       function: {
         handler: 'filecoin/functions/handle-cron-tick.main',
-        environment : {
+        environment: {
           DID: UPLOAD_API_DID,
           PIECE_TABLE_NAME: pieceTable.tableName,
           AGENT_INDEX_TABLE_NAME: agentIndexTable.tableName,
           AGENT_MESSAGE_BUCKET_NAME: agentMessageBucket.bucketName,
-          AGENT_INDEX_BUCKET_NAME: agentIndexBucket.bucketName,
           AGGREGATOR_DID,
         },
         timeout: '6 minutes',
         bind: [
           privateKey,
-          ...(process.env.FILECOIN_PROOFS_NOT_REQUIRED === 'true' ? [] : [aggregatorServiceProof]),
+          ...(process.env.FILECOIN_PROOFS_NOT_REQUIRED === 'true'
+            ? []
+            : [aggregatorServiceProof]),
         ],
-        permissions: [pieceTable, agentIndexTable, agentMessageBucket, agentIndexBucket],
-      }
-    }
+        permissions: [pieceTable, agentIndexTable, agentMessageBucket],
+      },
+    },
   })
 
-  const pieceTableHandleInserToClaimtDLQ = new Queue(stack, `piece-table-handle-insert-to-claim-dlq`, {
-    cdk: { queue: { retentionPeriod: Duration.days(14) } }
-  })
-  const pieceTableHandleInserToFilecoinSubmitDLQ = new Queue(stack, `piece-table-handle-insert-to-filecoin-submit-dlq`, {
-    cdk: { queue: { retentionPeriod: Duration.days(14) } }
-  })
-  const pieceTableHandleStatusUpdateDLQ = new Queue(stack, `piece-table-handle-status-update-dlq`, {
-    cdk: { queue: { retentionPeriod: Duration.days(14) } }
-  })
+  const pieceTableHandleInserToClaimtDLQ = new Queue(
+    stack,
+    `piece-table-handle-insert-to-claim-dlq`,
+    {
+      cdk: { queue: { retentionPeriod: Duration.days(14) } },
+    }
+  )
+  const pieceTableHandleInserToFilecoinSubmitDLQ = new Queue(
+    stack,
+    `piece-table-handle-insert-to-filecoin-submit-dlq`,
+    {
+      cdk: { queue: { retentionPeriod: Duration.days(14) } },
+    }
+  )
+  const pieceTableHandleStatusUpdateDLQ = new Queue(
+    stack,
+    `piece-table-handle-status-update-dlq`,
+    {
+      cdk: { queue: { retentionPeriod: Duration.days(14) } },
+    }
+  )
   // piece-cid reporting
   pieceTable.addConsumers(stack, {
     handlePieceInsertToContentClaim: {
@@ -178,11 +223,7 @@ export function FilecoinStack({ stack, app }) {
           CONTENT_CLAIMS_URL,
         },
         timeout: 3 * 60,
-        bind: [
-          privateKey,
-          indexingServiceProof,
-          contentClaimsPrivateKey
-        ]
+        bind: [privateKey, indexingServiceProof, contentClaimsPrivateKey],
       },
       deadLetterQueue: pieceTableHandleInserToClaimtDLQ.cdk.queue,
       cdk: {
@@ -195,19 +236,22 @@ export function FilecoinStack({ stack, app }) {
       },
       filters: [
         {
-          eventName: ['INSERT']
-        }
-      ]
+          eventName: ['INSERT'],
+        },
+      ],
     },
     handlePieceInsertToFilecoinSubmit: {
       function: {
-        handler: 'filecoin/functions/handle-piece-insert-to-filecoin-submit.main',
+        handler:
+          'filecoin/functions/handle-piece-insert-to-filecoin-submit.main',
         environment: {
           STOREFRONT_DID: UPLOAD_API_DID,
-          STOREFRONT_URL: storefrontCustomDomain?.domainName ? `https://${storefrontCustomDomain?.domainName}` : '',
+          STOREFRONT_URL: storefrontCustomDomain?.domainName
+            ? `https://${storefrontCustomDomain?.domainName}`
+            : '',
         },
         timeout: 3 * 60,
-        bind: [privateKey]
+        bind: [privateKey],
       },
       deadLetterQueue: pieceTableHandleInserToFilecoinSubmitDLQ.cdk.queue,
       cdk: {
@@ -220,19 +264,21 @@ export function FilecoinStack({ stack, app }) {
       },
       filters: [
         {
-          eventName: ['INSERT']
-        }
-      ]
+          eventName: ['INSERT'],
+        },
+      ],
     },
     handlePieceStatusUpdate: {
       function: {
         handler: 'filecoin/functions/handle-piece-status-update.main',
         environment: {
           STOREFRONT_DID: UPLOAD_API_DID,
-          STOREFRONT_URL: storefrontCustomDomain?.domainName ? `https://${storefrontCustomDomain?.domainName}` : '',
+          STOREFRONT_URL: storefrontCustomDomain?.domainName
+            ? `https://${storefrontCustomDomain?.domainName}`
+            : '',
         },
         timeout: 3 * 60,
-        bind: [privateKey]
+        bind: [privateKey],
       },
       deadLetterQueue: pieceTableHandleStatusUpdateDLQ.cdk.queue,
       cdk: {
@@ -248,13 +294,13 @@ export function FilecoinStack({ stack, app }) {
           dynamodb: {
             NewImage: {
               stat: {
-                N: [`${Status.ACCEPTED}`, `${Status.INVALID}`]
-              }
-            }
-          }
-        }
-      ]
-    }
+                N: [`${Status.ACCEPTED}`, `${Status.INVALID}`],
+              },
+            },
+          },
+        },
+      ],
+    },
   })
 
   // piece-cid compute
@@ -263,21 +309,27 @@ export function FilecoinStack({ stack, app }) {
     stack,
     'piece-cid-compute-handler',
     {
-      environment : {
+      environment: {
         DISABLE_PIECE_CID_COMPUTE,
         STOREFRONT_DID: UPLOAD_API_DID,
-        STOREFRONT_URL: storefrontCustomDomain?.domainName ? `https://${storefrontCustomDomain?.domainName}` : '',
+        STOREFRONT_URL: storefrontCustomDomain?.domainName
+          ? `https://${storefrontCustomDomain?.domainName}`
+          : '',
       },
       bind: [privateKey],
       permissions: [pieceTable, carparkBucket],
       timeout: '5 minutes',
       handler: 'filecoin/functions/piece-cid-compute.handler',
-    },
+    }
   )
 
-  const pieceCidComputeQueueDLQ = new Queue(stack, `piece-cid-compute-queue-dlq`, {
-    cdk: { queue: { retentionPeriod: Duration.days(14) } }
-   })
+  const pieceCidComputeQueueDLQ = new Queue(
+    stack,
+    `piece-cid-compute-queue-dlq`,
+    {
+      cdk: { queue: { retentionPeriod: Duration.days(14) } },
+    }
+  )
   const pieceCidComputeQueue = new Queue(stack, 'piece-cid-compute-queue', {
     consumer: {
       function: pieceCidComputeHandler,
@@ -285,7 +337,7 @@ export function FilecoinStack({ stack, app }) {
         eventSource: {
           batchSize: 1,
         },
-      }
+      },
     },
     cdk: {
       queue: {
@@ -293,7 +345,7 @@ export function FilecoinStack({ stack, app }) {
         visibilityTimeout: Duration.seconds(15 * 60),
         deadLetterQueue: {
           queue: pieceCidComputeQueueDLQ.cdk.queue,
-          maxReceiveCount: 3
+          maxReceiveCount: 3,
         },
       },
     },
@@ -308,10 +360,10 @@ export function FilecoinStack({ stack, app }) {
         message: awsEvents.RuleTargetInput.fromObject({
           bucketRegion: awsEvents.EventField.fromPath('$.detail.region'),
           bucketName: awsEvents.EventField.fromPath('$.detail.bucketName'),
-          key: awsEvents.EventField.fromPath('$.detail.key')
+          key: awsEvents.EventField.fromPath('$.detail.key'),
         }),
       },
-    }
+    },
   }
 
   eventBus.addRules(stack, {
@@ -320,41 +372,48 @@ export function FilecoinStack({ stack, app }) {
         source: [CARPARK_EVENT_BRIDGE_SOURCE_EVENT],
       },
       targets: {
-        targetPieceCidComputeQueue
-      }
-    }
+        targetPieceCidComputeQueue,
+      },
+    },
   })
 
   // `aggregate/offer` + `aggregate-accept` metrics
-  const metricsAggregateTotalDLQ = new Queue(stack, 'metrics-aggregate-total-dlq')
-  const metricsAggregateTotalConsumer = new Function(stack, 'metrics-aggregate-total-consumer', {
-    environment: {
-      METRICS_TABLE_NAME: adminMetricsTable.tableName,
-      AGENT_INDEX_TABLE_NAME: agentIndexTable.tableName,
-      AGENT_MESSAGE_BUCKET_NAME: agentMessageBucket.bucketName,
-      AGENT_INDEX_BUCKET_NAME: agentIndexBucket.bucketName,
-      START_FILECOIN_METRICS_EPOCH_MS
-    },
-    permissions: [adminMetricsTable, agentIndexTable, agentMessageBucket, agentIndexBucket],
-    handler: 'filecoin/functions/metrics-aggregate-offer-and-accept-total.consumer',
-    deadLetterQueue: metricsAggregateTotalDLQ.cdk.queue,
-    timeout: 3 * 60,
-  })
+  const metricsAggregateTotalDLQ = new Queue(
+    stack,
+    'metrics-aggregate-total-dlq'
+  )
+  const metricsAggregateTotalConsumer = new Function(
+    stack,
+    'metrics-aggregate-total-consumer',
+    {
+      environment: {
+        METRICS_TABLE_NAME: adminMetricsTable.tableName,
+        AGENT_INDEX_TABLE_NAME: agentIndexTable.tableName,
+        AGENT_MESSAGE_BUCKET_NAME: agentMessageBucket.bucketName,
+        START_FILECOIN_METRICS_EPOCH_MS,
+      },
+      permissions: [adminMetricsTable, agentIndexTable, agentMessageBucket],
+      handler:
+        'filecoin/functions/metrics-aggregate-offer-and-accept-total.consumer',
+      deadLetterQueue: metricsAggregateTotalDLQ.cdk.queue,
+      timeout: 3 * 60,
+    }
+  )
 
   ucanStream.addConsumers(stack, {
     metricsAggregateTotalConsumer: {
       function: metricsAggregateTotalConsumer,
       cdk: {
         eventSource: {
-          ...(getEventSourceConfig(stack))
-        }
-      }
-    }
+          ...getEventSourceConfig(stack),
+        },
+      },
+    },
   })
 
   return {
     aggregatorServiceProof,
     filecoinSubmitQueue,
-    pieceOfferQueue
+    pieceOfferQueue,
   }
 }

@@ -229,7 +229,6 @@ test(
             },
             buckets: {
               message: { name: getBucketName('workflow-store') },
-              index: { name: getBucketName('invocation-store') },
             },
           },
           stream: {

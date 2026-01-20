@@ -1,8 +1,4 @@
-import {
-  PutObjectCommand,
-  GetObjectCommand,
-  ListObjectsV2Command,
-} from '@aws-sdk/client-s3'
+import { PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3'
 import { PutItemCommand, QueryCommand } from '@aws-sdk/client-dynamodb'
 import {
   RecordNotFound,
@@ -33,7 +29,6 @@ export { API }
  * }>} DynamoDBConnection
  *
  * @typedef {object} Buckets
- * @property {{name:string}} index
  * @property {{name:string}} message
  *
  * @typedef {object} Tables
@@ -391,30 +386,15 @@ const list = async (connection, { prefix, suffix }) => {
     })
     const { Items } = await connection.dynamoDBChannel.send(dynamoCommand)
 
-    if (Items && Items.length > 0) {
-      // Reassemble index entries
-      return {
-        ok: /** @type {[string, ...string[]]} */ (
-          Items.map((item) => {
-            const identifier = item.identifier.S || ''
-            return `${prefix}/${identifier}${suffix}`
-          })
-        ),
-      }
-    }
-
-    const command = new ListObjectsV2Command({
-      Bucket: connection.buckets.index.name,
-      Prefix: prefix + '/',
-    })
-
-    const { Contents } = await connection.s3Channel.send(command)
-    const entries =
-      Contents?.map((c) => c.Key ?? '').filter((key) => key.endsWith(suffix)) ??
-      []
-
-    return entries.length > 0
-      ? { ok: /** @type {[string, ...string[]]} */ (entries) }
+    return Items && Items.length > 0
+      ? {
+          ok: /** @type {[string, ...string[]]} */ (
+            Items.map((item) => {
+              const identifier = item.identifier.S || ''
+              return `${prefix}/${identifier}${suffix}`
+            })
+          ),
+        }
       : {
           error: new RecordNotFound(
             `no pseudo symlink matching query ${prefix}/*${suffix} was found`
@@ -498,15 +478,6 @@ export const toMessagePath = ({ message }) => `${message}/${message}`
  * @param {API.Link} source.message
  * @param {API.Link} source.task
  * @param {API.Link} source.invocation
- */
-export const toInvocationPath = ({ message, task, invocation }) =>
-  `${task}/${invocation}@${message}.in`
-
-/**
- * @param {object} source
- * @param {API.Link} source.message
- * @param {API.Link} source.task
- * @param {API.Link} source.invocation
  * @returns {Record<string, import('@aws-sdk/client-dynamodb').AttributeValue>}
  */
 export const toInvocationItem = ({ message, task, invocation }) => ({
@@ -517,15 +488,6 @@ export const toInvocationItem = ({ message, task, invocation }) => ({
     S: `${invocation ? `${invocation}@${message}` : message}`,
   },
 })
-
-/**
- * @param {object} source
- * @param {API.Link} source.message
- * @param {API.Link} source.task
- * @param {API.Link} source.receipt
- */
-export const toReceiptPath = ({ message, task, receipt }) =>
-  `${task}/${receipt}@${message}.out`
 
 /**
  * @param {object} source

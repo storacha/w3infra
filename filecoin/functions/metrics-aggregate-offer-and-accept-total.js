@@ -27,7 +27,6 @@ async function handler(event) {
   const {
     metricsTableName,
     agentMessageBucketName,
-    agentIndexBucketName,
     agentIndexTableName,
     startEpochMs,
   } = getLambdaEnv()
@@ -37,11 +36,7 @@ async function handler(event) {
     metricsTableName
   )
   const workflowStore = createWorkflowStore(AWS_REGION, agentMessageBucketName)
-  const invocationStore = createInvocationStore(
-    AWS_REGION,
-    agentIndexBucketName,
-    agentIndexTableName
-  )
+  const invocationStore = createInvocationStore(AWS_REGION, agentIndexTableName)
 
   await Promise.all([
     updateAggregateOfferTotal(ucanInvocations, {
@@ -62,7 +57,6 @@ function getLambdaEnv() {
   return {
     metricsTableName: mustGetEnv('METRICS_TABLE_NAME'),
     agentMessageBucketName: mustGetEnv('AGENT_MESSAGE_BUCKET_NAME'),
-    agentIndexBucketName: mustGetEnv('AGENT_INDEX_BUCKET_NAME'),
     agentIndexTableName: mustGetEnv('AGENT_INDEX_TABLE_NAME'),
     startEpochMs: process.env.START_FILECOIN_METRICS_EPOCH_MS
       ? parseInt(process.env.START_FILECOIN_METRICS_EPOCH_MS)
