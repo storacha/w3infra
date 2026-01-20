@@ -104,7 +104,6 @@ async function createAuthorizeContext() {
     REVOCATION_TABLE_NAME = '',
     RATE_LIMIT_TABLE_NAME = '',
     AGENT_INDEX_TABLE_NAME = '',
-    AGENT_INDEX_BUCKET_NAME = '',
     AGENT_MESSAGE_BUCKET_NAME = '',
     SUBSCRIPTION_TABLE_NAME = '',
     CONSUMER_TABLE_NAME = '',
@@ -168,7 +167,6 @@ async function createAuthorizeContext() {
       region: AWS_REGION,
       buckets: {
         message: { name: AGENT_MESSAGE_BUCKET_NAME },
-        index: { name: AGENT_INDEX_BUCKET_NAME },
       },
       tables: {
         index: { name: AGENT_INDEX_TABLE_NAME },

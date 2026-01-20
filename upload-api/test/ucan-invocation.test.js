@@ -660,8 +660,10 @@ test('replace all link values as object and array', async (t) => {
  * @param {{ dynamo: any, s3: any; kinesis: any; streamName?: string }} ctx
  */
 async function getStores(ctx) {
-  const { invocationTableName, invocationBucketName, workflowBucketName } =
-    await prepareResources(ctx.dynamo, ctx.s3)
+  const { invocationTableName, workflowBucketName } = await prepareResources(
+    ctx.dynamo,
+    ctx.s3
+  )
 
   const agentStore = AgentStore.open({
     store: {
@@ -674,7 +676,6 @@ async function getStores(ctx) {
       region: 'us-west-2',
       buckets: {
         message: { name: workflowBucketName },
-        index: { name: invocationBucketName },
       },
       tables: {
         index: { name: invocationTableName },
@@ -700,12 +701,10 @@ async function prepareResources(dynamoClient, s3Client) {
     dynamoClient,
     agentIndexTableProps
   )
-  const invocationBucketName = await createBucket(s3Client)
   const workflowBucketName = await createBucket(s3Client)
 
   return {
     invocationTableName,
-    invocationBucketName,
     workflowBucketName,
   }
 }
