@@ -317,10 +317,16 @@ export async function executionContextToUcantoTestServerContext(t) {
     await createTable(dynamo, storeTableProps)
   )
 
+  const uploadShardsBucketName = await createBucket(s3)
+
   const uploadTable = useUploadTable(
     dynamo,
     await createTable(dynamo, uploadTableProps),
-    metrics
+    metrics,
+    {
+      s3Client: s3,
+      shardsBucketName: uploadShardsBucketName,
+    }
   )
 
   // To be deprecated
