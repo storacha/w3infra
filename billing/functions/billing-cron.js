@@ -2,7 +2,7 @@ import * as Sentry from '@sentry/serverless'
 import { expect } from './lib.js'
 import { createCustomerStore } from '../tables/customer.js'
 import { createCustomerBillingQueue } from '../queues/customer.js'
-import { startOfLastMonth, startOfMonth } from '../lib/util.js'
+import { startOfDay, startOfLastMonth, startOfMonth, startOfYesterday } from '../lib/util.js'
 import { enqueueCustomerBillingInstructions } from '../lib/billing-cron.js'
 import { mustGetEnv } from '../../lib/env.js'
 
@@ -33,7 +33,10 @@ export const handler = Sentry.AWSLambda.wrapHandler(
     const region = customContext?.region ?? mustGetEnv('AWS_REGION')
 
     const now = new Date()
-    let period = { from: startOfLastMonth(now), to: startOfMonth(now) }
+    let period = {                                                                                                                       
+      from: startOfYesterday(now),  // at 00:00 UTC                                                                                                     
+      to: startOfDay(now)  // at 00:00 UTC                                                                                                            
+    }                                          
 
     if ('rawQueryString' in event) {
       const { searchParams } = new URL(`http://localhost/?${event.rawQueryString}`)

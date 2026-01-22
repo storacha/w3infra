@@ -145,16 +145,13 @@ export const reportUsage = async (usage, ctx) => {
   console.log(`Space ${usage.space}: \n
     \t customer: ${usage.customer} \n
     \t stripe customer: ${customer} \n
-    \t usage (bytes/month): ${byteQuantity}
-    \t usage (GiB/month): ${gibQuantity} \n
+    \t usage (bytes/day): ${byteQuantity}
+    \t usage (GiB/day): ${gibQuantity} \n
     \t total usage (byte/ms): ${usage.usage} \n
   `)
 
   const idempotencyKey = await createIdempotencyKey(usage)
-
-  // Calculate the timestamp for the last day of the previous month at 23:59:59 UTC
-  const now = new Date()
-  const referenceDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 0, 23, 59, 59))
+  const referenceDate = new Date(usage.from.getTime()) 
 
   const meterEvent = await ctx.stripe.billing.meterEvents.create({
     event_name: 'storage_in_bytes_per_month',
