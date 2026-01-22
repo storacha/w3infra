@@ -20,14 +20,6 @@ export function hasOkReceipt(ucanInvocation) {
  * @returns {import("@ucanto/interface").Result<number, import("@storacha/capabilities/types").PlanNotFound>}
  */
 export function planLimit(customer, productInfo) {
-  // If customer has reserved capacity (forge network), use that as the hard limit
-  if (customer.reservedCapacity !== undefined) {
-    // Reserved capacity is stored in TiB, convert to bytes
-    const TiB = 1024 * 1024 * 1024 * 1024
-    return { ok: customer.reservedCapacity * TiB }
-  }
-
-  // Otherwise, use plan-based logic (hot network)
   const plan = productInfo[customer.product]
   if (!plan) {
     return {
@@ -37,5 +29,22 @@ export function planLimit(customer, productInfo) {
       },
     }
   }
+
+  // If customer is on the reserved capacity plan (forge network only), use their reserved capacity as the hard limit
+  if (customer.product === 'did:web:reserved.storacha.network') {
+    if (customer.reservedCapacity === undefined) {
+      return {
+        error: {
+          name: 'ReservedCapacityNotSet',
+          message: `customer ${customer.customer} is on reserved plan but has no reserved capacity set`,
+        },
+      }
+    }
+    // Reserved capacity is stored in TiB, convert to bytes
+    const TiB = 1024 * 1024 * 1024 * 1024
+    return { ok: customer.reservedCapacity * TiB }
+  }
+
+  // Otherwise, use plan-based logic (hot network)
   return { ok: plan.allowOverages ? 0 : plan.included }
 }
