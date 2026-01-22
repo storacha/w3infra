@@ -65,6 +65,7 @@ export function UploadApiStack({ stack, app }) {
     replicaTable,
     rateLimitTable,
     pieceTable,
+    uploadShardsBucket,
     privateKey,
     contentClaimsPrivateKey,
     indexingServiceProof,
@@ -182,6 +183,7 @@ export function UploadApiStack({ stack, app }) {
                 actions: ['ssm:GetParameters'],
                 resources: ssmParameterArns,
               }),
+              uploadShardsBucket,
             ],
             environment: {
               ADMIN_METRICS_TABLE: adminMetricsTable.tableName,
@@ -217,6 +219,7 @@ export function UploadApiStack({ stack, app }) {
               UCAN_LOGS: ucanStream.streamName,
               UPLOAD_SERVICE_URL: getServiceURL(stack, customDomain) ?? '',
               UPLOAD_TABLE: uploadTable.tableName,
+              UPLOAD_SHARDS_BUCKET: uploadShardsBucket.bucketName,
             },
             bind: [
               contentClaimsPrivateKey,

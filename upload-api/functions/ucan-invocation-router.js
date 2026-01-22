@@ -215,6 +215,7 @@ export async function ucanInvocationRouter(request) {
     storeTableName,
     storeBucketName,
     uploadTableName,
+    uploadShardsBucketName,
     allocationTableName,
     blobRegistryTableName,
     consumerTableName,
@@ -289,6 +290,11 @@ export async function ucanInvocationRouter(request) {
   })
 
   const options = { endpoint: dbEndpoint }
+  const uploadTableOptions = {
+    ...options,
+    shardsBucketName: uploadShardsBucketName,
+    shardsBucketRegion: AWS_REGION,
+  }
   const metrics = {
     space: createSpaceMetricsStore(AWS_REGION, spaceMetricsTableName, options),
     admin: createAdminMetricsStore(AWS_REGION, adminMetricsTableName, options),
@@ -652,7 +658,7 @@ export async function ucanInvocationRouter(request) {
       AWS_REGION,
       uploadTableName,
       metrics,
-      options
+      uploadTableOptions
     ),
     signer: serviceSigner,
     // TODO: we should set URL from a different env var, doing this for now to avoid that refactor - tracking in https://github.com/web3-storage/w3infra/issues/209
@@ -762,6 +768,7 @@ function getLambdaEnv() {
     storeTableName: mustGetEnv('STORE_TABLE'),
     storeBucketName: mustGetEnv('STORE_BUCKET'),
     uploadTableName: mustGetEnv('UPLOAD_TABLE'),
+    uploadShardsBucketName: mustGetEnv('UPLOAD_SHARDS_BUCKET'),
     allocationTableName: mustGetEnv('ALLOCATION_TABLE'),
     blobRegistryTableName: mustGetEnv('BLOB_REGISTRY_TABLE'),
     consumerTableName: mustGetEnv('CONSUMER_TABLE'),
