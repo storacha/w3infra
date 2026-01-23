@@ -71,7 +71,6 @@
     "typescript": "catalog:"
   },
   "dependencies": {
-    "@aws-sdk/client-ssm": "^3.970.0",
     "aws-cdk-lib": "catalog:",
     "jwt-decode": "^4.0.0",
     "sst": "catalog:"

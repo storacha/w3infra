@@ -1,7 +1,6 @@
 import * as Sentry from '@sentry/serverless'
 import { authorize } from '@storacha/upload-api/validate'
 import { Config } from 'sst/node/config'
-import { loadSSMParameters, mustGetSSMParameter, getSSMParameter } from '../../lib/ssm.js'
 import { getServiceSigner, parseServiceDids } from '../config.js'
 import { Email } from '../email.js'
 import { createDelegationsTable } from '../tables/delegations.js'
@@ -25,7 +24,6 @@ import { createRateLimitTable } from '../tables/rate-limit.js'
 import { createCustomerStore } from '../../billing/tables/customer.js'
 import { createSpaceDiffStore } from '../../billing/tables/space-diff.js'
 import { createSpaceSnapshotStore } from '../../billing/tables/space-snapshot.js'
-import { createEgressTrafficEventStore } from '../../billing/tables/egress-traffic.js'
 import { createEgressTrafficQueue } from '../../billing/queues/egress-traffic.js'
 import { useSubscriptionsStore } from '../stores/subscriptions.js'
 import { useUsageStore } from '../stores/usage.js'
@@ -40,18 +38,6 @@ Sentry.AWSLambda.init({
   dsn: process.env.SENTRY_DSN,
   tracesSampleRate: 0,
 })
-
-// Load SSM parameters at cold start to avoid 4KB Lambda env var limit
-const SSM_PARAMETERS = [
-  'POSTMARK_TOKEN',
-  'PROVIDERS',
-  'R2_ACCESS_KEY_ID',
-  'R2_DELEGATION_BUCKET',
-  'R2_ENDPOINT',
-  'R2_SECRET_ACCESS_KEY',
-  'UPLOAD_API_DID',
-]
-await loadSSMParameters(SSM_PARAMETERS)
 
 /**
  * @param {Response & { getStringBody: () => string }} response
@@ -95,7 +81,7 @@ export const preValidateEmail = Sentry.AWSLambda.wrapHandler(
   wrapLambdaHandler('pre-validate-email', validateEmailGet)
 )
 
-async function createAuthorizeContext() {
+function createAuthorizeContext() {
   const {
     ACCESS_SERVICE_URL = '',
     AWS_REGION = '',
@@ -103,30 +89,29 @@ async function createAuthorizeContext() {
     DELEGATION_TABLE_NAME = '',
     REVOCATION_TABLE_NAME = '',
     RATE_LIMIT_TABLE_NAME = '',
+    R2_ENDPOINT = '',
+    R2_ACCESS_KEY_ID = '',
+    R2_SECRET_ACCESS_KEY = '',
+    R2_DELEGATION_BUCKET_NAME = '',
     AGENT_INDEX_TABLE_NAME = '',
     AGENT_INDEX_BUCKET_NAME = '',
     AGENT_MESSAGE_BUCKET_NAME = '',
+    POSTMARK_TOKEN = '',
     SUBSCRIPTION_TABLE_NAME = '',
     CONSUMER_TABLE_NAME = '',
     CUSTOMER_TABLE_NAME = '',
+    UPLOAD_API_DID = '',
+    PROVIDERS = '',
     REFERRALS_ENDPOINT = '',
     UCAN_LOG_STREAM_NAME = '',
     SPACE_DIFF_TABLE_NAME = '',
     SPACE_SNAPSHOT_TABLE_NAME = '',
-    EGRESS_TRAFFIC_TABLE_NAME = '',
     EGRESS_TRAFFIC_QUEUE_URL = '',
     SST_STAGE = '',
     // set for testing
     DYNAMO_DB_ENDPOINT: dbEndpoint,
   } = process.env
   const { PRIVATE_KEY } = Config
-  // SSM parameters loaded at cold start (avoids 4KB env var limit)
-  const POSTMARK_TOKEN = mustGetSSMParameter('POSTMARK_TOKEN')
-  const PROVIDERS = mustGetSSMParameter('PROVIDERS')
-  const R2_ENDPOINT = mustGetSSMParameter('R2_ENDPOINT')
-  const R2_ACCESS_KEY_ID = mustGetSSMParameter('R2_ACCESS_KEY_ID')
-  const R2_SECRET_ACCESS_KEY = mustGetSSMParameter('R2_SECRET_ACCESS_KEY')
-  const R2_DELEGATION_BUCKET_NAME = mustGetSSMParameter('R2_DELEGATION_BUCKET_NAME')
 
   const delegationBucket = R2_DELEGATION_BUCKET_NAME
     ? createR2DelegationsStore(
@@ -188,10 +173,6 @@ async function createAuthorizeContext() {
     { region: AWS_REGION },
     { tableName: SPACE_SNAPSHOT_TABLE_NAME }
   )
-  const egressTrafficStore = createEgressTrafficEventStore(
-    { region: AWS_REGION },
-    { tableName: EGRESS_TRAFFIC_TABLE_NAME }
-  )
   const egressTrafficQueue = createEgressTrafficQueue(
     { region: AWS_REGION },
     { url: new URL(EGRESS_TRAFFIC_QUEUE_URL) }
@@ -200,7 +181,6 @@ async function createAuthorizeContext() {
   const usageStorage = useUsageStore({
     spaceDiffStore,
     spaceSnapshotStore,
-    egressTrafficStore,
     egressTrafficQueue,
   })
 
@@ -211,7 +191,7 @@ async function createAuthorizeContext() {
       token: POSTMARK_TOKEN,
       environment: SST_STAGE === 'prod' ? undefined : SST_STAGE,
     }),
-    signer: getServiceSigner({ did: getSSMParameter('UPLOAD_API_DID'), privateKey: PRIVATE_KEY }),
+    signer: getServiceSigner({ did: UPLOAD_API_DID, privateKey: PRIVATE_KEY }),
     delegationsStorage: createDelegationsTable(
       AWS_REGION,
       DELEGATION_TABLE_NAME,
@@ -251,7 +231,7 @@ export async function validateEmailPost(request) {
       )
     )
   }
-  const context = await createAuthorizeContext()
+  const context = createAuthorizeContext()
 
   const authorizeResult = await authorize(encodedUcan, context)
 
