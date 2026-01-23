@@ -8,14 +8,14 @@
    * After each (`blob/accept`) and `blob/remove` is accepted by the storage node we register this blob addition or removal into the blog register table. We also insert space usage deltas directly to `space-diff` from the BlobRegistry at the point where items are added or removed.
    * Each diff record contains: `provider`, `space`, `subscription`, `cause`, `delta` (bytes), `receiptAt`, `insertedAt`
 
-2. **Monthly Billing Trigger**: Every month on the 1st at midnight UTC, a cron job triggers the billing process.
+2. **Daily Billing Trigger**: Every day at 01:00 UTC, a cron job triggers the billing process.
    * Lambda lists ALL customers from the `customer` store
    * Only customers with a valid `account` (Stripe account) are processed
    * Customer billing instructions are added to the `customer-billing-queue` with:
      - `customer` (DID)
-     - `account` (Stripe account ID) 
+     - `account` (Stripe account ID)
      - `product` (billing plan)
-     - `from`/`to` dates (billing period)
+     - `from`/`to` dates (daily billing period)
 
 3. **Customer-to-Space Expansion**: A lambda consuming `customer-billing-queue` expands customers into spaces.
    * For each customer, looks up their subscriptions in `subscription` store
@@ -46,7 +46,8 @@
 
 ## Key Details
 
-- **Usage Units**: Calculated in byte-milliseconds, then converted to GiB/month for reporting
+- **Usage Units**: Calculated in byte-milliseconds (cumulative usage), reported daily to Stripe
 - **Error Handling**: Customers without Stripe accounts are skipped, failed items go to dead letter queues
-- **Billing Period**: Typically from start of previous month to start of current month
-- **Schedule**: Runs on the 1st of each month
+- **Billing Period**: Daily periods from yesterday at 00:00 UTC to today at 00:00 UTC
+- **Schedule**: Runs daily at 01:00 UTC
+- **Stripe Aggregation**: Daily meter events are accumulated by Stripe into monthly billing totals

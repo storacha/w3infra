@@ -110,7 +110,7 @@ export const storeSpaceUsage = async (instruction, { size, usage }, ctx) => {
   if (snapPut.error) return snapPut
 
   const duration = instruction.to.getTime() - instruction.from.getTime()
-  console.log(`Space consumed by ${instruction.space} is ${usage} byte/ms (~${new Big(usage.toString()).div(duration).div(GB).toFixed(2)} GiB/month)`)
+  console.log(`Total accumulated storage usage for ${instruction.space} is ${usage} byte/ms (~${new Big(usage.toString()).div(duration).div(GB).toFixed(2)} GiB)`)
   const usagePut = await ctx.usageStore.put({
     ...instruction,
     usage,
@@ -173,7 +173,7 @@ export const calculateSpaceAllocation = async (store, instruction, ctx) => {
   console.log(`Total allocation for ${instruction.space}: ${size} bytes`)
   const duration = instruction.to.getTime() - instruction.from.getTime()
   const usageGB = new Big(usage.toString()).div(duration).div(GB).toFixed(2)
-  console.log(`Approximate space consumed ${usage} byte/ms (~${usageGB} GiB/month)`)
+  console.log(`Approximate space consumed ${usage} byte/ms (~${usageGB} GiB)`)
   
   return {ok: {size, usage}}
 }
