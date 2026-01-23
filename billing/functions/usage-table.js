@@ -145,9 +145,9 @@ export const reportUsage = async (usage, ctx) => {
   console.log(`Space ${usage.space}: \n
     \t customer: ${usage.customer} \n
     \t stripe customer: ${customer} \n
-    \t usage (bytes/day): ${byteQuantity}
-    \t usage (GiB/day): ${gibQuantity} \n
-    \t total usage (byte/ms): ${usage.usage} \n
+    \t cumulative usage (bytes): ${byteQuantity}
+    \t cumulative usage (GiB): ${gibQuantity} \n
+    \t cumulative usage (byte/ms): ${usage.usage} \n
   `)
 
   const idempotencyKey = await createIdempotencyKey(usage)

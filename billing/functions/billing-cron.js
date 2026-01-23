@@ -33,9 +33,12 @@ export const handler = Sentry.AWSLambda.wrapHandler(
     const region = customContext?.region ?? mustGetEnv('AWS_REGION')
 
     const now = new Date()
-    let period = {                                                                                                                       
-      from: startOfYesterday(now),  // at 00:00 UTC                                                                                                     
-      to: startOfDay(now)  // at 00:00 UTC                                                                                                            
+    // Daily billing period: from yesterday at 00:00 UTC to today at 00:00 UTC
+    // Each day's usage is cumulative from the start of the month; by month-end,
+    // the sum of all daily usage records equals the total monthly usage for Stripe billing.
+    let period = {
+      from: startOfYesterday(now),  // at 00:00 UTC
+      to: startOfDay(now)  // at 00:00 UTC
     }                                          
 
     if ('rawQueryString' in event) {
