@@ -67,6 +67,7 @@ import {
   spaceDiffTableProps,
   createSpaceDiffStore,
 } from '../../../billing/tables/space-diff.js'
+import { spaceDiffV2TableProps } from '../../../billing/tables/space-diff-v2.js'
 import {
   spaceSnapshotTableProps,
   createSpaceSnapshotStore,
@@ -292,6 +293,7 @@ export async function executionContextToUcantoTestServerContext(t) {
   }
   const consumerTableName = await createTable(dynamo, consumerTableProps)
   const spaceDiffTableName = await createTable(dynamo, spaceDiffTableProps)
+  const spaceDiffV2TableName = await createTable(dynamo, spaceDiffV2TableProps)
   const spaceSnapshotTableName = await createTable(
     dynamo,
     spaceSnapshotTableProps
@@ -300,6 +302,7 @@ export async function executionContextToUcantoTestServerContext(t) {
     dynamo,
     await createTable(dynamo, blobRegistryTableProps),
     spaceDiffTableName,
+    spaceDiffV2TableName,
     consumerTableName,
     metrics
   )
