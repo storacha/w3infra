@@ -126,7 +126,7 @@ async function createAuthorizeContext() {
   const R2_ENDPOINT = mustGetSSMParameter('R2_ENDPOINT')
   const R2_ACCESS_KEY_ID = mustGetSSMParameter('R2_ACCESS_KEY_ID')
   const R2_SECRET_ACCESS_KEY = mustGetSSMParameter('R2_SECRET_ACCESS_KEY')
-  const R2_DELEGATION_BUCKET_NAME = mustGetSSMParameter('R2_DELEGATION_BUCKET_NAME')
+  const R2_DELEGATION_BUCKET_NAME = mustGetSSMParameter('R2_DELEGATION_BUCKET')
 
   const delegationBucket = R2_DELEGATION_BUCKET_NAME
     ? createR2DelegationsStore(
