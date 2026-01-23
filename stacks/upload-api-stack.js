@@ -80,7 +80,7 @@ export function UploadApiStack({ stack, app }) {
   // SSM parameter ARNs for runtime loading (avoids Lambda env var size limits)
   // The Lambda functions will load these from SSM at cold start
   const ssmParameterArns = [
-    `arn:aws:ssm:*:*:parameter/sst/${app.name}/${app.stage}/Parameter/*`,
+    `arn:aws:ssm:${stack.region}:${stack.account}:parameter/sst/${app.name}/${app.stage}/Parameter/*`,
   ]
   const { agentIndexTable, agentIndexBucket, agentMessageBucket, ucanStream } =
     use(UcanInvocationStack)
