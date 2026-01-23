@@ -46,7 +46,7 @@ const SSM_PARAMETERS = [
   'POSTMARK_TOKEN',
   'PROVIDERS',
   'R2_ACCESS_KEY_ID',
-  'R2_DELEGATION_BUCKET',
+  'R2_DELEGATION_BUCKET_NAME',
   'R2_ENDPOINT',
   'R2_SECRET_ACCESS_KEY',
   'UPLOAD_API_DID',
@@ -126,7 +126,7 @@ async function createAuthorizeContext() {
   const R2_ENDPOINT = mustGetSSMParameter('R2_ENDPOINT')
   const R2_ACCESS_KEY_ID = mustGetSSMParameter('R2_ACCESS_KEY_ID')
   const R2_SECRET_ACCESS_KEY = mustGetSSMParameter('R2_SECRET_ACCESS_KEY')
-  const R2_DELEGATION_BUCKET_NAME = mustGetSSMParameter('R2_DELEGATION_BUCKET')
+  const R2_DELEGATION_BUCKET_NAME = mustGetSSMParameter('R2_DELEGATION_BUCKET_NAME')
 
   const delegationBucket = R2_DELEGATION_BUCKET_NAME
     ? createR2DelegationsStore(

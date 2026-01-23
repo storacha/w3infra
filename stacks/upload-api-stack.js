@@ -197,6 +197,7 @@ export function UploadApiStack({ stack, app }) {
               CUSTOMER_TABLE: customerTable.tableName,
               DELEGATION_BUCKET: delegationBucket.bucketName,
               DELEGATION_TABLE: delegationTable.tableName,
+              DID: process.env.UPLOAD_API_DID ?? '',
               DISABLE_IPNI_PUBLISHING,
               ENABLE_CUSTOMER_TRIAL_PLAN:
                 process.env.ENABLE_CUSTOMER_TRIAL_PLAN ?? 'false',

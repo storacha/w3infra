@@ -121,12 +121,12 @@ export function UploadDbStack({ stack, app }) {
     })
   }
   if (process.env.R2_CARPARK_BUCKET_NAME) {
-    new Config.Parameter(stack, 'R2_CARPARK_BUCKET', {
+    new Config.Parameter(stack, 'R2_CARPARK_BUCKET_NAME', {
       value: process.env.R2_CARPARK_BUCKET_NAME,
     })
   }
   if (process.env.R2_DELEGATION_BUCKET_NAME) {
-    new Config.Parameter(stack, 'R2_DELEGATION_BUCKET', {
+    new Config.Parameter(stack, 'R2_DELEGATION_BUCKET_NAME', {
       value: process.env.R2_DELEGATION_BUCKET_NAME,
     })
   }
@@ -148,11 +148,6 @@ export function UploadDbStack({ stack, app }) {
   if (process.env.REQUIRE_PAYMENT_PLAN) {
     new Config.Parameter(stack, 'REQUIRE_PAYMENT_PLAN', {
       value: process.env.REQUIRE_PAYMENT_PLAN,
-    })
-  }
-  if (process.env.STRIPE_DEFAULT_SUCCESS_URL) {
-    new Config.Parameter(stack, 'STRIPE_SUCCESS_URL', {
-      value: process.env.STRIPE_DEFAULT_SUCCESS_URL,
     })
   }
   if (process.env.UPLOAD_API_ALIAS) {

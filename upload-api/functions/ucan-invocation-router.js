@@ -109,8 +109,8 @@ const SSM_PARAMETERS = [
   'PRINCIPAL_MAPPING',
   'PROVIDERS',
   'R2_ACCESS_KEY_ID',
-  'R2_CARPARK_BUCKET',
-  'R2_DELEGATION_BUCKET',
+  'R2_CARPARK_BUCKET_NAME',
+  'R2_DELEGATION_BUCKET_NAME',
   'R2_ENDPOINT',
   'R2_SECRET_ACCESS_KEY',
   'REQUIRE_PAYMENT_PLAN',
@@ -130,7 +130,7 @@ export { API }
  */
 
 const AWS_REGION = process.env.AWS_REGION || 'us-west-2'
-const R2_REGION = process.env.R2_REGION || 'auto'
+const R2_REGION = getSSMParameter('R2_REGION') || 'auto'
 
 /**
  * We define a ucanto codec that will switch encoder / decoder based on the
@@ -793,7 +793,7 @@ function getLambdaEnv() {
     r2DelegationBucketEndpoint: mustGetSSMParameter('R2_ENDPOINT'),
     r2DelegationBucketAccessKeyId: mustGetSSMParameter('R2_ACCESS_KEY_ID'),
     r2DelegationBucketSecretAccessKey: mustGetSSMParameter('R2_SECRET_ACCESS_KEY'),
-    r2DelegationBucketName: mustGetSSMParameter('R2_DELEGATION_BUCKET'),
+    r2DelegationBucketName: mustGetSSMParameter('R2_DELEGATION_BUCKET_NAME'),
     agentIndexTableName: mustGetEnv('AGENT_INDEX_TABLE'),
     agentIndexBucketName: mustGetEnv('AGENT_INDEX_BUCKET'),
     agentMessageBucketName: mustGetEnv('AGENT_MESSAGE_BUCKET'),
@@ -807,7 +807,7 @@ function getLambdaEnv() {
     dealTrackerDid: mustGetSSMParameter('DEAL_TRACKER_DID'),
     dealTrackerUrl: mustGetSSMParameter('DEAL_TRACKER_URL'),
     // carpark bucket - CAR file bytes may be found here with keys like {cid}/{cid}.car
-    carparkBucketName: mustGetSSMParameter('R2_CARPARK_BUCKET'),
+    carparkBucketName: mustGetSSMParameter('R2_CARPARK_BUCKET_NAME'),
     carparkBucketEndpoint: mustGetSSMParameter('R2_ENDPOINT'),
     carparkBucketAccessKeyId: mustGetSSMParameter('R2_ACCESS_KEY_ID'),
     carparkBucketSecretAccessKey: mustGetSSMParameter('R2_SECRET_ACCESS_KEY'),
