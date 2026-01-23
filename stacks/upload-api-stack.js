@@ -1,5 +1,4 @@
 import { Api, Config, Function, Queue, use } from 'sst/constructs'
-import * as iam from 'aws-cdk-lib/aws-iam'
 
 import {
   StartingPosition,
@@ -40,6 +39,10 @@ export function UploadApiStack({ stack, app }) {
 
   const {
     AGGREGATOR_DID,
+    INDEXING_SERVICE_DID,
+    INDEXING_SERVICE_URL,
+    CONTENT_CLAIMS_DID,
+    CONTENT_CLAIMS_URL,
     DISABLE_IPNI_PUBLISHING,
   } = getEnv()
 
@@ -76,12 +79,6 @@ export function UploadApiStack({ stack, app }) {
     dmailApiSecret,
     dmailJwtSecret,
   } = use(UploadDbStack)
-
-  // SSM parameter ARNs for runtime loading (avoids Lambda env var size limits)
-  // The Lambda functions will load these from SSM at cold start
-  const ssmParameterArns = [
-    `arn:aws:ssm:*:*:parameter/sst/${app.name}/${app.stage}/Parameter/*`,
-  ]
   const { agentIndexTable, agentIndexBucket, agentMessageBucket, ucanStream } =
     use(UcanInvocationStack)
   const {
@@ -178,11 +175,6 @@ export function UploadApiStack({ stack, app }) {
               subscriptionTable,
               ucanStream,
               uploadTable,
-              // SSM permissions for loading config at runtime (avoids 4KB env var limit)
-              new iam.PolicyStatement({
-                actions: ['ssm:GetParameters'],
-                resources: ssmParameterArns,
-              }),
               uploadShardsBucket,
             ],
             environment: {
@@ -194,20 +186,38 @@ export function UploadApiStack({ stack, app }) {
               ALLOCATION_TABLE: allocationTable.tableName,
               BLOB_REGISTRY_TABLE: blobRegistryTable.tableName,
               CONSUMER_TABLE: consumerTable.tableName,
+              CONTENT_CLAIMS_DID,
+              CONTENT_CLAIMS_URL,
               CUSTOMER_TABLE: customerTable.tableName,
+              DEAL_TRACKER_DID: process.env.DEAL_TRACKER_DID ?? '',
+              DEAL_TRACKER_URL: process.env.DEAL_TRACKER_URL ?? '',
               DELEGATION_BUCKET: delegationBucket.bucketName,
               DELEGATION_TABLE: delegationTable.tableName,
+              DMAIL_API_URL: process.env.DMAIL_API_URL ?? '',
+              DID: process.env.UPLOAD_API_DID ?? '',
               DISABLE_IPNI_PUBLISHING,
               ENABLE_CUSTOMER_TRIAL_PLAN:
                 process.env.ENABLE_CUSTOMER_TRIAL_PLAN ?? 'false',
               EGRESS_TRAFFIC_QUEUE: egressTrafficQueue.queueUrl,
-              EGRESS_TRAFFIC_TABLE: egressTrafficTable.tableName,
               FILECOIN_SUBMIT_QUEUE: filecoinSubmitQueue.queueUrl,
+              INDEXING_SERVICE_DID,
+              INDEXING_SERVICE_URL,
               ...(ipniConfig ? ipniConfig.environment : {}),
+              MAX_REPLICAS: process.env.MAX_REPLICAS ?? '',
               PIECE_OFFER_QUEUE: pieceOfferQueue.queueUrl,
               PIECE_TABLE: pieceTable.tableName,
+              POSTMARK_TOKEN: process.env.POSTMARK_TOKEN ?? '',
+              PRINCIPAL_MAPPING: process.env.PRINCIPAL_MAPPING ?? '',
+              PROVIDERS: process.env.PROVIDERS ?? '',
+              R2_ACCESS_KEY_ID: process.env.R2_ACCESS_KEY_ID ?? '',
+              R2_CARPARK_BUCKET: process.env.R2_CARPARK_BUCKET_NAME ?? '',
+              R2_DELEGATION_BUCKET: process.env.R2_DELEGATION_BUCKET_NAME ?? '',
+              R2_ENDPOINT: process.env.R2_ENDPOINT ?? '',
+              R2_REGION: process.env.R2_REGION ?? '',
+              R2_SECRET_ACCESS_KEY: process.env.R2_SECRET_ACCESS_KEY ?? '',
               RATE_LIMIT_TABLE: rateLimitTable.tableName,
               REPLICA_TABLE: replicaTable.tableName,
+              REQUIRE_PAYMENT_PLAN: process.env.REQUIRE_PAYMENT_PLAN ?? '',
               REVOCATION_TABLE: revocationTable.tableName,
               SPACE_DIFF_TABLE: spaceDiffTable.tableName,
               SPACE_METRICS_TABLE: spaceMetricsTable.tableName,
@@ -215,8 +225,11 @@ export function UploadApiStack({ stack, app }) {
               STORAGE_PROVIDER_TABLE: storageProviderTable.tableName,
               STORE_BUCKET: carparkBucket.bucketName,
               STORE_TABLE: storeTable.tableName,
+              STRIPE_SUCCESS_URL: process.env.STRIPE_DEFAULT_SUCCESS_URL ?? '',
               SUBSCRIPTION_TABLE: subscriptionTable.tableName,
               UCAN_LOGS: ucanStream.streamName,
+              UPLOAD_API_ALIAS: process.env.UPLOAD_API_ALIAS ?? '',
+              UPLOAD_API_DID: process.env.UPLOAD_API_DID ?? '',
               UPLOAD_SERVICE_URL: getServiceURL(stack, customDomain) ?? '',
               UPLOAD_TABLE: uploadTable.tableName,
               UPLOAD_SHARDS_BUCKET: uploadShardsBucket.bucketName,
@@ -294,11 +307,6 @@ export function UploadApiStack({ stack, app }) {
               spaceSnapshotTable,
               subscriptionTable,
               ucanStream,
-              // SSM permissions for loading config at runtime (avoids 4KB env var limit)
-              new iam.PolicyStatement({
-                actions: ['ssm:GetParameters'],
-                resources: ssmParameterArns,
-              }),
             ],
             environment: {
               ACCESS_SERVICE_URL: getServiceURL(stack, customDomain) ?? '',
@@ -311,7 +319,15 @@ export function UploadApiStack({ stack, app }) {
               DELEGATION_BUCKET_NAME: delegationBucket.bucketName,
               EGRESS_TRAFFIC_QUEUE_URL: egressTrafficQueue.queueUrl,
               HOSTED_ZONE: hostedZone ?? '',
+              POSTMARK_TOKEN: process.env.POSTMARK_TOKEN ?? '',
+              PROVIDERS: process.env.PROVIDERS ?? '',
               RATE_LIMIT_TABLE_NAME: rateLimitTable.tableName,
+              R2_ENDPOINT: process.env.R2_ENDPOINT ?? '',
+              R2_ACCESS_KEY_ID: process.env.R2_ACCESS_KEY_ID ?? '',
+              R2_SECRET_ACCESS_KEY: process.env.R2_SECRET_ACCESS_KEY ?? '',
+              R2_REGION: process.env.R2_REGION ?? '',
+              R2_DELEGATION_BUCKET_NAME:
+                process.env.R2_DELEGATION_BUCKET_NAME ?? '',
               REFERRALS_ENDPOINT: process.env.REFERRALS_ENDPOINT ?? '',
               REVOCATION_TABLE_NAME: revocationTable.tableName,
               SPACE_DIFF_TABLE_NAME: spaceDiffTable.tableName,
@@ -319,7 +335,7 @@ export function UploadApiStack({ stack, app }) {
               SPACE_SNAPSHOT_TABLE_NAME: spaceSnapshotTable.tableName,
               SUBSCRIPTION_TABLE_NAME: subscriptionTable.tableName,
               UCAN_LOG_STREAM_NAME: ucanStream.streamName,
-              EGRESS_TRAFFIC_TABLE_NAME: egressTrafficTable.tableName,
+              UPLOAD_API_DID: process.env.UPLOAD_API_DID ?? '',
             },
             bind: [privateKey],
           },
