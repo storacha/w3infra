@@ -269,6 +269,13 @@ export function UploadApiStack({ stack, app }) {
         'GET /validate-email': {
           function: {
             handler: 'upload-api/functions/validate-email.preValidateEmail',
+            permissions: [
+              // SSM permissions for loading config at runtime (avoids 4KB env var limit)
+              new iam.PolicyStatement({
+                actions: ['ssm:GetParameters'],
+                resources: ssmParameterArns,
+              }),
+            ],
             environment: {
               HOSTED_ZONE: hostedZone ?? '',
             },
