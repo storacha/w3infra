@@ -1,5 +1,6 @@
 import { Config } from 'sst/node/config'
 import { trace } from '@opentelemetry/api'
+import { loadSSMParameters, mustGetSSMParameter, getSSMParameter } from '../../lib/ssm.js'
 import { API } from '@ucanto/core'
 import * as Delegation from '@ucanto/core/delegation'
 import { CAR, Legacy, Codec } from '@ucanto/transport'
@@ -84,12 +85,40 @@ import {
   PLANS_TO_LINE_ITEMS_MAPPING,
 } from '../constants.js'
 import { instrumentServiceMethods } from '../lib/otel/ucanto.js'
+import { createEgressTrafficEventStore } from '../../billing/tables/egress-traffic.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
   dsn: process.env.SENTRY_DSN,
   tracesSampleRate: 1,
 })
+
+// Load SSM parameters at cold start to avoid 4KB Lambda env var limit
+// These parameters are defined in upload-db-stack.js as Config.Parameter
+const SSM_PARAMETERS = [
+  'AGGREGATOR_DID',
+  'CONTENT_CLAIMS_DID',
+  'CONTENT_CLAIMS_URL',
+  'DEAL_TRACKER_DID',
+  'DEAL_TRACKER_URL',
+  'DMAIL_API_URL',
+  'INDEXING_SERVICE_DID',
+  'INDEXING_SERVICE_URL',
+  'MAX_REPLICAS',
+  'POSTMARK_TOKEN',
+  'PRINCIPAL_MAPPING',
+  'PROVIDERS',
+  'R2_ACCESS_KEY_ID',
+  'R2_CARPARK_BUCKET_NAME',
+  'R2_DELEGATION_BUCKET_NAME',
+  'R2_ENDPOINT',
+  'R2_SECRET_ACCESS_KEY',
+  'REQUIRE_PAYMENT_PLAN',
+  'UPLOAD_API_ALIAS',
+  'UPLOAD_API_DID',
+]
+
+await loadSSMParameters(SSM_PARAMETERS)
 
 export { API }
 
@@ -101,7 +130,7 @@ export { API }
  */
 
 const AWS_REGION = process.env.AWS_REGION || 'us-west-2'
-const R2_REGION = process.env.R2_REGION || 'auto'
+const R2_REGION = getSSMParameter('R2_REGION') || 'auto'
 
 /**
  * We define a ucanto codec that will switch encoder / decoder based on the
@@ -194,6 +223,7 @@ export async function ucanInvocationRouter(request) {
     subscriptionTableName,
     delegationTableName,
     delegationBucketName,
+    egressTrafficTableName,
     revocationTableName,
     adminMetricsTableName,
     spaceMetricsTableName,
@@ -240,7 +270,11 @@ export async function ucanInvocationRouter(request) {
     }
   }
 
-  const { UPLOAD_API_DID, UPLOAD_API_ALIAS, MAX_REPLICAS } = process.env
+  // SSM parameters loaded at cold start (avoids 4KB env var limit)
+  // These are optional - getSSMParameter returns '' if not set
+  const UPLOAD_API_DID = getSSMParameter('UPLOAD_API_DID')
+  const UPLOAD_API_ALIAS = getSSMParameter('UPLOAD_API_ALIAS')
+  const MAX_REPLICAS = getSSMParameter('MAX_REPLICAS')
   const {
     PRIVATE_KEY,
     STRIPE_SECRET_KEY,
@@ -371,11 +405,17 @@ export async function ucanInvocationRouter(request) {
     { region: AWS_REGION },
     { url: new URL(egressTrafficQueueUrl) }
   )
+  const egressTrafficStore = createEgressTrafficEventStore(
+    { region: AWS_REGION },
+    { tableName: egressTrafficTableName }
+
+  )
 
   const usageStorage = useUsageStore({
     spaceDiffStore,
     spaceSnapshotStore,
     egressTrafficQueue,
+    egressTrafficStore
   })
 
   const provisionsStorage = useProvisionStore(
@@ -450,8 +490,8 @@ export async function ucanInvocationRouter(request) {
     )
   }
 
-  const claimsServicePrincipal = DID.parse(mustGetEnv('CONTENT_CLAIMS_DID'))
-  const claimsServiceURL = new URL(mustGetEnv('CONTENT_CLAIMS_URL'))
+  const claimsServicePrincipal = DID.parse(mustGetSSMParameter('CONTENT_CLAIMS_DID'))
+  const claimsServiceURL = new URL(mustGetSSMParameter('CONTENT_CLAIMS_URL'))
 
   let claimsIssuer = getServiceSigner({
     privateKey: CONTENT_CLAIMS_PRIVATE_KEY,
@@ -480,8 +520,8 @@ export async function ucanInvocationRouter(request) {
     }),
   }
 
-  const indexingServicePrincipal = DID.parse(mustGetEnv('INDEXING_SERVICE_DID'))
-  const indexingServiceURL = new URL(mustGetEnv('INDEXING_SERVICE_URL'))
+  const indexingServicePrincipal = DID.parse(mustGetSSMParameter('INDEXING_SERVICE_DID'))
+  const indexingServiceURL = new URL(mustGetSSMParameter('INDEXING_SERVICE_URL'))
 
   let indexingServiceProof
   try {
@@ -528,7 +568,7 @@ export async function ucanInvocationRouter(request) {
       apiSecret: DMAIL_API_SECRET,
       jwtSecret: DMAIL_JWT_SECRET || 'unused', // if undefined, we set it to a dummy value to bypass JWT validation
       apiUrl:
-        process.env.DMAIL_API_URL ||
+        getSSMParameter('DMAIL_API_URL') ||
         'https://api.dmail.ai/open/api/storacha/getUserStatus',
     })
     ssoProviders.push(dmailSSOService)
@@ -736,6 +776,7 @@ function getLambdaEnv() {
     subscriptionTableName: mustGetEnv('SUBSCRIPTION_TABLE'),
     delegationBucketName: mustGetEnv('DELEGATION_BUCKET'),
     delegationTableName: mustGetEnv('DELEGATION_TABLE'),
+    egressTrafficTableName: mustGetEnv('EGRESS_TRAFFIC_TABLE'),
     revocationTableName: mustGetEnv('REVOCATION_TABLE'),
     spaceMetricsTableName: mustGetEnv('SPACE_METRICS_TABLE'),
     adminMetricsTableName: mustGetEnv('ADMIN_METRICS_TABLE'),
@@ -748,27 +789,28 @@ function getLambdaEnv() {
     pieceOfferQueueUrl: mustGetEnv('PIECE_OFFER_QUEUE'),
     filecoinSubmitQueueUrl: mustGetEnv('FILECOIN_SUBMIT_QUEUE'),
     egressTrafficQueueUrl: mustGetEnv('EGRESS_TRAFFIC_QUEUE'),
-    r2DelegationBucketEndpoint: process.env.R2_ENDPOINT,
-    r2DelegationBucketAccessKeyId: process.env.R2_ACCESS_KEY_ID,
-    r2DelegationBucketSecretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
-    r2DelegationBucketName: process.env.R2_DELEGATION_BUCKET,
+    // SSM parameters loaded at cold start (avoids 4KB env var limit)
+    r2DelegationBucketEndpoint: mustGetSSMParameter('R2_ENDPOINT'),
+    r2DelegationBucketAccessKeyId: mustGetSSMParameter('R2_ACCESS_KEY_ID'),
+    r2DelegationBucketSecretAccessKey: mustGetSSMParameter('R2_SECRET_ACCESS_KEY'),
+    r2DelegationBucketName: mustGetSSMParameter('R2_DELEGATION_BUCKET_NAME'),
     agentIndexTableName: mustGetEnv('AGENT_INDEX_TABLE'),
     agentIndexBucketName: mustGetEnv('AGENT_INDEX_BUCKET'),
     agentMessageBucketName: mustGetEnv('AGENT_MESSAGE_BUCKET'),
     streamName: mustGetEnv('UCAN_LOGS'),
-    postmarkToken: mustGetEnv('POSTMARK_TOKEN'),
-    providers: mustGetEnv('PROVIDERS'),
+    postmarkToken: mustGetSSMParameter('POSTMARK_TOKEN'),
+    providers: mustGetSSMParameter('PROVIDERS'),
     accessServiceURL: mustGetEnv('UPLOAD_SERVICE_URL'),
     uploadServiceURL: mustGetEnv('UPLOAD_SERVICE_URL'),
-    aggregatorDid: mustGetEnv('AGGREGATOR_DID'),
-    requirePaymentPlan: process.env.REQUIRE_PAYMENT_PLAN === 'true',
-    dealTrackerDid: mustGetEnv('DEAL_TRACKER_DID'),
-    dealTrackerUrl: mustGetEnv('DEAL_TRACKER_URL'),
+    aggregatorDid: mustGetSSMParameter('AGGREGATOR_DID'),
+    requirePaymentPlan: getSSMParameter('REQUIRE_PAYMENT_PLAN') === 'true',
+    dealTrackerDid: mustGetSSMParameter('DEAL_TRACKER_DID'),
+    dealTrackerUrl: mustGetSSMParameter('DEAL_TRACKER_URL'),
     // carpark bucket - CAR file bytes may be found here with keys like {cid}/{cid}.car
-    carparkBucketName: mustGetEnv('R2_CARPARK_BUCKET'),
-    carparkBucketEndpoint: mustGetEnv('R2_ENDPOINT'),
-    carparkBucketAccessKeyId: mustGetEnv('R2_ACCESS_KEY_ID'),
-    carparkBucketSecretAccessKey: mustGetEnv('R2_SECRET_ACCESS_KEY'),
+    carparkBucketName: mustGetSSMParameter('R2_CARPARK_BUCKET_NAME'),
+    carparkBucketEndpoint: mustGetSSMParameter('R2_ENDPOINT'),
+    carparkBucketAccessKeyId: mustGetSSMParameter('R2_ACCESS_KEY_ID'),
+    carparkBucketSecretAccessKey: mustGetSSMParameter('R2_SECRET_ACCESS_KEY'),
     // IPNI service
     ipniConfig:
       process.env.DISABLE_IPNI_PUBLISHING === 'true'
@@ -788,7 +830,7 @@ function getLambdaEnv() {
       /** @type {Record<`did:web:${string}`, `did:key:${string}`>} */
       ({
         ...knownWebDIDs,
-        ...JSON.parse(process.env.PRINCIPAL_MAPPING || '{}'),
+        ...JSON.parse(getSSMParameter('PRINCIPAL_MAPPING') || '{}'),
       }),
     // default to staging values for line items since that's the default Stripe sandbox
     plansToLineItemsMapping:
