@@ -1,7 +1,7 @@
 import * as Sentry from '@sentry/serverless'
 import { authorize } from '@storacha/upload-api/validate'
 import { Config } from 'sst/node/config'
-import { loadSSMParameters, mustGetSSMParameter, getSSMParameter } from '../../lib/ssm.js'
+import { loadSSMParameters, getSSMParameter } from '../../lib/ssm.js'
 import { getServiceSigner, parseServiceDids } from '../config.js'
 import { Email } from '../email.js'
 import { createDelegationsTable } from '../tables/delegations.js'
@@ -121,12 +121,12 @@ async function createAuthorizeContext() {
   } = process.env
   const { PRIVATE_KEY } = Config
   // SSM parameters loaded at cold start (avoids 4KB env var limit)
-  const POSTMARK_TOKEN = mustGetSSMParameter('POSTMARK_TOKEN')
-  const PROVIDERS = mustGetSSMParameter('PROVIDERS')
-  const R2_ENDPOINT = mustGetSSMParameter('R2_ENDPOINT')
-  const R2_ACCESS_KEY_ID = mustGetSSMParameter('R2_ACCESS_KEY_ID')
-  const R2_SECRET_ACCESS_KEY = mustGetSSMParameter('R2_SECRET_ACCESS_KEY')
-  const R2_DELEGATION_BUCKET_NAME = mustGetSSMParameter('R2_DELEGATION_BUCKET_NAME')
+  const POSTMARK_TOKEN = getSSMParameter('POSTMARK_TOKEN')
+  const PROVIDERS = getSSMParameter('PROVIDERS')
+  const R2_ENDPOINT = getSSMParameter('R2_ENDPOINT')
+  const R2_ACCESS_KEY_ID = getSSMParameter('R2_ACCESS_KEY_ID')
+  const R2_SECRET_ACCESS_KEY = getSSMParameter('R2_SECRET_ACCESS_KEY')
+  const R2_DELEGATION_BUCKET_NAME = getSSMParameter('R2_DELEGATION_BUCKET_NAME')
 
   const delegationBucket = R2_DELEGATION_BUCKET_NAME
     ? createR2DelegationsStore(
