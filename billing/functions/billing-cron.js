@@ -2,7 +2,7 @@ import * as Sentry from '@sentry/serverless'
 import { expect } from './lib.js'
 import { createCustomerStore } from '../tables/customer.js'
 import { createCustomerBillingQueue } from '../queues/customer.js'
-import { startOfDay, startOfLastMonth, startOfMonth, startOfYesterday } from '../lib/util.js'
+import { startOfDay, startOfYesterday } from '../lib/util.js'
 import { enqueueCustomerBillingInstructions } from '../lib/billing-cron.js'
 import { mustGetEnv } from '../../lib/env.js'
 
