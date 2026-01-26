@@ -1,5 +1,5 @@
 import { calculatePeriodUsage, storeSpaceUsage } from '../../lib/space-billing-queue.js'
-import { startOfMonth, startOfLastMonth, } from '../../lib/util.js'
+import { startOfYesterday, startOfDay } from '../../lib/util.js'
 import { randomConsumer } from '../helpers/consumer.js'
 import { randomCustomer } from '../helpers/customer.js'
 import { randomLink } from '../helpers/dag.js'
@@ -10,8 +10,8 @@ export const test = {
     const customer = randomCustomer()
     const consumer = await randomConsumer()
     const now = new Date()
-    const from = startOfLastMonth(now)
-    const to = startOfMonth(now)
+    const from = startOfYesterday(now)
+    const to = startOfDay(now)
     const delta = 1024 * 1024 * 1024 // 1GiB
 
     await ctx.spaceDiffStore.batchPut([{
@@ -63,8 +63,8 @@ export const test = {
     const customer = randomCustomer()
     const consumer = await randomConsumer()
     const now = new Date()
-    const from = startOfLastMonth(now)
-    const to = startOfMonth(now)
+    const from = startOfYesterday(now)
+    const to = startOfDay(now)
     const delta = 1024 * 1024 * 1024 // 1GiB
 
     await ctx.spaceSnapshotStore.put({
@@ -93,7 +93,7 @@ export const test = {
         subscription: consumer.subscription,
         cause: randomLink(),
         delta: -delta,
-        // removed exactly half way through the month
+        // removed exactly half way through the period
         receiptAt: new Date(from.getTime() + ((to.getTime() - from.getTime()) / 2)),
         insertedAt: new Date()
       }
@@ -139,8 +139,8 @@ export const test = {
     const consumer = await randomConsumer()
     const size = BigInt(1024 * 1024 * 1024 * 1024) // 1TiB
     const now = new Date()
-    const from = startOfLastMonth(now)
-    const to = startOfMonth(now)
+    const from = startOfYesterday(now)
+    const to = startOfDay(now)
     const delta = 1024 * 1024 * 1024 // 1GiB
 
     await ctx.spaceSnapshotStore.put({
