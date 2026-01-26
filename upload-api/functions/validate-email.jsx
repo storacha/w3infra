@@ -1,7 +1,7 @@
 import * as Sentry from '@sentry/serverless'
 import { authorize } from '@storacha/upload-api/validate'
 import { Config } from 'sst/node/config'
-import { loadSSMParameters, mustGetSSMParameter, getSSMParameter } from '../../lib/ssm.js'
+import { loadSSMParameters, getSSMParameter } from '../../lib/ssm.js'
 import { getServiceSigner, parseServiceDids } from '../config.js'
 import { Email } from '../email.js'
 import { createDelegationsTable } from '../tables/delegations.js'
