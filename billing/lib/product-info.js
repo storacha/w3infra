@@ -76,6 +76,12 @@ export const productInfo = {
     included: 2 * TB,
     allowOverages: true,
   },
+  'did:web:reserved.storacha.network': {
+    cost: 0,
+    overage: 0 / GB,
+    included: 0,
+    allowOverages: false,
+  },
   'did:web:free.storacha.network': {
     cost: 0,
     overage: 0 / GB,
