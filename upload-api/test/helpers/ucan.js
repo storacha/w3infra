@@ -403,29 +403,31 @@ export async function executionContextToUcantoTestServerContext(t) {
     egressTrafficQueue,
   })
 
+  const testProductInfo = {
+    'did:web:test.up.storacha.network': {
+      cost: 0,
+      overage: 0,
+      included: 1000,
+      allowOverages: true,
+    },
+    'did:web:testlimit.up.storacha.network': {
+      cost: 0,
+      overage: 0,
+      included: 1000,
+      allowOverages: false,
+    },
+  }
+
   const provisionsStorage = useProvisionStore(
     subscriptionTable,
     consumerTable,
     customersStore,
     [id.did(), 'did:web:testlimit.up.storacha.network'],
-    {
-      'did:web:test.up.storacha.network': {
-        cost: 0,
-        overage: 0,
-        included: 1000,
-        allowOverages: true,
-      },
-      'did:web:testlimit.up.storacha.network': {
-        cost: 0,
-        overage: 0,
-        included: 1000,
-        allowOverages: false,
-      },
-    }
+    testProductInfo
   )
 
   const billingProvider = createTestBillingProvider()
-  const plansStorage = usePlansStore(customersStore, billingProvider)
+  const plansStorage = usePlansStore(customersStore, billingProvider, testProductInfo)
   const email = new DebugEmail()
   const ipniService = await createTestIPNIService({ sqs }, blobsStorage)
   const claimsService = await ClaimsService.activate()

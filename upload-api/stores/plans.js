@@ -1,14 +1,16 @@
 import { trace } from '@opentelemetry/api'
 import { instrumentMethods } from '../lib/otel/instrument.js'
+import { planLimit } from '../utils.js'
 
 const tracer = trace.getTracer('upload-api')
 
 /**
  * @param {import("../../billing/lib/api.js").CustomerStore} customerStore
  * @param {import('../types.js').BillingProvider} billingProvider
+ * @param {Record<string, import('../../billing/lib/api.js').Product>} productInfo
  * @returns {import("@storacha/upload-api").PlansStorage}
  */
-export function usePlansStore(customerStore, billingProvider) {
+export function usePlansStore(customerStore, billingProvider, productInfo) {
   return instrumentMethods(tracer, 'PlansStorage', {
     initialize: async (account, externalID, plan) => {
       const getResult = await customerStore.get({ customer: account })
@@ -47,23 +49,33 @@ export function usePlansStore(customerStore, billingProvider) {
 
     get: async (account) => {
       const result = await customerStore.get({ customer: account })
-      return result.ok
-        ? {
-            ok: {
-              product: /** @type {import("@ucanto/interface").DID} */ (
-                result.ok.product
-              ),
-              updatedAt: (
-                result.ok.updatedAt || result.ok.insertedAt
-              ).toISOString(),
-            },
-          }
-        : {
-            error: {
-              name: 'PlanNotFound',
-              message: result.error.message,
-            },
-          }
+      if (!result.ok) {
+        return {
+          error: {
+            name: 'PlanNotFound',
+            message: result.error.message,
+          },
+        }
+      }
+
+      // Calculate plan limit
+      const planLimitResult = planLimit(result.ok, productInfo)
+      if (planLimitResult.error) {
+        return { error: planLimitResult.error }
+      }
+
+      return {
+        ok: {
+          product: /** @type {import("@ucanto/interface").DID} */ (
+            result.ok.product
+          ),
+          updatedAt: (
+            result.ok.updatedAt || result.ok.insertedAt
+          ).toISOString(),
+          // Convert to string to support values > Number.MAX_SAFE_INTEGER
+          limit: String(planLimitResult.ok),
+        },
+      }
     },
 
     set: async (account, plan) => {
