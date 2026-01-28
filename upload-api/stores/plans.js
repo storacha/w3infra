@@ -52,7 +52,7 @@ export function usePlansStore(customerStore, billingProvider, productInfo) {
       if (!result.ok) {
         return {
           error: {
-            name: 'PlanNotFound',
+            name: /** @type {const} */ ('PlanNotFound'),
             message: result.error.message,
           },
         }
