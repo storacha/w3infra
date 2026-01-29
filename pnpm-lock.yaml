@@ -88,8 +88,8 @@ catalogs:
       specifier: ^1.2.4
       version: 1.2.4
     '@storacha/capabilities':
-      specifier: ^1.12.0
-      version: 1.12.0
+      specifier: ^2.1.0
+      version: 2.1.0
     '@storacha/client':
       specifier: ^1.8.26
       version: 1.8.26
@@ -365,7 +365,7 @@ importers:
         version: 1.2.4
       '@storacha/capabilities':
         specifier: 'catalog:'
-        version: 1.12.0
+        version: 2.1.0
       '@storacha/client':
         specifier: 'catalog:'
         version: 1.8.26(encoding@0.1.13)
@@ -485,7 +485,7 @@ importers:
         version: 7.120.4
       '@storacha/capabilities':
         specifier: 'catalog:'
-        version: 1.12.0
+        version: 2.1.0
       '@ucanto/interface':
         specifier: ^11.0.1
         version: 11.0.1
@@ -837,7 +837,7 @@ importers:
         version: 4.9.0
       '@storacha/capabilities':
         specifier: 'catalog:'
-        version: 1.12.0
+        version: 2.1.0
       '@types/aws-lambda':
         specifier: 'catalog:'
         version: 8.10.158
@@ -883,7 +883,7 @@ importers:
         version: 3.4.5
       '@storacha/capabilities':
         specifier: 'catalog:'
-        version: 1.12.0
+        version: 2.1.0
       '@storacha/did-mailto':
         specifier: 'catalog:'
         version: 1.0.2
@@ -964,7 +964,7 @@ importers:
         version: 1.6.4
       '@storacha/capabilities':
         specifier: 'catalog:'
-        version: 1.12.0
+        version: 2.1.0
       '@storacha/did-mailto':
         specifier: 'catalog:'
         version: 1.0.2
@@ -3570,6 +3570,9 @@ packages:
 
   '@storacha/capabilities@1.12.0':
     resolution: {integrity: sha512-d4YTllc9eoe/aZU8OCMszJgSnNHsXWpUNHRVlU+u3BDVCTqN6SZHEqR7HhYpr9IDC+pOz/f6nOj5iICiH3t77g==}
+
+  '@storacha/capabilities@2.1.0':
+    resolution: {integrity: sha512-7VTBjxLlFvZ1uIlmHFa2cycWMvXIS9FngQDpdwM1T39AgfuCTy9aLLaTSxY382vMgMIfwjWqxpn2+K+txcSWgg==}
 
   '@storacha/client@1.8.26':
     resolution: {integrity: sha512-rH7kRqlhoOMsMU6C87fBGBBDodusGDNhPON+4lpS+IXpzreCT/RCxMknuBUr4tqx8oQ9N0vxylcTxOGkBo/Zjg==}
@@ -14479,6 +14482,16 @@ snapshots:
       uint8arrays: 5.1.0
 
   '@storacha/capabilities@1.12.0':
+    dependencies:
+      '@ucanto/core': 10.4.6
+      '@ucanto/interface': 11.0.1
+      '@ucanto/principal': 9.0.3
+      '@ucanto/transport': 9.2.1
+      '@ucanto/validator': 10.0.1
+      '@web3-storage/data-segment': 5.3.0
+      multiformats: 13.4.1
+
+  '@storacha/capabilities@2.1.0':
     dependencies:
       '@ucanto/core': 10.4.6
       '@ucanto/interface': 11.0.1
