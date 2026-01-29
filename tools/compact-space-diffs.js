@@ -67,8 +67,10 @@ function createProgressBar(total, label) {
  * Compacts space diffs for a given space by creating a summation diff and archiving old diffs.
  *
  * @param {string} spaceDid - The space DID to compact
+ * @param {{ ['previous-month']?: boolean }} [options] - Options for compaction
  */
-export async function compactSpaceDiffs(spaceDid) {
+export async function compactSpaceDiffs(spaceDid, options = {}) {
+  console.log(options)
   try {
     const {
       ENV,
@@ -76,6 +78,7 @@ export async function compactSpaceDiffs(spaceDid) {
     } = getEnv()
 
     const SPACE_DID = spaceDid
+    const PREVIOUS_MONTH = options['previous-month'] || false
 
     const region = getRegion(ENV)
     const dynamoDb = getDynamoClient({ region })
@@ -86,6 +89,10 @@ export async function compactSpaceDiffs(spaceDid) {
 
     if (DRY_RUN) {
       console.log('🔍 DRY RUN MODE - No records will be modified')
+    }
+
+    if (PREVIOUS_MONTH) {
+      console.log('📅 PREVIOUS MONTH MODE - Compacting diffs between the two most recent snapshots')
     }
 
     console.log(`Compacting space diffs for space: ${SPACE_DID}`)
@@ -113,12 +120,13 @@ export async function compactSpaceDiffs(spaceDid) {
   const providerDID = consumerListResult.ok.results[0].provider
   console.log(`Found provider for space: ${providerDID}`)
 
-  // Step 1: Get the most recent snapshot for this space
+  // Step 1: Get the most recent snapshot(s) for this space
   const pk = `${providerDID}#${SPACE_DID}`
 
   // Query for snapshots ordered by recordedAt (the sort key) in descending order
   // ScanIndexForward: false sorts by the sort key (recordedAt) descending, so newest first
-  // Limit: 1 returns only the most recent snapshot
+  // Limit: 1 for current month, 2 for previous month mode
+  const snapshotLimit = PREVIOUS_MONTH ? 2 : 1
   const snapshotResult = await dynamoDb.send(new QueryCommand({
     TableName: spaceSnapshotTableName,
     KeyConditionExpression: 'pk = :pk',
@@ -126,21 +134,35 @@ export async function compactSpaceDiffs(spaceDid) {
       ':pk': { S: pk }
     },
     ScanIndexForward: false, // Sort by recordedAt descending (newest first)
-    Limit: 1
+    Limit: snapshotLimit
   }))
 
   let fromDate
+  let toDate
   if (snapshotResult.Items && snapshotResult.Items.length > 0) {
-    const snapshot = unmarshall(snapshotResult.Items[0])
-    fromDate = new Date(snapshot.recordedAt)
-    console.log(`Found most recent snapshot from: ${fromDate.toISOString()}`)
+    if (PREVIOUS_MONTH) {
+      if (snapshotResult.Items.length < 2) {
+        console.error('❌ ERROR: Previous month mode requires at least 2 snapshots')
+        console.error('Only found 1 snapshot - cannot determine previous month period')
+        return
+      }
+      const newerSnapshot = unmarshall(snapshotResult.Items[0])
+      const olderSnapshot = unmarshall(snapshotResult.Items[1])
+      fromDate = new Date(olderSnapshot.recordedAt)
+      toDate = new Date(newerSnapshot.recordedAt)
+      console.log(`Compacting previous month: ${fromDate.toISOString()} to ${toDate.toISOString()}`)
+    } else {
+      const snapshot = unmarshall(snapshotResult.Items[0])
+      fromDate = new Date(snapshot.recordedAt)
+      console.log(`Found most recent snapshot from: ${fromDate.toISOString()}`)
+    }
   } else {
     console.error('❌ No snapshot found - compaction requires a snapshot to exist')
     console.error('Please run billing first to create a snapshot, then compact')
     return
   }
 
-  // Step 2: Query all diffs since the snapshot
+  // Step 2: Query all diffs in the time range
   console.log('Reading diffs from database...')
   const diffs = []
   /** @type {Record<string, import('@aws-sdk/client-dynamodb').AttributeValue> | undefined} */
@@ -150,15 +172,31 @@ export async function compactSpaceDiffs(spaceDid) {
   let pageCount = 0
 
   do {
-    queryResult = await dynamoDb.send(new QueryCommand({
+    // Build the query based on whether we have a toDate (previous month mode)
+    /** @type {import('@aws-sdk/client-dynamodb').QueryCommandInput} */
+    const queryInput = {
       TableName: spaceDiffTableName,
-      KeyConditionExpression: 'pk = :pk AND sk >= :sk',
-      ExpressionAttributeValues: {
+      ExclusiveStartKey: exclusiveStartKey
+    }
+
+    if (toDate) {
+      // Previous month mode: query between two snapshots
+      queryInput.KeyConditionExpression = 'pk = :pk AND sk BETWEEN :from AND :to'
+      queryInput.ExpressionAttributeValues = {
+        ':pk': { S: pk },
+        ':from': { S: fromDate.toISOString() },
+        ':to': { S: toDate.toISOString() }
+      }
+    } else {
+      // Current month mode: query since last snapshot
+      queryInput.KeyConditionExpression = 'pk = :pk AND sk >= :sk'
+      queryInput.ExpressionAttributeValues = {
         ':pk': { S: pk },
         ':sk': { S: fromDate.toISOString() }
-      },
-      ExclusiveStartKey: exclusiveStartKey
-    }))
+      }
+    }
+
+    queryResult = await dynamoDb.send(new QueryCommand(queryInput))
 
     if (queryResult.Items) {
       diffs.push(...queryResult.Items.map(/** @param {any} item */ item => unmarshall(item)))
