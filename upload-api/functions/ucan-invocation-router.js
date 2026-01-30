@@ -390,7 +390,8 @@ export async function ucanInvocationRouter(request) {
       customerStore,
       plansToLineItemsMapping,
       couponIds
-    )
+    ),
+    productInfo
   )
   const rateLimitsStorage = createRateLimitTable(AWS_REGION, rateLimitTableName)
   const spaceDiffStore = createSpaceDiffStore(

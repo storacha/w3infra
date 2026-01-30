@@ -17,7 +17,7 @@ export function hasOkReceipt(ucanInvocation) {
  *
  * @param {import('../billing/lib/api.ts').Customer} customer
  * @param {Record<string, import('../billing/lib/api.ts').Product>} productInfo
- * @returns
+ * @returns {import("@ucanto/interface").Result<number, import("@storacha/capabilities/types").PlanNotFound>}
  */
 export function planLimit(customer, productInfo) {
   const plan = productInfo[customer.product]
