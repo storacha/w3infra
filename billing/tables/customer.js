@@ -26,8 +26,12 @@ export const customerTableProps = {
     /** Misc customer details */
     details: 'string',
     /**
-     * Reserved capacity in TiB for the customer.
+     * Reserved capacity in bytes for the customer.
      * Only used in the forge network, where capacity is not given by the product/plan.
+     *
+     * Note: this is ok to be a number. In DynamoDB, numbers can go really high
+     * (see https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html#HowItWorks.DataTypes.Number)
+     * It'd be great if this becomes a problem some day.
      */
     reservedCapacity: 'number',
     /** ISO timestamp record was inserted. */

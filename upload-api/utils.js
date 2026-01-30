@@ -17,7 +17,7 @@ export function hasOkReceipt(ucanInvocation) {
  *
  * @param {import('../billing/lib/api.ts').Customer} customer
  * @param {Record<string, import('../billing/lib/api.ts').Product>} productInfo
- * @returns {import("@ucanto/interface").Result<number, import("@storacha/capabilities/types").PlanNotFound>}
+ * @returns {import("@ucanto/interface").Result<number, import("@storacha/capabilities/types").PlanGetFailure>}
  */
 export function planLimit(customer, productInfo) {
   const plan = productInfo[customer.product]
@@ -40,9 +40,8 @@ export function planLimit(customer, productInfo) {
         },
       }
     }
-    // Reserved capacity is stored in TiB, convert to bytes
-    const TiB = 1024 * 1024 * 1024 * 1024
-    return { ok: customer.reservedCapacity * TiB }
+
+    return { ok: customer.reservedCapacity }
   }
 
   // Otherwise, use plan-based logic (hot network)

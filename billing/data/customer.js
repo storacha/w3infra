@@ -30,7 +30,7 @@ export const encode = input => {
         account: input.account,
         product: input.product,
         details: input.details,
-        reservedCapacity: input.reservedCapacity,
+        reservedCapacity: input.reservedCapacity ? Number(input.reservedCapacity) : undefined,
         insertedAt: input.insertedAt.toISOString(),
         updatedAt: input.updatedAt ? input.updatedAt.toISOString() : undefined
       }
