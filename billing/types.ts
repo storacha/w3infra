@@ -1,5 +1,5 @@
 export type InferStoreRecord<T> = {
-  [Property in keyof T]: T[Property] extends Number ? T[Property] : string
+  [Property in keyof T]: T[Property] extends Number | undefined ? T[Property] : string
 }
 
 /** A record that is of suitable type to be put in DynamoDB. */

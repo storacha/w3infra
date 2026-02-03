@@ -83,6 +83,17 @@ export interface Customer {
   product: string
   /** Misc customer details */
   details?: string
+  /**
+   * Reserved capacity in bytes for the customer.
+   * Only used in the forge network, where capacity is not given by the product/plan.
+   *
+   * TODO: We are using a number here to ship this faster, but we need to support capacities larger than
+   * Number.MAX_SAFE_INTEGER (~9 PiB) in Forge. Alternatives to do this could be:
+   *  - switch to bigint and be careful at code boundaries, i.e. on serialization to the DB and IPLD to put stuff
+   *    on the wire, etc. This would be a breaking API change for client code.
+   *  - add an additional `unit` field to represent TiB/PiB/EiB, etc. and keep `reservedCapacity` as number.
+   */
+  reservedCapacity?: number
   /** Time the record was added to the database. */
   insertedAt: Date
   /** Time the record was updated in the database. */

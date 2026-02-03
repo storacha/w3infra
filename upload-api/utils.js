@@ -17,7 +17,7 @@ export function hasOkReceipt(ucanInvocation) {
  *
  * @param {import('../billing/lib/api.ts').Customer} customer
  * @param {Record<string, import('../billing/lib/api.ts').Product>} productInfo
- * @returns {import("@ucanto/interface").Result<number, import("@storacha/capabilities/types").PlanNotFound>}
+ * @returns {import("@ucanto/interface").Result<number, import("@storacha/capabilities/types").PlanGetFailure>}
  */
 export function planLimit(customer, productInfo) {
   const plan = productInfo[customer.product]
@@ -29,5 +29,21 @@ export function planLimit(customer, productInfo) {
       },
     }
   }
+
+  // If customer is on the reserved capacity plan (forge network only), use their reserved capacity as the hard limit
+  if (customer.product === 'did:web:reserved.storacha.network') {
+    if (customer.reservedCapacity === undefined) {
+      return {
+        error: {
+          name: 'MissingCapacity',
+          message: `customer ${customer.customer} is on reserved plan but has no reserved capacity set`,
+        },
+      }
+    }
+
+    return { ok: customer.reservedCapacity }
+  }
+
+  // Otherwise, use plan-based logic (hot network)
   return { ok: plan.allowOverages ? 0 : plan.included }
 }
