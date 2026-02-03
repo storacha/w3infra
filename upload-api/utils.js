@@ -35,7 +35,7 @@ export function planLimit(customer, productInfo) {
     if (customer.reservedCapacity === undefined) {
       return {
         error: {
-          name: 'ReservedCapacityNotSet',
+          name: 'MissingCapacity',
           message: `customer ${customer.customer} is on reserved plan but has no reserved capacity set`,
         },
       }
