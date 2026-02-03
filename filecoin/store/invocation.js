@@ -9,13 +9,12 @@ import { getDynamoClient } from '../../lib/aws/dynamo.js'
  *
  * @param {string} region
  * @param {string} tableName
- * @param {string} bucketName
  * @param {{
  *   s3Address?: Partial<import('../../lib/aws/s3.js').Address>
  *   dynamoAddress?: Partial<import('../../lib/aws/dynamo.js').Address>
  * }} [options]
  */
-export function createInvocationStore(region, tableName,  bucketName, options = {}) {
+export function createInvocationStore(region, tableName, options = {}) {
   const dynamoDBClient = getDynamoClient({
     region,
     ...options.dynamoAddress,
@@ -25,38 +24,41 @@ export function createInvocationStore(region, tableName,  bucketName, options = 
     ...options.s3Address,
   })
 
-  return useInvocationStore(dynamoDBClient, s3client, tableName, bucketName)
+  return useInvocationStore(dynamoDBClient, s3client, tableName)
 }
 
 /**
  * @param {import('@aws-sdk/client-dynamodb').DynamoDBClient} dynamoDBClient
  * @param {import('@aws-sdk/client-s3').S3Client} s3client
  * @param {string} tableName
- * @param {string} bucketName
- * @returns {import('../types.js').InvocationBucket}
+ * @returns {import('../types.js').InvocationTable}
  */
-export const useInvocationStore = (dynamoDBClient, s3client, tableName, bucketName) => {
+export const useInvocationStore = (dynamoDBClient, s3client, tableName) => {
   const store = Store.open({
     s3Connection: { channel: s3client },
     dynamoDBConnection: { channel: dynamoDBClient },
-    region: typeof s3client.config.region === 'string' ? s3client.config.region : 'us-west-2',
+    region:
+      typeof s3client.config.region === 'string'
+        ? s3client.config.region
+        : 'us-west-2',
     buckets: {
-      index: { name: bucketName },
-      message: { name: bucketName },
+      message: { name: '' },
     },
     tables: {
-      index: { name: tableName }
-    }
+      index: { name: tableName },
+    },
   })
 
   return {
     /**
      * Get the agent message file CID for an invocation.
      *
-     * @param {string} invocationCid 
+     * @param {string} invocationCid
      */
     getInLink: async (invocationCid) => {
-      const result = await Store.resolve(store, { invocation: parseLink(invocationCid) })
+      const result = await Store.resolve(store, {
+        invocation: parseLink(invocationCid),
+      })
       if (result.ok) {
         return result.ok.message.toString()
       }

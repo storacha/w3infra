@@ -238,7 +238,6 @@ export async function ucanInvocationRouter(request) {
     r2DelegationBucketSecretAccessKey,
     r2DelegationBucketName,
     agentIndexTableName,
-    agentIndexBucketName,
     agentMessageBucketName,
     streamName,
     postmarkToken,
@@ -315,7 +314,6 @@ export async function ucanInvocationRouter(request) {
       region: AWS_REGION,
       buckets: {
         message: { name: agentMessageBucketName },
-        index: { name: agentIndexBucketName },
       },
       tables: {
         index: { name: agentIndexTableName },
@@ -680,13 +678,11 @@ export async function ucanInvocationRouter(request) {
     taskStore: createFilecoinTaskStore(
       AWS_REGION,
       agentIndexTableName,
-      agentIndexBucketName,
       agentMessageBucketName
     ),
     receiptStore: createFilecoinReceiptStore(
       AWS_REGION,
       agentIndexTableName,
-      agentIndexBucketName,
       agentMessageBucketName
     ),
     pieceOfferQueue: createPieceOfferQueueClient(
@@ -796,7 +792,6 @@ function getLambdaEnv() {
     r2DelegationBucketSecretAccessKey: getSSMParameter('R2_SECRET_ACCESS_KEY'),
     r2DelegationBucketName: getSSMParameter('R2_DELEGATION_BUCKET_NAME'),
     agentIndexTableName: mustGetEnv('AGENT_INDEX_TABLE'),
-    agentIndexBucketName: mustGetEnv('AGENT_INDEX_BUCKET'),
     agentMessageBucketName: mustGetEnv('AGENT_MESSAGE_BUCKET'),
     streamName: mustGetEnv('UCAN_LOGS'),
     postmarkToken: mustGetSSMParameter('POSTMARK_TOKEN'),

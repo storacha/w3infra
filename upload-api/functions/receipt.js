@@ -11,15 +11,14 @@ Sentry.AWSLambda.init({
   tracesSampleRate: 0,
 })
 
-
 /**
  * AWS HTTP Gateway handler for GET /receipt.
  *
  * @param {{pathParameters: {taskCid?: string}}} event
  * @param {Store.Options} options
- * 
+ *
  */
-export async function receiptGet (event, options = implicitContext()) {
+export async function receiptGet(event, options = implicitContext()) {
   const store = Store.open(options)
 
   if (!event.pathParameters?.taskCid) {
@@ -34,7 +33,9 @@ export async function receiptGet (event, options = implicitContext()) {
     console.log(result.error)
     return {
       statusCode: 404,
-      body: Buffer.from(`No receipt for task ${taskCid} is found`).toString('base64')
+      body: Buffer.from(`No receipt for task ${taskCid} is found`).toString(
+        'base64'
+      ),
     }
   }
   const url = Store.toMessageURL(store, result.ok.message)
@@ -43,28 +44,27 @@ export async function receiptGet (event, options = implicitContext()) {
   return {
     statusCode: 302,
     headers: {
-      Location: url.href
-    }
+      Location: url.href,
+    },
   }
 }
 
 /**
- * 
+ *
  * @returns {Store.Options}
  */
-export function implicitContext () {
+export function implicitContext() {
   const region = process.env.AWS_REGION || 'us-west-2'
   return {
     dynamoDBConnection: { address: { region } },
     s3Connection: { address: { region } },
     region,
     buckets: {
-      index: { name: mustGetEnv('AGENT_INDEX_BUCKET_NAME') },
       message: { name: mustGetEnv('AGENT_MESSAGE_BUCKET_NAME') },
     },
     tables: {
-      index: { name: mustGetEnv('AGENT_INDEX_TABLE_NAME') }
-    }
+      index: { name: mustGetEnv('AGENT_INDEX_TABLE_NAME') },
+    },
   }
 }
 

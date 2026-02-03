@@ -22,7 +22,6 @@ const AWS_REGION = process.env.AWS_REGION || 'us-west-2'
  */
 async function handlerFn(request) {
   const {
-    AGENT_INDEX_BUCKET_NAME: agentIndexBucketName = '',
     AGENT_INDEX_TABLE_NAME: agentIndexTableName = '',
     AGENT_MESSAGE_BUCKET_NAME: agentMessageBucketName = '',
     UCAN_LOG_STREAM_NAME: streamName = '',
@@ -34,22 +33,21 @@ async function handlerFn(request) {
     store: {
       dynamoDBConnection: {
         address: {
-          region: AWS_REGION
+          region: AWS_REGION,
         },
       },
       s3Connection: {
         address: {
-          region: AWS_REGION
+          region: AWS_REGION,
         },
       },
       region: AWS_REGION,
       buckets: {
         message: { name: agentMessageBucketName },
-        index: { name: agentIndexBucketName },
       },
       tables: {
-        index: { name: agentIndexTableName }
-      }
+        index: { name: agentIndexTableName },
+      },
     },
     stream: {
       connection: { address: {} },
@@ -60,7 +58,7 @@ async function handlerFn(request) {
   try {
     await processUcanLogRequest(request, {
       basicAuth: UCAN_INVOCATION_POST_BASIC_AUTH,
-      agentStore
+      agentStore,
     })
   } catch (/** @type {any} */ error) {
     return {
@@ -71,7 +69,7 @@ async function handlerFn(request) {
   }
 
   return {
-    statusCode: 200
+    statusCode: 200,
   }
 }
 
