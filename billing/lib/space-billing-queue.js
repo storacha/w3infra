@@ -69,13 +69,15 @@ export const calculatePeriodUsage = async (instruction, ctx) => {
 
   console.log(`Total size of ${instruction.space} is ${size} bytes @ ${instruction.from.toISOString()}`)
 
+  let totalDiffs = 0
   for await (const page of iterateSpaceDiffs(instruction, ctx)) {
     if (page.error) return page
+    totalDiffs += page.ok.length
     for (const diff of page.ok) {
-      console.log(`${diff.delta > 0 ? '+' : ''}${diff.delta} bytes @ ${diff.receiptAt.toISOString()}`)
       size += BigInt(diff.delta)
       usage += BigInt(diff.delta) * BigInt(instruction.to.getTime() - diff.receiptAt.getTime())
     }
+    console.log(`Total ${totalDiffs} diffs processed for space: ${instruction.space}...`)
   }
 
   console.log(`Total size of ${instruction.space} is ${size} bytes @ ${instruction.to.toISOString()}`)
