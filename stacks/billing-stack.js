@@ -141,10 +141,13 @@ export function BillingStack ({ stack, app }) {
 
   // Lambda that sends usage table records to Stripe for invoicing.
   const usageTableHandler = new Function(stack, 'usage-table-handler', {
-    permissions: [spaceSnapshotTable, spaceDiffTable],
+    permissions: [usageTable, spaceSnapshotTable, spaceDiffTable],
     handler: 'billing/functions/usage-table.handler',
     timeout: '15 minutes',
-    bind: [stripeSecretKey]
+    bind: [stripeSecretKey],
+    environment: {
+      USAGE_TABLE_NAME: usageTable.tableName
+    }
   })
 
   const usageTableDLQ = new Queue(stack, 'usage-table-dlq', {
@@ -157,7 +160,7 @@ export function BillingStack ({ stack, app }) {
         eventSource: {
           batchSize: 1,
           startingPosition: StartingPosition.LATEST,
-          retryAttempts: 10,
+          retryAttempts: 5,
           onFailure: new SqsDlq(usageTableDLQ.cdk.queue)
         }
       },
