@@ -2,7 +2,7 @@ import * as Sentry from '@sentry/serverless'
 import { expect } from './lib.js'
 import { createCustomerStore } from '../tables/customer.js'
 import { createCustomerBillingQueue } from '../queues/customer.js'
-import { startOfDay, startOfYesterday } from '../lib/util.js'
+import { startOfToday, startOfYesterday } from '../lib/util.js'
 import { enqueueCustomerBillingInstructions } from '../lib/billing-cron.js'
 import { mustGetEnv } from '../../lib/env.js'
 
@@ -38,7 +38,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(
     // the sum of all daily usage records equals the total monthly usage for Stripe billing.
     let period = {
       from: startOfYesterday(now),  // at 00:00 UTC
-      to: startOfDay(now)  // at 00:00 UTC
+      to: startOfToday(now)  // at 00:00 UTC
     }                                          
 
     if ('rawQueryString' in event) {

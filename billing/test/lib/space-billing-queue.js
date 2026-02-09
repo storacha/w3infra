@@ -1,5 +1,5 @@
 import { calculatePeriodUsage, storeSpaceUsage } from '../../lib/space-billing-queue.js'
-import { startOfYesterday, startOfDay } from '../../lib/util.js'
+import { startOfYesterday, startOfToday } from '../../lib/util.js'
 import { randomConsumer } from '../helpers/consumer.js'
 import { randomCustomer } from '../helpers/customer.js'
 import { randomLink } from '../helpers/dag.js'
@@ -11,7 +11,7 @@ export const test = {
     const consumer = await randomConsumer()
     const now = new Date()
     const from = startOfYesterday(now)
-    const to = startOfDay(now)
+    const to = startOfToday(now)
     const delta = 1024 * 1024 * 1024 // 1GiB
 
     await ctx.spaceDiffStore.batchPut([{
@@ -64,7 +64,7 @@ export const test = {
     const consumer = await randomConsumer()
     const now = new Date()
     const from = startOfYesterday(now)
-    const to = startOfDay(now)
+    const to = startOfToday(now)
     const delta = 1024 * 1024 * 1024 // 1GiB
 
     await ctx.spaceSnapshotStore.put({
@@ -140,7 +140,7 @@ export const test = {
     const size = BigInt(1024 * 1024 * 1024 * 1024) // 1TiB
     const now = new Date()
     const from = startOfYesterday(now)
-    const to = startOfDay(now)
+    const to = startOfToday(now)
     const delta = 1024 * 1024 * 1024 // 1GiB
 
     await ctx.spaceSnapshotStore.put({
