@@ -80,7 +80,7 @@ export const calculatePeriodUsage = async (instruction, ctx) => {
     console.log(`Total ${totalDiffs} diffs processed for space: ${instruction.space}...`)
   }
 
-  console.log(`Total size of ${instruction.space} is ${size} bytes @ ${instruction.to.toISOString()}`)
+  console.log(`Final total size of ${instruction.space} is ${size} bytes and usage ${usage} byte/ms @ ${instruction.to.toISOString()}`)
 
   return { ok: { size, usage } }
 }
