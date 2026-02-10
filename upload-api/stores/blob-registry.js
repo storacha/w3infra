@@ -13,6 +13,7 @@ import { base58btc } from 'multiformats/bases/base58'
 import { marshall, unmarshall } from '@aws-sdk/util-dynamodb'
 import { EntryNotFound, EntryExists } from '@storacha/upload-api/blob'
 import { createConsumerStore } from '../../billing/tables/consumer.js'
+import { createSpaceDiffStore } from '../../billing/tables/space-diff.js'
 
 import { getDynamoClient } from '../../lib/aws/dynamo.js'
 import { METRICS_NAMES, SPACE_METRICS_NAMES } from '../constants.js'
@@ -71,6 +72,9 @@ export const useBlobRegistry = (
   consumerTableName,
   metrics
 ) => {
+  // Create spaceDiffStore for GSI queries to check for duplicate causes
+  const spaceDiffStore = createSpaceDiffStore(dynamoDb, { tableName: spaceDiffTableName })
+
   /**
    * @typedef {object} DeltaInfo
    * @property {import('@storacha/upload-api').DID} space - The space DID that changed size
@@ -183,13 +187,21 @@ export const useBlobRegistry = (
           )
         }
 
-        for (const diffItem of spaceDiffResults.ok ?? []) {
-          transactWriteItems.push({
-            Put: {
-              TableName: spaceDiffTableName,
-              Item: marshall(diffItem, { removeUndefinedValues: true })
-            }
-          })
+        // Check if cause already exists in space-diff table to prevent duplicates
+        const existingDiffs = await spaceDiffStore.listByCause(cause, { size: 1 })
+        const causeAlreadyExists = (existingDiffs.ok?.results?.length ?? 0) > 0
+
+        // TODO: Should we fail the entire transaction if the cause already exists?
+
+        if (!causeAlreadyExists) {
+          for (const diffItem of spaceDiffResults.ok ?? []) {
+            transactWriteItems.push({
+              Put: {
+                TableName: spaceDiffTableName,
+                Item: marshall(diffItem, { removeUndefinedValues: true })
+              }
+            })
+          }
         }
 
         const transactWriteCommand = new TransactWriteItemsCommand({
@@ -262,13 +274,21 @@ export const useBlobRegistry = (
           throw new Error(`Error while processing space diffs: ${spaceDiffResults.error}`)
         }
 
-        for (const diffItem of spaceDiffResults.ok ?? []) {
-          transactWriteItems.push({
-            Put: {
-              TableName: spaceDiffTableName,
-              Item: marshall(diffItem, { removeUndefinedValues: true }),
-            },
-          })
+        // Check if cause already exists in space-diff table to prevent duplicates
+        const existingDiffs = await spaceDiffStore.listByCause(cause, { size: 1 })
+        const causeAlreadyExists = (existingDiffs.ok?.results?.length ?? 0) > 0
+
+        // TODO: Should we fail the entire transaction if the cause already exists?
+
+        if (!causeAlreadyExists) {
+          for (const diffItem of spaceDiffResults.ok ?? []) {
+            transactWriteItems.push({
+              Put: {
+                TableName: spaceDiffTableName,
+                Item: marshall(diffItem, { removeUndefinedValues: true }),
+              },
+            })
+          }
         }
 
         const transactWriteCommand = new TransactWriteItemsCommand({

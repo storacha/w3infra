@@ -1,5 +1,5 @@
 import { createStoreBatchPutterClient, createStoreListerClient } from './client.js'
-import { validate, encode, lister, decode } from '../data/space-diff.js'
+import { validate, encode, lister, decode, listerByCause } from '../data/space-diff.js'
 
 /**
  * Stores changes to total space size.
@@ -27,7 +27,10 @@ export const spaceDiffTableProps = {
     /** ISO timestamp we recorded the change. */
     insertedAt: 'string'
   },
-  primaryIndex: { partitionKey: 'pk', sortKey: 'sk' }
+  primaryIndex: { partitionKey: 'pk', sortKey: 'sk' },
+  globalIndexes: {
+    cause: { partitionKey: 'cause', projection: ['pk', 'sk'] }
+  }
 }
 
 /**
@@ -37,5 +40,20 @@ export const spaceDiffTableProps = {
  */
 export const createSpaceDiffStore = (conf, { tableName }) => ({
   ...createStoreBatchPutterClient(conf, { tableName, validate, encode }),
-  ...createStoreListerClient(conf, { tableName, encodeKey: lister.encodeKey, decode })
+  ...createStoreListerClient(conf, { tableName, encodeKey: lister.encodeKey, decode }),
+
+  /**
+   * List space diffs by cause using the `cause` GSI.
+   *
+   * @param {import('multiformats').Link} cause
+   * @returns {Promise<any>}
+   */
+  async listByCause(cause) {
+    const lister = createStoreListerClient(conf, {
+      tableName,
+      indexName: 'cause',
+      ...listerByCause
+    })
+    return lister.list(cause)
+  }
 })
