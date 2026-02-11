@@ -1,6 +1,8 @@
 import * as DidMailto from '@storacha/did-mailto'
 import { Failure } from '@ucanto/core'
 import { RecordNotFound } from '../tables/lib.js'
+import { createHash } from 'crypto'
+import retry from 'p-retry'
 
 export class CustomerFoundWithDifferentStripeAccount extends Failure {
   /**
@@ -148,19 +150,42 @@ export async function recordBillingMeterEvent(stripe, billingMeterEventName, egr
     }
   }
 
+  // Create a deterministic idempotency key that's guaranteed to be under 255 chars
+  // Hash the full event details to ensure uniqueness while staying within Stripe's limit
+  // We need deterministic keys based on the event data to prevent duplicate billing.
+  const idempotencyData = `${egressData.servedAt.toISOString()}-${egressData.space}-${egressData.customer}-${egressData.resource}-${egressData.cause}`
+  const idempotencyKey = createHash('sha256').update(idempotencyData).digest('hex') // 64 chars
+
   /** @type {import('stripe').Stripe.Billing.MeterEvent} */
-  const meterEvent = await stripe.billing.meterEvents.create({
-    event_name: billingMeterEventName,
-    payload: {
-      stripe_customer_id: stripeCustomerId,
-      // Stripe expects the value to be a string
-      value: egressData.bytes.toString(),
+  const meterEvent = await retry(
+    async () => {
+      return await stripe.billing.meterEvents.create({
+        event_name: billingMeterEventName,
+        payload: {
+          stripe_customer_id: stripeCustomerId,
+          // Stripe expects the value to be a string
+          value: egressData.bytes.toString(),
+        },
+        // Stripe expects the timestamp to be in seconds
+        timestamp: Math.floor(egressData.servedAt.getTime() / 1000),
+      },
+        {
+          idempotencyKey
+        }
+      )
     },
-    // Stripe expects the timestamp to be in seconds
-    timestamp: Math.floor(egressData.servedAt.getTime() / 1000),
-  },
     {
-      idempotencyKey: `${egressData.servedAt.toISOString()}-${egressData.space}-${egressData.customer}-${egressData.resource}-${egressData.cause}`
+      retries: 3,
+      minTimeout: 1000, // 1 second
+      factor: 2, // Exponential backoff: 1s, 2s, 4s
+      onFailedAttempt: (error) => {
+        console.warn(`Stripe API attempt ${error.attemptNumber} failed. ${error.retriesLeft} retries left.`)
+      },
+      // Only retry on rate limit errors (check the name property which p-retry preserves)
+      shouldRetry: (error) => {
+        // @ts-ignore - p-retry wraps the error but preserves the original error properties
+        return error.type === 'StripeRateLimitError' || error.name === 'StripeRateLimitError'
+      }
     }
   )
 
