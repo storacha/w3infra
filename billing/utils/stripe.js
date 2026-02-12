@@ -175,16 +175,17 @@ export async function recordBillingMeterEvent(stripe, billingMeterEventName, egr
       )
     },
     {
-      retries: 3,
+      retries: 5,
       minTimeout: 1000, // 1 second
-      factor: 2, // Exponential backoff: 1s, 2s, 4s
+      maxTimeout: 30000, // 30 seconds max
+      factor: 2, // Exponential backoff: 1s, 2s, 4s, 8s, 16s
+      randomize: true, // Add jitter to prevent thundering herd
       onFailedAttempt: (error) => {
-        console.warn(`Stripe API attempt ${error.attemptNumber} failed. ${error.retriesLeft} retries left.`)
+        console.warn(`Stripe rate limit hit. Attempt ${error.attemptNumber} failed. ${error.retriesLeft} retries left.`)
       },
-      // Only retry on rate limit errors (check the name property which p-retry preserves)
       shouldRetry: (error) => {
-        // @ts-ignore - p-retry wraps the error but preserves the original error properties
-        return error.type === 'StripeRateLimitError' || error.name === 'StripeRateLimitError'
+        // @ts-ignore - error has the original Stripe error properties
+        return error.type === 'StripeRateLimitError' || error.cause?.type === 'StripeRateLimitError'
       }
     }
   )
