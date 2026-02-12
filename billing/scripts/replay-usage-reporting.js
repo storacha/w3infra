@@ -22,6 +22,7 @@ import fs from 'node:fs'
 import { mustGetEnv } from '../../lib/env.js'
 import * as Usage from '../data/usage.js'
 import { reportUsage } from '../functions/usage-table.js'
+import { createUsageStore } from '../tables/usage.js'
 
 dotenv.config({ path: '.env.local' })
 
@@ -32,6 +33,7 @@ const customerIndex = args.indexOf('--customer')
 const CUSTOMER = customerIndex !== -1 ? args[customerIndex + 1] : undefined
 
 const STORACHA_ENV = mustGetEnv('STORACHA_ENV')
+const AWS_REGION = mustGetEnv('AWS_REGION')
 const STRIPE_SECRET_KEY = mustGetEnv('STRIPE_SECRET_KEY')
 const USAGE_TABLE_NAME = `${STORACHA_ENV}-w3infra-usage`
 
@@ -152,7 +154,10 @@ async function main() {
   const timestamp = new Date().toISOString().replace(/[.:]/g, '-')
   const errorsFilename = `./replay-failures-${timestamp}.jsonl`
 
-  const ctx = { stripe }
+  const ctx = {
+    stripe,
+    usageStore: createUsageStore({ region: AWS_REGION }, { tableName: USAGE_TABLE_NAME })
+  }
 
   const records = CUSTOMER ? queryUsageRecordsForCustomer(CUSTOMER) : scanUsageRecords()
   for await (const usage of records) {
