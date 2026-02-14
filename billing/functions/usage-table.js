@@ -114,9 +114,7 @@ export const reportUsage = async (usage, ctx) => {
     expand: ['subscriptions'],
   })
 
-  // Deleted customers produce a permanent resource_missing error from Stripe.
-  // Retrying will never succeed. Log at ERROR level for manual review and
-  // return ok so the Lambda exits cleanly — no retry, no DLQ entry.
+  // return ok so the Lambda exits cleanly, since retrying will never succeed.
   // The customer used the service and is not being billed; manual follow-up required.
   if (stripeCustomer.deleted) {
     console.error(
@@ -129,9 +127,6 @@ export const reportUsage = async (usage, ctx) => {
     return { ok: {} }
   }
 
-  // A past-due subscription does not prevent the meter event from being
-  // accepted by Stripe, but overages may not be collected until the
-  // subscription is brought current. Log a warning and continue.
   const pastDueSubs = (stripeCustomer.subscriptions?.data ?? []).filter(
     (s) => s.status === 'past_due'
   )
