@@ -46,14 +46,15 @@ export const createSpaceDiffStore = (conf, { tableName }) => ({
    * List space diffs by cause using the `cause` GSI.
    *
    * @param {import('multiformats').Link} cause
+   * @param {import('../lib/api.js').Pageable} [options]
    * @returns {Promise<any>}
    */
-  async listByCause(cause) {
+  async listByCause(cause, options) {
     const lister = createStoreListerClient(conf, {
       tableName,
       indexName: 'cause',
       ...listerByCause
     })
-    return lister.list(cause)
+    return lister.list(cause, options)
   }
 })
