@@ -43,9 +43,15 @@ export interface SpaceDiffListKey {
   from: Date
 }
 
+/** Item returned by the cause GSI - only contains the cause field */
+export interface SpaceDiffCauseIndexItem {
+  cause: Link
+}
+
 export type SpaceDiffStore =
   & StoreBatchPutter<SpaceDiff>
   & StoreLister<SpaceDiffListKey, SpaceDiff>
+  & { listByCause: (cause: Link, options?: Pageable) => Promise<Result<ListSuccess<SpaceDiffCauseIndexItem>, EncodeFailure|DecodeFailure|StoreOperationFailure>> }
 
 /** Captures size of a space at a given point in time. */
 export interface SpaceSnapshot {

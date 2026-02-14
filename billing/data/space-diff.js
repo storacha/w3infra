@@ -77,3 +77,26 @@ export const lister = {
     }
   })
 }
+
+/** @typedef {Pick<SpaceDiff, 'cause'>} SpaceDiffCauseIndexItem */
+
+/**
+ * Specialized lister for the `cause` GSI: decodes only projected fields.
+ * Used to check if a cause already exists in the space-diff table.
+ */
+export const listerByCause = {
+  /** @type {import('../lib/api.js').Encoder<import('multiformats').Link, import('../types.js').StoreRecord>} */
+  encodeKey: (input) => ({ ok: { cause: input.toString() } }),
+  /** @type {import('../lib/api.js').Decoder<StoreRecord, SpaceDiffCauseIndexItem>} */
+  decode: (input) => {
+    try {
+      return {
+        ok: {
+          cause: Link.parse(/** @type {string} */ (input.cause))
+        }
+      }
+    } catch (/** @type {any} */ err) {
+      return { error: new DecodeFailure(`decoding space diff cause index record: ${err.message}`, { cause: err }) }
+    }
+  }
+}
