@@ -187,11 +187,16 @@ export const useBlobRegistry = (
           )
         }
 
-        // Check if cause already exists in space-diff table to prevent duplicates
+        /**
+         * Check if the cause already exists in the space-diff table to avoid duplicates.
+         * We intentionally don’t fail the transaction if we find one.
+         * The main goal of this function is to register the blob, and there are valid cases 
+         * (like retries or reprocessed receipts) where the cause might already
+         * be in the diff table. In those situations, skipping the diff insert is enough
+         * to prevent double-counting without blocking the blob registration.
+         */
         const existingDiffs = await spaceDiffStore.listByCause(cause, { size: 1 })
         const causeAlreadyExists = (existingDiffs.ok?.results?.length ?? 0) > 0
-
-        // TODO: Should we fail the entire transaction if the cause already exists?
 
         if (!causeAlreadyExists) {
           for (const diffItem of spaceDiffResults.ok ?? []) {
@@ -274,11 +279,14 @@ export const useBlobRegistry = (
           throw new Error(`Error while processing space diffs: ${spaceDiffResults.error}`)
         }
 
-        // Check if cause already exists in space-diff table to prevent duplicates
+        /**
+         * Check if the cause already exists in the space-diff table to avoid duplicates.
+         * Same rationale as in register: we don't fail the transaction for a
+         * duplicate cause, since the primary goal here is to deregister the blob, and
+         * the cause may already be in the diff table from a previous attempt.
+         */
         const existingDiffs = await spaceDiffStore.listByCause(cause, { size: 1 })
         const causeAlreadyExists = (existingDiffs.ok?.results?.length ?? 0) > 0
-
-        // TODO: Should we fail the entire transaction if the cause already exists?
 
         if (!causeAlreadyExists) {
           for (const diffItem of spaceDiffResults.ok ?? []) {
