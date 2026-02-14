@@ -201,11 +201,10 @@ for (const usage of usages) {
 
 // Aggregate view keyed by customer with per-space entries and totals
 /**
- * @typedef {{ size: string, usage: string }} SpaceUsage
+ * @typedef {{ size: string, usage: string, provider: string }} SpaceUsage
  * @typedef {{
  *   account: string,
  *   product: string,
- *   provider: string,
  *   from: string,
  *   to: string,
  *   spaces: Array<Record<string, SpaceUsage>>,
@@ -221,7 +220,6 @@ for (const u of usageSnapshots) {
     aggregatedByCustomer[key] = {
       account: u.account,
       product: u.product,
-      provider: u.provider,
       from: from.toISOString(),
       to: to.toISOString(),
       spaces: [],
@@ -233,13 +231,13 @@ for (const u of usageSnapshots) {
     const agg = aggregatedByCustomer[key]
     if (agg.account !== u.account) console.warn(`customer ${key} has multiple accounts: ${agg.account} vs ${u.account}`)
     if (agg.product !== u.product) console.warn(`customer ${key} has multiple products: ${agg.product} vs ${u.product}`)
-    if (agg.provider !== u.provider) console.warn(`customer ${key} has multiple providers: ${agg.provider} vs ${u.provider}`)
   }
 
   aggregatedByCustomer[key].spaces.push({
     [u.space]: {
       size: u.size.toString(),
       usage: u.usage.toString(),
+      provider: u.provider,
     },
   })
   aggregatedByCustomer[key].totalSize += u.size

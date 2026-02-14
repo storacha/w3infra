@@ -214,8 +214,12 @@ export const createStoreListerClient = (conf, context) => {
   
       const results = []
       for (const item of res.Items ?? []) {
-        const decoding = context.decode(unmarshall(item))
-        if (decoding.error) return decoding
+        const raw = unmarshall(item)
+        const decoding = context.decode(raw)
+        if (decoding.error) {
+          console.error('Failed to decode item, skipping:', decoding.error.message, JSON.stringify(raw))
+          continue
+        }
         results.push(decoding.ok)
       }
       const lastKey = res.LastEvaluatedKey && unmarshall(res.LastEvaluatedKey)
