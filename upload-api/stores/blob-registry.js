@@ -13,6 +13,7 @@ import { base58btc } from 'multiformats/bases/base58'
 import { marshall, unmarshall } from '@aws-sdk/util-dynamodb'
 import { EntryNotFound, EntryExists } from '@storacha/upload-api/blob'
 import { createConsumerStore } from '../../billing/tables/consumer.js'
+import { createSpaceDiffStore } from '../../billing/tables/space-diff.js'
 
 import { getDynamoClient } from '../../lib/aws/dynamo.js'
 import { METRICS_NAMES, SPACE_METRICS_NAMES } from '../constants.js'
@@ -71,6 +72,9 @@ export const useBlobRegistry = (
   consumerTableName,
   metrics
 ) => {
+  // Create spaceDiffStore for GSI queries to check for duplicate causes
+  const spaceDiffStore = createSpaceDiffStore(dynamoDb, { tableName: spaceDiffTableName })
+
   /**
    * @typedef {object} DeltaInfo
    * @property {import('@storacha/upload-api').DID} space - The space DID that changed size
@@ -183,13 +187,26 @@ export const useBlobRegistry = (
           )
         }
 
-        for (const diffItem of spaceDiffResults.ok ?? []) {
-          transactWriteItems.push({
-            Put: {
-              TableName: spaceDiffTableName,
-              Item: marshall(diffItem, { removeUndefinedValues: true })
-            }
-          })
+        /**
+         * Check if the cause already exists in the space-diff table to avoid duplicates.
+         * We intentionally don’t fail the transaction if we find one.
+         * The main goal of this function is to register the blob, and there are valid cases 
+         * (like retries or reprocessed receipts) where the cause might already
+         * be in the diff table. In those situations, skipping the diff insert is enough
+         * to prevent double-counting without blocking the blob registration.
+         */
+        const existingDiffs = await spaceDiffStore.listByCause(cause, { size: 1 })
+        const causeAlreadyExists = (existingDiffs.ok?.results?.length ?? 0) > 0
+
+        if (!causeAlreadyExists) {
+          for (const diffItem of spaceDiffResults.ok ?? []) {
+            transactWriteItems.push({
+              Put: {
+                TableName: spaceDiffTableName,
+                Item: marshall(diffItem, { removeUndefinedValues: true })
+              }
+            })
+          }
         }
 
         const transactWriteCommand = new TransactWriteItemsCommand({
@@ -262,13 +279,24 @@ export const useBlobRegistry = (
           throw new Error(`Error while processing space diffs: ${spaceDiffResults.error}`)
         }
 
-        for (const diffItem of spaceDiffResults.ok ?? []) {
-          transactWriteItems.push({
-            Put: {
-              TableName: spaceDiffTableName,
-              Item: marshall(diffItem, { removeUndefinedValues: true }),
-            },
-          })
+        /**
+         * Check if the cause already exists in the space-diff table to avoid duplicates.
+         * Same rationale as in register: we don't fail the transaction for a
+         * duplicate cause, since the primary goal here is to deregister the blob, and
+         * the cause may already be in the diff table from a previous attempt.
+         */
+        const existingDiffs = await spaceDiffStore.listByCause(cause, { size: 1 })
+        const causeAlreadyExists = (existingDiffs.ok?.results?.length ?? 0) > 0
+
+        if (!causeAlreadyExists) {
+          for (const diffItem of spaceDiffResults.ok ?? []) {
+            transactWriteItems.push({
+              Put: {
+                TableName: spaceDiffTableName,
+                Item: marshall(diffItem, { removeUndefinedValues: true }),
+              },
+            })
+          }
         }
 
         const transactWriteCommand = new TransactWriteItemsCommand({
