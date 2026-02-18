@@ -104,80 +104,76 @@ async function createIdempotencyKey(usage){
  * @returns {Promise<bigint>} Previous cumulative usage (0n if not found)
  */
 async function getPreviousUsage(currentUsage, ctx) {
-  try {
-    // Calculate previous day's date (from - 24 hours)
-    const previousFrom = new Date(currentUsage.from.getTime() - 24 * 60 * 60 * 1000)
+  // Calculate previous day's date (from - 24 hours)
+  const previousFrom = new Date(currentUsage.from.getTime() - 24 * 60 * 60 * 1000)
 
-    // Query usage table with: customer PK, sk = previousFrom#provider#space
-    const result = await ctx.usageStore.get({
-      customer: currentUsage.customer,
-      from: previousFrom,
-      provider: currentUsage.provider,
-      space: currentUsage.space
-    })
+  // Query usage table with: customer PK, sk = previousFrom#provider#space
+  const result = await ctx.usageStore.get({
+    customer: currentUsage.customer,
+    from: previousFrom,
+    provider: currentUsage.provider,
+    space: currentUsage.space
+  })
 
-    if (result.ok) {
-      return result.ok.usage
-    }
-
-    if (result.error && result.error.name !== 'RecordNotFound') {
-      throw result.error
-    }
-
-    console.log(`⚠️ No previous usage found for ${currentUsage.space} on ${previousFrom.toISOString()}.\n Attempting to recover using Stripe meter event summaries...`)
-
-    // Query Stripe for summaries (returns in reverse chronological order - newest first)
-    const summaries = await ctx.stripe.billing.meters.listEventSummaries(STRIPE_BILLING_EVENT.id, {
-      customer: currentUsage.account.replace('stripe:', ''),
-      start_time: startOfMonth(currentUsage.from).getTime() / 1000,
-      end_time: currentUsage.to.getTime() / 1000,
-      value_grouping_window: 'day',
-      limit: 1
-    });
-
-    if (!summaries.data || summaries.data.length === 0) {
-      console.log(`No Stripe summaries found - treating as first-time customer`)
-      return 0n
-    }
-
-    const latestSummary = summaries.data[0]
-    const latestSummaryDate = new Date(latestSummary.end_time * 1000);
-
-    console.log(`Found latest Stripe summary: ${latestSummaryDate.toISOString()}`)
-    
-    // Query DynamoDB for usage at Stripe's latest date
-    const recoveryResult = await ctx.usageStore.get({
-      customer: currentUsage.customer,
-      from: latestSummaryDate,
-      provider: currentUsage.provider,
-      space: currentUsage.space
-    })
-
-    if (recoveryResult.ok) {
-      console.log(`⚠️ WARNING: Space ${currentUsage.space} usage between ${latestSummaryDate.toISOString()} and ${previousFrom.toISOString()} is lost using Stripe summaries for recovery.`)
-      return recoveryResult.ok.usage
-    }
-
-    if (recoveryResult.error?.name === 'RecordNotFound') {
-        console.error(`CRITICAL DATA LOSS: Cannot calculate usage delta. Manual investigation and correction required.' \n ${JSON.stringify({
-          previousDay: previousFrom.toISOString(),
-          latestSummaryDate: latestSummaryDate.toISOString(),
-          space: currentUsage.space,
-          customer: currentUsage.customer,
-          stripeAggregatedValue: latestSummary.aggregated_value,
-        })}`)
-
-        throw new Error(
-          `Critical: Cannot calculate usage delta for space ${currentUsage.space}. ` +
-          `Both DynamoDB records missing (${previousFrom.toISOString()} and ${latestSummaryDate.toISOString()}). ` +
-          `This indicates data loss. Manual investigation required.`
-        )
-      }
-  } catch (error) {
-    console.error(`Failed to recover previous usage for space ${currentUsage.space}. Returning 0 to minimize losses. Error: ${error}`)
+  if (result.ok) {
+    return result.ok.usage
   }
 
-  return 0n
+  if (result.error && result.error.name !== 'RecordNotFound') {
+    throw result.error
+  }
+
+  console.log(`⚠️ No previous usage found for ${currentUsage.space} on ${previousFrom.toISOString()}.\n Attempting to recover using Stripe meter event summaries...`)
+
+  // Query Stripe for summaries (returns in reverse chronological order - newest first)
+  const summaries = await ctx.stripe.billing.meters.listEventSummaries(STRIPE_BILLING_EVENT.id, {
+    customer: currentUsage.account.replace('stripe:', ''),
+    start_time: startOfMonth(currentUsage.from).getTime() / 1000,
+    end_time: currentUsage.to.getTime() / 1000,
+    value_grouping_window: 'day',
+    limit: 1
+  });
+
+  if (!summaries.data || summaries.data.length === 0) {
+    console.log(`No Stripe summaries found - treating as first-time customer`)
+    return 0n
+  }
+
+  const latestSummary = summaries.data[0]
+  const latestSummaryDate = new Date(latestSummary.end_time * 1000);
+
+  console.log(`Found latest Stripe summary: ${latestSummaryDate.toISOString()}`)
+  
+  // Query DynamoDB for usage at Stripe's latest date
+  const recoveryResult = await ctx.usageStore.get({
+    customer: currentUsage.customer,
+    from: latestSummaryDate,
+    provider: currentUsage.provider,
+    space: currentUsage.space
+  })
+
+  if (recoveryResult.ok) {
+    console.log(`⚠️ WARNING: Space ${currentUsage.space} usage between ${latestSummaryDate.toISOString()} and ${previousFrom.toISOString()} is lost using Stripe summaries for recovery.`)
+    return recoveryResult.ok.usage
+  }
+
+  if (recoveryResult.error?.name === 'RecordNotFound') {
+    console.error(`CRITICAL DATA LOSS: Cannot calculate usage delta. Manual investigation and correction required. \n ${JSON.stringify({
+      previousDay: previousFrom.toISOString(),
+      latestSummaryDate: latestSummaryDate.toISOString(),
+      space: currentUsage.space,
+      customer: currentUsage.customer,
+      stripeAggregatedValue: latestSummary.aggregated_value,
+    })}`)
+
+    throw new Error(
+      `Critical: Cannot calculate usage delta for space ${currentUsage.space}. ` +
+      `Both DynamoDB records missing (${previousFrom.toISOString()} and ${latestSummaryDate.toISOString()}). ` +
+      `This indicates data loss. Manual investigation required.`
+    )
+  }
+  
+   throw recoveryResult.error ?? new Error('Unknown error querying usage store during recovery')   
 }
 
 /**
@@ -261,15 +257,20 @@ export const reportUsage = async (usage, ctx) => {
 
   const isFirstOfMonth = usage.from.getUTCDate() === 1
   // NOTE: Since Stripe aggregates per billing period (monthly), each month starts fresh so no need to get previous usage and calculate delta.
-  const previousCumulativeUsage = isFirstOfMonth
-    ? 0n
-    : await getPreviousUsage(usage, ctx)
-  
+  let previousCumulativeUsage                                                                                                
+  try {                                                                                                                      
+    previousCumulativeUsage = isFirstOfMonth ? 0n : await getPreviousUsage(usage, ctx)                                       
+  } catch (/** @type {any} */ err) {                                                                                         
+    return { error: err }                                                                                                    
+  } 
+
   // Calculate delta: current cumulative - previous cumulative (or 0 if no previous)
   // Note: Delta can be negative if users deleted data
   const deltaUsage = usage.usage - previousCumulativeUsage
 
-  if (previousCumulativeUsage === 0n) {
+  if (isFirstOfMonth) {                                                                                                      
+    console.log(`First of month reset - reporting full usage as delta (no previous lookup)`, JSON.stringify({customer: usageContext.customer, space: usageContext.space}))                            
+  } else if (previousCumulativeUsage === 0n) {
     console.log(`No previous usage found - reporting full current usage as delta`, JSON.stringify({customer: usageContext.customer, space: usageContext.space}))
   } else {
     console.log('Delta calculation:', JSON.stringify({
