@@ -167,12 +167,12 @@ export function getEventSourceConfig (stack) {
 export function getKinesisStreamConfig (stack) {
   if (!isProd(stack.stage) && !isStaging(stack.stage)) {
     return {
-      retentionPeriod: Duration.hours(24)
+      retentionPeriod: Duration.hours(24),
     }
   }
 
   return {
-    retentionPeriod: Duration.days(365)
+    retentionPeriod: Duration.days(365),
   }
 }
 
