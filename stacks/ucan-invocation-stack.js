@@ -67,6 +67,13 @@ export function UcanInvocationStack({ stack, app }) {
     },
   })
 
+  // Increase max record size to 10MiB (default is 1MiB).
+  // The L2 Stream construct doesn't expose this property yet, so we use
+  // a CloudFormation override on the underlying CfnStream.
+  // @see https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-kinesis-stream.html
+  const cfnStream = /** @type {import('aws-cdk-lib').CfnResource} */ (ucanStream.cdk.stream.node.defaultChild)
+  cfnStream.addPropertyOverride('MaxRecordSizeInKiB', 10240)
+
   stack.addOutputs({
     agentMessageBucketName: agentMessageBucket.bucketName,
   })
