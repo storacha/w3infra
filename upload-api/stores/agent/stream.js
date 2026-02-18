@@ -11,6 +11,9 @@ export const defaults = {
   receipt: { type: 'receipt' },
 }
 
+/** Kinesis max record size is 1MB */
+const MAX_RECORD_SIZE = 1_048_576
+
 /**
  * @typedef {import('@aws-sdk/client-kinesis').KinesisClientConfig} Address
  * @typedef {Kinesis} Channel
@@ -105,7 +108,7 @@ export const assert = async (message, { stream, store }) => {
   for (const member of message.index) {
     if (member.invocation) {
       const { task, invocation, message } = member.invocation
-      const data = JSON.stringify({
+      const data = UTF8.fromString(JSON.stringify({
         // This is bad naming but not worth a breaking change
         carCid: message.toString(),
         task: task.toString(),
@@ -117,10 +120,19 @@ export const assert = async (message, { stream, store }) => {
         },
         ts: Date.now(),
         type: stream.workflow.type,
-      })
+      }))
+
+      if (data.byteLength > MAX_RECORD_SIZE) {
+        console.warn('Skipping oversized Kinesis invocation record', {
+          task: task.toString(),
+          can: invocation.capabilities[0]?.can,
+          size: data.byteLength,
+        })
+        continue
+      }
 
       records.push({
-        Data: UTF8.fromString(data),
+        Data: data,
         PartitionKey: partitionKey(member),
       })
     }
@@ -151,7 +163,7 @@ export const assert = async (message, { stream, store }) => {
         )
       }
 
-      const data = JSON.stringify(
+      const data = UTF8.fromString(JSON.stringify(
         {
           carCid: message.toString(),
           invocationCid: invocation.cid.toString(),
@@ -167,10 +179,19 @@ export const assert = async (message, { stream, store }) => {
           type: stream.receipt.type,
         },
         (_, value) => (typeof value === 'bigint' ? Number(value) : value)
-      )
+      ))
+
+      if (data.byteLength > MAX_RECORD_SIZE) {
+        console.warn('Skipping oversized Kinesis receipt record', {
+          task: task.toString(),
+          can: invocation.capabilities[0]?.can,
+          size: data.byteLength,
+        })
+        continue
+      }
 
       records.push({
-        Data: UTF8.fromString(data),
+        Data: data,
         PartitionKey: partitionKey(member),
       })
     }
