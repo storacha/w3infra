@@ -11,8 +11,8 @@ export const defaults = {
   receipt: { type: 'receipt' },
 }
 
-/** Kinesis max record size is 1MB */
-const MAX_RECORD_SIZE = 1_048_576
+/** Kinesis max record size is 10MiB */
+const MAX_RECORD_SIZE = 10_485_760
 
 /**
  * @typedef {import('@aws-sdk/client-kinesis').KinesisClientConfig} Address

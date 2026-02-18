@@ -167,12 +167,14 @@ export function getEventSourceConfig (stack) {
 export function getKinesisStreamConfig (stack) {
   if (!isProd(stack.stage) && !isStaging(stack.stage)) {
     return {
-      retentionPeriod: Duration.hours(24)
+      retentionPeriod: Duration.hours(24),
+      maxRecordSizeInKiB: 10240, // 10MiB, the maximum allowed by Kinesis
     }
   }
 
   return {
-    retentionPeriod: Duration.days(365)
+    retentionPeriod: Duration.days(365),
+    maxRecordSizeInKiB: 10240, // 10MiB, the maximum allowed by Kinesis
   }
 }
 
