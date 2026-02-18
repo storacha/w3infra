@@ -65,7 +65,7 @@ export const calculatePeriodUsage = async (instruction, ctx) => {
   if (!snap) console.warn(`!!! Snapshot not found, assuming empty space !!!`)
 
   let size = snap?.size ?? 0n
-  let usage = size * BigInt(instruction.to.getTime() - instruction.from.getTime())
+  let usage = size * BigInt(instruction.to.getTime() - instruction.from.getTime()) // initial usage from snapshot
 
   console.log(`Total size of ${instruction.space} is ${size} bytes @ ${instruction.from.toISOString()}`)
 
