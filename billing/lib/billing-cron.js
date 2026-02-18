@@ -19,6 +19,10 @@ export const enqueueCustomerBillingInstructions = async (period, ctx) => {
   /** @type {string|undefined} */
   let cursor
   while (true) {
+    /**
+     * Here we list all customers, even though some customers are not billable anymore.
+     * Wouldn't be better to filter only active/billable customers here?
+     */
     const customerList = await ctx.customerStore.list({}, { cursor, size: 1000 })
     if (customerList.error) return customerList
 

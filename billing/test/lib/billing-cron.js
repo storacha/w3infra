@@ -1,4 +1,4 @@
-import { startOfLastMonth, startOfMonth, } from '../../lib/util.js'
+import { startOfYesterday, startOfToday } from '../../lib/util.js'
 import { enqueueCustomerBillingInstructions } from '../../lib/billing-cron.js'
 import { randomCustomer } from '../helpers/customer.js'
 import { collectQueueMessages } from '../helpers/queue.js'
@@ -19,7 +19,7 @@ export const test = {
     assert.ok(!error)
 
     const now = new Date()
-    const period = { from: startOfLastMonth(now), to: startOfMonth(now) }
+    const period = { from: startOfYesterday(now), to: startOfToday(now) }
     const handled = await enqueueCustomerBillingInstructions(period, ctx)
     assert.ok(handled.ok)
 

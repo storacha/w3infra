@@ -1,5 +1,5 @@
 import { enqueueSpaceBillingInstructions } from '../../lib/customer-billing-queue.js'
-import { startOfLastMonth, startOfMonth, } from '../../lib/util.js'
+import { startOfYesterday, startOfToday } from '../../lib/util.js'
 import { randomConsumer } from '../helpers/consumer.js'
 import { randomCustomer } from '../helpers/customer.js'
 import { collectQueueMessages } from '../helpers/queue.js'
@@ -39,8 +39,8 @@ export const test = {
       customer: customer.customer,
       account: customer.account,
       product: customer.product,
-      from: startOfLastMonth(now),
-      to: startOfMonth(now)
+      from: startOfYesterday(now),
+      to: startOfToday(now)
     }
 
     const handled = await enqueueSpaceBillingInstructions(instruction, ctx)

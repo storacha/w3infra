@@ -1,5 +1,5 @@
-import { createStorePutterClient } from './client.js'
-import { validate, encode } from '../data/usage.js'
+import { createStorePutterClient, createStoreGetterClient } from './client.js'
+import { validate, encode, decode, encodeKey } from '../data/usage.js'
 
 /**
  * Stores per space usage across billing periods.
@@ -24,7 +24,7 @@ export const usageTableProps = {
     provider: 'string',
     /** Space DID (did:key:...). */
     space: 'string',
-    /** Usage in GB/month */
+    /** Usage in byte·milliseconds */
     usage: 'number',
     /** ISO timestamp the usage period spans from (inclusive). */
     from: 'string',
@@ -41,5 +41,7 @@ export const usageTableProps = {
  * @param {{ tableName: string }} context
  * @returns {import('../lib/api.js').UsageStore}
  */
-export const createUsageStore = (conf, { tableName }) =>
-  createStorePutterClient(conf, { tableName, validate, encode })
+export const createUsageStore = (conf, { tableName }) => ({
+  ...createStorePutterClient(conf, { tableName, validate, encode }),
+  ...createStoreGetterClient(conf, { tableName, encodeKey, decode })
+})

@@ -149,9 +149,13 @@ export interface Usage {
   insertedAt: Date
 }
 
+export interface UsageKey { customer: CustomerDID, from: Date, provider: ProviderDID, space: ConsumerDID }
+
 export interface UsageListKey { customer: CustomerDID, from: Date }
 
-export type UsageStore = StorePutter<Usage>
+export type UsageStore =
+  & StorePutter<Usage>
+  & StoreGetter<UsageKey, Usage>
 
 /**
  * Store for egress traffic data.
