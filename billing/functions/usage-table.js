@@ -109,6 +109,35 @@ export const reportUsage = async (usage, ctx) => {
 
   const customer = usage.account.replace('stripe:', '')
 
+  // Validate the Stripe customer before sending usage. 
+  const stripeCustomer = await ctx.stripe.customers.retrieve(customer, {
+    expand: ['subscriptions'],
+  })
+
+  // return ok so the Lambda exits cleanly, since retrying will never succeed.
+  // The customer used the service and is not being billed; manual follow-up required.
+  if (stripeCustomer.deleted) {
+    console.error(
+      `Stripe customer ${customer} has been deleted. ` +
+      `Skipping usage report for customer DID: ${usage.customer}, ` +
+      `space: ${usage.space}, provider: ${usage.provider}, ` +
+      `period: ${usage.from.toISOString()} - ${usage.to.toISOString()}. ` +
+      `Manual review required.`
+    )
+    return { ok: {} }
+  }
+
+  const pastDueSubs = (stripeCustomer.subscriptions?.data ?? []).filter(
+    (s) => s.status === 'past_due'
+  )
+  if (pastDueSubs.length > 0) {
+    console.warn(
+      `Stripe customer ${customer} (customer DID: ${usage.customer}) has ` +
+      `${pastDueSubs.length} past-due subscription(s). ` +
+      `Usage will still be reported but overages may not be collected.`
+    )
+  }
+
   const duration = usage.to.getTime() - usage.from.getTime()
   const byteQuantity = Math.floor(new Big(usage.usage.toString()).div(duration).toNumber())
   const gibQuantity = byteQuantity / (1024 * 1024 * 1024)

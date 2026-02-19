@@ -157,7 +157,7 @@ export function BillingStack ({ stack, app }) {
         eventSource: {
           batchSize: 1,
           startingPosition: StartingPosition.LATEST,
-          retryAttempts: 10,
+          retryAttempts: 3,
           onFailure: new SqsDlq(usageTableDLQ.cdk.queue)
         }
       },
