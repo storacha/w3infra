@@ -82,7 +82,7 @@ test('should store small number of shards inline in DynamoDB', async (t) => {
   })
 
   t.truthy(upsertResult.ok)
-  t.is(upsertResult.ok?.shards?.length, 10)
+  t.is(upsertResult.ok?.shards, undefined)
 
   // Get upload to verify shards are inline
   const getResult = await uploadTable.get(space, root)
@@ -131,7 +131,7 @@ test('should store large number of shards in S3', async (t) => {
   })
 
   t.truthy(upsertResult.ok)
-  t.is(upsertResult.ok?.shards?.length, 6000)
+  t.is(upsertResult.ok?.shards, undefined)
 
   // Get upload to verify shards are fetched from S3
   const getResult = await uploadTable.get(space, root)
@@ -185,7 +185,7 @@ test('should migrate from inline to S3 when crossing threshold', async (t) => {
   })
 
   t.truthy(upsert1Result.ok)
-  t.is(upsert1Result.ok?.shards?.length, 100)
+  t.is(upsert1Result.ok?.shards, undefined)
 
   // Second upsert with many more shards (should migrate to S3)
   const shards2 = await createShards(5500)
@@ -198,12 +198,12 @@ test('should migrate from inline to S3 when crossing threshold', async (t) => {
   })
 
   t.truthy(upsert2Result.ok)
-  // Should have all shards from both upserts, but deduplicated
-  t.true((upsert2Result.ok?.shards?.length ?? 0) >= 5500)
-
+  t.is(upsert2Result.ok?.shards, undefined)
+  
   // Get upload to verify all shards are present
   const getResult = await uploadTable.get(space, root)
   t.truthy(getResult.ok)
+  // Should have all shards from both upserts, but deduplicated
   t.true((getResult.ok?.shards?.length ?? 0) >= 5500)
 })
 

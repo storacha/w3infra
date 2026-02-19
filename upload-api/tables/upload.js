@@ -35,9 +35,12 @@ const getS3Key = async (space, cborData) => {
 }
 
 /**
- * @typedef {import('@storacha/upload-api').UploadTable} UploadTable
- * @typedef {import('@storacha/upload-api').UploadAddSuccess} UploadAddResult
- * @typedef {import('@storacha/upload-api').UploadListItem} UploadListItem
+ * @import {
+ *  UploadTable,
+ *  UploadAddSuccess as UploadAddResult,
+ *  UploadRemoveSuccess as UploadRemoveResult,
+ *  UploadListItem
+ * } from '@storacha/upload-api'
  */
 
 /**
@@ -397,7 +400,7 @@ export function useUploadTable(dynamoDb, tableName, metrics, options = {}) {
           })
         ])
 
-        return { ok: toUploadAddResult(raw) }
+        return { ok: toUploadRemoveResult(raw) }
       } catch (/** @type {any} */ err) {
         if (err.name === 'ConditionalCheckFailedException') {
           return { error: new RecordNotFound() }
@@ -505,15 +508,30 @@ export function useUploadTable(dynamoDb, tableName, metrics, options = {}) {
 }
 
 /**
- * Convert from the db representation to an UploadAddInput
+ * Convert from the db representation to an UploadAddResult
  *
  * @param {Record<string, any>} item
  * @returns {UploadAddResult}
  */
-export function toUploadAddResult({ root, shards }) {
+export function toUploadAddResult({ root }) {
   return {
     root: CID.parse(root),
-    shards: (shards ? [...shards] : []).map((s) => /** @type {import('@storacha/upload-api').CARLink} */ (CID.parse(s))),
+  }
+}
+
+/**
+ * Convert from the db representation to an UploadRemoveResult
+ *
+ * @param {Record<string, any>} item
+ * @returns {UploadRemoveResult}
+ */
+export function toUploadRemoveResult({ root, shards }) {
+  return {
+    root: CID.parse(root),
+    shards: (shards ? [...shards] : []).map(
+      (s) =>
+        /** @type {import('@storacha/upload-api').CARLink} */ (CID.parse(s))
+    ),
   }
 }
 
@@ -525,7 +543,7 @@ export function toUploadAddResult({ root, shards }) {
  */
 export function toUploadListItem({ insertedAt, updatedAt, ...rest }) {
   return {
-    ...toUploadAddResult(rest),
+    ...toUploadRemoveResult(rest),
     insertedAt,
     updatedAt,
   }
