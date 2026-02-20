@@ -462,6 +462,9 @@ importers:
       p-wait-for:
         specifier: 'catalog:'
         version: 5.0.2
+      stripe:
+        specifier: 'catalog:'
+        version: 17.7.0
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
