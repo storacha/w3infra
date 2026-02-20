@@ -243,10 +243,7 @@ test('w3infra store/upload integration flow', withCauseLog(async t => {
     cursor = listResult.cursor
   } while (!uploadFound)
 
-  t.is(uploadFound.shards?.length, 1)
-  for (let i = 0; i < shards.length; i++) {
-    t.truthy(uploadFound.shards?.[i].equals(shards[i]))
-  }
+  t.is(uploadFound.shards, undefined) // shards should not be included in list response
 
   // Read from Roundabout returns 200
   const rawCid = Link.create(RAW_CODE, shards[0].multihash)
