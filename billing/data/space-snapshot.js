@@ -65,3 +65,13 @@ export const decode = input => {
     }
   }
 }
+
+export const lister = {
+  /** @type {import('../lib/api.js').Encoder<Pick<SpaceSnapshotKey, 'provider'|'space'>, Pick<SpaceSnapshotKeyStoreRecord, 'pk'>>} */
+  encodeKey: (input) => ({
+    ok: {
+      pk: `${input.provider}#${input.space}`
+    }
+  })
+}
+

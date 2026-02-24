@@ -182,6 +182,7 @@ export const createStoreListerClient = (conf, context) => {
           IndexName: context.indexName,
           Limit: options?.size ?? 100,
           KeyConditions: conditions,
+          ScanIndexForward: options?.scanIndexForward,
           ExclusiveStartKey: options?.cursor
             ? marshall(JSON.parse(options.cursor))
             : undefined

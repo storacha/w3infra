@@ -56,21 +56,47 @@ export const calculatePeriodUsage = async (instruction, ctx) => {
   console.log(`Customer: ${instruction.customer}`)
   console.log(`Period: ${instruction.from.toISOString()} - ${instruction.to.toISOString()}`)
 
+  // Try to get snapshot at exact 'from' date first
   const { ok: snap, error } = await ctx.spaceSnapshotStore.get({
     space: instruction.space,
     provider: instruction.provider,
     recordedAt: instruction.from
   })
   if (error && error.name !== 'RecordNotFound') return { error }
-  if (!snap) console.warn(`!!! Snapshot not found, assuming empty space !!!`)
 
-  let size = snap?.size ?? 0n
-  let usage = size * BigInt(instruction.to.getTime() - instruction.from.getTime()) // initial usage from snapshot
+  let snapshotToUse = snap
+  let snapshotDate = instruction.from
 
-  console.log(`Total size of ${instruction.space} is ${size} bytes @ ${instruction.from.toISOString()}`)
+  // If no snapshot at exact 'from' date, list snapshots in descending order (newest first)
+  // and check if the most recent one is before 'from'.
+  if (!snap) {
+    console.warn(`No snapshot found at ${instruction.from.toISOString()}, querying for most recent snapshot before this date...`)
+
+    const listResult = await ctx.spaceSnapshotStore.list({
+      space: instruction.space,
+      provider: instruction.provider
+    }, { size: 1, scanIndexForward: false }) // get newest snapshot
+
+    if (listResult.error) return listResult
+
+    // Check if the newest snapshot is at or before 'from'
+    const newestSnapshot = listResult.ok.results[0]
+    if (newestSnapshot && newestSnapshot.recordedAt.getTime() <= instruction.from.getTime()) {
+      snapshotToUse = newestSnapshot
+      snapshotDate = newestSnapshot.recordedAt
+      console.log(`Found snapshot @ ${snapshotDate.toISOString()}: ${newestSnapshot.size} bytes`)
+    } else {
+      console.warn(`!!! No snapshot found before ${instruction.from.toISOString()}, assuming empty space !!!`)
+    }
+  }
+
+  let size = snapshotToUse ? snapshotToUse.size : 0n
+  let usage = size * BigInt(instruction.to.getTime() - snapshotDate.getTime()) // initial usage from snapshot
+
+  console.log(`Starting calculation from ${snapshotDate.toISOString()}: ${size} bytes for ${instruction.space}`)
 
   let totalDiffs = 0
-  for await (const page of iterateSpaceDiffs(instruction, ctx)) {
+  for await (const page of iterateSpaceDiffs({...instruction, from: snapshotDate}, ctx)) {
     if (page.error) return page
     totalDiffs += page.ok.length
     for (const diff of page.ok) {
