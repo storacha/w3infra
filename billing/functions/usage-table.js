@@ -289,7 +289,6 @@ export const reportUsage = async (usage, ctx) => {
   const usageSummary = {
     space: usage.space,
     customer: usage.customer,
-    stripeCustomer,
     cumulative: {
       bytes: cumulativeByteQuantity,
       byteMs: usage.usage.toString()
@@ -309,7 +308,6 @@ export const reportUsage = async (usage, ctx) => {
     message: 'Sending usage to Stripe',
     space: usage.space,
     customer: usage.customer,
-    stripeCustomer,
     deltaBytes: deltaByteQuantity,
     timestamp: referenceDate.toISOString(),
     idempotencyKey
@@ -327,7 +325,7 @@ export const reportUsage = async (usage, ctx) => {
     timestamp: Math.floor(referenceDate.getTime() / 1000),
     identifier: idempotencyKey,
     payload: {
-      stripe_customer_id: stripeCustomer,
+      stripe_customer_id: customer,
       bytes: deltaByteQuantity.toString(),
     },
   })
