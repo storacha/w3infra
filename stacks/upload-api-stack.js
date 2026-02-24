@@ -246,15 +246,6 @@ export function UploadApiStack({ stack, app }) {
             bind: [ucanInvocationPostbasicAuth],
           },
         },
-        'POST /bridge': {
-          function: {
-            handler: 'upload-api/functions/bridge.handler',
-            environment: {
-              ACCESS_SERVICE_URL: getServiceURL(stack, customDomain) ?? '',
-              UPLOAD_API_DID: process.env.UPLOAD_API_DID ?? '',
-            },
-          },
-        },
         'GET /': {
           function: {
             handler: 'upload-api/functions/get.home',
