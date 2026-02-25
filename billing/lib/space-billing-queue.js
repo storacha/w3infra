@@ -56,29 +56,57 @@ export const calculatePeriodUsage = async (instruction, ctx) => {
   console.log(`Customer: ${instruction.customer}`)
   console.log(`Period: ${instruction.from.toISOString()} - ${instruction.to.toISOString()}`)
 
+  // Try to get snapshot at exact 'from' date first
   const { ok: snap, error } = await ctx.spaceSnapshotStore.get({
     space: instruction.space,
     provider: instruction.provider,
     recordedAt: instruction.from
   })
   if (error && error.name !== 'RecordNotFound') return { error }
-  if (!snap) console.warn(`!!! Snapshot not found, assuming empty space !!!`)
 
-  let size = snap?.size ?? 0n
-  let usage = size * BigInt(instruction.to.getTime() - instruction.from.getTime())
+  let snapshotToUse = snap
+  let snapshotDate = instruction.from
 
-  console.log(`Total size of ${instruction.space} is ${size} bytes @ ${instruction.from.toISOString()}`)
+  // If no snapshot at exact 'from' date, list snapshots in descending order (newest first)
+  // and check if the most recent one is before 'from'.
+  if (!snap) {
+    console.warn(`No snapshot found at ${instruction.from.toISOString()}, querying for most recent snapshot before this date...`)
 
-  for await (const page of iterateSpaceDiffs(instruction, ctx)) {
-    if (page.error) return page
-    for (const diff of page.ok) {
-      console.log(`${diff.delta > 0 ? '+' : ''}${diff.delta} bytes @ ${diff.receiptAt.toISOString()}`)
-      size += BigInt(diff.delta)
-      usage += BigInt(diff.delta) * BigInt(instruction.to.getTime() - diff.receiptAt.getTime())
+    const listResult = await ctx.spaceSnapshotStore.list({
+      space: instruction.space,
+      provider: instruction.provider
+    }, { size: 1, scanIndexForward: false }) // get newest snapshot
+
+    if (listResult.error) return listResult
+
+    // Check if the newest snapshot is at or before 'from'
+    const newestSnapshot = listResult.ok.results[0]
+    if (newestSnapshot && newestSnapshot.recordedAt.getTime() <= instruction.from.getTime()) {
+      snapshotToUse = newestSnapshot
+      snapshotDate = newestSnapshot.recordedAt
+      console.log(`Found snapshot @ ${snapshotDate.toISOString()}: ${newestSnapshot.size} bytes`)
+    } else {
+      console.warn(`!!! No snapshot found before ${instruction.from.toISOString()}, assuming empty space !!!`)
     }
   }
 
-  console.log(`Total size of ${instruction.space} is ${size} bytes @ ${instruction.to.toISOString()}`)
+  let size = snapshotToUse ? snapshotToUse.size : 0n
+  let usage = size * BigInt(instruction.to.getTime() - snapshotDate.getTime()) // initial usage from snapshot
+
+  console.log(`Starting calculation from ${snapshotDate.toISOString()}: ${size} bytes for ${instruction.space}`)
+
+  let totalDiffs = 0
+  for await (const page of iterateSpaceDiffs({...instruction, from: snapshotDate}, ctx)) {
+    if (page.error) return page
+    totalDiffs += page.ok.length
+    for (const diff of page.ok) {
+      size += BigInt(diff.delta)
+      usage += BigInt(diff.delta) * BigInt(instruction.to.getTime() - diff.receiptAt.getTime())
+    }
+    console.log(`Total ${totalDiffs} diffs processed for space: ${instruction.space}...`)
+  }
+
+  console.log(`Final total size of ${instruction.space} is ${size} bytes and usage ${usage} byte/ms @ ${instruction.to.toISOString()}`)
 
   return { ok: { size, usage } }
 }
@@ -110,7 +138,7 @@ export const storeSpaceUsage = async (instruction, { size, usage }, ctx) => {
   if (snapPut.error) return snapPut
 
   const duration = instruction.to.getTime() - instruction.from.getTime()
-  console.log(`Space consumed by ${instruction.space} is ${usage} byte/ms (~${new Big(usage.toString()).div(duration).div(GB).toFixed(2)} GiB/month)`)
+  console.log(`Total accumulated storage usage for ${instruction.space} is ${usage} byte/ms (~${new Big(usage.toString()).div(duration).div(GB).toFixed(2)} GiB)`)
   const usagePut = await ctx.usageStore.put({
     ...instruction,
     usage,
@@ -173,7 +201,7 @@ export const calculateSpaceAllocation = async (store, instruction, ctx) => {
   console.log(`Total allocation for ${instruction.space}: ${size} bytes`)
   const duration = instruction.to.getTime() - instruction.from.getTime()
   const usageGB = new Big(usage.toString()).div(duration).div(GB).toFixed(2)
-  console.log(`Approximate space consumed ${usage} byte/ms (~${usageGB} GiB/month)`)
+  console.log(`Approximate space consumed ${usage} byte/ms (~${usageGB} GiB)`)
   
   return {ok: {size, usage}}
 }

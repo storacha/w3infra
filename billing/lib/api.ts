@@ -72,6 +72,7 @@ export interface SpaceSnapshotKey { provider: ProviderDID, space: ConsumerDID, r
 export type SpaceSnapshotStore =
   & StorePutter<SpaceSnapshot>
   & StoreGetter<SpaceSnapshotKey, SpaceSnapshot>
+  & StoreLister<Pick<SpaceSnapshotKey, 'provider'|'space'>, SpaceSnapshot>
 
 /**
  * Captures information about a customer of the service that may need to be
@@ -149,9 +150,13 @@ export interface Usage {
   insertedAt: Date
 }
 
+export interface UsageKey { customer: CustomerDID, from: Date, provider: ProviderDID, space: ConsumerDID }
+
 export interface UsageListKey { customer: CustomerDID, from: Date }
 
-export type UsageStore = StorePutter<Usage>
+export type UsageStore =
+  & StorePutter<Usage>
+  & StoreGetter<UsageKey, Usage>
 
 /**
  * Store for egress traffic data.
@@ -451,7 +456,7 @@ export interface StoreGetter<K extends {}, V> {
 /** StoreLister allows items in the store to be listed page by page. */
 export interface StoreLister<K extends {}, V> {
   /** Lists items in the store. */
-  list: (key: K, options?: Pageable) => Promise<Result<ListSuccess<V>, EncodeFailure|DecodeFailure|StoreOperationFailure>>
+  list: (key: K, options?: Pageable & { scanIndexForward?: boolean }) => Promise<Result<ListSuccess<V>, EncodeFailure|DecodeFailure|StoreOperationFailure>>
 }
 
 /** QueueAdder allows messages to be added to the end of the queue. */

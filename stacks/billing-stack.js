@@ -100,10 +100,10 @@ export function BillingStack ({ stack, app }) {
   })
   const billingCronHandlerURL = billingCronHandler.url ?? ''
 
-  // Cron job to kick off a billing run on every 1st day of the month
+  // Cron job to kick off a billing run daily at 01:00 UTC
   const billingCron = new Cron(stack, 'billing-cron', {
     job: billingCronHandler,
-    schedule: 'cron(0 0 1 * ? *)' // https://crontab.guru/#0_0_1_*_*
+    schedule: 'cron(0 1 * * ? *)' // https://crontab.guru/#0_0_*_*_*_*
   })
 
   const { ucanStream } = use(UcanInvocationStack)
@@ -141,10 +141,13 @@ export function BillingStack ({ stack, app }) {
 
   // Lambda that sends usage table records to Stripe for invoicing.
   const usageTableHandler = new Function(stack, 'usage-table-handler', {
-    permissions: [spaceSnapshotTable, spaceDiffTable],
+    permissions: [usageTable, spaceSnapshotTable, spaceDiffTable],
     handler: 'billing/functions/usage-table.handler',
     timeout: '15 minutes',
-    bind: [stripeSecretKey]
+    bind: [stripeSecretKey],
+    environment: {
+      USAGE_TABLE_NAME: usageTable.tableName
+    }
   })
 
   const usageTableDLQ = new Queue(stack, 'usage-table-dlq', {

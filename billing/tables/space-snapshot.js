@@ -1,5 +1,5 @@
-import { createStoreGetterClient, createStorePutterClient } from './client.js'
-import { validate, encode, decode, encodeKey } from '../data/space-snapshot.js'
+import { createStoreGetterClient, createStoreListerClient, createStorePutterClient } from './client.js'
+import { validate, encode, decode, encodeKey, lister } from '../data/space-snapshot.js'
 
 /**
  * Stores snapshots of total space size at a given time.
@@ -35,5 +35,6 @@ export const spaceSnapshotTableProps = {
  */
 export const createSpaceSnapshotStore = (conf, { tableName }) => ({
   ...createStorePutterClient(conf, { tableName, validate, encode }),
-  ...createStoreGetterClient(conf, { tableName, encodeKey, decode })
+  ...createStoreGetterClient(conf, { tableName, encodeKey, decode }),
+  ...createStoreListerClient(conf, { tableName, encodeKey: lister.encodeKey, decode })
 })
