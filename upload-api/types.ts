@@ -202,6 +202,7 @@ export interface StorageProviderInput {
   endpoint: URL
   proof: Delegation
   weight: number
+  replicationWeight?: number
 }
 
 export interface StorageProviderRecord {
@@ -209,6 +210,7 @@ export interface StorageProviderRecord {
   endpoint: URL
   proof: Delegation
   weight: number
+  replicationWeight: number
   insertedAt: Date
 }
 
@@ -216,7 +218,7 @@ export interface StorageProviderTable {
   put: (input: StorageProviderInput) => Promise<void>
   get: (provider: DID) => Promise<StorageProviderRecord|undefined>
   del: (provider: DID) => Promise<void>
-  list: () => Promise<Array<{ provider: DID, weight: number }>>
+  list: () => Promise<Array<{ provider: DID, weight: number, replicationWeight: number }>>
 }
 
 export type SpaceService = Pick<Service, "space">

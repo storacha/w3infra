@@ -62,8 +62,8 @@ export const useStorageProviderTable = (dynamo, tableName) =>
     },
 
     /** @type {API.StorageProviderTable['list']} */
-    async list () {
-      /** @type {{ provider: import('@ucanto/interface').DID; weight: number }[]} */
+    async list() {
+      /** @type {{ provider: import('@ucanto/interface').DID; weight: number; replicationWeight: number }[]} */
       const ids = []
       /** @type {Record<string, import('@aws-sdk/client-dynamodb').AttributeValue>|undefined} */
       let cursor
@@ -71,14 +71,15 @@ export const useStorageProviderTable = (dynamo, tableName) =>
         const cmd = new ScanCommand({
           TableName: tableName,
           ExclusiveStartKey: cursor,
-          AttributesToGet: ['provider', 'weight']
+          AttributesToGet: ['provider', 'weight', 'replicationWeight'],
         })
         const res = await dynamo.send(cmd)
         for (const item of res.Items ?? []) {
           const raw = unmarshall(item)
           ids.push({
             provider: parse(raw.provider).did(),
-            weight: raw.weight
+            weight: raw.weight,
+            replicationWeight: raw.replicationWeight ?? raw.weight,
           })
         }
         cursor = res.LastEvaluatedKey
@@ -102,6 +103,7 @@ const encode = async input => {
     endpoint: input.endpoint.toString(),
     proof: Link.create(0x0202, identity.digest(archive.ok)).toString(base64),
     weight: input.weight,
+    replicationWeight: input.replicationWeight ?? input.weight,
     insertedAt: new Date().toISOString(),
   }
 }
@@ -119,6 +121,7 @@ const decode = async item => {
     endpoint: new URL(raw.endpoint),
     proof,
     weight: raw.weight ?? 100,
-    insertedAt: new Date(raw.insertedAt)
+    replicationWeight: raw.replicationWeight ?? raw.weight ?? 100,
+    insertedAt: new Date(raw.insertedAt),
   }
 }

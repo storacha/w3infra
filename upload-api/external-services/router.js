@@ -51,7 +51,7 @@ export const create = (storageProviderTable, serviceID) =>
     selectReplicationProviders: async (primary, count, digest, size, options) => {
       const exclude = options?.exclude ?? []
       const providers = (await storageProviderTable.list())
-        .filter(p => p.weight > 0)
+        .filter(p => p.replicationWeight > 0)
         .filter(p => p.provider !== primary.did())
         .filter(p => !exclude.some(e => e.did() === p.provider))
 
@@ -61,7 +61,7 @@ export const create = (storageProviderTable, serviceID) =>
 
       const selection = []
       for (let i = 0; i < count; i++) {
-        const index = getWeightedRandomInt(providers.map(p => p.weight ?? 0))
+        const index = getWeightedRandomInt(providers.map(p => p.replicationWeight ?? 0))
         selection.push(parse(providers[index].provider))
         providers.splice(index, 1)
       }
