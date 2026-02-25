@@ -19,6 +19,7 @@ export function BillingStack ({ stack, app }) {
     spaceDiffTable,
     usageTable,
     egressTrafficTable,
+    egressTrafficMonthlyTable,
     stripeSecretKey
   } = use(BillingDbStack)
   const { subscriptionTable, consumerTable } = use(UploadDbStack)
@@ -200,13 +201,14 @@ export function BillingStack ({ stack, app }) {
 
   // Lambda that handles egress traffic tracking
   const egressTrafficQueueHandler = new Function(stack, 'egress-traffic-queue-handler', {
-    permissions: [customerTable, egressTrafficTable],
+    permissions: [customerTable, egressTrafficTable, egressTrafficMonthlyTable],
     handler: 'billing/functions/egress-traffic-queue.handler',
     timeout: '15 minutes',
     bind: [stripeSecretKey],
     environment: {
       CUSTOMER_TABLE_NAME: customerTable.tableName,
       EGRESS_TRAFFIC_TABLE_NAME: egressTrafficTable.tableName,
+      EGRESS_TRAFFIC_MONTHLY_TABLE_NAME: egressTrafficMonthlyTable.tableName,
       // Billing Meter Event Name for Stripe Test and Production APIs
       STRIPE_BILLING_METER_EVENT_NAME: 'gateway-egress-traffic',
       SKIP_STRIPE_EGRESS_TRACKING: process.env.SKIP_STRIPE_EGRESS_TRACKING || ''

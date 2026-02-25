@@ -5,6 +5,7 @@ import { spaceDiffArchiveTableProps } from '../billing/tables/space-diff-archive
 import { spaceSnapshotTableProps } from '../billing/tables/space-snapshot.js'
 import { usageTableProps } from '../billing/tables/usage.js'
 import { egressTrafficTableProps } from '../billing/tables/egress-traffic.js'
+import { egressTrafficMonthlyTableProps } from '../billing/tables/egress-traffic-monthly.js'
 
 /**
  * @param {import('sst/constructs').StackContext} properties
@@ -19,6 +20,7 @@ export const BillingDbStack = ({ stack }) => {
     stream: 'new_image'
   })
   const egressTrafficTable = new Table(stack, 'egress-traffic-events', egressTrafficTableProps)
+  const egressTrafficMonthlyTable = new Table(stack, 'egress-traffic-monthly', egressTrafficMonthlyTableProps)
 
   stack.addOutputs({
     customerTableName: customerTable.tableName,
@@ -26,10 +28,11 @@ export const BillingDbStack = ({ stack }) => {
     spaceDiffTableName: spaceDiffTable.tableName,
     spaceDiffArchiveTableName: spaceDiffArchiveTable.tableName,
     usageTable: usageTable.tableName,
-    egressTrafficTableName: egressTrafficTable.tableName
+    egressTrafficTableName: egressTrafficTable.tableName,
+    egressTrafficMonthlyTableName: egressTrafficMonthlyTable.tableName
   })
 
   const stripeSecretKey = new Config.Secret(stack, 'STRIPE_SECRET_KEY')
 
-  return { customerTable, spaceSnapshotTable, spaceDiffTable, spaceDiffArchiveTable, usageTable, egressTrafficTable, stripeSecretKey }
+  return { customerTable, spaceSnapshotTable, spaceDiffTable, spaceDiffArchiveTable, usageTable, egressTrafficTable, egressTrafficMonthlyTable, stripeSecretKey }
 }
