@@ -242,8 +242,11 @@ export const storageProviderTableProps = {
     endpoint: 'string',
     // Proof the upload service can invoke blob/allocate and blob/accept.
     proof: 'string',
-    // Weight determines chance of selection relative to other providers.
+    // Weight determines chance of selection for uploads relative to other providers.
     weight: 'number',
+    // Weight determines chance of selection for replications relative to other providers.
+    // Defaults to weight if not set.
+    replicationWeight: 'number',
     // Date and time the record was created (ISO 8601)
     insertedAt: 'string',
     // Date and time the record was last updated (ISO 8601)
