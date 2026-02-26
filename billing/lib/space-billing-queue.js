@@ -1,5 +1,5 @@
 import Big from 'big.js'
-import {GB} from './util.js'
+import {GB, startOfMonth} from './util.js'
 
 /**
  * @param {import('./api.js').SpaceDiffListKey & { to: Date }} params
@@ -56,6 +56,8 @@ export const calculatePeriodUsage = async (instruction, ctx) => {
   console.log(`Customer: ${instruction.customer}`)
   console.log(`Period: ${instruction.from.toISOString()} - ${instruction.to.toISOString()}`)
 
+  const monthStart = startOfMonth(instruction.from)
+
   // Try to get snapshot at exact 'from' date first
   const { ok: snap, error } = await ctx.spaceSnapshotStore.get({
     space: instruction.space,
@@ -91,7 +93,7 @@ export const calculatePeriodUsage = async (instruction, ctx) => {
   }
 
   let size = snapshotToUse ? snapshotToUse.size : 0n
-  let usage = size * BigInt(instruction.to.getTime() - snapshotDate.getTime()) // initial usage from snapshot
+  let usage = size * BigInt(instruction.to.getTime() - monthStart.getTime()) // calculate cumulative usage from MONTH START to instruction.to    
 
   console.log(`Starting calculation from ${snapshotDate.toISOString()}: ${size} bytes for ${instruction.space}`)
 
@@ -101,7 +103,8 @@ export const calculatePeriodUsage = async (instruction, ctx) => {
     totalDiffs += page.ok.length
     for (const diff of page.ok) {
       size += BigInt(diff.delta)
-      usage += BigInt(diff.delta) * BigInt(instruction.to.getTime() - diff.receiptAt.getTime())
+      const effectiveStart = Math.max(diff.receiptAt.getTime(), monthStart.getTime()) // prevents from charges outside the billing month                                                                                                                                                                                                                                                                                                                                    
+      usage += BigInt(diff.delta) * BigInt(instruction.to.getTime() - effectiveStart)
     }
     console.log(`Total ${totalDiffs} diffs processed for space: ${instruction.space}...`)
   }
@@ -137,8 +140,17 @@ export const storeSpaceUsage = async (instruction, { size, usage }, ctx) => {
   })
   if (snapPut.error) return snapPut
 
-  const duration = instruction.to.getTime() - instruction.from.getTime()
-  console.log(`Total accumulated storage usage for ${instruction.space} is ${usage} byte/ms (~${new Big(usage.toString()).div(duration).div(GB).toFixed(2)} GiB)`)
+  const monthStart = startOfMonth(instruction.from)
+  const duration = instruction.to.getTime() - monthStart.getTime()
+  const avgGiB = new Big(usage.toString()).div(duration).div(GB).toFixed(2)
+
+  console.log(
+    `Storing usage record for ${instruction.space}:\n` +
+    `  Period: ${instruction.from.toISOString()} to ${instruction.to.toISOString()}\n` +
+    `  Cumulative usage from month start (${monthStart.toISOString()}): ${usage} byte·ms (~${avgGiB} GiB average)\n` +
+    `  Current size at ${instruction.to.toISOString()}: ${size} bytes`
+  )
+
   const usagePut = await ctx.usageStore.put({
     ...instruction,
     usage,

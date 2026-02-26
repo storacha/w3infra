@@ -193,6 +193,7 @@ export const reportUsage = async (usage, ctx) => {
     customer: usage.customer,
     account: usage.account,
     product: usage.product,
+    usage: usage.usage,
     period: {
       from: usage.from.toISOString(),
       to: usage.to.toISOString()
@@ -252,15 +253,11 @@ export const reportUsage = async (usage, ctx) => {
     }
   }
 
-  // Calculate cumulative byte quantity (for logging)
-  const cumulativeByteQuantity = Math.floor(new Big(usage.usage.toString()).div(duration).toNumber())
-
   const isFirstOfMonth = usage.from.getUTCDate() === 1
-  const isFirstDailyRun = usage.from <= new Date('2026-02-25T00:00:00.000Z')  // Hardcoded migration cutoff. TODO: remove it after 
   // NOTE: Since Stripe aggregates per billing period (monthly), each month starts fresh so no need to get previous usage and calculate delta.
   let previousCumulativeUsage                                                                                                
   try {                                                                                                                      
-    previousCumulativeUsage = (isFirstOfMonth || isFirstDailyRun) ? 0n : await getPreviousUsage(usage, ctx)                                       
+    previousCumulativeUsage = isFirstOfMonth ? 0n : await getPreviousUsage(usage, ctx)                                       
   } catch (/** @type {any} */ err) {                                                                                         
     return { error: err }                                                                                                    
   } 
@@ -282,6 +279,11 @@ export const reportUsage = async (usage, ctx) => {
     }))
   }
 
+  // Calculate cumulative byte quantity (for logging) - average over the entire month-to-date
+  const monthStart = startOfMonth(usage.to)
+  const cumulativeDuration = usage.to.getTime() - monthStart.getTime()
+  const cumulativeByteQuantity = Math.floor(new Big(usage.usage.toString()).div(cumulativeDuration).toNumber())
+
   // Convert delta to byte quantity for Stripe
   const deltaByteQuantity = Math.floor(new Big(deltaUsage.toString()).div(duration).toNumber())
   const deltaGibQuantity = deltaByteQuantity / (1024 * 1024 * 1024)
@@ -290,7 +292,7 @@ export const reportUsage = async (usage, ctx) => {
     space: usage.space,
     customer: usage.customer,
     cumulative: {
-      bytes: cumulativeByteQuantity,
+      bytesAverage: cumulativeByteQuantity,  // Average bytes from month start to now
       byteMs: usage.usage.toString()
     },
     delta: {
@@ -302,7 +304,7 @@ export const reportUsage = async (usage, ctx) => {
   console.log(`Usage summary:\n ${JSON.stringify(usageSummary)}`)
 
   const idempotencyKey = await createIdempotencyKey(usage)
-  const referenceDate = new Date(usage.from.getTime())
+  const referenceDate = new Date(usage.to.getTime())
 
   const stripeRequest = {
     message: 'Sending usage to Stripe',
