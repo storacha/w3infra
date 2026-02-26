@@ -59,9 +59,16 @@ export const createEgressTrafficEventStore = (conf, { tableName }) => {
      *
      * @param {import('@ucanto/interface').DID} space - The space DID
      * @param {{ from: Date, to: Date }} period - Time period to query
+     * @param {import('../lib/api.js').EgressTrafficMonthlyStore} [monthlyStore] - Optional monthly store for fast aggregation
      * @returns {Promise<import('@ucanto/interface').Result<number, Error>>}
      */
-    async sumBySpace(space, period) {
+    async sumBySpace(space, period, monthlyStore) {
+      // Use monthly store if provided (fast path)
+      if (monthlyStore) {
+        return monthlyStore.sumBySpace(space, period)
+      }
+
+      // Fallback to scanning raw events (slow path)
       let total = 0
       /** @type {Record<string, import('@aws-sdk/client-dynamodb').AttributeValue> | undefined} */
       let exclusiveStartKey

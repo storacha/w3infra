@@ -165,7 +165,36 @@ export type EgressTrafficEventStore = StorePutter<EgressTrafficData> & StoreList
   /**
    * Sum total egress bytes for a space within a time period
    */
-  sumBySpace: (space: ConsumerDID, period: { from: Date, to: Date }) => Promise<Result<number, Failure>>
+  sumBySpace: (space: ConsumerDID, period: { from: Date, to: Date }, monthlyStore?: EgressTrafficMonthlyStore) => Promise<Result<number, Failure>>
+}
+
+/**
+ * Monthly aggregated egress traffic summary.
+ */
+export interface EgressTrafficMonthlySummary {
+  customer: CustomerDID
+  space: ConsumerDID
+  month: string  // YYYY-MM
+  bytes: bigint
+  eventCount: number
+}
+
+/**
+ * Store for monthly aggregated egress traffic data.
+ */
+export interface EgressTrafficMonthlyStore {
+  /**
+   * Atomically increment monthly aggregates
+   */
+  increment: (params: { customer: string, space: string, month: string, bytes: number }) => Promise<void>
+  /**
+   * Get total egress for a space in a time period (uses GSI)
+   */
+  sumBySpace: (space: string, period: { from: Date, to: Date }) => Promise<Result<number, Failure>>
+  /**
+   * Get all spaces egress for a customer in a month
+   */
+  listByCustomer: (customer: string, month: string) => Promise<Result<Array<{space: string, month: string, bytes: number, eventCount: number}>, Failure>>
 }
 
 export interface Allocation {

@@ -10,9 +10,10 @@ const tracer = trace.getTracer('upload-api')
  * @param {import('../../billing/lib/api.js').SpaceDiffStore} conf.spaceDiffStore
  * @param {import('../../billing/lib/api.js').EgressTrafficEventStore} conf.egressTrafficStore
  * @param {import('../../billing/lib/api.js').EgressTrafficQueue} conf.egressTrafficQueue
+ * @param {import('../../billing/lib/api.js').EgressTrafficMonthlyStore} [conf.egressTrafficMonthlyStore] - Optional monthly store for fast aggregation
  * @returns {import('@storacha/upload-api').UsageStorage}
  */
-export function useUsageStore({ spaceSnapshotStore, spaceDiffStore, egressTrafficStore, egressTrafficQueue }) {
+export function useUsageStore({ spaceSnapshotStore, spaceDiffStore, egressTrafficStore, egressTrafficQueue, egressTrafficMonthlyStore }) {
   return instrumentMethods(tracer, 'UsageStorage', {
     /**
      * @param {import('@storacha/upload-api').ProviderDID} provider
@@ -72,7 +73,8 @@ export function useUsageStore({ spaceSnapshotStore, spaceDiffStore, egressTraffi
      * @param {{ from: Date, to: Date }} period
      */
     async reportEgress(provider, space, period) {
-      const result = await egressTrafficStore.sumBySpace(space, period)
+      // Pass monthly store to enable fast aggregation (if available)
+      const result = await egressTrafficStore.sumBySpace(space, period, egressTrafficMonthlyStore)
       if (result.error) {
         return result
       }
