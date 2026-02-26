@@ -180,24 +180,13 @@ export function useUploadTable(dynamoDb, tableName, metrics, options = {}) {
           space,
           root: root.toString(),
         }),
-        AttributesToGet: ['space', 'root', 'shards', 'shardsRef', 'insertedAt', 'updatedAt'],
+        AttributesToGet: ['root', 'insertedAt', 'updatedAt'],
       })
       const res = await dynamoDb.send(cmd)
       if (!res.Item) {
         return { error: new RecordNotFound() }
       }
       const item = unmarshall(res.Item)
-
-      // If shards are stored in S3, fetch them
-      if (item.shardsRef && s3Client && shardsBucketName) {
-        try {
-          item.shards = await fetchShardStringsFromS3(item.shardsRef)
-        } catch (/** @type {any} */ error) {
-          console.error('Failed to fetch shards from S3:', error)
-          throw error
-        }
-      }
-
       return { ok: toUploadListItem(item) }
     },
     /**
@@ -377,16 +366,7 @@ export function useUploadTable(dynamoDb, tableName, metrics, options = {}) {
         }
         const raw = unmarshall(res.Attributes)
 
-        // If shards were in S3, fetch them for the return value BEFORE deleting
         if (raw.shardsRef && s3Client && shardsBucketName) {
-          try {
-            raw.shards = await fetchShardStringsFromS3(raw.shardsRef)
-          } catch (/** @type {any} */ error) {
-            console.error('Failed to fetch shards from S3 during remove:', error)
-            // Continue with empty shards rather than failing
-            raw.shards = []
-          }
-
           // Now delete the S3 object
           await deleteShardsFromS3(raw.shardsRef)
         }
@@ -434,28 +414,10 @@ export function useUploadTable(dynamoDb, tableName, metrics, options = {}) {
         },
         ScanIndexForward: !options.pre,
         ExclusiveStartKey: exclusiveStartKey,
-        AttributesToGet: ['space', 'root', 'shards', 'shardsRef', 'insertedAt', 'updatedAt'],
+        AttributesToGet: ['root', 'insertedAt', 'updatedAt'],
       })
       const response = await dynamoDb.send(cmd)
-
-      // Process results and fetch S3 shards if needed
-      const results = await Promise.all(
-        (response.Items ?? []).map(async (i) => {
-          const item = unmarshall(i)
-          // If shards are in S3, fetch them
-          if (item.shardsRef && s3Client && shardsBucketName) {
-            try {
-              item.shards = await fetchShardStringsFromS3(item.shardsRef)
-            } catch (/** @type {any} */ error) {
-              console.error('Failed to fetch shards from S3 for list:', error)
-              // Continue without shards rather than failing the entire list
-              item.shards = []
-            }
-          }
-          return toUploadListItem(item)
-        })
-      )
-
+      const results = (response.Items ?? []).map(i => toUploadListItem(unmarshall(i)))
       const firstRootCID = results[0] ? results[0].root.toString() : undefined
 
       // Get cursor of the item where list operation stopped (inclusive).
@@ -473,6 +435,65 @@ export function useUploadTable(dynamoDb, tableName, metrics, options = {}) {
           after,
           cursor: after,
           results: options.pre ? results.reverse() : results,
+        }
+      }
+    },
+
+    /**
+     * List all shards for an upload.
+     *
+     * @type {UploadTable['listShards']}
+     */
+    listShards: async (space, root, options = {}) => {
+      const cmd = new GetItemCommand({
+        TableName: tableName,
+        Key: marshall({
+          space,
+          root: root.toString(),
+        }),
+        AttributesToGet: ['root', 'shards', 'shardsRef', 'insertedAt', 'updatedAt'],
+      })
+      const res = await dynamoDb.send(cmd)
+      if (!res.Item) {
+        return { error: new RecordNotFound() }
+      }
+      const upload = unmarshall(res.Item)
+
+      let size = options?.size ?? 1000
+      if (typeof size !== 'number' || isNaN(size)) {
+        size = 1000
+      } else if (size < 1) {
+        size = 1
+      } else if (size > 1000) {
+        size = 1000
+      } else {
+        size = Math.trunc(size)
+      }
+
+      /** @type {string[]} */
+      let shards = upload.shards ?? []
+      // If shards are stored in S3, fetch them
+      if (upload.shardsRef && s3Client && shardsBucketName) {
+        try {
+          shards = await fetchShardStringsFromS3(upload.shardsRef)
+        } catch (/** @type {any} */ error) {
+          console.error('Failed to fetch shards from S3:', error)
+          return { error }
+        }
+      }
+
+      let cursorIndex = 0
+      if (options?.cursor) {
+        cursorIndex = Math.max(0, shards.findIndex(s => s === options.cursor))
+      }
+      const results = shards.slice(cursorIndex, cursorIndex+size)
+      const cursor = shards[cursorIndex+size]
+
+      return {
+        ok: {
+          size: shards.length,
+          cursor,
+          results: results.map(r => CID.parse(r)),
         }
       }
     },
@@ -525,13 +546,9 @@ export function toUploadAddResult({ root }) {
  * @param {Record<string, any>} item
  * @returns {UploadRemoveResult}
  */
-export function toUploadRemoveResult({ root, shards }) {
+export function toUploadRemoveResult({ root }) {
   return {
     root: CID.parse(root),
-    shards: (shards ? [...shards] : []).map(
-      (s) =>
-        /** @type {import('@storacha/upload-api').CARLink} */ (CID.parse(s))
-    ),
   }
 }
 
@@ -539,11 +556,11 @@ export function toUploadRemoveResult({ root, shards }) {
  * Convert from the db representation to an UploadListItem
  *
  * @param {Record<string, any>} item
- * @returns {UploadListItem & { insertedAt: string; updatedAt: string }}
+ * @returns {UploadListItem}
  */
-export function toUploadListItem({ insertedAt, updatedAt, ...rest }) {
+export function toUploadListItem({ insertedAt, updatedAt, root }) {
   return {
-    ...toUploadRemoveResult(rest),
+    root: CID.parse(root),
     insertedAt,
     updatedAt,
   }
