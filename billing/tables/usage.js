@@ -24,11 +24,28 @@ export const usageTableProps = {
     provider: 'string',
     /** Space DID (did:key:...). */
     space: 'string',
-    /** Usage in byte·milliseconds */
+    /**
+     * Cumulative usage in byte·milliseconds from the start of the billing month to `to`.
+     *
+     * IMPORTANT: This is NOT usage from `from` to `to`. The `usage` value represents
+     * the cumulative byte·milliseconds from the start of the current billing month
+     * (startOfMonth(to)) to the `to` timestamp. For example:
+     *
+     * - Feb 2 record: { from: Feb 2, to: Feb 3, usage: cumulative_from_Feb_1_to_Feb_3 }
+     * - Feb 3 record: { from: Feb 3, to: Feb 4, usage: cumulative_from_Feb_1_to_Feb_4 }
+     *
+     * The delta sent to Stripe is calculated as: current.usage - previous.usage
+     */
     usage: 'number',
-    /** ISO timestamp the usage period spans from (inclusive). */
+    /**
+     * ISO timestamp marking the start of this billing run (inclusive).
+     *
+     * NOTE: This is used for record uniqueness (SK = "from#provider#space"), NOT as
+     * the baseline for cumulative usage calculation. The cumulative usage is calculated
+     * from the start of the billing month (startOfMonth(to)), not from this date.
+     */
     from: 'string',
-    /** ISO timestamp the usage period spans to (exclusive). */
+    /** ISO timestamp marking the end of this billing run (exclusive). */
     to: 'string',
     /** ISO timestamp we created the invoice. */
     insertedAt: 'string'
