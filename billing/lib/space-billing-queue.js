@@ -33,6 +33,36 @@ export const iterateSpaceDiffs = async function * ({ provider, space, from, to }
 }
 
 /**
+ * Query previous day's cumulative usage from usage table.
+ *
+ * @param {import('./api.js').SpaceBillingInstruction} instruction
+ * @param {{ usageStore: import('./api.js').UsageStore }} ctx
+ * @returns {Promise<bigint>}
+ */
+const getPreviousCumulativeUsage = async (instruction, ctx) => {
+  const previousFrom = new Date(instruction.from.getTime() - 24 * 60 * 60 * 1000)
+
+  const result = await ctx.usageStore.get({
+    customer: instruction.customer,
+    from: previousFrom,
+    provider: instruction.provider,
+    space: instruction.space
+  })
+
+  if (result.ok) {
+    console.log(`Found previous cumulative: ${result.ok.usage} byte·ms`)
+    return result.ok.usage
+  }
+
+  if (result.error && result.error.name !== 'RecordNotFound') {
+    throw result.error
+  }
+
+  console.warn(`⚠️ No previous usage found for ${instruction.space} on ${previousFrom.toISOString()}`)
+  return 0n
+}
+
+/**
  * Calculates total usage for the given space, customer, and billing period.
  * If a size snapshot for the given `from` date is not found then the space is
  * assumed to be empty.
@@ -47,6 +77,7 @@ export const iterateSpaceDiffs = async function * ({ provider, space, from, to }
  * @param {{
  *   spaceDiffStore: import('./api.js').SpaceDiffStore
  *   spaceSnapshotStore: import('./api.js').SpaceSnapshotStore
+ *   usageStore: import('./api.js').UsageStore
  * }} ctx
  * @returns {Promise<import('@ucanto/interface').Result<{ usage: bigint, size: bigint }>>}
  */
@@ -55,8 +86,6 @@ export const calculatePeriodUsage = async (instruction, ctx) => {
   console.log(`Provider: ${instruction.provider}`)
   console.log(`Customer: ${instruction.customer}`)
   console.log(`Period: ${instruction.from.toISOString()} - ${instruction.to.toISOString()}`)
-
-  const monthStart = startOfMonth(instruction.from)
 
   // Try to get snapshot at exact 'from' date first
   const { ok: snap, error } = await ctx.spaceSnapshotStore.get({
@@ -92,26 +121,58 @@ export const calculatePeriodUsage = async (instruction, ctx) => {
     }
   }
 
+  // Initialize state
   let size = snapshotToUse ? snapshotToUse.size : 0n
-  let usage = size * BigInt(instruction.to.getTime() - monthStart.getTime()) // calculate cumulative usage from MONTH START to instruction.to    
+  let previousTime = instruction.from.getTime()
+  let dailyUsage = 0n
 
-  console.log(`Starting calculation from ${snapshotDate.toISOString()}: ${size} bytes for ${instruction.space}`)
+  console.log(`Starting from snapshot @ ${snapshotDate.toISOString()}: ${size} bytes`)
 
+  // Process diffs using integral algorithm
   let totalDiffs = 0
   for await (const page of iterateSpaceDiffs({...instruction, from: snapshotDate}, ctx)) {
     if (page.error) return page
     totalDiffs += page.ok.length
+
     for (const diff of page.ok) {
+      // Phase 1: Replay old diffs to reconstruct size at FROM
+      if (diff.receiptAt.getTime() < instruction.from.getTime()) {
+        size += BigInt(diff.delta)
+        continue
+      }
+
+      // Phase 2: Stop at period end
+      if (diff.receiptAt.getTime() >= instruction.to.getTime()) break
+
+      // Phase 3: Integral algorithm - accumulate size × interval, then update size
+      const intervalMs = diff.receiptAt.getTime() - previousTime
+      dailyUsage += size * BigInt(intervalMs)
       size += BigInt(diff.delta)
-      const effectiveStart = Math.max(diff.receiptAt.getTime(), monthStart.getTime()) // prevents from charges outside the billing month                                                                                                                                                                                                                                                                                                                                    
-      usage += BigInt(diff.delta) * BigInt(instruction.to.getTime() - effectiveStart)
+      previousTime = diff.receiptAt.getTime()
     }
-    console.log(`Total ${totalDiffs} diffs processed for space: ${instruction.space}...`)
+    console.log(`Processed ${totalDiffs} diffs...`)
   }
 
-  console.log(`Final total size of ${instruction.space} is ${size} bytes and usage ${usage} byte/ms @ ${instruction.to.toISOString()}`)
+  // Final interval from last diff (or FROM) to TO
+  const finalIntervalMs = instruction.to.getTime() - previousTime
+  dailyUsage += size * BigInt(finalIntervalMs)
 
-  return { ok: { size, usage } }
+  // Monthly accumulation
+  const isFirstOfMonth = instruction.from.getUTCDate() === 1
+  let previousCumulative = 0n
+
+  if (!isFirstOfMonth) {
+    previousCumulative = await getPreviousCumulativeUsage(instruction, ctx)
+  }
+
+  const cumulativeUsage = previousCumulative + dailyUsage
+
+  console.log(`Daily usage: ${dailyUsage} byte·ms`)
+  console.log(`Previous cumulative: ${previousCumulative} byte·ms`)
+  console.log(`New cumulative: ${cumulativeUsage} byte·ms`)
+  console.log(`Final size: ${size} bytes @ ${instruction.to.toISOString()}`)
+
+  return { ok: { size, usage: cumulativeUsage } }
 }
 
 /**
