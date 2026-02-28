@@ -193,7 +193,7 @@ export const reportUsage = async (usage, ctx) => {
     customer: usage.customer,
     account: usage.account,
     product: usage.product,
-    usage: usage.usage,
+    usage: usage.usage.toString(),
     period: {
       from: usage.from.toISOString(),
       to: usage.to.toISOString()

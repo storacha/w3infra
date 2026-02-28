@@ -1,5 +1,5 @@
 import Big from 'big.js'
-import {GB, startOfMonth} from './util.js'
+import {GB, isMonthStart, startOfMonth} from './util.js'
 
 /**
  * @param {import('./api.js').SpaceDiffListKey & { to: Date }} params
@@ -40,6 +40,11 @@ export const iterateSpaceDiffs = async function * ({ provider, space, from, to }
  * @returns {Promise<bigint>}
  */
 const getPreviousCumulativeUsage = async (instruction, ctx) => {
+  if (isMonthStart(instruction.from)) {
+    console.log('First of month, resetting cumulative to 0')
+    return 0n
+  }
+
   const previousFrom = new Date(instruction.from.getTime() - 24 * 60 * 60 * 1000)
 
   const result = await ctx.usageStore.get({
@@ -58,8 +63,7 @@ const getPreviousCumulativeUsage = async (instruction, ctx) => {
     throw result.error
   }
 
-  console.warn(`⚠️ No previous usage found for ${instruction.space} on ${previousFrom.toISOString()}`)
-  return 0n
+  throw new Error(`Missing previous usage at ${previousFrom} for space ${instruction.space}`)
 }
 
 /**
@@ -98,24 +102,29 @@ export const calculatePeriodUsage = async (instruction, ctx) => {
   let snapshotToUse = snap
   let snapshotDate = instruction.from
 
-  // If no snapshot at exact 'from' date, list snapshots in descending order (newest first)
-  // and check if the most recent one is before 'from'.
+  // If no snapshot at exact 'from' date, fetch up to 31 snapshots (one month's worth)
+  // and find the most recent snapshot where recordedAt <= from.
+  // This handles edge cases where future snapshots exist (from later billing runs)
+  // but older valid snapshots are still available.
   if (!snap) {
     console.warn(`No snapshot found at ${instruction.from.toISOString()}, querying for most recent snapshot before this date...`)
 
     const listResult = await ctx.spaceSnapshotStore.list({
       space: instruction.space,
       provider: instruction.provider
-    }, { size: 1, scanIndexForward: false }) // get newest snapshot
+    }, { size: 31, scanIndexForward: false }) // Get up to 31 days of snapshots (newest first)
 
     if (listResult.error) return listResult
 
-    // Check if the newest snapshot is at or before 'from'
-    const newestSnapshot = listResult.ok.results[0]
-    if (newestSnapshot && newestSnapshot.recordedAt.getTime() <= instruction.from.getTime()) {
-      snapshotToUse = newestSnapshot
-      snapshotDate = newestSnapshot.recordedAt
-      console.log(`Found snapshot @ ${snapshotDate.toISOString()}: ${newestSnapshot.size} bytes`)
+    // Find the newest snapshot where recordedAt <= from
+    const validSnapshot = listResult.ok.results.find(
+      snapshot => snapshot.recordedAt.getTime() <= instruction.from.getTime()
+    )
+
+    if (validSnapshot) {
+      snapshotToUse = validSnapshot
+      snapshotDate = validSnapshot.recordedAt
+      console.log(`Found snapshot @ ${snapshotDate.toISOString()}: ${validSnapshot.size} bytes`)
     } else {
       console.warn(`!!! No snapshot found before ${instruction.from.toISOString()}, assuming empty space !!!`)
     }
@@ -124,7 +133,7 @@ export const calculatePeriodUsage = async (instruction, ctx) => {
   // Initialize state
   let size = snapshotToUse ? snapshotToUse.size : 0n
   let previousTime = instruction.from.getTime()
-  let dailyUsage = 0n
+  let usage = 0n
 
   console.log(`Starting from snapshot @ ${snapshotDate.toISOString()}: ${size} bytes`)
 
@@ -137,6 +146,7 @@ export const calculatePeriodUsage = async (instruction, ctx) => {
     for (const diff of page.ok) {
       // Phase 1: Replay old diffs to reconstruct size at FROM
       if (diff.receiptAt.getTime() < instruction.from.getTime()) {
+        console.log('receiptAt is before from')
         size += BigInt(diff.delta)
         continue
       }
@@ -146,28 +156,26 @@ export const calculatePeriodUsage = async (instruction, ctx) => {
 
       // Phase 3: Integral algorithm - accumulate size × interval, then update size
       const intervalMs = diff.receiptAt.getTime() - previousTime
-      dailyUsage += size * BigInt(intervalMs)
+      usage += size * BigInt(intervalMs)
       size += BigInt(diff.delta)
       previousTime = diff.receiptAt.getTime()
     }
-    console.log(`Processed ${totalDiffs} diffs...`)
+    const date = page.ok[page.ok.length-1]?.receiptAt.toISOString()
+    console.log(`Processed ${totalDiffs} diffs... day: ${date}`)
+
   }
 
   // Final interval from last diff (or FROM) to TO
   const finalIntervalMs = instruction.to.getTime() - previousTime
-  dailyUsage += size * BigInt(finalIntervalMs)
+  usage += size * BigInt(finalIntervalMs)
 
   // Monthly accumulation
-  const isFirstOfMonth = instruction.from.getUTCDate() === 1
-  let previousCumulative = 0n
+  
+  // if the snapshot does not exist, consider it a new space
+  const previousCumulative = snapshotToUse ? await getPreviousCumulativeUsage({...instruction, from: snapshotDate}, ctx) : 0n
+  const cumulativeUsage = previousCumulative + usage
 
-  if (!isFirstOfMonth) {
-    previousCumulative = await getPreviousCumulativeUsage(instruction, ctx)
-  }
-
-  const cumulativeUsage = previousCumulative + dailyUsage
-
-  console.log(`Daily usage: ${dailyUsage} byte·ms`)
+  console.log(`Usage: ${usage} byte·ms`)
   console.log(`Previous cumulative: ${previousCumulative} byte·ms`)
   console.log(`New cumulative: ${cumulativeUsage} byte·ms`)
   console.log(`Final size: ${size} bytes @ ${instruction.to.toISOString()}`)

@@ -1,5 +1,5 @@
 import { calculatePeriodUsage, storeSpaceUsage } from '../../lib/space-billing-queue.js'
-import { startOfYesterday, startOfToday } from '../../lib/util.js'
+import { startOfYesterday, startOfToday, startOfMonth, startOfLastMonth } from '../../lib/util.js'
 import { randomConsumer } from '../helpers/consumer.js'
 import { randomCustomer } from '../helpers/customer.js'
 import { randomLink } from '../helpers/dag.js'
@@ -66,6 +66,20 @@ export const test = {
     const from = startOfYesterday(now)
     const to = startOfToday(now)
     const delta = 1024 * 1024 * 1024 // 1GiB
+
+    // Add previous day's usage record (required for mid-month billing)
+    const previousFrom = new Date(from.getTime() - 24 * 60 * 60 * 1000)
+    await ctx.usageStore.put({
+      customer: customer.customer,
+      account: customer.account,
+      product: customer.product,
+      from: previousFrom,
+      to: from,
+      space: consumer.consumer,
+      provider: consumer.provider,
+      usage: 0n, // Empty space on previous day
+      insertedAt: new Date()
+    })
 
     await ctx.spaceSnapshotStore.put({
       space: consumer.consumer,
@@ -134,14 +148,29 @@ export const test = {
     assert.ok(snap)
     assert.equal(snap.size, 0n)
   },
-  'should consider existing space size': async (/** @type {import('entail').assert} */ assert, ctx) => {
+  'should consider existing space size from previous month': async (/** @type {import('entail').assert} */ assert, ctx) => {
     const customer = randomCustomer()
     const consumer = await randomConsumer()
     const size = BigInt(1024 * 1024 * 1024 * 1024) // 1TiB
     const now = new Date()
-    const from = startOfYesterday(now)
-    const to = startOfToday(now)
+    const from = startOfLastMonth(now)
+    const to = startOfMonth(now)
     const delta = 1024 * 1024 * 1024 // 1GiB
+
+    // Add previous day's usage record (required for mid-month billing)
+    const previousFrom = new Date(from.getTime() - 24 * 60 * 60 * 1000)
+    const previousDailyUsage = size * BigInt(24 * 60 * 60 * 1000) // 1TiB for 24h
+    await ctx.usageStore.put({
+      customer: customer.customer,
+      account: customer.account,
+      product: customer.product,
+      from: previousFrom,
+      to: from,
+      space: consumer.consumer,
+      provider: consumer.provider,
+      usage: previousDailyUsage, // Cumulative from previous day
+      insertedAt: new Date()
+    })
 
     await ctx.spaceSnapshotStore.put({
       space: consumer.consumer,
@@ -151,11 +180,11 @@ export const test = {
       insertedAt: new Date()
     })
 
-    /** @param {Date} today */
-    const yesterday = today => {
-      const yest = new Date(today.toISOString())
-      yest.setUTCDate(today.getUTCDate() - 1)
-      return yest
+    /** @param {Date} date */
+    const hourBefore = (date) => {
+      const d = new Date(date)
+      d.setUTCHours(d.getUTCHours() - 1)
+      return d
     }
 
     await ctx.spaceDiffStore.batchPut([{
@@ -164,8 +193,7 @@ export const test = {
       subscription: consumer.subscription,
       cause: randomLink(),
       delta,
-      // store/add 24h prior to end of billing
-      receiptAt: yesterday(to),
+      receiptAt: hourBefore(to),
       insertedAt: new Date()
     }])
 
@@ -190,12 +218,18 @@ export const test = {
     assert.ok(listing)
 
     assert.equal(listing.results.length, 1)
+    /**
+     * This logic only applies when we are not considering previous usage,
+     * which typically happens during a month transition.
+     *
+     * During the month, usage is calculated cumulatively each day.
+     */
     assert.equal(
       listing.results[0].usage,
       // existing size for the period
       size * BigInt(to.getTime() - from.getTime())
-      // + 1GiB for 1 day
-      + BigInt(delta) * BigInt(to.getTime() - yesterday(to).getTime())
+      // + 1GiB for 1 hour
+      + BigInt(delta) * BigInt(to.getTime() - hourBefore(to).getTime())
     )
 
     const { ok: snap } = await ctx.spaceSnapshotStore.get({
@@ -210,8 +244,8 @@ export const test = {
     const customer = randomCustomer()
     const consumer = await randomConsumer()
     const now = new Date()
-    const from = startOfYesterday(now)
-    const to = startOfToday(now)
+    const from = startOfLastMonth(now)
+    const to = startOfMonth(now)
 
     // Create a snapshot 2 days before 'from' with existing size
     const twoDaysBeforeFrom = new Date(from.getTime() - 2 * 24 * 60 * 60 * 1000)
@@ -225,9 +259,25 @@ export const test = {
       insertedAt: new Date()
     })
 
+    // Add previous day's usage record (required for mid-month billing)
+    const previousFromSnapshot = new Date(twoDaysBeforeFrom.getTime() - 24 * 60 * 60 * 1000)
+    const sizeAtPreviousTo = existingSize
+    const previousCumulativeDailyUsage = sizeAtPreviousTo * BigInt(24 * 60 * 60 * 1000)
+    await ctx.usageStore.put({
+      customer: customer.customer,
+      account: customer.account,
+      product: customer.product,
+      from: previousFromSnapshot,
+      to: twoDaysBeforeFrom,
+      space: consumer.consumer,
+      provider: consumer.provider,
+      usage: previousCumulativeDailyUsage, // Cumulative from previous day
+      insertedAt: new Date()
+    })
+
     // Add a diff between the old snapshot and 'from'
     const oneDayBeforeFrom = new Date(from.getTime() - 24 * 60 * 60 * 1000)
-    const deltaBefore = 1024 * 1024 * 1024 // 1GiB added before period starts
+    const deltaBefore = 1024 * 1024 * 1024 // 1GiB added before period starts (will be added below)
 
     await ctx.spaceDiffStore.batchPut([{
       provider: consumer.provider,
@@ -271,13 +321,11 @@ export const test = {
     const expectedFinalSize = sizeAtFrom + BigInt(deltaInPeriod)
 
     // Usage calculation:
-    // 6GiB for whole period + 2GiB for whole period (since added at 'from')
-    // = (6GiB + 2GiB) * period_duration (but 2GiB added at 'from', so it's 6GiB for full period + 2GiB for full period)
-    // Actually: 6GiB * period + 2GiB * (to - from) = 8GiB * period
-    const expectedUsage = expectedFinalSize * BigInt(to.getTime() - from.getTime())
+    // previousCumulativeDailyUsage + 6GiB * period + 2GiB * (to - from)
+    const expectedCumulativeUsage = previousCumulativeDailyUsage + expectedFinalSize * BigInt(to.getTime() - from.getTime())
 
     assert.equal(calculation.ok.size, expectedFinalSize)
-    assert.equal(calculation.ok.usage, expectedUsage)
+    assert.equal(calculation.ok.usage, expectedCumulativeUsage)
 
     const handled = await storeSpaceUsage(instruction, calculation.ok, ctx)
     assert.ok(handled.ok)
@@ -306,6 +354,23 @@ export const test = {
       size: snapshotSize,
       recordedAt: threeDaysBeforeFrom,
       provider: consumer.provider,
+      insertedAt: new Date()
+    })
+
+    // Add previous day's usage record (required for mid-month billing)
+    // Size at 'from' will be: 10GiB + 2GiB - 3GiB = 9GiB (from diffs added below)
+    const previousFrom = new Date(threeDaysBeforeFrom.getTime() - 24 * 60 * 60 * 1000)
+    const sizeAtPreviousTo = BigInt(9 * 1024 * 1024 * 1024) // 9GiB
+    const previousDailyUsage = sizeAtPreviousTo * BigInt(24 * 60 * 60 * 1000) // 9GiB for 24h
+    await ctx.usageStore.put({
+      customer: customer.customer,
+      account: customer.account,
+      product: customer.product,
+      from: previousFrom,
+      to: threeDaysBeforeFrom,
+      space: consumer.consumer,
+      provider: consumer.provider,
+      usage: previousDailyUsage, // Cumulative from previous day
       insertedAt: new Date()
     })
 
@@ -413,6 +478,21 @@ export const test = {
       size: mostRecentSize,
       recordedAt: oneDayBeforeFrom,
       provider: consumer.provider,
+      insertedAt: new Date()
+    })
+
+    // Add previous day's usage record (required for mid-month billing)
+    const previousFromSnap = new Date(oneDayBeforeFrom.getTime() - 24 * 60 * 60 * 1000)
+    const previousDailyUsage = mostRecentSize * BigInt(24 * 60 * 60 * 1000) // 12GiB for 24h
+    await ctx.usageStore.put({
+      customer: customer.customer,
+      account: customer.account,
+      product: customer.product,
+      from: previousFromSnap,
+      to: oneDayBeforeFrom,
+      space: consumer.consumer,
+      provider: consumer.provider,
+      usage: previousDailyUsage, // Cumulative from previous day
       insertedAt: new Date()
     })
 
@@ -857,5 +937,282 @@ export const test = {
 
     // Verify each interval contributed correctly (size × interval, not diff × remaining_time)
     assert.equal(expectedDailyUsage, 3100n * BigInt(msPerHour))
+  },
+
+  // ========== BILLING PERIOD HANDLING TESTS ==========
+
+  'should throw error when previous usage missing mid-month': async (/** @type {import('entail').assert} */ assert, ctx) => {
+    // Test 1: Missing usage mid-month should throw error
+    // Setup: Feb 25→26 billing without Feb 24→25 usage record
+    // Expected: Throws error with message including "Missing previous usage"
+    // Validates: Prevents undercharging by failing loudly
+    const customer = randomCustomer()
+    const consumer = await randomConsumer()
+
+    const size = 1000n
+    const feb25 = new Date('2026-02-25T00:00:00.000Z')
+    const feb26 = new Date('2026-02-26T00:00:00.000Z')
+
+    // Create snapshot at Feb 25
+    await ctx.spaceSnapshotStore.put({
+      space: consumer.consumer,
+      size,
+      recordedAt: feb25,
+      provider: consumer.provider,
+      insertedAt: new Date()
+    })
+
+    // NO usage record for Feb 24→25 (intentionally missing)
+
+    // Run billing for Feb 25 → Feb 26 (mid-month, should look for previous day's usage)
+    const instruction = {
+      customer: customer.customer,
+      account: customer.account,
+      product: customer.product,
+      from: feb25,
+      to: feb26,
+      space: consumer.consumer,
+      provider: consumer.provider
+    }
+
+    // Should throw error because previous day's usage is missing
+    /** @type {any} */
+    let thrownError
+    try {
+      await calculatePeriodUsage(instruction, ctx)
+    } catch (/** @type {any} */ err) {
+      thrownError = err
+    }
+
+    assert.ok(thrownError, 'Should throw error when previous usage is missing mid-month')
+    assert.ok(
+      thrownError.message.includes('Missing previous usage'),
+      `Error message should mention missing previous usage, got: ${thrownError.message}`
+    )
+    assert.ok(
+      thrownError.message.includes(consumer.consumer),
+      'Error message should include space DID'
+    )
+  },
+
+  'should detect month start with complete timestamp validation': async (/** @type {import('entail').assert} */ assert, ctx) => {
+    // Test 2: Month start detection (comprehensive)
+    // Setup: Feb 1 at 00:00:00.000 UTC with large Jan 31 cumulative
+    // Expected: Feb 1 cumulative = dailyUsage only (NOT including Jan)
+    // Validates: Month boundary reset works correctly
+    const customer = randomCustomer()
+    const consumer = await randomConsumer()
+
+    const size = 500n
+    const msPerDay = 24 * 60 * 60 * 1000
+
+    // Critical: Feb 1 at EXACTLY 00:00:00.000 UTC
+    const feb1Exact = new Date('2026-02-01T00:00:00.000Z')
+    const feb2 = new Date('2026-02-02T00:00:00.000Z')
+    const jan31 = new Date('2026-01-31T00:00:00.000Z')
+
+    // Create Jan 31 snapshot
+    await ctx.spaceSnapshotStore.put({
+      space: consumer.consumer,
+      size,
+      recordedAt: jan31,
+      provider: consumer.provider,
+      insertedAt: new Date()
+    })
+
+    // Create large Jan 31 cumulative usage (should NOT be included in Feb 1)
+    const jan31Cumulative = size * BigInt(msPerDay) * 31n // ~31 days of January
+    await ctx.usageStore.put({
+      customer: customer.customer,
+      account: customer.account,
+      product: customer.product,
+      from: jan31,
+      to: feb1Exact,
+      space: consumer.consumer,
+      provider: consumer.provider,
+      usage: jan31Cumulative,
+      insertedAt: new Date()
+    })
+
+    // Create Feb 1 snapshot
+    await ctx.spaceSnapshotStore.put({
+      space: consumer.consumer,
+      size,
+      recordedAt: feb1Exact,
+      provider: consumer.provider,
+      insertedAt: new Date()
+    })
+
+    // Run billing for Feb 1 → Feb 2 (first of month)
+    const instruction = {
+      customer: customer.customer,
+      account: customer.account,
+      product: customer.product,
+      from: feb1Exact,
+      to: feb2,
+      space: consumer.consumer,
+      provider: consumer.provider
+    }
+
+    const calc = await calculatePeriodUsage(instruction, ctx)
+    assert.ok(calc.ok, 'Calculation should succeed')
+
+    // Verify timestamp is EXACTLY first of month
+    assert.equal(feb1Exact.getUTCDate(), 1, 'Should be 1st of month')
+    assert.equal(feb1Exact.getUTCHours(), 0, 'Should be 00 hours')
+    assert.equal(feb1Exact.getUTCMinutes(), 0, 'Should be 00 minutes')
+    assert.equal(feb1Exact.getUTCSeconds(), 0, 'Should be 00 seconds')
+    assert.equal(feb1Exact.getUTCMilliseconds(), 0, 'Should be 000 milliseconds')
+
+    const dailyUsageFeb1 = size * BigInt(msPerDay)
+    const expectedCumulative = dailyUsageFeb1 // Should NOT include Jan cumulative
+
+    assert.equal(calc.ok.usage, expectedCumulative, 'Feb 1 cumulative should start fresh')
+    assert.ok(
+      calc.ok.usage < jan31Cumulative,
+      'Feb 1 cumulative should be MUCH smaller than Jan 31 cumulative'
+    )
+
+    // Additional validation: Feb 1 cumulative should be ~1/31 of Jan cumulative (for same constant size)
+    const expectedRatio = Number(calc.ok.usage) / Number(jan31Cumulative)
+    assert.ok(
+      expectedRatio > 0.03 && expectedRatio < 0.04,
+      `Ratio should be ~1/31 (0.032), got ${expectedRatio.toFixed(4)}`
+    )
+  },
+
+  'should support arbitrary billing periods with correct cumulative lookup': async (/** @type {import('entail').assert} */ assert, ctx) => {
+    // Test 3: Arbitrary periods (multi-day and monthly)
+    // Setup: Run Feb 1→5 (4 days), then Feb 1→Mar 1 (28 days)
+    // Expected: Both periods calculate correctly
+    // Validates: Arbitrary period support
+    const customer = randomCustomer()
+    const consumer = await randomConsumer()
+
+    const size = 200n
+    const msPerDay = 24 * 60 * 60 * 1000
+
+    const feb1 = new Date('2026-02-01T00:00:00.000Z')
+    const feb5 = new Date('2026-02-05T00:00:00.000Z')
+    const mar1 = new Date('2026-03-01T00:00:00.000Z')
+
+    // Create Feb 1 snapshot with 200 bytes
+    await ctx.spaceSnapshotStore.put({
+      space: consumer.consumer,
+      size,
+      recordedAt: feb1,
+      provider: consumer.provider,
+      insertedAt: new Date()
+    })
+
+    // Test 1: Multi-day period Feb 1 → Feb 5 (4 days)
+    const instruction1 = {
+      customer: customer.customer,
+      account: customer.account,
+      product: customer.product,
+      from: feb1,
+      to: feb5,
+      space: consumer.consumer,
+      provider: consumer.provider
+    }
+
+    const calc1 = await calculatePeriodUsage(instruction1, ctx)
+    assert.ok(calc1.ok, 'Multi-day period calculation should succeed')
+
+    const expected4Days = size * BigInt(msPerDay * 4)
+    assert.equal(calc1.ok.usage, expected4Days, '4-day period should calculate correctly')
+    assert.equal(calc1.ok.size, size, 'Size should remain constant')
+
+    // Store Feb 5 snapshot
+    await ctx.spaceSnapshotStore.put({
+      space: consumer.consumer,
+      size,
+      recordedAt: feb5,
+      provider: consumer.provider,
+      insertedAt: new Date()
+    })
+
+    // Test 2: Full month period Feb 1 → Mar 1 (28 days in February 2026)
+    const instruction2 = {
+      customer: customer.customer,
+      account: customer.account,
+      product: customer.product,
+      from: feb1,
+      to: mar1,
+      space: consumer.consumer,
+      provider: consumer.provider
+    }
+
+    const calc2 = await calculatePeriodUsage(instruction2, ctx)
+    assert.ok(calc2.ok, 'Full month period calculation should succeed')
+
+    const expected28Days = size * BigInt(msPerDay * 28) // February 2026 has 28 days
+    assert.equal(calc2.ok.usage, expected28Days, 'Full month period should calculate correctly')
+    assert.equal(calc2.ok.size, size, 'Size should remain constant')
+
+    // Verify: 28-day period should be exactly 7x the 4-day period
+    assert.equal(calc2.ok.usage, calc1.ok.usage * 7n, '28 days = 7 × 4 days')
+  },
+
+  'should propagate non-RecordNotFound errors from usageStore': async (/** @type {import('entail').assert} */ assert, ctx) => {
+    // Test 4: Non-RecordNotFound errors propagate
+    // Setup: Mock usageStore.get to return DynamoDB error
+    // Expected: Error propagates (doesn't return 0n)
+    // Validates: Real errors aren't swallowed
+    const customer = randomCustomer()
+    const consumer = await randomConsumer()
+
+    const size = 100n
+    const feb25 = new Date('2026-02-25T00:00:00.000Z')
+    const feb26 = new Date('2026-02-26T00:00:00.000Z')
+
+    // Create snapshot at Feb 25
+    await ctx.spaceSnapshotStore.put({
+      space: consumer.consumer,
+      size,
+      recordedAt: feb25,
+      provider: consumer.provider,
+      insertedAt: new Date()
+    })
+
+    // Mock usageStore.get to return a DynamoDB error (not RecordNotFound)
+    const originalGet = ctx.usageStore.get
+
+    // Create a StoreOperationFailure error (not RecordNotFound)
+    const { StoreOperationFailure } = await import('../../tables/lib.js')
+    const dynamoError = new StoreOperationFailure('DynamoDB ServiceUnavailable: Simulated AWS error')
+
+    ctx.usageStore.get = async () => {
+      return { error: dynamoError }
+    }
+
+    const instruction = {
+      customer: customer.customer,
+      account: customer.account,
+      product: customer.product,
+      from: feb25,
+      to: feb26,
+      space: consumer.consumer,
+      provider: consumer.provider
+    }
+
+    // Should throw the DynamoDB error (not swallow it)
+    /** @type {any} */
+    let thrownError
+    try {
+      await calculatePeriodUsage(instruction, ctx)
+    } catch (/** @type {any} */ err) {
+      thrownError = err
+    } finally {
+      // Restore original function
+      ctx.usageStore.get = originalGet
+    }
+
+    assert.ok(thrownError, 'Should throw error for non-RecordNotFound errors')
+    assert.equal(thrownError.name, 'StoreOperationFailure', 'Should propagate original error type')
+    assert.ok(
+      thrownError.detail && thrownError.detail.includes('DynamoDB ServiceUnavailable'),
+      `Error detail should be preserved, got: ${thrownError.detail}`
+    )
   }
 }
