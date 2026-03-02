@@ -304,7 +304,9 @@ export const reportUsage = async (usage, ctx) => {
   console.log(`Usage summary:\n ${JSON.stringify(usageSummary)}`)
 
   const idempotencyKey = await createIdempotencyKey(usage)
-  const referenceDate = new Date(usage.to.getTime())
+  // Subtract 1 minute from the 'to' date to ensure the timestamp falls within the correct billing month.
+  // If 'to' is the first day of the next month (e.g., Mar 1 00:00), we want the timestamp to be in the previous month (Feb 28 23:59).
+  const referenceDate = new Date(usage.to.getTime() - 60000)
 
   const stripeRequest = {
     message: 'Sending usage to Stripe',
