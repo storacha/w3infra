@@ -31,3 +31,11 @@ export const startOfLastMonth = (now) => {
   d.setUTCMonth(d.getUTCMonth() - 1)
   return d
 }
+
+/** @param {string|number|Date} date */
+export const isMonthStart = (date) => {
+  const d = new Date(date)
+  return d.getUTCDate() === 1 &&
+  d.getUTCHours() === 0 &&
+  d.getUTCMinutes() === 0
+}

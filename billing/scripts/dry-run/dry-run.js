@@ -165,6 +165,7 @@ await all(
           await SpaceBillingQueue.calculatePeriodUsage(instruction, {
             spaceDiffStore,
             spaceSnapshotStore: readableSpaceSnapshotStore,
+            usageStore,
           })
         )
 

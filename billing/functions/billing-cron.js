@@ -3,7 +3,7 @@ import { expect } from './lib.js'
 import { createCustomerStore } from '../tables/customer.js'
 import { createCustomerBillingQueue } from '../queues/customer.js'
 import { startOfToday, startOfYesterday } from '../lib/util.js'
-import { enqueueCustomerBillingInstructions } from '../lib/billing-cron.js'
+import { enqueueCustomerBillingInstructions, enqueueSingleCustomerBillingInstruction } from '../lib/billing-cron.js'
 import { mustGetEnv } from '../../lib/env.js'
 
 Sentry.AWSLambda.init({
@@ -41,6 +41,8 @@ export const handler = Sentry.AWSLambda.wrapHandler(
       to: startOfToday(now)  // at 00:00 UTC
     }                                          
 
+    /** @type {string|undefined} */
+    let customer
     if ('rawQueryString' in event) {
       const { searchParams } = new URL(`http://localhost/?${event.rawQueryString}`)
       const fromParam = searchParams.get('from')
@@ -59,15 +61,28 @@ export const handler = Sentry.AWSLambda.wrapHandler(
         }
         period = { from, to }
       }
+      customer = searchParams.get('customer') || undefined
     }
 
-    expect(
-      await enqueueCustomerBillingInstructions(period, {
-        customerStore: createCustomerStore({ region }, { tableName: customerTable }),
-        customerBillingQueue: createCustomerBillingQueue({ region }, { url: customerBillingQueueURL })
-      }),
-      `adding customer billing instructions for period: ${period.from} - ${period.to}`
-    )
+    const ctx = {
+      customerStore: createCustomerStore({ region }, { tableName: customerTable }),
+      customerBillingQueue: createCustomerBillingQueue({ region }, { url: customerBillingQueueURL })
+    }
+
+    if (customer) {
+      if (!customer.startsWith('did:mailto:')) {
+        throw new Error('customer must be a did:mailto: DID')
+      }
+      expect(
+        await enqueueSingleCustomerBillingInstruction(/** @type {import('../lib/api.js').CustomerDID} */ (customer), period, ctx),
+        `adding billing instruction for customer ${customer} for period: ${period.from} - ${period.to}`
+      )
+    } else {
+      expect(
+        await enqueueCustomerBillingInstructions(period, ctx),
+        `adding customer billing instructions for period: ${period.from} - ${period.to}`
+      )
+    }
   }
 )
 

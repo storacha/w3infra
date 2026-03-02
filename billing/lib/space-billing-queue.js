@@ -1,5 +1,5 @@
 import Big from 'big.js'
-import {GB} from './util.js'
+import {GB, isMonthStart, startOfMonth} from './util.js'
 
 /**
  * @param {import('./api.js').SpaceDiffListKey & { to: Date }} params
@@ -33,6 +33,40 @@ export const iterateSpaceDiffs = async function * ({ provider, space, from, to }
 }
 
 /**
+ * Query previous day's cumulative usage from usage table.
+ *
+ * @param {import('./api.js').SpaceBillingInstruction} instruction
+ * @param {{ usageStore: import('./api.js').UsageStore }} ctx
+ * @returns {Promise<bigint>}
+ */
+const getPreviousCumulativeUsage = async (instruction, ctx) => {
+  if (isMonthStart(instruction.from)) {
+    console.log('First of month, resetting cumulative to 0')
+    return 0n
+  }
+
+  const previousFrom = new Date(instruction.from.getTime() - 24 * 60 * 60 * 1000)
+
+  const result = await ctx.usageStore.get({
+    customer: instruction.customer,
+    from: previousFrom,
+    provider: instruction.provider,
+    space: instruction.space
+  })
+
+  if (result.ok) {
+    console.log(`Found previous cumulative: ${result.ok.usage} byte·ms`)
+    return result.ok.usage
+  }
+
+  if (result.error && result.error.name !== 'RecordNotFound') {
+    throw result.error
+  }
+
+  throw new Error(`Missing previous usage at ${previousFrom} for space ${instruction.space}`)
+}
+
+/**
  * Calculates total usage for the given space, customer, and billing period.
  * If a size snapshot for the given `from` date is not found then the space is
  * assumed to be empty.
@@ -47,6 +81,7 @@ export const iterateSpaceDiffs = async function * ({ provider, space, from, to }
  * @param {{
  *   spaceDiffStore: import('./api.js').SpaceDiffStore
  *   spaceSnapshotStore: import('./api.js').SpaceSnapshotStore
+ *   usageStore: import('./api.js').UsageStore
  * }} ctx
  * @returns {Promise<import('@ucanto/interface').Result<{ usage: bigint, size: bigint }>>}
  */
@@ -67,48 +102,85 @@ export const calculatePeriodUsage = async (instruction, ctx) => {
   let snapshotToUse = snap
   let snapshotDate = instruction.from
 
-  // If no snapshot at exact 'from' date, list snapshots in descending order (newest first)
-  // and check if the most recent one is before 'from'.
+  // If no snapshot at exact 'from' date, fetch up to 31 snapshots (one month's worth)
+  // and find the most recent snapshot where recordedAt <= from.
+  // This handles edge cases where future snapshots exist (from later billing runs)
+  // but older valid snapshots are still available.
   if (!snap) {
     console.warn(`No snapshot found at ${instruction.from.toISOString()}, querying for most recent snapshot before this date...`)
 
     const listResult = await ctx.spaceSnapshotStore.list({
       space: instruction.space,
       provider: instruction.provider
-    }, { size: 1, scanIndexForward: false }) // get newest snapshot
+    }, { size: 31, scanIndexForward: false }) // Get up to 31 days of snapshots (newest first)
 
     if (listResult.error) return listResult
 
-    // Check if the newest snapshot is at or before 'from'
-    const newestSnapshot = listResult.ok.results[0]
-    if (newestSnapshot && newestSnapshot.recordedAt.getTime() <= instruction.from.getTime()) {
-      snapshotToUse = newestSnapshot
-      snapshotDate = newestSnapshot.recordedAt
-      console.log(`Found snapshot @ ${snapshotDate.toISOString()}: ${newestSnapshot.size} bytes`)
+    // Find the newest snapshot where recordedAt <= from
+    const validSnapshot = listResult.ok.results.find(
+      snapshot => snapshot.recordedAt.getTime() <= instruction.from.getTime()
+    )
+
+    if (validSnapshot) {
+      snapshotToUse = validSnapshot
+      snapshotDate = validSnapshot.recordedAt
+      console.log(`Found snapshot @ ${snapshotDate.toISOString()}: ${validSnapshot.size} bytes`)
     } else {
       console.warn(`!!! No snapshot found before ${instruction.from.toISOString()}, assuming empty space !!!`)
     }
   }
 
+  // Initialize state
   let size = snapshotToUse ? snapshotToUse.size : 0n
-  let usage = size * BigInt(instruction.to.getTime() - snapshotDate.getTime()) // initial usage from snapshot
+  let previousTime = instruction.from.getTime()
+  let usage = 0n
 
-  console.log(`Starting calculation from ${snapshotDate.toISOString()}: ${size} bytes for ${instruction.space}`)
+  console.log(`Starting from snapshot @ ${snapshotDate.toISOString()}: ${size} bytes`)
 
+  // Process diffs using integral algorithm
   let totalDiffs = 0
   for await (const page of iterateSpaceDiffs({...instruction, from: snapshotDate}, ctx)) {
     if (page.error) return page
     totalDiffs += page.ok.length
+
     for (const diff of page.ok) {
+      // Phase 1: Replay old diffs to reconstruct size at FROM
+      if (diff.receiptAt.getTime() < instruction.from.getTime()) {
+        console.log('receiptAt is before from')
+        size += BigInt(diff.delta)
+        continue
+      }
+
+      // Phase 2: Stop at period end
+      if (diff.receiptAt.getTime() >= instruction.to.getTime()) break
+
+      // Phase 3: Integral algorithm - accumulate size × interval, then update size
+      const intervalMs = diff.receiptAt.getTime() - previousTime
+      usage += size * BigInt(intervalMs)
       size += BigInt(diff.delta)
-      usage += BigInt(diff.delta) * BigInt(instruction.to.getTime() - diff.receiptAt.getTime())
+      previousTime = diff.receiptAt.getTime()
     }
-    console.log(`Total ${totalDiffs} diffs processed for space: ${instruction.space}...`)
+    const date = page.ok[page.ok.length-1]?.receiptAt.toISOString()
+    console.log(`Processed ${totalDiffs} diffs... day: ${date}`)
+
   }
 
-  console.log(`Final total size of ${instruction.space} is ${size} bytes and usage ${usage} byte/ms @ ${instruction.to.toISOString()}`)
+  // Final interval from last diff (or FROM) to TO
+  const finalIntervalMs = instruction.to.getTime() - previousTime
+  usage += size * BigInt(finalIntervalMs)
 
-  return { ok: { size, usage } }
+  // Monthly accumulation
+  
+  // if the snapshot does not exist, consider it a new space
+  const previousCumulative = snapshotToUse ? await getPreviousCumulativeUsage({...instruction, from: snapshotDate}, ctx) : 0n
+  const cumulativeUsage = previousCumulative + usage
+
+  console.log(`Usage: ${usage} byte·ms`)
+  console.log(`Previous cumulative: ${previousCumulative} byte·ms`)
+  console.log(`New cumulative: ${cumulativeUsage} byte·ms`)
+  console.log(`Final size: ${size} bytes @ ${instruction.to.toISOString()}`)
+
+  return { ok: { size, usage: cumulativeUsage } }
 }
 
 /**
@@ -137,8 +209,17 @@ export const storeSpaceUsage = async (instruction, { size, usage }, ctx) => {
   })
   if (snapPut.error) return snapPut
 
-  const duration = instruction.to.getTime() - instruction.from.getTime()
-  console.log(`Total accumulated storage usage for ${instruction.space} is ${usage} byte/ms (~${new Big(usage.toString()).div(duration).div(GB).toFixed(2)} GiB)`)
+  const monthStart = startOfMonth(instruction.from)
+  const duration = instruction.to.getTime() - monthStart.getTime()
+  const avgGiB = new Big(usage.toString()).div(duration).div(GB).toFixed(2)
+
+  console.log(
+    `Storing usage record for ${instruction.space}:\n` +
+    `  Period: ${instruction.from.toISOString()} to ${instruction.to.toISOString()}\n` +
+    `  Cumulative usage from month start (${monthStart.toISOString()}): ${usage} byte·ms (~${avgGiB} GiB average)\n` +
+    `  Current size at ${instruction.to.toISOString()}: ${size} bytes`
+  )
+
   const usagePut = await ctx.usageStore.put({
     ...instruction,
     usage,

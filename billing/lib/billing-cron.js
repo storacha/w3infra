@@ -1,4 +1,37 @@
 /**
+ * Add a billing instruction for a single customer to the queue.
+ *
+ * @param {import('./api.js').CustomerDID} customer - Customer DID
+ * @param {{ from: Date, to: Date }} period
+ * @param {{
+ *   customerStore: import('./api.js').CustomerStore
+ *   customerBillingQueue: import('./api.js').CustomerBillingQueue
+ * }} ctx
+ * @returns {Promise<import('@ucanto/interface').Result<import('@ucanto/interface').Unit>>}
+ */
+export const enqueueSingleCustomerBillingInstruction = async (customer, period, ctx) => {
+  console.log(`Getting customer: ${customer}`)
+  const customerRecord = await ctx.customerStore.get({ customer })
+  if (customerRecord.error) return customerRecord
+
+  if (!customerRecord.ok.account) {
+    return { error: new Error(`MissingAccount: Customer ${customer} does not have an account. Cannot run billing.`) }
+  }
+
+  console.log(`Adding customer billing instruction for: ${customer}`)
+  const queueAdd = await ctx.customerBillingQueue.add({
+    customer: customerRecord.ok.customer,
+    account: customerRecord.ok.account,
+    product: customerRecord.ok.product,
+    from: period.from,
+    to: period.to
+  })
+  if (queueAdd.error) return queueAdd
+
+  return { ok: {} }
+}
+
+/**
  * Add a billing instruction for the given time period to the queue for every
  * customer in the store.
  *
