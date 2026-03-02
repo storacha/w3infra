@@ -253,12 +253,11 @@ export const reportUsage = async (usage, ctx) => {
     }
   }
 
-  const isFirstDailyRun = usage.from <= new Date('2026-02-27T00:00:00.000Z')  // Hardcoded migration cutoff. TODO: remove it after 
   const isFirstOfMonth = usage.from.getUTCDate() === 1
   // NOTE: Since Stripe aggregates per billing period (monthly), each month starts fresh so no need to get previous usage and calculate delta.
   let previousCumulativeUsage                                                                                                
   try {                                                                                                                      
-    previousCumulativeUsage = (isFirstOfMonth || isFirstDailyRun) ? 0n : await getPreviousUsage(usage, ctx)                                       
+    previousCumulativeUsage = isFirstOfMonth ? 0n : await getPreviousUsage(usage, ctx)                                       
   } catch (/** @type {any} */ err) {                                                                                         
     return { error: err }                                                                                                    
   } 
