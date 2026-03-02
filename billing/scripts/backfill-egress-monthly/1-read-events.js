@@ -17,9 +17,11 @@ import { extractMonth } from '../../data/egress-monthly.js'
 dotenv.config({ path: '.env.local' })
 
 const STORACHA_ENV = mustGetEnv('STORACHA_ENV')
+const EGRESS_TRAFFIC_TABLE_NAME = `${STORACHA_ENV}-w3infra-egress-traffic-events`
 
 // Timing
 const startMs = Date.now()
+
 /** @param {string} [label] */
 function logDuration(label = 'Duration') {
   const elapsedMs = Date.now() - startMs
@@ -39,12 +41,10 @@ async function readEvents({ fromDate, toDate }) {
   console.log(`Reading egress events: ${fromDate} to ${toDate}`)
   console.log(`Environment: ${STORACHA_ENV}\n`)
 
-  const region = mustGetEnv('AWS_REGION')
-  const client = new DynamoDBClient({ region })
-  const tableName = mustGetEnv('EGRESS_TRAFFIC_TABLE_NAME')
+  const client = new DynamoDBClient()
 
   // Aggregate in memory by customer+space+month
-  /** @type {Map<string, { customer: string, space: string, month: string, bytes: bigint, eventCount: number }>} */
+  /** @type {Map<string, { customer: string, space: string, month: string, bytes: number, eventCount: number }>} */
   const aggregates = new Map()
 
   let scanned = 0
@@ -52,9 +52,9 @@ async function readEvents({ fromDate, toDate }) {
 
   do {
     const result = await client.send(new ScanCommand({
-      TableName: tableName,
+      TableName: EGRESS_TRAFFIC_TABLE_NAME,
       ExclusiveStartKey: exclusiveStartKey,
-      FilterExpression: 'servedAt BETWEEN :from AND :to',
+      FilterExpression: 'servedAt >= :from AND servedAt < :to',
       ExpressionAttributeValues: {
         ':from': { S: fromDate },
         ':to': { S: toDate }
@@ -66,12 +66,12 @@ async function readEvents({ fromDate, toDate }) {
       const month = extractMonth(new Date(item.servedAt))
       const key = `${item.customer}#${month}#${item.space}`
 
-      const existing = aggregates.get(key) ?? { bytes: 0n, eventCount: 0 }
+      const existing = aggregates.get(key) ?? { bytes: 0, eventCount: 0 }
       aggregates.set(key, {
         customer: item.customer,
         space: item.space,
         month,
-        bytes: existing.bytes + BigInt(item.bytes),
+        bytes: existing.bytes + item.bytes,
         eventCount: existing.eventCount + 1
       })
 
@@ -92,7 +92,7 @@ async function readEvents({ fromDate, toDate }) {
     customer: agg.customer,
     space: agg.space,
     month: agg.month,
-    bytes: agg.bytes.toString(), // BigInt as string
+    bytes: agg.bytes, 
     eventCount: agg.eventCount
   }))
 

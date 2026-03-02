@@ -1,4 +1,4 @@
-import { BatchWriteItemCommand, DynamoDBClient, GetItemCommand, PutItemCommand, QueryCommand, ScanCommand } from '@aws-sdk/client-dynamodb'
+import { BatchWriteItemCommand, DynamoDBClient, GetItemCommand, PutItemCommand, QueryCommand, ScanCommand, UpdateItemCommand } from '@aws-sdk/client-dynamodb'
 import { marshall, unmarshall, convertToAttr } from '@aws-sdk/util-dynamodb'
 import retry from 'p-retry'
 import { InsufficientRecords, RecordNotFound, StoreOperationFailure } from './lib.js'
@@ -228,5 +228,35 @@ export const createStoreListerClient = (conf, context) => {
   
       return { ok: { cursor, results } }
     }
+  }
+}
+
+/**
+ * Generic command executor with retry logic and error handling.
+ *
+ * @param {import('@aws-sdk/client-dynamodb').DynamoDBClient} client - DynamoDB client
+ * @param {() => (UpdateItemCommand | QueryCommand | PutItemCommand | GetItemCommand | ScanCommand | BatchWriteItemCommand)} buildCommand - Callback that builds the command to execute
+ * @param {string} errorMessage - Error message to use if command fails
+ * @returns {Promise<import('@ucanto/interface').Result<any, import('./lib.js').StoreOperationFailure>>}
+ */
+export const executeCommand = async (client, buildCommand, errorMessage) => {
+  try {
+    const res = await retry(async () => {
+      const cmd = buildCommand()
+      // @ts-expect-error - smithy version conflict between client-dynamodb and client-ssm
+      const res = await client.send(cmd)
+      if (res.$metadata.httpStatusCode !== 200) {
+        throw new Error(`unexpected status: ${res.$metadata.httpStatusCode}`)
+      }
+      return res
+    }, {
+      retries: 3,
+      minTimeout: 100,
+      onFailedAttempt: console.warn
+    })
+    return { ok: res }
+  } catch (/** @type {any} */ err) {
+    console.error(err)
+    return { error: new StoreOperationFailure(errorMessage, { cause: err }) }
   }
 }

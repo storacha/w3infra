@@ -73,7 +73,7 @@ export function useUsageStore({ spaceSnapshotStore, spaceDiffStore, egressTraffi
      * @param {{ from: Date, to: Date }} period
      */
     async reportEgress(provider, space, period) {
-      // Pass monthly store to enable fast aggregation (if available)
+      // Pass egress monthly aggregation store to enable fast report
       const result = await egressTrafficStore.sumBySpace(space, period, egressTrafficMonthlyStore)
       if (result.error) {
         return result

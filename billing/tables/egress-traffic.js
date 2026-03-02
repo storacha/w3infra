@@ -63,7 +63,7 @@ export const createEgressTrafficEventStore = (conf, { tableName }) => {
      * @returns {Promise<import('@ucanto/interface').Result<number, Error>>}
      */
     async sumBySpace(space, period, monthlyStore) {
-      // Use monthly store if provided (fast path)
+      // Use egress monthly aggregation store if provided (fast path)
       if (monthlyStore) {
         return monthlyStore.sumBySpace(space, period)
       }

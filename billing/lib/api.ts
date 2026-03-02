@@ -175,7 +175,25 @@ export interface EgressTrafficMonthlySummary {
   customer: CustomerDID
   space: ConsumerDID
   month: string  // YYYY-MM
-  bytes: bigint
+  bytes: number
+  eventCount: number
+}
+
+/**
+ * DynamoDB store record for monthly aggregated egress traffic.
+ */
+export interface EgressTrafficMonthlySummaryStoreRecord {
+  /** Composite key: customer#{customer-did} */
+  pk: string
+  /** Composite key: {YYYY-MM}#{space-did} */
+  sk: string
+  /** Space DID string for GSI */
+  space: string
+  /** Month in YYYY-MM format for GSI */
+  month: string
+  /** Total bytes served */
+  bytes: number
+  /** Total event count */
   eventCount: number
 }
 
@@ -192,9 +210,12 @@ export interface EgressTrafficMonthlyStore {
    */
   sumBySpace: (space: string, period: { from: Date, to: Date }) => Promise<Result<number, Failure>>
   /**
-   * Get all spaces egress for a customer in a month
+   * Get all spaces egress for a customer in a month, with customer total
    */
-  listByCustomer: (customer: string, month: string) => Promise<Result<Array<{space: string, month: string, bytes: number, eventCount: number}>, Failure>>
+  listByCustomer: (customer: string, month: string) => Promise<Result<{
+    spaces: Array<{space: string, month: string, bytes: number, eventCount: number}>,
+    total: number
+  }, Failure>>
 }
 
 export interface Allocation {

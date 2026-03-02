@@ -1,7 +1,7 @@
 import { UpdateItemCommand, QueryCommand } from '@aws-sdk/client-dynamodb'
-import { unmarshall } from '@aws-sdk/util-dynamodb'
-import { connectTable } from './client.js'
-import { encode, decode } from '../data/egress-monthly.js'
+import { unmarshall, marshall } from '@aws-sdk/util-dynamodb'
+import { connectTable, executeCommand } from './client.js'
+import { validate, encode, decode, extractMonth } from '../data/egress-monthly.js'
 
 /**
  * Source of truth for egress traffic monthly aggregates.
@@ -51,25 +51,41 @@ export const createEgressTrafficMonthlyStore = (conf, { tableName }) => {
      * @param {number} params.bytes - Bytes to add
      */
     async increment({ customer, space, month, bytes }) {
-      await client.send(new UpdateItemCommand({
-        TableName: tableName,
-        Key: {
-          pk: { S: `customer#${customer}` },
-          sk: { S: `${month}#${space}` }
-        },
-        UpdateExpression: 'SET space = :space, #month = :month ADD bytes :bytes, eventCount :one',
-        ExpressionAttributeNames: {
-          '#month': 'month'  // reserved word
-        },
-        ExpressionAttributeValues: {
-          ':space': { S: space },
-          ':month': { S: month },
-          ':bytes': { N: bytes.toString() },
-          ':one': { N: '1' }
-        }
-      }))
-    },
+      const validation = validate({ customer, space, month, bytes, eventCount: 1 })
+      if (validation.error) throw validation.error
 
+      const encoding = encode(validation.ok)
+      if (encoding.error) throw encoding.error
+      
+      const parameters = encoding.ok
+
+      const result = await executeCommand(
+        client,
+        () => new UpdateItemCommand({
+          TableName: tableName,
+          Key: marshall({
+            pk: parameters.pk, 
+            sk: parameters.sk
+          }),
+          UpdateExpression: 'SET #space = :space, #month = :month ADD bytes :bytes, eventCount :one',
+          ExpressionAttributeNames: {
+            '#space': 'space',  // reserved word
+            '#month': 'month'   // reserved word
+          },
+          ExpressionAttributeValues: marshall({
+            ':space': parameters.space,
+            ':month': parameters.month,
+            ':bytes': parameters.bytes,
+            ':one': parameters.eventCount
+          })
+        }),
+        'Failed to increment egress monthly aggregates'
+      )
+
+      if (result.error) {
+        throw result.error
+      }
+    },
     /**
      * Get total egress for a space in a month (uses GSI)
      * Used by account/usage/get - sumBySpace
@@ -78,64 +94,87 @@ export const createEgressTrafficMonthlyStore = (conf, { tableName }) => {
      * @returns {Promise<import('@ucanto/interface').Result<number, Error>>}
      */
     async sumBySpace(space, period) {
-      const fromMonth = period.from.toISOString().slice(0, 7)
-      const toMonth = period.to.toISOString().slice(0, 7)
+      const fromMonth = extractMonth(period.from)
+      const toMonth = extractMonth(period.to)
 
-      try {
-        const result = await client.send(new QueryCommand({
+      const result = await executeCommand(
+        client,
+        () => new QueryCommand({
           TableName: tableName,
           IndexName: 'space-month-index',
-          KeyConditionExpression: 'space = :space AND #month BETWEEN :from AND :to',
-          ExpressionAttributeNames: { '#month': 'month' },
-          ExpressionAttributeValues: {
-            ':space': { S: space },
-            ':from': { S: fromMonth },
-            ':to': { S: toMonth }
-          }
-        }))
+          KeyConditionExpression: '#space = :space AND #month BETWEEN :from AND :to',
+          ExpressionAttributeNames:  {
+            '#space': 'space',  // reserved word
+            '#month': 'month'   // reserved word
+          },
+          ExpressionAttributeValues: marshall({
+            ':space': space,
+            ':from': fromMonth,
+            ':to': toMonth
+          })
+        }),
+        'Failed to sum egress by space'
+      )
 
-        let totalBytes = 0
-        for (const item of result.Items ?? []) {
-          const record = unmarshall(item)
-          totalBytes += Number(record.bytes)
-        }
-
-        return { ok: totalBytes }
-      } catch (/** @type {any} */ error) {
-        return { error: new Error(`Failed to sum egress by space: ${error.message}`, { cause: error }) }
+      if (result.error) {
+        return { error: new Error(result.error.message, { cause: result.error }) }
       }
+
+      let totalBytes = 0
+      for (const item of result.ok.Items ?? []) {
+        const record = unmarshall(item)
+        totalBytes += Number(record.bytes)
+      }
+
+      return { ok: totalBytes }
     },
 
     /**
-     * Get all spaces egress for a customer in a month
+     * Get all spaces egress for a customer in a month with total customer egress
      * @param {string} customer - Customer DID
      * @param {string} month - YYYY-MM format
-     * @returns {Promise<import('@ucanto/interface').Result<Array<{space: string, month: string, bytes: number, eventCount: number}>, Error>>}
+     * @returns {Promise<import('@ucanto/interface').Result<{spaces: Array<{space: string, month: string, bytes: number, eventCount: number}>, total: number}, Error>>}
      */
     async listByCustomer(customer, month) {
-      try {
-        const result = await client.send(new QueryCommand({
+      const result = await executeCommand(
+        client,
+        () => new QueryCommand({
           TableName: tableName,
           KeyConditionExpression: 'pk = :pk AND begins_with(sk, :month)',
-          ExpressionAttributeValues: {
-            ':pk': { S: `customer#${customer}` },
-            ':month': { S: month }
-          }
-        }))
-
-        return {
-          ok: (result.Items ?? []).map(item => {
-            const record = unmarshall(item)
-            return {
-              space: record.space,
-              month: record.month,
-              bytes: Number(record.bytes),
-              eventCount: Number(record.eventCount)
-            }
+          ExpressionAttributeValues: marshall({
+            ':pk': `customer#${customer}`,
+            ':month': month
           })
+        }),
+        'Failed to list egress by customer'
+      )
+
+      if (result.error) {
+        return result
+      }
+
+      let totalBytes = 0
+      const spaces = (result.ok.Items ?? []).map(/** @type {(item: import('@aws-sdk/client-dynamodb').AttributeValue) => {space: string, month: string, bytes: number, eventCount: number}} */ (item) => {
+        const raw = unmarshall(item)
+        const decodedResult = decode( /** @type {import('../lib/api.js').EgressTrafficMonthlySummaryStoreRecord} */(raw))
+        
+        if (decodedResult.error) throw decodedResult.error
+        const record = decodedResult.ok
+
+        totalBytes += record.bytes
+        return {
+          space: record.space,
+          month: record.month,
+          bytes: record.bytes,
+          eventCount: record.eventCount
         }
-      } catch (/** @type {any} */ error) {
-        return { error: new Error(`Failed to list egress by customer: ${error.message}`, { cause: error }) }
+      })
+
+      return {
+        ok: {
+          spaces,
+          total: totalBytes
+        }
       }
     }
   }
