@@ -484,7 +484,7 @@ export function useUploadTable(dynamoDb, tableName, metrics, options = {}) {
 
       let cursorIndex = 0
       if (options?.cursor) {
-        cursorIndex = Math.max(0, shards.findIndex(s => s === options.cursor))
+        cursorIndex = Math.max(0, shards.indexOf(options.cursor))
       }
       const results = shards.slice(cursorIndex, cursorIndex+size)
       const cursor = shards[cursorIndex+size]
