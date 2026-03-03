@@ -3,18 +3,24 @@
 /**
  * Write monthly aggregates to egress-traffic-monthly table
  *
- * WARNING: This script uses ADD operation - NOT idempotent!
- * Running multiple times will inflate counters.
+ * This script uses SET operation for idempotent writes.
+ * Safe to re-run anytime - will overwrite with absolute values.
  *
- * Supports --resume to continue after interruption.
+ * Each aggregate in the input JSON is already a complete total for that
+ * customer/month/space combination (computed by 1-read-events.js).
+ * Using SET ensures that re-running this script won't double-count.
+ *
+ * Supports --resume to skip already-processed keys.
  */
 
 import dotenv from 'dotenv'
 import fs from 'node:fs'
 import * as CSV from 'csv-stringify/sync'
 import pMap from 'p-map'
+import { DynamoDBClient, UpdateItemCommand } from '@aws-sdk/client-dynamodb'
+import { marshall } from '@aws-sdk/util-dynamodb'
 import { mustGetEnv } from '../../../lib/env.js'
-import { createEgressTrafficMonthlyStore } from '../../tables/egress-traffic-monthly.js'
+import { validate, encode } from '../../data/egress-monthly.js'
 
 dotenv.config({ path: '.env.local' })
 
@@ -83,11 +89,8 @@ async function writeAggregates({ inputFile, resume }) {
 
   console.log(`Processing ${itemsToProcess.length} aggregates (${alreadyProcessed.size} already done)\n`)
 
-  // Initialize store
-  const monthlyStore = createEgressTrafficMonthlyStore(
-    { region: REGION },
-    { tableName: EGRESS_TRAFFIC_MONTHLY_TABLE_NAME }
-  )
+  // Initialize DynamoDB client
+  const dynamoClient = new DynamoDBClient({ region: REGION })
 
   /** @type {string[]} */
   const processedKeys = []
@@ -138,6 +141,31 @@ async function writeAggregates({ inputFile, resume }) {
     process.exit(1)
   })
 
+  // Uncaught exception handlers
+  process.on('uncaughtException', (err) => {
+    console.error('\nUncaught exception occurred:', err)
+    console.log(`Processed ${written} item(s) so far. Re-run with --resume to continue.`)
+    try {
+      flushOutput()
+      flushErrors()
+    } catch (flushErr) {
+      console.error('Error writing files:', flushErr)
+    }
+    process.exit(1)
+  })
+
+  process.on('unhandledRejection', (reason) => {
+    console.error('\nUnhandled promise rejection:', reason)
+    console.log(`Processed ${written} item(s) so far. Re-run with --resume to continue.`)
+    try {
+      flushOutput()
+      flushErrors()
+    } catch (flushErr) {
+      console.error('Error writing files:', flushErr)
+    }
+    process.exit(1)
+  })
+
   // Process aggregates
   await pMap(
     itemsToProcess,
@@ -145,12 +173,45 @@ async function writeAggregates({ inputFile, resume }) {
       const key = `${agg.customer}#${agg.month}#${agg.space}`
 
       try {
-        await monthlyStore.increment({
+        // Validate the aggregate data
+        const validation = validate({
           customer: agg.customer,
           space: agg.space,
           month: agg.month,
-          bytes: agg.bytes
+          bytes: agg.bytes,
+          eventCount: agg.eventCount
         })
+        if (validation.error) {
+          throw new Error(`Validation failed: ${validation.error.message}`)
+        }
+
+        // Encode to DynamoDB format (pk, sk, etc)
+        const encoding = encode(validation.ok)
+        if (encoding.error) {
+          throw new Error(`Encoding failed: ${encoding.error.message}`)
+        }
+
+        const parameters = encoding.ok
+
+        // Use SET operation for idempotent writes
+        await dynamoClient.send(new UpdateItemCommand({
+          TableName: EGRESS_TRAFFIC_MONTHLY_TABLE_NAME,
+          Key: marshall({
+            pk: parameters.pk,
+            sk: parameters.sk
+          }),
+          UpdateExpression: 'SET #space = :space, #month = :month, bytes = :bytes, eventCount = :eventCount',
+          ExpressionAttributeNames: {
+            '#space': 'space',  // reserved word
+            '#month': 'month'   // reserved word
+          },
+          ExpressionAttributeValues: marshall({
+            ':space': parameters.space,
+            ':month': parameters.month,
+            ':bytes': parameters.bytes,
+            ':eventCount': parameters.eventCount
+          })
+        }))
 
         processedKeys.push(key)
         written++

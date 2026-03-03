@@ -29,7 +29,7 @@ node 1-read-events.js from=2024-01-01 to=2026-03-01
 
 This script is READ-ONLY and safe to re-run multiple times.
 
-### Step 2: Write Aggregates (One-time, Resumable)
+### Step 2: Write Aggregates (Idempotent, Resumable)
 
 Write aggregates to monthly table:
 
@@ -37,11 +37,13 @@ Write aggregates to monthly table:
 node 2-write-aggregates.js input=egress-monthly-aggregates-2024-01-01-2026-03-01.json
 ```
 
-**If interrupted, resume:**
+**Optional: Skip already-processed keys with --resume flag:**
 
 ```bash
 node 2-write-aggregates.js input=egress-monthly-aggregates-2024-01-01-2026-03-01.json --resume
 ```
+
+This script uses DynamoDB SET operation (not ADD), making it **fully idempotent**. Safe to re-run anytime - it will overwrite with absolute values rather than accumulating.
 
 ### Output Files
 
@@ -51,7 +53,8 @@ node 2-write-aggregates.js input=egress-monthly-aggregates-2024-01-01-2026-03-01
 
 ## Important Notes
 
-- ⚠️ **NOT idempotent:** Running step 2 multiple times will inflate counters (uses ADD operation)
-- ✅ **Resumable:** If step 2 is interrupted, use `--resume` flag to continue
+- ✅ **Idempotent:** Step 2 uses SET operation - safe to re-run anytime without inflating counters
+- ✅ **Resumable:** If step 2 is interrupted, use `--resume` flag to skip already-processed keys (for efficiency)
 - ✅ **Safe separation:** Review aggregates file before writing to database
 - 🔄 **Recommended:** Run step 1 first, verify output, then run step 2
+- 💡 **How it works:** Each aggregate is a complete total (from step 1). SET overwrites with absolute values, not increments.

@@ -1,6 +1,6 @@
  import * as Sentry from '@sentry/serverless'
 import { expect } from './lib.js'
-import { decodeStr, encode } from '../data/egress.js'
+import { decodeStr } from '../data/egress.js'
 import { extractMonth } from '../data/egress-monthly.js'
 import { mustGetEnv } from '../../lib/env.js'
 import { createCustomerStore } from '../tables/customer.js'
