@@ -8,6 +8,8 @@ import { uploadTableProps, adminMetricsTableProps, spaceMetricsTableProps } from
 import { useMetricsTable as useAdminMetricsStore } from '../../stores/metrics.js'
 import { useMetricsTable as useSpaceMetricsStore } from '../../stores/space-metrics.js'
 
+/** @import * as API from '@storacha/upload-api' */
+
 /**
  * Helper to create a CID from a string
  *
@@ -31,6 +33,27 @@ async function createShards(count) {
     shards.push(await createCIDFromString(`shard-${i}`))
   }
   // @ts-expect-error - using raw codec for testing instead of CAR codec
+  return shards
+}
+
+/**
+ * @param {API.UploadTable} uploadTable 
+ * @param {API.DID} space 
+ * @param {API.UnknownLink} root 
+ * @returns {Promise<API.UnknownLink[]>}
+ */
+const collectShards = async (uploadTable, space, root) => {
+  const shards = []
+  /** @type {string|undefined} */
+  let cursor
+  do {
+    const listResult = await uploadTable.listShards(space, root, { cursor })
+    if (!listResult.ok) {
+      throw new Error('listing shards', { cause: listResult.error })
+    }
+    shards.push(...listResult.ok.results)
+    cursor = listResult.ok.cursor
+  } while (cursor)
   return shards
 }
 
@@ -82,12 +105,10 @@ test('should store small number of shards inline in DynamoDB', async (t) => {
   })
 
   t.truthy(upsertResult.ok)
-  t.is(upsertResult.ok?.shards, undefined)
 
-  // Get upload to verify shards are inline
-  const getResult = await uploadTable.get(space, root)
-  t.truthy(getResult.ok)
-  t.is(getResult.ok?.shards?.length, 10)
+  const listResult = await uploadTable.listShards(space, root)
+  t.truthy(listResult.ok)
+  t.is(listResult.ok?.results.length, 10)
 })
 
 test('should store large number of shards in S3', async (t) => {
@@ -131,15 +152,11 @@ test('should store large number of shards in S3', async (t) => {
   })
 
   t.truthy(upsertResult.ok)
-  t.is(upsertResult.ok?.shards, undefined)
 
-  // Get upload to verify shards are fetched from S3
-  const getResult = await uploadTable.get(space, root)
-  t.truthy(getResult.ok)
-  t.is(getResult.ok?.shards?.length, 6000)
-
+  const listResults = await collectShards(uploadTable, space, root)
+  t.is(listResults.length, 6000)
   // Verify all CIDs are present
-  const returnedCidStrings = getResult.ok?.shards?.map((s) => s.toString()).sort()
+  const returnedCidStrings = listResults.map((s) => s.toString()).sort()
   const originalCidStrings = shards.map((s) => s.toString()).sort()
   t.deepEqual(returnedCidStrings, originalCidStrings)
 })
@@ -185,7 +202,6 @@ test('should migrate from inline to S3 when crossing threshold', async (t) => {
   })
 
   t.truthy(upsert1Result.ok)
-  t.is(upsert1Result.ok?.shards, undefined)
 
   // Second upsert with many more shards (should migrate to S3)
   const shards2 = await createShards(5500)
@@ -198,13 +214,15 @@ test('should migrate from inline to S3 when crossing threshold', async (t) => {
   })
 
   t.truthy(upsert2Result.ok)
-  t.is(upsert2Result.ok?.shards, undefined)
-  
+
   // Get upload to verify all shards are present
-  const getResult = await uploadTable.get(space, root)
-  t.truthy(getResult.ok)
+  const listResults = await collectShards(uploadTable, space, root)
+
   // Should have all shards from both upserts, but deduplicated
-  t.true((getResult.ok?.shards?.length ?? 0) >= 5500)
+  t.deepEqual(
+    listResults.map(s => s.toString()).sort(),
+    [...new Set([...shards1, ...shards2].map(s => s.toString()))].sort(),
+  )
 })
 
 test('should list uploads with S3-stored shards', async (t) => {
@@ -267,8 +285,21 @@ test('should list uploads with S3-stored shards', async (t) => {
   const upload1 = listResult.ok?.results.find((u) => u.root.toString() === root1.toString())
   const upload2 = listResult.ok?.results.find((u) => u.root.toString() === root2.toString())
 
-  t.is(upload1?.shards?.length, 10)
-  t.is(upload2?.shards?.length, 6000)
+  if (!upload1 || !upload2) {
+    return t.fail('Missing uploads in list results')
+  }
+
+  const upload1Shards = await collectShards(uploadTable, space, upload1.root)
+  t.deepEqual(
+    upload1Shards.map(s => s.toString()).sort(),
+    shards1.map(s => s.toString()).sort(),
+  )
+
+  const upload2Shards = await collectShards(uploadTable, space, upload2.root)
+  t.deepEqual(
+    upload2Shards.map(s => s.toString()).sort(),
+    shards2.map(s => s.toString()).sort(),
+  )
 })
 
 test('should clean up S3 shards when removing upload', async (t) => {
@@ -314,9 +345,12 @@ test('should clean up S3 shards when removing upload', async (t) => {
   // Remove upload
   const removeResult = await uploadTable.remove(space, root)
   t.truthy(removeResult.ok)
-  t.is(removeResult.ok?.shards?.length, 6000)
 
   // Verify upload is gone
   const getResult = await uploadTable.get(space, root)
   t.truthy(getResult.error)
+
+  // Should error because upload is not found
+  const listResult = await uploadTable.listShards(space, root)
+  t.truthy(listResult.error)
 })
