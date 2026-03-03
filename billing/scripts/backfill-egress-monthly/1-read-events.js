@@ -48,7 +48,8 @@ async function readEvents({ fromDate, toDate }) {
   const aggregates = new Map()
 
   let scanned = 0
-  let exclusiveStartKey = undefined
+  /** @type {Record<string, any> | undefined} */
+  let exclusiveStartKey
 
   do {
     const result = await client.send(new ScanCommand({
@@ -134,7 +135,9 @@ if (!/^\d{4}-\d{2}-\d{2}$/.test(toArg)) {
   process.exit(1)
 }
 
-readEvents({ fromDate: fromArg, toDate: toArg }).catch((/** @type {any} */ err) => {
+try {
+  await readEvents({ fromDate: fromArg, toDate: toArg })
+} catch (/** @type {any} */ err) {
   console.error('Fatal error:', err)
   process.exit(1)
-})
+}

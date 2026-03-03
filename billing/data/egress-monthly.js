@@ -22,30 +22,18 @@ const fieldSchemas = {
 /** Full schema for complete record validation */
 export const egressMonthlySchema = Schema.struct(fieldSchemas)
 
-/**
- * Validate egress monthly summary data
- * @template T
- * @param {T} input - Data to validate
- * @param {Array<'customer'|'space'|'bytes'|'eventCount'|'month'>} [fields] - Optional array of field names to validate. If not provided, validates entire struct.
- * @returns {import('@ucanto/interface').Result<T, import('@ucanto/interface').Failure>}
- * @example
- * // Validate entire struct
- * validate({ customer: 'did:mailto:...', space: 'did:key:...', ... })
- *
- * // Validate only specific fields
- * validate({ month: '2024-01', customer: 'did:mailto:...' }, ['month', 'customer'])
- */
-
 /**                                                                                                                                                                                                                          
  * @overload                                                                                                                                                                                                                 
  * @param {unknown} input                                                                                                                                                                                                    
  * @returns {import('@ucanto/interface').Result<import('../lib/api.js').EgressTrafficMonthlySummary, import('@ucanto/interface').Failure>}                                                                                   
- *                                                                                                                                                                                                                      
+ */                                                                                                                                                                                                            
+/**                                                                                                                                                                                                                   
  * @overload                                                                                                                                                                                                                 
  * @param {unknown} input                                                                                                                                                                                                    
  * @param {Array<'customer'|'space'|'bytes'|'eventCount'|'month'>} fields                                                                                                                                                    
  * @returns {import('@ucanto/interface').Result<Partial<import('../lib/api.js').EgressTrafficMonthlySummary>, import('@ucanto/interface').Failure>}                                                                          
- *                                                                                                                                                                                                                          
+ */                                                                                                                                                                                                            
+/**                                                                                                                                                                                                                           
  * @param {unknown} input                                                                                                                                                                                                    
  * @param {Array<'customer'|'space'|'bytes'|'eventCount'|'month'>} [fields]                                                                                                                                                  
  */       
@@ -70,6 +58,7 @@ export const validate = (input, fields) => {
 
 /**
  * Encode monthly summary for DynamoDB storage
+ *
  * @type {import('../lib/api.js').Encoder<EgressTrafficMonthlySummary, EgressTrafficMonthlySummaryStoreRecord>}
  */
 export const encode = input => {
@@ -93,6 +82,7 @@ export const encode = input => {
 
 /**
  * Decode monthly summary from DynamoDB
+ *
  * @type {import('../lib/api.js').Decoder<EgressTrafficMonthlySummaryStoreRecord, EgressTrafficMonthlySummary>}
  */
 export const decode = input => {
@@ -118,6 +108,7 @@ export const decode = input => {
 
 /**
  * Extract month in YYYY-MM format from a Date
+ *
  * @param {Date} date
  * @returns {string} YYYY-MM format
  */

@@ -19,6 +19,8 @@ import { createEgressTrafficMonthlyStore } from '../../tables/egress-traffic-mon
 dotenv.config({ path: '.env.local' })
 
 const STORACHA_ENV = mustGetEnv('STORACHA_ENV')
+const REGION = mustGetEnv('AWS_REGION')
+const EGRESS_TRAFFIC_MONTHLY_TABLE_NAME = mustGetEnv('EGRESS_TRAFFIC_MONTHLY_TABLE_NAME')
 const CONCURRENCY = 10
 
 // Timing
@@ -82,10 +84,9 @@ async function writeAggregates({ inputFile, resume }) {
   console.log(`Processing ${itemsToProcess.length} aggregates (${alreadyProcessed.size} already done)\n`)
 
   // Initialize store
-  const region = mustGetEnv('AWS_REGION')
   const monthlyStore = createEgressTrafficMonthlyStore(
-    { region },
-    { tableName: mustGetEnv('EGRESS_TRAFFIC_MONTHLY_TABLE_NAME') }
+    { region: REGION },
+    { tableName: EGRESS_TRAFFIC_MONTHLY_TABLE_NAME }
   )
 
   /** @type {string[]} */
@@ -148,15 +149,16 @@ async function writeAggregates({ inputFile, resume }) {
           customer: agg.customer,
           space: agg.space,
           month: agg.month,
-          bytes: Number(agg.bytes) // Convert string to number
+          bytes: agg.bytes
         })
 
         processedKeys.push(key)
         written++
 
         const shouldLog = written % 100 === 0 ||
-                          written % Math.max(1, Math.floor(itemsToProcess.length / 10)) === 0
-        if (shouldLog || written === itemsToProcess.length) {
+                          written % Math.max(1, Math.floor(itemsToProcess.length / 10)) === 0 || 
+                          written === itemsToProcess.length
+        if (shouldLog) {
           console.log(`  [${written}/${itemsToProcess.length}] Written`)
           logDuration('  Elapsed')
         }
@@ -204,7 +206,9 @@ if (!fs.existsSync(inputArg)) {
   process.exit(1)
 }
 
-writeAggregates({ inputFile: inputArg, resume: resumeFlag }).catch((/** @type {any} */ err) => {
+try {
+  await writeAggregates({ inputFile: inputArg, resume: resumeFlag })
+} catch (/** @type {any} */ err) {
   console.error('Fatal error:', err)
   process.exit(1)
-})
+}

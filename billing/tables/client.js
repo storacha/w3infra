@@ -1,4 +1,4 @@
-import { BatchWriteItemCommand, DynamoDBClient, GetItemCommand, PutItemCommand, QueryCommand, ScanCommand, UpdateItemCommand } from '@aws-sdk/client-dynamodb'
+import { BatchWriteItemCommand, DynamoDBClient, GetItemCommand, PutItemCommand, QueryCommand, ScanCommand } from '@aws-sdk/client-dynamodb'
 import { marshall, unmarshall, convertToAttr } from '@aws-sdk/util-dynamodb'
 import retry from 'p-retry'
 import { InsufficientRecords, RecordNotFound, StoreOperationFailure } from './lib.js'
@@ -235,7 +235,7 @@ export const createStoreListerClient = (conf, context) => {
  * Generic command executor with retry logic and error handling.
  *
  * @param {import('@aws-sdk/client-dynamodb').DynamoDBClient} client - DynamoDB client
- * @param {() => (UpdateItemCommand | QueryCommand | PutItemCommand | GetItemCommand | ScanCommand | BatchWriteItemCommand)} buildCommand - Callback that builds the command to execute
+ * @param {() => (import('@aws-sdk/client-dynamodb').UpdateItemCommand | QueryCommand | PutItemCommand | GetItemCommand | ScanCommand | BatchWriteItemCommand)} buildCommand - Callback that builds the command to execute
  * @param {string} errorMessage - Error message to use if command fails
  * @returns {Promise<import('@ucanto/interface').Result<any, import('./lib.js').StoreOperationFailure>>}
  */

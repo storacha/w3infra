@@ -44,6 +44,7 @@ export const createEgressTrafficMonthlyStore = (conf, { tableName }) => {
   return {
     /**
      * Atomically increment monthly aggregates
+     *
      * @param {object} params
      * @param {string} params.customer - Customer DID
      * @param {string} params.space - Space DID
@@ -89,6 +90,7 @@ export const createEgressTrafficMonthlyStore = (conf, { tableName }) => {
     /**
      * Get total egress for a space in a month (uses GSI)
      * Used by account/usage/get - sumBySpace
+     *
      * @param {string} space - Space DID
      * @param {{ from: Date, to: Date }} period - Time period to query
      * @returns {Promise<import('@ucanto/interface').Result<number, Error>>}
@@ -131,6 +133,7 @@ export const createEgressTrafficMonthlyStore = (conf, { tableName }) => {
 
     /**
      * Get all spaces egress for a customer in a month with total customer egress
+     *
      * @param {string} customer - Customer DID
      * @param {string} month - YYYY-MM format
      * @returns {Promise<import('@ucanto/interface').Result<{spaces: Array<{space: string, month: string, bytes: number, eventCount: number}>, total: number}, Error>>}
