@@ -471,7 +471,7 @@ export function useUploadTable(dynamoDb, tableName, metrics, options = {}) {
       }
 
       /** @type {string[]} */
-      let shards = upload.shards ?? []
+      let shards = upload.shards ? [...upload.shards] : []
       // If shards are stored in S3, fetch them
       if (upload.shardsRef && s3Client && shardsBucketName) {
         try {
