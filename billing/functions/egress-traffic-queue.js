@@ -1,6 +1,4 @@
  import * as Sentry from '@sentry/serverless'
-import { DynamoDBClient, TransactWriteItemsCommand } from '@aws-sdk/client-dynamodb'
-import { marshall } from '@aws-sdk/util-dynamodb'
 import { expect } from './lib.js'
 import { decodeStr, encode } from '../data/egress.js'
 import { extractMonth } from '../data/egress-monthly.js'
@@ -9,8 +7,8 @@ import { createCustomerStore } from '../tables/customer.js'
 import Stripe from 'stripe'
 import { Config } from 'sst/node/config'
 import { recordBillingMeterEvent } from '../utils/stripe.js'
-import { rawUpdateCommandToIncrement } from '../tables/egress-traffic-monthly.js'
-
+import { createEgressTrafficEventStore } from '../tables/egress-traffic.js' 
+import { createEgressTrafficMonthlyStore } from '../tables/egress-traffic-monthly.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -27,8 +25,9 @@ Sentry.AWSLambda.init({
  *   stripeSecretKey?: string
  *   customerStore?: import('../lib/api.js').CustomerStore
  *   egressTrafficTable?: string
+ *   egressTrafficEventStore?: import('../lib/api.js').EgressTrafficEventStore
  *   egressTrafficMonthlyTable?: string
- *   dynamoClient?: import('@aws-sdk/client-dynamodb').DynamoDBClient
+ *    egressTrafficMonthlyStore?:  import('../lib/api.js').EgressTrafficMonthlyStore
  * }} CustomHandlerContext
  */
 
@@ -50,7 +49,8 @@ export const handler = Sentry.AWSLambda.wrapHandler(
     const customerStore = customContext?.customerStore ?? createCustomerStore({ region }, { tableName: customerTable })
     const egressTrafficTable = customContext?.egressTrafficTable ?? mustGetEnv('EGRESS_TRAFFIC_TABLE_NAME')
     const egressTrafficMonthlyTable = customContext?.egressTrafficMonthlyTable ?? mustGetEnv('EGRESS_TRAFFIC_MONTHLY_TABLE_NAME')
-    const dynamoClient = customContext?.dynamoClient ?? new DynamoDBClient({ region })
+    const egressTrafficEventStore = customContext?.egressTrafficEventStore ?? createEgressTrafficEventStore({ region }, { tableName: egressTrafficTable })
+    const egressTrafficMonthlyStore = customContext?.egressTrafficMonthlyStore ?? createEgressTrafficMonthlyStore({ region }, { tableName: egressTrafficMonthlyTable })
     const skipStripeEgressTracking = (process.env.SKIP_STRIPE_EGRESS_TRACKING === 'true')
 
     const stripeSecretKey = customContext?.stripeSecretKey ?? Config.STRIPE_SECRET_KEY
@@ -68,56 +68,28 @@ export const handler = Sentry.AWSLambda.wrapHandler(
 
         // Extract month for monthly aggregation
         const month = extractMonth(egressData.servedAt)
-        const encodedEvent = encode(egressData)
-        expect(encodedEvent, 'Failed to encode egress event')
 
-        // Atomic transaction: write raw event + increment monthly counter
-        // If raw event already exists, entire transaction fails (idempotent)
-        try {
-          await dynamoClient.send(new TransactWriteItemsCommand({
-            TransactItems: [
-              {
-                Put: {
-                  TableName: egressTrafficTable,
-                  Item: marshall(encodedEvent.ok, { removeUndefinedValues: true }),
-                  ConditionExpression: 'attribute_not_exists(pk)'
-                }
-              },
-              {
-                // Increment monthly aggregate (only if raw event write succeeds)
-                Update: rawUpdateCommandToIncrement(egressTrafficMonthlyTable, {
-                    pk: `customer#${egressData.customer}`,
-                    sk: `${month}#${egressData.space}`,
-                    space: egressData.space,
-                    bytes: egressData.bytes,
-                    eventCount: 1,
-                    month
-                  }
-                )
-              }
-            ]
-          }))
-        } catch (/** @type {any} */ err) {
-          // Check if failure is due to duplicate event (ConditionalCheckFailedException)
-          if (err.name === 'TransactionCanceledException' &&
-              err.CancellationReasons?.[0]?.Code === 'ConditionalCheckFailed') {
-            // Event already processed - this is a retry, skip silently
-            console.log('Duplicate event detected, skipping', {
-              customer: egressData.customer,
-              space: egressData.space,
-              cause: egressData.cause.toString()
-            })
-            continue // Success - don't add to batchItemFailures
-          }
+        // Save raw egress event
+        // IMPORTANT: Idempotency limitation
+        // The put() method does NOT check for duplicates (no ConditionExpression).
+        // If increment() fails after put() succeeds, SQS will retry the entire event.
+        // On retry:
+        //   1. put() overwrites the existing event (wastes write capacity but harmless)
+        //   2. increment() ADDs bytes 
+        // This is acceptable for now, but it's good to have in mind how it works
+        const putResult = await egressTrafficEventStore.put(egressData)
+        expect(putResult, 'Failed to save egress event in database')
 
-          // Actual error - rethrow for retry
-          console.error('Failed to write egress event', {
-            customer: egressData.customer,
-            error: err.message
-          })
-          throw err
-        }
+        // Increment monthly aggregate (only if put succeeded)
+        const incrementResult = await egressTrafficMonthlyStore.increment({
+          customer: egressData.customer,
+          space: egressData.space,
+          month,
+          bytes: egressData.bytes
+        })
+        expect(incrementResult, 'Failed to increment monthly egress aggregates')
 
+        // Get customer account for Stripe billing
         const response = await customerStore.get({ customer: egressData.customer })
         if (response.error) throw response.error
 

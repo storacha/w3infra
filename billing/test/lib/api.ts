@@ -26,7 +26,6 @@ import {
 } from '../../lib/api.js'
 import { Context, Handler, SQSEvent } from 'aws-lambda'
 import Stripe from 'stripe'
-import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
 
 export interface BillingCronTestContext {
   customerStore: CustomerStore & StorePutter<Customer>
@@ -57,10 +56,10 @@ export interface EgressTrafficTestContext extends Context {
   region: string
   customerTable: string
   customerStore: CustomerStore
-  egressTrafficMonthlyTable: string
-  dynamoClient: DynamoDBClient
   egressTrafficTable: string
   egressTrafficEventStore: EgressTrafficEventStore
+  egressTrafficMonthlyTable: string
+  egressTrafficMonthlyStore: EgressTrafficMonthlyStore
   billingMeterEventName: string
   billingMeterId: string
   stripeSecretKey: string

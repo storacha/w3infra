@@ -13,8 +13,6 @@ This backfill populates historical data from the raw `egress-traffic-events` tab
 - `.env.local` file with required environment variables:
   - `STORACHA_ENV`
   - `AWS_REGION`
-  - `EGRESS_TRAFFIC_TABLE_NAME`
-  - `EGRESS_TRAFFIC_MONTHLY_TABLE_NAME`
 
 ## Usage
 
