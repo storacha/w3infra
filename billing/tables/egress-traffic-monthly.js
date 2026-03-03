@@ -34,6 +34,33 @@ export const egressTrafficMonthlyTableProps = {
 }
 
 /**
+ * Generate raw UpdateItem parameters for atomically incrementing monthly egress aggregates.
+ * This can be used in both standalone UpdateItemCommand and TransactWriteItems.
+ *
+ * @param {string} tableName - DynamoDB table name
+ * @param {import('../lib/api.js').EgressTrafficMonthlySummaryStoreRecord} parameters - Record with pk, sk, space, month, bytes, eventCount
+ * @returns {import('@aws-sdk/client-dynamodb').UpdateItemCommandInput & { UpdateExpression: string }}
+ */
+export const rawUpdateCommandToIncrement = (tableName, parameters) => ({
+  TableName: tableName,
+  Key: marshall({
+    pk: parameters.pk,
+    sk: parameters.sk
+  }),
+  UpdateExpression: 'SET #space = :space, #month = :month ADD bytes :bytes, eventCount :one',
+  ExpressionAttributeNames: {
+    '#space': 'space',  // reserved word
+    '#month': 'month'   // reserved word
+  },
+  ExpressionAttributeValues: marshall({
+    ':space': parameters.space,
+    ':month': parameters.month,
+    ':bytes': parameters.bytes,
+    ':one': parameters.eventCount
+  })
+})
+
+/**
  * @param {{ region: string } | import('@aws-sdk/client-dynamodb').DynamoDBClient} conf
  * @param {{ tableName: string }} context
  * @returns {import('../lib/api.js').EgressTrafficMonthlyStore}
@@ -43,7 +70,7 @@ export const createEgressTrafficMonthlyStore = (conf, { tableName }) => {
 
   return {
     /**
-     * Atomically increment monthly aggregates
+     * Atomically increment by 1 monthly aggregates
      *
      * @param {object} params
      * @param {string} params.customer - Customer DID
@@ -62,24 +89,7 @@ export const createEgressTrafficMonthlyStore = (conf, { tableName }) => {
 
       const result = await executeCommand(
         client,
-        () => new UpdateItemCommand({
-          TableName: tableName,
-          Key: marshall({
-            pk: parameters.pk, 
-            sk: parameters.sk
-          }),
-          UpdateExpression: 'SET #space = :space, #month = :month ADD bytes :bytes, eventCount :one',
-          ExpressionAttributeNames: {
-            '#space': 'space',  // reserved word
-            '#month': 'month'   // reserved word
-          },
-          ExpressionAttributeValues: marshall({
-            ':space': parameters.space,
-            ':month': parameters.month,
-            ':bytes': parameters.bytes,
-            ':one': parameters.eventCount
-          })
-        }),
+        () => new UpdateItemCommand(rawUpdateCommandToIncrement(tableName, parameters)),
         'Failed to increment egress monthly aggregates'
       )
 

@@ -9,6 +9,7 @@ import { createCustomerStore } from '../tables/customer.js'
 import Stripe from 'stripe'
 import { Config } from 'sst/node/config'
 import { recordBillingMeterEvent } from '../utils/stripe.js'
+import { rawUpdateCommandToIncrement } from '../tables/egress-traffic-monthly.js'
 
 
 Sentry.AWSLambda.init({
@@ -76,32 +77,23 @@ export const handler = Sentry.AWSLambda.wrapHandler(
           await dynamoClient.send(new TransactWriteItemsCommand({
             TransactItems: [
               {
-                // Write raw event (with condition: must not already exist)
                 Put: {
                   TableName: egressTrafficTable,
-                  Item: marshall(encodedEvent.ok),
-                  ConditionExpression: 'attribute_not_exists(pk)',
+                  Item: marshall(encodedEvent.ok, { removeUndefinedValues: true }),
+                  ConditionExpression: 'attribute_not_exists(pk)'
                 }
               },
               {
                 // Increment monthly aggregate (only if raw event write succeeds)
-                Update: {
-                  TableName: egressTrafficMonthlyTable,
-                  Key: marshall({
+                Update: rawUpdateCommandToIncrement(egressTrafficMonthlyTable, {
                     pk: `customer#${egressData.customer}`,
-                    sk: `${month}#${egressData.space}`
-                  }),
-                  UpdateExpression: 'SET space = :space, #month = :month ADD bytes :bytes, eventCount :one',
-                  ExpressionAttributeNames: {
-                    '#month': 'month'
-                  },
-                  ExpressionAttributeValues: marshall({
-                    ':space': egressData.space,
-                    ':month': month,
-                    ':bytes': egressData.bytes,
-                    ':one': 1
-                  })
-                }
+                    sk: `${month}#${egressData.space}`,
+                    space: egressData.space,
+                    bytes: egressData.bytes,
+                    eventCount: 1,
+                    month
+                  }
+                )
               }
             ]
           }))

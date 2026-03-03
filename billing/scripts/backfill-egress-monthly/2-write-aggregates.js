@@ -20,7 +20,7 @@ dotenv.config({ path: '.env.local' })
 
 const STORACHA_ENV = mustGetEnv('STORACHA_ENV')
 const REGION = mustGetEnv('AWS_REGION')
-const EGRESS_TRAFFIC_MONTHLY_TABLE_NAME = mustGetEnv('EGRESS_TRAFFIC_MONTHLY_TABLE_NAME')
+const EGRESS_TRAFFIC_MONTHLY_TABLE_NAME = `${STORACHA_ENV}-w3infra-egress-traffic-monthly`
 const CONCURRENCY = 10
 
 // Timing

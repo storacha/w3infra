@@ -175,6 +175,7 @@ export const createEgressTrafficTestContext = async () => {
     })
   }
 
+  const egressTrafficMonthlyTable = await createTable(awsServices.dynamo.client, egressTrafficMonthlyTableProps, 'egress-traffic-monthly-')
   const egressTrafficTable = await createTable(awsServices.dynamo.client, egressTrafficTableProps, 'egress-traffic-events-')
   const egressTrafficEventStore = {
     ...createEgressTrafficEventStore(awsServices.dynamo.client, { tableName: egressTrafficTable }),
@@ -192,12 +193,14 @@ export const createEgressTrafficTestContext = async () => {
     egressTrafficQueue,
     egressTrafficQueueUrl: egressQueueURL.toString(),
     egressTrafficHandler: createEgressTrafficHandler,
+    dynamoClient: awsServices.dynamo.client,
     accountId: accountId ?? '',
     region: region ?? '',
     customerTable,
     customerStore,
     egressTrafficTable,
     egressTrafficEventStore,
+    egressTrafficMonthlyTable,
     billingMeterEventName,
     billingMeterId,
     stripeSecretKey,
