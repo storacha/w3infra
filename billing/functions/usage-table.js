@@ -218,11 +218,15 @@ export const reportUsage = async (usage, ctx) => {
     expand: ['subscriptions'],
   })
 
-  // return ok so the Lambda exits cleanly, since retrying will never succeed.
-  // The customer used the service and is not being billed; manual follow-up required.
-  if (stripeCustomer.deleted) {
+  const isDeleted = stripeCustomer.deleted
+  const subscriptions = isDeleted ? [] : (stripeCustomer.subscriptions?.data ?? [])
+  const allSubscriptionsInactive = subscriptions.every(
+    (s) => s.status === 'canceled' || s.status === 'paused'
+  )
+
+  if (isDeleted || allSubscriptionsInactive) {
     console.error(
-      `Stripe customer ${customer} has been deleted. ` +
+      `Stripe customer ${customer} is not being billed by stripe. ` +
       `Skipping usage report for customer DID: ${usage.customer}, ` +
       `space: ${usage.space}, provider: ${usage.provider}, ` +
       `period: ${usage.from.toISOString()} - ${usage.to.toISOString()}. ` +
@@ -231,14 +235,11 @@ export const reportUsage = async (usage, ctx) => {
     return { ok: {} }
   }
 
-  const pastDueSubs = (stripeCustomer.subscriptions?.data ?? []).filter(
-    (s) => s.status === 'past_due'
-  )
-  if (pastDueSubs.length > 0) {
+  const hasPastDue = subscriptions.some((s) => s.status === 'past_due')
+  if (hasPastDue) {
     console.warn(
-      `Stripe customer ${customer} (customer DID: ${usage.customer}) has ` +
-      `${pastDueSubs.length} past-due subscription(s). ` +
-      `Usage will still be reported but overages may not be collected.`
+      `Stripe customer ${customer} (customer DID: ${usage.customer}) has past-due subscription(s). ` +
+      `Usage will still be reported but requires manual intervention for resource collection.`
     )
   }
 
