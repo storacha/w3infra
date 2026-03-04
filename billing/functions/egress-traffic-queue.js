@@ -7,7 +7,7 @@ import { createCustomerStore } from '../tables/customer.js'
 import Stripe from 'stripe'
 import { Config } from 'sst/node/config'
 import { recordBillingMeterEvent } from '../utils/stripe.js'
-import { createEgressTrafficEventStore } from '../tables/egress-traffic.js' 
+import { createEgressTrafficEventStore } from '../tables/egress-traffic.js'
 import { createEgressTrafficMonthlyStore } from '../tables/egress-traffic-monthly.js'
 
 Sentry.AWSLambda.init({
