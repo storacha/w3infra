@@ -22,16 +22,30 @@ export const connectTable = target =>
 export const createStorePutterClient = (conf, context) => {
   const client = connectTable(conf)
   return {
-    put: async (record) => {
+    /**
+     * @param {T} record
+     * @param {object} [options]
+     * @param {string[]} [options.conditionFieldsMustNotExist] - Optional list of fields that must not exist for put to succeed
+     */
+    put: async (record, options) => {
       const validation = context.validate(record)
       if (validation.error) return validation
 
       const encoding = context.encode(validation.ok)
       if (encoding.error) return encoding
 
+      // Build ConditionExpression if fields specified
+      let conditionExpression
+      if (options?.conditionFieldsMustNotExist && options.conditionFieldsMustNotExist.length > 0) {
+        conditionExpression = options.conditionFieldsMustNotExist
+          .map(field => `attribute_not_exists(${field})`)
+          .join(' AND ')
+      }
+
       const cmd = new PutItemCommand({
         TableName: context.tableName,
-        Item: marshall(encoding.ok, { removeUndefinedValues: true })
+        Item: marshall(encoding.ok, { removeUndefinedValues: true }),
+        ...(conditionExpression && { ConditionExpression: conditionExpression })
       })
 
       try {
@@ -43,7 +57,11 @@ export const createStorePutterClient = (conf, context) => {
         }, {
           retries: 3,
           minTimeout: 100,
-          onFailedAttempt: console.warn
+          onFailedAttempt: console.warn,
+          shouldRetry: (err) => {                                                                                                                                                                                 
+            // Don't retry if condition check failed - item already exists                                                                                                                                        
+            return err.name !== 'ConditionalCheckFailedException'                                                                                                                                                 
+          }                                                          
         })
         return { ok: {} }
       } catch (/** @type {any} */ err) {

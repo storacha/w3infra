@@ -480,7 +480,7 @@ export interface InsufficientRecords extends Failure {
 /** StorePutter allows a single item to be put in the store by it's key. */
 export interface StorePutter<T> {
   /** Puts a single item into the store by it's key */
-  put: (rec: T) => Promise<Result<Unit, EncodeFailure|StoreOperationFailure|Failure>>
+  put: (rec: T, options?: { conditionFieldsMustNotExist?: string[] }) => Promise<Result<Unit, EncodeFailure|StoreOperationFailure|Failure>>
 }
 
 /**

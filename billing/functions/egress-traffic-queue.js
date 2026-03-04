@@ -69,18 +69,33 @@ export const handler = Sentry.AWSLambda.wrapHandler(
         // Extract month for monthly aggregation
         const month = extractMonth(egressData.servedAt)
 
-        // Save raw egress event
-        // IMPORTANT: Idempotency limitation
-        // The put() method does NOT check for duplicates (no ConditionExpression).
-        // If increment() fails after put() succeeds, SQS will retry the entire event.
-        // On retry:
-        //   1. put() overwrites the existing event (wastes write capacity but harmless)
-        //   2. increment() ADDs bytes 
-        // This is acceptable for now, but it's good to have in mind how it works
-        const putResult = await egressTrafficEventStore.put(egressData)
-        expect(putResult, 'Failed to save egress event in database')
+        // IMPORTANT: Idempotency behavior
+        // Uses ConditionExpression to prevent overwriting existing events.
+        // This ensures proper handling of SQS retries:
+        //
+        // Scenario: put() succeeds, increment() fails
+        //   - On retry: put() fails with ConditionalCheckFailedException (event exists)
+        //   - We ignore this error and proceed to increment()
+        //   - Result: Event saved once, counted once
+        //
+        // CRITICAL: Source MUST NOT send duplicate events!
+        // If the same event is sent twice to the queue (not a retry, but truly
+        // duplicate messages), both will be counted, causing double-counting.
+        //
+        const putResult = await egressTrafficEventStore.put(egressData, { conditionFieldsMustNotExist: ['pk'] })
 
-        // Increment monthly aggregate (only if put succeeded)
+        if (putResult.error) {
+          // @ts-expect-error - cause.name exists on AWS SDK errors
+          if (putResult.error.cause?.name === 'ConditionalCheckFailedException') {
+            console.log(`Event already saved for customer ${egressData.customer}, space ${egressData.space} at ${egressData.servedAt.toISOString()} - proceeding to increment`)
+            // Don't throw - event was already saved, proceed to increment
+          } else {
+            expect(putResult, 'Failed to save egress event in database')
+          }
+        }
+
+        // Increment monthly aggregate
+        // Runs whether put() succeeded (new event) or failed with ConditionalCheckFailedException (retry handling)
         const incrementResult = await egressTrafficMonthlyStore.increment({
           customer: egressData.customer,
           space: egressData.space,
