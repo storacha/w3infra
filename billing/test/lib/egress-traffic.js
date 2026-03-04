@@ -1,6 +1,7 @@
 import { encodeStr } from '../../data/egress.js'
 import { randomCustomer } from '../helpers/customer.js'
 import { randomEgressEvent } from '../helpers/egress.js'
+import { extractMonth } from '../../data/egress-monthly.js'
 import retry from 'p-retry'
 import * as DidMailto from '@storacha/did-mailto'
 
@@ -140,6 +141,97 @@ export const test = {
     } finally {
       if (stripeCustomerId) {
         // 5. Delete the test customer from stripe
+        const deletedCustomer = await ctx.stripe.customers.del(stripeCustomerId)
+        assert.ok(deletedCustomer.deleted, 'Error deleting customer from stripe')
+      }
+    }
+  },
+
+  /**
+   * Test: Retry after put() succeeded but increment() failed
+   * Simulates SQS retry where event was already saved but not counted
+   *
+   * @param {import('entail').assert} assert
+   * @param {import('./api.js').EgressTrafficTestContext} ctx
+   */
+  'should handle retry correctly when event already exists': async (assert, ctx) => {
+    /** @type {string | null} */
+    let stripeCustomerId = null
+    try {
+      // Create a test customer in Stripe
+      const didMailto = `did:mailto:storacha.network:retry-test`
+      const email = DidMailto.toEmail(/** @type {`did:mailto:${string}:${string}`} */(didMailto))
+      const stripeCustomer = await ctx.stripe.customers.create({ email })
+      assert.ok(stripeCustomer.id, 'Error adding customer to stripe')
+      stripeCustomerId = stripeCustomer.id
+
+      const customer = randomCustomer({
+        customer: didMailto,
+        /** @type {`stripe:${string}`} */
+        account: `stripe:${stripeCustomerId}`
+      })
+      const { error } = await ctx.customerStore.put(customer)
+      assert.ok(!error, 'Error adding customer')
+
+      // Create an egress event
+      const event = await randomEgressEvent(customer)
+      const month = extractMonth(event.servedAt)
+
+      // SIMULATE FIRST ATTEMPT: Save event but don't increment (as if increment failed)
+      const putResult = await ctx.egressTrafficEventStore.put(event)
+      assert.ok(!putResult.error, 'First put should succeed')
+
+      // Verify event was saved
+      const eventExists = await ctx.egressTrafficEventStore.put(event, {
+        conditionFieldsMustNotExist: ['pk']
+      })
+      assert.ok(eventExists.error, 'Second put with condition should fail')
+      assert.ok(
+        // @ts-expect-error - cause.name exists on AWS SDK errors
+        eventExists.error.cause?.name === 'ConditionalCheckFailedException',
+        'Should be ConditionalCheckFailedException'
+      )
+
+      // SIMULATE SQS RETRY: Process the same event again
+      const sqsEvent = {
+        Records: [{
+          body: encodeStr(event).ok ?? '',
+          messageId: 'test-message-retry',
+          receiptHandle: 'test-receipt-retry',
+          awsRegion: ctx.region,
+          eventSource: 'aws:sqs',
+          eventSourceARN: `arn:aws:sqs:${ctx.region}:${ctx.accountId}:test-queue`,
+          awsAccountId: ctx.accountId,
+          md5OfBody: '',
+          md5OfMessageAttributes: '',
+          attributes: {
+            ApproximateReceiveCount: '2', // Retry attempt
+            SentTimestamp: event.servedAt.getTime().toString(),
+            SenderId: ctx.accountId,
+            ApproximateFirstReceiveTimestamp: event.servedAt.getTime().toString(),
+          },
+          messageAttributes: {},
+        }]
+      }
+
+      const customCtx = { clientContext: { Custom: ctx } }
+      // @ts-expect-error
+      const result = await ctx.egressTrafficHandler(sqsEvent, customCtx)
+
+      // Verify handler succeeded despite ConditionalCheckFailedException
+      assert.equal(result.statusCode, 200)
+      assert.equal(result.batchItemFailures.length, 0, 'Should have no failures')
+
+      // Verify monthly aggregate was incremented (for the FIRST time)
+      const monthlyResult = await ctx.egressTrafficMonthlyStore.listByCustomer(customer.customer, month)
+      assert.ok(!monthlyResult.error, 'Should retrieve monthly aggregate')
+      if (monthlyResult.error) return
+      assert.equal(monthlyResult.ok.spaces.length, 1, 'Should have 1 space')
+      assert.equal(monthlyResult.ok.spaces[0].bytes, event.bytes, 'Bytes should be counted once')
+      assert.equal(monthlyResult.ok.spaces[0].eventCount, 1, 'Event count should be 1 (not double counted)')
+    } finally {
+      if (stripeCustomerId) {
+        // Clean up: Delete the test customer from stripe
         const deletedCustomer = await ctx.stripe.customers.del(stripeCustomerId)
         assert.ok(deletedCustomer.deleted, 'Error deleting customer from stripe')
       }

@@ -21,7 +21,8 @@ import {
   Usage,
   EgressTrafficQueue,
   EgressTrafficData,
-  EgressTrafficEventStore
+  EgressTrafficEventStore,
+  EgressTrafficMonthlyStore
 } from '../../lib/api.js'
 import { Context, Handler, SQSEvent } from 'aws-lambda'
 import Stripe from 'stripe'
@@ -57,10 +58,25 @@ export interface EgressTrafficTestContext extends Context {
   customerStore: CustomerStore
   egressTrafficTable: string
   egressTrafficEventStore: EgressTrafficEventStore
+  egressTrafficMonthlyTable: string
+  egressTrafficMonthlyStore: EgressTrafficMonthlyStore
   billingMeterEventName: string
   billingMeterId: string
   stripeSecretKey: string
   stripe: Stripe
+}
+
+export interface EgressMonthlyTestContext extends Context {
+  egressTrafficQueue: EgressTrafficQueue & QueueRemover<EgressTrafficData>
+  egressTrafficQueueUrl: string
+  accountId: string
+  region: string
+  customerTable: string
+  customerStore: CustomerStore & StorePutter<Customer>
+  egressTrafficTable: string
+  egressTrafficEventStore: EgressTrafficEventStore
+  egressTrafficMonthlyTable: string
+  egressTrafficMonthlyStore: EgressTrafficMonthlyStore
 }
 
 export type TestContext =
@@ -69,6 +85,7 @@ export type TestContext =
   & SpaceBillingQueueTestContext
   & StripeTestContext
   & EgressTrafficTestContext
+  & EgressMonthlyTestContext
 
 /** QueueRemover can remove items from the head of the queue. */
 export interface QueueRemover<T> {

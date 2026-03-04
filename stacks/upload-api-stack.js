@@ -89,6 +89,7 @@ export function UploadApiStack({ stack, app }) {
     spaceDiffTable,
     spaceSnapshotTable,
     egressTrafficTable,
+    egressTrafficMonthlyTable,
     stripeSecretKey,
   } = use(BillingDbStack)
   const { aggregatorServiceProof, pieceOfferQueue, filecoinSubmitQueue } =
@@ -162,6 +163,7 @@ export function UploadApiStack({ stack, app }) {
               delegationTable,
               egressTrafficQueue,
               egressTrafficTable,
+              egressTrafficMonthlyTable,
               filecoinSubmitQueue,
               ...(ipniConfig ? ipniConfig.permissions : []),
               pieceOfferQueue,
@@ -201,6 +203,7 @@ export function UploadApiStack({ stack, app }) {
                 process.env.ENABLE_CUSTOMER_TRIAL_PLAN ?? 'false',
               EGRESS_TRAFFIC_QUEUE: egressTrafficQueue.queueUrl,
               EGRESS_TRAFFIC_TABLE: egressTrafficTable.tableName,
+              EGRESS_TRAFFIC_MONTHLY_TABLE: egressTrafficMonthlyTable.tableName,
               FILECOIN_SUBMIT_QUEUE: filecoinSubmitQueue.queueUrl,
               ...(ipniConfig ? ipniConfig.environment : {}),
               PIECE_OFFER_QUEUE: pieceOfferQueue.queueUrl,
@@ -323,6 +326,7 @@ export function UploadApiStack({ stack, app }) {
               SUBSCRIPTION_TABLE_NAME: subscriptionTable.tableName,
               UCAN_LOG_STREAM_NAME: ucanStream.streamName,
               EGRESS_TRAFFIC_TABLE_NAME: egressTrafficTable.tableName,
+              EGRESS_TRAFFIC_MONTHLY_TABLE_NAME: egressTrafficMonthlyTable.tableName,
             },
             bind: [privateKey],
           },

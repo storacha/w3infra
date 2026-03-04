@@ -23,6 +23,7 @@ import { createEgressTrafficQueue } from '../../queues/egress-traffic.js'
 import { handler as createEgressTrafficHandler } from '../../functions/egress-traffic-queue.js'
 import Stripe from 'stripe'
 import { createEgressTrafficEventStore, egressTrafficTableProps } from '../../tables/egress-traffic.js'
+import { createEgressTrafficMonthlyStore, egressTrafficMonthlyTableProps } from '../../tables/egress-traffic-monthly.js'
 
 dotenv.config({ path: path.resolve('../.env.local'), override: true, debug: true })
 
@@ -174,6 +175,9 @@ export const createEgressTrafficTestContext = async () => {
     })
   }
 
+  const egressTrafficMonthlyTable = await createTable(awsServices.dynamo.client, egressTrafficMonthlyTableProps, 'egress-traffic-monthly-')
+  const egressTrafficMonthlyStore = createEgressTrafficMonthlyStore(awsServices.dynamo.client, { tableName: egressTrafficMonthlyTable })
+
   const egressTrafficTable = await createTable(awsServices.dynamo.client, egressTrafficTableProps, 'egress-traffic-events-')
   const egressTrafficEventStore = {
     ...createEgressTrafficEventStore(awsServices.dynamo.client, { tableName: egressTrafficTable }),
@@ -197,10 +201,68 @@ export const createEgressTrafficTestContext = async () => {
     customerStore,
     egressTrafficTable,
     egressTrafficEventStore,
+    egressTrafficMonthlyTable,
+    egressTrafficMonthlyStore,
     billingMeterEventName,
     billingMeterId,
     stripeSecretKey,
     stripe,
+  }
+}
+
+/**
+ * Create test context for egress monthly tests.
+ * Includes egress traffic queue, egress traffic events table,
+ * egress monthly aggregation table, and customer store.
+ *
+ * @returns {Promise<import('../lib/api.js').EgressMonthlyTestContext>}
+ */
+export const createEgressMonthlyTestContext = async () => {
+  await createAWSServices()
+
+  // Create egress traffic queue (for raw events)
+  const egressQueueURL = new URL(await createQueue(awsServices.sqs.client, 'egress-traffic-queue-'))
+  const egressTrafficQueue = {
+    add: createEgressTrafficQueue(awsServices.sqs.client, { url: egressQueueURL }).add,
+    remove: createQueueRemoverClient(awsServices.sqs.client, { url: egressQueueURL, decode: decodeEgressTrafficEvent }).remove,
+  }
+
+  // Get AWS metadata
+  // @ts-expect-error
+  const accountId = (await awsServices.sqs.client.config.credentials()).accountId
+  const region = 'us-west-2'
+
+  // Create customer table and store
+  const customerTable = await createTable(awsServices.dynamo.client, customerTableProps, 'customer-')
+  const customerStore = {
+    ...createCustomerStore(awsServices.dynamo.client, { tableName: customerTable }),
+    ...createStorePutterClient(awsServices.dynamo.client, {
+      tableName: customerTable,
+      validate: validateCustomer,
+      encode: encodeCustomer
+    })
+  }
+
+  // Create egress traffic events table (raw events)
+  const egressTrafficTable = await createTable(awsServices.dynamo.client, egressTrafficTableProps, 'egress-traffic-events-')
+  const egressTrafficEventStore = createEgressTrafficEventStore(awsServices.dynamo.client, { tableName: egressTrafficTable })
+
+  // Create egress traffic monthly aggregation table
+  const egressTrafficMonthlyTable = await createTable(awsServices.dynamo.client, egressTrafficMonthlyTableProps, 'egress-traffic-monthly-')
+  const egressTrafficMonthlyStore = createEgressTrafficMonthlyStore(awsServices.dynamo.client, { tableName: egressTrafficMonthlyTable })
+
+  // @ts-expect-error -- Don't need to initialize the full lambda context for testing
+  return {
+    egressTrafficQueue,
+    egressTrafficQueueUrl: egressQueueURL.toString(),
+    accountId: accountId ?? '',
+    region: region ?? '',
+    customerTable,
+    customerStore,
+    egressTrafficTable,
+    egressTrafficEventStore,
+    egressTrafficMonthlyTable,
+    egressTrafficMonthlyStore,
   }
 }
 

@@ -1,13 +1,14 @@
 import * as Sentry from '@sentry/serverless'
 import { expect } from './lib.js'
 import { decodeStr } from '../data/egress.js'
+import { extractMonth } from '../data/egress-monthly.js'
 import { mustGetEnv } from '../../lib/env.js'
 import { createCustomerStore } from '../tables/customer.js'
 import Stripe from 'stripe'
 import { Config } from 'sst/node/config'
 import { recordBillingMeterEvent } from '../utils/stripe.js'
 import { createEgressTrafficEventStore } from '../tables/egress-traffic.js'
-
+import { createEgressTrafficMonthlyStore } from '../tables/egress-traffic-monthly.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -25,6 +26,8 @@ Sentry.AWSLambda.init({
  *   customerStore?: import('../lib/api.js').CustomerStore
  *   egressTrafficTable?: string
  *   egressTrafficEventStore?: import('../lib/api.js').EgressTrafficEventStore
+ *   egressTrafficMonthlyTable?: string
+ *   egressTrafficMonthlyStore?:  import('../lib/api.js').EgressTrafficMonthlyStore
  * }} CustomHandlerContext
  */
 
@@ -45,7 +48,9 @@ export const handler = Sentry.AWSLambda.wrapHandler(
     const customerTable = customContext?.customerTable ?? mustGetEnv('CUSTOMER_TABLE_NAME')
     const customerStore = customContext?.customerStore ?? createCustomerStore({ region }, { tableName: customerTable })
     const egressTrafficTable = customContext?.egressTrafficTable ?? mustGetEnv('EGRESS_TRAFFIC_TABLE_NAME')
+    const egressTrafficMonthlyTable = customContext?.egressTrafficMonthlyTable ?? mustGetEnv('EGRESS_TRAFFIC_MONTHLY_TABLE_NAME')
     const egressTrafficEventStore = customContext?.egressTrafficEventStore ?? createEgressTrafficEventStore({ region }, { tableName: egressTrafficTable })
+    const egressTrafficMonthlyStore = customContext?.egressTrafficMonthlyStore ?? createEgressTrafficMonthlyStore({ region }, { tableName: egressTrafficMonthlyTable })
     const skipStripeEgressTracking = (process.env.SKIP_STRIPE_EGRESS_TRACKING === 'true')
 
     const stripeSecretKey = customContext?.stripeSecretKey ?? Config.STRIPE_SECRET_KEY
@@ -61,9 +66,45 @@ export const handler = Sentry.AWSLambda.wrapHandler(
         const decoded = decodeStr(record.body)
         const egressData = expect(decoded, 'Failed to decode egress event')
 
-        const result = await egressTrafficEventStore.put(egressData)
-        expect(result, 'Failed to save egress event in database')
+        // Extract month for monthly aggregation
+        const month = extractMonth(egressData.servedAt)
 
+        // IMPORTANT: Idempotency behavior
+        // Uses ConditionExpression to prevent overwriting existing events.
+        // This ensures proper handling of SQS retries:
+        //
+        // Scenario: put() succeeds, increment() fails
+        //   - On retry: put() fails with ConditionalCheckFailedException (event exists)
+        //   - We ignore this error and proceed to increment()
+        //   - Result: Event saved once, counted once
+        //
+        // CRITICAL: Source MUST NOT send duplicate events!
+        // If the same event is sent twice to the queue (not a retry, but truly
+        // duplicate messages), both will be counted, causing double-counting.
+        //
+        const putResult = await egressTrafficEventStore.put(egressData, { conditionFieldsMustNotExist: ['pk'] })
+
+        if (putResult.error) {
+          // @ts-expect-error - cause.name exists on AWS SDK errors
+          if (putResult.error.cause?.name === 'ConditionalCheckFailedException') {
+            console.log(`Event already saved for customer ${egressData.customer}, space ${egressData.space} at ${egressData.servedAt.toISOString()} - proceeding to increment`)
+            // Don't throw - event was already saved, proceed to increment
+          } else {
+            expect(putResult, 'Failed to save egress event in database')
+          }
+        }
+
+        // Increment monthly aggregate
+        // Runs whether put() succeeded (new event) or failed with ConditionalCheckFailedException (retry handling)
+        const incrementResult = await egressTrafficMonthlyStore.increment({
+          customer: egressData.customer,
+          space: egressData.space,
+          month,
+          bytes: egressData.bytes
+        })
+        expect(incrementResult, 'Failed to increment monthly egress aggregates')
+
+        // Get customer account for Stripe billing
         const response = await customerStore.get({ customer: egressData.customer })
         if (response.error) throw response.error
 

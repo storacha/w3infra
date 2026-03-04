@@ -165,7 +165,57 @@ export type EgressTrafficEventStore = StorePutter<EgressTrafficData> & StoreList
   /**
    * Sum total egress bytes for a space within a time period
    */
-  sumBySpace: (space: ConsumerDID, period: { from: Date, to: Date }) => Promise<Result<number, Failure>>
+  sumBySpace: (space: ConsumerDID, period: { from: Date, to: Date }, monthlyStore?: EgressTrafficMonthlyStore) => Promise<Result<number, Failure>>
+}
+
+/**
+ * Monthly aggregated egress traffic summary.
+ */
+export interface EgressTrafficMonthlySummary {
+  customer: CustomerDID
+  space: ConsumerDID
+  month: string  // YYYY-MM
+  bytes: number
+  eventCount: number
+}
+
+/**
+ * DynamoDB store record for monthly aggregated egress traffic.
+ */
+export interface EgressTrafficMonthlySummaryStoreRecord {
+  /** Composite key: customer#{customer-did} */
+  pk: string
+  /** Composite key: {YYYY-MM}#{space-did} */
+  sk: string
+  /** Space DID string for GSI */
+  space: string
+  /** Month in YYYY-MM format for GSI */
+  month: string
+  /** Total bytes served */
+  bytes: number
+  /** Total event count */
+  eventCount: number
+}
+
+/**
+ * Store for monthly aggregated egress traffic data.
+ */
+export interface EgressTrafficMonthlyStore {
+  /**
+   * Atomically increment monthly aggregates
+   */
+  increment: (params: { customer: string, space: string, month: string, bytes: number }) => Promise<Result<{}, Failure>>
+  /**
+   * Get total egress for a space in a time period (uses GSI)
+   */
+  sumBySpace: (space: string, period: { from: Date, to: Date }) => Promise<Result<number, Failure>>
+  /**
+   * Get all spaces egress for a customer in a month, with customer total
+   */
+  listByCustomer: (customer: string, month: string) => Promise<Result<{
+    spaces: Array<{space: string, month: string, bytes: number, eventCount: number}>,
+    total: number
+  }, Failure>>
 }
 
 export interface Allocation {
@@ -430,7 +480,7 @@ export interface InsufficientRecords extends Failure {
 /** StorePutter allows a single item to be put in the store by it's key. */
 export interface StorePutter<T> {
   /** Puts a single item into the store by it's key */
-  put: (rec: T) => Promise<Result<Unit, EncodeFailure|StoreOperationFailure|Failure>>
+  put: (rec: T, options?: { conditionFieldsMustNotExist?: string[] }) => Promise<Result<Unit, EncodeFailure|StoreOperationFailure|Failure>>
 }
 
 /**
