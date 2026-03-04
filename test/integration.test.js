@@ -243,9 +243,10 @@ test('w3infra store/upload integration flow', withCauseLog(async t => {
     cursor = listResult.cursor
   } while (!uploadFound)
 
-  t.is(uploadFound.shards?.length, 1)
+  const uploadShards = await client.capability.upload.shard.list(uploadFound.root)
+  t.is(uploadShards.results.length, shards.length)
   for (let i = 0; i < shards.length; i++) {
-    t.truthy(uploadFound.shards?.[i].equals(shards[i]))
+    t.truthy(uploadShards.results[i].equals(shards[i]))
   }
 
   // Read from Roundabout returns 200
