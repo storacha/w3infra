@@ -27,7 +27,7 @@ Sentry.AWSLambda.init({
  *   egressTrafficTable?: string
  *   egressTrafficEventStore?: import('../lib/api.js').EgressTrafficEventStore
  *   egressTrafficMonthlyTable?: string
- *    egressTrafficMonthlyStore?:  import('../lib/api.js').EgressTrafficMonthlyStore
+ *   egressTrafficMonthlyStore?:  import('../lib/api.js').EgressTrafficMonthlyStore
  * }} CustomHandlerContext
  */
 
