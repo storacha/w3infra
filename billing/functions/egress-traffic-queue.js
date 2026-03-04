@@ -1,4 +1,4 @@
- import * as Sentry from '@sentry/serverless'
+import * as Sentry from '@sentry/serverless'
 import { expect } from './lib.js'
 import { decodeStr } from '../data/egress.js'
 import { extractMonth } from '../data/egress-monthly.js'
