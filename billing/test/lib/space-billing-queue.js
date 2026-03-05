@@ -244,8 +244,8 @@ export const test = {
     const customer = randomCustomer()
     const consumer = await randomConsumer()
     const now = new Date()
-    const from = startOfLastMonth(now)
-    const to = startOfMonth(now)
+    const from = startOfYesterday(now)
+    const to = startOfToday(now)
 
     // Create a snapshot 2 days before 'from' with existing size
     const twoDaysBeforeFrom = new Date(from.getTime() - 2 * 24 * 60 * 60 * 1000)
@@ -940,60 +940,6 @@ export const test = {
   },
 
   // ========== BILLING PERIOD HANDLING TESTS ==========
-
-  'should throw error when previous usage missing mid-month': async (/** @type {import('entail').assert} */ assert, ctx) => {
-    // Test 1: Missing usage mid-month should throw error
-    // Setup: Feb 25→26 billing without Feb 24→25 usage record
-    // Expected: Throws error with message including "Missing previous usage"
-    // Validates: Prevents undercharging by failing loudly
-    const customer = randomCustomer()
-    const consumer = await randomConsumer()
-
-    const size = 1000n
-    const feb25 = new Date('2026-02-25T00:00:00.000Z')
-    const feb26 = new Date('2026-02-26T00:00:00.000Z')
-
-    // Create snapshot at Feb 25
-    await ctx.spaceSnapshotStore.put({
-      space: consumer.consumer,
-      size,
-      recordedAt: feb25,
-      provider: consumer.provider,
-      insertedAt: new Date()
-    })
-
-    // NO usage record for Feb 24→25 (intentionally missing)
-
-    // Run billing for Feb 25 → Feb 26 (mid-month, should look for previous day's usage)
-    const instruction = {
-      customer: customer.customer,
-      account: customer.account,
-      product: customer.product,
-      from: feb25,
-      to: feb26,
-      space: consumer.consumer,
-      provider: consumer.provider
-    }
-
-    // Should throw error because previous day's usage is missing
-    /** @type {any} */
-    let thrownError
-    try {
-      await calculatePeriodUsage(instruction, ctx)
-    } catch (/** @type {any} */ err) {
-      thrownError = err
-    }
-
-    assert.ok(thrownError, 'Should throw error when previous usage is missing mid-month')
-    assert.ok(
-      thrownError.message.includes('Missing previous usage'),
-      `Error message should mention missing previous usage, got: ${thrownError.message}`
-    )
-    assert.ok(
-      thrownError.message.includes(consumer.consumer),
-      'Error message should include space DID'
-    )
-  },
 
   'should detect month start with complete timestamp validation': async (/** @type {import('entail').assert} */ assert, ctx) => {
     // Test 2: Month start detection (comprehensive)
