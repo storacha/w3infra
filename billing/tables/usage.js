@@ -1,5 +1,5 @@
-import { createStorePutterClient, createStoreGetterClient } from './client.js'
-import { validate, encode, decode, encodeKey } from '../data/usage.js'
+import { createStorePutterClient, createStoreGetterClient, createStoreListerClient } from './client.js'
+import { validate, encode, decode, encodeKey, lister } from '../data/usage.js'
 
 /**
  * Stores per space usage across billing periods.
@@ -60,5 +60,6 @@ export const usageTableProps = {
  */
 export const createUsageStore = (conf, { tableName }) => ({
   ...createStorePutterClient(conf, { tableName, validate, encode }),
-  ...createStoreGetterClient(conf, { tableName, encodeKey, decode })
+  ...createStoreGetterClient(conf, { tableName, encodeKey, decode }),
+  ...createStoreListerClient(conf,  { tableName, encodeKey: lister.encodeKey, decode })
 })
