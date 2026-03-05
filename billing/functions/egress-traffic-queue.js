@@ -82,7 +82,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(
         // If the same event is sent twice to the queue (not a retry, but truly
         // duplicate messages), both will be counted, causing double-counting.
         //
-        const putResult = await egressTrafficEventStore.put(egressData, { conditionFieldsMustNotExist: ['pk'] })
+        const putResult = await egressTrafficEventStore.put(egressData, { conditionFieldsMustNotExist: ['pk', 'sk'] })
 
         if (putResult.error) {
           // @ts-expect-error - cause.name exists on AWS SDK errors

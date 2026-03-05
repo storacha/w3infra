@@ -6,7 +6,7 @@ import { DecodeFailure, EncodeFailure, Schema } from './lib.js'
  * @typedef {import('../lib/api.js').UsageKey} UsageKey
  * @typedef {Omit<import('../types.js').InferStoreRecord<UsageKey>, 'from'|'provider'|'space'> & { sk: string }} UsageKeyStoreRecord
  * @typedef {import('../lib/api.js').UsageListKey} UsageListKey
- * @typedef {Omit<import('../types.js').InferStoreRecord<UsageListKey>, 'from'> & { sk: string }} UsageListKeyStoreRecord
+ * @typedef {Omit<import('../types.js').InferStoreRecord<UsageListKey>, 'from'> & { sk?: string }} UsageListKeyStoreRecord
  * @typedef {import('../types.js').StoreRecord} StoreRecord
  */
 
@@ -62,7 +62,7 @@ export const lister = {
   encodeKey: input => ({
     ok: {
       customer: input.customer,
-      sk: input.from.toISOString()
+      ...(input.from && { sk: input.from.toISOString() })
     }
   })
 }

@@ -2,6 +2,7 @@ import Big from 'big.js'
 import { StoreOperationFailure } from '../../tables/lib.js'
 import { EndOfQueue } from '../../test/helpers/queue.js'
 import { productInfo } from '../../lib/product-info.js'
+import { startOfMonth } from '../../lib/util.js'
 
 /**
  * @template T
@@ -59,3 +60,56 @@ export const calculateCost = (product, usage, duration) => {
 
 /** @param {Date} d */
 export const toDateString = (d) => d.toISOString().split('T')[0]
+
+/**
+ * Calculate the delta metrics that would be sent to Stripe, matching production logic exactly.
+ * This simulates what usage-table.js sends to Stripe.
+ *
+ * @param {bigint} usageByteMs - Current day's cumulative usage in byte·milliseconds
+ * @param {Date} from - Start of billing period (inclusive)
+ * @param {Date} to - End of billing period (exclusive)
+ * @param {bigint} previousCumulativeUsage - Previous day's cumulative usage (0n if first of month or not found)
+ * @returns {{
+ *   cumulativeByteQuantity: number,
+ *   previousCumulativeByteQuantity: number,
+ *   deltaByteQuantity: number,
+ *   deltaGibQuantity: number,
+ *   currentCumulativeDuration: number,
+ *   previousCumulativeDuration: number
+ * }}
+ */
+export function calculateDeltaMetrics(usageByteMs, from, to, previousCumulativeUsage) {
+  // Calculate cumulative averages from month start
+  const monthStart = startOfMonth(from)
+  const currentCumulativeDuration = to.getTime() - monthStart.getTime()
+  const previousCumulativeDuration = from.getTime() - monthStart.getTime()
+
+  // Current cumulative average (from month start to now)
+  const cumulativeByteQuantity = Math.floor(
+    new Big(usageByteMs.toString()).div(currentCumulativeDuration).toNumber()
+  )
+
+  // Previous cumulative average (from month start to yesterday)
+  const previousCumulativeByteQuantity =
+    previousCumulativeUsage === 0n
+      ? 0
+      : Math.floor(
+          new Big(previousCumulativeUsage.toString())
+            .div(previousCumulativeDuration)
+            .toNumber()
+        )
+
+  // Delta to send to Stripe: difference between cumulative averages
+  // Stripe sums these deltas across the month to get the month-to-date average
+  const deltaByteQuantity = cumulativeByteQuantity - previousCumulativeByteQuantity
+  const deltaGibQuantity = deltaByteQuantity / GB
+
+  return {
+    cumulativeByteQuantity,
+    previousCumulativeByteQuantity,
+    deltaByteQuantity,
+    deltaGibQuantity,
+    currentCumulativeDuration,
+    previousCumulativeDuration,
+  }
+}
