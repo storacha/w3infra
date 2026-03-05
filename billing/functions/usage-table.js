@@ -255,39 +255,47 @@ export const reportUsage = async (usage, ctx) => {
   }
 
   const isFirstOfMonth = usage.from.getUTCDate() === 1
-  // NOTE: Since Stripe aggregates per billing period (monthly), each month starts fresh so no need to get previous usage and calculate delta.
-  let previousCumulativeUsage                                                                                                
-  try {                                                                                                                      
-    previousCumulativeUsage = isFirstOfMonth ? 0n : await getPreviousUsage(usage, ctx)                                       
-  } catch (/** @type {any} */ err) {                                                                                         
-    return { error: err }                                                                                                    
-  } 
-
-  // Calculate delta: current cumulative - previous cumulative (or 0 if no previous)
-  // Note: Delta can be negative if users deleted data
-  const deltaUsage = usage.usage - previousCumulativeUsage
-
-  if (isFirstOfMonth) {                                                                                                      
-    console.log(`First of month reset - reporting full usage as delta (no previous lookup)`, JSON.stringify({customer: usageContext.customer, space: usageContext.space}))                            
-  } else if (previousCumulativeUsage === 0n) {
-    console.log(`No previous usage found - reporting full current usage as delta`, JSON.stringify({customer: usageContext.customer, space: usageContext.space}))
-  } else {
-    console.log('Delta calculation:', JSON.stringify({
-      space: usageContext.space,
-      previousCumulativeUsage: previousCumulativeUsage.toString(),
-      currentUsage: usage.usage.toString(),
-      deltaUsage: deltaUsage.toString()
-    }))
+  let previousCumulativeUsage
+  try {
+    previousCumulativeUsage = isFirstOfMonth ? 0n : await getPreviousUsage(usage, ctx)
+  } catch (/** @type {any} */ err) {
+    return { error: err }
   }
 
-  // Calculate cumulative byte quantity (for logging) - average over the entire month-to-date
+  // Calculate cumulative averages from month start
   const monthStart = startOfMonth(usage.from)
-  const cumulativeDuration = usage.to.getTime() - monthStart.getTime()
-  const cumulativeByteQuantity = Math.floor(new Big(usage.usage.toString()).div(cumulativeDuration).toNumber())
+  const currentCumulativeDuration = usage.to.getTime() - monthStart.getTime()
+  const previousCumulativeDuration = usage.from.getTime() - monthStart.getTime()
 
-  // Convert delta to byte quantity for Stripe
-  const deltaByteQuantity = Math.floor(new Big(deltaUsage.toString()).div(duration).toNumber())
+  // Current cumulative average (from month start to now)
+  const cumulativeByteQuantity = Math.floor(new Big(usage.usage.toString()).div(currentCumulativeDuration).toNumber())
+
+  // Previous cumulative average (from month start to yesterday)
+  const previousCumulativeByteQuantity = previousCumulativeUsage === 0n
+    ? 0
+    : Math.floor(new Big(previousCumulativeUsage.toString()).div(previousCumulativeDuration).toNumber())
+
+  // Delta to send to Stripe: difference between cumulative averages
+  // Stripe sums these deltas across the month to get the month-to-date average
+  const deltaByteQuantity = cumulativeByteQuantity - previousCumulativeByteQuantity
   const deltaGibQuantity = deltaByteQuantity / (1024 * 1024 * 1024)
+
+  if (isFirstOfMonth) {
+    console.log(`First of month reset - reporting full cumulative average as delta (no previous lookup)`, JSON.stringify({customer: usageContext.customer, space: usageContext.space}))
+  } else if (previousCumulativeUsage === 0n) {
+    console.log(`No previous usage found - reporting full cumulative average as delta`, JSON.stringify({customer: usageContext.customer, space: usageContext.space}))
+  } else {
+    console.log('Delta calculation inspect:', JSON.stringify({
+      space: usageContext.space,
+      previousCumulativeUsage: previousCumulativeUsage.toString(),
+      previousCumulativeDuration,
+      previousCumulativeAverage: previousCumulativeByteQuantity,
+      currentCumulativeUsage: usage.usage.toString(),
+      currentCumulativeDuration,
+      currentCumulativeAverage: cumulativeByteQuantity,
+      deltaBytes: deltaByteQuantity
+    }))
+  }
 
   const usageSummary = {
     space: usage.space,
@@ -297,9 +305,8 @@ export const reportUsage = async (usage, ctx) => {
       byteMs: usage.usage.toString()
     },
     delta: {
-      bytes: deltaByteQuantity,
-      gib: deltaGibQuantity,
-      byteMs: deltaUsage.toString()
+      bytes: deltaByteQuantity,  // Delta between current and previous cumulative averages
+      gib: deltaGibQuantity
     }
   }
   console.log(`Usage summary:\n ${JSON.stringify(usageSummary)}`)

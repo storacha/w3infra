@@ -8,12 +8,12 @@ import * as CSV from 'csv-stringify/sync'
 import fs from 'node:fs'
 import all from 'p-all'
 import { startOfMonth, GB } from '../../lib/util.js'
-import Big from 'big.js'
 import {
   calculateCost,
   createMemoryQueue,
   createMemoryStore,
-  toDateString
+  toDateString,
+  calculateDeltaMetrics
 } from './helpers.js'
 import { EndOfQueue } from '../../test/helpers/queue.js'
 import { expect } from '../../functions/lib.js'
@@ -25,10 +25,22 @@ import { createSubscriptionStore } from '../../tables/subscription.js'
 import { createConsumerStore } from '../../tables/consumer.js'
 import { createSpaceDiffStore } from '../../tables/space-diff.js'
 import { createSpaceSnapshotStore } from '../../tables/space-snapshot.js'
+import { createUsageStore } from '../../tables/usage.js'
 import { mustGetEnv } from '../../../lib/env.js'
 import { parseArgs } from '../utils.js'
 
-/** @typedef {import('../../lib/api.js').Usage & import('../../lib/api.js').SpaceSnapshot} UsageAndSnapshot */
+/**
+ * @typedef {{
+ *   cumulativeByteQuantity: number,
+ *   previousCumulativeByteQuantity: number,
+ *   deltaByteQuantity: number,
+ *   deltaGibQuantity: number,
+ *   currentCumulativeDuration: number,
+ *   previousCumulativeDuration: number
+ * }} DeltaMetrics
+ */
+
+/** @typedef {import('../../lib/api.js').Usage & import('../../lib/api.js').SpaceSnapshot & {_deltaMetrics?: DeltaMetrics}} UsageAndSnapshot */
 
 dotenv.config({ path: '.env.local' })
 
@@ -40,6 +52,7 @@ const SUBSCRIPTION_TABLE_NAME=`${STORACHA_ENV}-w3infra-subscription`
 const CONSUMER_TABLE_NAME=`${STORACHA_ENV}-w3infra-consumer`
 const SPACE_DIFF_TABLE_NAME = `${STORACHA_ENV}-w3infra-space-diff`
 const SPACE_SNAPSHOT_TABLE_NAME = `${STORACHA_ENV}-w3infra-space-snapshot`
+const USAGE_TABLE_NAME = `${STORACHA_ENV}-w3infra-usage`
 
 const dynamo = new DynamoDBClient()
 
@@ -58,11 +71,14 @@ const spaceDiffStore = createSpaceDiffStore(dynamo, {
 const readableSpaceSnapshotStore = createSpaceSnapshotStore(dynamo, {
   tableName: SPACE_SNAPSHOT_TABLE_NAME,
 })
+const readableUsageStore = createUsageStore(dynamo, {
+  tableName: USAGE_TABLE_NAME,
+})
 
 
 /**
  *  @typedef {import('../../lib/api.js').CustomerBillingInstruction} CustomerBillingInstruction
- *  @typedef {import('../../lib/api.js').StorePutter<import('../../lib/api.js').SpaceSnapshot> & import('../../lib/api.js').StoreLister<any, import('../../lib/api.js').SpaceSnapshot> & import('../../lib/api.js').StoreGetter<any, import('../../lib/api.js').SpaceSnapshot>} SpaceSnapshotStore 
+ *  @typedef {import('../../lib/api.js').StorePutter<import('../../lib/api.js').SpaceSnapshot> & import('../../lib/api.js').StoreLister<any, import('../../lib/api.js').SpaceSnapshot> & import('../../lib/api.js').StoreGetter<any, import('../../lib/api.js').SpaceSnapshot>} SpaceSnapshotStore
  *  @typedef {import('../../lib/api.js').StorePutter<import('../../lib/api.js').Usage> & import('../../lib/api.js').StoreLister<any, import('../../lib/api.js').Usage> & import('../../lib/api.js').StoreGetter<any, import('../../lib/api.js').Usage>} UsageStore
  *  @typedef {import('../../lib/api.js').QueueAdder<import('../../lib/api.js').CustomerBillingInstruction> & import('../../test/lib/api.js').QueueRemover<import('../../lib/api.js').CustomerBillingInstruction>} CustomerBillingQueue
  *  @typedef {import('../../lib/api.js').QueueAdder<import('../../lib/api.js').SpaceBillingInstruction> & import('../../test/lib/api.js').QueueRemover<import('../../lib/api.js').SpaceBillingInstruction>} SpaceBillingQueue
@@ -71,7 +87,7 @@ const readableSpaceSnapshotStore = createSpaceSnapshotStore(dynamo, {
 /** @type SpaceSnapshotStore */
 const writableSpaceSnapshotStore = createMemoryStore()
 /** @type UsageStore */
-const usageStore = createMemoryStore()
+const writableUsageStore = createMemoryStore()
 /** @type CustomerBillingQueue */
 const customerBillingQueue = createMemoryQueue()
 /** @type SpaceBillingQueue */
@@ -165,14 +181,14 @@ await all(
           await SpaceBillingQueue.calculatePeriodUsage(instruction, {
             spaceDiffStore,
             spaceSnapshotStore: readableSpaceSnapshotStore,
-            usageStore,
+            usageStore: readableUsageStore,
           })
         )
 
         expect(
           await SpaceBillingQueue.storeSpaceUsage(instruction, usage, {
             spaceSnapshotStore: writableSpaceSnapshotStore,
-            usageStore,
+            usageStore: writableUsageStore,
           })
         )
       }),
@@ -184,7 +200,7 @@ await all(
 
 console.log(`✅ Billing run completed successfully`)
 
-const { results: usages } = expect(await usageStore.list({}))
+const { results: usages } = expect(await writableUsageStore.list({}))
 const { results: snapshots } = expect(await writableSpaceSnapshotStore.list({}))
 
 /** @type {UsageAndSnapshot[]} */
@@ -264,33 +280,87 @@ for (const usage of usageSnapshots) {
   customerUsages.push(usage)
 }
 
+// Calculate delta metrics for each usage record (simulating what production sends to Stripe)
+console.log('\n--- Delta Calculation (Production Simulation) ---')
+for (const usage of usageSnapshots) {
+  const isFirstOfMonth = usage.from.getUTCDate() === 1
+  let previousCumulativeUsage = 0n
+
+  if (!isFirstOfMonth) {
+    // Look up previous day's usage
+    const previousFrom = new Date(usage.from.getTime() - 24 * 60 * 60 * 1000)
+    const prevResult = await readableUsageStore.get({
+      customer: usage.customer,
+      from: previousFrom,
+      provider: usage.provider,
+      space: usage.space
+    })
+
+    if (prevResult.ok) {
+      previousCumulativeUsage = prevResult.ok.usage
+    }
+  }
+
+  // Calculate delta using production formula
+  const delta = calculateDeltaMetrics(
+    usage.usage,
+    usage.from,
+    usage.to,
+    previousCumulativeUsage
+  )
+
+  // Store delta metrics on the usage object for CSV generation
+  usage._deltaMetrics = delta
+
+  console.log(`\nSpace: ${usage.space}`)
+  console.log(`  Customer: ${usage.customer}`)
+  console.log(`  Date: ${usage.from.toISOString().split('T')[0]}`)
+  console.log(`  Cumulative Usage: ${usage.usage} byte·ms`)
+  console.log(`  Previous Cumulative: ${previousCumulativeUsage} byte·ms`)
+  console.log(`  Cumulative Avg: ${delta.cumulativeByteQuantity} bytes/month`)
+  console.log(`  Previous Avg: ${delta.previousCumulativeByteQuantity} bytes/month`)
+  console.log(`  Delta (Stripe): ${delta.deltaByteQuantity} bytes (${delta.deltaGibQuantity.toFixed(6)} GiB)`)
+  console.log(`  Would Skip: ${delta.deltaByteQuantity === 0 ? 'YES' : 'NO'}`)
+}
+console.log('\n--- End Delta Calculation ---\n')
+
 /** @type {Array<[string, string, string, string, string, string, number]>} */
 const data = []
-const duration = to.getTime() - from.getTime()
 
 for (const [customer, usages] of usageByCustomer.entries()) {
   let product
   let size = 0n
   let totalUsage = 0n
+  let totalCumulativeByteQuantity = 0
+
   for (const u of usages) {
     product = product ?? u.product
     size += u.size
     totalUsage += u.usage
+    // Sum the cumulative byte quantities from each space's delta metrics
+    if (u._deltaMetrics) {
+      totalCumulativeByteQuantity += u._deltaMetrics.cumulativeByteQuantity
+    }
   }
   if (!product) throw new Error('missing product')
   try {
-    // Compute average usage (bytes and GiB) across the period from totalUsage (byte·ms)
-    const usageBytesPerMonth = Math.floor(new Big(totalUsage.toString()).div(duration).toNumber())
+    // Use the aggregated cumulative byte quantity from delta metrics
+    const usageBytesPerMonth = totalCumulativeByteQuantity
     const usageGiBPerMonth = (usageBytesPerMonth / GB).toFixed(2)
     const usageByteMs = totalUsage.toString()
+
+    // Calculate cost using cumulative duration from month start
+    const monthStart = startOfMonth(usages[0].from)
+    const cumulativeDuration = usages[0].to.getTime() - monthStart.getTime()
+
     data.push([
       customer,
       product,
       size.toString(), // Total Size (bytes)
-      usageByteMs,     // Usage (byte/ms)
-      usageBytesPerMonth.toString(), // Usage (bytes/month)
-      usageGiBPerMonth, // Usage (GiB/month)
-      calculateCost(product, totalUsage, duration),
+      usageByteMs,     // Cumulative Usage (byte·ms) from month start
+      usageBytesPerMonth.toString(), // Cumulative Avg (bytes/month) from delta metrics
+      usageGiBPerMonth, // Cumulative Avg (GiB/month) from delta metrics
+      calculateCost(product, totalUsage, cumulativeDuration),
     ])
   } catch (err) {
     console.warn(`failed to calculate cost for: ${customer}`, err)
@@ -307,9 +377,9 @@ await fs.promises.writeFile(
       'Customer',
       'Product',
       'Total Size (bytes)',
-      'Usage (byte/ms)',
-      'Usage (bytes/month)',
-      'Usage (GiB/month)',
+      'Cumulative Usage (byte·ms)',
+      'Cumulative Avg (bytes/month)',
+      'Cumulative Avg (GiB/month)',
       'Cost ($)'
     ],
   })

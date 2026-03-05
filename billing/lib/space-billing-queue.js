@@ -161,7 +161,7 @@ export const calculatePeriodUsage = async (instruction, ctx) => {
       previousTime = diff.receiptAt.getTime()
     }
     const date = page.ok[page.ok.length-1]?.receiptAt.toISOString()
-    console.log(`Processed ${totalDiffs} diffs... day: ${date}`)
+    console.log(`Processed ${totalDiffs} diffs... day: ${date} size: ${size}`)
 
   }
 
