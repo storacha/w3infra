@@ -20,6 +20,7 @@ import { expect } from '../../functions/lib.js'
 import * as BillingCron from '../../lib/billing-cron.js'
 import * as CustomerBillingQueue from '../../lib/customer-billing-queue.js'
 import * as SpaceBillingQueue from '../../lib/space-billing-queue.js'
+import { findPreviousUsageBySnapshotDate } from '../../lib/space-billing-queue.js'
 import { createCustomerStore } from '../../tables/customer.js'
 import { createSubscriptionStore } from '../../tables/subscription.js'
 import { createConsumerStore } from '../../tables/consumer.js'
@@ -287,18 +288,13 @@ for (const usage of usageSnapshots) {
   let previousCumulativeUsage = 0n
 
   if (!isFirstOfMonth) {
-    // Look up previous day's usage
-    const previousFrom = new Date(usage.from.getTime() - 24 * 60 * 60 * 1000)
-    const prevResult = await readableUsageStore.get({
+    // Use the same production logic (24h lookback + paginated scan fallback)
+    previousCumulativeUsage = await findPreviousUsageBySnapshotDate({
       customer: usage.customer,
-      from: previousFrom,
+      space: usage.space,
       provider: usage.provider,
-      space: usage.space
-    })
-
-    if (prevResult.ok) {
-      previousCumulativeUsage = prevResult.ok.usage
-    }
+      targetDate: usage.from
+    }, { usageStore: readableUsageStore })
   }
 
   // Calculate delta using production formula
@@ -324,7 +320,7 @@ for (const usage of usageSnapshots) {
 }
 console.log('\n--- End Delta Calculation ---\n')
 
-/** @type {Array<[string, string, string, string, string, string, number]>} */
+/** @type {Array<[string, string, string, string, string, string, string, string, number]>} */
 const data = []
 
 for (const [customer, usages] of usageByCustomer.entries()) {
@@ -332,14 +328,18 @@ for (const [customer, usages] of usageByCustomer.entries()) {
   let size = 0n
   let totalUsage = 0n
   let totalCumulativeByteQuantity = 0
+  let totalDeltaByteQuantity = 0
+  let totalDeltaGibQuantity = 0
 
   for (const u of usages) {
     product = product ?? u.product
     size += u.size
     totalUsage += u.usage
-    // Sum the cumulative byte quantities from each space's delta metrics
+    // Sum the delta metrics from each space
     if (u._deltaMetrics) {
       totalCumulativeByteQuantity += u._deltaMetrics.cumulativeByteQuantity
+      totalDeltaByteQuantity += u._deltaMetrics.deltaByteQuantity
+      totalDeltaGibQuantity += u._deltaMetrics.deltaGibQuantity
     }
   }
   if (!product) throw new Error('missing product')
@@ -360,14 +360,16 @@ for (const [customer, usages] of usageByCustomer.entries()) {
       usageByteMs,     // Cumulative Usage (byte·ms) from month start
       usageBytesPerMonth.toString(), // Cumulative Avg (bytes/month) from delta metrics
       usageGiBPerMonth, // Cumulative Avg (GiB/month) from delta metrics
+      totalDeltaByteQuantity.toString(), // Delta sent to Stripe (bytes)
+      totalDeltaGibQuantity.toFixed(6), // Delta sent to Stripe (GiB)
       calculateCost(product, totalUsage, cumulativeDuration),
     ])
   } catch (err) {
     console.warn(`failed to calculate cost for: ${customer}`, err)
   }
 }
-// Sort by Cost ($) descending. Cost is now at index 6.
-data.sort((a, b) => b[6] - a[6])
+// Sort by Cost ($) descending. Cost is now at index 8.
+data.sort((a, b) => b[8] - a[8])
 
 await fs.promises.writeFile(
   `./summary-${fileID}.csv`,
@@ -380,6 +382,8 @@ await fs.promises.writeFile(
       'Cumulative Usage (byte·ms)',
       'Cumulative Avg (bytes/month)',
       'Cumulative Avg (GiB/month)',
+      'Delta Stripe (bytes)',
+      'Delta Stripe (GiB)',
       'Cost ($)'
     ],
   })

@@ -11,6 +11,7 @@ import { sha256 } from 'multiformats/hashes/sha2'
 import { createUsageStore } from '../tables/usage.js'
 import { mustGetEnv } from '../../lib/env.js'
 import { startOfMonth } from '../lib/util.js'
+import { findPreviousUsageBySnapshotDate } from '../lib/space-billing-queue.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -97,33 +98,32 @@ async function createIdempotencyKey(usage){
 }
 
 /**
- * Queries the usage table for the previous day's usage record.
+ * Queries the usage table for the previous usage record that created the snapshot
+ * being used for the current billing period.
+ *
+ * Uses the shared findPreviousUsageBySnapshotDate function for the core lookup logic,
+ * with Stripe recovery as a last resort fallback for data loss scenarios.
  *
  * @param {import('../lib/api.js').Usage} currentUsage
  * @param {{ stripe: Stripe, usageStore: import('../lib/api.js').UsageStore }} ctx
  * @returns {Promise<bigint>} Previous cumulative usage (0n if not found)
  */
 async function getPreviousUsage(currentUsage, ctx) {
-  // Calculate previous day's date (from - 24 hours)
-  const previousFrom = new Date(currentUsage.from.getTime() - 24 * 60 * 60 * 1000)
-
-  // Query usage table with: customer PK, sk = previousFrom#provider#space
-  const result = await ctx.usageStore.get({
+  // Use shared lookup logic (24h lookback + paginated scan)
+  const previousUsage = await findPreviousUsageBySnapshotDate({
     customer: currentUsage.customer,
-    from: previousFrom,
+    space: currentUsage.space,
     provider: currentUsage.provider,
-    space: currentUsage.space
-  })
+    targetDate: currentUsage.from
+  }, ctx)
 
-  if (result.ok) {
-    return result.ok.usage
+  // If found via standard lookup, return it
+  if (previousUsage > 0n) {
+    return previousUsage
   }
 
-  if (result.error && result.error.name !== 'RecordNotFound') {
-    throw result.error
-  }
-
-  console.log(`⚠️ No previous usage found for ${currentUsage.space} on ${previousFrom.toISOString()}.\n Attempting to recover using Stripe meter event summaries...`)
+  // Last resort: Stripe recovery for data loss scenarios
+  console.log(`⚠️ No previous usage found via DynamoDB. Attempting Stripe recovery...`)
 
   // Query Stripe for summaries (returns in reverse chronological order - newest first)
   const summaries = await ctx.stripe.billing.meters.listEventSummaries(STRIPE_BILLING_EVENT.id, {
@@ -143,7 +143,7 @@ async function getPreviousUsage(currentUsage, ctx) {
   const latestSummaryDate = new Date(latestSummary.end_time * 1000);
 
   console.log(`Found latest Stripe summary: ${latestSummaryDate.toISOString()}`)
-  
+
   // Query DynamoDB for usage at Stripe's latest date
   const recoveryResult = await ctx.usageStore.get({
     customer: currentUsage.customer,
@@ -151,6 +151,8 @@ async function getPreviousUsage(currentUsage, ctx) {
     provider: currentUsage.provider,
     space: currentUsage.space
   })
+
+  const previousFrom = new Date(currentUsage.from.getTime() - 24 * 60 * 60 * 1000)
 
   if (recoveryResult.ok) {
     console.log(`⚠️ WARNING: Space ${currentUsage.space} usage between ${latestSummaryDate.toISOString()} and ${previousFrom.toISOString()} is lost using Stripe summaries for recovery.`)
@@ -172,8 +174,8 @@ async function getPreviousUsage(currentUsage, ctx) {
       `This indicates data loss. Manual investigation required.`
     )
   }
-  
-   throw recoveryResult.error ?? new Error('Unknown error querying usage store during recovery')   
+
+   throw recoveryResult.error ?? new Error('Unknown error querying usage store during recovery')
 }
 
 /**
