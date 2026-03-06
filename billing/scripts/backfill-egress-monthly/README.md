@@ -29,7 +29,7 @@ node 1-read-events.js from=2024-01-01 to=2026-03-01
 
 This script is READ-ONLY and safe to re-run multiple times.
 
-### Step 2: Write Aggregates (Idempotent, Resumable)
+### Step 2: Write Aggregates (One-time, Resumable)
 
 Write aggregates to monthly table:
 
@@ -37,13 +37,19 @@ Write aggregates to monthly table:
 node 2-write-aggregates.js input=egress-monthly-aggregates-2024-01-01-2026-03-01.json
 ```
 
-**Optional: Skip already-processed keys with --resume flag:**
+**If interrupted, resume from where it left off:**
 
 ```bash
 node 2-write-aggregates.js input=egress-monthly-aggregates-2024-01-01-2026-03-01.json --resume
 ```
 
-This script uses DynamoDB SET operation (not ADD), making it **fully idempotent**. Safe to re-run anytime - it will overwrite with absolute values rather than accumulating.
+**⚠️ WARNING: NOT idempotent!**
+
+This script uses DynamoDB ADD operation (increment) to **add historical data to the production table**. Running multiple times will add the values multiple times, inflating counters.
+
+**Only run this script ONCE per input file.** Use `--resume` flag only to continue after interruption, not to re-run completed backfills.
+
+**Progress tracking:** Shows `[processed/total] success=X errors=Y` to track both successful and failed increments.
 
 ### Output Files
 
@@ -51,10 +57,3 @@ This script uses DynamoDB SET operation (not ADD), making it **fully idempotent*
 - `egress-monthly-aggregates-{from}-{to}-processed.txt` - Progress tracking (from step 2)
 - `egress-monthly-aggregates-{from}-{to}-errors.csv` - Errors, if any (from step 2)
 
-## Important Notes
-
-- ✅ **Idempotent:** Step 2 uses SET operation - safe to re-run anytime without inflating counters
-- ✅ **Resumable:** If step 2 is interrupted, use `--resume` flag to skip already-processed keys (for efficiency)
-- ✅ **Safe separation:** Review aggregates file before writing to database
-- 🔄 **Recommended:** Run step 1 first, verify output, then run step 2
-- 💡 **How it works:** Each aggregate is a complete total (from step 1). SET overwrites with absolute values, not increments.

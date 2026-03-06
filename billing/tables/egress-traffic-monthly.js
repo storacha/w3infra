@@ -50,10 +50,11 @@ export const createEgressTrafficMonthlyStore = (conf, { tableName }) => {
      * @param {string} params.space - Space DID
      * @param {string} params.month - YYYY-MM format
      * @param {number} params.bytes - Bytes to add
+     * @param {number} [params.eventCount=1] - Number of events (defaults to 1)
      * @returns {Promise<import('@ucanto/interface').Result<{}, Error>>}
      */
-    async increment({ customer, space, month, bytes }) {
-      const validation = validate({ customer, space, month, bytes, eventCount: 1 })
+    async increment({ customer, space, month, bytes, eventCount = 1 }) {
+      const validation = validate({ customer, space, month, bytes, eventCount })
       if (validation.error) return validation
 
       const encoding = encode(validation.ok)

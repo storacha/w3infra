@@ -205,7 +205,7 @@ export interface EgressTrafficMonthlyStore {
   /**
    * Atomically increment monthly aggregates
    */
-  increment: (params: { customer: string, space: string, month: string, bytes: number }) => Promise<Result<{}, Failure>>
+  increment: (params: { customer: string, space: string, month: string, bytes: number, eventCount?: number }) => Promise<Result<{}, Failure>>
   /**
    * Get total egress for a space in a time period (uses GSI)
    */

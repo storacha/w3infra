@@ -1,14 +1,18 @@
 #!/usr/bin/env node
 
 /**
- * Write monthly aggregates to egress-traffic-monthly table
+ * Backfill monthly aggregates to egress-traffic-monthly table
  *
- * This script uses SET operation for idempotent writes.
- * Safe to re-run anytime - will overwrite with absolute values.
+ * This script uses ADD operation (increment) to add historical data to the monthly table.
+ *
+ * IMPORTANT: This is designed for backfilling historical events to a table that's
+ * already in production. It ADDS the aggregated values to whatever is already in the table.
+ *
+ * WARNING: NOT idempotent! Running multiple times will ADD values multiple times.
+ * Only run this script ONCE per input file, or use --resume to continue after interruption.
  *
  * Each aggregate in the input JSON is already a complete total for that
  * customer/month/space combination (computed by 1-read-events.js).
- * Using SET ensures that re-running this script won't double-count.
  *
  * Supports --resume to skip already-processed keys.
  */
@@ -17,10 +21,8 @@ import dotenv from 'dotenv'
 import fs from 'node:fs'
 import * as CSV from 'csv-stringify/sync'
 import pMap from 'p-map'
-import { DynamoDBClient, UpdateItemCommand } from '@aws-sdk/client-dynamodb'
-import { marshall } from '@aws-sdk/util-dynamodb'
 import { mustGetEnv } from '../../../lib/env.js'
-import { validate, encode } from '../../data/egress-monthly.js'
+import { createEgressTrafficMonthlyStore } from '../../tables/egress-traffic-monthly.js'
 
 dotenv.config({ path: '.env.local' })
 
@@ -89,8 +91,10 @@ async function writeAggregates({ inputFile, resume }) {
 
   console.log(`Processing ${itemsToProcess.length} aggregates (${alreadyProcessed.size} already done)\n`)
 
-  // Initialize DynamoDB client
-  const dynamoClient = new DynamoDBClient({ region: REGION })
+  const monthlyStore = createEgressTrafficMonthlyStore(
+    { region: REGION },
+    { tableName: EGRESS_TRAFFIC_MONTHLY_TABLE_NAME }
+  )
 
   /** @type {string[]} */
   const processedKeys = []
@@ -119,7 +123,7 @@ async function writeAggregates({ inputFile, resume }) {
   // Signal handlers
   process.on('SIGINT', () => {
     console.error('\nReceived SIGINT, flushing partial output...')
-    console.log(`Processed ${written} item(s) so far. Re-run with --resume to continue.`)
+    console.log(`Processed ${written + errors.length} item(s) so far (success=${written}, errors=${errors.length}). Re-run with --resume to continue.`)
     try {
       flushOutput()
       flushErrors()
@@ -131,7 +135,7 @@ async function writeAggregates({ inputFile, resume }) {
 
   process.on('SIGTERM', () => {
     console.error('\nReceived SIGTERM, flushing partial output...')
-    console.log(`Processed ${written} item(s) so far. Re-run with --resume to continue.`)
+    console.log(`Processed ${written + errors.length} item(s) so far (success=${written}, errors=${errors.length}). Re-run with --resume to continue.`)
     try {
       flushOutput()
       flushErrors()
@@ -144,7 +148,7 @@ async function writeAggregates({ inputFile, resume }) {
   // Uncaught exception handlers
   process.on('uncaughtException', (err) => {
     console.error('\nUncaught exception occurred:', err)
-    console.log(`Processed ${written} item(s) so far. Re-run with --resume to continue.`)
+    console.log(`Processed ${written + errors.length} item(s) so far (success=${written}, errors=${errors.length}). Re-run with --resume to continue.`)
     try {
       flushOutput()
       flushErrors()
@@ -156,7 +160,7 @@ async function writeAggregates({ inputFile, resume }) {
 
   process.on('unhandledRejection', (reason) => {
     console.error('\nUnhandled promise rejection:', reason)
-    console.log(`Processed ${written} item(s) so far. Re-run with --resume to continue.`)
+    console.log(`Processed ${written + errors.length} item(s) so far (success=${written}, errors=${errors.length}). Re-run with --resume to continue.`)
     try {
       flushOutput()
       flushErrors()
@@ -173,67 +177,41 @@ async function writeAggregates({ inputFile, resume }) {
       const key = `${agg.customer}#${agg.month}#${agg.space}`
 
       try {
-        // Validate the aggregate data
-        const validation = validate({
+        const incrementResult = await monthlyStore.increment({
           customer: agg.customer,
           space: agg.space,
           month: agg.month,
           bytes: agg.bytes,
           eventCount: agg.eventCount
         })
-        if (validation.error) {
-          throw new Error(`Validation failed: ${validation.error.message}`)
+
+        if (incrementResult.error) {
+          throw new Error(incrementResult.error.message)
         }
-
-        // Encode to DynamoDB format (pk, sk, etc)
-        const encoding = encode(validation.ok)
-        if (encoding.error) {
-          throw new Error(`Encoding failed: ${encoding.error.message}`)
-        }
-
-        const parameters = encoding.ok
-
-        // Use SET operation for idempotent writes
-        await dynamoClient.send(new UpdateItemCommand({
-          TableName: EGRESS_TRAFFIC_MONTHLY_TABLE_NAME,
-          Key: marshall({
-            pk: parameters.pk,
-            sk: parameters.sk
-          }),
-          UpdateExpression: 'SET #space = :space, #month = :month, bytes = :bytes, eventCount = :eventCount',
-          ExpressionAttributeNames: {
-            '#space': 'space',  // reserved word
-            '#month': 'month'   // reserved word
-          },
-          ExpressionAttributeValues: marshall({
-            ':space': parameters.space,
-            ':month': parameters.month,
-            ':bytes': parameters.bytes,
-            ':eventCount': parameters.eventCount
-          })
-        }))
 
         processedKeys.push(key)
         written++
 
-        const shouldLog = written % 100 === 0 ||
-                          written % Math.max(1, Math.floor(itemsToProcess.length / 10)) === 0 || 
-                          written === itemsToProcess.length
+        const processed = written + errors.length
+        const shouldLog = processed % 100 === 0 ||
+                          processed % Math.max(1, Math.floor(itemsToProcess.length / 10)) === 0 ||
+                          processed === itemsToProcess.length
         if (shouldLog) {
-          console.log(`  [${written}/${itemsToProcess.length}] Written`)
+          console.log(`  [${processed}/${itemsToProcess.length}] success=${written} errors=${errors.length}`)
           logDuration('  Elapsed')
         }
 
       } catch (/** @type {any} */ err) {
-        const message = err instanceof Error ? err.message : JSON.stringify(err)
-        console.error(`  [${written}/${itemsToProcess.length}] ERROR: ${key} error=${message}`)
+        const message = err instanceof Error ? `${err.name}: ${err.message}` : JSON.stringify(err)
+        const processed = written + errors.length + 1  // +1 for current error being logged
+        console.error(`  [${processed}/${itemsToProcess.length}] ERROR: ${key} error=${message}`)
         errors.push({ key, error: message })
       }
     },
     { concurrency: CONCURRENCY }
   )
 
-  console.log(`\nWrite complete: ${written}/${itemsToProcess.length} aggregates written\n`)
+  console.log(`\nWrite complete: ${written + errors.length}/${itemsToProcess.length} processed (success=${written}, errors=${errors.length})\n`)
 
   // Save state and errors
   await fs.promises.writeFile(stateFile, processedKeys.join('\n'))
