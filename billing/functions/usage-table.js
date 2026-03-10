@@ -204,7 +204,7 @@ export const reportUsage = async (usage, ctx) => {
     }, ctx)
 
     if(!previousUsageResult.found) {
-      console.log(`⚠️ Error: cannot calculate usage delta for space ${usage.space} (provider: ${usage.provider}). Usage between ${usage.from.toISOString()} and ${usage.to.toISOString()} is lost!`)
+      console.log(`Error: cannot calculate usage delta for space ${usage.space} (provider: ${usage.provider}). Usage between ${usage.from.toISOString()} and ${usage.to.toISOString()} is lost!`)
       throw new Error(
         `Critical: Cannot calculate usage delta for space ${usage.space} (provider: ${usage.provider}). `
       )
