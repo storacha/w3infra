@@ -143,6 +143,9 @@ export const createEgressTrafficMonthlyStore = (conf, { tableName }) => {
      * @returns {Promise<import('@ucanto/interface').Result<{spaces: Array<{space: string, month: string, bytes: number, eventCount: number}>, total: number}, Error>>}
      */
     async listByCustomer(customer, month) {
+      const validation = validate({ customer, month }, ['customer', 'month'])
+      if (validation.error) return validation
+
       const result = await executeCommand(
         client,
         () => new QueryCommand({

@@ -63,6 +63,14 @@ export const handler = Sentry.AWSLambda.wrapHandler(
     const batchItemFailures = []
     for (const record of event.Records) {
       try {
+        const receiveCount = record.attributes?.ApproximateReceiveCount || '1'                                                                                                                                    
+                                                                                                                                                                                                              
+        console.log('SQS message received:', {                                                                                                                                                                    
+          messageId: record.messageId,                                                                                                                                                                            
+          receiveCount,                                                                                                                                                                                           
+          body: record.body  // Contains the egress event                                                                                                                                                         
+        })   
+
         const decoded = decodeStr(record.body)
         const egressData = expect(decoded, 'Failed to decode egress event')
 
