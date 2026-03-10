@@ -2,7 +2,6 @@ import * as Sentry from '@sentry/serverless'
 import { Config } from 'sst/node/config'
 import { unmarshall } from '@aws-sdk/util-dynamodb'
 import Stripe from 'stripe'
-import Big from 'big.js'
 import * as Usage from '../data/usage.js'
 import { expect } from './lib.js'
 import { CID } from 'multiformats/cid'
@@ -10,8 +9,7 @@ import * as raw from 'multiformats/codecs/raw'
 import { sha256 } from 'multiformats/hashes/sha2'
 import { createUsageStore } from '../tables/usage.js'
 import { mustGetEnv } from '../../lib/env.js'
-import { startOfMonth } from '../lib/util.js'
-import { findPreviousUsageBySnapshotDate } from '../lib/space-billing-queue.js'
+import { findPreviousUsageBySnapshotDate, calculateDeltaMetrics } from '../lib/usage-calculations.js'
 
 Sentry.AWSLambda.init({
   environment: process.env.SST_STAGE,
@@ -89,7 +87,7 @@ const parseUsageInsertEvent = event => {
 }
 
 /**
- * @param {import('../lib/api.js').Usage} usage 
+ * @param {import('../lib/api.js').Usage} usage
  */
 async function createIdempotencyKey(usage){
   const digest = await sha256.digest(new TextEncoder().encode(`${usage.from.toISOString()}-${usage.to.toISOString()}/${usage.customer}/${usage.provider}/${usage.space}`))
@@ -98,124 +96,21 @@ async function createIdempotencyKey(usage){
 }
 
 /**
- * Queries the usage table for the previous usage record that created the snapshot
- * being used for the current billing period.
- *
- * Uses the shared findPreviousUsageBySnapshotDate function for the core lookup logic,
- * with Stripe recovery as a last resort fallback for data loss scenarios.
- *
- * @param {import('../lib/api.js').Usage} currentUsage
- * @param {{ stripe: Stripe, usageStore: import('../lib/api.js').UsageStore }} ctx
- * @returns {Promise<bigint>} Previous cumulative usage (0n if not found)
- */
-async function getPreviousUsage(currentUsage, ctx) {
-  // Use shared lookup logic (24h lookback + paginated scan)
-  const previousUsage = await findPreviousUsageBySnapshotDate({
-    customer: currentUsage.customer,
-    space: currentUsage.space,
-    provider: currentUsage.provider,
-    targetDate: currentUsage.from
-  }, ctx)
-
-  // If found via standard lookup, return it
-  if (previousUsage > 0n) {
-    return previousUsage
-  }
-
-  // Last resort: Stripe recovery for data loss scenarios
-  console.log(`⚠️ No previous usage found via DynamoDB. Attempting Stripe recovery...`)
-
-  // Query Stripe for summaries (returns in reverse chronological order - newest first)
-  const summaries = await ctx.stripe.billing.meters.listEventSummaries(STRIPE_BILLING_EVENT.id, {
-    customer: currentUsage.account.replace('stripe:', ''),
-    start_time: startOfMonth(currentUsage.from).getTime() / 1000,
-    end_time: currentUsage.to.getTime() / 1000,
-    value_grouping_window: 'day',
-    limit: 1
-  });
-
-  if (!summaries.data || summaries.data.length === 0) {
-    console.log(`No Stripe summaries found - treating as first-time customer`)
-    return 0n
-  }
-
-  const latestSummary = summaries.data[0]
-  const latestSummaryDate = new Date(latestSummary.end_time * 1000);
-
-  console.log(`Found latest Stripe summary: ${latestSummaryDate.toISOString()}`)
-
-  // Query DynamoDB for usage at Stripe's latest date
-  const recoveryResult = await ctx.usageStore.get({
-    customer: currentUsage.customer,
-    from: latestSummaryDate,
-    provider: currentUsage.provider,
-    space: currentUsage.space
-  })
-
-  const previousFrom = new Date(currentUsage.from.getTime() - 24 * 60 * 60 * 1000)
-
-  if (recoveryResult.ok) {
-    console.log(`⚠️ WARNING: Space ${currentUsage.space} usage between ${latestSummaryDate.toISOString()} and ${previousFrom.toISOString()} is lost using Stripe summaries for recovery.`)
-    return recoveryResult.ok.usage
-  }
-
-  if (recoveryResult.error?.name === 'RecordNotFound') {
-    console.error(`CRITICAL DATA LOSS: Cannot calculate usage delta. Manual investigation and correction required. \n ${JSON.stringify({
-      previousDay: previousFrom.toISOString(),
-      latestSummaryDate: latestSummaryDate.toISOString(),
-      space: currentUsage.space,
-      customer: currentUsage.customer,
-      stripeAggregatedValue: latestSummary.aggregated_value,
-    })}`)
-
-    throw new Error(
-      `Critical: Cannot calculate usage delta for space ${currentUsage.space}. ` +
-      `Both DynamoDB records missing (${previousFrom.toISOString()} and ${latestSummaryDate.toISOString()}). ` +
-      `This indicates data loss. Manual investigation required.`
-    )
-  }
-
-   throw recoveryResult.error ?? new Error('Unknown error querying usage store during recovery')
-}
-
-/**
- * Reports usage to Stripe. Note we use an `idempotencyKey` but this is only
- * retained by Stripe for 24 hours. Thus, retries should not be attempted for
- * the same usage record after 24 hours. The default DynamoDB stream retention
- * is 24 hours so this should be fine for intermittent failures.
+ * Validates whether a Stripe customer should be billed.
+ * Checks payment system, customer status, and subscription states.
  *
  * @param {import('../lib/api.js').Usage} usage
- * @param {{ stripe: Stripe, usageStore: import('../lib/api.js').UsageStore }} ctx
- * @returns {Promise<import('@ucanto/interface').Result<import('@ucanto/interface').Unit>>}
+ * @param {{ stripe: Stripe }} ctx
+ * @returns {Promise<import('@ucanto/interface').Result<{ shouldBill: boolean, stripeId: string }>>} Returns true if should bill, false if should skip
  */
-export const reportUsage = async (usage, ctx) => {
-  const usageContext = {
-    space: usage.space,
-    provider: usage.provider,
-    customer: usage.customer,
-    account: usage.account,
-    product: usage.product,
-    usage: usage.usage.toString(),
-    period: {
-      from: usage.from.toISOString(),
-      to: usage.to.toISOString()
-    }
-  }
-
-  console.log(`Processing usage...\n${JSON.stringify(usageContext)}`)
-
-  if (usage.space === 'did:key:z6Mkj8ynPJNkKc1e6S9VXpVDfQd8M1bPxZTgDg2Uhhjt9LoV') {
-    console.log('not reporting usage for space: did:key:z6Mkj8ynPJNkKc1e6S9VXpVDfQd8M1bPxZTgDg2Uhhjt9LoV')
-    return { ok: {} }
-  }
-
+async function validateStripeCustomerForBilling(usage, ctx) {
   if (!usage.account.startsWith('stripe:')) {
     return { error: new Error('unknown payment system') }
   }
 
   const customer = usage.account.replace('stripe:', '')
 
-  // Validate the Stripe customer before sending usage. 
+  // Validate the Stripe customer before sending usage.
   const stripeCustomer = await ctx.stripe.customers.retrieve(customer, {
     expand: ['subscriptions'],
   })
@@ -234,7 +129,7 @@ export const reportUsage = async (usage, ctx) => {
       `period: ${usage.from.toISOString()} - ${usage.to.toISOString()}. ` +
       `Manual review required.`
     )
-    return { ok: {} }
+    return { ok: { shouldBill: false, stripeId: customer } }
   }
 
   const hasPastDue = subscriptions.some((s) => s.status === 'past_due')
@@ -244,6 +139,41 @@ export const reportUsage = async (usage, ctx) => {
       `Usage will still be reported but requires manual intervention for resource collection.`
     )
   }
+
+  return { ok: { shouldBill: true, stripeId: customer } }
+}
+
+/**
+ * Reports usage to Stripe. Note we use an `idempotencyKey` but this is only
+ * retained by Stripe for 24 hours. Thus, retries should not be attempted for
+ * the same usage record after 24 hours. The default DynamoDB stream retention
+ * is 24 hours so this should be fine for intermittent failures.
+ *
+ * @param {import('../lib/api.js').Usage} usage
+ * @param {{ stripe: Stripe, usageStore: import('../lib/api.js').UsageStore }} ctx
+ * @returns {Promise<import('@ucanto/interface').Result<import('@ucanto/interface').Unit>>}
+ */
+export const reportUsage = async (usage, ctx) => {
+
+  if (usage.space === 'did:key:z6Mkj8ynPJNkKc1e6S9VXpVDfQd8M1bPxZTgDg2Uhhjt9LoV') {
+    console.log('not reporting usage for space: did:key:z6Mkj8ynPJNkKc1e6S9VXpVDfQd8M1bPxZTgDg2Uhhjt9LoV')
+    return { ok: {} }
+  }
+
+  const usageContext = {
+    space: usage.space,
+    provider: usage.provider,
+    customer: usage.customer,
+    account: usage.account,
+    product: usage.product,
+    usage: usage.usage.toString(),
+    period: {
+      from: usage.from.toISOString(),
+      to: usage.to.toISOString()
+    }
+  }
+
+  console.log(`Processing usage...\n${JSON.stringify(usageContext)}`)
 
   const duration = usage.to.getTime() - usage.from.getTime()
 
@@ -255,45 +185,53 @@ export const reportUsage = async (usage, ctx) => {
       )
     }
   }
+  
+  // Validate Stripe customer and check if billing should proceed
+  const validationResult = await validateStripeCustomerForBilling(usage, ctx)
+  if (validationResult.error) return validationResult
+  if (!validationResult.ok?.shouldBill) return { ok: {} }
 
-  const isFirstOfMonth = usage.from.getUTCDate() === 1
-  let previousCumulativeUsage
+  const stripeCustomerId = validationResult.ok?.stripeId
+
+  // Get previous cumulative usage (handles first-of-month reset internally)
+  let previousUsageResult
   try {
-    previousCumulativeUsage = isFirstOfMonth ? 0n : await getPreviousUsage(usage, ctx)
+    previousUsageResult = await findPreviousUsageBySnapshotDate({
+      customer: usage.customer,
+      space: usage.space,
+      provider: usage.provider,
+      targetDate: usage.from
+    }, ctx)
+
+    if(!previousUsageResult.found) {
+      console.log(`Error: cannot calculate usage delta for space ${usage.space} (provider: ${usage.provider}). Usage between ${usage.from.toISOString()} and ${usage.to.toISOString()} is lost!`)
+      throw new Error(
+        `Critical: Cannot calculate usage delta for space ${usage.space} (provider: ${usage.provider}). `
+      )
+    }
   } catch (/** @type {any} */ err) {
     return { error: err }
   }
 
-  // Calculate cumulative averages from month start
-  const monthStart = startOfMonth(usage.from)
-  const currentCumulativeDuration = usage.to.getTime() - monthStart.getTime()
-  const previousCumulativeDuration = usage.from.getTime() - monthStart.getTime()
+  const previousCumulativeUsage = previousUsageResult.usage
 
-  // Current cumulative average (from month start to now)
-  const cumulativeByteQuantity = Math.floor(new Big(usage.usage.toString()).div(currentCumulativeDuration).toNumber())
+  const {
+    cumulativeByteQuantity,
+    previousCumulativeByteQuantity,
+    deltaByteQuantity,
+    deltaGibQuantity
+  } = calculateDeltaMetrics(usage.usage, usage.from, usage.to, previousCumulativeUsage)
 
-  // Previous cumulative average (from month start to yesterday)
-  const previousCumulativeByteQuantity = previousCumulativeUsage === 0n
-    ? 0
-    : Math.floor(new Big(previousCumulativeUsage.toString()).div(previousCumulativeDuration).toNumber())
-
-  // Delta to send to Stripe: difference between cumulative averages
-  // Stripe sums these deltas across the month to get the month-to-date average
-  const deltaByteQuantity = cumulativeByteQuantity - previousCumulativeByteQuantity
-  const deltaGibQuantity = deltaByteQuantity / (1024 * 1024 * 1024)
-
-  if (isFirstOfMonth) {
-    console.log(`First of month reset - reporting full cumulative average as delta (no previous lookup)`, JSON.stringify({customer: usageContext.customer, space: usageContext.space}))
-  } else if (previousCumulativeUsage === 0n) {
+  if (previousCumulativeUsage === 0n && previousUsageResult.found) {
+    console.log(`First of month reset or zero usage - reporting full cumulative average as delta`, JSON.stringify({customer: usageContext.customer, space: usageContext.space}))
+  } else if (previousCumulativeUsage === 0n && !previousUsageResult.found) {
     console.log(`No previous usage found - reporting full cumulative average as delta`, JSON.stringify({customer: usageContext.customer, space: usageContext.space}))
   } else {
     console.log('Delta calculation inspect:', JSON.stringify({
       space: usageContext.space,
       previousCumulativeUsage: previousCumulativeUsage.toString(),
-      previousCumulativeDuration,
       previousCumulativeAverage: previousCumulativeByteQuantity,
       currentCumulativeUsage: usage.usage.toString(),
-      currentCumulativeDuration,
       currentCumulativeAverage: cumulativeByteQuantity,
       deltaBytes: deltaByteQuantity
     }))
@@ -316,7 +254,8 @@ export const reportUsage = async (usage, ctx) => {
   const idempotencyKey = await createIdempotencyKey(usage)
   // Subtract 1 minute from the 'to' date to ensure the timestamp falls within the correct billing month.
   // If 'to' is the first day of the next month (e.g., Mar 1 00:00), we want the timestamp to be in the previous month (Feb 28 23:59).
-  const referenceDate = new Date(usage.to.getTime() - 60000)
+  const ONE_MINUTE_MS = 60000
+  const referenceDate = new Date(usage.to.getTime() - ONE_MINUTE_MS)
 
   const stripeRequest = {
     message: 'Sending usage to Stripe',
@@ -339,7 +278,7 @@ export const reportUsage = async (usage, ctx) => {
     timestamp: Math.floor(referenceDate.getTime() / 1000),
     identifier: idempotencyKey,
     payload: {
-      stripe_customer_id: customer,
+      stripe_customer_id: stripeCustomerId,
       bytes: deltaByteQuantity.toString(),
     },
   })

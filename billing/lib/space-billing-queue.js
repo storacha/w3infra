@@ -1,5 +1,6 @@
 import Big from 'big.js'
-import {GB, isMonthStart, startOfMonth} from './util.js'
+import {GB, startOfMonth} from './util.js'
+import { findPreviousUsageBySnapshotDate } from './usage-calculations.js'
 
 /**
  * @param {import('./api.js').SpaceDiffListKey & { to: Date }} params
@@ -30,130 +31,6 @@ export const iterateSpaceDiffs = async function * ({ provider, space, from, to }
     if (done || !spaceDiffList.ok.cursor) break
     cursor = spaceDiffList.ok.cursor
   }
-}
-
-/**
- * Finds the previous usage record that created the snapshot at targetDate.
- * Uses optimized 24h lookback first (single GetItem), then falls back to
- * paginated scan if not found or if the record doesn't match.
- *
- * This is the core logic shared between space billing queue processing
- * and usage table Stripe reporting.
- *
- * @param {{
- *   customer: `did:mailto:${string}`,
- *   space: `did:${string}:${string}`,
- *   provider: `did:web:${string}`,
- *   targetDate: Date
- * }} params
- * @param {{ usageStore: import('./api.js').UsageStore }} ctx
- * @returns {Promise<bigint>} Previous cumulative usage (0n if not found)
- */
-export const findPreviousUsageBySnapshotDate = async (params, ctx) => {
-  const { customer, space, provider, targetDate } = params
-
-  // Optimization: Try 24-hour lookback first (works for daily billing - the common case)
-  const previousFrom = new Date(targetDate.getTime() - 24 * 60 * 60 * 1000)
-  const quickLookup = await ctx.usageStore.get({
-    customer,
-    from: previousFrom,
-    provider,
-    space
-  })
-
-  if (quickLookup.ok) {
-    // Verify this record's 'to' matches our targetDate (it should for daily billing)
-    if (quickLookup.ok.to.getTime() === targetDate.getTime()) {
-      console.log(`Found previous cumulative via 24h lookback (to=${quickLookup.ok.to.toISOString()}): ${quickLookup.ok.usage} byte·ms`)
-      return quickLookup.ok.usage
-    }
-    console.log(`24h lookback found record but 'to' doesn't match (expected ${targetDate.toISOString()}, got ${quickLookup.ok.to.toISOString()}). Falling back to scan...`)
-  }
-
-  if (quickLookup.error && quickLookup.error.name !== 'RecordNotFound') {
-    throw quickLookup.error
-  }
-
-  console.log('24h lookback failed, scanning for previous usage...')
-
-  // We're looking for a usage record where to === targetDate
-  // for this specific space/provider combination.
-  // Since 'to' is not part of the key, we must list and filter in code. (TODO: we can create an GSI later)
-
-  const monthBeforeTarget = new Date(targetDate.getTime() - 32 * 24 * 60 * 60 * 1000)
-
-  let cursor
-  let totalScanned = 0
-  while (true) {
-    const listResult = await ctx.usageStore.list({customer}, { size: 100, scanIndexForward: false, cursor })
-
-    if (listResult.error) {
-      throw listResult.error
-    }
-
-    totalScanned += listResult.ok.results.length
-
-    // Find the record where to === targetDate for this specific space
-    const previousRecord = listResult.ok.results.find(
-      record =>
-        record.space === space &&
-        record.provider === provider &&
-        record.to.getTime() === targetDate.getTime()
-    )
-
-    if (previousRecord) {
-      console.log(`Found previous cumulative (to=${previousRecord.to.toISOString()}): ${previousRecord.usage} byte·ms (scanned ${totalScanned} records)`)
-      return previousRecord.usage
-    }
-
-    // Early termination: if all records in this page are older than ~1 month before target,
-    // we've scanned too far back (billing periods don't exceed 1 month)
-    const allRecordsTooOld = listResult.ok.results.length > 0 &&
-      listResult.ok.results.every(record => record.from.getTime() < monthBeforeTarget.getTime())
-
-    if (allRecordsTooOld) {
-      console.warn(
-        `Stopped scanning: all records older than ${monthBeforeTarget.toISOString()}. ` +
-        `No usage record found with to=${targetDate.toISOString()} ` +
-        `for space ${space}, returning 0n (scanned ${totalScanned} records)`
-      )
-      return 0n
-    }
-
-    // No more records to scan
-    if (!listResult.ok.cursor) {
-      console.warn(
-        `No usage record found with to=${targetDate.toISOString()} ` +
-        `for space ${space}, returning 0n (scanned ${totalScanned} records)`
-      )
-      return 0n
-    }
-
-    cursor = listResult.ok.cursor
-  }
-}
-
-/**
- * Query previous cumulative usage from usage table.
- * Finds the usage record where `to === instruction.from`, which is the record
- * that created the snapshot being used for the current billing period.
- *
- * @param {import('./api.js').SpaceBillingInstruction} instruction
- * @param {{ usageStore: import('./api.js').UsageStore }} ctx
- * @returns {Promise<bigint>}
- */
-const getPreviousCumulativeUsage = async (instruction, ctx) => {
-  if (isMonthStart(instruction.from)) {
-    console.log('First of month, resetting cumulative to 0')
-    return 0n
-  }
-
-  return findPreviousUsageBySnapshotDate({
-    customer: instruction.customer,
-    space: instruction.space,
-    provider: instruction.provider,
-    targetDate: instruction.from
-  }, ctx)
 }
 
 /**
@@ -260,13 +137,19 @@ export const calculatePeriodUsage = async (instruction, ctx) => {
   usage += size * BigInt(finalIntervalMs)
 
   // Monthly accumulation
-    
- const isSnapshotFromPreviousMonth = snapshotToUse &&                                                                                                                                                                                                                                                                                                                           
-    startOfMonth(snapshotDate) < startOfMonth(instruction.from)                                                                                                                                                                                                                                                                                                                  
-                                                                                                                                                                                                                                                                                                                                                                                 
-  const previousCumulative = snapshotToUse && !isSnapshotFromPreviousMonth                                                                                                                                                                                                                                                                                                       
-    ? await getPreviousCumulativeUsage({...instruction, from: snapshotDate}, ctx)                                                                                                                                                                                                                                                                                                
-    : 0n     
+
+  const isSnapshotFromPreviousMonth = snapshotToUse && startOfMonth(snapshotDate) < startOfMonth(instruction.from)
+  const shouldLoadPreviousUsage = snapshotToUse && !isSnapshotFromPreviousMonth
+
+  const previousCumulative = shouldLoadPreviousUsage
+    ? (await findPreviousUsageBySnapshotDate({
+        customer: instruction.customer,
+        space: instruction.space,
+        provider: instruction.provider,
+        targetDate: snapshotDate
+      }, ctx)).usage
+    : 0n
+
   const cumulativeUsage = previousCumulative + usage
 
   console.log(`Usage: ${usage} byte·ms`)

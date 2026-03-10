@@ -7,20 +7,18 @@ import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
 import * as CSV from 'csv-stringify/sync'
 import fs from 'node:fs'
 import all from 'p-all'
-import { startOfMonth, GB } from '../../lib/util.js'
+import { startOfMonth, GB, toDateString } from '../../lib/util.js'
 import {
   calculateCost,
   createMemoryQueue,
-  createMemoryStore,
-  toDateString,
-  calculateDeltaMetrics
+  createMemoryStore
 } from './helpers.js'
+import { calculateDeltaMetrics, findPreviousUsageBySnapshotDate } from '../../lib/usage-calculations.js'
 import { EndOfQueue } from '../../test/helpers/queue.js'
 import { expect } from '../../functions/lib.js'
 import * as BillingCron from '../../lib/billing-cron.js'
 import * as CustomerBillingQueue from '../../lib/customer-billing-queue.js'
 import * as SpaceBillingQueue from '../../lib/space-billing-queue.js'
-import { findPreviousUsageBySnapshotDate } from '../../lib/space-billing-queue.js'
 import { createCustomerStore } from '../../tables/customer.js'
 import { createSubscriptionStore } from '../../tables/subscription.js'
 import { createConsumerStore } from '../../tables/consumer.js'
@@ -284,25 +282,21 @@ for (const usage of usageSnapshots) {
 // Calculate delta metrics for each usage record (simulating what production sends to Stripe)
 console.log('\n--- Delta Calculation (Production Simulation) ---')
 for (const usage of usageSnapshots) {
-  const isFirstOfMonth = usage.from.getUTCDate() === 1
-  let previousCumulativeUsage = 0n
+  const previousCumulativeUsage = await findPreviousUsageBySnapshotDate({
+    customer: usage.customer,
+    space: usage.space,
+    provider: usage.provider,
+    targetDate: usage.from
+  }, { usageStore: readableUsageStore })
 
-  if (!isFirstOfMonth) {
-    // Use the same production logic (24h lookback + paginated scan fallback)
-    previousCumulativeUsage = await findPreviousUsageBySnapshotDate({
-      customer: usage.customer,
-      space: usage.space,
-      provider: usage.provider,
-      targetDate: usage.from
-    }, { usageStore: readableUsageStore })
-  }
+  console.log('previousCumulativeUsage:',previousCumulativeUsage.found)
 
   // Calculate delta using production formula
   const delta = calculateDeltaMetrics(
     usage.usage,
     usage.from,
     usage.to,
-    previousCumulativeUsage
+    previousCumulativeUsage.usage
   )
 
   // Store delta metrics on the usage object for CSV generation

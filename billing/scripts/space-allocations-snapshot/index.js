@@ -14,7 +14,6 @@ import { mustGetEnv } from '../../../lib/env.js'
 import {
   calculateCost,
   createMemoryQueue,
-  toDateString,
 } from '../dry-run/helpers.js'
 import { EndOfQueue } from '../../test/helpers/queue.js'
 
@@ -22,6 +21,7 @@ import * as BillingCron from '../../lib/billing-cron.js'
 import * as SpaceBillingQueue from '../../lib/space-billing-queue.js'
 import * as CustomerBillingQueue from '../../lib/customer-billing-queue.js'
 import { parseArgs } from '../utils.js'
+import { toDateString } from '../../lib/util.js'
 
 /**
  * @typedef {import('../../lib/api.js').CustomerDID} CustomerDID
