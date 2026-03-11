@@ -77,40 +77,33 @@ export const handler = Sentry.AWSLambda.wrapHandler(
         // Extract month for monthly aggregation
         const month = extractMonth(egressData.servedAt)
 
-        // IMPORTANT: Idempotency behavior
+        // IMPORTANT: Duplicate/retry event handling
         // Uses ConditionExpression to prevent overwriting existing events.
-        // This ensures proper handling of SQS retries:
         //
-        // Scenario: put() succeeds, increment() fails
-        //   - On retry: put() fails with ConditionalCheckFailedException (event exists)
-        //   - We ignore this error and proceed to increment()
-        //   - Result: Event saved once, counted once
+        // Behavior on duplicate SQS messages:
+        //   - put() fails with ConditionalCheckFailedException (event exists)
+        //   - Skip monthly increment to prevent over-counting
+        //   - Still call Stripe (idempotent via idempotency key) since this can be a retry and not duplication
         //
-        // CRITICAL: Source MUST NOT send duplicate events!
-        // If the same event is sent twice to the queue (not a retry, but truly
-        // duplicate messages), both will be counted, causing double-counting.
+        // Trade-off: If increment fails on first attempt and message retries,
+        // the event will be saved and billed but NOT counted in monthly aggregates.
+        // This is acceptable because:
+        //   - Increment failures are extremely rare (empty DLQ, no recent errors)
+        //   - Stripe report is idempotent
+        //   - Monthly aggregates are for reporting only
         //
         const putResult = await egressTrafficEventStore.put(egressData, { conditionFieldsMustNotExist: ['pk', 'sk'] })
 
+        let isDuplicate = false
         if (putResult.error) {
           // @ts-expect-error - cause.name exists on AWS SDK errors
           if (putResult.error.cause?.name === 'ConditionalCheckFailedException') {
-            console.log(`Event already saved for customer ${egressData.customer}, space ${egressData.space} at ${egressData.servedAt.toISOString()} - proceeding to increment`)
-            // Don't throw - event was already saved, proceed to increment
+            console.log(`Duplicate event detected for customer ${egressData.customer}, space ${egressData.space} at ${egressData.servedAt.toISOString()} - skipping increment`)
+            isDuplicate = true
           } else {
             expect(putResult, 'Failed to save egress event in database')
           }
         }
-
-        // Increment monthly aggregate
-        // Runs whether put() succeeded (new event) or failed with ConditionalCheckFailedException (retry handling)
-        const incrementResult = await egressTrafficMonthlyStore.increment({
-          customer: egressData.customer,
-          space: egressData.space,
-          month,
-          bytes: egressData.bytes
-        })
-        expect(incrementResult, 'Failed to increment monthly egress aggregates')
 
         // Get customer account for Stripe billing
         const response = await customerStore.get({ customer: egressData.customer })
@@ -128,6 +121,17 @@ export const handler = Sentry.AWSLambda.wrapHandler(
           }
         } else {
           console.warn(`Received egress event but could not find ${egressData.customer} in our database - this is very strange!`)
+        }
+
+        if (!isDuplicate) {
+          // Increment monthly aggregate (only for new events)
+          const incrementResult = await egressTrafficMonthlyStore.increment({
+            customer: egressData.customer,
+            space: egressData.space,
+            month,
+            bytes: egressData.bytes
+          })
+          expect(incrementResult, 'Failed to increment monthly egress aggregates')
         }
       } catch (error) {
         console.error('Error processing egress event:', error)
