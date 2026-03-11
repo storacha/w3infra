@@ -79,7 +79,10 @@ export const createEgressTrafficEventStore = (conf, { tableName }) => {
           const queryResult = await client.send(new QueryCommand({
             TableName: tableName,
             IndexName: 'space',
-            KeyConditionExpression: 'space = :space AND servedAt BETWEEN :from AND :to',
+            KeyConditionExpression: '#space = :space AND servedAt BETWEEN :from AND :to',
+            ExpressionAttributeNames: {
+              '#space': 'space'
+            },
             ExpressionAttributeValues: {
               ':space': { S: space },
               ':from': { S: period.from.toISOString() },

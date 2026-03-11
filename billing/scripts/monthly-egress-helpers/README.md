@@ -74,7 +74,33 @@ This script uses DynamoDB ADD operation (increment) to **add historical data to 
 
 Get the egress value from the monthly aggregation table and compare it with the value aggregated by Stripe.
 
+**Basic usage:**
+
 ```bash
-cd billing/scripts/backfill-egress-monthly
+cd billing/scripts/monthly-egress-helpers
 node 3-get-customer-egress-from-monthly-table.js customer=did:mailto:gmail.com:example month=2026-03
 ```
+
+**Output:**
+- Shows egress totals from monthly aggregation table (per-space breakdown)
+- Shows egress total from Stripe billing
+- Compares the two values and reports any discrepancies
+
+**With raw events verification:**
+
+```bash
+node 3-get-customer-egress-from-monthly-table.js customer=did:mailto:gmail.com:example month=2026-03 --calculateFromRaw
+```
+
+**Additional output when using `--calculateFromRaw`:**
+- Calculates egress from raw events table (source of truth)
+- Compares all three sources: monthly table, Stripe, and raw events
+- Identifies over-counting (duplicate event processing) or under-counting issues
+- Shows percentage differences for each comparison
+
+**When to use `--calculateFromRaw`:**
+- Investigating discrepancies between monthly aggregates and Stripe
+- Diagnosing duplicate event processing issues
+- Verifying monthly aggregation accuracy
+
+**Note:** Calculating from raw events is slower (queries raw events table) but provides the most accurate verification.
