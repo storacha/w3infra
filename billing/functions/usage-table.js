@@ -8,6 +8,7 @@ import { CID } from 'multiformats/cid'
 import * as raw from 'multiformats/codecs/raw'
 import { sha256 } from 'multiformats/hashes/sha2'
 import { createUsageStore } from '../tables/usage.js'
+import { createSpaceSnapshotStore } from '../tables/space-snapshot.js'
 import { mustGetEnv } from '../../lib/env.js'
 import { findPreviousUsageBySnapshotDate, calculateDeltaMetrics } from '../lib/usage-calculations.js'
 
@@ -22,6 +23,7 @@ Sentry.AWSLambda.init({
  *   stripeSecretKey: string
  *   region?: string
  *   usageTableName?: string
+ *   snapshotTableName?: string
  * }} CustomHandlerContext
  */
 
@@ -52,10 +54,12 @@ export const handler = Sentry.AWSLambda.wrapHandler(
 
     const region = customContext?.region ?? mustGetEnv('AWS_REGION')
     const usageTableName = customContext?.usageTableName ?? mustGetEnv('USAGE_TABLE_NAME')
- 
+    const snapshotTableName = customContext?.snapshotTableName ?? mustGetEnv('SPACE_SNAPSHOT_TABLE_NAME')
+
     const ctx = {
       stripe: new Stripe(stripeSecretKey, { apiVersion: '2025-02-24.acacia' }),
-      usageStore: createUsageStore({ region }, { tableName: usageTableName })
+      usageStore: createUsageStore({ region }, { tableName: usageTableName }),
+      spaceSnapshotStore: createSpaceSnapshotStore({ region }, { tableName: snapshotTableName })
     }
     for (const usage of records) {
       expect(
@@ -150,7 +154,7 @@ async function validateStripeCustomerForBilling(usage, ctx) {
  * is 24 hours so this should be fine for intermittent failures.
  *
  * @param {import('../lib/api.js').Usage} usage
- * @param {{ stripe: Stripe, usageStore: import('../lib/api.js').UsageStore }} ctx
+ * @param {{ stripe: Stripe, usageStore: import('../lib/api.js').UsageStore, spaceSnapshotStore: import('../lib/api.js').SpaceSnapshotStore }} ctx
  * @returns {Promise<import('@ucanto/interface').Result<import('@ucanto/interface').Unit>>}
  */
 export const reportUsage = async (usage, ctx) => {
@@ -203,11 +207,37 @@ export const reportUsage = async (usage, ctx) => {
       targetDate: usage.from
     }, ctx)
 
-    if(!previousUsageResult.found) {
-      console.log(`Error: cannot calculate usage delta for space ${usage.space} (provider: ${usage.provider}). Usage between ${usage.from.toISOString()} and ${usage.to.toISOString()} is lost!`)
-      throw new Error(
-        `Critical: Cannot calculate usage delta for space ${usage.space} (provider: ${usage.provider}). `
+    if (!previousUsageResult.found) {
+      // Check if this is a new space or data loss by querying snapshot table
+      const snapshotCheck = await ctx.spaceSnapshotStore.get({
+        space: usage.space,
+        provider: usage.provider,
+        recordedAt: usage.from
+      })
+
+      if (snapshotCheck.ok) {
+        // Snapshot exists at 'from' date → billing previously occurred → usage record should exist → data loss
+        console.error(
+          `Critical: Missing usage record for space ${usage.space} (provider: ${usage.provider}). ` +
+          `Snapshot exists at ${usage.from.toISOString()} but no corresponding usage record found. ` +
+          `This indicates data loss between ${usage.from.toISOString()} and ${usage.to.toISOString()}.`
+        )
+        throw new Error(
+          `Critical: Cannot calculate usage delta for space ${usage.space} (provider: ${usage.provider}). ` +
+          `Missing usage record indicates data loss.`
+        )
+      }
+
+      if (snapshotCheck.error && snapshotCheck.error.name !== 'RecordNotFound') {
+        throw snapshotCheck.error
+      }
+
+      // No snapshot at 'from' date → new space, first billing period
+      console.log(
+        `New space detected: ${usage.space} (provider: ${usage.provider}). ` +
+        `First billing period ${usage.from.toISOString()} - ${usage.to.toISOString()}.`
       )
+      // Continue with previousCumulativeUsage = 0n
     }
   } catch (/** @type {any} */ err) {
     return { error: err }

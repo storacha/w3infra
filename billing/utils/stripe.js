@@ -192,7 +192,7 @@ export async function recordBillingMeterEvent(stripe, billingMeterEventName, egr
 
   // Identifier is only set if the event was successfully created
   if (meterEvent.identifier) {
-    console.log('Meter event created:', meterEvent)
+    console.log('Meter event created:', {...meterEvent, idempotencyKey})
     return { ok: { meterEvent } }
   }
   return {
