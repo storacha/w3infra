@@ -187,7 +187,7 @@ async function aggregateCustomerEgressFromRawEvents(customer, from, to) {
   const spaceProviderMap = await getAllCustomerSpaces(customer)
   if (!spaceProviderMap) {
     console.error('Failed to get spaces')
-    return undefined
+    return
   }
 
   console.log(`  Found ${spaceProviderMap.size} spaces`)
@@ -244,7 +244,7 @@ async function getAllCustomerSpaces(customer) {
     if (subscriptionList.error) {
       const errorMsg = `Failed to list subscriptions for ${customer}: ${subscriptionList.error}`
       console.error(errorMsg)
-      return undefined
+      return
     }
 
     // For each subscription, get the consumer (space)

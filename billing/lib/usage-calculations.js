@@ -124,7 +124,7 @@ async function scanForPreviousUsage(params, ctx) {
     if (!listResult.ok.cursor) {
       console.warn(
         `No usage record found with to=${targetDate.toISOString()} ` +
-        `for space ${space} and provider ${provider}, returning 0n (not found, scanned ${totalScanned} records)`
+        `for space ${space} and provider ${provider}, returning 0n (scanned all ${totalScanned} records)`
       )
       return { usage: 0n, found: false }
     }

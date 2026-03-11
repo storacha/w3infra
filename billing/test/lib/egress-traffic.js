@@ -148,18 +148,23 @@ export const test = {
   },
 
   /**
-   * Test: Retry after put() succeeded but increment() failed
-   * Simulates SQS retry where event was already saved but not counted
+   * Test: Duplicate SQS message handling (at-least-once delivery)
+   *
+   * Verifies that when the same egress event is delivered twice via SQS
+   * (duplicate message, not retry), the system:
+   * - Saves the event only once (conditional write protection)
+   * - Increments monthly aggregate only once (duplicate detection)
+   * - Calls Stripe twice but only bills once (idempotency key protection)
    *
    * @param {import('entail').assert} assert
    * @param {import('./api.js').EgressTrafficTestContext} ctx
    */
-  'should handle retry correctly when event already exists': async (assert, ctx) => {
+  'should handle duplicate SQS messages correctly': async (assert, ctx) => {
     /** @type {string | null} */
     let stripeCustomerId = null
     try {
       // Create a test customer in Stripe
-      const didMailto = `did:mailto:storacha.network:retry-test`
+      const didMailto = `did:mailto:storacha.network:duplicate-test`
       const email = DidMailto.toEmail(/** @type {`did:mailto:${string}:${string}`} */(didMailto))
       const stripeCustomer = await ctx.stripe.customers.create({ email })
       assert.ok(stripeCustomer.id, 'Error adding customer to stripe')
@@ -177,27 +182,12 @@ export const test = {
       const event = await randomEgressEvent(customer)
       const month = extractMonth(event.servedAt)
 
-      // SIMULATE FIRST ATTEMPT: Save event but don't increment (as if increment failed)
-      const putResult = await ctx.egressTrafficEventStore.put(event)
-      assert.ok(!putResult.error, 'First put should succeed')
-
-      // Verify event was saved
-      const eventExists = await ctx.egressTrafficEventStore.put(event, {
-        conditionFieldsMustNotExist: ['pk']
-      })
-      assert.ok(eventExists.error, 'Second put with condition should fail')
-      assert.ok(
-        // @ts-expect-error - cause.name exists on AWS SDK errors
-        eventExists.error.cause?.name === 'ConditionalCheckFailedException',
-        'Should be ConditionalCheckFailedException'
-      )
-
-      // SIMULATE SQS RETRY: Process the same event again
+      // Create SQS event with the same message content (simulating duplicate delivery)
       const sqsEvent = {
         Records: [{
           body: encodeStr(event).ok ?? '',
-          messageId: 'test-message-retry',
-          receiptHandle: 'test-receipt-retry',
+          messageId: 'test-message-1',
+          receiptHandle: 'test-receipt-1',
           awsRegion: ctx.region,
           eventSource: 'aws:sqs',
           eventSourceARN: `arn:aws:sqs:${ctx.region}:${ctx.accountId}:test-queue`,
@@ -205,7 +195,7 @@ export const test = {
           md5OfBody: '',
           md5OfMessageAttributes: '',
           attributes: {
-            ApproximateReceiveCount: '2', // Retry attempt
+            ApproximateReceiveCount: '1', // First delivery
             SentTimestamp: event.servedAt.getTime().toString(),
             SenderId: ctx.accountId,
             ApproximateFirstReceiveTimestamp: event.servedAt.getTime().toString(),
@@ -215,20 +205,65 @@ export const test = {
       }
 
       const customCtx = { clientContext: { Custom: ctx } }
+
+      // FIRST PROCESSING: Process the event for the first time
       // @ts-expect-error
-      const result = await ctx.egressTrafficHandler(sqsEvent, customCtx)
+      const result1 = await ctx.egressTrafficHandler(sqsEvent, customCtx)
+      assert.equal(result1.statusCode, 200, 'First processing should succeed')
+      assert.equal(result1.batchItemFailures.length, 0, 'First processing should have no failures')
 
-      // Verify handler succeeded despite ConditionalCheckFailedException
-      assert.equal(result.statusCode, 200)
-      assert.equal(result.batchItemFailures.length, 0, 'Should have no failures')
+      // Verify event was saved in raw events table
+      const rawEventCheck = await ctx.egressTrafficEventStore.put(event, {
+        conditionFieldsMustNotExist: ['pk', 'sk']
+      })
+      assert.ok(rawEventCheck.error, 'Event should already exist in raw events table')
+      // @ts-expect-error - cause.name exists on AWS SDK errors
+      assert.equal(rawEventCheck.error.cause?.name, 'ConditionalCheckFailedException', 'Should be ConditionalCheckFailedException')
 
-      // Verify monthly aggregate was incremented (for the FIRST time)
-      const monthlyResult = await ctx.egressTrafficMonthlyStore.listByCustomer(customer.customer, month)
-      assert.ok(!monthlyResult.error, 'Should retrieve monthly aggregate')
-      if (monthlyResult.error) return
-      assert.equal(monthlyResult.ok.spaces.length, 1, 'Should have 1 space')
-      assert.equal(monthlyResult.ok.spaces[0].bytes, event.bytes, 'Bytes should be counted once')
-      assert.equal(monthlyResult.ok.spaces[0].eventCount, 1, 'Event count should be 1 (not double counted)')
+      // Verify monthly aggregate was incremented once
+      const monthlyResult1 = await ctx.egressTrafficMonthlyStore.listByCustomer(customer.customer, month)
+      assert.ok(!monthlyResult1.error, 'Should retrieve monthly aggregate after first processing')
+      if (monthlyResult1.error) return
+      assert.equal(monthlyResult1.ok.spaces.length, 1, 'Should have 1 space')
+      assert.equal(monthlyResult1.ok.spaces[0].bytes, event.bytes, 'Bytes should match')
+      assert.equal(monthlyResult1.ok.spaces[0].eventCount, 1, 'Event count should be 1')
+
+      // SECOND PROCESSING: Process the SAME event again (duplicate SQS message)
+      const sqsEventDuplicate = {
+        Records: [{
+          body: encodeStr(event).ok ?? '',
+          messageId: 'test-message-2', // Different message ID (different SQS delivery)
+          receiptHandle: 'test-receipt-2',
+          awsRegion: ctx.region,
+          eventSource: 'aws:sqs',
+          eventSourceARN: `arn:aws:sqs:${ctx.region}:${ctx.accountId}:test-queue`,
+          awsAccountId: ctx.accountId,
+          md5OfBody: '',
+          md5OfMessageAttributes: '',
+          attributes: {
+            ApproximateReceiveCount: '1', // First delivery of this duplicate
+            SentTimestamp: event.servedAt.getTime().toString(),
+            SenderId: ctx.accountId,
+            ApproximateFirstReceiveTimestamp: event.servedAt.getTime().toString(),
+          },
+          messageAttributes: {},
+        }]
+      }
+
+      // @ts-expect-error
+      const result2 = await ctx.egressTrafficHandler(sqsEventDuplicate, customCtx)
+      assert.equal(result2.statusCode, 200, 'Duplicate processing should succeed')
+      assert.equal(result2.batchItemFailures.length, 0, 'Duplicate processing should have no failures')
+
+      // Verify monthly aggregate was NOT incremented again
+      const monthlyResult2 = await ctx.egressTrafficMonthlyStore.listByCustomer(customer.customer, month)
+      assert.ok(!monthlyResult2.error, 'Should retrieve monthly aggregate after duplicate processing')
+      if (monthlyResult2.error) return
+      assert.equal(monthlyResult2.ok.spaces.length, 1, 'Should still have 1 space')
+      assert.equal(monthlyResult2.ok.spaces[0].bytes, event.bytes, 'Bytes should still match (not doubled)')
+      assert.equal(monthlyResult2.ok.spaces[0].eventCount, 1, 'Event count should still be 1 (not double counted)')
+
+      console.log(`✅ Duplicate event correctly handled: counted once despite two SQS deliveries`)
     } finally {
       if (stripeCustomerId) {
         // Clean up: Delete the test customer from stripe

@@ -23,6 +23,7 @@ import { mustGetEnv } from '../../lib/env.js'
 import * as Usage from '../data/usage.js'
 import { reportUsage } from '../functions/usage-table.js'
 import { createUsageStore } from '../tables/usage.js'
+import { createSpaceSnapshotStore } from '../tables/space-snapshot.js'
 
 dotenv.config({ path: '.env.local' })
 
@@ -36,6 +37,7 @@ const STORACHA_ENV = mustGetEnv('STORACHA_ENV')
 const AWS_REGION = mustGetEnv('AWS_REGION')
 const STRIPE_SECRET_KEY = mustGetEnv('STRIPE_SECRET_KEY')
 const USAGE_TABLE_NAME = `${STORACHA_ENV}-w3infra-usage`
+const SPACE_SNAPSHOT_TABLE_NAME = `${STORACHA_ENV}-w3infra-space-snapshot`
 
 const dynamo = new DynamoDBClient()
 const stripe = new Stripe(STRIPE_SECRET_KEY, { apiVersion: '2025-02-24.acacia' })
@@ -156,7 +158,8 @@ async function main() {
 
   const ctx = {
     stripe,
-    usageStore: createUsageStore({ region: AWS_REGION }, { tableName: USAGE_TABLE_NAME })
+    usageStore: createUsageStore({ region: AWS_REGION }, { tableName: USAGE_TABLE_NAME }),
+    spaceSnapshotStore: createSpaceSnapshotStore({ region: AWS_REGION }, { tableName: SPACE_SNAPSHOT_TABLE_NAME })
   }
 
   const records = CUSTOMER ? queryUsageRecordsForCustomer(CUSTOMER) : scanUsageRecords()
