@@ -1,37 +1,8 @@
 import Big from 'big.js'
 import {GB, startOfMonth} from './util.js'
 import { findPreviousUsageBySnapshotDate } from './usage-calculations.js'
+import { findSnapshotAtOrBefore, iterateSpaceDiffs } from './space-size.js'
 
-/**
- * @param {import('./api.js').SpaceDiffListKey & { to: Date }} params
- * @param {{ spaceDiffStore: import('./api.js').SpaceDiffStore }} ctx
- * @returns {AsyncIterable<import('@ucanto/interface').Result<import('./api.js').SpaceDiff[], import('@ucanto/interface').Failure>>}
- */
-export const iterateSpaceDiffs = async function * ({ provider, space, from, to }, ctx) {
-  /** @type {string|undefined} */
-  let cursor
-  let done = false
-  while (true) {
-    const spaceDiffList = await ctx.spaceDiffStore.list(
-      { provider, space, from },
-      { cursor, size: 1000 }
-    )
-    if (spaceDiffList.error) return spaceDiffList
-
-    const diffs = []
-    for (const diff of spaceDiffList.ok.results) {
-      // NOTE: the interval is [from, to) where `to` is exclusive
-      if (diff.receiptAt.getTime() >= to.getTime()) {
-        done = true
-        break
-      }
-      diffs.push(diff)
-    }
-    yield { ok: diffs }
-    if (done || !spaceDiffList.ok.cursor) break
-    cursor = spaceDiffList.ok.cursor
-  }
-}
 
 /**
  * Calculates total usage for the given space, customer, and billing period.
@@ -58,44 +29,14 @@ export const calculatePeriodUsage = async (instruction, ctx) => {
   console.log(`Customer: ${instruction.customer}`)
   console.log(`Period: ${instruction.from.toISOString()} - ${instruction.to.toISOString()}`)
 
-  // Try to get snapshot at exact 'from' date first
-  const { ok: snap, error } = await ctx.spaceSnapshotStore.get({
-    space: instruction.space,
-    provider: instruction.provider,
-    recordedAt: instruction.from
-  })
-  if (error && error.name !== 'RecordNotFound') return { error }
-
-  let snapshotToUse = snap
-  let snapshotDate = instruction.from
-
-  // If no snapshot at exact 'from' date, fetch up to 31 snapshots (one month's worth)
-  // and find the most recent snapshot where recordedAt <= from.
-  // This handles edge cases where future snapshots exist (from later billing runs)
-  // but older valid snapshots are still available.
-  if (!snap) {
-    console.warn(`No snapshot found at ${instruction.from.toISOString()}, querying for most recent snapshot before this date...`)
-
-    const listResult = await ctx.spaceSnapshotStore.list({
-      space: instruction.space,
-      provider: instruction.provider
-    }, { size: 31, scanIndexForward: false }) // Get up to 31 days of snapshots (newest first)
-
-    if (listResult.error) return listResult
-
-    // Find the newest snapshot where recordedAt <= from
-    const validSnapshot = listResult.ok.results.find(
-      snapshot => snapshot.recordedAt.getTime() <= instruction.from.getTime()
-    )
-
-    if (validSnapshot) {
-      snapshotToUse = validSnapshot
-      snapshotDate = validSnapshot.recordedAt
-      console.log(`Found snapshot @ ${snapshotDate.toISOString()}: ${validSnapshot.size} bytes`)
-    } else {
-      console.warn(`!!! No snapshot found before ${instruction.from.toISOString()}, assuming empty space !!!`)
-    }
-  }
+  const snapshotResult = await findSnapshotAtOrBefore({ 
+    space: instruction.space, 
+    provider: instruction.provider, 
+    targetDate: instruction.from 
+  }, ctx)
+  if (snapshotResult.error) return snapshotResult
+  const snapshotToUse = snapshotResult.ok
+  const snapshotDate = snapshotToUse ? snapshotToUse.recordedAt : instruction.from
 
   // Initialize state
   let size = snapshotToUse ? snapshotToUse.size : 0n

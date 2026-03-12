@@ -147,7 +147,8 @@ export function BillingStack ({ stack, app }) {
     timeout: '15 minutes',
     bind: [stripeSecretKey],
     environment: {
-      USAGE_TABLE_NAME: usageTable.tableName
+      USAGE_TABLE_NAME: usageTable.tableName,
+      SPACE_SNAPSHOT_TABLE_NAME: spaceSnapshotTable.tableName
     }
   })
 
