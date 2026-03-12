@@ -1,6 +1,7 @@
 import { trace } from '@opentelemetry/api'
-import { iterateSpaceDiffs } from '../../billing/lib/space-billing-queue.js'
+import { iterateSpaceDiffs, findSnapshotAtOrBefore } from '../../billing/lib/space-size.js'
 import { instrumentMethods } from '../lib/otel/instrument.js'
+import { startOfToday } from '../../billing/lib/util.js'
 
 const tracer = trace.getTracer('upload-api')
 
@@ -21,19 +22,18 @@ export function useUsageStore({ spaceSnapshotStore, spaceDiffStore, egressTraffi
      * @param {{ from: Date, to: Date }} period
      */
     async report(provider, space, period) {
-      const snapResult = await spaceSnapshotStore.get({
-        provider,
-        space,
-        recordedAt: period.from
-      })
-      const initial = snapResult.error ? 0n : snapResult.ok.size
-      if (snapResult.error && snapResult.error.name !== 'RecordNotFound') {
-        return snapResult
-      }
+      const targetDate = startOfToday(period.to)
+      const snapshotResult = await findSnapshotAtOrBefore(
+        { space, provider, targetDate },
+        { spaceSnapshotStore }
+      )
+      if (snapshotResult.error) return { error: snapshotResult.error }
+      const latestSnapshotValue = snapshotResult.ok ? snapshotResult.ok.size : 0n
+      const latestSnapshotDate = snapshotResult.ok ? snapshotResult.ok.recordedAt : period.from
 
-      let final = initial
+      let final = latestSnapshotValue
       const events = []
-      const query = { provider, space, ...period }
+      const query = { provider, space, from: latestSnapshotDate, to: period.to }
       for await (const page of iterateSpaceDiffs(query, { spaceDiffStore })) {
         if (page.error) return page
         for (const diff of page.ok) {
@@ -59,7 +59,7 @@ export function useUsageStore({ spaceSnapshotStore, spaceDiffStore, egressTraffi
           to: period.to.toISOString()
         },
         size: {
-          initial: Number(initial),
+          initial: Number(latestSnapshotValue),
           final: Number(final)
         },
         events,
