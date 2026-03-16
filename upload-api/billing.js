@@ -54,8 +54,8 @@ function billingCycleAnchor() {
  * @param {import('stripe').Stripe} stripe
  * @param {import('../billing/lib/api.js').CustomerStore} customerStore
  * @param {import('./types.js').PlansToLineItems} plansToLineItemsMapping
- * @param {string} stripeSuccessURL
  * @param {Record<string, string?>} couponIds
+ * @param {string} stripeSuccessURL
  * @returns {import('./types.js').BillingProvider}
  */
 export function createStripeBillingProvider(
