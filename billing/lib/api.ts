@@ -5,7 +5,7 @@ import { StoreRecord } from '../types.js'
 
 /**
  * Captures a size change that occurred for a given resource due to a
- * service invocation such as store/add or store/remove.
+ * service invocation such as space/blob/add or store/remove.
  */
 export interface UsageDelta {
   /** Resource that changed size. */

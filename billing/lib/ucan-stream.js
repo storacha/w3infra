@@ -17,18 +17,13 @@ export const findSpaceUsageDeltas = messages => {
     let resource
     /** @type {number|undefined} */
     let size
-    // TODO: remove me LEGACY store/add
-    if (isReceiptForCapability(message, StoreCaps.add) && isStoreAddSuccess(message.out)) {
-      resource = /** @type {import('@ucanto/interface').DID} */ (message.value.att[0].with)
-      size = message.out.ok.allocated
-    // TODO: remove me LEGACY store/remove
-    } else if (isReceiptForCapability(message, StoreCaps.remove) && isStoreRemoveSuccess(message.out)) {
+    // LEGACY store/remove - keep for users to delete their legacy data
+    if (isReceiptForCapability(message, StoreCaps.remove) && isStoreRemoveSuccess(message.out)) {
       resource = /** @type {import('@ucanto/interface').DID} */ (message.value.att[0].with)
       size = -message.out.ok.size
     }
 
-    // Is message is a repeat store/add for the same shard or not a valid
-    // store/add or store/remove receipt?
+    // Is message not a valid store/remove receipt?
     if (resource == null || size == 0 || size == null) {
       continue
     }
@@ -107,17 +102,6 @@ export const storeSpaceUsageDeltas = async (deltas, ctx) => {
  * @returns {m is import('./api.js').UcanReceiptMessage}
  */
 const isReceipt = m => m.type === 'receipt'
-
-/**
- * @param {import('@ucanto/interface').Result} r
- * @returns {r is { ok: import('@storacha/capabilities/types').StoreAddSuccess }}
- */
-const isStoreAddSuccess = r =>
-  !r.error &&
-  r.ok != null &&
-  typeof r.ok === 'object' &&
-  'status' in r.ok &&
-  (r.ok.status === 'done' || r.ok.status === 'upload')
 
 /**
  * @param {import('@ucanto/interface').Result} r

@@ -38,7 +38,7 @@ test('revocations endpoint returns 404 for non-revoked delegation', async (t) =>
     audience: bob,
     capabilities: [
       {
-        can: 'store/add',
+        can: 'space/blob/add',
         with: alice.did()
       }
     ],
@@ -101,8 +101,8 @@ test('revocations endpoint returns CAR file with verifiable content', async (t) 
   // Create a space and delegation
   const { proof: spaceProof, spaceDid } = await createSpace(alice)
   
-  // Create a delegation from Alice to Bob for store/add capability
-  const delegation = await createUcanInvocation('store/add', { 
+  // Create a delegation from Alice to Bob for space/blob/add capability
+  const delegation = await createUcanInvocation('space/blob/add', { 
     link: Link.parse('bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi'),
     size: 1024 
   }, {
@@ -410,8 +410,8 @@ test('verify top level delegation chain revocation', async (t) => {
   const { proof: spaceProof, spaceDid } = await createSpace(alice)
   
   // Create delegation chain: Alice -> Bob -> Charlie -> Dave
-  // Alice delegates store/add to Bob
-  const aliceToBob = await createUcanInvocation('store/add', { 
+  // Alice delegates space/blob/add to Bob
+  const aliceToBob = await createUcanInvocation('space/blob/add', { 
     link: Link.parse('bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi'),
     size: 1024 
   }, {
@@ -421,8 +421,8 @@ test('verify top level delegation chain revocation', async (t) => {
     proofs: [spaceProof]
   })
   
-  // Bob delegates store/add to Charlie (using Alice's delegation as proof)
-  const bobToCharlie = await createUcanInvocation('store/add', { 
+  // Bob delegates space/blob/add to Charlie (using Alice's delegation as proof)
+  const bobToCharlie = await createUcanInvocation('space/blob/add', { 
     link: Link.parse('bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi'),
     size: 1024 
   }, {
@@ -432,8 +432,8 @@ test('verify top level delegation chain revocation', async (t) => {
     proofs: [aliceToBob] // Bob uses Alice's delegation as proof
   })
   
-  // Charlie delegates store/add to Dave (using Bob's delegation as proof)
-  const charlieToDave = await createUcanInvocation('store/add', { 
+  // Charlie delegates space/blob/add to Dave (using Bob's delegation as proof)
+  const charlieToDave = await createUcanInvocation('space/blob/add', { 
     link: Link.parse('bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi'),
     size: 1024 
   }, {
@@ -616,7 +616,7 @@ test('verify top level delegation chain revocation', async (t) => {
   t.truthy(charlieToDaveVerification.reason, 'Should provide reason for invalidity')
   
   // Test 4: Verify that a non-revoked delegation still returns 404
-  const unrelatedDelegation = await createUcanInvocation('store/add', { 
+  const unrelatedDelegation = await createUcanInvocation('space/blob/add', { 
     link: Link.parse('bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi'),
     size: 2048 
   }, {
@@ -680,8 +680,8 @@ test('verify intermediate level delegation chain revocation', async (t) => {
   const { proof: spaceProof, spaceDid } = await createSpace(alice)
   
   // Create delegation chain: Alice -> Bob -> Charlie -> Dave
-  // Alice delegates store/add to Bob
-  const aliceToBob = await createUcanInvocation('store/add', { 
+  // Alice delegates space/blob/add to Bob
+  const aliceToBob = await createUcanInvocation('space/blob/add', { 
     link: Link.parse('bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi'),
     size: 1024 
   }, {
@@ -691,8 +691,8 @@ test('verify intermediate level delegation chain revocation', async (t) => {
     proofs: [spaceProof]
   })
   
-  // Bob delegates store/add to Charlie (using Alice's delegation as proof)
-  const bobToCharlie = await createUcanInvocation('store/add', { 
+  // Bob delegates space/blob/add to Charlie (using Alice's delegation as proof)
+  const bobToCharlie = await createUcanInvocation('space/blob/add', { 
     link: Link.parse('bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi'),
     size: 1024 
   }, {
@@ -702,8 +702,8 @@ test('verify intermediate level delegation chain revocation', async (t) => {
     proofs: [aliceToBob] // Bob uses Alice's delegation as proof
   })
   
-  // Charlie delegates store/add to Dave (using Bob's delegation as proof)
-  const charlieToDave = await createUcanInvocation('store/add', { 
+  // Charlie delegates space/blob/add to Dave (using Bob's delegation as proof)
+  const charlieToDave = await createUcanInvocation('space/blob/add', { 
     link: Link.parse('bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi'),
     size: 1024 
   }, {

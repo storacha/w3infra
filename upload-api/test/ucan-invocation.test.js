@@ -624,10 +624,12 @@ test('replace all link values as object and array', async (t) => {
   const att = [
     {
       nb: {
-        link: root,
-        size: car.size,
+        blob: {
+          digest: root.multihash.bytes,
+          size: car.size,
+        },
       },
-      can: 'store/add',
+      can: 'space/blob/add',
       with: 'did:key:z6MkfTDbhRZz26kcDNmmehPxeujSkbXe8jqv5fLpKvtc3Wcv',
     },
     {

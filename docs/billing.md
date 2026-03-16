@@ -4,7 +4,7 @@
 
 
 1. **Real-time Space Tracking**: Increases and decreases to space size (in bytes) are recorded in the `space-diff` store in real time.
-   * A consumer for the UCAN stream inserts records based on `store/add` and `store/remove` invocations. 
+   * A consumer for the UCAN stream inserts records based on `store/remove` invocations (legacy) and `blob/add`/`blob/remove` invocations. 
    * After each (`blob/accept`) and `blob/remove` is accepted by the storage node we register this blob addition or removal into the blog register table. We also insert space usage deltas directly to `space-diff` from the BlobRegistry at the point where items are added or removed.
    * Each diff record contains: `provider`, `space`, `subscription`, `cause`, `delta` (bytes), `receiptAt`, `insertedAt`
 

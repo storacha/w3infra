@@ -1,5 +1,4 @@
 import {
-  add as storeAdd,
   remove as storeRemove
 } from '@storacha/capabilities/store'
 import {
@@ -15,8 +14,6 @@ import {
 export const BLOB_ADD = blobAdd.can
 export const BLOB_REMOVE = blobRemove.can
 /** @deprecated */
-export const STORE_ADD = storeAdd.can
-/** @deprecated */
 export const STORE_REMOVE = storeRemove.can
 export const UPLOAD_ADD = uploadAdd.can
 export const UPLOAD_REMOVE = uploadRemove.can
@@ -29,10 +26,6 @@ export const METRICS_NAMES = {
   BLOB_ADD_SIZE_TOTAL: `${BLOB_ADD}-size-total`,
   BLOB_REMOVE_TOTAL: `${BLOB_REMOVE}-total`,
   BLOB_REMOVE_SIZE_TOTAL: `${BLOB_REMOVE}-size-total`,
-  /** @deprecated */
-  STORE_ADD_TOTAL: `${STORE_ADD}-total`,
-  /** @deprecated */
-  STORE_ADD_SIZE_TOTAL: `${STORE_ADD}-size-total`,
   /** @deprecated */
   STORE_REMOVE_TOTAL: `${STORE_REMOVE}-total`,
   /** @deprecated */
@@ -47,10 +40,6 @@ export const SPACE_METRICS_NAMES = {
   BLOB_ADD_SIZE_TOTAL: `${BLOB_ADD}-size-total`,
   BLOB_REMOVE_TOTAL: `${BLOB_REMOVE}-total`,
   BLOB_REMOVE_SIZE_TOTAL: `${BLOB_REMOVE}-size-total`,
-  /** @deprecated */
-  STORE_ADD_TOTAL: `${STORE_ADD}-total`,
-  /** @deprecated */
-  STORE_ADD_SIZE_TOTAL: `${STORE_ADD}-size-total`,
   /** @deprecated */
   STORE_REMOVE_TOTAL: `${STORE_REMOVE}-total`,
   /** @deprecated */
