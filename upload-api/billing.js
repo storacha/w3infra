@@ -55,13 +55,15 @@ function billingCycleAnchor() {
  * @param {import('../billing/lib/api.js').CustomerStore} customerStore
  * @param {import('./types.js').PlansToLineItems} plansToLineItemsMapping
  * @param {Record<string, string?>} couponIds
+ * @param {string} stripeSuccessURL
  * @returns {import('./types.js').BillingProvider}
  */
 export function createStripeBillingProvider(
   stripe,
   customerStore,
   plansToLineItemsMapping,
-  couponIds
+  couponIds,
+  stripeSuccessURL
 ) {
   return {
     /** @type {import('./types.js').BillingProvider['hasCustomer']} */
@@ -222,7 +224,7 @@ export function createStripeBillingProvider(
           customer_email: DIDMailto.toEmail(
             /** @type {import('@storacha/did-mailto').DidMailto} */ (account)
           ),
-          success_url: options.successURL || process.env.STRIPE_SUCCESS_URL,
+          success_url: options.successURL || stripeSuccessURL,
           cancel_url: options.cancelURL,
           line_items: plansToLineItemsMapping[planID],
           subscription_data: {
@@ -241,9 +243,8 @@ export function createStripeBillingProvider(
           }
         }
 
-        const session = await stripe.checkout.sessions.create(
-          sessionCreateParams
-        )
+        const session =
+          await stripe.checkout.sessions.create(sessionCreateParams)
         if (!session.url) {
           return {
             error: {

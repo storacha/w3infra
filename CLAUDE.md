@@ -110,6 +110,32 @@ DynamoDB / External Service
 - Stores encapsulate all database/external service interactions
 - All Lambda handlers should be idempotent
 
+### Environment Variables & Configuration
+
+Lambda env vars are subject to a **4KB size limit**. To work around this, the codebase uses a **3-layer config pattern** instead of setting env vars directly on Lambdas:
+
+1. **Deploy time** (@stacks/upload-db-stack.js): reads `process.env.*` from the CI/deploy environment and writes values into AWS SSM Parameter Store via `new Config.Parameter(stack, 'NAME', { value: process.env.NAME })`. The deploy-time env var name and the SSM parameter name may differ (e.g. `STRIPE_DEFAULT_SUCCESS_URL` → `STRIPE_SUCCESS_URL`).
+
+2. **Lambda cold start** (@upload-api/functions/ucan-invocation-router.js): the `SSM_PARAMETERS` array lists which SSM params to load, and `loadSSMParameters()` (from @lib/ssm.js) fetches them all into an in-process cache.
+
+3. **Runtime** (`getLambdaEnv()` in @upload-api/functions/ucan-invocation-router.js): values are read from the SSM cache via `getSSMParameter()` (optional, returns `''`) or `mustGetSSMParameter()` (throws if missing) — **never** via `process.env` directly for these params.
+
+**Where to set values:**
+- **Local development**: `.env.local` (gitignored copy of `.env.tpl`)
+- **Staging / Production**: seed.run console → app → stage → Settings → Environment Variables
+
+**Adding a new config parameter:**
+1. Add `if (process.env.MY_VAR) { new Config.Parameter(stack, 'MY_PARAM', { value: process.env.MY_VAR }) }` in @stacks/upload-db-stack.js
+2. Add `'MY_PARAM'` to the `SSM_PARAMETERS` array in @upload-api/functions/ucan-invocation-router.js
+3. Read it in `getLambdaEnv()` via `getSSMParameter('MY_PARAM')` and return it
+4. Pass it explicitly to any function that needs it — **do not read `process.env.MY_PARAM` inside business logic**
+5. Add `MY_VAR = ''` to @.env.tpl
+6. Set `MY_VAR` in seed.run for each stage
+
+**Secrets** (sensitive values like API keys) use `Config.Secret` instead of `Config.Parameter` and are bound to Lambdas via the `bind:` array. They are defined in @stacks/upload-db-stack.js and accessed via `Config.MY_SECRET` at runtime (SST handles the SSM lookup automatically).
+
+---
+
 ### Code Style
 
 - ESM modules with TypeScript type checking via JSDoc annotations

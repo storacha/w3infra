@@ -104,6 +104,7 @@ async function withCustomer(context, testFn) {
 
 test.before(async t => {
   const stripeSecretKey = process.env.STRIPE_TEST_SECRET_KEY
+  const stripeSuccessURL = process.env.STRIPE_DEFAULT_SUCCESS_URL || 'http://localhost:3000/public-checkout-success'
 
   if (!stripeSecretKey) {
     throw new Error('STRIPE_TEST_SECRET_KEY environment variable is not set')
@@ -116,7 +117,7 @@ test.before(async t => {
   // use the staging config in test because staging points at the Stripe sandbox
   const plansToLineItemsMapping = PLANS_TO_LINE_ITEMS_MAPPING.staging
   const couponIds = FREE_TRIAL_COUPONS.staging
-  const billingProvider = createStripeBillingProvider(stripe, customerStore, plansToLineItemsMapping, couponIds)
+  const billingProvider = createStripeBillingProvider(stripe, customerStore, plansToLineItemsMapping, couponIds, stripeSuccessURL)
 
   Object.assign(t.context, {
     dynamo,

@@ -160,6 +160,11 @@ export function UploadDbStack({ stack, app }) {
       value: process.env.UPLOAD_API_DID,
     })
   }
+  if (process.env.STRIPE_DEFAULT_SUCCESS_URL) {
+    new Config.Parameter(stack, 'STRIPE_SUCCESS_URL', {
+      value: process.env.STRIPE_DEFAULT_SUCCESS_URL,
+    })
+  }
 
   const humanodeTable = new Table(stack, 'humanode', humanodeTableProps)
 

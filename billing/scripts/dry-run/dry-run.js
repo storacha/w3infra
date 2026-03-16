@@ -314,7 +314,7 @@ for (const usage of usageSnapshots) {
 }
 console.log('\n--- End Delta Calculation ---\n')
 
-/** @type {Array<[string, string, string, string, string, string, string, string, number]>} */
+/** @type {Array<[string, string, string, string, string, string, string, string, string, number]>} */
 const data = []
 
 for (const [customer, usages] of usageByCustomer.entries()) {
@@ -346,12 +346,14 @@ for (const [customer, usages] of usageByCustomer.entries()) {
     // Calculate cost using cumulative duration from month start
     const monthStart = startOfMonth(usages[0].from)
     const cumulativeDuration = usages[0].to.getTime() - monthStart.getTime()
+    const stripeCustomerId = usages[0].account.replace('stripe:', '')
 
     data.push([
       customer,
+      stripeCustomerId,
       product,
       size.toString(), // Total Size (bytes)
-      usageByteMs,     // Cumulative Usage (byte·ms) from month start
+      usageByteMs, // Cumulative Usage (byte·ms) from month start
       usageBytesPerMonth.toString(), // Cumulative Avg (bytes/month) from delta metrics
       usageGiBPerMonth, // Cumulative Avg (GiB/month) from delta metrics
       totalDeltaByteQuantity.toString(), // Delta sent to Stripe (bytes)
@@ -362,8 +364,8 @@ for (const [customer, usages] of usageByCustomer.entries()) {
     console.warn(`failed to calculate cost for: ${customer}`, err)
   }
 }
-// Sort by Cost ($) descending. Cost is now at index 8.
-data.sort((a, b) => b[8] - a[8])
+// Sort by Cost ($) descending. Cost is now at index 9.
+data.sort((a, b) => b[9] - a[9])
 
 await fs.promises.writeFile(
   `./summary-${fileID}.csv`,
@@ -371,6 +373,7 @@ await fs.promises.writeFile(
     header: true,
     columns: [
       'Customer',
+      'Stripe ID',
       'Product',
       'Total Size (bytes)',
       'Cumulative Usage (byte·ms)',
@@ -378,7 +381,7 @@ await fs.promises.writeFile(
       'Cumulative Avg (GiB/month)',
       'Delta Stripe (bytes)',
       'Delta Stripe (GiB)',
-      'Cost ($)'
+      'Cost ($)',
     ],
   })
 )

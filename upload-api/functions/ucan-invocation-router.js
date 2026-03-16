@@ -115,6 +115,7 @@ const SSM_PARAMETERS = [
   'R2_ENDPOINT',
   'R2_SECRET_ACCESS_KEY',
   'REQUIRE_PAYMENT_PLAN',
+  'STRIPE_SUCCESS_URL',
   'UPLOAD_API_ALIAS',
   'UPLOAD_API_DID',
 ]
@@ -251,6 +252,7 @@ export async function ucanInvocationRouter(request) {
     filecoinSubmitQueueUrl,
     egressTrafficQueueUrl,
     requirePaymentPlan,
+    stripeSuccessURL,
     principalMapping,
     plansToLineItemsMapping,
     couponIds,
@@ -389,7 +391,8 @@ export async function ucanInvocationRouter(request) {
       stripe,
       customerStore,
       plansToLineItemsMapping,
-      couponIds
+      couponIds,
+      stripeSuccessURL
     ),
     productInfo
   )
@@ -807,6 +810,7 @@ function getLambdaEnv() {
     uploadServiceURL: mustGetEnv('UPLOAD_SERVICE_URL'),
     aggregatorDid: mustGetSSMParameter('AGGREGATOR_DID'),
     requirePaymentPlan: getSSMParameter('REQUIRE_PAYMENT_PLAN') === 'true',
+    stripeSuccessURL: getSSMParameter('STRIPE_SUCCESS_URL'),
     dealTrackerDid: mustGetSSMParameter('DEAL_TRACKER_DID'),
     dealTrackerUrl: mustGetSSMParameter('DEAL_TRACKER_URL'),
     // carpark bucket - CAR file bytes may be found here with keys like {cid}/{cid}.car
