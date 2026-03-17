@@ -127,6 +127,11 @@ export function getCustomDomain (stage, hostedZone) {
     return { domainName: `staging.${hostedZone}`, hostedZone }
   }
 
+  // forge-test uses bare domain like production (matches other test services)
+  if (stage === 'forge-test') {
+    return { domainName: hostedZone, hostedZone }
+  }
+
   return { domainName: `${stage}.${hostedZone}`, hostedZone }
 }
 
