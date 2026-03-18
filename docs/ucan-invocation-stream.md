@@ -58,14 +58,10 @@ In the context of `space-metrics` table, a partition key with `space` is used to
 
 Each UCAN Invocation/receipt that goes through the stream is stored 
 in S3. We [partition log storage](https://github.com/web3-storage/w3infra/blob/9def8df1ac3e0dda6e7aad710b1ec534af50af0a/stacks/firehose-stack.js#L163) by "type" (ie, `workflow` or `receipt`),
-"op" (ie, the UCAN's ability - `space/blob/add`, `upload/remove`, etc) and "day"
+"op" (ie, the UCAN's ability - `upload/remove`, etc) and "day"
 (a `%Y-%m-%d` formatted string). We designed partitioning this way to make it easy and efficient to 
 find logs for a particular operation on a particular date, which is used extensively
 by AWS Athena to make UCAN log queries efficient.
-
-For example, receipts of the `store/add` operation from January 1, 2024 are stored in:
-
-`/logs/receipt/store/add/2024-01-01`
 
 #### Glue
 
