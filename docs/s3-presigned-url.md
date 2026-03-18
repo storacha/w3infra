@@ -1,6 +1,6 @@
 # S3 Presigned URLs
 
-When a user invokes `store/add`, we create a "presigned" URL allowing them to make a PUT request directly to S3 with their upload.
+When a user invokes `space/blob/add`, we create a "presigned" URL allowing them to make a PUT request directly to S3 with their upload.
 
 The URL has authentication params in the query string, so anyone with the URL can use it to write to our bucket! 
 
@@ -23,7 +23,7 @@ This means:
 
 When presigning a URL for S3, the headers relating to auth and signing are "hoisted" to the URLSearchParams; they appear in the query so you can hand the URL off, and the params needed verify it are baked in. S3 support unpacking those params from either the query _or_ from HTTP request headers. The query params are part of the signature, so they can't be tampered with. 
 
-You can also "hoist" and sign any other params you want... it is tempting to move `x-amz-checksum-sha256` to the query so a user wouldn't need to provide it separately. However it appears that aws does not support pulling that value out of the query, only from a request header. This is why we return the `x-amz-checksum-sha256` and `content-length` headers from `store/add` as the user MUST send them with the request, or the signature verification will fail.
+You can also "hoist" and sign any other params you want... it is tempting to move `x-amz-checksum-sha256` to the query so a user wouldn't need to provide it separately. However it appears that aws does not support pulling that value out of the query, only from a request header. This is why we return the `x-amz-checksum-sha256` and `content-length` headers from `space/blob/add` as the user MUST send them with the request, or the signature verification will fail.
 
 ## References
 
