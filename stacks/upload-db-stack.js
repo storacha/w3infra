@@ -70,11 +70,6 @@ export function UploadDbStack({ stack, app }) {
       value: process.env.CONTENT_CLAIMS_URL,
     })
   }
-  if (process.env.DISABLE_CUSTOMER_REGISTRATION) {
-    new Config.Parameter(stack, 'DISABLE_CUSTOMER_REGISTRATION', {
-      value: process.env.DISABLE_CUSTOMER_REGISTRATION,
-    })
-  }
   if (process.env.INDEXING_SERVICE_DID) {
     new Config.Parameter(stack, 'INDEXING_SERVICE_DID', {
       value: process.env.INDEXING_SERVICE_DID,
