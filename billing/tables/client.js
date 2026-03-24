@@ -73,6 +73,23 @@ export const createStorePutterClient = (conf, context) => {
 }
 
 /**
+ * Creates a putter client that is read only. i.e. if the put method is called
+ * it will return an error instead of writing to the table.
+ *
+ * @template T
+ * @returns {import('../lib/api.js').StorePutter<T>}
+ */
+export const createReadOnlyStorePutterClient = () => ({
+  /**
+   * @param {T} record
+   * @param {object} [options]
+   */
+  put: async (record, options) => {
+    return { error: new StoreOperationFailure('store is read only') }
+  }
+})
+
+/**
  * @template T
  * @param {{ region: string } | import('@aws-sdk/client-dynamodb').DynamoDBClient} conf
  * @param {object} context

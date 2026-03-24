@@ -55,7 +55,7 @@ export const webhook = Sentry.AWSLambda.wrapHandler(
     if (event.type === 'customer.subscription.created') {
       const region = customContext?.region ?? mustGetEnv('AWS_REGION')
       const customerTable = customContext?.customerTable ?? mustGetEnv('CUSTOMER_TABLE_NAME')
-      const customerStore = createCustomerStore({ region }, { tableName: customerTable })
+      const customerStore = createCustomerStore({ region }, { tableName: customerTable, readOnly: process.env.DISABLE_NEW_SIGNUPS === 'true' })
       const storachaEnv = mustGetEnv('SST_STAGE')
       const pricesToPlans = PRICES_TO_PLANS_MAPPING[storachaEnv]
       // TODO: move this out to a separate lambda per best practices here: https://stripe.com/docs/webhooks#acknowledge-events-immediately

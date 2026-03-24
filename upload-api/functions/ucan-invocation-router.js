@@ -278,6 +278,7 @@ export async function ucanInvocationRouter(request) {
   const UPLOAD_API_DID = getSSMParameter('UPLOAD_API_DID')
   const UPLOAD_API_ALIAS = getSSMParameter('UPLOAD_API_ALIAS')
   const MAX_REPLICAS = getSSMParameter('MAX_REPLICAS')
+  const DISABLE_NEW_SIGNUPS = getSSMParameter('DISABLE_NEW_SIGNUPS')
   const {
     PRIVATE_KEY,
     STRIPE_SECRET_KEY,
@@ -379,7 +380,10 @@ export async function ucanInvocationRouter(request) {
   )
   const customerStore = createCustomerStore(
     { region: AWS_REGION },
-    { tableName: customerTableName }
+    {
+      tableName: customerTableName,
+      readOnly: DISABLE_NEW_SIGNUPS === 'true',
+    }
   )
   if (!STRIPE_SECRET_KEY) throw new Error('missing secret: STRIPE_SECRET_KEY')
   const stripe = new Stripe(STRIPE_SECRET_KEY, {
@@ -396,7 +400,11 @@ export async function ucanInvocationRouter(request) {
     ),
     productInfo
   )
-  const rateLimitsStorage = createRateLimitTable(AWS_REGION, rateLimitTableName)
+  const rateLimitsStorage = createRateLimitTable(
+    AWS_REGION,
+    rateLimitTableName,
+    DISABLE_NEW_SIGNUPS === 'true' ? { unknownCustomerRate: 0, customerStore } : {},
+  )
   const spaceDiffStore = createSpaceDiffStore(
     { region: AWS_REGION },
     { tableName: spaceDiffTableName }

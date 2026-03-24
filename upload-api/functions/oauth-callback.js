@@ -262,7 +262,10 @@ const getContext = (customContext) => {
 
   const customerStore = createCustomerStore(
     { region },
-    { tableName: mustGetEnv('CUSTOMER_TABLE_NAME') }
+    { 
+      tableName: mustGetEnv('CUSTOMER_TABLE_NAME'),
+      readOnly: process.env.DISABLE_NEW_SIGNUPS === 'true',
+    }
   )
 
   return {

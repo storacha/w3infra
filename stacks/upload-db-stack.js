@@ -70,6 +70,11 @@ export function UploadDbStack({ stack, app }) {
       value: process.env.CONTENT_CLAIMS_URL,
     })
   }
+  if (process.env.DISABLE_NEW_SIGNUPS) {
+    new Config.Parameter(stack, 'DISABLE_NEW_SIGNUPS', {
+      value: process.env.DISABLE_NEW_SIGNUPS,
+    })
+  }
   if (process.env.INDEXING_SERVICE_DID) {
     new Config.Parameter(stack, 'INDEXING_SERVICE_DID', {
       value: process.env.INDEXING_SERVICE_DID,
