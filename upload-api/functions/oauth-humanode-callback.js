@@ -160,7 +160,7 @@ const getContext = (customContext) => {
 
   const customerStore = createCustomerStore({ region }, {
     tableName: mustGetEnv('CUSTOMER_TABLE_NAME'),
-    readOnly: process.env.DISABLE_NEW_SIGNUPS === 'true'
+    readOnly: process.env.DISABLE_CUSTOMER_REGISTRATION === 'true'
   })
   const humanodeStore = createHumanodesTable(region, mustGetEnv('HUMANODE_TABLE_NAME'))
   

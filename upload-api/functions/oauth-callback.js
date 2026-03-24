@@ -264,7 +264,7 @@ const getContext = (customContext) => {
     { region },
     { 
       tableName: mustGetEnv('CUSTOMER_TABLE_NAME'),
-      readOnly: process.env.DISABLE_NEW_SIGNUPS === 'true',
+      readOnly: process.env.DISABLE_CUSTOMER_REGISTRATION === 'true',
     }
   )
 

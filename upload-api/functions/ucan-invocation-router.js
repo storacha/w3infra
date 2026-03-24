@@ -278,7 +278,7 @@ export async function ucanInvocationRouter(request) {
   const UPLOAD_API_DID = getSSMParameter('UPLOAD_API_DID')
   const UPLOAD_API_ALIAS = getSSMParameter('UPLOAD_API_ALIAS')
   const MAX_REPLICAS = getSSMParameter('MAX_REPLICAS')
-  const DISABLE_NEW_SIGNUPS = getSSMParameter('DISABLE_NEW_SIGNUPS')
+  const DISABLE_CUSTOMER_REGISTRATION = getSSMParameter('DISABLE_CUSTOMER_REGISTRATION')
   const {
     PRIVATE_KEY,
     STRIPE_SECRET_KEY,
@@ -382,7 +382,7 @@ export async function ucanInvocationRouter(request) {
     { region: AWS_REGION },
     {
       tableName: customerTableName,
-      readOnly: DISABLE_NEW_SIGNUPS === 'true',
+      readOnly: DISABLE_CUSTOMER_REGISTRATION === 'true',
     }
   )
   if (!STRIPE_SECRET_KEY) throw new Error('missing secret: STRIPE_SECRET_KEY')
@@ -403,7 +403,7 @@ export async function ucanInvocationRouter(request) {
   const rateLimitsStorage = createRateLimitTable(
     AWS_REGION,
     rateLimitTableName,
-    DISABLE_NEW_SIGNUPS === 'true' ? { unknownCustomerRate: 0, customerStore } : {},
+    DISABLE_CUSTOMER_REGISTRATION === 'true' ? { unknownCustomerRate: 0, customerStore } : {},
   )
   const spaceDiffStore = createSpaceDiffStore(
     { region: AWS_REGION },
