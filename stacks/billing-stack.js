@@ -147,8 +147,9 @@ export function BillingStack ({ stack, app }) {
     timeout: '15 minutes',
     bind: [stripeSecretKey],
     environment: {
+      DISABLE_CUSTOMER_REGISTRATION: process.env.DISABLE_CUSTOMER_REGISTRATION || '',
       USAGE_TABLE_NAME: usageTable.tableName,
-      SPACE_SNAPSHOT_TABLE_NAME: spaceSnapshotTable.tableName
+      SPACE_SNAPSHOT_TABLE_NAME: spaceSnapshotTable.tableName,
     }
   })
 
