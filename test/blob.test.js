@@ -86,7 +86,7 @@ test('blob integration flow with receipts validation', withCauseLog(async t => {
   console.log('Creating new File')
   const file = await randomFile(100)
   
-  // Encode file as Unixfs and perform store/add
+  // Encode file as Unixfs and perform space/blob/add
   const blocksReadableStream = UnixFS.createFileEncoderStream(file)
   /** @type {CARLink[]} */
   const shards = []
