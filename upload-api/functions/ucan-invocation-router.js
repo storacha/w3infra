@@ -379,7 +379,10 @@ export async function ucanInvocationRouter(request) {
   )
   const customerStore = createCustomerStore(
     { region: AWS_REGION },
-    { tableName: customerTableName }
+    {
+      tableName: customerTableName,
+      readOnly: process.env.DISABLE_CUSTOMER_REGISTRATION === 'true',
+    }
   )
   if (!STRIPE_SECRET_KEY) throw new Error('missing secret: STRIPE_SECRET_KEY')
   const stripe = new Stripe(STRIPE_SECRET_KEY, {
@@ -396,7 +399,11 @@ export async function ucanInvocationRouter(request) {
     ),
     productInfo
   )
-  const rateLimitsStorage = createRateLimitTable(AWS_REGION, rateLimitTableName)
+  const rateLimitsStorage = createRateLimitTable(
+    AWS_REGION,
+    rateLimitTableName,
+    process.env.DISABLE_CUSTOMER_REGISTRATION === 'true' ? { unknownCustomerRate: 0, customerStore } : {},
+  )
   const spaceDiffStore = createSpaceDiffStore(
     { region: AWS_REGION },
     { tableName: spaceDiffTableName }

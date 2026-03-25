@@ -158,7 +158,10 @@ const getContext = (customContext) => {
     privateKey: Config.PRIVATE_KEY
   })
 
-  const customerStore = createCustomerStore({ region }, { tableName: mustGetEnv('CUSTOMER_TABLE_NAME') })
+  const customerStore = createCustomerStore({ region }, {
+    tableName: mustGetEnv('CUSTOMER_TABLE_NAME'),
+    readOnly: process.env.DISABLE_CUSTOMER_REGISTRATION === 'true'
+  })
   const humanodeStore = createHumanodesTable(region, mustGetEnv('HUMANODE_TABLE_NAME'))
   
   return {

@@ -1,4 +1,4 @@
-import { connectTable, createStoreGetterClient, createStoreListerClient, createStorePutterClient } from './client.js'
+import { connectTable, createReadOnlyStorePutterClient, createStoreGetterClient, createStoreListerClient, createStorePutterClient } from './client.js'
 import { validate, encode, encodeKey, decode, listerByAccount } from '../data/customer.js'
 import { RecordNotFound, StoreOperationFailure } from './lib.js'
 import { UpdateItemCommand } from '@aws-sdk/client-dynamodb'
@@ -47,12 +47,14 @@ export const customerTableProps = {
 
 /**
  * @param {{ region: string } | import('@aws-sdk/client-dynamodb').DynamoDBClient} conf
- * @param {{ tableName: string }} context
+ * @param {{ tableName: string, readOnly?: boolean }} context
  * @returns {import('../lib/api.js').CustomerStore & { getByAccount: (account: import('../lib/api.js').AccountID) => Promise<any> }}
  */
-export const createCustomerStore = (conf, { tableName }) => ({
+export const createCustomerStore = (conf, { tableName, readOnly }) => ({
   ...createStoreGetterClient(conf, { tableName, encodeKey, decode }),
-  ...createStorePutterClient(conf, { tableName, validate, encode }),
+  ...(readOnly
+    ? createReadOnlyStorePutterClient()
+    : createStorePutterClient(conf, { tableName, validate, encode })),
   ...createStoreListerClient(conf, {
     tableName,
     encodeKey: () => ({ ok: {} }),
