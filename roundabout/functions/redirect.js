@@ -36,7 +36,7 @@ export async function redirectGet(request) {
   }
 
   /** @type {string[]} */
-  const indexingServiceURLs = JSON.parse(process.env.ROUNDABOUT_INDEXING_SERVICE_URLS || '["https://indexer.storacha.network"]')
+  const indexingServiceURLs = JSON.parse(process.env.ROUNDABOUT_INDEXING_SERVICE_URLS || '[]')
   if (!indexingServiceURLs.length && process.env.SST_STAGE !== 'prod') {
     indexingServiceURLs.push('https://staging.indexer.storacha.network')
   }
@@ -138,7 +138,7 @@ export async function redirectPieceGet(request) {
   }
 
   /** @type {string[]} */
-   const indexingServiceURLs = JSON.parse(process.env.ROUNDABOUT_INDEXING_SERVICE_URLS || '["https://indexer.storacha.network"]')
+   const indexingServiceURLs = JSON.parse(process.env.ROUNDABOUT_INDEXING_SERVICE_URLS || '[]')
   if (!indexingServiceURLs.length && process.env.SST_STAGE !== 'prod') {
     indexingServiceURLs.push('https://staging.indexer.storacha.network')
   }
