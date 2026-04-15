@@ -38,12 +38,10 @@ export function RoundaboutStack({ stack, app }) {
       }
     },
     routes: {
-      'GET /piece/{pieceCID}':  'roundabout/functions/redirect.pieceHandler',
-      'HEAD /piece/{pieceCID}': 'roundabout/functions/redirect.pieceHandler',
-      'GET /{cid}':             'roundabout/functions/redirect.handler',
-      'HEAD /{cid}':            'roundabout/functions/redirect.handler',
-      'GET /key/{key}':         'roundabout/functions/redirect.keyHandler',
-      'HEAD /key/{key}':        'roundabout/functions/redirect.keyHandler',
+      'GET /{cid}':       'roundabout/functions/redirect.handler',
+      'HEAD /{cid}':      'roundabout/functions/redirect.handler',
+      'GET /key/{key}':   'roundabout/functions/redirect.keyHandler',
+      'HEAD /key/{key}':   'roundabout/functions/redirect.keyHandler',
     },
     accessLog: {
       format:'{"requestTime":"$context.requestTime","requestId":"$context.requestId","httpMethod":"$context.httpMethod","path":"$context.path","routeKey":"$context.routeKey","status":$context.status,"responseLatency":$context.responseLatency,"integrationRequestId":"$context.integration.requestId","integrationStatus":"$context.integration.status","integrationLatency":"$context.integration.latency","integrationServiceStatus":"$context.integration.integrationStatus","ip":"$context.identity.sourceIp","userAgent":"$context.identity.userAgent"}'
