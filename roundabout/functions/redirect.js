@@ -36,7 +36,7 @@ export async function redirectGet(request) {
   }
 
   /** @type {string[]} */
-  const indexingServiceURLs = JSON.parse(process.env.ROUNDABOUT_INDEXING_SERVICE_URLS || '["https://indexer.storacha.network"]')
+  const indexingServiceURLs = JSON.parse(process.env.ROUNDABOUT_INDEXING_SERVICE_URLS || '[]')
   if (!indexingServiceURLs.length && process.env.SST_STAGE !== 'prod') {
     indexingServiceURLs.push('https://staging.indexer.storacha.network')
   }
@@ -59,7 +59,21 @@ export async function redirectGet(request) {
 
   let response
   if (asPieceCidV2(cid) !== undefined) {
-    response = await resolvePiece(cid, locateContent, indexingService)
+    // For piece CIDs, try multiple buckets in production
+    const locateContents = []
+    const baseBucketName = getEnv().BUCKET_NAME
+    const bucketNames = getBucketNamesToTry(baseBucketName)
+
+    for (const bucketName of bucketNames) {
+      locateContents.push(contentLocationResolver({
+        bucket: bucketName,
+        s3Client: getBucketClient(),
+        expiresIn,
+        indexingService
+      }))
+    }
+    
+    response = await resolvePiece(cid, locateContents, indexingService)
   } else if (asPieceCidV1(cid) !== undefined) {
     response = {
       statusCode: 415,
@@ -73,6 +87,27 @@ export async function redirectGet(request) {
     statusCode: 415, 
     body: 'Unsupported CID type' 
   }
+}
+
+/**
+ * Get the list of bucket names to try for content location resolution.
+ * In production, tries both primary and secondary carpark buckets.
+ * 
+ * @param {string} baseBucketName
+ * @returns {string[]}
+ */
+function getBucketNamesToTry(baseBucketName) {
+  const bucketNames = [baseBucketName]
+  if (process.env.SST_STAGE === 'prod') {
+    if (/^carpark-\w+-0$/.test(baseBucketName)) {
+      const secondaryBucket = baseBucketName.replace(/-0$/, '-1')
+      bucketNames.push(secondaryBucket)
+    } else if (/^carpark-\w+-1$/.test(baseBucketName)) {
+      const primaryBucket = baseBucketName.replace(/-1$/, '-0')
+      bucketNames.unshift(primaryBucket)
+    }
+  }
+  return bucketNames
 }
 
 /**
@@ -93,18 +128,20 @@ async function resolveContent (cid, locateContent) {
  * Return response for a Piece CID, or undefined for other CID types
  * 
  * @param {UnknownLink} cid
- * @param {(cid: UnknownLink) => Promise<string | undefined> } locateContent
+ * @param {((cid: UnknownLink) => Promise<string | undefined>)[]} locateContents
  * @param {IndexingServiceQueryClient} [indexingService]
  */
-async function resolvePiece (cid, locateContent, indexingService) {
+async function resolvePiece (cid, locateContents, indexingService) {
   const cids = await findEquivalentCids(cid, indexingService)
   if (cids.size === 0) {
     return { statusCode: 404, body: 'No equivalent CID for Piece CID found' }
   }
   for (const cid of cids) {
-    const url = await locateContent(cid)
-    if (url) {
-      return redirectTo(url)
+    for (const locateContent of locateContents) {
+      const url = await locateContent(cid)
+      if (url) {
+        return redirectTo(url)
+      }
     }
   }
   return { statusCode: 404, body: 'No content found for Piece CID' }
@@ -138,7 +175,7 @@ export async function redirectPieceGet(request) {
   }
 
   /** @type {string[]} */
-   const indexingServiceURLs = JSON.parse(process.env.ROUNDABOUT_INDEXING_SERVICE_URLS || '["https://indexer.storacha.network"]')
+  const indexingServiceURLs = JSON.parse(process.env.ROUNDABOUT_INDEXING_SERVICE_URLS || '[]')
   if (!indexingServiceURLs.length && process.env.SST_STAGE !== 'prod') {
     indexingServiceURLs.push('https://staging.indexer.storacha.network')
   }
@@ -152,14 +189,20 @@ export async function redirectPieceGet(request) {
     indexingService = new Client({ serviceURL: url })
   }
 
-  const locateContent = contentLocationResolver({
-    bucket: getEnv().BUCKET_NAME,
-    s3Client: getBucketClient(),
-    expiresIn,
-    indexingService
-  })
+  const locateContents = []
+  const baseBucketName = getEnv().BUCKET_NAME
+  const bucketNames = getBucketNamesToTry(baseBucketName)
 
-  return resolvePiece(cid, locateContent, indexingService)
+  for (const bucketName of bucketNames) {
+    locateContents.push(contentLocationResolver({
+      bucket: bucketName,
+      s3Client: getBucketClient(),
+      expiresIn,
+      indexingService
+    }))
+  }
+
+  return resolvePiece(cid, locateContents, indexingService)
 }
 
 /**
