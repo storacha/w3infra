@@ -1,6 +1,6 @@
 import { test } from './helpers/context.js'
 
-import { PutObjectCommand } from '@aws-sdk/client-s3'
+import { PutObjectCommand, CreateBucketCommand } from '@aws-sdk/client-s3'
 import { encode } from 'multiformats/block'
 import { CID } from 'multiformats/cid'
 import { base58btc } from 'multiformats/bases/base58'
@@ -14,7 +14,7 @@ import { Client } from '@storacha/indexing-service-client'
 import * as QueryResult from '@storacha/indexing-service-client/query-result'
 import * as Claim from '@storacha/indexing-service-client/claim'
 import { Assert } from '@storacha/capabilities'
-import { RAW_CODE, CARPARK_DOMAIN } from '../constants.js'
+import { RAW_CODE, CARPARK_DOMAIN_PATTERN } from '../constants.js'
 import { getSigner, contentLocationResolver } from '../index.js'
 import {
   parseQueryStringParameters,
@@ -25,6 +25,10 @@ import {
 import { createS3, createBucket } from './helpers/resources.js'
 
 /** @import { URI } from '@ucanto/interface' */
+
+// default carpark domains for the test environment (SST_STAGE is undefined → 'dev')
+const TEST_CARPARK_DOMAIN_0 = 'carpark-dev-0.r2.w3s.link'
+const TEST_CARPARK_DOMAIN_1 = 'carpark-dev-1.r2.w3s.link'
 
 test.before(async t => {
   const { client } = await createS3({ port: 9000 })
@@ -72,7 +76,7 @@ test('can create signed url for Blob in bucket and get it', async t => {
       content: blobCid,
       location: [
         /** @type {URI} */
-        (`http://${CARPARK_DOMAIN}/${encodedMultihash}/${encodedMultihash}.blob`)
+        (`http://${TEST_CARPARK_DOMAIN_0}/${encodedMultihash}/${encodedMultihash}.blob`)
       ]
     }
   })
@@ -184,6 +188,134 @@ test('fails to parse expires query parameter when not acceptable value', t => {
     expires: `${MIN_EXPIRES_IN - 1}`
   }
   t.throws(() => parseQueryStringParameters(queryParamsSmaller))
+})
+
+test('CARPARK_DOMAIN_PATTERN matches any numbered carpark bucket for current stage', t => {
+  t.truthy(CARPARK_DOMAIN_PATTERN.test('carpark-dev-0.r2.w3s.link'))
+  t.truthy(CARPARK_DOMAIN_PATTERN.test('carpark-dev-1.r2.w3s.link'))
+  t.falsy(CARPARK_DOMAIN_PATTERN.test('carpark-prod-0.r2.w3s.link'))
+  t.falsy(CARPARK_DOMAIN_PATTERN.test('other-dev-0.r2.w3s.link'))
+  t.falsy(CARPARK_DOMAIN_PATTERN.test('carpark-dev-.r2.w3s.link'))
+})
+
+test('resolves blob from secondary carpark bucket when extractCarparkBucketFromUrl is true', async t => {
+  await t.context.s3Client.send(new CreateBucketCommand({ Bucket: 'carpark-dev-1' }))
+  const blobCid = await putBlobToBucket(t.context.s3Client, 'carpark-dev-1')
+  const encodedMultihash = base58btc.encode(blobCid.multihash.bytes)
+  const expiresIn = 3 * 24 * 60 * 60
+
+  const configuredBucket = await createBucket(t.context.s3Client)
+
+  const alice = await ed25519.generate()
+  const space = await ed25519.generate()
+
+  const site = await Assert.location.delegate({
+    issuer: alice,
+    audience: space,
+    with: alice.did(),
+    nb: {
+      content: blobCid,
+      location: [
+        /** @type {URI} */
+        (`http://${TEST_CARPARK_DOMAIN_1}/${encodedMultihash}/${encodedMultihash}.blob`)
+      ]
+    }
+  })
+
+  const blocks = new Map()
+  for (const b of site.export()) {
+    blocks.set(b.cid.toString(), b)
+  }
+
+  const result = await QueryResult.from({
+    claims: [Claim.view({ root: site.cid, blocks })]
+  })
+  if (result.error) return t.fail(result.error.message)
+
+  const queryArchiveRes = await QueryResult.archive(result.ok)
+  if (queryArchiveRes.error) return t.fail(queryArchiveRes.error.message)
+
+  const indexingService = new Client({
+    fetch: async () => new Response(/** @type {BodyInit} */ (queryArchiveRes.ok))
+  })
+
+  const locateContent = contentLocationResolver({
+    bucket: configuredBucket,
+    s3Client: t.context.s3Client,
+    expiresIn,
+    indexingService,
+    extractCarparkBucketFromUrl: true
+  })
+
+  const signedUrl = await locateContent(blobCid)
+  if (!signedUrl) return t.fail('presigned url must be received')
+
+  t.truthy(signedUrl.includes('carpark-dev-1'))
+  t.truthy(signedUrl.includes(`${encodedMultihash}/${encodedMultihash}.blob`))
+
+  const fetchResponse = await fetch(signedUrl)
+  t.assert(fetchResponse.ok)
+})
+
+test('uses configured bucket when extractCarparkBucketFromUrl is false', async t => {
+  await t.context.s3Client.send(new CreateBucketCommand({ Bucket: 'carpark-dev-2' }))
+  const blobCid = await putBlobToBucket(t.context.s3Client, 'carpark-dev-2')
+  const encodedMultihash = base58btc.encode(blobCid.multihash.bytes)
+  const expiresIn = 3 * 24 * 60 * 60
+
+  const configuredBucket = await createBucket(t.context.s3Client)
+
+  const alice = await ed25519.generate()
+  const space = await ed25519.generate()
+
+  const site = await Assert.location.delegate({
+    issuer: alice,
+    audience: space,
+    with: alice.did(),
+    nb: {
+      content: blobCid,
+      location: [
+        /** @type {URI} */
+        (`http://carpark-dev-2.r2.w3s.link/${encodedMultihash}/${encodedMultihash}.blob`)
+      ]
+    }
+  })
+
+  const blocks = new Map()
+  for (const b of site.export()) {
+    blocks.set(b.cid.toString(), b)
+  }
+
+  const result = await QueryResult.from({
+    claims: [Claim.view({ root: site.cid, blocks })]
+  })
+  if (result.error) return t.fail(result.error.message)
+
+  const queryArchiveRes = await QueryResult.archive(result.ok)
+  if (queryArchiveRes.error) return t.fail(queryArchiveRes.error.message)
+
+  const indexingService = new Client({
+    fetch: async () => new Response(/** @type {BodyInit} */ (queryArchiveRes.ok))
+  })
+
+  const locateContent = contentLocationResolver({
+    bucket: configuredBucket,
+    s3Client: t.context.s3Client,
+    expiresIn,
+    indexingService
+    // extractCarparkBucketFromUrl defaults to false
+  })
+
+  const signedUrl = await locateContent(blobCid)
+  if (!signedUrl) return t.fail('presigned url must be received')
+
+  // signed URL targets the configured bucket, not the secondary one from the claim URL
+  t.truthy(signedUrl.includes(configuredBucket))
+  t.falsy(signedUrl.includes('carpark-dev-2'))
+
+  // blob is in carpark-dev-2, not in configuredBucket → 404
+  const fetchResponse = await fetch(signedUrl)
+  t.is(fetchResponse.status, 404)
 })
 
 async function getContent () {

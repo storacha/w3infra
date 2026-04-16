@@ -50,11 +50,12 @@ export async function redirectGet(request) {
     indexingService = new Client({ serviceURL: url })
   }
 
-  const locateContent = contentLocationResolver({ 
+  const locateContent = contentLocationResolver({
     bucket: getEnv().BUCKET_NAME,
     s3Client: getBucketClient(),
     expiresIn,
-    indexingService
+    indexingService,
+    extractCarparkBucketFromUrl: process.env.SST_STAGE === 'prod'
   })
 
   let response
@@ -156,7 +157,8 @@ export async function redirectPieceGet(request) {
     bucket: getEnv().BUCKET_NAME,
     s3Client: getBucketClient(),
     expiresIn,
-    indexingService
+    indexingService,
+    extractCarparkBucketFromUrl: process.env.SST_STAGE === 'prod'
   })
 
   return resolvePiece(cid, locateContent, indexingService)
