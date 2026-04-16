@@ -36,7 +36,7 @@ export async function redirectGet(request) {
   }
 
   /** @type {string[]} */
-  const indexingServiceURLs = JSON.parse(process.env.ROUNDABOUT_INDEXING_SERVICE_URLS ?? '[]')
+  const indexingServiceURLs = JSON.parse(process.env.ROUNDABOUT_INDEXING_SERVICE_URLS || '[]')
   if (!indexingServiceURLs.length && process.env.SST_STAGE !== 'prod') {
     indexingServiceURLs.push('https://staging.indexer.storacha.network')
   }
@@ -243,4 +243,5 @@ function getBucketClient () {
 }
 
 export const handler = Sentry.AWSLambda.wrapHandler(redirectGet)
+export const pieceHandler = Sentry.AWSLambda.wrapHandler(redirectPieceGet)
 export const keyHandler = Sentry.AWSLambda.wrapHandler(redirectKeyGet)
