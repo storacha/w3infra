@@ -9,7 +9,7 @@ import * as Digest from 'multiformats/hashes/digest'
  * @import { S3Client } from '@aws-sdk/client-s3'
  * @import { RequestPresigningArguments } from '@smithy/types'
  */
-import { RAW_CODE, CARPARK_DOMAIN } from './constants.js'
+import { RAW_CODE, CARPARK_DOMAIN_PATTERN } from './constants.js'
 
 /**
  * @param {S3Client} s3Client
@@ -49,8 +49,9 @@ export function getSigner (s3Client, bucketName) {
  * @param {string} config.bucket
  * @param {number} config.expiresIn
  * @param {IndexingServiceQueryClient} config.indexingService
+ * @param {boolean} [config.extractCarparkBucketFromUrl] - when true, derive the signing bucket from the carpark URL hostname (for envs with multiple carpark buckets)
  */
-export function contentLocationResolver ({ s3Client, bucket, expiresIn, indexingService }) {
+export function contentLocationResolver ({ s3Client, bucket, expiresIn, indexingService, extractCarparkBucketFromUrl = false }) {
   const signer = getSigner(s3Client, bucket)
   /**
    * @param {UnknownLink} cid
@@ -77,9 +78,13 @@ export function contentLocationResolver ({ s3Client, bucket, expiresIn, indexing
           locations.push(...c.location)
           for (const url of c.location) {
             // if location is a known carpark URI then return a signed URL
-            if (url.includes(CARPARK_DOMAIN)) {
-              const blobKey = new URL(url).pathname.slice(1)
-              return signer.getUrl(blobKey, { expiresIn })
+            const parsedUrl = new URL(url)
+            if (CARPARK_DOMAIN_PATTERN.test(parsedUrl.hostname)) {
+              const blobKey = parsedUrl.pathname.slice(1)
+              const urlSigner = extractCarparkBucketFromUrl
+                ? getSigner(s3Client, parsedUrl.hostname.split('.')[0])
+                : signer
+              return urlSigner.getUrl(blobKey, { expiresIn })
             }
           }
         }

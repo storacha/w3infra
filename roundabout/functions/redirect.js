@@ -50,11 +50,12 @@ export async function redirectGet(request) {
     indexingService = new Client({ serviceURL: url })
   }
 
-  const locateContent = contentLocationResolver({ 
+  const locateContent = contentLocationResolver({
     bucket: getEnv().BUCKET_NAME,
     s3Client: getBucketClient(),
     expiresIn,
-    indexingService
+    indexingService,
+    extractCarparkBucketFromUrl: process.env.SST_STAGE === 'prod'
   })
 
   let response
@@ -108,6 +109,59 @@ async function resolvePiece (cid, locateContent, indexingService) {
     }
   }
   return { statusCode: 404, body: 'No content found for Piece CID' }
+}
+
+/**
+ * AWS HTTP Gateway handler for GET /piece/{pieceCID} by Piece CID (V2 only)
+ *
+ * @param {import('aws-lambda').APIGatewayProxyEventV2} request
+ */
+export async function redirectPieceGet(request) {
+  let cid, expiresIn
+  try {
+    const parsedQueryParams = parseQueryStringParameters(request.queryStringParameters)
+    expiresIn = parsedQueryParams.expiresIn
+    const cidString = request.pathParameters?.pieceCID
+    cid = CID.parse(cidString || '')
+  } catch (/** @type {any} */ err) {
+    return { statusCode: 400, body: err.message }
+  }
+
+  if (asPieceCidV1(cid) !== undefined) {
+    return {
+      statusCode: 415,
+      body: 'v1 Piece CIDs are not supported yet. Please provide a V2 Piece CID. https://github.com/filecoin-project/FIPs/blob/master/FRCs/frc-0069.md'
+    }
+  }
+
+  if (asPieceCidV2(cid) === undefined) {
+    return { statusCode: 400, body: 'Invalid Piece CID. Expected a V2 Piece CID.' }
+  }
+
+  /** @type {string[]} */
+   const indexingServiceURLs = JSON.parse(process.env.ROUNDABOUT_INDEXING_SERVICE_URLS || '[]')
+  if (!indexingServiceURLs.length && process.env.SST_STAGE !== 'prod') {
+    indexingServiceURLs.push('https://staging.indexer.storacha.network')
+  }
+
+  let indexingService
+  if (indexingServiceURLs.length > 1) {
+    const clients = indexingServiceURLs.map(u => new Client({ serviceURL: new URL(u) }))
+    indexingService = combine(clients)
+  } else {
+    const url = indexingServiceURLs[0] ? new URL(indexingServiceURLs[0]) : undefined
+    indexingService = new Client({ serviceURL: url })
+  }
+
+  const locateContent = contentLocationResolver({
+    bucket: getEnv().BUCKET_NAME,
+    s3Client: getBucketClient(),
+    expiresIn,
+    indexingService,
+    extractCarparkBucketFromUrl: process.env.SST_STAGE === 'prod'
+  })
+
+  return resolvePiece(cid, locateContent, indexingService)
 }
 
 /**
