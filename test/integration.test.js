@@ -63,23 +63,21 @@ test('upload-api /metrics', async t => {
   /**
    * # HELP w3up_bytes Total bytes associated with each invocation.
    * # TYPE w3up_bytes counter
-   * w3up_bytes{can="store/add"} 0
    * w3up_bytes{can="store/remove"} 0
    * w3up_bytes{can="blob/add"} 0
    * w3up_bytes{can="blob/remove"} 0
    */
-  t.is((body.match(/w3up_bytes/g) || []).length, 6)
+  t.is((body.match(/w3up_bytes/g) || []).length, 5)
   /**
    * # HELP w3up_invocations_total Total number of invocations.
    * # TYPE w3up_invocations_total counter
-   * w3up_invocations_total{can="store/add"} 1
    * w3up_invocations_total{can="store/remove"} 0
    * w3up_invocations_total{can="upload/add"} 0
    * w3up_invocations_total{can="upload/remove"} 1
    * w3up_invocations_total{can="blob/add"} 1
    * w3up_invocations_total{can="blob/remove"} 0
    */
-  t.is((body.match(/w3up_invocations_total/g) || []).length, 8)
+  t.is((body.match(/w3up_invocations_total/g) || []).length, 7)
 })
 
 test('authorizations can be blocked by email or domain', async t => {
