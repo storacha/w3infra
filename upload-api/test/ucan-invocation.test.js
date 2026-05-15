@@ -624,10 +624,12 @@ test('replace all link values as object and array', async (t) => {
   const att = [
     {
       nb: {
-        link: root,
-        size: car.size,
+        blob: {
+          digest: root.multihash.bytes,
+          size: car.size,
+        },
       },
-      can: 'store/add',
+      can: 'space/blob/add',
       with: 'did:key:z6MkfTDbhRZz26kcDNmmehPxeujSkbXe8jqv5fLpKvtc3Wcv',
     },
     {
@@ -642,9 +644,11 @@ test('replace all link values as object and array', async (t) => {
 
   att.map(replaceAllLinkValues)
 
-  // Object with Link
-  // @ts-expect-error Property '/' does not exist on type 'Link<Partial<Model>
-  t.is(att[0].nb.link['/'], root.toString())
+  // Object with Link - space/blob/add uses blob.digest (Uint8Array), not link
+  // The digest is not converted to a Link object by replaceAllLinkValues
+  t.true(att[0].nb.blob?.digest instanceof Uint8Array)
+  t.is(att[0].nb.blob?.size, car.size)
+  
   // @ts-expect-error Property '/' does not exist on type 'Link<Partial<Model>
   t.is(att[1].nb.root['/'], root.toString())
 

@@ -1,7 +1,6 @@
 import { hasOkReceipt } from './utils.js'
 
 import {
-  STORE_ADD,
   STORE_REMOVE,
   METRICS_NAMES,
   SPACE_METRICS_NAMES,
@@ -16,8 +15,6 @@ import {
 /**
  * Update total admin metrics for upload-api receipts.
  * Metrics:
- * - STORE_ADD_TOTAL: increment number of `store/add` success receipts
- * - STORE_ADD_SIZE_TOTAL: increment size of `store/add` success receipts
  * - STORE_REMOVE_TOTAL: increment number of `store/remove` success receipts
  * - STORE_REMOVE_SIZE_TOTAL: increment size of `store/remove` success receipts
  * 
@@ -42,10 +39,6 @@ export async function updateAdminMetrics (ucanInvocations, ctx) {
   }))
 
   await ctx.metricsStore.incrementTotals({
-    [METRICS_NAMES.STORE_ADD_TOTAL]: (receipts.get(STORE_ADD) || []).length,
-    [METRICS_NAMES.STORE_ADD_SIZE_TOTAL]: (receipts.get(STORE_ADD) || []).reduce(
-      (acc, c) => acc + c.nb?.size, 0
-    ),
     [METRICS_NAMES.STORE_REMOVE_TOTAL]: (receipts.get(STORE_REMOVE) || []).length,
     [METRICS_NAMES.STORE_REMOVE_SIZE_TOTAL]: storeRemoveReceipts.reduce(
       (acc, c) => acc + c.nb?.size, 0
@@ -56,8 +49,6 @@ export async function updateAdminMetrics (ucanInvocations, ctx) {
 /**
  * Update total space metrics for upload-api receipts.
  * Metrics:
- * - STORE_ADD_TOTAL: increment number of `store/add` success receipts for a space
- * - STORE_ADD_SIZE_TOTAL: increment size of `store/add` success receipts for a space
  * - STORE_REMOVE_TOTAL: increment number of `store/remove` success receipts for a space
  * - STORE_REMOVE_SIZE_TOTAL: increment size of `store/remove` success receipts for a space
  * 
@@ -82,8 +73,6 @@ export async function updateSpaceMetrics (ucanInvocations, ctx) {
   }))
 
   await ctx.metricsStore.incrementTotals({
-    [SPACE_METRICS_NAMES.STORE_ADD_TOTAL]: normalizeCapsPerSpaceTotal(receipts.get(STORE_ADD) || []),
-    [SPACE_METRICS_NAMES.STORE_ADD_SIZE_TOTAL]: normalizeCapsPerSpaceSize(receipts.get(STORE_ADD) || []),
     [SPACE_METRICS_NAMES.STORE_REMOVE_TOTAL]: normalizeCapsPerSpaceTotal(receipts.get(STORE_REMOVE) || []),
     [SPACE_METRICS_NAMES.STORE_REMOVE_SIZE_TOTAL]: normalizeCapsPerSpaceSize(storeRemoveReceipts),
   })
