@@ -38,6 +38,7 @@ import {
   getServiceConnection,
 } from '../config.js'
 import { createUcantoServer } from '../service.js'
+import { parseWritesDisabled } from '../utils.js'
 import { Email } from '../email.js'
 import * as AgentStore from '../stores/agent.js'
 import {
@@ -650,6 +651,7 @@ export async function ucanInvocationRouter(request) {
     proofs,
     router: routingService,
     registry: allocationBlobRegistry,
+    writesDisabled: parseWritesDisabled(process.env),
     blobsStorage,
     blobRetriever,
     ...principalResolver,

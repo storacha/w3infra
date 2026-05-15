@@ -47,3 +47,15 @@ export function planLimit(customer, productInfo) {
   // Otherwise, use plan-based logic (hot network)
   return { ok: plan.allowOverages ? 0 : plan.included }
 }
+
+/**
+ * Strict-`'true'` parser matching the convention used by other env-driven
+ * flags in this file's host workspace (e.g. `DISABLE_CUSTOMER_REGISTRATION`,
+ * `DISABLE_IPNI_PUBLISHING`). Any value other than the literal string
+ * `"true"` — including `"1"`, `"false"`, the empty string, and `undefined` —
+ * is treated as `false`.
+ *
+ * @param {Record<string, string|undefined>} env
+ * @returns {boolean}
+ */
+export const parseWritesDisabled = (env) => env.WRITES_DISABLED === 'true'
