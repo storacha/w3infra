@@ -35,10 +35,10 @@ catalog:
   '@multiformats/multiaddr': ^12.2.1
   '@octokit/types': ^13.8.0
   '@sentry/serverless': ^7.74.1
-  '@storacha/access': ^1.6.7
+  '@storacha/access': ^1.6.9
   '@storacha/blob-index': ^1.2.4
   '@storacha/capabilities': 2.3.0-rc.0
-  '@storacha/client': 2.1.0-rc.0
+  '@storacha/client': 2.1.4
   '@storacha/did-mailto': ^1.0.2
   '@storacha/filecoin-api': ^2.1.0
   '@storacha/filecoin-client': ^1.0.15
@@ -46,7 +46,7 @@ catalog:
   '@storacha/one-webcrypto': ^1.0.1
   '@storacha/principal-resolver': ^1.0.0
   '@storacha/router': ^1.1.1
-  '@storacha/upload-api': 3.2.0-rc.0
+  '@storacha/upload-api': 3.3.0
   '@storacha/upload-client': 1.4.0-rc.0
   '@tsconfig/node16': ^1.0.3
   '@types/aws-lambda': ^8.10.108
