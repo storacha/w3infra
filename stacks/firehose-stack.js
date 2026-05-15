@@ -356,7 +356,7 @@ export function UcanFirehoseStack ({ stack, app }) {
         columns: [
           { name: 'carcid', type: 'string' },
           // STRUCT here refers to the Apache Hive STRUCT datatype - see https://aws.amazon.com/blogs/big-data/create-tables-in-amazon-athena-from-nested-json-and-mappings-using-jsonserde/
-          { name: 'value', type: 'STRUCT<att:ARRAY<struct<can:STRING,with:STRING,nb:STRUCT<blob:STRUCT<size:BIGINT>,space:STRING,cause:STRUCT<_cid_slash:STRING>>>>,iss:STRING,aud:STRING>' },
+          { name: 'value', type: 'STRUCT<att:ARRAY<struct<can:STRING,with:STRING,nb:STRUCT<blob:STRUCT<size:BIGINT,digest:STRING>,space:STRING,cause:STRUCT<_cid_slash:STRING>>>>,iss:STRING,aud:STRING>' },
           // No need to store URL for allocation here for now
           { name: "out", type: "STRUCT<error:STRUCT<name:STRING>,ok:STRUCT<size:BIGINT>>" },
           { name: "ts", type: "timestamp" }
