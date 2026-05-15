@@ -59,6 +59,21 @@ export const testBlob  = /** @type {TestBlobContextFn} */ (anyTest)
 export const testStore  = /** @type {TestStoreContextFn} */ (anyTest)
 
 /**
+ * Wraps an ava test fn so that, when `WRITES_DISABLED=true` is set in the env,
+ * the test is skipped. Use for tests that invoke user-facing write capabilities
+ * (`upload/add`, `space/blob/add`, etc.) — those return `ServiceUnavailable`
+ * receipts when the deployed upload-api has writes disabled.
+ *
+ * @template {import('ava').TestFn<any>} T
+ * @param {T} testFn
+ * @returns {T}
+ */
+export const skipIfWritesDisabled = testFn =>
+  process.env.WRITES_DISABLED === 'true'
+    ? /** @type {T} */ (/** @type {unknown} */ (testFn.skip))
+    : testFn
+
+/**
  * Ava does not log error cause.
  *
  * @template T

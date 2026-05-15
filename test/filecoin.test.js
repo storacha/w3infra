@@ -1,4 +1,4 @@
-import { testFilecoin as test, withCauseLog } from './helpers/context.js'
+import { testFilecoin as test, skipIfWritesDisabled, withCauseLog } from './helpers/context.js'
 import { fetch } from '@web-std/fetch'
 import pWaitFor from 'p-wait-for'
 import { isDelegation } from '@ucanto/core'
@@ -35,7 +35,7 @@ test.before((t) => {
   }
 })
 
-test(
+skipIfWritesDisabled(test)(
   'w3filecoin integration flow',
   withCauseLog(async (t) => {
     const s3Client = getAwsBucketClient()

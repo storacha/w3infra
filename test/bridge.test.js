@@ -5,7 +5,7 @@ import { ed25519 } from '@ucanto/principal'
 import { CBOR } from '@ucanto/core'
 import * as dagJSON from '@ipld/dag-json'
 import pWaitFor from 'p-wait-for'
-import { test, withCauseLog } from './helpers/context.js'
+import { test, skipIfWritesDisabled, withCauseLog } from './helpers/context.js'
 import { getDynamoDb, getApiEndpoint, getRoundaboutEndpoint } from './helpers/deployment.js'
 import { randomFile } from './helpers/random.js'
 import { setupNewClient } from './helpers/up-client.js'
@@ -72,7 +72,7 @@ async function makeBridgeRequest(context, client, capabilities, expiration, requ
   })
 }
 
-test('the bridge can make various types of requests', withCauseLog(async t => {
+skipIfWritesDisabled(test)('the bridge can make various types of requests', withCauseLog(async t => {
   const { client } = await setupNewClient()
   const spaceDID = client.currentSpace()?.did()
   if (!spaceDID) {

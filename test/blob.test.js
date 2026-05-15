@@ -1,4 +1,4 @@
-import { testBlob as test, withCauseLog } from './helpers/context.js'
+import { testBlob as test, skipIfWritesDisabled, withCauseLog } from './helpers/context.js'
 import pWaitFor from 'p-wait-for'
 import * as SpaceBlobCapabilities from '@storacha/capabilities/space/blob'
 import * as UploadCapabilities from '@storacha/capabilities/upload'
@@ -57,7 +57,7 @@ test.before(async t => {
  * 10. Read from Hoverboard
  * 11. Verify metrics
  */
-test('blob integration flow with receipts validation', withCauseLog(async t => {
+skipIfWritesDisabled(test)('blob integration flow with receipts validation', withCauseLog(async t => {
   const stage = getStage()
   const { client, account } = await setupNewClient()
   const serviceProps = getServiceProps(client, [
@@ -335,7 +335,7 @@ test('blob integration flow with receipts validation', withCauseLog(async t => {
   }
 }))
 
-test('10k NFT drop', withCauseLog(async t => {
+skipIfWritesDisabled(test)('10k NFT drop', withCauseLog(async t => {
   const total = 20_000
   console.log('Creating client')
   const { client } = await setupNewClient()
