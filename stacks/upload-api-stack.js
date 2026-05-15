@@ -38,10 +38,7 @@ export function UploadApiStack({ stack, app }) {
     },
   })
 
-  const {
-    AGGREGATOR_DID,
-    DISABLE_IPNI_PUBLISHING,
-  } = getEnv()
+  const { AGGREGATOR_DID, DISABLE_IPNI_PUBLISHING } = getEnv()
 
   // Setup app monitoring with Sentry
   setupSentry(app, stack)
@@ -199,7 +196,8 @@ export function UploadApiStack({ stack, app }) {
               DELEGATION_TABLE: delegationTable.tableName,
               DID: process.env.UPLOAD_API_DID ?? '',
               DISABLE_IPNI_PUBLISHING,
-              DISABLE_CUSTOMER_REGISTRATION: process.env.DISABLE_CUSTOMER_REGISTRATION ?? '',
+              DISABLE_CUSTOMER_REGISTRATION:
+                process.env.DISABLE_CUSTOMER_REGISTRATION ?? '',
               ENABLE_CUSTOMER_TRIAL_PLAN:
                 process.env.ENABLE_CUSTOMER_TRIAL_PLAN ?? 'false',
               EGRESS_TRAFFIC_QUEUE: egressTrafficQueue.queueUrl,
@@ -223,6 +221,7 @@ export function UploadApiStack({ stack, app }) {
               UPLOAD_SERVICE_URL: getServiceURL(stack, customDomain) ?? '',
               UPLOAD_TABLE: uploadTable.tableName,
               UPLOAD_SHARDS_BUCKET: uploadShardsBucket.bucketName,
+              WRITES_DISABLED: process.env.WRITES_DISABLED ?? '',
             },
             bind: [
               contentClaimsPrivateKey,
@@ -327,7 +326,8 @@ export function UploadApiStack({ stack, app }) {
               SUBSCRIPTION_TABLE_NAME: subscriptionTable.tableName,
               UCAN_LOG_STREAM_NAME: ucanStream.streamName,
               EGRESS_TRAFFIC_TABLE_NAME: egressTrafficTable.tableName,
-              EGRESS_TRAFFIC_MONTHLY_TABLE_NAME: egressTrafficMonthlyTable.tableName,
+              EGRESS_TRAFFIC_MONTHLY_TABLE_NAME:
+                egressTrafficMonthlyTable.tableName,
             },
             bind: [privateKey],
           },
@@ -429,7 +429,8 @@ export function UploadApiStack({ stack, app }) {
               AGENT_INDEX_TABLE_NAME: agentIndexTable.tableName,
               AGENT_MESSAGE_BUCKET_NAME: agentMessageBucket.bucketName,
               CUSTOMER_TABLE_NAME: customerTable.tableName,
-              DISABLE_CUSTOMER_REGISTRATION: process.env.DISABLE_CUSTOMER_REGISTRATION ?? '',
+              DISABLE_CUSTOMER_REGISTRATION:
+                process.env.DISABLE_CUSTOMER_REGISTRATION ?? '',
               GITHUB_CLIENT_ID: process.env.GITHUB_CLIENT_ID ?? '',
               UCAN_LOG_STREAM_NAME: ucanStream.streamName,
               UPLOAD_API_DID: process.env.UPLOAD_API_DID ?? '',
@@ -444,7 +445,8 @@ export function UploadApiStack({ stack, app }) {
             permissions: [customerTable, humanodeTable],
             environment: {
               CUSTOMER_TABLE_NAME: customerTable.tableName,
-              DISABLE_CUSTOMER_REGISTRATION: process.env.DISABLE_CUSTOMER_REGISTRATION ?? '',
+              DISABLE_CUSTOMER_REGISTRATION:
+                process.env.DISABLE_CUSTOMER_REGISTRATION ?? '',
               HUMANODE_CLIENT_ID: process.env.HUMANODE_CLIENT_ID ?? '',
               HUMANODE_TABLE_NAME: humanodeTable.tableName,
               HUMANODE_TOKEN_ENDPOINT:
